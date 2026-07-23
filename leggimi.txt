@@ -1,15 +1,14 @@
 ===================================================================
 CAMOSCIO — LEGGIMI (stato progetto, aggiornato automaticamente)
-Ultimo aggiornamento: 2026-07-23 — Fase A quasi completa, in pausa su un solo blocco
+Ultimo aggiornamento: 2026-07-23 — Fase A completata
 ===================================================================
 
-NOTA: Fase A quasi completa (vedi checklist sotto). Manca solo
-l'installazione di Git, che su questo PC richiede un permesso di
-amministratore Windows che non posso approvare da solo (l'account
-Windows in uso non è amministratore). Serve un'azione semplice
-dell'utente: vedi "COSE CHE DEVE FARE L'UTENTE DI PERSONA", punto 1.
-Appena Git è installato si chiude la Fase A (git init + due commit)
-e si passa alla Fase B.
+NOTA: Fase A completata (vedi checklist sotto). L'utente ha installato
+Git di persona (richiedeva un permesso di amministratore Windows che
+Claude non poteva approvare da solo). Repository git creato con un
+commit iniziale (f4da9c2). Prossimo passo: Fase B, per cui serve
+l'account MongoDB Atlas dell'utente (vedi "COSE CHE DEVE FARE L'UTENTE
+DI PERSONA", punto 2).
 
 A COSA SERVE QUESTO FILE
 -------------------------
@@ -133,18 +132,9 @@ appunti per fase più sotto.
 
 COSE CHE DEVE FARE L'UTENTE DI PERSONA (non automatizzabili)
 ----------------------------------------------------------------
-1. Git per Windows (serve SUBITO per chiudere la Fase A): ho provato ad
-   installarlo automaticamente ma Windows chiede conferma da amministratore
-   e questo account non lo è, quindi non posso cliccare "Sì" al posto tuo.
-   Basta una di queste due cose, la più comoda per te:
-   a) scrivi in chat, con il punto esclamativo davanti (fa girare il
-      comando per davvero, sul tuo PC):
-      !winget install --id Git.Git -e --source winget --accept-package-agreements --accept-source-agreements
-      poi clicca "Sì" quando Windows chiede il permesso; oppure
-   b) scarica l'installer da https://git-scm.com/download/win, aprilo e
-      clicca "Avanti" varie volte tenendo tutte le opzioni di default,
-      poi "Installa".
-   STATO: non ancora fatto — BLOCCA il completamento della Fase A.
+1. Git per Windows — FATTO (2026-07-23): installato dall'utente con il
+   comando winget indicato da Claude, cliccando "Sì" al permesso di
+   amministratore Windows quando richiesto.
 2. MongoDB Atlas (serve per la Fase B): creare un account gratuito su
    cloud.mongodb.com, un cluster gratuito M0, un utente database, aprire
    l'accesso di rete a 0.0.0.0/0, copiare la stringa di connessione
@@ -163,12 +153,14 @@ COSE CHE DEVE FARE L'UTENTE DI PERSONA (non automatizzabili)
 
 CHECKLIST DI AVANZAMENTO (aggiornare via via che si procede)
 -----------------------------------------------------------------
-[~] Fase A — Preparazione ambiente — IN CORSO (iniziata 2026-07-21, ripresa 2026-07-23)
+[x] Fase A — Preparazione ambiente — COMPLETATA (2026-07-21 -> 2026-07-23)
     [x] Creato questo file leggimi.txt
-    [ ] Git per Windows installato — BLOCCATO: serve un click dell'utente
-        su un permesso di amministratore Windows, vedi sezione sotto
-    [ ] git init + due commit (1: import iniziale del codice esistente,
-        2: riorganizzazione Fase A) — in attesa che Git sia installato
+    [x] Git per Windows installato (fatto dall'utente di persona,
+        serviva un permesso di amministratore Windows)
+    [x] git init + commit iniziale (root-commit f4da9c2, 38 file,
+        identita' autore locale "Denis <denis1995.09@gmail.com>" —
+        impostata solo su questo repository, non tocca altre
+        impostazioni git eventualmente presenti sul PC)
     [x] .gitignore creato (esclude node_modules/, .env, data/db.json,
         public/uploads/*)
     [x] .env / .env.example creati (PORT, NODE_ENV, SESSION_SECRET già
@@ -188,7 +180,7 @@ CHECKLIST DI AVANZAMENTO (aggiornare via via che si procede)
         stesse identiche risposte dalle API (2 escursioni, 4 utenti demo)
         di prima — nessun cambiamento di comportamento, come richiesto
 [ ] Fase B — Migrazione MongoDB Atlas — NON INIZIATA (serve prima l'account
-    Atlas dell'utente, vedi sopra)
+    Atlas dell'utente, vedi sotto)
 [ ] Fase C — Registrazione utenti reale + login — NON INIZIATA
 [ ] Fase D — Nuova palette colori — NON INIZIATA
 [ ] Fase E — GitHub + Render online — NON INIZIATA (serve account GitHub
