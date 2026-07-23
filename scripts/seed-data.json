@@ -1,0 +1,185 @@
+{
+  "users": [
+    {
+      "id": "user_marco",
+      "username": "Marco Alpinista",
+      "reputation": 92,
+      "kycVerified": true,
+      "completedHikes": 12,
+      "averagePaceUp": 450,
+      "averagePaceDown": 600,
+      "experienceLevel": "Esperto",
+      "avatar": "🏔️",
+      "trainingGoal": "Monte Bianco",
+      "localExpert": { "area": "Gran Sasso d'Italia", "active": true }
+    },
+    {
+      "id": "user_luca",
+      "username": "Luca TrailRunner",
+      "reputation": 88,
+      "kycVerified": true,
+      "completedHikes": 8,
+      "averagePaceUp": 600,
+      "averagePaceDown": 850,
+      "experienceLevel": "Esperto",
+      "avatar": "🏃",
+      "trainingGoal": "Cervino",
+      "localExpert": { "area": "Gran Paradiso", "active": false }
+    },
+    {
+      "id": "user_sofia",
+      "username": "Sofia FotoPasso",
+      "reputation": 95,
+      "kycVerified": true,
+      "completedHikes": 15,
+      "averagePaceUp": 300,
+      "averagePaceDown": 450,
+      "experienceLevel": "Intermedio",
+      "avatar": "📸",
+      "trainingGoal": "Tre Cime di Lavaredo",
+      "localExpert": { "area": "Dolomiti", "active": true }
+    },
+    {
+      "id": "user_giulia",
+      "username": "Giulia Escursionista",
+      "reputation": 75,
+      "kycVerified": false,
+      "completedHikes": 2,
+      "averagePaceUp": 280,
+      "averagePaceDown": 400,
+      "experienceLevel": "Principiante",
+      "avatar": "🥾",
+      "trainingGoal": "Monte Rosa",
+      "localExpert": null
+    }
+  ],
+  "hikes": [
+    {
+      "id": "hike_orobie",
+      "title": "Ascesa al Corno Grande (Gran Sasso d'Italia)",
+      "description": "Salita alla vetta più alta dell'Appennino. Partenza dall'altopiano di Campo Imperatore, sosta al Rifugio Franchetti, ultimo tratto su cresta esposta fino alla cima del Corno Grande.",
+      "creatorId": "user_marco",
+      "difficulty": "Esperto",
+      "maxAltitude": 2912,
+      "distanceKm": 11,
+      "elevationGain": 950,
+      "date": "2026-06-15",
+      "tribeTags": ["Passo Fotografico", "Dog Friendly", "Millennials"],
+      "manualApproval": true,
+      "participants": ["user_marco", "user_sofia"],
+      "pendingApproval": ["user_giulia"],
+      "trailhead": { "lat": 42.4423, "lng": 13.5581, "name": "Campo Imperatore (AQ)" },
+      "peaks": [
+        { "name": "Rifugio Franchetti", "lat": 42.4614, "lng": 13.5445, "altitude": 2433, "stampId": "stamp_mezzeno" },
+        { "name": "Corno Grande", "lat": 42.4691, "lng": 13.5595, "altitude": 2912, "stampId": "stamp_gemelli" }
+      ],
+      "carpool": {
+        "fuelPrice": 1.85,
+        "fuelConsumption": 7.5,
+        "tollCost": 10.50,
+        "drivers": [
+          { "userId": "user_marco", "seats": 3, "departureCity": "Roma", "distanceKm": 260, "pricePerPassenger": 0 }
+        ]
+      },
+      "backpackTemplate": [
+        { "name": "Guscio impermeabile", "category": "Abbigliamento", "mandatory": true, "assignedTo": null, "weight": 450 },
+        { "name": "Kit Primo Soccorso", "category": "Emergenza", "mandatory": true, "assignedTo": "user_marco", "weight": 800 },
+        { "name": "Ramponcini", "category": "Attrezzatura", "mandatory": false, "assignedTo": null, "weight": 350 },
+        { "name": "Fornello a gas", "category": "Attrezzatura", "mandatory": false, "assignedTo": "user_sofia", "weight": 600 }
+      ]
+    },
+    {
+      "id": "hike_rosa",
+      "title": "Monte Vettore - Sibillini",
+      "description": "Salita alla vetta più alta dei Monti Sibillini. Partenza da Forca di Presta, sosta al Rifugio Zilioli, cresta finale panoramica fino alla cima del Monte Vettore.",
+      "creatorId": "user_luca",
+      "difficulty": "Esperto",
+      "maxAltitude": 2476,
+      "distanceKm": 10,
+      "elevationGain": 950,
+      "date": "2026-08-10",
+      "tribeTags": ["Trail Runners", "Passo Svelto"],
+      "manualApproval": true,
+      "participants": ["user_luca", "user_marco"],
+      "pendingApproval": [],
+      "trailhead": { "lat": 42.7972, "lng": 13.2361, "name": "Forca di Presta (AP)" },
+      "peaks": [
+        { "name": "Rifugio Zilioli", "lat": 42.8150, "lng": 13.2600, "altitude": 2250, "stampId": "stamp_gnifetti" },
+        { "name": "Monte Vettore", "lat": 42.8244, "lng": 13.2750, "altitude": 2476, "stampId": "stamp_margherita" }
+      ],
+      "carpool": {
+        "fuelPrice": 1.85,
+        "fuelConsumption": 7.0,
+        "tollCost": 0,
+        "drivers": [
+          { "userId": "user_luca", "seats": 2, "departureCity": "Ascoli Piceno", "distanceKm": 90, "pricePerPassenger": 0 }
+        ]
+      },
+      "backpackTemplate": [
+        { "name": "Bastoncini da trekking", "category": "Attrezzatura", "mandatory": false, "assignedTo": "user_luca", "weight": 400 },
+        { "name": "Giacca antivento", "category": "Abbigliamento", "mandatory": true, "assignedTo": null, "weight": 350 },
+        { "name": "Kit Primo Soccorso", "category": "Emergenza", "mandatory": true, "assignedTo": "user_marco", "weight": 800 },
+        { "name": "Scorta d'acqua extra (crinale esposto e ventoso)", "category": "Alimentazione", "mandatory": true, "assignedTo": null, "weight": 1000 }
+      ]
+    }
+  ],
+  "reports": [
+    {
+      "id": "rep_1",
+      "type": "frana",
+      "lat": 42.4550,
+      "lng": 13.5500,
+      "description": "Piccolo smottamento sul sentiero verso il Rifugio Franchetti. Si passa prestando molta attenzione.",
+      "createdAt": "2026-06-14T08:00:00.000Z",
+      "status": "active"
+    },
+    {
+      "id": "rep_2",
+      "type": "fontana_secca",
+      "lat": 42.4460,
+      "lng": 13.5600,
+      "description": "Fonte presso Campo Imperatore completamente asciutta. Rifornirsi d'acqua prima della partenza.",
+      "createdAt": "2026-06-10T09:15:00.000Z",
+      "status": "active"
+    }
+  ],
+  "reviews": [
+    { "id": "rev_1", "targetUserId": "user_marco", "punctuality": 5, "equipment": 5, "respect": 5, "comment": "Ottimo capogruppo, preparato e attento al passo di tutti." },
+    { "id": "rev_2", "targetUserId": "user_marco", "punctuality": 4, "equipment": 5, "respect": 5, "comment": "Molto disponibile e ben attrezzato." },
+    { "id": "rev_3", "targetUserId": "user_sofia", "punctuality": 5, "equipment": 4, "respect": 5, "comment": "Compagnia piacevole, scatta foto stupende e rispetta i tempi del gruppo." },
+    { "id": "rev_4", "targetUserId": "user_giulia", "punctuality": 3, "equipment": 3, "respect": 5, "comment": "Gentile, ma ha faticato molto sul tecnico. Consigliati sentieri più semplici." }
+  ],
+  "diaries": [
+    {
+      "id": "diary_1",
+      "hikeId": "hike_orobie",
+      "userId": "user_sofia",
+      "lat": 42.4614,
+      "lng": 13.5445,
+      "textNote": "Arrivati al Rifugio Franchetti! Da qui il Corno Grande si vede in tutta la sua imponenza, la fatica dell'altopiano ripaga tutta in un colpo.",
+      "mediaUrl": "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=600&q=80",
+      "audioNoteUrl": null,
+      "timestamp": "2026-06-15T11:30:00.000Z"
+    }
+  ],
+  "stamps": [
+    { "userId": "user_marco", "stampId": "stamp_mezzeno", "dateUnlocked": "2026-06-15" },
+    { "userId": "user_marco", "stampId": "stamp_gemelli", "dateUnlocked": "2026-06-15" },
+    { "userId": "user_sofia", "stampId": "stamp_gemelli", "dateUnlocked": "2026-06-15" }
+  ],
+  "squads": [
+    {
+      "id": "squad_orobie_lovers",
+      "name": "I Camosci della Val Brembana",
+      "creatorId": "user_marco",
+      "members": ["user_marco", "user_sofia", "user_luca"]
+    }
+  ],
+  "routeBookmarks": [
+    { "userId": "user_giulia", "hikeId": "hike_orobie" },
+    { "userId": "user_luca", "hikeId": "hike_orobie" }
+  ],
+  "completions": [],
+  "notifications": [],
+  "_reviewLocks": []
+}

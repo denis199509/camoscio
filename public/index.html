@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camoscio - Social Hiking & Mountain Safety</title>
+    
+    <!-- Meta SEO -->
+    <meta name="description" content="Camoscio: l'applicazione web per l'escursionismo collaborativo, carpooling intelligente, passaporto vette e sicurezza in montagna.">
+    
+    <!-- Font Inter & Outfit (vendorizzati in locale, nessuna chiamata a Google) -->
+    <link rel="stylesheet" href="vendor/fonts/fonts.css">
+
+    <!-- Leaflet CSS (Open Source Maps, vendorizzato in locale) -->
+    <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+
+    <!-- Font CSS personalizzato -->
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar di Navigazione -->
+        <aside class="sidebar">
+            <div class="brand">
+                <span class="logo-icon">🏔️</span>
+                <h1 class="logo-text">CAMOSCIO</h1>
+            </div>
+            
+            <nav class="nav-menu">
+                <button class="nav-btn active" data-target="dashboard" id="btn-nav-dashboard">
+                    <i data-lucide="layout-dashboard"></i>
+                    <span>Dashboard</span>
+                </button>
+                <button class="nav-btn" data-target="hikes" id="btn-nav-hikes">
+                    <i data-lucide="compass"></i>
+                    <span>Escursioni</span>
+                </button>
+                <button class="nav-btn" data-target="map-section" id="btn-nav-map">
+                    <i data-lucide="map"></i>
+                    <span>Mappa & Waze</span>
+                </button>
+                <button class="nav-btn" data-target="carpool" id="btn-nav-carpool">
+                    <i data-lucide="car"></i>
+                    <span>Carpooling</span>
+                </button>
+                <button class="nav-btn" data-target="backpack" id="btn-nav-backpack">
+                    <i data-lucide="backpack"></i>
+                    <span>Zaino Intelligente</span>
+                </button>
+                <button class="nav-btn" data-target="safety" id="btn-nav-safety">
+                    <i data-lucide="shield-alert"></i>
+                    <span>Sicurezza & Mesh</span>
+                </button>
+                <button class="nav-btn" data-target="social" id="btn-nav-social">
+                    <i data-lucide="users"></i>
+                    <span>Tribù & Squadre</span>
+                </button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="app-version">v1.0.0 Local</div>
+            </div>
+        </aside>
+
+        <!-- Contenuto Principale -->
+        <main class="main-content">
+            <!-- Header Superiore -->
+            <header class="top-header">
+                <div class="header-search">
+                    <h2 id="section-title" class="section-title">Dashboard</h2>
+                </div>
+                
+                <!-- Profilo Utente Corrente & Quick Switch (Fondamentale per test locali) -->
+                <div class="user-status-widget">
+                    <div class="user-selector-wrapper">
+                        <label for="user-quick-switch" class="text-muted small">Cambia Utente:</label>
+                        <select id="user-quick-switch" class="user-select-dropdown">
+                            <!-- Popolato dinamicamente da JS -->
+                        </select>
+                    </div>
+                    
+                    <div class="notification-bell-wrapper">
+                        <button class="notification-bell-btn" id="btn-notification-bell" title="Notifiche">
+                            <i data-lucide="bell"></i>
+                            <span class="notification-count-badge hidden" id="notification-count-badge">0</span>
+                        </button>
+                        <div class="notification-dropdown hidden" id="notification-dropdown">
+                            <div class="notification-dropdown-header">Notifiche</div>
+                            <div class="notification-dropdown-list" id="notification-dropdown-list">
+                                <!-- Renderizzato da JS -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="active-user-badge">
+                        <span id="current-user-avatar" class="avatar-icon">🥾</span>
+                        <div class="user-details">
+                            <div class="user-name-row">
+                                <span id="current-user-name" class="font-bold">Caricamento...</span>
+                                <span id="current-user-kyc" class="kyc-badge" title="Profilo Verificato">
+                                    <i data-lucide="badge-check"></i>
+                                </span>
+                            </div>
+                            <div class="user-sub-details">
+                                <span class="reputation-text">Reputazione: <strong id="current-user-reputation">--</strong>%</span>
+                                <span class="divider">|</span>
+                                <span class="experience-text" id="current-user-exp">--</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Sezione di Notifica Emergenza Persistente se il Dead Man's Switch è attivo -->
+            <div id="emergency-banner" class="emergency-banner hidden">
+                <div class="emergency-banner-content">
+                    <i data-lucide="alert-triangle" class="blink"></i>
+                    <span><strong>DEAD MAN'S SWITCH ATTIVO:</strong> Mancano <span id="emergency-banner-timer">00:00</span> al rientro stimato. Fai il check-in per disattivarlo.</span>
+                    <button class="btn btn-sm btn-danger" id="btn-banner-checkin">Check-in Sicuro</button>
+                </div>
+            </div>
+
+            <!-- Area Pagine Dinamiche -->
+            <div class="page-container">
+                
+                <!-- 1. DASHBOARD -->
+                <section id="dashboard" class="page-section active">
+                    <div class="dashboard-grid">
+                        
+                        <!-- Colonna Sinistra -->
+                        <div class="dash-col">
+                            <!-- Card Benvenuto -->
+                            <div class="glass-card welcome-card">
+                                <h3>Benvenuto su Camoscio, <span class="highlight-text" id="dash-welcome-name">Utente</span>!</h3>
+                                <p class="text-muted">Il tuo assistente personale per escursioni sicure, organizzazione di carpooling e pianificazione alpina avanzata.</p>
+                                <div class="quick-stats-row">
+                                    <div class="q-stat">
+                                        <span class="q-val" id="stat-completed-hikes">0</span>
+                                        <span class="q-lbl">Escursioni Fatte</span>
+                                    </div>
+                                    <div class="q-stat">
+                                        <span class="q-val" id="stat-stamps-count">0</span>
+                                        <span class="q-lbl">Timbri Vette</span>
+                                    </div>
+                                    <div class="q-stat">
+                                        <span class="q-val" id="stat-reputation">50%</span>
+                                        <span class="q-lbl">Punteggio Reputazione</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Card Passaporto Digitale Vette -->
+                            <div class="glass-card passport-card">
+                                <div class="card-header-row">
+                                    <h4><i data-lucide="award"></i> Passaporto delle Vette Digitale</h4>
+                                    <span class="badge badge-accent">Geofencing Attivo</span>
+                                </div>
+                                <p class="small text-muted">Raggiungi le vette e i rifugi per sbloccare i timbri digitali collezionabili. Usa la mappa per simulare la tua posizione GPS!</p>
+                                <div class="stamps-grid" id="stamps-collection">
+                                    <!-- Stamp sbloccati renderizzati da JS -->
+                                </div>
+                                <div class="challenges-section">
+                                    <h5>Sfide in corso:</h5>
+                                    <div class="challenge-item">
+                                        <div class="challenge-info">
+                                            <span>Le Vette del Gran Sasso (0/2)</span>
+                                            <span class="small font-bold" id="challenge-percent">0%</span>
+                                        </div>
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" id="challenge-fill" style="width: 0%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Card Profilo: verifica KYC + Layer Esperto Locale -->
+                            <div class="glass-card profile-card">
+                                <h4><i data-lucide="user-check"></i> Il Tuo Profilo</h4>
+
+                                <div id="profile-kyc-section" class="profile-section">
+                                    <p class="small text-muted">Un profilo verificato aumenta la fiducia del gruppo, specialmente per le escursioni ad approvazione manuale.</p>
+                                    <button class="btn btn-sm btn-primary" id="btn-trigger-kyc">Verifica il tuo profilo (KYC Light)</button>
+                                    <span class="badge badge-green hidden" id="profile-kyc-verified-badge"><i data-lucide="badge-check"></i> Profilo Verificato</span>
+                                </div>
+
+                                <div class="profile-section local-expert-section">
+                                    <p class="small text-muted">Se conosci bene una zona, proponiti come esperto locale informale per aiutare chi è meno pratico del posto.</p>
+                                    <div class="form-group">
+                                        <label><input type="checkbox" id="local-expert-toggle"> Sono un esperto locale</label>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="local-expert-area">Zona di competenza:</label>
+                                        <div class="input-with-btn">
+                                            <input type="text" id="local-expert-area" placeholder="Es. Gran Sasso d'Italia, Monti Sibillini...">
+                                            <button class="btn btn-sm btn-primary" id="btn-save-local-expert">Salva</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Colonna Destra -->
+                        <div class="dash-col">
+                            <!-- Card Stato Dead Man's Switch -->
+                            <div class="glass-card safety-quick-card">
+                                <h4><i data-lucide="shield"></i> Sicurezza Rapida</h4>
+                                <div id="dash-safety-status-idle" class="safety-status-block">
+                                    <p class="small text-muted">Nessun piano di sicurezza attivo per oggi. Imposta un timer di sicurezza prima di partire.</p>
+                                    <button class="btn btn-primary btn-block btn-nav-trigger" data-target="safety">Configura Dead Man's Switch</button>
+                                </div>
+                                <div id="dash-safety-status-active" class="safety-status-block hidden">
+                                    <div class="timer-display-large pulse-orange" id="dash-timer-countdown">00:00:00</div>
+                                    <p class="small text-warning text-center">Il sistema invierà un SOS ai contatti fidati alla scadenza se non effettui il check-in.</p>
+                                    <button class="btn btn-danger btn-block" id="btn-dash-checkin">DISATTIVA / CHECK-IN</button>
+                                </div>
+                            </div>
+
+                            <!-- Card Statistiche Passo Personalizzato -->
+                            <div class="glass-card pace-card">
+                                <h4><i data-lucide="activity"></i> Calcolatore Passo & Fatica</h4>
+                                <p class="small text-muted">L'algoritmo impara dalle tue escursioni tracciate per stimare i tempi effettivi di cammino.</p>
+                                <div class="pace-stats">
+                                    <div class="pace-row">
+                                        <span>Velocità Ascesa:</span>
+                                        <strong><span id="pace-up-val">--</span> m/h</strong>
+                                    </div>
+                                    <div class="pace-row">
+                                        <span>Velocità Discesa:</span>
+                                        <strong><span id="pace-down-val">--</span> m/h</strong>
+                                    </div>
+                                    <div class="pace-row">
+                                        <span>Indice Fatica Personalizzato:</span>
+                                        <strong><span id="pace-index-val">--</span>x rispetto a CAI</strong>
+                                    </div>
+                                </div>
+                                <div class="pace-chart-container">
+                                    <canvas id="paceChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 2. ESCURSIONI -->
+                <section id="hikes" class="page-section">
+                    <div class="hikes-header-row">
+                        <h3>Esplora Escursioni di Gruppo</h3>
+                        <button class="btn btn-primary" id="btn-open-create-hike"><i data-lucide="plus"></i> Crea Nuova Escursione</button>
+                    </div>
+
+                    <!-- Filtri avanzati (Tribù, Difficoltà, Obiettivo) -->
+                    <div class="glass-card filter-card">
+                        <h5><i data-lucide="sliders-horizontal"></i> Filtri e Algoritmi di Corrispondenza</h5>
+                        <div class="filter-grid">
+                            <div class="filter-group">
+                                <label for="filter-difficulty">Difficoltà:</label>
+                                <select id="filter-difficulty">
+                                    <option value="all">Tutte le difficoltà</option>
+                                    <option value="Principiante">Principiante</option>
+                                    <option value="Intermedio">Intermedio</option>
+                                    <option value="Esperto">Esperto</option>
+                                </select>
+                            </div>
+                            <div class="filter-group filter-group-tribe">
+                                <label>Tribù (Stile di Vita) — seleziona una o più:</label>
+                                <div class="checkbox-group" id="filter-tribe-checkboxes">
+                                    <label><input type="checkbox" name="filter-tribe-tag" value="Passo Fotografico"> Passo Fotografico</label>
+                                    <label><input type="checkbox" name="filter-tribe-tag" value="Trail Runners"> Trail Runners</label>
+                                    <label><input type="checkbox" name="filter-tribe-tag" value="Passo Svelto"> Passo Svelto</label>
+                                    <label><input type="checkbox" name="filter-tribe-tag" value="Dog Friendly"> Dog Friendly</label>
+                                    <label><input type="checkbox" name="filter-tribe-tag" value="Generazione Alpha"> Generazione Alpha</label>
+                                    <label><input type="checkbox" name="filter-tribe-tag" value="Generazione Z"> Generazione Z</label>
+                                    <label><input type="checkbox" name="filter-tribe-tag" value="Millennials"> Millennials</label>
+                                </div>
+                            </div>
+                            <div class="filter-group">
+                                <label for="filter-goal">Obiettivo di Allenamento:</label>
+                                <input type="text" id="filter-goal" placeholder="Es. Monte Bianco, Cervino...">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Griglia Escursioni -->
+                    <div class="hikes-grid" id="hikes-list-container">
+                        <!-- Renderizzato da JS -->
+                    </div>
+
+                    <!-- Modal Creazione Escursione -->
+                    <div id="create-hike-modal" class="modal hidden">
+                        <div class="modal-content glass-card">
+                            <div class="modal-header">
+                                <h4>Crea Nuova Escursione</h4>
+                                <button class="close-modal-btn" id="btn-close-hike-modal">&times;</button>
+                            </div>
+                            <form id="create-hike-form">
+                                <div class="form-group">
+                                    <label for="hike-title">Titolo Escursione:</label>
+                                    <input type="text" id="hike-title" required placeholder="Es. Giro delle Tre Cime">
+                                </div>
+                                <div class="form-group">
+                                    <label for="hike-desc">Descrizione percorso e ritrovo:</label>
+                                    <textarea id="hike-desc" required placeholder="Fornisci dettagli sul sentiero..."></textarea>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="hike-diff">Difficoltà Tecnica:</label>
+                                        <select id="hike-diff">
+                                            <option value="Principiante">Principiante (Dislivello ridotto, sentiero largo)</option>
+                                            <option value="Intermedio">Intermedio (D+ fino a 1000m, tratti ripidi)</option>
+                                            <option value="Esperto">Esperto (D+ > 1000m, fondo tecnico/esposto)</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="hike-date">Data Uscita:</label>
+                                        <input type="date" id="hike-date" required>
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="hike-alt">Quota Massima (metri):</label>
+                                        <input type="number" id="hike-alt" required value="1500">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="hike-elev">Dislivello Positivo (D+ metri):</label>
+                                        <input type="number" id="hike-elev" required value="600">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="hike-dist">Distanza Totale (km):</label>
+                                        <input type="number" id="hike-dist" step="0.1" required value="10">
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="hike-trailhead-lat">Latitudine Ritrovo:</label>
+                                        <input type="number" id="hike-trailhead-lat" step="0.0001" required value="45.9698">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="hike-trailhead-lng">Longitudine Ritrovo:</label>
+                                        <input type="number" id="hike-trailhead-lng" step="0.0001" required value="9.8115">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="hike-trailhead-name">Nome Località Ritrovo:</label>
+                                        <input type="text" id="hike-trailhead-name" required placeholder="Es. Rifugio Franchetti">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Seleziona i Tag Tribù (stile di vita):</label>
+                                    <div class="checkbox-group">
+                                        <label><input type="checkbox" name="hike-tags" value="Passo Fotografico"> Passo Fotografico</label>
+                                        <label><input type="checkbox" name="hike-tags" value="Trail Runners"> Trail Runners</label>
+                                        <label><input type="checkbox" name="hike-tags" value="Passo Svelto"> Passo Svelto</label>
+                                        <label><input type="checkbox" name="hike-tags" value="Dog Friendly"> Dog Friendly</label>
+                                        <label><input type="checkbox" name="hike-tags" value="Generazione Alpha"> Generazione Alpha</label>
+                                        <label><input type="checkbox" name="hike-tags" value="Generazione Z"> Generazione Z</label>
+                                        <label><input type="checkbox" name="hike-tags" value="Millennials"> Millennials</label>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="hike-approval">Modalità di Iscrizione:</label>
+                                    <select id="hike-approval">
+                                        <option value="true">Manuale (Veto del Capogruppo - Approvo io i membri)</option>
+                                        <option value="false">Automatica (Chiunque può iscriversi liberamente)</option>
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-block">Pubblica Escursione</button>
+                            </form>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 3. MAPPA & WAZE -->
+                <section id="map-section" class="page-section">
+                    <div class="map-layout">
+                        <!-- Mappa Leaflet -->
+                        <div class="map-container-wrapper">
+                            <div id="map"></div>
+                            <div class="map-overlay-instructions">
+                                <span class="badge badge-primary"><i data-lucide="info"></i> Clicca sulla mappa per segnalare pericoli (Waze) o simulare la posizione GPS per timbrare la vetta.</span>
+                            </div>
+                            <button class="btn btn-sm btn-secondary map-gps-real-btn" id="btn-use-real-gps" title="Usa la posizione GPS reale del dispositivo al posto del marker simulato">
+                                <i data-lucide="locate-fixed"></i> Usa la mia posizione reale
+                            </button>
+                        </div>
+
+                        <!-- Sidebar Mappa (Meteo + Segnalazioni) -->
+                        <div class="map-sidebar">
+                            <!-- Sezione Meteo Multi-Quota -->
+                            <div class="glass-card weather-widget-card">
+                                <h4><i data-lucide="cloud-lightning"></i> Meteo Multi-Quota & Microclima</h4>
+                                <p class="small text-muted">Analisi delle temperature e del vento alle diverse altitudini del percorso.</p>
+                                
+                                <div class="weather-selector-row">
+                                    <button class="btn btn-sm btn-secondary active" id="btn-weather-orobie">Gran Sasso</button>
+                                    <button class="btn btn-sm btn-secondary" id="btn-weather-rosa">Monte Vettore</button>
+                                </div>
+                                
+                                <div id="weather-details-container" class="weather-details-box">
+                                    <!-- Caricato dinamicamente tramite API Open-Meteo -->
+                                    <div class="text-center py-4">Seleziona una località o un sentiero...</div>
+                                </div>
+                            </div>
+
+                            <!-- Sezione Esposizione Solare -->
+                            <div class="glass-card sun-exposure-card">
+                                <h4><i data-lucide="sun"></i> Esposizione Solare</h4>
+                                <div class="sun-exposure-content" id="sun-exposure-info">
+                                    <p class="small text-muted">L'algoritmo analizza la pendenza e l'orientamento dei versanti alpini consigliando gli orari e i versanti migliori.</p>
+                                    <div id="sun-advice-box" class="sun-advice-box info">
+                                        <!-- Generato dinamicamente -->
+                                        Seleziona un sentiero per ottenere consigli sul sole/ombra.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Crowdsourcing Waze Segnalazioni -->
+                            <div class="glass-card waze-card">
+                                <h4><i data-lucide="alert-octagon"></i> Segnala Stato Sentiero</h4>
+                                <p class="small text-muted">Aiuta la community segnalando criticità in tempo reale. Clicca sulla mappa per collocare una segnalazione.</p>
+                                
+                                <div id="waze-form-container" class="hidden">
+                                    <form id="waze-report-form">
+                                        <div class="form-row">
+                                            <div class="form-group col">
+                                                <label for="waze-type">Tipo Pericolo:</label>
+                                                <select id="waze-type" class="form-control">
+                                                    <option value="frana">⚠️ Frana / Cedimento</option>
+                                                    <option value="ghiaccio">❄️ Ghiaccio / Nevaio</option>
+                                                    <option value="fontana_secca">💧 Fontana Senz'Acqua</option>
+                                                    <option value="ostacolo">🌲 Albero / Ostacolo</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="waze-desc">Descrizione della criticità:</label>
+                                            <input type="text" id="waze-desc" class="form-control" required placeholder="Descrivi il pericolo...">
+                                        </div>
+                                        <div class="form-row-buttons">
+                                            <button type="button" class="btn btn-secondary btn-sm" id="btn-waze-cancel">Annulla</button>
+                                            <button type="submit" class="btn btn-primary btn-sm">Invia Segnalazione</button>
+                                        </div>
+                                    </form>
+                                </div>
+                                
+                                <div id="waze-list-container" class="waze-reports-list">
+                                    <!-- Lista segnalazioni attive renderizzate da JS -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 4. CARPOOLING -->
+                <section id="carpool" class="page-section">
+                    <div class="carpool-layout">
+                        <!-- Colonna di Sinistra: Calcolatore Pedaggi e Spese Generali -->
+                        <div class="carpool-column">
+                            <div class="glass-card carpool-calc-card">
+                                <h4><i data-lucide="calculator"></i> Split Spese Viaggio</h4>
+                                <p class="small text-muted">Calcola e dividi equamente i costi di benzina, autostrada e rifugio per la tua escursione.</p>
+                                
+                                <form id="carpool-calc-form">
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="calc-dist">Distanza A/R (km):</label>
+                                            <input type="number" id="calc-dist" value="120" min="1" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="calc-consumption">Consumo (L/100km):</label>
+                                            <input type="number" id="calc-consumption" value="6.5" step="0.1" required>
+                                        </div>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="calc-fuel-price">Costo Benzina (€/L):</label>
+                                            <input type="number" id="calc-fuel-price" value="1.82" step="0.01" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="calc-toll">Autostrada / Pedaggio (€):</label>
+                                            <input type="number" id="calc-toll" value="12.40" step="0.1" required>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="calc-extra">Costi Aggiuntivi (es. parcheggio, rifugio):</label>
+                                        <input type="number" id="calc-extra" value="0" step="1">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="calc-passengers">Numero Totale Persone in Auto:</label>
+                                        <input type="number" id="calc-passengers" value="4" min="1" required>
+                                    </div>
+                                    <button type="button" class="btn btn-primary btn-block" id="btn-calculate-expenses">Ricalcola Divisione Spese</button>
+                                </form>
+
+                                <div class="calc-results-box" id="calc-results">
+                                    <div class="result-row">
+                                        <span>Costo Carburante Totale:</span>
+                                        <strong id="res-fuel-cost">€ 14.19</strong>
+                                    </div>
+                                    <div class="result-row">
+                                        <span>Costo Totale Viaggio:</span>
+                                        <strong id="res-total-cost">€ 26.59</strong>
+                                    </div>
+                                    <div class="result-row highlight">
+                                        <span>Quota a Persona:</span>
+                                        <strong id="res-share-cost">€ 6.65</strong>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Sezione Offerta Passaggi -->
+                            <div class="glass-card carpool-driver-card">
+                                <h4><i data-lucide="plus-circle"></i> Offri un Passaggio</h4>
+                                <form id="offer-carpool-form">
+                                    <div class="form-group">
+                                        <label for="offer-hike-select">Per quale escursione?</label>
+                                        <select id="offer-hike-select" class="form-control" required>
+                                            <!-- Popolato da JS -->
+                                        </select>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="offer-city">Città di Partenza:</label>
+                                            <input type="text" id="offer-city" placeholder="Es. Milano, Bergamo..." required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="offer-seats">Posti Liberi in Auto:</label>
+                                            <input type="number" id="offer-seats" value="3" min="1" max="8" required>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="offer-distance">Distanza A/R stimata (km):</label>
+                                        <input type="number" id="offer-distance" value="120" min="1" required>
+                                    </div>
+                                    <button type="submit" class="btn btn-success btn-block">Pubblica Auto Disponibile</button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Colonna di Destra: Matching Intelligente e Privacy Partenza -->
+                        <div class="carpool-column">
+                            <div class="glass-card carpool-match-card">
+                                <h4><i data-lucide="git-merge"></i> Abbinamenti Intelligenti & Privacy Partenze</h4>
+                                <p class="small text-muted">Condividi la tua zona di partenza da casa. L'algoritmo mostrerà gli accoppiamenti solo se ci sono 2 o più persone della stessa zona per tutelare la privacy.</p>
+                                
+                                <div class="address-privacy-box">
+                                    <form id="privacy-address-form">
+                                        <div class="form-group">
+                                            <label for="user-home-city">Il tuo indirizzo / zona di partenza da casa:</label>
+                                            <div class="input-with-btn">
+                                                <input type="text" id="user-home-city" placeholder="Es. Milano Loreto, Bergamo Alta..." required>
+                                                <button type="submit" class="btn btn-primary">Salva Zona</button>
+                                            </div>
+                                        </div>
+                                    </form>
+                                    <div class="privacy-status" id="privacy-match-status">
+                                        <!-- Mostrato da JS -->
+                                    </div>
+                                </div>
+
+                                <div class="hike-carpools-section">
+                                    <h5>Auto e Passaggi disponibili:</h5>
+                                    <div id="hike-carpools-list">
+                                        <!-- Renderizzato da JS -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 5. ZAINO INTELLIGENTE -->
+                <section id="backpack" class="page-section">
+                    <div class="backpack-layout">
+                        <!-- Configurazione Zaino -->
+                        <div class="backpack-config">
+                            <div class="glass-card config-backpack-card">
+                                <h4><i data-lucide="settings"></i> Generatore Checklist Intelligente</h4>
+                                <p class="small text-muted">Inserisci i dati ambientali dell'escursione per ottenere una checklist consigliata e dividere i pesi con il gruppo.</p>
+                                
+                                <form id="backpack-generator-form">
+                                    <div class="form-group">
+                                        <label for="backpack-season">Stagione:</label>
+                                        <select id="backpack-season">
+                                            <option value="estate">Estate (Caldo, temporali improvvisi)</option>
+                                            <option value="inverno">Inverno (Freddo intenso, ghiaccio, neve)</option>
+                                            <option value="autunno-primavera">Mezza Stagione (Vento, pioggia, strati termici)</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="backpack-altitude">Quota Massima (metri):</label>
+                                            <input type="number" id="backpack-altitude" value="2600" min="0">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="backpack-duration">Durata Escursione:</label>
+                                            <select id="backpack-duration">
+                                                <option value="giornata">Giornata Singola</option>
+                                                <option value="plurigiorno">Più Giorni (Rifugio/Tenda)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label><input type="checkbox" id="backpack-rain-expected" checked> Previsione Pioggia / Maltempo</label>
+                                    </div>
+                                    <button type="button" class="btn btn-primary btn-block" id="btn-generate-backpack">Genera Checklist Dinamica</button>
+                                </form>
+                            </div>
+
+                            <!-- Reputazione Pesi Condivisi -->
+                            <div class="glass-card weight-distribution-card">
+                                <h4><i data-lucide="scale"></i> Ripartizione dei Pesi del Gruppo</h4>
+                                <p class="small text-muted">Dividi i pesi degli oggetti comuni tra i partecipanti dell'escursione selezionata per non sovraccaricare nessuno.</p>
+                                <div id="backpack-weight-distribution" class="weight-dist-list">
+                                    <!-- Renderizzato da JS -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Lista Articoli dello Zaino -->
+                        <div class="backpack-list-area">
+                            <div class="glass-card backpack-list-card">
+                                <div class="card-header-row">
+                                    <h4><i data-lucide="check-square"></i> La tua Checklist</h4>
+                                    <span class="badge badge-accent" id="backpack-badge-rules">Altitudine > 2500m</span>
+                                </div>
+                                <div class="backpack-rules-notice warning" id="backpack-rules-alert">
+                                    <i data-lucide="alert-triangle"></i>
+                                    <span>Quota superiore a 2500 metri ed è prevista pioggia: <strong>Guscio Impermeabile</strong> e <strong>Ramponcini</strong> sono stati inseriti come obbligatori!</span>
+                                </div>
+                                
+                                <div class="backpack-items-categories" id="backpack-categories-container">
+                                    <!-- Renderizzato da JS in categorie: Abbigliamento, Attrezzatura, Alimentazione, Sicurezza/Emergenza -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 6. SICUREZZA & MESH -->
+                <section id="safety" class="page-section">
+                    <div class="safety-layout">
+                        <!-- Dead Man's Switch -->
+                        <div class="safety-column">
+                            <div class="glass-card dead-man-card">
+                                <h4><i data-lucide="heart-pulse"></i> Dead Man's Switch (Timer di Sicurezza)</h4>
+                                <p class="small text-muted">Configura un orario stimato di rientro prima di iniziare l'escursione. Se non disattivi il timer prima della scadenza, l'app simulerà l'invio di un SMS satellitare con la tua ultima posizione nota.</p>
+                                
+                                <div class="form-group">
+                                    <label for="safety-contact">Contatto di Emergenza (Nome e Numero):</label>
+                                    <input type="text" id="safety-contact" value="Mamma (333-1234567)" placeholder="Nome (Cellulare)" required>
+                                </div>
+                                
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="safety-duration">Durata stimata (ore):</label>
+                                        <input type="number" id="safety-duration" value="3" min="1" max="24">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="safety-time">Oppure orario esatto rientro:</label>
+                                        <input type="time" id="safety-time" value="21:00">
+                                    </div>
+                                </div>
+
+                                <div class="safety-actions">
+                                    <button class="btn btn-primary" id="btn-activate-switch">Attiva Switch di Sicurezza</button>
+                                    <button class="btn btn-danger hidden" id="btn-deactivate-switch">Check-in Sicuro (Disattiva)</button>
+                                </div>
+
+                                <!-- Log invio SMS simulato -->
+                                <div class="sms-log-box" id="sms-log-box">
+                                    <h5><i data-lucide="send"></i> Log Messaggi di Emergenza (Simulati)</h5>
+                                    <div class="sms-log-entries" id="sms-log-entries">
+                                        <div class="text-muted small italic">Nessun messaggio inviato. Il sistema è in stato sicuro.</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Mesh Network Simulator -->
+                        <div class="safety-column">
+                            <div class="glass-card mesh-card">
+                                <h4><i data-lucide="radio"></i> Simulatore Mesh Networking (Offline Link)</h4>
+                                <p class="small text-muted">In mancanza di campo, l'app crea una rete Wi-Fi Direct/Bluetooth tra dispositivi vicini (50-100m) per scambiarsi messaggi e posizioni in tempo reale.</p>
+                                
+                                <div class="mesh-simulator-status">
+                                    <span class="status-indicator online" id="mesh-connection-status">Attivo (Connesso al Server Mesh)</span>
+                                </div>
+
+                                <div class="mesh-radar-container">
+                                    <div class="radar-circle">
+                                        <div class="radar-sweep"></div>
+                                        <!-- Punti di compagni visualizzati dinamicamente -->
+                                        <div class="radar-dot center"></div>
+                                        <div id="radar-peers"></div>
+                                    </div>
+                                    <div class="radar-legend">
+                                        <span class="legend-item"><span class="dot-sample me"></span> Tu</span>
+                                        <span class="legend-item"><span class="dot-sample peer"></span> Compagno in Rete</span>
+                                    </div>
+                                </div>
+
+                                <div class="mesh-chat-box">
+                                    <h5><i data-lucide="message-square"></i> Canale SOS Locale Mesh (Raggio 100m)</h5>
+                                    <div class="mesh-messages" id="mesh-messages-log">
+                                        <!-- Messaggi inviati/ricevuti -->
+                                        <div class="message system">In attesa di traffico di rete... Apri l'app in più schede del browser come utenti diversi per testare il mesh in tempo reale!</div>
+                                    </div>
+                                    <form id="mesh-send-form" class="mesh-send-form">
+                                        <input type="text" id="mesh-input-msg" placeholder="Scrivi un messaggio o SOS..." required>
+                                        <button type="submit" class="btn btn-sm btn-primary">Invia</button>
+                                        <button type="button" class="btn btn-sm btn-danger" id="btn-mesh-sos">SOS</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 7. TRIBÙ & SQUADRE -->
+                <section id="social" class="page-section">
+                    <div class="social-layout">
+                        <!-- Colonna Sinistra: Squadre Ricorrenti & Obiettivi Comuni -->
+                        <div class="social-column">
+                            <!-- Squadre Ricorrenti -->
+                            <div class="glass-card squads-card">
+                                <h4><i data-lucide="users"></i> Le tue Squadre Ricorrenti</h4>
+                                <p class="small text-muted">Se un gruppo funziona bene, salvalo come squadra fissa per creare nuove escursioni con un clic, invitando tutti automaticamente.</p>
+                                
+                                <div id="squads-list" class="squads-list">
+                                    <!-- Renderizzato da JS -->
+                                </div>
+
+                                <button class="btn btn-primary btn-sm btn-block" id="btn-open-create-squad"><i data-lucide="plus"></i> Crea Nuova Squadra</button>
+                                
+                                <div id="create-squad-form-box" class="create-squad-form-box hidden">
+                                    <form id="create-squad-form">
+                                        <div class="form-group">
+                                            <label for="squad-name">Nome Squadra:</label>
+                                            <input type="text" id="squad-name" placeholder="Es. I Camosci del Gran Sasso" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Seleziona i membri da includere:</label>
+                                            <div class="checkbox-group" id="squad-members-checkboxes">
+                                                <!-- Popolato da JS con altri utenti -->
+                                            </div>
+                                        </div>
+                                        <div class="form-row-buttons">
+                                            <button type="button" class="btn btn-secondary btn-sm" id="btn-close-squad-form">Annulla</button>
+                                            <button type="submit" class="btn btn-success btn-sm">Crea Squadra</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+
+                            <!-- Obiettivi di Allenamento Comuni -->
+                            <div class="glass-card training-goals-card">
+                                <h4><i data-lucide="target"></i> Match su Obiettivi Comuni</h4>
+                                <p class="small text-muted">Vuoi allenarti per un traguardo alpinistico importante tra qualche mese? Trova compagni con lo stesso obiettivo per programmare uscite di allenamento mirate.</p>
+                                
+                                <form id="training-goal-form">
+                                    <div class="form-group">
+                                        <label for="user-training-goal">Il tuo obiettivo alpinistico a lungo termine:</label>
+                                        <div class="input-with-btn">
+                                            <input type="text" id="user-training-goal" placeholder="Es. Monte Bianco, Cervino, Gran Paradiso..." required>
+                                            <button type="submit" class="btn btn-primary">Salva Obiettivo</button>
+                                        </div>
+                                    </div>
+                                </form>
+
+                                <div class="goal-matches-section">
+                                    <h5>Escursionisti con obiettivi compatibili:</h5>
+                                    <div id="goal-matches-list" class="goal-matches-list">
+                                        <!-- Renderizzato da JS -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Colonna Destra: Diario e Recensioni Anonime -->
+                        <div class="social-column">
+                            <!-- Recensioni Anonime Post-Escursione -->
+                            <div class="glass-card review-card">
+                                <h4><i data-lucide="star"></i> Recensioni Post-Escursione (100% Anonime)</h4>
+                                <p class="small text-muted">Per garantire la sicurezza e la fiducia nel gruppo, le valutazioni reciproche sono obbligatorie e **rigorosamente anonime** (i voti vengono aggregati e i commenti mostrati senza nomi o date).</p>
+                                
+                                <form id="peer-review-form">
+                                    <div class="form-group">
+                                        <label for="review-target">Chi vuoi recensire?</label>
+                                        <select id="review-target" class="form-control" required>
+                                            <!-- Popolato da JS con partecipanti delle escursioni passate -->
+                                        </select>
+                                    </div>
+                                    <div class="form-row-ratings">
+                                        <div class="rating-group">
+                                            <label for="rate-punctuality">Puntualità (1-5):</label>
+                                            <input type="number" id="rate-punctuality" min="1" max="5" value="5" required>
+                                        </div>
+                                        <div class="rating-group">
+                                            <label for="rate-equipment">Attrezzatura Adeguata (1-5):</label>
+                                            <input type="number" id="rate-equipment" min="1" max="5" value="5" required>
+                                        </div>
+                                        <div class="rating-group">
+                                            <label for="rate-respect">Rispetto Gruppo/Ambiente (1-5):</label>
+                                            <input type="number" id="rate-respect" min="1" max="5" value="5" required>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="review-comment">Commento di feedback costruttivo:</label>
+                                        <textarea id="review-comment" placeholder="Es. Ottimo passo, attento alla sicurezza..." required></textarea>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary btn-block">Invia Recensione Anonima</button>
+                                </form>
+                            </div>
+
+                            <!-- Diario di Viaggio Collaborativo -->
+                            <div class="glass-card diary-card">
+                                <h4><i data-lucide="book-open"></i> Diario di Viaggio Collaborativo</h4>
+                                <p class="small text-muted">Aggiungi foto, pensieri o tracce audio geolocalizzate durante l'uscita. A fine giornata verrà generato un "Reel" interattivo della timeline del viaggio.</p>
+                                
+                                <form id="add-diary-form">
+                                    <div class="form-group">
+                                        <label for="diary-hike-select">Escursione associata:</label>
+                                        <select id="diary-hike-select" class="form-control" required>
+                                            <!-- Popolato da JS -->
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="diary-text">Racconta un momento dell'escursione:</label>
+                                        <textarea id="diary-text" required placeholder="Es. Sosta per il pranzo al sacco davanti a un panorama mozzafiato..."></textarea>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="diary-img">Link Foto (Unsplash o file):</label>
+                                            <input type="text" id="diary-img" placeholder="https://images.unsplash.com/..." value="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=600&q=80">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Nota vocale (facoltativa):</label>
+                                        <div class="diary-voice-recorder">
+                                            <button type="button" class="btn btn-sm btn-secondary" id="btn-record-voice-note">
+                                                <i data-lucide="mic"></i> Registra nota vocale
+                                            </button>
+                                            <span class="small text-muted" id="voice-note-status"></span>
+                                        </div>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="diary-lat">Latitudine Foto:</label>
+                                            <input type="number" id="diary-lat" step="0.0001" value="42.4691" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="diary-lng">Longitudine Foto:</label>
+                                            <input type="number" id="diary-lng" step="0.0001" value="13.5595" required>
+                                        </div>
+                                    </div>
+                                    <button type="submit" class="btn btn-success btn-block">Aggiungi al Diario di Viaggio</button>
+                                </form>
+
+                                <div class="timeline-reel-section">
+                                    <h5>Timeline / Reel Interattivo:</h5>
+                                    <div class="diary-timeline" id="diary-timeline-container">
+                                        <!-- Renderizzato da JS -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Contenitore notifiche toast (non bloccanti) -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Modal generico per conferme e richieste testuali (sostituisce confirm()/prompt() nativi) -->
+    <div id="generic-modal" class="modal hidden">
+        <div class="modal-content glass-card generic-modal-content">
+            <p id="generic-modal-message"></p>
+            <div id="generic-modal-input-wrapper" class="form-group hidden">
+                <input type="text" id="generic-modal-input">
+            </div>
+            <div class="form-row-buttons">
+                <button type="button" class="btn btn-secondary" id="generic-modal-cancel">Annulla</button>
+                <button type="button" class="btn btn-primary" id="generic-modal-confirm">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script Lucide Icons (Open Source, vendorizzato in locale) -->
+    <script src="vendor/lucide/lucide.js"></script>
+    <!-- Script Leaflet JS (Open Source Maps, vendorizzato in locale) -->
+    <script src="vendor/leaflet/leaflet.js"></script>
+    <!-- Script Chart.js (Open Source Graphs, vendorizzato in locale) -->
+    <script src="vendor/chartjs/chart.umd.js"></script>
+
+    <!-- Moduli Applicativi Client -->
+    <script src="js/safety.js"></script>
+    <script src="js/profile.js"></script>
+    <script src="js/weather.js"></script>
+    <script src="js/backpack.js"></script>
+    <script src="js/carpool.js"></script>
+    <script src="js/social.js"></script>
+    <script src="js/map.js"></script>
+    <script src="js/app.js"></script>
+    
+    <script>
+        // Inizializza le icone Lucide all'avvio
+        lucide.createIcons();
+    </script>
+</body>
+</html>

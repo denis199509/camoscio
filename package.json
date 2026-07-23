@@ -1,0 +1,21 @@
+{
+  "name": "camoscio",
+  "version": "1.0.0",
+  "description": "Camoscio - Social Hiking & Planning App",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@turf/turf": "^7.3.5",
+    "bcryptjs": "^3.0.3",
+    "connect-mongo": "^6.0.0",
+    "dotenv": "^17.4.2",
+    "express": "^4.19.2",
+    "express-session": "^1.19.0",
+    "mongoose": "^9.8.0",
+    "rbush": "^4.0.1",
+    "validator": "^13.15.35",
+    "ws": "^8.16.0"
+  }
+}

@@ -1,0 +1,209 @@
+===================================================================
+CAMOSCIO — LEGGIMI (stato progetto, aggiornato automaticamente)
+Ultimo aggiornamento: 2026-07-23 — Fase A quasi completa, in pausa su un solo blocco
+===================================================================
+
+NOTA: Fase A quasi completa (vedi checklist sotto). Manca solo
+l'installazione di Git, che su questo PC richiede un permesso di
+amministratore Windows che non posso approvare da solo (l'account
+Windows in uso non è amministratore). Serve un'azione semplice
+dell'utente: vedi "COSE CHE DEVE FARE L'UTENTE DI PERSONA", punto 1.
+Appena Git è installato si chiude la Fase A (git init + due commit)
+e si passa alla Fase B.
+
+A COSA SERVE QUESTO FILE
+-------------------------
+Questo file esiste per permettere a una sessione futura (Claude o chiunque
+altro riprenda il progetto) di ripartire velocemente SENZA dover rileggere
+tutto il codice da zero. Contiene: da dove nasce il progetto, cosa c'era
+prima, il piano completo concordato con l'utente, le decisioni prese, e
+una checklist di avanzamento aggiornata a mano a mano che si procede.
+
+Riferimento completo del piano originale (fasi dettagliate, schemi dati,
+endpoint): C:\Users\lenovo\.claude\plans\entra-nella-cartella-c-users-lenovo-oned-wobbly-sparkle.md
+(se quel file non esiste più, questo leggimi.txt è la fonte di verità).
+
+
+ORIGINE DEL PROGETTO
+---------------------
+"Camoscio" è un'app social per l'escursionismo in montagna (Marche, Lazio,
+Abruzzo, Molise). L'utente (proprietario del progetto) ha scritto le sue
+richieste in `cose_da_fare.txt` (nella stessa cartella di questo file) —
+quel file resta la fonte originale dei requisiti, non cancellarlo.
+
+Riassunto delle richieste originali (cose_da_fare.txt):
+1. Registrazione utenti reale con molti campi (vedi dettaglio Fase C sotto)
+2. Repository GitHub + pubblicazione online + migrazione a MongoDB
+3. Tracciamento GPS live durante l'escursione, solo dati utili, efficiente
+   con poco campo in montagna, mappa scaricata offline PRIMA di partire
+4. Il GPS deve restare "agganciato" al sentiero (tolleranza ~10m errore OSM),
+   se non esiste un sentiero noto va mappato per il futuro
+5. Nuova palette colori "montagna" (verde, marrone chiaro)
+6. Caccia ai bug generale
+Vincoli: MongoDB con formato dati efficiente (poco spazio), tutto open
+source, mantenere i 4 account demo esistenti accessibili da una pagina
+dedicata (Marco Alpinista, Luca TrailRunner, Sofia FotoPasso, Giulia
+Escursionista), regione geografica limitata a Marche/Lazio/Abruzzo/Molise.
+
+
+DECISIONI PRESE CON L'UTENTE (non richiedere di nuovo)
+--------------------------------------------------------
+- Hosting online: RENDER.COM (piano gratuito) — scartate le alternative
+  "solo GitHub senza hosting live" e "Railway.app"
+- Estrazione dati sentieri OpenStreetMap: TUTTO IN NODE.JS, niente Python
+  (Python non è nemmeno installato su questo PC, solo lo stub Microsoft
+  Store — NON installarlo, non serve)
+- Email in registrazione: SOLO SALVATA, nessuna verifica reale via email
+  (niente servizio esterno tipo Resend/Brevo)
+- Nome file per questo promemoria: leggimi.txt (richiesto esplicitamente
+  dall'utente, in italiano, dentro la cartella del progetto)
+- Libreria "osmtogeojson" (prevista in origine per la Fase G) NON installata:
+  ogni versione pubblicata su npm porta con sé una libreria di lettura XML
+  (xmldom) con vulnerabilità di sicurezza critiche irrisolte (gravità
+  massima, 9.8/10, su tutte le versioni disponibili). Per la Fase G si userà
+  invece l'output nativo in formato JSON di Overpass API (si può richiedere
+  direttamente, senza passare da XML) con una piccola funzione scritta a
+  mano per trasformarlo in GeoJSON — stesso risultato, zero dipendenze
+  rischiose in più.
+
+
+STATO DEL CODICE PRIMA DI QUESTO LAVORO (come si presentava il progetto)
+--------------------------------------------------------------------------
+- Stack: Node.js + Express 4 + libreria "ws" per WebSocket. Frontend: un
+  solo public/index.html (SPA con sezioni mostra/nascondi), 8 file JS in
+  public/js/ (app.js, map.js, profile.js, safety.js, social.js, backpack.js,
+  carpool.js, weather.js), nessun framework, nessun bundler.
+- Dati: un solo file data/db.json, letto/riscritto per intero ad ogni
+  richiesta tramite readDb()/writeDb() dentro server.js (righe 220-241).
+  NESSUN MongoDB.
+- Autenticazione: NESSUNA VERA. Esisteva POST /api/login ma era codice
+  morto (nessun frontend lo chiamava). L'"utente corrente" era solo una
+  scelta da un menu a tendina nell'header, salvata in localStorage
+  (chiave "camoscio_user_id"), default "user_marco". Zero verifica lato
+  server — qualunque endpoint si fidava dell'ID utente mandato dal client.
+- I 4 account demo (Marco/Luca/Sofia/Giulia) erano semplicemente le uniche
+  4 righe nella tabella utenti di data/db.json.
+- GPS/tracciamento: NESSUNO reale. Il percorso disegnato durante
+  un'escursione era 5 punti finti generati a tavolino attorno al
+  trailhead (solo per la demo dell'esposizione solare). Un pulsante
+  "usa GPS reale" chiamava getCurrentPosition() UNA SOLA VOLTA (non
+  watchPosition) e non mandava nulla al server.
+- Aggancio al sentiero: NESSUNO. Nessuna libreria di geometria oltre a
+  Leaflet stesso (niente Turf.js).
+- Mappa offline: NESSUNA cache. Le tile OpenStreetMap si scaricavano
+  sempre dal vivo, nessun service worker.
+- Vincolo regionale: window.CAMOSCIO_REGION_BOUNDS in public/js/map.js,
+  un semplice rettangolo {minLat:40.8, maxLat:43.9, minLng:11.4,
+  maxLng:15.2}, applicato SOLO lato client (maxBounds di Leaflet +
+  validazione nel form crea-escursione). Zero controllo lato server.
+- Colori: centralizzati in :root dentro public/css/styles.css (righe
+  4-32, tema "Dark Alpine": sfondo blu navy scurissimo #0B0F19, accento
+  arancione neon #FF6B35) ma ANCHE duplicati a mano dentro map.js e
+  app.js in vari punti (marker, popup, grafici Chart.js).
+- Bug noto trovato durante l'esplorazione (da correggere in Fase H):
+  resolveReportDirectly() in map.js "risolve" una segnalazione POSTando
+  di nuovo su /api/reports, ma quella rotta fa solo un push di un nuovo
+  documento → crea un DUPLICATO invece di aggiornare l'originale, che
+  resta sempre "attivo".
+- Ambiente PC (verificato dal vivo prima di iniziare): Node.js v24.18.0
+  e npm già installati e funzionanti. Git NON installato. Python NON
+  installato (solo stub Windows Store). Nessun MongoDB locale. La
+  cartella non era ancora un repository git.
+
+
+IL PIANO — 8 FASI (ordine di dipendenza obbligato)
+-----------------------------------------------------
+Fase A — Preparazione ambiente (installare Git, npm dependencies,
+         riorganizzare server.js in moduli, .gitignore, .env)
+Fase B — Migrazione dati da data/db.json a MongoDB Atlas (cloud, gratuito)
+Fase C — Registrazione utenti reale + login a sessione + pagina /demo
+Fase D — Nuova palette colori "montagna" (verde/terracotta/marrone)
+Fase E — Pubblicazione online: repository GitHub + deploy su Render.com
+Fase F — Tracciamento GPS live durante l'escursione (aggiornamenti
+         incrementali, buffer offline, mappa pre-scaricata)
+Fase G — Aggancio GPS al sentiero (estrazione sentieri OSM via Overpass
+         API in Node.js, indice spaziale rbush, tolleranza adattiva)
+Fase H — Caccia ai bug generale + verifica finale
+
+Dettagli tecnici completi (schemi MongoDB, endpoint, algoritmi) sono nel
+file di piano originale citato in cima a questo documento. Se quel file
+non fosse più disponibile, i punti chiave da ricordare sono negli
+appunti per fase più sotto.
+
+
+COSE CHE DEVE FARE L'UTENTE DI PERSONA (non automatizzabili)
+----------------------------------------------------------------
+1. Git per Windows (serve SUBITO per chiudere la Fase A): ho provato ad
+   installarlo automaticamente ma Windows chiede conferma da amministratore
+   e questo account non lo è, quindi non posso cliccare "Sì" al posto tuo.
+   Basta una di queste due cose, la più comoda per te:
+   a) scrivi in chat, con il punto esclamativo davanti (fa girare il
+      comando per davvero, sul tuo PC):
+      !winget install --id Git.Git -e --source winget --accept-package-agreements --accept-source-agreements
+      poi clicca "Sì" quando Windows chiede il permesso; oppure
+   b) scarica l'installer da https://git-scm.com/download/win, aprilo e
+      clicca "Avanti" varie volte tenendo tutte le opzioni di default,
+      poi "Installa".
+   STATO: non ancora fatto — BLOCCA il completamento della Fase A.
+2. MongoDB Atlas (serve per la Fase B): creare un account gratuito su
+   cloud.mongodb.com, un cluster gratuito M0, un utente database, aprire
+   l'accesso di rete a 0.0.0.0/0, copiare la stringa di connessione
+   "mongodb+srv://...". STATO: non ancora fatto.
+3. GitHub (serve per la Fase E): creare un repository vuoto su github.com,
+   creare un Personal Access Token per l'autenticazione git push.
+   STATO: non ancora fatto.
+4. Render.com (serve per la Fase E): registrarsi (consigliato "Sign in
+   with GitHub"), creare un Web Service collegato al repository, incollare
+   le variabili d'ambiente (MONGODB_URI, SESSION_SECRET, NODE_ENV).
+   STATO: non ancora fatto.
+5. Permesso GPS del browser (serve per testare la Fase F davvero):
+   cliccare "Consenti" sul popup nativo del browser almeno una volta.
+   STATO: non ancora fatto.
+
+
+CHECKLIST DI AVANZAMENTO (aggiornare via via che si procede)
+-----------------------------------------------------------------
+[~] Fase A — Preparazione ambiente — IN CORSO (iniziata 2026-07-21, ripresa 2026-07-23)
+    [x] Creato questo file leggimi.txt
+    [ ] Git per Windows installato — BLOCCATO: serve un click dell'utente
+        su un permesso di amministratore Windows, vedi sezione sotto
+    [ ] git init + due commit (1: import iniziale del codice esistente,
+        2: riorganizzazione Fase A) — in attesa che Git sia installato
+    [x] .gitignore creato (esclude node_modules/, .env, data/db.json,
+        public/uploads/*)
+    [x] .env / .env.example creati (PORT, NODE_ENV, SESSION_SECRET già
+        generato in modo casuale, MONGODB_URI lasciato vuoto per la Fase B)
+    [x] Dipendenze npm installate: mongoose, bcryptjs, express-session,
+        connect-mongo, validator, dotenv, @turf/turf, rbush — verificate
+        con "npm audit": 0 vulnerabilità. "osmtogeojson" volutamente NON
+        installato (vedi decisione sopra).
+    [x] initialData spostato in scripts/seed-data.json (JSON puro, dati
+        identici all'originale)
+    [x] readDb()/writeDb() spostati in db/jsonStore.js (stessa identica
+        logica, solo relocata)
+    [x] Struttura cartelle creata: db/ (contiene jsonStore.js), scripts/
+        (contiene seed-data.json), models/ routes/ middleware/ (vuote per
+        ora con un file .gitkeep, le riempirà la Fase B)
+    [x] Verificato dal vivo: server riavviato con la nuova struttura,
+        stesse identiche risposte dalle API (2 escursioni, 4 utenti demo)
+        di prima — nessun cambiamento di comportamento, come richiesto
+[ ] Fase B — Migrazione MongoDB Atlas — NON INIZIATA (serve prima l'account
+    Atlas dell'utente, vedi sopra)
+[ ] Fase C — Registrazione utenti reale + login — NON INIZIATA
+[ ] Fase D — Nuova palette colori — NON INIZIATA
+[ ] Fase E — GitHub + Render online — NON INIZIATA (serve account GitHub
+    + Render dell'utente, vedi sopra)
+[ ] Fase F — Tracciamento GPS live — NON INIZIATA
+[ ] Fase G — Aggancio GPS al sentiero — NON INIZIATA
+[ ] Fase H — Caccia ai bug finale — NON INIZIATA
+
+
+COME RIPRENDERE IL LAVORO IN UNA NUOVA SESSIONE
+----------------------------------------------------
+1. Leggi questo file per intero.
+2. Guarda la checklist sopra per capire a che punto siamo.
+3. Se il file di piano originale esiste ancora (percorso in cima a questo
+   file), rileggilo per i dettagli tecnici della fase corrente.
+4. Continua dalla prima fase/voce non completata nella checklist.
+5. Aggiorna questo file (checklist + eventuali nuove decisioni prese
+   insieme all'utente) man mano che avanzi.

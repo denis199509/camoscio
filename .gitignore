@@ -1,0 +1,14 @@
+# Dipendenze
+node_modules/
+
+# Segreti e configurazione locale (mai su GitHub)
+.env
+
+# Database locale: dalla Fase B in poi non e' piu' il database reale (si passa a MongoDB Atlas)
+data/db.json
+
+# Contenuti caricati dagli utenti (note vocali ecc.), rigenerati automaticamente all'avvio del server
+public/uploads/*
+
+# File di sistema Windows
+Thumbs.db

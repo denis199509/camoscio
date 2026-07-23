@@ -1,0 +1,115 @@
+informazioni su questa sessione:
+in questo sito di montagna ci sono degli account demo (es:"marco alpinista", "giulia Escursionista"), questi devono rimanere e devono poter essere accessibili tramite la page "demo".
+questa sarà una page dedicata solo a test e per capire come vengono fatte le modifiche future.
+la regione geografica e i vincoli sono corretti come per esempio open source e usare solo le regioni: marche, lazio, abruzzo, molise
+
+vincolo hard: 
+1) devi pensare al formato migliore possibile per risparmiare spazio ma rimanendo molto performante, usando mongodb ci sara poco spazio quindi è fondamentale conservarlo nel formato più efficiente possibile
+2) tutto deve essere fatto con  fonti open source e licenze open source
+3) è la prima volta che lancio codici su questo pc e potrebbe non essere installato python in caso installalo 
+obiettivi: sviluppare i seguenti n punti che sti sto chiedendo nel modo migliore possibile.
+
+1) vorrei creare la possibilità a ogni persona di potersi fare il proprio account, al momento della registrazioni queste solo le richieste da fare al cliente che vuole utilizzare il sito:
+1. Dati base (obbligatori)
+Nome
+Cognome
+Email
+Password
+Data di nascita se per la privacy non vogliono mettere la data allora chiedi il range di età dai 18 ai 30 (anni) oppure dai 30 ai 40 ( dopo anni 18 fare range di 10 anni in 10 anni) 
+Accettazione Termini e Privacy
+2. Profilo escursionistico (molto consigliato)
+Livello di esperienza
+🌱 Principiante
+🥾 Intermedio
+⛰️ Esperto
+🧗 Alpinista
+Serve per filtrare gli itinerari.
+
+3.interessi:
+Può selezionare più opzioni.
+
+Passeggiate facili
+Trekking giornalieri
+Trekking di più giorni
+Ferrate
+Alpinismo
+Trail running
+MTB
+Ciaspolate
+Fotografia
+Natura
+Rifugi
+Laghi
+Panorami
+Vette
+Borghi
+Tramonti
+Alba
+
+4.Difficoltà preferita
+Turistica (T)
+Escursionistica (E)
+Escursionisti Esperti (EE)
+Escursionisti Esperti Attrezzati (EEA) 
+Alpinistica
+
+5. Area geografica
+Molto utile.
+
+Può scegliere:
+
+Regione preferita
+Province
+Catene montuose
+Ad esempio:
+gran sasso
+maiella 
+pnalm
+
+
+6. Profilo pubblico
+Username (univoco)
+es.
+@MarcoHiker
+
+Foto profilo (facoltativa)
+Bio (massimo 250 caratteri)
+
+7.Contatti di emergenza (obbligatorio) può mettere + di 1 contatto
+Nome
+Telefono
+Relazione
+Potrebbe essere usato in futuro per funzionalità di sicurezza.
+NOTA: durante la registrazione dell'account iniziale al punto 7. ci deve essere scritto in rosso un allert che dice :" il contatto di emergenza non è pubblico e viene usato SOLO a scopo di emergenza")
+
+
+8.Consenso alla geolocalizzazione (facoltativo)
+Per:
+
+trovare escursioni vicine
+registrare percorsi
+mostrare la propria posizione
+
+NOTA: durante la registrazione dell'account iniziale al punto 8. ci deve essere scritto in rosso un allert che dice :"accettando la geolocalizzazione avrai più possibilità di trovare gente con li stessi interessi ")
+
+
+9.Preferenze di privacy
+Profilo pubblico
+Solo amici
+Privato
+
+
+2) ti ho collegato il mio account github (se hai problemi dimmelo) voglio che crei la repositori e la page per mandarlo ufficialmente online tramite github , una cosa fondamentale è che dovrai usare MongoDb per tutto ciò che riguarda il database e aggiornamento database dei vari account e delle varie escursioni o dati nel corso del tempo, ricorda vincoli hard.
+
+3) una cosa fondamentale, quando INIZIA la vera escursione devi far in modo che si aggiorni progressivamente SOLO E SOLTANTO i dati utili all'escursione e non tutto il resto(esempio: traccia gps dalla partenza fino ultimo segnale, velocità media, km fatti e dislivello, tempo da inizio registrazione), dato hche in montagna ci sono zone con + campo e rete e altre dove non prende, si deve aggiornare in modo continuo e efficiente durante il percorso,
+errore da non fare: non riscaricare tutta la mappa (la devi scaricare prima dell'inizio dell'escursione per averla "in locale " ) e tutte le informazioni utili all'escursioni devono essere aggiornate automaticamente mentre ce campo.
+
+
+4) è fondamentale la traccia gps del telefono che si connetta al sito e che rimanga ancorata al percorso di montagna anche se le mappe osm hanno errore in media di 10 m , se sto li mi dovrai considerare sul percorso, se proprio non hai il percorso mappalo per le escursioni future.
+
+
+
+5) cambiare i colori del sito con colori piu inerenti alla montagna come verde, marrone chiaro ecc 
+
+
+6) fai controllo per identificare bug
