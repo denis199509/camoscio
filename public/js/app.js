@@ -470,16 +470,16 @@ function renderPaceChart(user) {
                 {
                     label: 'Tuo Passo Rilevato',
                     data: [user.averagePaceUp, user.averagePaceDown],
-                    backgroundColor: 'rgba(255, 107, 53, 0.65)',
-                    borderColor: '#FF6B35',
+                    backgroundColor: 'rgba(193, 102, 46, 0.65)',
+                    borderColor: '#C1662E',
                     borderWidth: 2,
                     borderRadius: 6
                 },
                 {
                     label: 'Standard CAI Alpino',
                     data: [400, 600],
-                    backgroundColor: 'rgba(0, 210, 255, 0.25)',
-                    borderColor: '#00D2FF',
+                    backgroundColor: 'rgba(76, 126, 144, 0.25)',
+                    borderColor: '#4C7E90',
                     borderWidth: 2,
                     borderRadius: 6
                 }

@@ -223,12 +223,12 @@ function logSimulatedSms(type, text) {
     
     if (type === "SAFE") {
         entry.className = "sms-entry";
-        entry.style.background = "rgba(16, 185, 129, 0.08)";
-        entry.style.borderColor = "rgba(16, 185, 129, 0.2)";
+        entry.style.background = "rgba(76, 122, 68, 0.08)";
+        entry.style.borderColor = "rgba(76, 122, 68, 0.2)";
         entry.innerHTML = `<strong style="color:var(--accent-green)">[SATELLITE SAFE]</strong> ${text}`;
     } else if (type === "SOS") {
         entry.className = "sms-entry blink";
-        entry.style.background = "rgba(239, 68, 68, 0.12)";
+        entry.style.background = "rgba(168, 59, 46, 0.12)";
         entry.style.borderColor = "var(--accent-red)";
         entry.innerHTML = `<strong style="color:var(--accent-red)">[SATELLITE SOS ALERT]</strong> ${text}`;
     } else {

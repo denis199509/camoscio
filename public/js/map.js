@@ -50,7 +50,7 @@ function initMapModule() {
 function createUserGpsMarker() {
     const userIcon = L.divIcon({
         className: 'user-gps-leaflet-marker',
-        html: `<div style="font-size: 2rem; filter: drop-shadow(0 0 5px rgba(255,107,53,0.8));">🥾</div>`,
+        html: `<div style="font-size: 2rem; filter: drop-shadow(0 0 5px rgba(193,102,46,0.8));">🥾</div>`,
         iconSize: [32, 32],
         iconAnchor: [16, 16]
     });
@@ -121,7 +121,7 @@ function checkGeofencing(lat, lng) {
             userGpsMarker.bindPopup(`
                 <div style="color: white; font-family: inherit; text-align: center;">
                     <h4 style="margin: 0 0 4px 0;">🎉 Vetta Raggiunta!</h4>
-                    <h5 style="margin: 0 0 8px 0; color: #FF6B35;">${foundNearPeak.name} (${foundNearPeak.altitude}m)</h5>
+                    <h5 style="margin: 0 0 8px 0; color: #C1662E;">${foundNearPeak.name} (${foundNearPeak.altitude}m)</h5>
                     <p style="font-size: 0.8rem; margin: 0 0 10px 0;">Sei a soli ${Math.round(distance)}m dalla cima.</p>
                     <button class="btn btn-sm btn-primary" onclick="unlockStampDirectly('${stampId}', '${foundNearPeak.name}')">TIMBRA PASSAPORTO</button>
                 </div>
@@ -346,7 +346,7 @@ function renderMapMarkers() {
 
         const customIcon = L.divIcon({
             className: 'waze-leaflet-marker',
-            html: `<div style="font-size: 1.8rem; background: rgba(0,0,0,0.6); padding: 4px; border-radius: 50%; border: 1.5px solid #EF4444; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;">${emoji}</div>`,
+            html: `<div style="font-size: 1.8rem; background: rgba(0,0,0,0.6); padding: 4px; border-radius: 50%; border: 1.5px solid #A83B2E; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;">${emoji}</div>`,
             iconSize: [36, 36],
             iconAnchor: [18, 18]
         });
@@ -355,7 +355,7 @@ function renderMapMarkers() {
         
         marker.bindPopup(`
             <div style="color: white; font-family: inherit;">
-                <h5 style="margin: 0 0 4px 0; color: #EF4444;">${title}</h5>
+                <h5 style="margin: 0 0 4px 0; color: #A83B2E;">${title}</h5>
                 <p style="font-size: 0.8rem; margin: 0 0 8px 0;">${rep.description}</p>
                 <span class="small text-muted">Segnalato il: ${new Date(rep.createdAt).toLocaleDateString()}</span>
             </div>
@@ -370,7 +370,7 @@ function renderMapMarkers() {
         activeHike.peaks.forEach(peak => {
             const peakIcon = L.divIcon({
                 className: 'peak-leaflet-marker',
-                html: `<div style="font-size: 1.6rem; background: rgba(0,0,0,0.6); padding: 4px; border-radius: 50%; border: 1.5px solid #00D2FF; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">🏔️</div>`,
+                html: `<div style="font-size: 1.6rem; background: rgba(0,0,0,0.6); padding: 4px; border-radius: 50%; border: 1.5px solid #4C7E90; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">🏔️</div>`,
                 iconSize: [32, 32],
                 iconAnchor: [16, 16]
             });
@@ -488,7 +488,7 @@ function loadActiveHikeOnMap(hikeId) {
     // Se l'utente vuole l'esposizione solare, coloriamo il sentiero in modo speciale
     // Altrimenti lo coloriamo di verde foresta standard
     hikePolyline = L.polyline(activeHikePath, {
-        color: '#10B981',
+        color: '#4C7A44',
         weight: 6,
         opacity: 0.8
     }).addTo(window.mapInstance);
@@ -501,7 +501,7 @@ function loadActiveHikeOnMap(hikeId) {
     hike.peaks.forEach(peak => {
         const peakIcon = L.divIcon({
             className: 'peak-leaflet-marker',
-            html: `<div style="font-size: 1.6rem; background: rgba(0,0,0,0.6); padding: 4px; border-radius: 50%; border: 1.5px solid #00D2FF; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">🏔️</div>`,
+            html: `<div style="font-size: 1.6rem; background: rgba(0,0,0,0.6); padding: 4px; border-radius: 50%; border: 1.5px solid #4C7E90; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">🏔️</div>`,
             iconSize: [32, 32],
             iconAnchor: [16, 16]
         });

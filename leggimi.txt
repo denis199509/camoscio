@@ -1,16 +1,17 @@
 ===================================================================
 CAMOSCIO — LEGGIMI (stato progetto, aggiornato automaticamente)
-Ultimo aggiornamento: 2026-07-23 — Fase C completata
+Ultimo aggiornamento: 2026-07-23 — Fase D completata
 ===================================================================
 
-NOTA: Fasi A, B e C completate (vedi checklist sotto). Il sito ha ora
-registrazione utenti reale, login/logout a sessione vera, e una pagina
-/demo separata per i 4 account storici. Il vecchio "cambia utente" a
-tendina non esiste piu': senza login si vede una schermata di
-accesso/registrazione, non il sito. Verificato sia via chiamate dirette
-alle API sia dal vivo nel browser (registrazione a 6 passi completa,
-login, logout, login demo). Prossimo passo: Fase D (nuova palette
-colori), che non ha bisogno di nessun account esterno.
+NOTA: Fasi A, B, C e D completate (vedi checklist sotto). Il sito ha ora
+registrazione utenti reale, login/logout a sessione vera, una pagina
+/demo separata, e la nuova palette colori "montagna" (verde muschio,
+terracotta, blu lago alpino, rosso mattone) al posto del tema scuro
+"neon" originale. Verificato dal vivo nel browser su piu' sezioni
+(Dashboard, Mappa, Carpooling, Sicurezza) - nessun colore vecchio
+rimasto, nessun problema di leggibilita' (popup, badge, avvisi).
+Prossimo passo: Fase E (GitHub + Render online), per cui servono
+gli account GitHub e Render dell'utente.
 
 A COSA SERVE QUESTO FILE
 -------------------------
@@ -92,6 +93,17 @@ DECISIONI PRESE CON L'UTENTE (non richiedere di nuovo)
 - Foto profilo: salvata come stringa base64 dentro il documento utente
   su MongoDB (come da piano, per sopravvivere ai riavvii di Render),
   con un limite di ~1.5MB imposto sia lato client che lato server.
+- Palette colori "montagna" (Fase D) - stessi NOMI di variabile CSS di
+  prima (--accent-orange, --accent-green, --accent-blue, --accent-red),
+  solo nuovi valori, per non dover toccare centinaia di regole che li
+  usano:
+  sfondo #14150F, card rgba(45,40,32,*) (tortora scuro caldo), testo
+  principale #F3EFE6, accento/terracotta #C1662E (era arancione neon
+  #FF6B35), verde muschio #4C7A44 (era verde smeraldo #10B981), blu
+  lago alpino #4C7E90 (era ciano neon #00D2FF), rosso mattone #A83B2E
+  (era rosso acceso #EF4444), nuovo tan neutro #A88F6B. Se in futuro
+  serve un nuovo colore per un elemento UI, usare queste stesse
+  variabili invece di scrivere un hex a mano, per restare coerenti.
 - Stringa di connessione MongoDB: usa il formato "standard" (mongodb://...
   con gli host dei 3 shard elencati uno per uno), NON il formato
   "mongodb+srv://" che Atlas mostra di default. Motivo: su questo PC
@@ -311,7 +323,24 @@ CHECKLIST DI AVANZAMENTO (aggiornare via via che si procede)
     [x] Dati di test creati durante le verifiche ripuliti dal database
         reale (2 account di prova, 2 recensioni di test, reputazione
         di Marco/Giulia ricalcolata) su conferma esplicita dell'utente
-[ ] Fase D — Nuova palette colori — NON INIZIATA
+[x] Fase D — Nuova palette colori "montagna" — COMPLETATA (2026-07-23)
+    [x] Variabili in :root (public/css/styles.css) aggiornate: stessi
+        nomi (--accent-orange ecc.) ma nuovi valori "rifugio di
+        montagna di notte" (vedi tabella nelle decisioni sopra) +
+        nuova variabile --accent-tan per badge/etichette neutre
+    [x] Tutti i colori scritti "a mano" fuori dalle variabili CSS
+        corretti: ~45 rgba()/hex ripetuti dentro styles.css stesso,
+        piu' i marker/popup/percorso della mappa (map.js), i colori
+        del grafico passo personale (app.js), il log messaggi
+        Dead Man's Switch (safety.js), l'icona/box rischio fulmini
+        (weather.js)
+    [x] Ricerca finale su tutto public/ per i vecchi codici colore
+        (FF6B35, 00D2FF, 10B981, EF4444 e le loro varianti rgba/hover/
+        testo-chiaro): zero risultati rimasti
+    [x] Verificato dal vivo nel browser: Dashboard, Mappa (marker vette,
+        percorso, popup - niente testo bianco-su-bianco), Carpooling,
+        Sicurezza & Mesh - palette coerente ovunque, nessun errore
+        in console
 [ ] Fase E — GitHub + Render online — NON INIZIATA (serve account GitHub
     + Render dell'utente, vedi sopra)
 [ ] Fase F — Tracciamento GPS live — NON INIZIATA

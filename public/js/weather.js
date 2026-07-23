@@ -92,7 +92,7 @@ function renderWeatherData(data, placeName) {
     if (lightningRisk) {
         html += `
             <div class="lightning-alert blink">
-                <i data-lucide="zap" style="color:#EF4444; fill:#EF4444; width:16px; height:16px;"></i>
+                <i data-lucide="zap" style="color:#A83B2E; fill:#A83B2E; width:16px; height:16px;"></i>
                 <span>${riskMessage}</span>
             </div>
         `;
@@ -101,7 +101,7 @@ function renderWeatherData(data, placeName) {
         triggerLightningPushNotification(riskMessage);
     } else {
         html += `
-            <div class="lightning-alert" style="background: rgba(16, 185, 129, 0.15); border-color: var(--accent-green); color: #A7F3D0;">
+            <div class="lightning-alert" style="background: rgba(76, 122, 68, 0.15); border-color: var(--accent-green); color: #B8CBA8;">
                 <i data-lucide="check-circle" style="color:var(--accent-green); width:16px; height:16px;"></i>
                 <span>Nessun rischio fulmini rilevato per le prossime ore.</span>
             </div>
