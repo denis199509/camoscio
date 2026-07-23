@@ -1,14 +1,14 @@
 ===================================================================
 CAMOSCIO — LEGGIMI (stato progetto, aggiornato automaticamente)
-Ultimo aggiornamento: 2026-07-23 — Fase A completata
+Ultimo aggiornamento: 2026-07-23 — Fase B completata
 ===================================================================
 
-NOTA: Fase A completata (vedi checklist sotto). L'utente ha installato
-Git di persona (richiedeva un permesso di amministratore Windows che
-Claude non poteva approvare da solo). Repository git creato con un
-commit iniziale (f4da9c2). Prossimo passo: Fase B, per cui serve
-l'account MongoDB Atlas dell'utente (vedi "COSE CHE DEVE FARE L'UTENTE
-DI PERSONA", punto 2).
+NOTA: Fase A e Fase B completate (vedi checklist sotto). Il sito oggi
+legge/scrive tutti i dati da MongoDB Atlas (non piu' da data/db.json),
+verificato sia via chiamate dirette alle API sia dal vivo nel browser
+(sezione Mappa, cambio utente, timbri, recensioni, completamento
+escursione). Prossimo passo: Fase C (registrazione utenti reale +
+login + pagina /demo), che non ha bisogno di altri account esterni.
 
 A COSA SERVE QUESTO FILE
 -------------------------
@@ -64,6 +64,42 @@ DECISIONI PRESE CON L'UTENTE (non richiedere di nuovo)
   direttamente, senza passare da XML) con una piccola funzione scritta a
   mano per trasformarlo in GeoJSON — stesso risultato, zero dipendenze
   rischiose in più.
+- Stringa di connessione MongoDB: usa il formato "standard" (mongodb://...
+  con gli host dei 3 shard elencati uno per uno), NON il formato
+  "mongodb+srv://" che Atlas mostra di default. Motivo: su questo PC
+  qualcosa (quasi certamente AVG o McAfee, entrambi installati insieme
+  a Windows Defender) blocca specificamente le query DNS di tipo SRV
+  fatte da Node.js, mentre le query DNS normali e le connessioni TCP
+  dirette funzionano bene. La stringa attuale è dentro .env, con gli
+  host espliciti (ac-fh8vbm9-shard-00-00/01/02.shlr4hq.mongodb.net:27017)
+  e il nome del replica set (atlas-aley8a-shard-0) letti a mano dal DNS.
+  RISCHIO DA SAPERE: se in futuro Atlas cambia gli host del cluster
+  (succede raramente, es. durante manutenzioni), questa stringa andrà
+  rigenerata a mano (rifare la stessa procedura: Resolve-DnsName -Type
+  SRV/TXT sul nome del cluster, oppure capire perché Node non riesce a
+  fare query SRV su questo PC e risolvere quello — es. aggiungendo
+  un'eccezione per node.exe nel firewall di AVG/McAfee).
+- Identità autore Git per i commit: nome "Denis", email
+  denis1995.09@gmail.com — impostata SOLO su questo repository (git
+  config locale, non globale), quindi non tocca altre impostazioni git
+  eventualmente presenti sul PC per altri progetti.
+- Modello dati Mongoose "Diary" (diario di viaggio con foto/note vocali):
+  non era esplicitamente elencato tra le collezioni nella Fase B del
+  piano originale (probabile dimenticanza nel riassunto, dato che
+  l'obiettivo dichiarato della fase era "mantenendo tutti i dati
+  attuali" e tutte le rotte esistenti) — creato comunque per non perdere
+  la funzionalità già esistente del diario di viaggio.
+- Compatibilità con il frontend esistente durante la migrazione a
+  MongoDB: tutti i documenti vengono restituiti dalle API con un campo
+  "id" (stringa) invece di "_id"/"__v" (vedi mongoose.set('toJSON',...)
+  in db/mongo.js), perché tutto il frontend esistente usa già ".id".
+  Due pulsanti in map.js ("Gran Sasso"/"Monte Vettore") cercavano
+  un'escursione per un ID scritto a mano ("hike_orobie"/"hike_rosa") che
+  con MongoDB non esiste più: corretti per cercare l'escursione per
+  titolo invece che per ID. Verificato dal vivo nel browser che entrambi
+  i pulsanti funzionano ancora. Tutto il resto del frontend non aveva
+  altri ID scritti a mano (solo un fallback già presente per l'utente
+  di default, che già gestiva correttamente un ID mancante).
 
 
 STATO DEL CODICE PRIMA DI QUESTO LAVORO (come si presentava il progetto)
@@ -135,10 +171,9 @@ COSE CHE DEVE FARE L'UTENTE DI PERSONA (non automatizzabili)
 1. Git per Windows — FATTO (2026-07-23): installato dall'utente con il
    comando winget indicato da Claude, cliccando "Sì" al permesso di
    amministratore Windows quando richiesto.
-2. MongoDB Atlas (serve per la Fase B): creare un account gratuito su
-   cloud.mongodb.com, un cluster gratuito M0, un utente database, aprire
-   l'accesso di rete a 0.0.0.0/0, copiare la stringa di connessione
-   "mongodb+srv://...". STATO: non ancora fatto.
+2. MongoDB Atlas — FATTO (2026-07-23): account creato, cluster M0 gratuito
+   "Cluster0", utente database "camoscio". La stringa di connessione è
+   già dentro .env (vedi decisione sopra sul formato usato e perché).
 3. GitHub (serve per la Fase E): creare un repository vuoto su github.com,
    creare un Personal Access Token per l'autenticazione git push.
    STATO: non ancora fatto.
@@ -179,8 +214,41 @@ CHECKLIST DI AVANZAMENTO (aggiornare via via che si procede)
     [x] Verificato dal vivo: server riavviato con la nuova struttura,
         stesse identiche risposte dalle API (2 escursioni, 4 utenti demo)
         di prima — nessun cambiamento di comportamento, come richiesto
-[ ] Fase B — Migrazione MongoDB Atlas — NON INIZIATA (serve prima l'account
-    Atlas dell'utente, vedi sotto)
+[x] Fase B — Migrazione MongoDB Atlas — COMPLETATA (2026-07-23)
+    [x] Account MongoDB Atlas + cluster M0 gratuito creati dall'utente,
+        connessione testata e funzionante (vedi decisione sopra sul
+        formato di connessione usato)
+    [x] 10 modelli Mongoose creati in models/: User, Hike, Report, Review,
+        ReviewLock, Stamp, Squad, RouteBookmark, Completion, Notification,
+        Diary (quest'ultimo aggiunto in piu' rispetto al piano, vedi
+        decisione sopra)
+    [x] db/mongo.js: connessione centralizzata + trasformazione
+        id/_id per compatibilita' col frontend esistente
+    [x] scripts/seed-atlas.js: migrati su Atlas tutti i dati esistenti
+        (4 utenti demo con isDemoAccount:true, 2 escursioni con
+        posizione anche in GeoJSON, 2 segnalazioni, 4 recensioni,
+        3 timbri, 1 squadra, 2 preferiti, 1 nota diario) — sicuro da
+        rilanciare per errore, non duplica se trova dati gia' presenti
+    [x] Tutte le 24 rotte API riscritte per usare Mongoose, spostate in
+        routes/ (users.js include anche /api/login, storicamente un
+        percorso "fratello" di /api/users - vedi commento nel file);
+        indici unici al posto dei controlli .some() a mano per: timbro
+        gia' sbloccato, preferito gia' salvato, escursione gia'
+        completata, recensione duplicata (quest'ultima ora a prova di
+        richieste simultanee, corregge un bug tecnico del codice
+        originale)
+    [x] server.js: si connette a MongoDB prima di avviarsi, monta tutte
+        le rotte; rimane invariato solo l'upload delle note vocali
+        (scrive file su disco, non riguarda MongoDB)
+    [x] db/jsonStore.js rimosso (non piu' usato da nessuno dopo la
+        migrazione)
+    [x] Corretto map.js (2 pulsanti che cercavano un'escursione per un
+        ID scritto a mano, vedi decisione sopra)
+    [x] Verificato: chiamate dirette a tutte le rotte (lettura e
+        scrittura) + verifica dal vivo nel browser (Dashboard, sezione
+        Mappa con i due pulsanti Gran Sasso/Monte Vettore, cambio
+        utente) — nessun errore in console, dati coerenti con la
+        migrazione
 [ ] Fase C — Registrazione utenti reale + login — NON INIZIATA
 [ ] Fase D — Nuova palette colori — NON INIZIATA
 [ ] Fase E — GitHub + Render online — NON INIZIATA (serve account GitHub

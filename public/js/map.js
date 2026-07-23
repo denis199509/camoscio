@@ -250,16 +250,23 @@ function setupMapForms() {
     const btnRosa = document.getElementById("btn-weather-rosa");
 
     if (btnOrobie && btnRosa) {
+        // Cerca per titolo invece che per un ID fisso: dalla Fase B gli ID sono generati
+        // da MongoDB e cambiano ad ogni migrazione, il titolo invece resta stabile.
+        const findHikeByTitle = (fragment) =>
+            window.CamoscioState.hikes.find(h => h.title.includes(fragment));
+
         btnOrobie.addEventListener("click", () => {
             btnOrobie.classList.add("active");
             btnRosa.classList.remove("active");
-            loadActiveHikeOnMap("hike_orobie");
+            const hike = findHikeByTitle("Corno Grande");
+            if (hike) loadActiveHikeOnMap(hike.id);
         });
 
         btnRosa.addEventListener("click", () => {
             btnRosa.classList.add("active");
             btnOrobie.classList.remove("active");
-            loadActiveHikeOnMap("hike_rosa");
+            const hike = findHikeByTitle("Vettore");
+            if (hike) loadActiveHikeOnMap(hike.id);
         });
     }
 
