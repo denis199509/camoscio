@@ -88,6 +88,11 @@ window.showAlertModal = function(message, confirmLabel = "Ho capito") {
 
 // Main routing and initialization
 document.addEventListener("DOMContentLoaded", async () => {
+    // Verifica se c'e' gia' una sessione valida (login o demo-login): se no, mostra
+    // la schermata di accesso/registrazione e si ferma qui - initApp() parte solo dopo.
+    const authenticated = await checkAuthAndShowGate();
+    if (!authenticated) return;
+
     // Inizializza i moduli principali
     await initApp();
 
@@ -96,33 +101,51 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Inizializza il centro notifiche
     setupNotificationBell();
+
+    // Collega il pulsante di uscita
+    const btnLogout = document.getElementById("btn-logout");
+    if (btnLogout) btnLogout.addEventListener("click", () => { if (window.performLogout) window.performLogout(); });
 });
+
+// Ritorna true (e mostra l'app) se esiste gia' una sessione valida (GET /api/auth/me),
+// altrimenti mostra la schermata di login/registrazione e ritorna false.
+async function checkAuthAndShowGate() {
+    try {
+        const res = await fetch("/api/auth/me");
+        if (res.ok) {
+            const user = await res.json();
+            window.CamoscioState.currentUser = user;
+            document.getElementById("auth-gate").classList.add("hidden");
+            document.getElementById("main-app-container").classList.remove("hidden");
+            return true;
+        }
+    } catch (e) {
+        console.error("Errore nel controllo della sessione:", e);
+    }
+
+    document.getElementById("main-app-container").classList.add("hidden");
+    document.getElementById("auth-gate").classList.remove("hidden");
+    if (window.setupAuthGate) window.setupAuthGate();
+    if (window.lucide) lucide.createIcons();
+    return false;
+}
+
+// Richiamato da auth.js dopo un login/registrazione riusciti: la ricarica pagina
+// e' il modo piu' semplice e affidabile per far ripartire initApp() da zero con
+// il nuovo utente (tutti i moduli si reinizializzano gia' correttamente cosi').
+window.onAuthSuccess = function () {
+    window.location.reload();
+};
 
 async function initApp() {
     try {
-        // Carica tutti i dati dal server backend
+        // Carica tutti i dati dal server backend (l'utente corrente e' gia' impostato
+        // da checkAuthAndShowGate a partire dalla sessione)
         await refreshState();
-
-        // Imposta l'utente di default (Marco Alpinista)
-        let savedUserId = localStorage.getItem("camoscio_user_id") || "user_marco";
-        let defaultUser = window.CamoscioState.users.find(u => u.id === savedUserId);
-
-        if (!defaultUser && window.CamoscioState.users.length > 0) {
-            defaultUser = window.CamoscioState.users[0];
-        }
-
-        window.CamoscioState.currentUser = defaultUser;
-
-        // Ricarica lo stato ora che l'utente corrente è impostato: solo a questo punto
-        // refreshState può caricare i dati specifici dell'utente (timbri, completamenti, notifiche)
-        await refreshState();
-
-        // Popola la dropdown di quick switch
-        populateUserSwitcher();
 
         // Aggiorna l'interfaccia utente superiore
         updateHeaderUserWidget();
-        
+
         // Inizializza i sottomoduli in ordine
         if (window.initProfileModule) window.initProfileModule();
         if (window.initMapModule) window.initMapModule();
@@ -288,53 +311,17 @@ function triggerSectionRender(sectionId) {
     });
 }
 
-// Popola la dropdown degli utenti
-function populateUserSwitcher() {
-    const select = document.getElementById("user-quick-switch");
-    if (!select) return;
-    
-    select.innerHTML = "";
-    window.CamoscioState.users.forEach(user => {
-        const opt = document.createElement("option");
-        opt.value = user.id;
-        opt.textContent = `${user.avatar} ${user.username}`;
-        if (window.CamoscioState.currentUser && user.id === window.CamoscioState.currentUser.id) {
-            opt.selected = true;
-        }
-        select.appendChild(opt);
-    });
-
-    select.addEventListener("change", async (e) => {
-        const userId = e.target.value;
-        const newUsr = window.CamoscioState.users.find(u => u.id === userId);
-        if (newUsr) {
-            window.CamoscioState.currentUser = newUsr;
-            localStorage.setItem("camoscio_user_id", userId);
-            
-            // Ricarica lo stato e i timbri per il nuovo utente
-            await refreshState();
-            
-            // Aggiorna la UI del widget profilo
-            updateHeaderUserWidget();
-            
-            // Notifica il cambio a tutti i moduli
-            if (window.onUserSwitched) window.onUserSwitched();
-            
-            // Rinfresca la pagina corrente
-            const activeSec = document.querySelector(".page-section.active");
-            if (activeSec) {
-                triggerSectionRender(activeSec.id);
-            }
-        }
-    });
-}
-
 // Aggiorna l'header superiore
 function updateHeaderUserWidget() {
     const usr = window.CamoscioState.currentUser;
     if (!usr) return;
 
-    document.getElementById("current-user-avatar").textContent = usr.avatar;
+    const avatarEl = document.getElementById("current-user-avatar");
+    if (usr.profilePhoto) {
+        avatarEl.innerHTML = `<img src="${usr.profilePhoto}" alt="Foto profilo" class="avatar-photo">`;
+    } else {
+        avatarEl.textContent = usr.avatar;
+    }
     document.getElementById("current-user-name").textContent = usr.username;
     document.getElementById("current-user-reputation").textContent = usr.reputation;
     document.getElementById("current-user-exp").textContent = `Livello: ${usr.experienceLevel}`;

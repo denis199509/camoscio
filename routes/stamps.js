@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const Stamp = require('../models/Stamp');
+const { requireAuth } = require('../middleware/auth');
 
-// Ottieni timbri di un utente
-router.get('/:userId', async (req, res) => {
+// Ottieni timbri di un utente (achievement pubblici tra utenti loggati)
+router.get('/:userId', requireAuth, async (req, res) => {
     try {
         const userStamps = await Stamp.find({ userId: req.params.userId });
         res.json(userStamps);
@@ -12,9 +13,10 @@ router.get('/:userId', async (req, res) => {
     }
 });
 
-// Aggiungi timbro (sbloccato con geofencing)
-router.post('/', async (req, res) => {
-    const { userId, stampId } = req.body;
+// Aggiungi timbro (sbloccato con geofencing) - sempre per l'utente che ha fatto login
+router.post('/', requireAuth, async (req, res) => {
+    const userId = req.session.userId;
+    const { stampId } = req.body;
     try {
         const alreadyExists = await Stamp.findOne({ userId, stampId });
         if (!alreadyExists) {

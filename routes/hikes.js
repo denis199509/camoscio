@@ -5,23 +5,26 @@ const User = require('../models/User');
 const Squad = require('../models/Squad');
 const Notification = require('../models/Notification');
 const Completion = require('../models/Completion');
+const { requireAuth } = require('../middleware/auth');
 
 // Ottieni escursioni
-router.get('/', async (req, res) => {
+router.get('/', requireAuth, async (req, res) => {
     const hikes = await Hike.find();
     res.json(hikes);
 });
 
-// Crea escursione
-router.post('/', async (req, res) => {
+// Crea escursione - il creatore e' SEMPRE chi ha fatto login, mai un valore mandato dal client
+router.post('/', requireAuth, async (req, res) => {
     try {
+        const creatorId = req.session.userId;
         const hike = await Hike.create({
-            participants: [req.body.creatorId],
+            ...req.body,
+            creatorId,
+            participants: [creatorId],
             pendingApproval: [],
             backpackTemplate: [],
             peaks: [],
-            carpool: { fuelPrice: 1.85, fuelConsumption: 7.0, tollCost: 0, drivers: [] },
-            ...req.body
+            carpool: { fuelPrice: 1.85, fuelConsumption: 7.0, tollCost: 0, drivers: [] }
         });
 
         // Notifica automatica ai membri delle squadre ricorrenti del creatore (funzionalità 17b)
@@ -45,9 +48,12 @@ router.post('/', async (req, res) => {
 });
 
 // Aggiorna escursione (es. partecipanti, lista zaino, carpooling)
-router.put('/:id', async (req, res) => {
+router.put('/:id', requireAuth, async (req, res) => {
     try {
-        const hike = await Hike.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+        const update = { ...req.body };
+        delete update.creatorId; // la proprietà dell'escursione non si cambia da questa rotta generica
+
+        const hike = await Hike.findByIdAndUpdate(req.params.id, update, { new: true, runValidators: true });
         if (hike) {
             res.json(hike);
         } else {
@@ -58,16 +64,18 @@ router.put('/:id', async (req, res) => {
     }
 });
 
-// Segna un'escursione come completata: aggiorna cronologia, passo personale e livello esperienza
-router.post('/:id/complete', async (req, res) => {
+// Segna un'escursione come completata: aggiorna cronologia, passo personale e livello esperienza.
+// L'utente che completa e' SEMPRE chi ha fatto login (prima si fidava di userId nel body:
+// chiunque poteva segnare escursioni come completate per conto di un altro utente).
+router.post('/:id/complete', requireAuth, async (req, res) => {
     try {
         const hike = await Hike.findById(req.params.id);
         if (!hike) {
             return res.status(404).json({ error: 'Escursione non trovata' });
         }
 
-        const { userId, actualTimeHours } = req.body;
-        const user = await User.findById(userId);
+        const { actualTimeHours } = req.body;
+        const user = await User.findById(req.session.userId);
         if (!user) {
             return res.status(404).json({ error: 'Utente non trovato' });
         }

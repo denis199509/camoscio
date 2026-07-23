@@ -1,16 +1,18 @@
 const express = require('express');
 const router = express.Router();
 const RouteBookmark = require('../models/RouteBookmark');
+const { requireAuth } = require('../middleware/auth');
 
 // Ottieni preferiti / rotte desiderate
-router.get('/', async (req, res) => {
+router.get('/', requireAuth, async (req, res) => {
     const bookmarks = await RouteBookmark.find();
     res.json(bookmarks);
 });
 
-// Aggiungi preferito sentiero
-router.post('/', async (req, res) => {
-    const { userId, hikeId } = req.body;
+// Aggiungi preferito sentiero - sempre per l'utente che ha fatto login
+router.post('/', requireAuth, async (req, res) => {
+    const userId = req.session.userId;
+    const { hikeId } = req.body;
     try {
         const exists = await RouteBookmark.findOne({ userId, hikeId });
         if (!exists) {

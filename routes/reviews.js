@@ -4,9 +4,10 @@ const router = express.Router();
 const Review = require('../models/Review');
 const ReviewLock = require('../models/ReviewLock');
 const User = require('../models/User');
+const { requireAuth } = require('../middleware/auth');
 
 // Ottieni recensioni aggregate per un utente
-router.get('/:userId', async (req, res) => {
+router.get('/:userId', requireAuth, async (req, res) => {
     try {
         const userReviews = await Review.find({ targetUserId: req.params.userId });
         res.json(userReviews);
@@ -15,17 +16,18 @@ router.get('/:userId', async (req, res) => {
     }
 });
 
-// Inserisci recensione (Rigorosamente anonima!)
-router.post('/', async (req, res) => {
+// Inserisci recensione (Rigorosamente anonima verso l'ESTERNO: il DB sa chi recensisce,
+// solo per il blocco anti-duplicati, ma quel dato non esce mai in nessuna risposta API)
+router.post('/', requireAuth, async (req, res) => {
     try {
-        const { targetUserId, punctuality, equipment, respect, comment, reviewerId, hikeId } = req.body;
+        const { targetUserId, punctuality, equipment, respect, comment, hikeId } = req.body;
+        const reviewerId = req.session.userId;
 
         // Anti-spam: un hash one-way (mai reviewerId in chiaro) impedisce a chi ha già recensito
         // questa persona per questa escursione di rifarlo. L'indice unico su ReviewLock (non solo
         // un controllo prima di scrivere) impedisce la doppia recensione anche in caso di due
-        // richieste arrivate nello stesso istante. Se reviewerId/hikeId non vengono forniti
-        // (client più vecchio) la recensione procede comunque, senza protezione anti-duplicati.
-        if (reviewerId && hikeId) {
+        // richieste arrivate nello stesso istante.
+        if (hikeId) {
             const lockHash = crypto.createHash('sha256').update(`${reviewerId}|${targetUserId}|${hikeId}`).digest('hex');
             try {
                 await ReviewLock.create({ lockHash });

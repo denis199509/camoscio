@@ -607,13 +607,7 @@ function renderSolarExposureAdvice(hike) {
     adviceBox.innerHTML = html;
 }
 
-// Invocato quando l'utente loggato cambia
-function onUserSwitched() {
-    renderMapMarkers();
-}
-
 // Collegamento globale per inizializzatore
-window.onUserSwitched = onUserSwitched;
 window.renderMapMarkers = renderMapMarkers;
 window.renderWazeReportsList = renderWazeReportsList;
 window.loadActiveHikeOnMap = loadActiveHikeOnMap;

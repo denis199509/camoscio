@@ -7,6 +7,7 @@ mongoose.set('toJSON', {
     versionKey: false,
     transform: (doc, ret) => {
         delete ret._id;
+        delete ret.passwordHash; // non deve MAI uscire in una risposta API, qualunque rotta sia
         return ret;
     }
 });

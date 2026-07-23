@@ -125,7 +125,6 @@ window.triggerKycVerification = async function() {
 
                 // Aggiorna widget superiore e dashboard
                 await refreshState();
-                populateUserSwitcher();
                 updateHeaderUserWidget();
 
                 const activeSec = document.querySelector(".page-section.active");
@@ -201,7 +200,6 @@ window.markHikeCompleted = async function(hikeId) {
             window.showToast("Escursione segnata come completata! Il tuo passo e il tuo livello di esperienza sono stati aggiornati.", "success");
 
             await refreshState();
-            populateUserSwitcher();
             updateHeaderUserWidget();
 
             const activeSec = document.querySelector(".page-section.active");

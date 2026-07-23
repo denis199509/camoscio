@@ -2032,3 +2032,361 @@ h1, h2, h3, h4, h5, h6 {
         opacity: 0.3;
     }
 }
+
+/* ==========================================================================
+   8. AUTENTICAZIONE: LOGIN + REGISTRAZIONE A 6 PASSI (Fase C)
+   ========================================================================== */
+.auth-gate {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow-y: auto;
+    padding: 24px;
+    background: radial-gradient(circle at 50% 0%, rgba(255, 107, 53, 0.08), transparent 60%), var(--bg-dark);
+}
+
+.auth-card {
+    width: 100%;
+    max-width: 560px;
+    background: var(--bg-card);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 32px;
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.4);
+}
+
+.auth-brand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.auth-brand .logo-icon {
+    font-size: 2rem;
+}
+
+.auth-brand h1 {
+    font-size: 1.6rem;
+    background: linear-gradient(135deg, #FFF 30%, var(--accent-orange) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: 0.05em;
+}
+
+.auth-subtitle {
+    text-align: center;
+    color: var(--color-text-secondary);
+    font-size: 0.85rem;
+    margin-bottom: 24px;
+}
+
+.auth-switch-row {
+    text-align: center;
+    margin-top: 18px;
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
+}
+
+.auth-switch-row a, .auth-link {
+    color: var(--accent-orange);
+    cursor: pointer;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.auth-switch-row a:hover, .auth-link:hover {
+    text-decoration: underline;
+}
+
+.auth-demo-hint {
+    text-align: center;
+    margin-top: 10px;
+    font-size: 0.8rem;
+}
+
+/* Indicatore di avanzamento a 6 passi */
+.wizard-progress {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 24px;
+}
+
+.wizard-progress-dot {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--border-color);
+    color: var(--color-text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.wizard-progress-dot.active {
+    background: var(--accent-orange);
+    border-color: var(--accent-orange);
+    color: white;
+    box-shadow: 0 0 0 4px var(--accent-orange-glow);
+}
+
+.wizard-progress-dot.done {
+    background: var(--accent-green);
+    border-color: var(--accent-green);
+    color: white;
+}
+
+.wizard-progress-line {
+    flex: 1;
+    height: 2px;
+    background: var(--border-color);
+    max-width: 24px;
+}
+
+.wizard-step-title {
+    font-size: 1.1rem;
+    margin-bottom: 4px;
+}
+
+.wizard-step-desc {
+    color: var(--color-text-secondary);
+    font-size: 0.82rem;
+    margin-bottom: 18px;
+}
+
+.wizard-step {
+    display: none;
+}
+
+.wizard-step.active {
+    display: block;
+    animation: popIn 0.25s ease;
+}
+
+.wizard-nav {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 24px;
+    gap: 12px;
+}
+
+/* Selettore a pulsanti (livello escursionistico, difficoltà, privacy...) invece di una select semplice */
+.choice-picker {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 10px;
+    margin-bottom: 4px;
+}
+
+.choice-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 12px 10px;
+    color: var(--color-text-primary);
+    cursor: pointer;
+    text-align: center;
+    font-size: 0.85rem;
+    transition: border var(--transition-speed), background var(--transition-speed);
+}
+
+.choice-btn .choice-emoji {
+    display: block;
+    font-size: 1.4rem;
+    margin-bottom: 4px;
+}
+
+.choice-btn:hover {
+    border-color: var(--border-color-focus);
+}
+
+.choice-btn.selected {
+    border-color: var(--accent-orange);
+    background: var(--accent-orange-glow);
+    font-weight: 700;
+}
+
+/* Box di avviso rosso, obbligatori per contatto emergenza e geolocalizzazione (cose_da_fare.txt) */
+.privacy-alert-box {
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid var(--accent-red);
+    color: #FCA5A5;
+    padding: 10px 12px;
+    border-radius: 8px;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    margin: 10px 0 16px;
+}
+
+.privacy-alert-box i {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    margin-top: 1px;
+}
+
+.emergency-contact-row {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 12px;
+    position: relative;
+}
+
+.emergency-contact-row .btn-remove-contact {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: none;
+    border: none;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    font-size: 1.1rem;
+    line-height: 1;
+}
+
+.emergency-contact-row .btn-remove-contact:hover {
+    color: var(--accent-red);
+}
+
+.char-counter {
+    text-align: right;
+    font-size: 0.72rem;
+    color: var(--color-text-muted);
+}
+
+.photo-upload-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.photo-preview-circle {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.photo-preview-circle img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.auth-error-box {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid var(--accent-red);
+    color: #FCA5A5;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    margin-bottom: 16px;
+}
+
+/* Header profilo: foto reale al posto dell'emoji, quando presente */
+.avatar-photo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+/* ==========================================================================
+   9. PAGINA DEMO (account storici, senza password)
+   ========================================================================== */
+.demo-page-body {
+    background: var(--bg-dark);
+    color: var(--color-text-primary);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+.demo-page-card {
+    width: 100%;
+    max-width: 640px;
+    background: var(--bg-card);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 32px;
+    text-align: center;
+}
+
+.demo-badge {
+    display: inline-block;
+    background: var(--accent-blue-glow);
+    color: var(--accent-blue);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 16px;
+}
+
+.demo-accounts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 14px;
+    margin: 24px 0;
+}
+
+.demo-account-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 20px 12px;
+    color: var(--color-text-primary);
+    cursor: pointer;
+    text-align: center;
+    transition: border var(--transition-speed), transform var(--transition-speed);
+}
+
+.demo-account-btn:hover {
+    border-color: var(--accent-orange);
+    transform: translateY(-2px);
+}
+
+.demo-account-btn .demo-avatar {
+    font-size: 2.2rem;
+    display: block;
+    margin-bottom: 8px;
+}
+
+.demo-account-btn .demo-name {
+    font-weight: 700;
+    font-size: 0.85rem;
+    display: block;
+}
+
+.demo-account-btn .demo-level {
+    color: var(--color-text-secondary);
+    font-size: 0.72rem;
+}

@@ -1,14 +1,16 @@
 ===================================================================
 CAMOSCIO — LEGGIMI (stato progetto, aggiornato automaticamente)
-Ultimo aggiornamento: 2026-07-23 — Fase B completata
+Ultimo aggiornamento: 2026-07-23 — Fase C completata
 ===================================================================
 
-NOTA: Fase A e Fase B completate (vedi checklist sotto). Il sito oggi
-legge/scrive tutti i dati da MongoDB Atlas (non piu' da data/db.json),
-verificato sia via chiamate dirette alle API sia dal vivo nel browser
-(sezione Mappa, cambio utente, timbri, recensioni, completamento
-escursione). Prossimo passo: Fase C (registrazione utenti reale +
-login + pagina /demo), che non ha bisogno di altri account esterni.
+NOTA: Fasi A, B e C completate (vedi checklist sotto). Il sito ha ora
+registrazione utenti reale, login/logout a sessione vera, e una pagina
+/demo separata per i 4 account storici. Il vecchio "cambia utente" a
+tendina non esiste piu': senza login si vede una schermata di
+accesso/registrazione, non il sito. Verificato sia via chiamate dirette
+alle API sia dal vivo nel browser (registrazione a 6 passi completa,
+login, logout, login demo). Prossimo passo: Fase D (nuova palette
+colori), che non ha bisogno di nessun account esterno.
 
 A COSA SERVE QUESTO FILE
 -------------------------
@@ -64,6 +66,32 @@ DECISIONI PRESE CON L'UTENTE (non richiedere di nuovo)
   direttamente, senza passare da XML) con una piccola funzione scritta a
   mano per trasformarlo in GeoJSON — stesso risultato, zero dipendenze
   rischiose in più.
+- Campo "Username" della registrazione (sezione 6 di cose_da_fare.txt,
+  es. "@MarcoHiker"): riusa il campo "username" già esistente da prima
+  della Fase C (quello mostrato ovunque nell'interfaccia), invece di
+  creare un campo separato — "Nome"/"Cognome" (sezione 1) sono invece
+  due campi NUOVI, distinti, usati solo per identificazione reale (es.
+  contatti di emergenza), mai mostrati pubblicamente al posto di username.
+- I 9 "punti" della registrazione in cose_da_fare.txt sono raggruppati in
+  6 passaggi (come richiesto: "6 passaggi, non un modulo unico") così:
+  Passo1=punto1, Passo2=punti2+3, Passo3=punti4+5, Passo4=punto6,
+  Passo5=punti7+8, Passo6=punto9.
+- Sicurezza sessione: 13 delle 24 rotte esistenti (piu' alcune nuove)
+  si fidavano ciecamente di un ID mandato dal client (es. chiunque
+  poteva segnare un'escursione come completata per conto di un altro
+  utente, o spacciarsi per un altro nelle recensioni). Corrette per
+  usare SEMPRE req.session.userId lato server, mai un valore dal
+  body/params quando rappresenta "chi sta facendo l'azione".
+- Privacy profilo: email, contatti di emergenza, data di nascita/fascia
+  d'età e consenso geolocalizzazione non sono MAI visibili a nessun
+  altro utente (solo al proprietario), indipendentemente dalla scelta
+  Pubblico/Solo amici/Privato — quella scelta regola solo bio, foto,
+  interessi, livello dichiarato, difficoltà/area preferita. "Solo amici"
+  = condividere una squadra (stesso criterio già usato altrove nel
+  codice, non esiste ancora un vero elenco amici).
+- Foto profilo: salvata come stringa base64 dentro il documento utente
+  su MongoDB (come da piano, per sopravvivere ai riavvii di Render),
+  con un limite di ~1.5MB imposto sia lato client che lato server.
 - Stringa di connessione MongoDB: usa il formato "standard" (mongodb://...
   con gli host dei 3 shard elencati uno per uno), NON il formato
   "mongodb+srv://" che Atlas mostra di default. Motivo: su questo PC
@@ -249,7 +277,40 @@ CHECKLIST DI AVANZAMENTO (aggiornare via via che si procede)
         Mappa con i due pulsanti Gran Sasso/Monte Vettore, cambio
         utente) — nessun errore in console, dati coerenti con la
         migrazione
-[ ] Fase C — Registrazione utenti reale + login — NON INIZIATA
+[x] Fase C — Registrazione utenti reale + login — COMPLETATA (2026-07-23)
+    [x] models/User.js esteso con tutti i campi della registrazione
+        (nome, cognome, email, passwordHash, data di nascita/fascia
+        d'età, livello dichiarato, interessi, difficoltà/area preferita,
+        foto/bio, contatti di emergenza, consenso geo, privacy) - campi
+        obbligatori solo per gli account veri, non per i 4 demo storici
+    [x] Sessione login vera: express-session + connect-mongo (cookie
+        httpOnly, secure solo in produzione), middleware/auth.js
+        (requireAuth)
+    [x] routes/auth.js: POST /api/auth/register, /login, /demo-login,
+        /logout, GET /me, GET /demo-accounts (pubblica, per la pagina demo)
+    [x] Rimosso il vecchio POST /api/login (falla di sicurezza: creava
+        utenti finti senza password) - il "cambia utente" a tendina in
+        header e' sparito, sostituito da un pulsante "Esci"
+    [x] 13+ rotte esistenti corrette per usare req.session.userId invece
+        di fidarsi di un ID mandato dal client (creazione escursioni/
+        recensioni/segnalazioni/timbri/squadre/preferiti/diario,
+        completamento escursione, notifiche) - vedi decisione sopra
+    [x] Filtro privacy su GET /api/users e /api/users/:id (email,
+        contatti di emergenza, data di nascita mai pubblici; bio/foto/
+        interessi secondo la preferenza Pubblico/SoloAmici/Privato)
+    [x] Pagina /demo (public/demo.html) con i 4 account storici,
+        accesso senza password, chiaramente etichettata come test
+    [x] Interfaccia: schermata login/registrazione in public/index.html
+        (nuovo file public/js/auth.js), percorso di registrazione a
+        6 passi con le due caselle rosse obbligatorie (contatto
+        emergenza, geolocalizzazione) richieste da cose_da_fare.txt
+    [x] Verificato dal vivo nel browser: registrazione completa a 6
+        passi, dashboard corretta per il nuovo utente, logout, nuovo
+        login con le stesse credenziali, pagina /demo e login demo -
+        tutto funzionante, nessun errore in console
+    [x] Dati di test creati durante le verifiche ripuliti dal database
+        reale (2 account di prova, 2 recensioni di test, reputazione
+        di Marco/Giulia ricalcolata) su conferma esplicita dell'utente
 [ ] Fase D — Nuova palette colori — NON INIZIATA
 [ ] Fase E — GitHub + Render online — NON INIZIATA (serve account GitHub
     + Render dell'utente, vedi sopra)

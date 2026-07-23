@@ -5,8 +5,11 @@ const http = require('http');
 const WebSocket = require('ws');
 const path = require('path');
 const fs = require('fs');
+const session = require('express-session');
+const { MongoStore } = require('connect-mongo');
 const { connectMongo } = require('./db/mongo');
 
+const authRouter = require('./routes/auth');
 const usersRouter = require('./routes/users');
 const hikesRouter = require('./routes/hikes');
 const reportsRouter = require('./routes/reports');
@@ -21,8 +24,28 @@ const bookmarksRouter = require('./routes/bookmarks');
 const app = express();
 const port = process.env.PORT || 3000;
 
-app.use(express.json({ limit: '10mb' })); // limite alzato per le note vocali del diario (audio base64)
+app.use(express.json({ limit: '10mb' })); // limite alzato per le note vocali del diario e le foto profilo (base64)
+
+app.use(session({
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    store: MongoStore.create({ mongoUrl: process.env.MONGODB_URI }),
+    cookie: {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production', // richiede HTTPS: vero solo su Render, mai in locale
+        sameSite: 'lax',
+        maxAge: 30 * 24 * 60 * 60 * 1000 // 30 giorni
+    }
+}));
+
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Pagina dedicata ai 4 account demo storici (Fase C): accesso senza password,
+// chiaramente separata dagli account veri.
+app.get('/demo', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'demo.html'));
+});
 
 // Creazione della cartella per le note vocali del diario se non esiste
 const uploadsPath = path.join(__dirname, 'public', 'uploads');
@@ -31,6 +54,8 @@ if (!fs.existsSync(uploadsPath)) {
 }
 
 // --- REST API ENDPOINTS ---
+
+app.use('/api/auth', authRouter);
 
 // /api/login e /api/users* (vedi routes/users.js sul perche' sono nello stesso router)
 app.use('/api', usersRouter);

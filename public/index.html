@@ -18,7 +18,246 @@
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-    <div class="app-container">
+    <!-- ================= AUTENTICAZIONE (login + registrazione) ================= -->
+    <div id="auth-gate" class="auth-gate hidden">
+        <!-- Vista Login -->
+        <div id="auth-login-view" class="auth-card">
+            <div class="auth-brand">
+                <span class="logo-icon">🏔️</span>
+                <h1>CAMOSCIO</h1>
+            </div>
+            <p class="auth-subtitle">Accedi al tuo account per escursioni, carpooling e sicurezza in montagna.</p>
+
+            <div id="auth-login-error" class="auth-error-box hidden"></div>
+
+            <form id="auth-login-form">
+                <div class="form-group">
+                    <label for="login-email">Email:</label>
+                    <input type="email" id="login-email" required autocomplete="email">
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Password:</label>
+                    <input type="password" id="login-password" required autocomplete="current-password">
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Accedi</button>
+            </form>
+
+            <div class="auth-switch-row">
+                Non hai un account? <a id="link-go-register">Registrati</a>
+            </div>
+            <div class="auth-demo-hint">
+                <a href="/demo" class="auth-link">Vuoi solo provare il sito? Entra con un account demo →</a>
+            </div>
+        </div>
+
+        <!-- Vista Registrazione: percorso a 6 passi -->
+        <div id="auth-register-view" class="auth-card hidden">
+            <div class="auth-brand">
+                <span class="logo-icon">🏔️</span>
+                <h1>CAMOSCIO</h1>
+            </div>
+
+            <div class="wizard-progress" id="wizard-progress">
+                <!-- Generato da JS: 6 pallini + linee -->
+            </div>
+
+            <div id="auth-register-error" class="auth-error-box hidden"></div>
+
+            <form id="auth-register-form">
+                <!-- PASSO 1: Dati base -->
+                <div class="wizard-step active" data-step="1">
+                    <h4 class="wizard-step-title">1. Dati base</h4>
+                    <p class="wizard-step-desc">Le informazioni essenziali per creare il tuo account.</p>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="reg-nome">Nome:</label>
+                            <input type="text" id="reg-nome" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="reg-cognome">Cognome:</label>
+                            <input type="text" id="reg-cognome" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-email">Email:</label>
+                        <input type="email" id="reg-email" required autocomplete="email">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="reg-password">Password (minimo 8 caratteri):</label>
+                            <input type="password" id="reg-password" minlength="8" required autocomplete="new-password">
+                        </div>
+                        <div class="form-group">
+                            <label for="reg-password-confirm">Conferma password:</label>
+                            <input type="password" id="reg-password-confirm" minlength="8" required autocomplete="new-password">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Data di nascita oppure fascia d'età:</label>
+                        <div class="form-row-buttons" style="margin-bottom:8px;">
+                            <label><input type="radio" name="age-mode" value="date" checked> Data di nascita</label>
+                            <label><input type="radio" name="age-mode" value="range"> Fascia d'età</label>
+                        </div>
+                        <input type="date" id="reg-birthdate">
+                        <select id="reg-agerange" class="hidden">
+                            <option value="18-29">18-29 anni</option>
+                            <option value="30-39">30-39 anni</option>
+                            <option value="40-49">40-49 anni</option>
+                            <option value="50-59">50-59 anni</option>
+                            <option value="60+">60+ anni</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label><input type="checkbox" id="reg-terms" required> Accetto i Termini di Servizio e l'Informativa sulla Privacy</label>
+                    </div>
+                </div>
+
+                <!-- PASSO 2: Profilo escursionistico + Interessi -->
+                <div class="wizard-step" data-step="2">
+                    <h4 class="wizard-step-title">2. Profilo escursionistico</h4>
+                    <p class="wizard-step-desc">Aiuta a proporti gli itinerari giusti (facoltativo ma consigliato).</p>
+                    <div class="form-group">
+                        <label>Livello di esperienza dichiarato:</label>
+                        <div class="choice-picker" id="reg-hikinglevel-picker">
+                            <div class="choice-btn" data-value="Principiante"><span class="choice-emoji">🌱</span>Principiante</div>
+                            <div class="choice-btn" data-value="Intermedio"><span class="choice-emoji">🥾</span>Intermedio</div>
+                            <div class="choice-btn" data-value="Esperto"><span class="choice-emoji">⛰️</span>Esperto</div>
+                            <div class="choice-btn" data-value="Alpinista"><span class="choice-emoji">🧗</span>Alpinista</div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>I tuoi interessi (seleziona quanti ne vuoi):</label>
+                        <div class="checkbox-group" id="reg-interests-checkboxes" style="grid-template-columns: repeat(3, 1fr);">
+                            <label><input type="checkbox" name="reg-interest" value="Passeggiate facili"> Passeggiate facili</label>
+                            <label><input type="checkbox" name="reg-interest" value="Trekking giornalieri"> Trekking giornalieri</label>
+                            <label><input type="checkbox" name="reg-interest" value="Trekking di più giorni"> Trekking più giorni</label>
+                            <label><input type="checkbox" name="reg-interest" value="Ferrate"> Ferrate</label>
+                            <label><input type="checkbox" name="reg-interest" value="Alpinismo"> Alpinismo</label>
+                            <label><input type="checkbox" name="reg-interest" value="Trail running"> Trail running</label>
+                            <label><input type="checkbox" name="reg-interest" value="MTB"> MTB</label>
+                            <label><input type="checkbox" name="reg-interest" value="Ciaspolate"> Ciaspolate</label>
+                            <label><input type="checkbox" name="reg-interest" value="Fotografia"> Fotografia</label>
+                            <label><input type="checkbox" name="reg-interest" value="Natura"> Natura</label>
+                            <label><input type="checkbox" name="reg-interest" value="Rifugi"> Rifugi</label>
+                            <label><input type="checkbox" name="reg-interest" value="Laghi"> Laghi</label>
+                            <label><input type="checkbox" name="reg-interest" value="Panorami"> Panorami</label>
+                            <label><input type="checkbox" name="reg-interest" value="Vette"> Vette</label>
+                            <label><input type="checkbox" name="reg-interest" value="Borghi"> Borghi</label>
+                            <label><input type="checkbox" name="reg-interest" value="Tramonti"> Tramonti</label>
+                            <label><input type="checkbox" name="reg-interest" value="Alba"> Alba</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PASSO 3: Difficoltà preferita + Area geografica -->
+                <div class="wizard-step" data-step="3">
+                    <h4 class="wizard-step-title">3. Difficoltà e area geografica</h4>
+                    <p class="wizard-step-desc">Facoltativo: aiuta a filtrare gli itinerari più adatti a te.</p>
+                    <div class="form-group">
+                        <label>Difficoltà preferita (scala CAI):</label>
+                        <select id="reg-preferreddifficulty">
+                            <option value="">Nessuna preferenza</option>
+                            <option value="T">T — Turistica</option>
+                            <option value="E">E — Escursionistica</option>
+                            <option value="EE">EE — Escursionisti Esperti</option>
+                            <option value="EEA">EEA — Escursionisti Esperti Attrezzati</option>
+                            <option value="Alpinistica">Alpinistica</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-region">Regione preferita:</label>
+                        <select id="reg-region">
+                            <option value="">Nessuna preferenza</option>
+                            <option value="Marche">Marche</option>
+                            <option value="Lazio">Lazio</option>
+                            <option value="Abruzzo">Abruzzo</option>
+                            <option value="Molise">Molise</option>
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="reg-provinces">Province (separate da virgola):</label>
+                            <input type="text" id="reg-provinces" placeholder="Es. AQ, TE">
+                        </div>
+                        <div class="form-group">
+                            <label for="reg-mountainranges">Catene montuose (separate da virgola):</label>
+                            <input type="text" id="reg-mountainranges" placeholder="Es. Gran Sasso, Maiella, PNALM">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PASSO 4: Profilo pubblico -->
+                <div class="wizard-step" data-step="4">
+                    <h4 class="wizard-step-title">4. Profilo pubblico</h4>
+                    <p class="wizard-step-desc">Come ti vedranno gli altri escursionisti.</p>
+                    <div class="form-group">
+                        <label for="reg-username">Username (univoco, es. MarcoHiker):</label>
+                        <input type="text" id="reg-username" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Foto profilo (facoltativa):</label>
+                        <div class="photo-upload-row">
+                            <div class="photo-preview-circle" id="reg-photo-preview">🏔️</div>
+                            <input type="file" id="reg-photo-input" accept="image/*">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-bio">Bio (massimo 250 caratteri):</label>
+                        <textarea id="reg-bio" maxlength="250" placeholder="Raccontaci qualcosa di te..."></textarea>
+                        <div class="char-counter"><span id="reg-bio-counter">0</span>/250</div>
+                    </div>
+                </div>
+
+                <!-- PASSO 5: Contatti di emergenza + Geolocalizzazione -->
+                <div class="wizard-step" data-step="5">
+                    <h4 class="wizard-step-title">5. Sicurezza</h4>
+                    <p class="wizard-step-desc">Contatti di emergenza (obbligatorio) e geolocalizzazione (facoltativa).</p>
+
+                    <div class="privacy-alert-box">
+                        <i data-lucide="alert-triangle"></i>
+                        <span>Il contatto di emergenza non è pubblico e viene usato SOLO a scopo di emergenza.</span>
+                    </div>
+
+                    <div id="reg-emergency-contacts-list"></div>
+                    <button type="button" class="btn btn-secondary btn-sm" id="btn-add-emergency-contact">
+                        <i data-lucide="plus"></i> Aggiungi un altro contatto
+                    </button>
+
+                    <div class="privacy-alert-box" style="margin-top:20px;">
+                        <i data-lucide="alert-triangle"></i>
+                        <span>Accettando la geolocalizzazione avrai più possibilità di trovare gente con gli stessi interessi.</span>
+                    </div>
+                    <div class="form-group">
+                        <label><input type="checkbox" id="reg-geoconsent"> Acconsento all'uso della mia posizione (per trovare escursioni vicine, registrare percorsi, mostrare la mia posizione)</label>
+                    </div>
+                </div>
+
+                <!-- PASSO 6: Privacy -->
+                <div class="wizard-step" data-step="6">
+                    <h4 class="wizard-step-title">6. Preferenze privacy</h4>
+                    <p class="wizard-step-desc">Chi può vedere il tuo profilo pubblico (bio, foto, interessi)?</p>
+                    <div class="choice-picker" id="reg-privacy-picker">
+                        <div class="choice-btn selected" data-value="Pubblico"><span class="choice-emoji">🌍</span>Pubblico</div>
+                        <div class="choice-btn" data-value="SoloAmici"><span class="choice-emoji">🤝</span>Solo amici</div>
+                        <div class="choice-btn" data-value="Privato"><span class="choice-emoji">🔒</span>Privato</div>
+                    </div>
+                    <p class="small text-muted" style="margin-top:12px;">"Solo amici" significa chi condivide una squadra con te. I dati sensibili (email, contatti di emergenza, data di nascita) non sono mai visibili a nessun altro utente, qualunque impostazione tu scelga.</p>
+                </div>
+            </form>
+
+            <div class="wizard-nav">
+                <button type="button" class="btn btn-secondary" id="btn-wizard-prev">Indietro</button>
+                <button type="button" class="btn btn-primary" id="btn-wizard-next">Avanti</button>
+                <button type="button" class="btn btn-success hidden" id="btn-wizard-submit">Completa Registrazione</button>
+            </div>
+
+            <div class="auth-switch-row">
+                Hai già un account? <a id="link-go-login">Accedi</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-container hidden" id="main-app-container">
         <!-- Sidebar di Navigazione -->
         <aside class="sidebar">
             <div class="brand">
@@ -70,15 +309,12 @@
                     <h2 id="section-title" class="section-title">Dashboard</h2>
                 </div>
                 
-                <!-- Profilo Utente Corrente & Quick Switch (Fondamentale per test locali) -->
+                <!-- Profilo Utente Corrente (sessione reale, Fase C) -->
                 <div class="user-status-widget">
-                    <div class="user-selector-wrapper">
-                        <label for="user-quick-switch" class="text-muted small">Cambia Utente:</label>
-                        <select id="user-quick-switch" class="user-select-dropdown">
-                            <!-- Popolato dinamicamente da JS -->
-                        </select>
-                    </div>
-                    
+                    <button class="btn btn-sm btn-secondary" id="btn-logout" title="Esci dall'account">
+                        <i data-lucide="log-out"></i> Esci
+                    </button>
+
                     <div class="notification-bell-wrapper">
                         <button class="notification-bell-btn" id="btn-notification-bell" title="Notifiche">
                             <i data-lucide="bell"></i>
@@ -895,6 +1131,7 @@
     <script src="vendor/chartjs/chart.umd.js"></script>
 
     <!-- Moduli Applicativi Client -->
+    <script src="js/auth.js"></script>
     <script src="js/safety.js"></script>
     <script src="js/profile.js"></script>
     <script src="js/weather.js"></script>

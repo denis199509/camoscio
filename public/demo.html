@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camoscio - Accesso Demo</title>
+    <link rel="stylesheet" href="vendor/fonts/fonts.css">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="demo-page-body">
+    <div class="demo-page-card">
+        <span class="demo-badge">Modalità demo / test</span>
+        <h2>🏔️ CAMOSCIO</h2>
+        <p class="text-muted" style="margin-top:10px;">
+            Questi 4 account esistono solo per provare rapidamente il sito, senza registrarti.
+            Non sono account reali: qualunque modifica fatta qui è visibile a chiunque usi la demo.
+        </p>
+
+        <div class="demo-accounts-grid" id="demo-accounts-grid">
+            <!-- Popolato da JS -->
+        </div>
+
+        <p class="auth-switch-row">
+            Vuoi un account vero e tutto tuo? <a href="/" class="auth-link">Torna alla pagina di login/registrazione</a>
+        </p>
+    </div>
+
+    <div id="toast-container" class="toast-container"></div>
+
+    <script>
+        window.showToast = function (message) {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+            const toast = document.createElement('div');
+            toast.className = 'toast error';
+            toast.textContent = message;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+        };
+
+        async function loadDemoAccounts() {
+            const grid = document.getElementById('demo-accounts-grid');
+            try {
+                const res = await fetch('/api/auth/demo-accounts');
+                const accounts = await res.json();
+                grid.innerHTML = accounts.map(u => `
+                    <div class="demo-account-btn" data-id="${u.id}">
+                        <span class="demo-avatar">${u.avatar || '🥾'}</span>
+                        <span class="demo-name">${u.username}</span>
+                        <span class="demo-level">${u.experienceLevel || ''}</span>
+                    </div>
+                `).join('');
+
+                grid.querySelectorAll('.demo-account-btn').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        try {
+                            const r = await fetch('/api/auth/demo-login', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ userId: btn.getAttribute('data-id') })
+                            });
+                            if (!r.ok) throw new Error('Accesso demo fallito');
+                            window.location.href = '/';
+                        } catch (e) {
+                            showToast("Impossibile accedere con l'account demo");
+                        }
+                    });
+                });
+            } catch (e) {
+                grid.innerHTML = '<p class="text-muted">Impossibile caricare gli account demo. Il server è avviato?</p>';
+            }
+        }
+
+        loadDemoAccounts();
+    </script>
+</body>
+</html>
