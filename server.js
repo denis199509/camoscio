@@ -24,6 +24,13 @@ const bookmarksRouter = require('./routes/bookmarks');
 const app = express();
 const port = process.env.PORT || 3000;
 
+// Render (e la maggior parte dei servizi di hosting) termina l'HTTPS su un proxy
+// davanti all'app e le inoltra le richieste in HTTP semplice: senza questa riga
+// Express non capisce che la connessione originale era sicura, e il cookie di
+// sessione con secure:true (sotto) non verrebbe mai impostato correttamente,
+// impedendo qualunque login di funzionare una volta online.
+app.set('trust proxy', 1);
+
 app.use(express.json({ limit: '10mb' })); // limite alzato per le note vocali del diario e le foto profilo (base64)
 
 app.use(session({
