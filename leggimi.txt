@@ -1,17 +1,16 @@
 ===================================================================
 CAMOSCIO — LEGGIMI (stato progetto, aggiornato automaticamente)
-Ultimo aggiornamento: 2026-07-23 — Fase D completata
+Ultimo aggiornamento: 2026-07-23 — Fase E completata, sito online
 ===================================================================
 
-NOTA: Fasi A, B, C e D completate (vedi checklist sotto). Il sito ha ora
-registrazione utenti reale, login/logout a sessione vera, una pagina
-/demo separata, e la nuova palette colori "montagna" (verde muschio,
-terracotta, blu lago alpino, rosso mattone) al posto del tema scuro
-"neon" originale. Verificato dal vivo nel browser su piu' sezioni
-(Dashboard, Mappa, Carpooling, Sicurezza) - nessun colore vecchio
-rimasto, nessun problema di leggibilita' (popup, badge, avvisi).
-Prossimo passo: Fase E (GitHub + Render online), per cui servono
-gli account GitHub e Render dell'utente.
+NOTA: Fasi A, B, C, D, E tutte completate. Il sito e' online e
+funzionante su https://camoscio.onrender.com (repository GitHub:
+https://github.com/denis199509/camoscio, branch master). Verificato
+dal vivo in produzione: pagina /demo, login demo, dashboard con dati
+reali, nessun errore in console. Prossimo passo: Fase F (tracciamento
+GPS live), che non ha bisogno di nuovi account esterni (solo, quando
+si testera' dal telefono, il permesso di geolocalizzazione del
+browser - vedi "COSE CHE DEVE FARE L'UTENTE DI PERSONA").
 
 A COSA SERVE QUESTO FILE
 -------------------------
@@ -214,13 +213,16 @@ COSE CHE DEVE FARE L'UTENTE DI PERSONA (non automatizzabili)
 2. MongoDB Atlas — FATTO (2026-07-23): account creato, cluster M0 gratuito
    "Cluster0", utente database "camoscio". La stringa di connessione è
    già dentro .env (vedi decisione sopra sul formato usato e perché).
-3. GitHub (serve per la Fase E): creare un repository vuoto su github.com,
-   creare un Personal Access Token per l'autenticazione git push.
-   STATO: non ancora fatto.
-4. Render.com (serve per la Fase E): registrarsi (consigliato "Sign in
-   with GitHub"), creare un Web Service collegato al repository, incollare
-   le variabili d'ambiente (MONGODB_URI, SESSION_SECRET, NODE_ENV).
-   STATO: non ancora fatto.
+3. GitHub — FATTO (2026-07-23): repository creato
+   (https://github.com/denis199509/camoscio), Personal Access Token
+   creato (classic, scope "repo"), codice caricato con successo
+   (remote "origin" configurato in locale con il token per i push
+   futuri, vedi .git/config - mai committato, resta solo su questo PC).
+4. Render.com — FATTO (2026-07-23): account creato, Web Service
+   "camoscio" collegato al repository GitHub (branch master, redeploy
+   automatico ad ogni push), variabili d'ambiente MONGODB_URI/
+   SESSION_SECRET/NODE_ENV=production impostate. Sito live su
+   https://camoscio.onrender.com.
 5. Permesso GPS del browser (serve per testare la Fase F davvero):
    cliccare "Consenti" sul popup nativo del browser almeno una volta.
    STATO: non ancora fatto.
@@ -341,8 +343,26 @@ CHECKLIST DI AVANZAMENTO (aggiornare via via che si procede)
         percorso, popup - niente testo bianco-su-bianco), Carpooling,
         Sicurezza & Mesh - palette coerente ovunque, nessun errore
         in console
-[ ] Fase E — GitHub + Render online — NON INIZIATA (serve account GitHub
-    + Render dell'utente, vedi sopra)
+[x] Fase E — GitHub + Render online — COMPLETATA (2026-07-23)
+    [x] Repository GitHub creato dall'utente (denis199509/camoscio),
+        Personal Access Token classic (scope "repo") creato
+    [x] Codice caricato (git push) - il primo push e' stato fatto
+        dall'utente in prima persona (bloccato dal classificatore di
+        sicurezza per Claude, giustamente: e' un'azione pubblica), i
+        push successivi Claude e' riuscito a farli direttamente
+    [x] Account Render creato dall'utente, Web Service "camoscio"
+        collegato al repository (branch master, redeploy automatico
+        ad ogni push), variabili d'ambiente impostate
+    [x] BUG TROVATO E CORRETTO in produzione: senza
+        app.set('trust proxy', 1) in server.js, il cookie di sessione
+        (secure:true in produzione) non veniva mai impostato
+        correttamente dietro il proxy HTTPS di Render - login e login
+        demo sembravano funzionare ma riportavano sempre alla
+        schermata di accesso. Fix committato e pushato, verificato
+        dal vivo che risolve il problema.
+    [x] Verificato dal vivo in produzione (https://camoscio.onrender.com):
+        pagina /demo, login demo, dashboard con dati reali dell'utente,
+        nuova palette colori, nessun errore in console
 [ ] Fase F — Tracciamento GPS live — NON INIZIATA
 [ ] Fase G — Aggancio GPS al sentiero — NON INIZIATA
 [ ] Fase H — Caccia ai bug finale — NON INIZIATA
