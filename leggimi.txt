@@ -7,10 +7,14 @@ NOTA: Fasi A, B, C, D, E tutte completate. Il sito e' online e
 funzionante su https://camoscio.onrender.com (repository GitHub:
 https://github.com/denis199509/camoscio, branch master). Verificato
 dal vivo in produzione: pagina /demo, login demo, dashboard con dati
-reali, nessun errore in console. Prossimo passo: Fase F (tracciamento
-GPS live), che non ha bisogno di nuovi account esterni (solo, quando
-si testera' dal telefono, il permesso di geolocalizzazione del
-browser - vedi "COSE CHE DEVE FARE L'UTENTE DI PERSONA").
+reali, nessun errore in console. Sessione messa in PAUSA su richiesta
+esplicita dell'utente, che ha anche confermato di persona (aprendo il
+sito dal telefono) il limite gia' noto del layout non responsive -
+vedi decisione dedicata piu' sotto. Prossimo passo: Fase F
+(tracciamento GPS live), che non ha bisogno di nuovi account esterni
+(solo, quando si testera' dal telefono, il permesso di
+geolocalizzazione del browser - vedi "COSE CHE DEVE FARE L'UTENTE DI
+PERSONA").
 
 A COSA SERVE QUESTO FILE
 -------------------------
@@ -128,6 +132,16 @@ DECISIONI PRESE CON L'UTENTE (non richiedere di nuovo)
   l'obiettivo dichiarato della fase era "mantenendo tutti i dati
   attuali" e tutte le rotte esistenti) — creato comunque per non perdere
   la funzionalità già esistente del diario di viaggio.
+- Layout non responsive/mobile: confermato di persona dall'utente aprendo
+  il sito dal telefono (2026-07-23) - la sidebar di navigazione
+  (Dashboard/Escursioni/Mappa/ecc.) non si nasconde su schermo piccolo e
+  lascia poco spazio al contenuto. Non e' un bug: e' una scelta gia'
+  presa in una sessione precedente (resta cosi', non richiesta nella
+  lista originale). Rilevante per la Fase F: il piano prevede GIA' come
+  unica eccezione che il nuovo pannello "Avvia escursione dal vivo" sia
+  reso comodo da usare su schermo piccolo, visto che li' verra' usato
+  davvero da telefono in montagna - la conferma diretta dell'utente
+  rende questo punto ancora piu' importante da rispettare bene.
 - Compatibilità con il frontend esistente durante la migrazione a
   MongoDB: tutti i documenti vengono restituiti dalle API con un campo
   "id" (stringa) invece di "_id"/"__v" (vedi mongoose.set('toJSON',...)
