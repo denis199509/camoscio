@@ -154,6 +154,7 @@ async function initApp() {
         if (window.initCarpoolModule) window.initCarpoolModule();
         if (window.initSafetyModule) window.initSafetyModule();
         if (window.initSocialModule) window.initSocialModule();
+        if (window.initTrackingModule) window.initTrackingModule();
 
         // Forza il render della dashboard iniziale
         renderDashboard();

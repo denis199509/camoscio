@@ -5,6 +5,7 @@ let hikePolyline = null;
 let reportMarkersGroup = null;
 let peakMarkersGroup = null;
 let activeHikePath = []; // Array di coordinate per il sentiero attivo
+let liveTrackPolyline = null; // Percorso REALMENTE registrato durante un tracciamento GPS live (Fase F)
 
 // Ambito geografico attuale della demo: Lazio, Molise, Abruzzo, Marche ("per ora", vedi nota owner).
 // Unico punto da modificare per allargare l'ambito in futuro (es. a tutta Italia).
@@ -23,8 +24,11 @@ function initMapModule() {
         minZoom: 7
     }).setView(defaultCenter, 9);
 
-    // Carica i tiles da OpenStreetMap (Open Source)
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    // Carica i tiles da OpenStreetMap (Open Source). Layer "offline-aware" (Fase F,
+    // vedi public/js/offline-map.js): usa la cache IndexedDB quando disponibile invece
+    // di riscaricare sempre dalla rete, e salva ogni tile vista per l'uso offline futuro.
+    const tileLayerFactory = window.createOfflineTileLayer || L.tileLayer;
+    window.CamoscioTileLayer = tileLayerFactory('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
         maxZoom: 18
     }).addTo(window.mapInstance);
@@ -86,6 +90,49 @@ function teleportUserGps(lat, lng) {
         userGpsMarker.setLatLng([lat, lng]);
         window.mapInstance.panTo([lat, lng]);
         checkGeofencing(lat, lng);
+    }
+}
+
+// Aggiorna la posizione del marker con un fix GPS REALE durante un tracciamento live
+// (Fase F): a differenza di teleportUserGps NON ricentra la mappa ad ogni fix (arriva
+// un aggiornamento ogni pochi secondi, ricentrare sempre impedirebbe all'utente di
+// guardarsi intorno sulla mappa mentre cammina).
+function updateLiveGpsPosition(lat, lng, recenter = false) {
+    window.userSimulatedLocation = { lat, lng };
+    if (!userGpsMarker) {
+        createUserGpsMarker();
+    }
+    userGpsMarker.setLatLng([lat, lng]);
+    if (recenter && window.mapInstance) {
+        window.mapInstance.panTo([lat, lng]);
+    }
+    checkGeofencing(lat, lng);
+}
+
+// Percorso REALMENTE registrato durante un'escursione dal vivo (Fase F) - stile diverso
+// dal percorso "pianificato" (hikePolyline, verde) per restare distinguibili se visibili insieme.
+function resetLiveTrackPolyline() {
+    if (liveTrackPolyline) {
+        window.mapInstance.removeLayer(liveTrackPolyline);
+    }
+    liveTrackPolyline = L.polyline([], {
+        color: '#C1662E',
+        weight: 5,
+        opacity: 0.95,
+        dashArray: '2, 8',
+        lineCap: 'round'
+    }).addTo(window.mapInstance);
+}
+
+function addLiveTrackPoint(lat, lng) {
+    if (!liveTrackPolyline) resetLiveTrackPolyline();
+    liveTrackPolyline.addLatLng([lat, lng]);
+}
+
+function clearLiveTrackPolyline() {
+    if (liveTrackPolyline) {
+        window.mapInstance.removeLayer(liveTrackPolyline);
+        liveTrackPolyline = null;
     }
 }
 
@@ -612,3 +659,7 @@ window.renderMapMarkers = renderMapMarkers;
 window.renderWazeReportsList = renderWazeReportsList;
 window.loadActiveHikeOnMap = loadActiveHikeOnMap;
 window.teleportUserGps = teleportUserGps;
+window.updateLiveGpsPosition = updateLiveGpsPosition;
+window.resetLiveTrackPolyline = resetLiveTrackPolyline;
+window.addLiveTrackPoint = addLiveTrackPoint;
+window.clearLiveTrackPolyline = clearLiveTrackPolyline;

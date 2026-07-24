@@ -1,20 +1,25 @@
 ===================================================================
 CAMOSCIO — LEGGIMI (stato progetto, aggiornato automaticamente)
-Ultimo aggiornamento: 2026-07-23 — Fase E completata, sito online
+Ultimo aggiornamento: 2026-07-24 — Fase F scritta, un bug trovato e
+corretto durante la prima prova dal vivo dell'utente (vedi nota sotto)
 ===================================================================
 
-NOTA: Fasi A, B, C, D, E tutte completate. Il sito e' online e
-funzionante su https://camoscio.onrender.com (repository GitHub:
-https://github.com/denis199509/camoscio, branch master). Verificato
-dal vivo in produzione: pagina /demo, login demo, dashboard con dati
-reali, nessun errore in console. Sessione messa in PAUSA su richiesta
-esplicita dell'utente, che ha anche confermato di persona (aprendo il
-sito dal telefono) il limite gia' noto del layout non responsive -
-vedi decisione dedicata piu' sotto. Prossimo passo: Fase F
-(tracciamento GPS live), che non ha bisogno di nuovi account esterni
-(solo, quando si testera' dal telefono, il permesso di
-geolocalizzazione del browser - vedi "COSE CHE DEVE FARE L'UTENTE DI
-PERSONA").
+NOTA: Fasi A, B, C, D, E completate (sito online su
+https://camoscio.onrender.com, repository GitHub
+https://github.com/denis199509/camoscio, branch master). Fase F
+(tracciamento GPS live) scritta per intero in questa sessione,
+verificata sia chiamando direttamente le nuove API sia con una prima
+prova dal vivo nel browser fatta di persona dall'utente (login demo,
+pulsante flottante, avvio tracciamento) - PROVA DA COMPUTER, non
+ancora da telefono vero all'aperto. Quella prova ha fatto emergere un
+bug reale (una sessione conclusa non si "chiudeva" davvero, la
+successiva ripartiva da quella vecchia invece che crearne una nuova -
+dettagli nelle decisioni piu' sotto): corretto e riverificato con
+successo. Non ancora provati dal vivo: il permesso GPS di un telefono
+vero all'aperto, e il download della mappa offline. Codice non ancora
+committato ne' pushato: in attesa di conferma dell'utente (vedi
+istruzioni permanenti su commit espliciti). Prossimo passo dopo una
+prova da telefono vero: Fase G (aggancio GPS al sentiero).
 
 A COSA SERVE QUESTO FILE
 -------------------------
@@ -153,6 +158,88 @@ DECISIONI PRESE CON L'UTENTE (non richiedere di nuovo)
   i pulsanti funzionano ancora. Tutto il resto del frontend non aveva
   altri ID scritti a mano (solo un fallback già presente per l'utente
   di default, che già gestiva correttamente un ID mancante).
+- Fase F - Formato dati traccia GPS: ogni punto è una tupla
+  [longitudine, latitudine, altitudine, secondi-da-inizio, precisione-m]
+  invece di un oggetto con chiavi ripetute per ogni punto (risparmio di
+  spazio enorme su MongoDB, vincolo hard di cose_da_fare.txt) - niente
+  GeoJSON per la traccia live: perderebbe altitudine/tempo/precisione
+  per punto o li dovrebbe portare in array paralleli, più scomodo.
+- Fase F - Collezione "ActiveHikeSession" separata dalle escursioni
+  (come da piano): un aggiornamento del percorso non può mai
+  sovrascrivere per errore titolo/partecipanti/altri dati
+  dell'escursione collegata.
+- Fase F - Un solo tracciamento aperto per utente alla volta: indice
+  unico parziale su MongoDB (non solo un controllo lato codice) cosi'
+  due richieste quasi simultanee (es. doppio click, due schede aperte)
+  non possono creare due sessioni. GET /api/tracking/active usa lo
+  stesso meccanismo sia per "riprendi dopo un ricaricamento" sia per
+  decidere se /start deve crearne una nuova o restituire quella già
+  aperta (idempotente).
+- Fase F - Distanza/dislivello/durata sono ricalcolati e salvati dal
+  SERVER ad ogni gruppo di punti ricevuto (mai fidandosi di un totale
+  mandato dal client, stesso criterio di sicurezza già in uso altrove
+  nell'app) in modo incrementale (solo sull'ultimo punto noto + il
+  nuovo gruppo, non su tutta la traccia ogni volta: resta veloce anche
+  dopo ore di escursione). Il client mostra comunque un numero
+  provvisorio immediato (calcolato in locale) che si autocorregge ad
+  ogni sincronizzazione riuscita con il numero autorevole del server.
+- Fase F - Il tempo passato in pausa (pulsante "Pausa") viene escluso
+  dalla durata finale e quindi anche dal calcolo del passo medio: senza
+  questo accorgimento una sosta lunga (pranzo, foto) avrebbe fatto
+  risultare un passo molto più lento di quello reale. Gestito con due
+  campi (pausedMs, pausedAt) sul documento della sessione.
+- Fase F - Rumore altimetrico: una variazione di altitudine tra due
+  punti consecutivi inferiore a 3 metri non viene contata nel
+  dislivello (il GPS di un telefono senza barometro oscilla molto più
+  di quanto sembri da fermo). Altitudine mancante su un punto (comune
+  su molti telefoni) non scarta il punto: viene sostituita con l'ultima
+  altitudine nota.
+- Fase F - A fine escursione ("Termina") la traccia dettagliata viene
+  semplificata (algoritmo Douglas-Peucker, tolleranza 8m - stessa scala
+  dell'errore OSM di ~10m citato altrove) per risparmiare spazio nel
+  lungo periodo: le statistiche finali (km, dislivello, tempo) restano
+  quelle calcolate PRIMA sui dati completi, solo il dettaglio della
+  linea salvata si riduce.
+- Fase F - Mappa offline: nessun Service Worker (aggiungerebbe
+  complessità di versionamento/cache-busting non necessaria a questa
+  scala). Invece, un normale layer Leaflet personalizzato controlla
+  prima una cache IndexedDB nel browser e scarica dalla rete solo se
+  manca; OGNI tile vista dal vivo viene salvata in automatico (non solo
+  quelle scaricate col pulsante dedicato), così qualunque zona già
+  vista in precedenza resta disponibile anche offline in futuro. Il
+  pulsante "scarica mappa offline" pre-scarica in blocco una zona
+  (escursione selezionata, o vista mappa corrente) sui livelli di zoom
+  12-16, con conferma della dimensione stimata prima di partire.
+- Fase F - Interfaccia: NON si è reso responsive il resto dell'app
+  (scelta già presa in precedenza, confermata dall'utente - vedi sopra).
+  Il pannello "Avvia escursione dal vivo" richiesto dal piano come
+  unica eccezione è realizzato come pulsante flottante + pannello a
+  comparsa dal basso, indipendenti dalla sidebar: funzionano allo
+  stesso modo su schermo grande o piccolo senza bisogno di media query,
+  raggiungibili da qualunque sezione dell'app (non solo dalla Mappa).
+- Fase F - Fine tracciamento collegato a un'escursione: invece di
+  duplicare la logica di "segna come completata" (già esistente, Fase
+  C/NOTE_SVILUPPO), il riepilogo finale del tracciamento chiama la
+  stessa rotta esistente POST /api/hikes/:id/complete passando il
+  tempo reale misurato al posto di farlo scrivere a mano dall'utente.
+- BUG TROVATO E CORRETTO durante la prima prova dal vivo fatta
+  dall'utente (2026-07-24): il campo "openSession" (l'interruttore che
+  dice se un tracciamento e' ancora aperto) aveva un valore di default
+  a livello di schema Mongoose. Alla chiusura di una sessione il codice
+  provava a "spegnerlo" assegnando `undefined` e salvando, ma Mongoose
+  rimette il default ogni volta che rilegge un documento a cui manca
+  quel campo — risultato: un'escursione conclusa restava per sempre
+  "quella aperta" per l'utente, e la successiva pressione di "Avvia"
+  gli riproponeva quella vecchia invece di crearne una nuova. Corretto
+  in due punti: (1) POST /:id/end ora usa un $unset esplicito invece di
+  assegnare undefined+save(), (2) tolto il default dello schema per
+  quel campo (già impostato esplicitamente a true da POST /start, non
+  serviva). Verificato dopo la correzione: avvio→fine→riavvio produce
+  ora tre ID diversi come deve essere. Promemoria generale per il
+  futuro: su questo progetto, per "spegnere" un campo booleano/opzionale
+  di un documento già esistente, usare sempre $unset esplicito (o
+  findByIdAndUpdate con $unset), mai assegnare undefined a un campo che
+  ha un default nello schema e poi chiamare .save().
 
 
 STATO DEL CODICE PRIMA DI QUESTO LAVORO (come si presentava il progetto)
@@ -237,9 +324,22 @@ COSE CHE DEVE FARE L'UTENTE DI PERSONA (non automatizzabili)
    automatico ad ogni push), variabili d'ambiente MONGODB_URI/
    SESSION_SECRET/NODE_ENV=production impostate. Sito live su
    https://camoscio.onrender.com.
-5. Permesso GPS del browser (serve per testare la Fase F davvero):
-   cliccare "Consenti" sul popup nativo del browser almeno una volta.
-   STATO: non ancora fatto.
+5. Permesso GPS del browser — FATTO PARZIALMENTE (2026-07-24): provato
+   da computer (login demo "Marco Alpinista", pulsante 🥾, permesso
+   concesso, tracciamento avviato/concluso), ha fatto emergere e
+   corretto un bug reale (vedi decisione "openSession" piu' sopra).
+   STATO: manca ancora una prova da telefono vero, all'aperto, in
+   movimento — da computer il GPS e' impreciso e aggiorna raramente,
+   un telefono in montagna e' il vero banco di prova per watchPosition,
+   l'invio a gruppi dei punti e la mappa offline.
+6. Prova da telefono vero all'aperto per la Fase F: non ancora fatta.
+   Quando possibile, aprire il sito da telefono (in locale sulla stessa
+   rete WiFi con l'indirizzo IP del PC al posto di "localhost", oppure
+   online dopo il prossimo deploy), entrare con un account, cliccare il
+   pulsante 🥾, avviare il tracciamento e camminare un po' tenendo il
+   telefono con se', controllare che il percorso disegnato sulla mappa
+   segua il cammino reale, provare anche il pulsante "scarica mappa
+   offline" prima di partire.
 
 
 CHECKLIST DI AVANZAMENTO (aggiornare via via che si procede)
@@ -377,7 +477,57 @@ CHECKLIST DI AVANZAMENTO (aggiornare via via che si procede)
     [x] Verificato dal vivo in produzione (https://camoscio.onrender.com):
         pagina /demo, login demo, dashboard con dati reali dell'utente,
         nuova palette colori, nessun errore in console
-[ ] Fase F — Tracciamento GPS live — NON INIZIATA
+[ ] Fase F — Tracciamento GPS live — CODICE COMPLETO E TESTATO VIA API
+    (2026-07-24), MANCA ANCORA LA PROVA CLICCATA A MANO NEL BROWSER
+    PRIMA DI SEGNARLA COME DAVVERO COMPLETATA (vedi i due punti [ ] sotto)
+    [x] models/ActiveHikeSession.js: nuova collezione separata dalle
+        escursioni, punti come tuple compatte, indice unico parziale
+        (un solo tracciamento aperto per utente), virtual per durata
+        (esclude le pause) e velocità media (non salvata, calcolata)
+    [x] routes/tracking.js: GET /active (riprendi/idempotenza), POST
+        /start, POST /:id/points (gruppo di punti, calcolo incrementale
+        distanza/dislivello, risposta senza rispedire l'intera traccia),
+        POST /:id/pause, POST /:id/resume, POST /:id/end (semplifica
+        la traccia con Douglas-Peucker) - tutte con requireAuth e
+        controllo che la sessione appartenga a chi ha fatto login
+    [x] Verificato chiamando le rotte direttamente (non nel browser):
+        avvio idempotente, gruppo di punti con calcolo distanza/
+        dislivello corretto, altitudine mancante gestita senza perdere
+        il punto, pausa/ripresa con esclusione corretta del tempo di
+        pausa dalla durata, chiusura con semplificazione della traccia
+        mantenendo invariate le statistiche finali, nessun errore nei
+        log del server - dati di prova rimossi dal database reale a
+        fine verifica
+    [x] public/js/idb.js: piccolo strato comune su IndexedDB (coda
+        punti GPS da inviare, cache tile mappa)
+    [x] public/js/offline-map.js: layer Leaflet personalizzato che
+        legge/scrive la cache IndexedDB (ogni tile vista dal vivo si
+        salva da sola) + funzione per scaricare in anticipo tutte le
+        tile di una zona
+    [x] public/js/tracking.js: watchPosition continuo, coda IndexedDB
+        con invio a gruppi ogni 25s (o al ritorno del segnale), ripresa
+        automatica dopo un ricaricamento della pagina, orologio live
+        che esclude le pause, integrazione con "segna come completata"
+        a fine escursione
+    [x] public/js/map.js: nuove funzioni updateLiveGpsPosition (non
+        ricentra la mappa ad ogni fix, a differenza di teleportUserGps)
+        e polyline dedicata al percorso live (stile diverso da quello
+        "pianificato"); tile layer sostituito con quello offline-aware
+    [x] Interfaccia: pulsante flottante 🥾 + pannello a comparsa dal
+        basso (stato "avvia" con scelta escursione e scarica mappa
+        offline; stato "in corso" con statistiche live grandi e
+        Pausa/Termina; stato "riepilogo" con eventuale segna-completata),
+        pensati apposta per essere comodi anche su schermo piccolo
+    [x] Prova dal vivo nel browser fatta di persona dall'utente
+        (2026-07-24, da computer con login demo "Marco Alpinista"):
+        pulsante flottante e avvio tracciamento funzionanti, nessun
+        errore. Ha fatto emergere il bug "openSession" (vedi decisione
+        dedicata piu' sopra), corretto e riverificato subito dopo.
+    [ ] Prova da TELEFONO VERO all'aperto (permesso GPS reale in
+        movimento, mappa offline vera): non ancora fatta - resta il
+        prossimo passo pratico prima della Fase G, vedi "COSE CHE DEVE
+        FARE L'UTENTE DI PERSONA"
+    [ ] Commit e push: non ancora fatti, in attesa di conferma esplicita
 [ ] Fase G — Aggancio GPS al sentiero — NON INIZIATA
 [ ] Fase H — Caccia ai bug finale — NON INIZIATA
 

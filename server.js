@@ -20,6 +20,7 @@ const notificationsRouter = require('./routes/notifications');
 const reviewsRouter = require('./routes/reviews');
 const squadsRouter = require('./routes/squads');
 const bookmarksRouter = require('./routes/bookmarks');
+const trackingRouter = require('./routes/tracking');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -76,6 +77,7 @@ app.use('/api/notifications', notificationsRouter);
 app.use('/api/reviews', reviewsRouter);
 app.use('/api/squads', squadsRouter);
 app.use('/api/bookmarks', bookmarksRouter);
+app.use('/api/tracking', trackingRouter);
 
 // Carica una nota vocale del diario (base64 in JSON, nessuna dipendenza aggiuntiva).
 // Salva su disco, non nel database: resta qui perche' non riguarda MongoDB.

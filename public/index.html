@@ -1123,6 +1123,120 @@
         </div>
     </div>
 
+    <!-- Fase F: Tracciamento GPS live. Pulsante flottante + pannello indipendenti dalla
+         sidebar (che non e' responsive), raggiungibili da qualunque sezione dell'app:
+         e' l'unica parte dell'interfaccia pensata apposta per essere comoda anche su
+         schermo piccolo, visto che verra' usata davvero da telefono in montagna. -->
+    <button id="tracking-fab" class="tracking-fab" title="Escursione dal vivo" type="button">
+        🥾
+    </button>
+
+    <div id="tracking-mini-bar" class="tracking-mini-bar hidden">
+        <span id="tracking-mini-icon">🔴</span>
+        <span id="tracking-mini-time">00:00:00</span>
+        <span id="tracking-mini-distance">0.00 km</span>
+        <span class="tracking-mini-hint">Tocca per i dettagli</span>
+    </div>
+
+    <div id="tracking-panel" class="tracking-panel hidden">
+        <div class="modal-header">
+            <h3><i data-lucide="footprints"></i> Escursione dal vivo</h3>
+            <button type="button" class="close-modal-btn" id="tracking-panel-close">&times;</button>
+        </div>
+
+        <!-- Stato: nessun tracciamento in corso -->
+        <div id="tracking-state-idle">
+            <p class="small text-muted" style="margin-bottom:14px;">
+                Registra il percorso GPS reale della tua escursione: continua ad aggiornarsi anche
+                con poco campo e si sincronizza da solo appena torna segnale.
+            </p>
+
+            <div class="form-group">
+                <label for="tracking-hike-select">Escursione collegata (facoltativo):</label>
+                <select id="tracking-hike-select" class="form-control">
+                    <option value="">Nessuna - traccia libera</option>
+                </select>
+            </div>
+
+            <div id="tracking-geo-consent-alert" class="privacy-alert-box hidden">
+                <i data-lucide="alert-triangle"></i>
+                <span>Il tracciamento userà la posizione GPS reale del telefono. Avevi lasciato il consenso alla geolocalizzazione disattivato in registrazione: verrà attivato ora, se prosegui.</span>
+            </div>
+
+            <button type="button" id="btn-tracking-download-map" class="btn btn-secondary btn-block" style="margin-top:14px;">
+                <i data-lucide="download"></i> Scarica mappa offline per quest'area
+            </button>
+            <div id="tracking-download-progress" class="tracking-download-progress hidden">
+                <div class="tracking-download-progress-fill" id="tracking-download-progress-fill"></div>
+                <span id="tracking-download-progress-label" class="small text-muted"></span>
+            </div>
+
+            <button type="button" id="btn-tracking-start" class="btn btn-primary btn-block" style="margin-top:12px;">
+                <i data-lucide="play"></i> Avvia tracciamento GPS
+            </button>
+        </div>
+
+        <!-- Stato: tracciamento attivo o in pausa -->
+        <div id="tracking-state-active" class="hidden">
+            <div class="tracking-stats-grid">
+                <div class="tracking-stat">
+                    <span class="tracking-stat-label">Tempo</span>
+                    <span class="tracking-stat-value" id="tracking-stat-time">00:00:00</span>
+                </div>
+                <div class="tracking-stat">
+                    <span class="tracking-stat-label">Distanza</span>
+                    <span class="tracking-stat-value" id="tracking-stat-distance">0.00 km</span>
+                </div>
+                <div class="tracking-stat">
+                    <span class="tracking-stat-label">Dislivello D+</span>
+                    <span class="tracking-stat-value" id="tracking-stat-elevation">0 m</span>
+                </div>
+                <div class="tracking-stat">
+                    <span class="tracking-stat-label">Velocità media</span>
+                    <span class="tracking-stat-value" id="tracking-stat-speed">0.0 km/h</span>
+                </div>
+            </div>
+
+            <div class="tracking-signal-row">
+                <span id="tracking-gps-quality" class="badge badge-primary">GPS: in attesa del segnale...</span>
+                <span id="tracking-sync-status" class="badge badge-green">Sincronizzato</span>
+            </div>
+
+            <div class="tracking-panel-actions">
+                <button type="button" id="btn-tracking-pause" class="btn btn-secondary"><i data-lucide="pause"></i> Pausa</button>
+                <button type="button" id="btn-tracking-resume" class="btn btn-secondary hidden"><i data-lucide="play"></i> Riprendi</button>
+                <button type="button" id="btn-tracking-end" class="btn btn-danger"><i data-lucide="square"></i> Termina</button>
+            </div>
+        </div>
+
+        <!-- Stato: riepilogo dopo la fine del tracciamento -->
+        <div id="tracking-state-summary" class="hidden">
+            <h4 style="margin-bottom:14px;">Escursione conclusa 🎉</h4>
+            <div class="tracking-stats-grid">
+                <div class="tracking-stat">
+                    <span class="tracking-stat-label">Durata</span>
+                    <span class="tracking-stat-value" id="tracking-summary-time">-</span>
+                </div>
+                <div class="tracking-stat">
+                    <span class="tracking-stat-label">Distanza</span>
+                    <span class="tracking-stat-value" id="tracking-summary-distance">-</span>
+                </div>
+                <div class="tracking-stat">
+                    <span class="tracking-stat-label">Dislivello D+</span>
+                    <span class="tracking-stat-value" id="tracking-summary-elevation">-</span>
+                </div>
+                <div class="tracking-stat">
+                    <span class="tracking-stat-label">Velocità media</span>
+                    <span class="tracking-stat-value" id="tracking-summary-speed">-</span>
+                </div>
+            </div>
+            <button type="button" id="btn-tracking-mark-complete" class="btn btn-success btn-block hidden" style="margin-top:16px;">
+                Segna l'escursione collegata come completata
+            </button>
+            <button type="button" id="btn-tracking-summary-close" class="btn btn-secondary btn-block" style="margin-top:10px;">Chiudi</button>
+        </div>
+    </div>
+
     <!-- Script Lucide Icons (Open Source, vendorizzato in locale) -->
     <script src="vendor/lucide/lucide.js"></script>
     <!-- Script Leaflet JS (Open Source Maps, vendorizzato in locale) -->
@@ -1138,7 +1252,11 @@
     <script src="js/backpack.js"></script>
     <script src="js/carpool.js"></script>
     <script src="js/social.js"></script>
+    <!-- Fase F: tracciamento GPS live (coda IndexedDB + mappa offline + mappa) -->
+    <script src="js/idb.js"></script>
+    <script src="js/offline-map.js"></script>
     <script src="js/map.js"></script>
+    <script src="js/tracking.js"></script>
     <script src="js/app.js"></script>
     
     <script>
