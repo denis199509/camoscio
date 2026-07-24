@@ -1,25 +1,40 @@
 ===================================================================
 CAMOSCIO — LEGGIMI (stato progetto, aggiornato automaticamente)
-Ultimo aggiornamento: 2026-07-24 — Fase F scritta, un bug trovato e
-corretto durante la prima prova dal vivo dell'utente (vedi nota sotto)
+Ultimo aggiornamento: 2026-07-24 — Fase F scritta, committata, pushata
+e online su Render. Test da telefono vero in corso da parte
+dell'utente PROPRIO ORA, esito non ancora noto (vedi nota sotto)
 ===================================================================
 
-NOTA: Fasi A, B, C, D, E completate (sito online su
-https://camoscio.onrender.com, repository GitHub
-https://github.com/denis199509/camoscio, branch master). Fase F
-(tracciamento GPS live) scritta per intero in questa sessione,
-verificata sia chiamando direttamente le nuove API sia con una prima
-prova dal vivo nel browser fatta di persona dall'utente (login demo,
-pulsante flottante, avvio tracciamento) - PROVA DA COMPUTER, non
-ancora da telefono vero all'aperto. Quella prova ha fatto emergere un
-bug reale (una sessione conclusa non si "chiudeva" davvero, la
-successiva ripartiva da quella vecchia invece che crearne una nuova -
-dettagli nelle decisioni piu' sotto): corretto e riverificato con
-successo. Non ancora provati dal vivo: il permesso GPS di un telefono
-vero all'aperto, e il download della mappa offline. Codice non ancora
-committato ne' pushato: in attesa di conferma dell'utente (vedi
-istruzioni permanenti su commit espliciti). Prossimo passo dopo una
-prova da telefono vero: Fase G (aggancio GPS al sentiero).
+NOTA IMPORTANTE PER CHI RIPARTE DA QUI: quando e' stato scritto questo
+promemoria, l'utente aveva appena aperto https://camoscio.onrender.com
+dal proprio telefono per provare il tracciamento GPS live all'aperto,
+mentre Claude preparava questo file. NON SI SA ANCORA se quella prova
+sia andata bene. Se stai riprendendo la conversazione con l'utente
+(stessa sessione o una nuova) e non trovi nella conversazione stessa
+il suo riscontro, LA PRIMA COSA DA FARE e' chiedergli semplicemente
+com'e' andata la prova dal telefono, prima di iniziare la Fase G.
+
+NOTA GENERALE: Fasi A, B, C, D, E completate. Fase F (tracciamento GPS
+live) scritta per intero in questa sessione, con un ciclo di verifica
+a piu' livelli:
+1) chiamate dirette alle nuove API (avvio, invio punti, pausa/ripresa,
+   chiusura, semplificazione traccia) - tutte corrette;
+2) prima prova dal vivo nel browser fatta di persona dall'utente DA
+   COMPUTER (login demo, pulsante flottante, avvio tracciamento) - ha
+   fatto emergere un bug reale (una sessione conclusa non si
+   "chiudeva" davvero, la successiva ripartiva da quella vecchia
+   invece che crearne una nuova): corretto e riverificato con
+   successo (dettagli nelle decisioni piu' sotto);
+3) commit c97f4d0 ("Fase F: tracciamento GPS live durante
+   l'escursione"), push su GitHub, redeploy automatico su Render
+   verificato (home page, script nuovi, pagina /demo tutti
+   raggiungibili con codice 200 su https://camoscio.onrender.com);
+4) prova da TELEFONO VERO all'aperto: avviata dall'utente proprio alla
+   fine di questa sessione, esito da verificare all'inizio della
+   prossima (vedi nota sopra).
+Prossimo passo, una volta confermato che la prova da telefono e' andata
+bene: Fase G (aggancio GPS al sentiero). Se invece qualcosa non ha
+funzionato, risolvere prima quello.
 
 A COSA SERVE QUESTO FILE
 -------------------------
@@ -324,22 +339,18 @@ COSE CHE DEVE FARE L'UTENTE DI PERSONA (non automatizzabili)
    automatico ad ogni push), variabili d'ambiente MONGODB_URI/
    SESSION_SECRET/NODE_ENV=production impostate. Sito live su
    https://camoscio.onrender.com.
-5. Permesso GPS del browser — FATTO PARZIALMENTE (2026-07-24): provato
-   da computer (login demo "Marco Alpinista", pulsante 🥾, permesso
-   concesso, tracciamento avviato/concluso), ha fatto emergere e
-   corretto un bug reale (vedi decisione "openSession" piu' sopra).
-   STATO: manca ancora una prova da telefono vero, all'aperto, in
-   movimento — da computer il GPS e' impreciso e aggiorna raramente,
-   un telefono in montagna e' il vero banco di prova per watchPosition,
-   l'invio a gruppi dei punti e la mappa offline.
-6. Prova da telefono vero all'aperto per la Fase F: non ancora fatta.
-   Quando possibile, aprire il sito da telefono (in locale sulla stessa
-   rete WiFi con l'indirizzo IP del PC al posto di "localhost", oppure
-   online dopo il prossimo deploy), entrare con un account, cliccare il
-   pulsante 🥾, avviare il tracciamento e camminare un po' tenendo il
-   telefono con se', controllare che il percorso disegnato sulla mappa
-   segua il cammino reale, provare anche il pulsante "scarica mappa
-   offline" prima di partire.
+5. Permesso GPS del browser — FATTO (2026-07-24): sia da computer
+   (login demo "Marco Alpinista", pulsante 🥾, permesso concesso,
+   tracciamento avviato/concluso - ha fatto emergere e corretto un bug
+   reale, vedi decisione "openSession" piu' sopra), sia il primo
+   permesso da telefono vero, dato proprio alla fine di questa sessione.
+6. Prova da telefono vero all'aperto per la Fase F — IN CORSO PROPRIO
+   ALLA FINE DI QUESTA SESSIONE, esito non ancora noto (vedi nota
+   importante in cima al file): l'utente ha aperto
+   https://camoscio.onrender.com dal telefono per camminare un po' e
+   controllare che il percorso disegnato sulla mappa segua il cammino
+   reale, provando anche pausa/ripresa/termine e il pulsante "scarica
+   mappa offline". CHIEDERGLI COM'E' ANDATA appena possibile.
 
 
 CHECKLIST DI AVANZAMENTO (aggiornare via via che si procede)
@@ -477,9 +488,10 @@ CHECKLIST DI AVANZAMENTO (aggiornare via via che si procede)
     [x] Verificato dal vivo in produzione (https://camoscio.onrender.com):
         pagina /demo, login demo, dashboard con dati reali dell'utente,
         nuova palette colori, nessun errore in console
-[ ] Fase F — Tracciamento GPS live — CODICE COMPLETO E TESTATO VIA API
-    (2026-07-24), MANCA ANCORA LA PROVA CLICCATA A MANO NEL BROWSER
-    PRIMA DI SEGNARLA COME DAVVERO COMPLETATA (vedi i due punti [ ] sotto)
+[ ] Fase F — Tracciamento GPS live — CODICE COMPLETO, TESTATO E ONLINE
+    (2026-07-24), MANCA SOLO LA CONFERMA DELLA PROVA DA TELEFONO VERO
+    ALL'APERTO PRIMA DI SEGNARLA COME DAVVERO COMPLETATA (vedi ultimo
+    punto [ ] sotto - IMPORTANTE: leggi la nota in cima al file)
     [x] models/ActiveHikeSession.js: nuova collezione separata dalle
         escursioni, punti come tuple compatte, indice unico parziale
         (un solo tracciamento aperto per utente), virtual per durata
@@ -523,11 +535,19 @@ CHECKLIST DI AVANZAMENTO (aggiornare via via che si procede)
         pulsante flottante e avvio tracciamento funzionanti, nessun
         errore. Ha fatto emergere il bug "openSession" (vedi decisione
         dedicata piu' sopra), corretto e riverificato subito dopo.
+    [x] Commit c97f4d0 "Fase F: tracciamento GPS live durante
+        l'escursione" (2026-07-24) + push su GitHub + redeploy
+        automatico su Render verificato con successo: home page,
+        js/idb.js, js/offline-map.js, js/tracking.js e pagina /demo
+        tutti raggiungibili (codice 200) su
+        https://camoscio.onrender.com dopo il deploy
     [ ] Prova da TELEFONO VERO all'aperto (permesso GPS reale in
-        movimento, mappa offline vera): non ancora fatta - resta il
-        prossimo passo pratico prima della Fase G, vedi "COSE CHE DEVE
-        FARE L'UTENTE DI PERSONA"
-    [ ] Commit e push: non ancora fatti, in attesa di conferma esplicita
+        movimento, mappa offline vera): AVVIATA dall'utente proprio
+        alla fine di questa sessione su https://camoscio.onrender.com,
+        esito non ancora noto - vedi la nota importante in cima al
+        file e il punto 6 in "COSE CHE DEVE FARE L'UTENTE DI PERSONA".
+        Questo e' l'UNICO passo che manca per poter segnare la Fase F
+        come completata del tutto e passare alla Fase G.
 [ ] Fase G — Aggancio GPS al sentiero — NON INIZIATA
 [ ] Fase H — Caccia ai bug finale — NON INIZIATA
 
