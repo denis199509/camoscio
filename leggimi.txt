@@ -1,22 +1,21 @@
 ===================================================================
 CAMOSCIO — LEGGIMI (stato progetto, aggiornato automaticamente)
 Ultimo aggiornamento: 2026-07-25 (nuova sessione, stesso giorno) — Fase
-H (caccia ai bug generale, richiesta esplicita punto 6 di
-cose_da_fare.txt) completata: revisione riga per riga di tutto il
-codice (~7400 righe, backend e frontend) e di tutte le 24+ rotte API,
-14 bug corretti (dettagli sotto e nella checklist), verificati con uno
-script di chiamate dirette alle API (32 controlli automatici, tutti
-superati) dato che anche in questa sessione il collegamento al browser
-Chrome non era disponibile. LAVORO SOLO COMMITTATO IN LOCALE, NON
-ANCORA PUSHATO SU GITHUB: un push fa ripartire il server su Render
-(redeploy automatico), il che chiuderebbe di colpo qualunque
-tracciamento GPS live in corso in quel momento - dato che la prova a
-piedi della Fase G era ancora in sospeso a fine sessione precedente,
-si e' aspettato l'ok esplicito dell'utente prima di pushare invece di
-farlo in automatico come nelle fasi precedenti. Database ripulito da
-ogni residuo di test a fine sessione (utenti/escursioni/segnalazioni
-con prefisso "TEST_H" rimossi, verificato con una query finale a zero
-risultati).
+H (caccia ai bug generale) COMPLETATA E ONLINE: 14 bug corretti (vedi
+sotto e checklist), pushata su GitHub (commit 516badd) su richiesta
+esplicita dell'utente ("manda tutto online, salva tutto correttamente
+e in sicurezza"), redeploy automatico su Render avviato, home page
+verificata raggiungibile (codice 200) subito dopo. SESSIONE CHIUSA IN
+FRETTA per limite di utilizzo dell'utente in esaurimento: NON e' stata
+rifatta una verifica dal vivo completa post-deploy (solo home page)
+né richiesta conferma esplicita che il sito resti stabile nel
+tempo - primo controllo da fare a inizio prossima sessione. Prima di
+chiudere, l'utente ha anche dettato una NUOVA lista di richieste (uso
+reale del sito online), aggiunta in cose_da_fare.txt (punti 7-14) - una
+ricognizione tecnica su tutti quei punti e' gia' stata fatta in questa
+sessione (vedi sezione dedicata piu' sotto) cosi' la prossima sessione
+puo' partire diretta sull'implementazione senza dover riesplorare il
+codice.
 ===================================================================
 
 NOTA IMPORTANTE PER CHI RIPARTE DA QUI - FASE H (CACCIA AI BUG)
@@ -61,8 +60,118 @@ l'upload audio senza login, il bug gia' noto delle segnalazioni
 duplicate invece che risolte, e altri) sono elencati con tutti i
 dettagli nella checklist della Fase H piu' sotto e nelle decisioni
 dedicate. Verificati con chiamate dirette alle API (browser non
-disponibile anche in questa sessione) - VERIFICA MANCANTE: prova dal
-vivo nel browser una volta che l'utente da' l'ok per il deploy.
+disponibile anche in questa sessione). PUSHATA SU GITHUB (commit
+516badd) su richiesta dell'utente, redeploy Render avviato, home page
+ricontrollata raggiungibile (200) - VERIFICA ANCORA MANCANTE: una
+prova vera nel browser, e conferma che il sito resti stabile per un
+periodo piu' lungo (la sessione si e' chiusa subito dopo il primo
+controllo, per limite di utilizzo dell'utente).
+
+NOTA IMPORTANTE PER CHI RIPARTE DA QUI - RICOGNIZIONE TECNICA PER LA
+NUOVA LISTA (punti 7-14 di cose_da_fare.txt, aggiunti 2026-07-25 dopo
+uso reale del sito online). Fatta con un agente di ricerca a fine
+sessione, PRIMA di scrivere qualunque codice - nessuna implementazione
+ancora iniziata, solo ricognizione. Risultati per punto (i numeri di
+riga possono essere leggermente cambiati da allora, ricontrollare):
+
+- Punto 8 (scelta ritrovo dalla mappa): oggi il form crea-escursione
+  (#create-hike-modal, public/index.html) ha 3 semplici input numerici
+  per lat/lng + un campo nome, NIENTE ricerca o selezione da mappa
+  (public/js/social.js, submitCreateHike). Per il geocoding: l'UNICO
+  precedente nel progetto e' scripts/fetch-region-boundaries.js, che
+  chiama Nominatim (nominatim.openstreetmap.org/search) con uno User-
+  Agent custom obbligatorio e rispetta il limite di 1 richiesta/sec -
+  ma e' uno script offline "una tantum", MAI chiamato dal browser.
+  Serve un nuovo endpoint server che faccia da proxy verso Nominatim
+  (mai chiamarlo direttamente dal client: violerebbe la policy Nominatim
+  sull'User-Agent e sarebbe facile da far bloccare per troppe
+  richieste) sia per la ricerca testo->coordinate (place->punto) sia
+  per l'inverso coordinate->nome piu' vicino (reverse geocoding, per
+  "se il punto e' vicino a un luogo noto usa quel nome").
+- Punto 9 (mappa inutilizzabile su telefono): CONFERMATO - public/css/
+  styles.css non ha NESSUNA @media query in tutto il file. La sezione
+  Mappa ha una sidebar a larghezza FISSA 380px (.map-sidebar) piu' un'
+  area mappa a height:calc(100vh - ...): su schermo stretto la sidebar
+  schiaccia la mappa. Gia' documentato altrove in questo file come
+  scelta presa in precedenza per TUTTO il resto dell'app (eccetto il
+  pannello tracciamento, l'unica parte pensata apposta per mobile) - la
+  richiesta ora e' di intervenire specificamente sulla sezione Mappa.
+- Punto 10 (pagina "Le mie escursioni"): CONFERMATO che non esiste.
+  Oggi c'e' solo #hikes-list-container (sezione "Esplora Escursioni di
+  Gruppo"), UNA lista con tutte le escursioni di tutti, filtrabile per
+  difficolta'/tag/testo ma non per "create da me / a cui partecipo /
+  completate" - quell'informazione oggi esiste solo come badge dentro
+  ogni singola card (renderHikesList in public/js/social.js), calcolata
+  al volo confrontando hike.creatorId/participants/db.completions col
+  currentUser - va riusata la stessa logica ma con viste/filtri dedicati
+  invece che badge sparsi in un'unica lista.
+- Punto 11 (marker GPS live fermo sulla mappa): probabile causa tecnica
+  gia' individuata, DA CONFERMARE con una prova reale prima di
+  correggere alla cieca. Il marker (public/js/map.js, variabile
+  userGpsMarker, creato in createUserGpsMarker) e' LO STESSO oggetto
+  Leaflet sia per la posizione "simulata" trascinabile sia per quella
+  aggiornata dal GPS reale durante il tracciamento (window.
+  updateLiveGpsPosition, chiamata da onPositionUpdate in tracking.js).
+  Sospetto principale: la mappa Leaflet viene creata (initMapModule,
+  chiamata incondizionatamente ad ogni avvio app in app.js, PRIMA che
+  l'utente clicchi mai su "Mappa") mentre il suo contenitore e' ancora
+  dentro una sezione con display:none (il pulsante di tracciamento e'
+  raggiungibile da QUALUNQUE sezione, non solo dalla Mappa) - un
+  problema classico di Leaflet (dimensioni/posizionamento sballati
+  finche' non arriva un resize). Il codice gia' chiama
+  map.invalidateSize() ma SOLO quando si naviga manualmente alla
+  sezione Mappa dalla sidebar, mai quando si avvia un tracciamento da
+  un'altra sezione. Sospetto secondario: quel tratto di codice
+  (onPositionUpdate, righe 240-253 circa) non ha un try/catch a
+  differenza del resto della funzione - un errore silenzioso li'
+  interromperebbe solo l'aggiornamento del marker per quel fix, mentre
+  le statistiche (tempo/distanza/dislivello) continuano ad aggiornarsi
+  comunque perche' vengono ANCHE ricalcolate lato server ogni 25s
+  (flushPendingPoints) e sovrascritte li' - il marker invece dipende
+  SOLO dalla riuscita di quella singola chiamata diretta, senza nessun
+  meccanismo di correzione equivalente. Prima cosa da fare: riprodurre
+  dal vivo (telefono o browser con posizione simulata devtools) con la
+  console aperta per vedere se ci sono errori silenziosi, poi valutare
+  se serve anche invalidateSize() quando si avvia il tracciamento.
+- Punto 12 (rimuovere "Waze"): solo 3 punti di TESTO VISIBILE da
+  cambiare - public/index.html riga ~279 (voce sidebar "Mappa & Waze"),
+  public/js/app.js riga ~262 (titolo header "Mappa & Crowdsourcing
+  Waze"), public/index.html riga ~614 (badge overlay sulla mappa). Il
+  resto del nome "Waze" compare solo in id/classi/commenti/nomi
+  funzione interni (es. renderWazeReportsList, .waze-card,
+  #waze-report-form) - non visibili all'utente, da valutare se
+  rinominare per coerenza o lasciare come sono (nessun impatto utente).
+- Punto 13 (pianificazione percorso multi-punto con aggancio sentieri):
+  la funzionalita' piu' impegnativa della lista. lib/trailIndex.js
+  (funzione snapPoint) e lib/geometry.js esistono e sono solidi, ma
+  fanno solo UNA cosa: agganciare UN SINGOLO punto al sentiero piu'
+  vicino. Collegare DUE punti scelti dall'utente SEGUENDO i sentieri
+  conosciuti (non solo agganciare ciascuno singolarmente) e' un
+  problema diverso e piu' complesso - serve un vero algoritmo di
+  ricerca di cammino (pathfinding, es. Dijkstra/A*) su un grafo
+  costruito dai segmenti sentiero, non ancora esistente in nessuna
+  forma nel progetto. La modalita' "non agganciare ai sentieri"
+  richiesta dall'utente (linea retta tra i punti) e' invece semplice,
+  quasi gratuita, dato che gli endpoint dei punti sono comunque
+  disponibili senza aggancio.
+- Punto 14 (tasto unico "comincia registrazione" col percorso disegnato
+  in blu chiaro): in gran parte gia' collegata alla correzione del
+  punto 11 (una volta che il marker segue davvero il GPS, serve solo
+  scegliere lo stile della polyline live - oggi arancione tratteggiata,
+  vedi liveTrackPolyline in map.js) - non richiede nuove API server,
+  solo interfaccia.
+
+Punto NON tecnico da chiarire con l'utente prima di implementare il
+punto 7 (recupero password): in Fase C si era deciso esplicitamente
+"Email in registrazione: SOLO SALVATA, nessuna verifica reale via
+email, niente servizio esterno tipo Resend/Brevo" (vedi decisione piu'
+sotto) - un vero recupero password ha quasi sempre bisogno di un canale
+per dimostrare che sei tu (di solito l'email) senza il quale non si
+può implementare in modo standard/sicuro. Da decidere insieme
+all'utente come procedere (riconsiderare un servizio email gratuito,
+oppure un meccanismo alternativo) PRIMA di iniziare quel punto
+specifico - non bloccante per gli altri 7 punti della lista, che sono
+indipendenti tra loro.
 
 NOTA IMPORTANTE PER CHI RIPARTE DA QUI - INCIDENTE E CORREZIONE FASE G
 (2026-07-25): il primo tentativo di mettere online la Fase G con TUTTE
@@ -1018,10 +1127,11 @@ CHECKLIST DI AVANZAMENTO (aggiornare via via che si procede)
         prima di considerare la fase davvero conclusa
     [ ] Riattivare Marche e Molise in ACTIVE_REGIONS (lib/trailIndex.js)
         quando si e' sicuri che la memoria regga anche con tutte e 4
-[ ] Fase H — Caccia ai bug finale — CODICE COMPLETO E TESTATO (2026-07-25),
-    MANCA IL PUSH (in attesa dell'ok esplicito dell'utente, vedi nota in
-    cima al file) E LA PROVA DAL VIVO NEL BROWSER (Chrome non disponibile
-    anche in questa sessione)
+[ ] Fase H — Caccia ai bug finale — CODICE COMPLETO, TESTATO E ONLINE
+    (2026-07-25, commit 516badd, home page ricontrollata raggiungibile),
+    MANCA UNA VERIFICA PIU' LUNGA DI STABILITA' E LA PROVA DAL VIVO NEL
+    BROWSER (Chrome non disponibile anche in questa sessione, sessione
+    chiusa in fretta per limite di utilizzo subito dopo il push)
     [x] Revisione manuale di tutto il codice (server.js, tutti i modelli,
         tutte le rotte, lib/, tutto public/js/) - non solo grep mirati
     [x] Sicurezza/autorizzazione - 4 bug seri corretti (vedi decisioni
@@ -1057,14 +1167,22 @@ CHECKLIST DI AVANZAMENTO (aggiornare via via che si procede)
         risoluzione segnalazioni, recensioni, idempotenza GPS, livello
         esperienza, protezione username demo - dati di prova rimossi dal
         database reale a fine verifica (verificato a zero residui)
-    [x] Commit locale creato (fixes Fase H) - NON ancora pushato
-    [ ] Push su GitHub + redeploy Render: IN ATTESA DELL'OK DELL'UTENTE
-        (non fatto in automatico come nelle fasi precedenti: un redeploy
-        interromperebbe qualunque tracciamento GPS live in corso, e la
-        prova a piedi della Fase G era ancora aperta a fine sessione
-        precedente - rischio troppo concreto per pushare senza chiedere)
-    [ ] Prova dal vivo nel browser una volta pushato (Chrome non
-        disponibile in questa sessione, verificato tutto via API dirette)
+    [x] Commit locale creato (fixes Fase H)
+    [x] Push su GitHub (commit 516badd) su richiesta esplicita
+        dell'utente ("manda tutto online, salva tutto correttamente e in
+        sicurezza"), redeploy Render avviato automaticamente
+    [x] Home page ricontrollata raggiungibile (codice 200) subito dopo
+        il push
+    [ ] Verifica di stabilita' piu' lunga (qualche minuto di normale
+        navigazione) - NON fatta, sessione chiusa subito dopo il primo
+        controllo per limite di utilizzo dell'utente: PRIMA COSA da fare
+        a inizio prossima sessione
+    [ ] Prova dal vivo nel browser (Chrome non disponibile in questa
+        sessione, verificato tutto via API dirette)
+    [ ] Nuova lista di richieste dell'utente (uso reale del sito online)
+        aggiunta in cose_da_fare.txt punti 7-14, ricognizione tecnica
+        gia' fatta (vedi nota dedicata in cima al file) - da pianificare
+        e implementare in una sessione futura, NON ancora iniziata
 
 
 COME RIPRENDERE IL LAVORO IN UNA NUOVA SESSIONE

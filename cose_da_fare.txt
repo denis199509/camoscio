@@ -109,7 +109,57 @@ errore da non fare: non riscaricare tutta la mappa (la devi scaricare prima dell
 
 
 
-5) cambiare i colori del sito con colori piu inerenti alla montagna come verde, marrone chiaro ecc 
+5) cambiare i colori del sito con colori piu inerenti alla montagna come verde, marrone chiaro ecc
 
 
 6) fai controllo per identificare bug
+
+
+=====================================================================
+NUOVA LISTA (aggiunta 2026-07-25, dopo la Fase H caccia ai bug) - segnalazioni
+dell'utente dopo aver usato il sito vero (online, dopo il push della Fase H).
+Da pianificare e implementare in una sessione futura.
+=====================================================================
+
+7) Recupero password in caso di dimenticanza - manca del tutto, va aggiunto.
+
+8) Scelta del punto di ritrovo di un'escursione dalla mappa invece che a coordinate
+scritte a mano (oggi il form di creazione escursione chiede latitudine/longitudine
+come numeri, troppo difficile da trovare per una persona normale). Vorrei:
+ - una barra di ricerca con affianco un simbolo di mappa;
+ - se scrivo un nome di luogo (es. "Campo Imperatore") il sistema lo deve trovare
+   sulla mappa;
+ - in alternativa, cliccando il simbolo della mappa si apre la mappa vera e posso
+   scegliere il punto direttamente li;
+ - se il punto scelto sulla mappa e' molto vicino a un luogo con un nome noto (es.
+   Campo Imperatore), usare quel nome come riferimento (piu' facile da capire per
+   un principiante) invece delle sole coordinate;
+ - se il punto non ha nessun riferimento vicino, tenere le coordinate come
+   informazione, con la possibilita' di copiarle per incollarle su Google Maps.
+
+9) La mappa sul telefono e' inutilizzabile, tutto troppo piccolo (provato sia da
+telefono che da PC creando un'escursione di prova).
+
+10) Manca una pagina "Le mie escursioni": le escursioni che ho creato, quelle a cui
+partecipo e quelle gia' fatte non si trovano facilmente sul sito (oggi c'e' solo
+un elenco generale di tutte le escursioni di tutti).
+
+11) Quando avvio il tracciamento dal pulsante a forma di scarpone (in basso a
+destra), tempo/distanza/dislivello si aggiornano correttamente, ma SULLA MAPPA il
+mio segnaposto non si muove seguendo la posizione GPS reale - resta fermo dov'era,
+lo posso solo trascinare a mano. Deve seguire la posizione GPS vera durante il
+tracciamento.
+
+12) Nella pagina "Mappa & Waze": togliere il nome "Waze" (non deve piu' comparire).
+
+13) Nuova funzionalita' sulla pagina Mappa: poter progettare in anticipo il percorso
+di una futura escursione scegliendo piu' punti sulla mappa. Esempio: escursione al
+Corno Grande, primo punto a Campo Imperatore (partenza), secondo punto alla Sella
+del Monte Aquila. Il sistema deve collegare automaticamente i punti scelti seguendo
+i sentieri conosciuti. Se passo per una zona senza sentieri mappati, voglio poter
+scegliere di NON agganciarmi ai sentieri mentre creo il progetto: in quel caso i
+punti si collegano in linea d'aria (retta), senza seguire nessun sentiero.
+
+14) Semplificare il tracciamento live: una volta aperta la mappa, un tasto semplice
+"Comincia registrazione" che segue il GPS reale sulla mappa e disegna il percorso
+fatto con una linea blu chiaro (i punti dove sono passato). Collegato al punto 11.
