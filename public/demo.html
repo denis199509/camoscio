@@ -38,6 +38,20 @@
             setTimeout(() => toast.remove(), 4000);
         };
 
+        // Un account demo non ha password: chiunque puo' farvi accesso e, da li', rinominarsi
+        // (campo username, normalmente modificabile dal proprio profilo). Senza questo escaping
+        // un nome scelto apposta con HTML dentro avvelenerebbe questa pagina pubblica per
+        // chiunque la visiti dopo (bug trovato in Fase H, caccia ai bug generale).
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
         async function loadDemoAccounts() {
             const grid = document.getElementById('demo-accounts-grid');
             try {
@@ -45,9 +59,9 @@
                 const accounts = await res.json();
                 grid.innerHTML = accounts.map(u => `
                     <div class="demo-account-btn" data-id="${u.id}">
-                        <span class="demo-avatar">${u.avatar || '🥾'}</span>
-                        <span class="demo-name">${u.username}</span>
-                        <span class="demo-level">${u.experienceLevel || ''}</span>
+                        <span class="demo-avatar">${escapeHtml(u.avatar) || '🥾'}</span>
+                        <span class="demo-name">${escapeHtml(u.username)}</span>
+                        <span class="demo-level">${escapeHtml(u.experienceLevel) || ''}</span>
                     </div>
                 `).join('');
 

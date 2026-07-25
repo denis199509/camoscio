@@ -36,6 +36,11 @@ const userSchema = new mongoose.Schema({
     },
     avatar: { type: String, default: '🏔️' },
     trainingGoal: { type: String, default: '' },
+    // Citta'/zona di partenza per il matching carpooling (vedi public/js/carpool.js): il campo
+    // mancava dallo schema (bug trovato in Fase H) - veniva scartato silenziosamente ad ogni
+    // salvataggio, cosi' il matching per citta' funzionava solo per coincidenza tra account
+    // diversi sullo stesso browser (via il fallback localStorage), mai tra utenti veri.
+    homeCity: { type: String, default: '' },
     localExpert: {
         type: new mongoose.Schema({
             area: String,

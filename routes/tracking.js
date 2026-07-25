@@ -143,7 +143,16 @@ router.post('/:id/points', requireAuth, async (req, res) => {
         }
 
         let lastPoint = session.points.length > 0 ? session.points[0] : null;
-        const sanitized = sanitizePoints(req.body.points, lastPoint ? lastPoint[2] : 0);
+        let sanitized = sanitizePoints(req.body.points, lastPoint ? lastPoint[2] : 0);
+
+        // Idempotenza: se il telefono rimanda un gruppo di punti gia' ricevuto (es. la
+        // richiesta precedente e' andata a buon fine sul server ma la risposta si e' persa per
+        // strada, proprio il caso "poco campo" per cui esiste questa funzionalita' - il client
+        // allora la considera fallita e la rimette in coda), scarta i punti non piu' nuovi del
+        // l'ultimo gia' salvato invece di risommarne distanza/dislivello e duplicarli in coda.
+        if (lastPoint) {
+            sanitized = sanitized.filter(p => p[3] > lastPoint[3]);
+        }
         if (sanitized.length === 0) {
             return res.status(400).json({ error: 'Nessun punto GPS valido ricevuto' });
         }

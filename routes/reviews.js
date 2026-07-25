@@ -4,6 +4,7 @@ const router = express.Router();
 const Review = require('../models/Review');
 const ReviewLock = require('../models/ReviewLock');
 const User = require('../models/User');
+const Hike = require('../models/Hike');
 const { requireAuth } = require('../middleware/auth');
 
 // Ottieni recensioni aggregate per un utente
@@ -23,20 +24,37 @@ router.post('/', requireAuth, async (req, res) => {
         const { targetUserId, punctuality, equipment, respect, comment, hikeId } = req.body;
         const reviewerId = req.session.userId;
 
+        // hikeId ora obbligatorio (bug trovato in Fase H): prima bastava ometterlo per aggirare
+        // del tutto il blocco anti-spam sotto e recensire la stessa persona un numero illimitato
+        // di volte, falsandone la reputazione. Verifica anche che le due persone abbiano
+        // DAVVERO condiviso quell'escursione (mai fidarsi solo dell'accoppiata di ID mandata dal
+        // client) e che non ci si stia autorecensendo.
+        if (!targetUserId || !hikeId) {
+            return res.status(400).json({ error: "Manca il destinatario o l'escursione condivisa" });
+        }
+        if (String(targetUserId) === String(reviewerId)) {
+            return res.status(400).json({ error: 'Non puoi recensire te stesso' });
+        }
+        const sharedHike = await Hike.findOne({
+            _id: hikeId,
+            participants: { $all: [reviewerId, targetUserId] }
+        });
+        if (!sharedHike) {
+            return res.status(403).json({ error: 'Puoi recensire solo chi ha condiviso con te questa escursione' });
+        }
+
         // Anti-spam: un hash one-way (mai reviewerId in chiaro) impedisce a chi ha già recensito
         // questa persona per questa escursione di rifarlo. L'indice unico su ReviewLock (non solo
         // un controllo prima di scrivere) impedisce la doppia recensione anche in caso di due
         // richieste arrivate nello stesso istante.
-        if (hikeId) {
-            const lockHash = crypto.createHash('sha256').update(`${reviewerId}|${targetUserId}|${hikeId}`).digest('hex');
-            try {
-                await ReviewLock.create({ lockHash });
-            } catch (lockErr) {
-                if (lockErr.code === 11000) {
-                    return res.status(409).json({ error: 'Hai già recensito questa persona per questa escursione.' });
-                }
-                throw lockErr;
+        const lockHash = crypto.createHash('sha256').update(`${reviewerId}|${targetUserId}|${hikeId}`).digest('hex');
+        try {
+            await ReviewLock.create({ lockHash });
+        } catch (lockErr) {
+            if (lockErr.code === 11000) {
+                return res.status(409).json({ error: 'Hai già recensito questa persona per questa escursione.' });
             }
+            throw lockErr;
         }
 
         await Review.create({

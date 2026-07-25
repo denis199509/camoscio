@@ -482,7 +482,7 @@ function renderMapMarkers() {
         marker.bindPopup(`
             <div style="color: white; font-family: inherit;">
                 <h5 style="margin: 0 0 4px 0; color: #A83B2E;">${title}</h5>
-                <p style="font-size: 0.8rem; margin: 0 0 8px 0;">${rep.description}</p>
+                <p style="font-size: 0.8rem; margin: 0 0 8px 0;">${escapeHtml(rep.description)}</p>
                 <span class="small text-muted">Segnalato il: ${new Date(rep.createdAt).toLocaleDateString()}</span>
             </div>
         `);
@@ -507,7 +507,7 @@ function renderMapMarkers() {
             
             marker.bindPopup(`
                 <div style="color: white; font-family: inherit; text-align: center;">
-                    <h5 style="margin: 0 0 4px 0;">📍 ${peak.name}</h5>
+                    <h5 style="margin: 0 0 4px 0;">📍 ${escapeHtml(peak.name)}</h5>
                     <p style="font-size: 0.8rem; margin: 0 0 6px 0;">Altitudine: <b>${peak.altitude}m</b></p>
                     <span class="badge ${isUnlocked ? 'badge-green' : 'badge-accent'}">
                         ${isUnlocked ? 'Timbro Collezionato ✓' : 'Timbro non Sbloccato'}
@@ -547,7 +547,7 @@ function renderWazeReportsList() {
         item.innerHTML = `
             <span>${emoji}</span>
             <div class="waze-item-desc">
-                <strong>${rep.description}</strong>
+                <strong>${escapeHtml(rep.description)}</strong>
                 <div class="text-muted small">Coord: ${rep.lat.toFixed(3)}, ${rep.lng.toFixed(3)}</div>
             </div>
             <button class="waze-item-resolve" onclick="resolveReportDirectly('${rep.id}')" title="Risolvi segnalazione">✓</button>
@@ -556,24 +556,20 @@ function renderWazeReportsList() {
     });
 }
 
-// Rimuove un report risolto
+// Segna un report come risolto sul server (aggiorna l'originale, non ne crea uno nuovo)
 window.resolveReportDirectly = async function(reportId) {
-    // Nel nostro server locale possiamo simulare la rimozione o inviare una richiesta
-    // In questo mock aggiorniamo lo stato locale per reattività immediata
     const db = window.CamoscioState;
     const index = db.reports.findIndex(r => r.id === reportId);
     if (index !== -1) {
         db.reports[index].status = 'resolved';
-        // Invia una finta cancellazione al DB locale del server (oppure lo aggiorna)
         try {
-            await fetch(`/api/reports`, {
-                method: 'POST',
+            await fetch(`/api/reports/${reportId}`, {
+                method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                // Salvando l'anomalia come risolta
-                body: JSON.stringify({ id: reportId, status: 'resolved' })
+                body: JSON.stringify({ status: 'resolved' })
             });
         } catch(e) {}
-        
+
         renderMapMarkers();
         renderWazeReportsList();
     }

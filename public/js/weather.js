@@ -50,7 +50,7 @@ function renderWeatherData(data, placeName) {
         { name: "Cima / Cresta", elevation: 2500 }
     ];
 
-    let html = `<h5 style="margin-bottom: 8px; color: #FFF;">Ritrovo: ${placeName}</h5>`;
+    let html = `<h5 style="margin-bottom: 8px; color: #FFF;">Ritrovo: ${escapeHtml(placeName)}</h5>`;
     html += `<div style="font-size: 0.8rem; margin-bottom: 12px; color: var(--color-text-secondary);">Precipitazioni: <b>${rainProb}%</b> | Instabilità CAPE: <b>${Math.round(capeValue)} J/kg</b></div>`;
 
     altitudes.forEach(alt => {

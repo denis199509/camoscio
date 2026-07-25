@@ -519,7 +519,7 @@ function renderHikeSelectOptions() {
     const currentValue = select.value;
 
     select.innerHTML = '<option value="">Nessuna - traccia libera</option>' +
-        hikes.map(h => `<option value="${h.id}">${h.title}</option>`).join('');
+        hikes.map(h => `<option value="${h.id}">${escapeHtml(h.title)}</option>`).join('');
 
     if (currentValue && hikes.some(h => h.id === currentValue)) {
         select.value = currentValue;

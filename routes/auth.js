@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const validator = require('validator');
 const router = express.Router();
 const User = require('../models/User');
+const { mongoose } = require('../db/mongo');
 
 const MAX_PHOTO_LENGTH = 2 * 1024 * 1024; // ~1.5MB decodificati: "piccola immagine", non un file pesante
 
@@ -138,6 +139,14 @@ router.get('/demo-accounts', async (req, res) => {
 // Login demo: nessuna password, funziona SOLO per i 4 account storici isDemoAccount:true
 router.post('/demo-login', async (req, res) => {
     try {
+        // Convalida il formato PRIMA di passarlo alla query: senza questo controllo un valore
+        // non stringa (es. {"$ne": null}) verrebbe comunque interpretato da Mongoose come
+        // operatore di query invece che come ID letterale (bug trovato in Fase H). Qui
+        // l'impatto pratico e' minimo (i 4 account demo sono gia' tutti pubblici e senza
+        // password), ma resta comunque scorretto fidarsi cosi' di un valore mandato dal client.
+        if (typeof req.body.userId !== 'string' || !mongoose.isValidObjectId(req.body.userId)) {
+            return res.status(400).json({ error: 'Richiesta non valida' });
+        }
         const user = await User.findOne({ _id: req.body.userId, isDemoAccount: true });
         if (!user) {
             return res.status(404).json({ error: 'Account demo non trovato' });

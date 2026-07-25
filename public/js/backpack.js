@@ -169,15 +169,16 @@ function renderChecklistUI(items, hikeId) {
         const catBox = document.createElement("div");
         catBox.className = "backpack-category";
         
+        const catDomKey = catName.replace(/[^a-zA-Z0-9]/g, '');
         catBox.innerHTML = `
-            <h5>${catName}</h5>
-            <div class="backpack-list-items" id="cat-items-${catName.replace(/\s+/g, '')}">
+            <h5>${escapeHtml(catName)}</h5>
+            <div class="backpack-list-items" id="cat-items-${catDomKey}">
                 <!-- Articoli caricati qui -->
             </div>
         `;
         container.appendChild(catBox);
 
-        const itemsContainer = document.getElementById(`cat-items-${catName.replace(/\s+/g, '')}`);
+        const itemsContainer = document.getElementById(`cat-items-${catDomKey}`);
         
         categories[catName].forEach((item, index) => {
             const itemRow = document.createElement("div");
@@ -196,7 +197,7 @@ function renderChecklistUI(items, hikeId) {
                 if (item.assignedTo) {
                     const assignee = db.users.find(u => u.id === item.assignedTo);
                     const name = assignee ? assignee.username.split(" ")[0] : "Qualcuno";
-                    assignmentLabel = `<span class="item-assigned">Porta: ${name}</span>`;
+                    assignmentLabel = `<span class="item-assigned">Porta: ${escapeHtml(name)}</span>`;
                 } else {
                     assignmentLabel = `<span class="item-assigned" style="color:var(--accent-orange)">Da Assegnare</span>`;
                 }
@@ -204,8 +205,8 @@ function renderChecklistUI(items, hikeId) {
 
             itemRow.innerHTML = `
                 <div class="backpack-item-left ${isChecked ? 'checked' : ''}">
-                    <input type="checkbox" id="check-${catName.replace(/\s+/g, '')}-${index}" ${isChecked ? 'checked' : ''}>
-                    <span>${item.name}</span>
+                    <input type="checkbox" id="check-${catDomKey}-${index}" ${isChecked ? 'checked' : ''}>
+                    <span>${escapeHtml(item.name)}</span>
                 </div>
                 <div class="backpack-item-right">
                     ${item.mandatory ? '<span class="item-mandatory-tag">OBBLIGATORIO</span>' : ''}
@@ -267,13 +268,13 @@ function renderWeightDistribution(hike) {
         const weightKg = (weights[pId] / 1000).toFixed(2);
 
         itemRow.innerHTML = `
-            <span>${user.avatar} ${user.username}</span>
+            <span>${user.avatar} ${escapeHtml(user.username)}</span>
             <div style="display:flex; align-items:center; gap: 10px;">
                 <!-- Assegnatore rapido oggetti condivisi -->
                 <select onchange="reassignSharedGear('${hike.id}', '${pId}', this.value)" class="user-select-dropdown" style="padding: 2px 4px; font-size: 0.75rem;">
                     <option value="">Assegna oggetto...</option>
                     ${hike.backpackTemplate.filter(item => !item.assignedTo || item.assignedTo !== pId).map(item => `
-                        <option value="${item.name}">${item.name} (${item.weight}g)</option>
+                        <option value="${escapeHtml(item.name)}">${escapeHtml(item.name)} (${item.weight}g)</option>
                     `).join('')}
                 </select>
                 <strong>${weightKg} kg</strong>

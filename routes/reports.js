@@ -20,4 +20,21 @@ router.post('/', requireAuth, async (req, res) => {
     }
 });
 
+// Segna una segnalazione come risolta (es. ghiaccio sciolto, frana rimossa) - qualunque utente
+// loggato puo' confermarlo, stesso spirito crowdsourcing di Waze gia' usato per crearle. Aggiorna
+// il documento esistente invece di crearne uno nuovo (vedi bug noto in leggimi.txt: la vecchia
+// resolveReportDirectly() in map.js POSTava di nuovo su questa rotta, creando un duplicato invece
+// di risolvere l'originale, che restava per sempre "attivo").
+router.patch('/:id', requireAuth, async (req, res) => {
+    try {
+        const report = await Report.findByIdAndUpdate(req.params.id, { status: 'resolved' }, { new: true });
+        if (!report) {
+            return res.status(404).json({ error: 'Segnalazione non trovata' });
+        }
+        res.json(report);
+    } catch (e) {
+        res.status(400).json({ error: 'Impossibile aggiornare la segnalazione' });
+    }
+});
+
 module.exports = router;

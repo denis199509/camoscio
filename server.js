@@ -9,6 +9,7 @@ const session = require('express-session');
 const { MongoStore } = require('connect-mongo');
 const { connectMongo } = require('./db/mongo');
 const { loadTrailIndex } = require('./lib/trailIndex');
+const { requireAuth } = require('./middleware/auth');
 
 const authRouter = require('./routes/auth');
 const usersRouter = require('./routes/users');
@@ -36,7 +37,10 @@ app.set('trust proxy', 1);
 
 app.use(express.json({ limit: '10mb' })); // limite alzato per le note vocali del diario e le foto profilo (base64)
 
-app.use(session({
+// Tenuta come variabile a parte (non solo dentro app.use) perche' la riusa anche il WebSocket
+// del mesh networking piu' sotto, per riconoscere chi si connette senza duplicare la logica di
+// lettura/verifica del cookie di sessione.
+const sessionMiddleware = session({
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
@@ -47,7 +51,8 @@ app.use(session({
         sameSite: 'lax',
         maxAge: 30 * 24 * 60 * 60 * 1000 // 30 giorni
     }
-}));
+});
+app.use(sessionMiddleware);
 
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -83,8 +88,10 @@ app.use('/api/tracking', trackingRouter);
 app.use('/api/regions', regionsRouter);
 
 // Carica una nota vocale del diario (base64 in JSON, nessuna dipendenza aggiuntiva).
-// Salva su disco, non nel database: resta qui perche' non riguarda MongoDB.
-app.post('/api/uploads/audio', (req, res) => {
+// Salva su disco, non nel database: resta qui perche' non riguarda MongoDB. requireAuth
+// aggiunto in Fase H (caccia ai bug generale): mancava del tutto, chiunque - anche senza
+// account - poteva scrivere file arbitrari sul disco del server senza limite di quantita'.
+app.post('/api/uploads/audio', requireAuth, (req, res) => {
     const { audioBase64, mimeType } = req.body;
     if (!audioBase64) {
         return res.status(400).json({ error: 'Nessun audio ricevuto' });
@@ -106,7 +113,27 @@ app.post('/api/uploads/audio', (req, res) => {
 // --- SERVER HTTP & WEBSOCKET SETUP ---
 
 const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
+// noServer: gestiamo l'upgrade a mano sotto, per poter controllare la sessione PRIMA di
+// accettare la connessione (vedi bug corretto in Fase H sotto).
+const wss = new WebSocket.Server({ noServer: true });
+
+// Bug corretto in Fase H (caccia ai bug generale): questo WebSocket non richiedeva ALCUN login,
+// chiunque su internet poteva collegarsi direttamente (senza nemmeno aver mai aperto il sito) e
+// trasmettere falsi messaggi/SOS a chiunque avesse la pagina Sicurezza aperta - grave in
+// particolare per un canale pensato per le emergenze. Riusa lo stesso sessionMiddleware di
+// Express sulla richiesta di upgrade per leggere il cookie di sessione gia' esistente, senza
+// duplicarne la logica; una richiesta di upgrade senza sessione valida viene chiusa subito.
+server.on('upgrade', (request, socket, head) => {
+    sessionMiddleware(request, {}, () => {
+        if (!request.session || !request.session.userId) {
+            socket.destroy();
+            return;
+        }
+        wss.handleUpgrade(request, socket, head, (ws) => {
+            wss.emit('connection', ws, request);
+        });
+    });
+});
 
 // Gestione dei messaggi WebSocket per il mesh networking locale
 wss.on('connection', (ws) => {

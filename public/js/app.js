@@ -13,6 +13,21 @@ window.CamoscioState = {
     activeHikeId: null // Escursione attualmente selezionata da Zaino/Carpooling/Mappa; default hikes[0] finché non se ne sceglie una
 };
 
+// Escaping di sicurezza per inserire testo scritto da un utente (titoli, bio, nomi, messaggi...)
+// dentro innerHTML: senza questo, chiunque potrebbe eseguire script arbitrario nel browser di chi
+// legge semplicemente scrivendo HTML nei tanti campi di testo libero dell'app (username, titoli
+// escursione, messaggi mesh, ecc. - vedi caccia ai bug Fase H). "Chrome globale" come showToast
+// sotto: caricato da app.js ma usato da tutti gli altri moduli, stesso criterio già in uso.
+window.escapeHtml = function(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+};
+
 // --- COMPONENTE TOAST/MODAL NON BLOCCANTE (sostituisce alert/confirm/prompt nativi) ---
 // "Chrome globale" dell'app, non legato a un singolo modulo/funzionalità - stesso criterio già
 // usato per window.CamoscioState.
@@ -319,7 +334,7 @@ function updateHeaderUserWidget() {
 
     const avatarEl = document.getElementById("current-user-avatar");
     if (usr.profilePhoto) {
-        avatarEl.innerHTML = `<img src="${usr.profilePhoto}" alt="Foto profilo" class="avatar-photo">`;
+        avatarEl.innerHTML = `<img src="${escapeHtml(usr.profilePhoto)}" alt="Foto profilo" class="avatar-photo">`;
     } else {
         avatarEl.textContent = usr.avatar;
     }
@@ -358,7 +373,7 @@ function renderNotificationBell() {
 
     list.innerHTML = notifications.map(n => `
         <div class="notification-item ${n.read ? '' : 'unread'}" onclick="markNotificationRead('${n.id}')">
-            ${n.text}
+            ${escapeHtml(n.text)}
             <span class="notification-time">${new Date(n.createdAt).toLocaleString([], { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
         </div>
     `).join("");

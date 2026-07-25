@@ -161,7 +161,7 @@ function renderHikesList() {
                 .map(b => db.users.find(u => u.id === b.userId))
                 .filter(Boolean);
             if (otherBookmarkers.length > 0) {
-                const names = otherBookmarkers.map(u => `<b>${u.username.split(" ")[0]}</b>`).join(" e ");
+                const names = otherBookmarkers.map(u => `<b>${escapeHtml(u.username.split(" ")[0])}</b>`).join(" e ");
                 trailMatchHtml = `<div class="trail-match-line small"><i data-lucide="star"></i> Anche ${names} ${otherBookmarkers.length === 1 ? "ha" : "hanno"} messo questo sentiero nei preferiti.</div>`;
             }
         }
@@ -174,9 +174,9 @@ function renderHikesList() {
             const pUser = db.users.find(u => u.id === pId);
             if (!pUser) return "";
             const isLocalExpert = pUser.localExpert && pUser.localExpert.active;
-            const expertTitlePart = isLocalExpert ? ` — Esperto locale: ${pUser.localExpert.area}` : "";
+            const expertTitlePart = isLocalExpert ? ` — Esperto locale: ${escapeHtml(pUser.localExpert.area)}` : "";
             return `
-                <div class="p-avatar ${pUser.kycVerified ? 'verified' : ''} ${isLocalExpert ? 'local-expert' : ''}" title="${pUser.username} (Rep: ${pUser.reputation}%)${expertTitlePart}">
+                <div class="p-avatar ${pUser.kycVerified ? 'verified' : ''} ${isLocalExpert ? 'local-expert' : ''}" title="${escapeHtml(pUser.username)} (Rep: ${pUser.reputation}%)${expertTitlePart}">
                     ${pUser.avatar}
                 </div>
             `;
@@ -215,7 +215,7 @@ function renderHikesList() {
                 
                 return `
                     <div class="veto-request-item">
-                        <span>${pendingUser.avatar} <b>${pendingUser.username}</b> (Rep: ${pendingUser.reputation}%, ${pendingUser.experienceLevel})</span>
+                        <span>${pendingUser.avatar} <b>${escapeHtml(pendingUser.username)}</b> (Rep: ${pendingUser.reputation}%, ${pendingUser.experienceLevel})</span>
                         <div class="veto-actions">
                             <button class="btn btn-sm btn-success" style="padding:2px 6px;" onclick="approveParticipant('${hike.id}', '${pendingId}')">Accetta</button>
                             <button class="btn btn-sm btn-danger" style="padding:2px 6px;" onclick="declineParticipant('${hike.id}', '${pendingId}')">Rifiuta</button>
@@ -234,10 +234,10 @@ function renderHikesList() {
 
         card.innerHTML = `
             <span class="badge badge-primary hike-difficulty-badge">${hike.difficulty}</span>
-            <h4 style="color:#FFF; margin-bottom: 4px;">${hike.title}</h4>
-            <p class="small text-muted" style="margin-bottom: 8px;">Organizzato da: <b>${creatorName}</b> ${creator && creator.kycVerified ? '🔹' : ''}</p>
-            
-            <p class="small text-secondary" style="line-height:1.4; height: 60px; overflow:hidden; text-overflow:ellipsis;">${hike.description}</p>
+            <h4 style="color:#FFF; margin-bottom: 4px;">${escapeHtml(hike.title)}</h4>
+            <p class="small text-muted" style="margin-bottom: 8px;">Organizzato da: <b>${escapeHtml(creatorName)}</b> ${creator && creator.kycVerified ? '🔹' : ''}</p>
+
+            <p class="small text-secondary" style="line-height:1.4; height: 60px; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(hike.description)}</p>
             
             <div class="hike-meta-row">
                 <div class="hike-meta-item">
@@ -548,7 +548,7 @@ function renderGoalMatches(currentUser) {
         const item = document.createElement("div");
         item.className = "goal-match-item";
         item.innerHTML = `
-            <span>${m.avatar} <b>${m.username}</b> si allena per: <strong style="color:var(--accent-orange)">${m.trainingGoal}</strong></span>
+            <span>${m.avatar} <b>${escapeHtml(m.username)}</b> si allena per: <strong style="color:var(--accent-orange)">${escapeHtml(m.trainingGoal)}</strong></span>
             <button class="btn btn-sm btn-secondary" onclick="inviteToSquadDirectly('${m.id}')">Invita in Squadra</button>
         `;
         container.appendChild(item);
@@ -603,7 +603,7 @@ function renderSquadsList() {
 
         item.innerHTML = `
             <div>
-                <h5>👥 ${squad.name}</h5>
+                <h5>👥 ${escapeHtml(squad.name)}</h5>
                 <div class="squad-members-row">${membersAvatars}</div>
             </div>
             <div>
@@ -629,7 +629,7 @@ function populateSquadMembersCheckboxes() {
         const label = document.createElement("label");
         label.innerHTML = `
             <input type="checkbox" name="squad-member" value="${u.id}">
-            <span>${u.avatar} ${u.username}</span>
+            <span>${u.avatar} ${escapeHtml(u.username)}</span>
         `;
         container.appendChild(label);
     });
@@ -813,19 +813,19 @@ function renderDiaryTimeline() {
 
             item.innerHTML = `
                 <div class="timeline-header">
-                    <span>${avatar} <b>${name}</b></span>
+                    <span>${avatar} <b>${escapeHtml(name)}</b></span>
                     <span>${new Date(entry.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                 </div>
                 <div class="timeline-body">
-                    <p>${entry.textNote}</p>
-                    ${entry.mediaUrl ? `<img src="${entry.mediaUrl}" alt="Media Diario">` : ''}
-                    ${entry.audioNoteUrl ? `<audio controls src="${entry.audioNoteUrl}"></audio>` : ''}
+                    <p>${escapeHtml(entry.textNote)}</p>
+                    ${entry.mediaUrl ? `<img src="${escapeHtml(entry.mediaUrl)}" alt="Media Diario">` : ''}
+                    ${entry.audioNoteUrl ? `<audio controls src="${escapeHtml(entry.audioNoteUrl)}"></audio>` : ''}
                 </div>
             `;
             filmstrip.appendChild(item);
         });
 
-        groupBox.innerHTML = `<h6>${hike ? hike.title : "Altre note"}</h6>`;
+        groupBox.innerHTML = `<h6>${escapeHtml(hike ? hike.title : "Altre note")}</h6>`;
         groupBox.appendChild(filmstrip);
         container.appendChild(groupBox);
     });

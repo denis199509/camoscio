@@ -8,6 +8,98 @@ const Completion = require('../models/Completion');
 const { requireAuth } = require('../middleware/auth');
 const { regionForPoint } = require('../lib/regions');
 
+// --- Autorizzazione fine-grained per PUT /:id (vedi sotto) ---
+// Bug trovato in Fase H (caccia ai bug generale): questa rotta accettava QUALUNQUE modifica da
+// QUALUNQUE utente loggato, senza controllare che fosse il creatore dell'escursione - usata pero'
+// da tante funzionalita' diverse (carpool.js, backpack.js, social.js) dove un partecipante DEVE
+// poter cambiare alcune cose (la propria offerta di carpooling, la propria iscrizione...) senza
+// essere il creatore. Le funzioni sotto permettono solo le modifiche che un normale partecipante
+// dovrebbe davvero poter fare da solo; tutto il resto resta riservato al creatore.
+
+function diffIdLists(oldList, newList) {
+    const oldSet = new Set((oldList || []).map(String));
+    const newSet = new Set((Array.isArray(newList) ? newList : []).map(String));
+    return {
+        added: [...newSet].filter(id => !oldSet.has(id)),
+        removed: [...oldSet].filter(id => !newSet.has(id))
+    };
+}
+
+// Un utente normale puo': iscriversi/ritirarsi da solo (rispettando manualApproval), ritirare una
+// propria richiesta in sospeso, o invitare altri (es. la propria squadra) SOLO se e' gia' lui
+// stesso un partecipante. Spostare/rimuovere l'ID di un ALTRO (approvare o rifiutare una
+// richiesta, "Veto Capogruppo") resta riservato al creatore.
+function canNonCreatorEditParticipation(hike, userId, body) {
+    const userIdStr = String(userId);
+    const pDiff = diffIdLists(hike.participants, body.participants !== undefined ? body.participants : hike.participants);
+    const pendDiff = diffIdLists(hike.pendingApproval, body.pendingApproval !== undefined ? body.pendingApproval : hike.pendingApproval);
+    const wasParticipant = (hike.participants || []).some(id => String(id) === userIdStr);
+
+    const onlySelfOrEmpty = ids => ids.length === 0 || (ids.length === 1 && ids[0] === userIdStr);
+
+    const touchesOnlySelf = onlySelfOrEmpty(pDiff.added) && onlySelfOrEmpty(pDiff.removed) &&
+        onlySelfOrEmpty(pendDiff.added) && onlySelfOrEmpty(pendDiff.removed);
+    if (touchesOnlySelf) return true;
+
+    // Invito di altri (es. "invita la mia squadra"): solo aggiunte a participants, mai rimozioni
+    // ne' tocchi alle richieste in sospeso, e solo da parte di chi e' gia' un partecipante.
+    return wasParticipant && pDiff.removed.length === 0 && pendDiff.added.length === 0 && pendDiff.removed.length === 0;
+}
+
+// Un utente normale puo' creare/modificare/rimuovere SOLO la propria offerta come autista, e
+// salire/scendere SOLO se stesso dall'auto di un altro. Le impostazioni di viaggio (prezzo
+// benzina, consumo, pedaggio) e le offerte altrui restano del creatore.
+function canNonCreatorEditCarpool(hike, userId, newCarpool) {
+    if (!newCarpool || typeof newCarpool !== 'object' || !Array.isArray(newCarpool.drivers)) return false;
+    const userIdStr = String(userId);
+    const oldCarpool = hike.carpool || {};
+
+    for (const key of ['fuelPrice', 'fuelConsumption', 'tollCost']) {
+        if (newCarpool[key] !== undefined && newCarpool[key] !== oldCarpool[key]) return false;
+    }
+
+    const oldByUser = new Map((oldCarpool.drivers || []).map(d => [String(d.userId), d]));
+    const newByUser = new Map(newCarpool.drivers.map(d => [String(d.userId), d]));
+
+    for (const uid of oldByUser.keys()) {
+        if (uid !== userIdStr && !newByUser.has(uid)) return false; // rimossa un'offerta altrui
+    }
+
+    for (const [uid, newDriver] of newByUser) {
+        if (uid === userIdStr) continue; // la propria offerta: libera
+
+        const oldDriver = oldByUser.get(uid);
+        if (!oldDriver) return false; // creata un'offerta per conto di un altro
+
+        for (const key of Object.keys(newDriver)) {
+            if (key === 'passengers') continue;
+            if (JSON.stringify(newDriver[key]) !== JSON.stringify(oldDriver[key])) return false;
+        }
+
+        const pDiff = diffIdLists(oldDriver.passengers, newDriver.passengers);
+        const onlySelf = ids => ids.every(id => id === userIdStr);
+        if (!onlySelf(pDiff.added) || !onlySelf(pDiff.removed)) return false;
+    }
+
+    return true;
+}
+
+// Un utente normale puo' solo riassegnare "a chi tocca portarlo" (assignedTo) sugli oggetti gia'
+// esistenti della lista zaino condivisa, mai cambiare nome/categoria/peso/obbligatorieta' o la
+// lista stessa (aggiungere/togliere articoli).
+function canNonCreatorEditBackpack(hike, newTemplate) {
+    const oldTemplate = hike.backpackTemplate || [];
+    if (!Array.isArray(newTemplate) || newTemplate.length !== oldTemplate.length) return false;
+
+    return oldTemplate.every((oldItem, i) => {
+        const newItem = newTemplate[i];
+        if (!newItem) return false;
+        return ['name', 'category', 'mandatory', 'weight'].every(
+            key => JSON.stringify(newItem[key]) === JSON.stringify(oldItem[key])
+        );
+    });
+}
+
 // Ottieni escursioni
 router.get('/', requireAuth, async (req, res) => {
     const hikes = await Hike.find();
@@ -65,20 +157,63 @@ router.post('/', requireAuth, async (req, res) => {
     }
 });
 
-// Aggiorna escursione (es. partecipanti, lista zaino, carpooling)
+// Aggiorna escursione (es. partecipanti, lista zaino, carpooling) - le modifiche permesse
+// dipendono da chi chiama: vedi le funzioni canNonCreatorEdit* sopra per i dettagli. Bug
+// trovato in Fase H (caccia ai bug generale): prima chiunque fosse loggato poteva riscrivere
+// QUALUNQUE campo di QUALUNQUE escursione (titolo, ritrovo, partecipanti, carpooling...),
+// bypassando anche l'approvazione manuale del capogruppo.
 router.put('/:id', requireAuth, async (req, res) => {
     try {
-        const update = { ...req.body };
-        delete update.creatorId; // la proprietà dell'escursione non si cambia da questa rotta generica
-
-        const hike = await Hike.findByIdAndUpdate(req.params.id, update, { new: true, runValidators: true });
-        if (hike) {
-            res.json(hike);
-        } else {
-            res.status(404).json({ error: 'Escursione non trovata' });
+        const hike = await Hike.findById(req.params.id);
+        if (!hike) {
+            return res.status(404).json({ error: 'Escursione non trovata' });
         }
+
+        const userId = req.session.userId;
+        const isCreator = hike.creatorId.equals(userId);
+        const body = req.body;
+        const update = {};
+
+        const CREATOR_ONLY_FIELDS = [
+            'title', 'description', 'difficulty', 'maxAltitude', 'distanceKm', 'elevationGain',
+            'date', 'tribeTags', 'manualApproval', 'trailhead', 'location', 'peaks'
+        ];
+        for (const field of CREATOR_ONLY_FIELDS) {
+            if (body[field] !== undefined) {
+                if (!isCreator) {
+                    return res.status(403).json({ error: "Solo chi ha creato l'escursione può modificare questo campo" });
+                }
+                update[field] = body[field];
+            }
+        }
+
+        if (body.participants !== undefined || body.pendingApproval !== undefined) {
+            if (!isCreator && !canNonCreatorEditParticipation(hike, userId, body)) {
+                return res.status(403).json({ error: 'Non puoi modificare così la lista partecipanti' });
+            }
+            if (body.participants !== undefined) update.participants = body.participants;
+            if (body.pendingApproval !== undefined) update.pendingApproval = body.pendingApproval;
+        }
+
+        if (body.carpool !== undefined) {
+            if (!isCreator && !canNonCreatorEditCarpool(hike, userId, body.carpool)) {
+                return res.status(403).json({ error: 'Non puoi modificare così il carpooling' });
+            }
+            update.carpool = body.carpool;
+        }
+
+        if (body.backpackTemplate !== undefined) {
+            if (!isCreator && !canNonCreatorEditBackpack(hike, body.backpackTemplate)) {
+                return res.status(403).json({ error: 'Non puoi modificare così la lista zaino' });
+            }
+            update.backpackTemplate = body.backpackTemplate;
+        }
+
+        const updated = await Hike.findByIdAndUpdate(req.params.id, update, { new: true, runValidators: true });
+        res.json(updated);
     } catch (e) {
-        res.status(404).json({ error: 'Escursione non trovata' });
+        console.error('Errore aggiornamento escursione:', e);
+        res.status(400).json({ error: "Impossibile aggiornare l'escursione" });
     }
 });
 
@@ -106,6 +241,13 @@ router.post('/:id/complete', requireAuth, async (req, res) => {
             return res.status(409).json({ error: 'Escursione già segnata come completata', user });
         }
 
+        // Quante escursioni PRECEDENTI hanno gia' un tempo reale misurato - non e' detto coincida
+        // con completedHikes (si puo' segnare un'escursione come completata senza indicare un
+        // tempo). Bug trovato in Fase H: usare completedHikes al posto di questo (sotto, nella
+        // media del passo) trattava anche le escursioni senza tempo come se avessero gia'
+        // contribuito, diluendo il valore di default con "campioni" che in realta' non esistono.
+        const priorTimedCompletions = await Completion.countDocuments({ userId: user._id, actualTimeHours: { $ne: null } });
+
         await Completion.create({
             userId: user._id,
             hikeId: hike._id,
@@ -115,10 +257,9 @@ router.post('/:id/complete', requireAuth, async (req, res) => {
 
         // Aggiorna il passo personale (media incrementale) solo se è stato dichiarato un tempo reale
         if (actualTimeHours && Number(actualTimeHours) > 0) {
-            const priorSamples = user.completedHikes || 0;
             const observedPaceUp = hike.elevationGain / Number(actualTimeHours);
 
-            const newPaceUp = ((user.averagePaceUp * priorSamples) + observedPaceUp) / (priorSamples + 1);
+            const newPaceUp = ((user.averagePaceUp * priorTimedCompletions) + observedPaceUp) / (priorTimedCompletions + 1);
             const paceRatio = newPaceUp / user.averagePaceUp;
 
             user.averagePaceUp = Math.round(newPaceUp);
@@ -127,10 +268,15 @@ router.post('/:id/complete', requireAuth, async (req, res) => {
 
         user.completedHikes = (user.completedHikes || 0) + 1;
 
-        // Ricalcola il livello di esperienza dalla cronologia reale, mai autodichiarato
-        if (user.completedHikes >= 10 || user.averagePaceUp >= 500) {
+        // Ricalcola il livello di esperienza dalla cronologia reale, mai autodichiarato. Il passo
+        // (averagePaceUp) conta solo se esiste almeno un tempo reale misurato (prima o adesso):
+        // senza questo controllo il valore di default (350, uguale alla soglia "Intermedio" sotto)
+        // promuoveva chiunque gia' alla primissima escursione segnata come completata, pure senza
+        // aver mai dichiarato un tempo reale (bug trovato in Fase H).
+        const hasRealPaceData = priorTimedCompletions > 0 || (actualTimeHours && Number(actualTimeHours) > 0);
+        if (user.completedHikes >= 10 || (hasRealPaceData && user.averagePaceUp >= 500)) {
             user.experienceLevel = 'Esperto';
-        } else if (user.completedHikes >= 4 || user.averagePaceUp >= 350) {
+        } else if (user.completedHikes >= 4 || (hasRealPaceData && user.averagePaceUp >= 350)) {
             user.experienceLevel = 'Intermedio';
         } else {
             user.experienceLevel = 'Principiante';

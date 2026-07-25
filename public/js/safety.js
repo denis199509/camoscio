@@ -117,7 +117,7 @@ function activateDeadManSwitch() {
     document.getElementById("emergency-banner").classList.remove("hidden");
 
     // Registra evento sul log satellitare simulato
-    logSimulatedSms("SYSTEM", `Switch Attivato. Rientro atteso: ${new Date(returnTimestamp).toLocaleTimeString()}. Contatto emergenza: ${contact}.`);
+    logSimulatedSms("SYSTEM", `Switch Attivato. Rientro atteso: ${new Date(returnTimestamp).toLocaleTimeString()}. Contatto emergenza: ${escapeHtml(contact)}.`);
 
     startSafetyCountdown();
     updateDashboardSafetyCard();
@@ -201,7 +201,7 @@ function triggerEmergencyAlarm() {
     // Costruisce il messaggio di allerta
     const msg = `ALLARME SOS: L'escursionista non è rientrato in tempo. Ultima posizione GPS: Lat ${lat}, Lng ${lng}. Avviare ricerche!`;
 
-    logSimulatedSms("SOS", `A: ${contact} - MSG: ${msg}`);
+    logSimulatedSms("SOS", `A: ${escapeHtml(contact)} - MSG: ${escapeHtml(msg)}`);
 
     // Notifica visiva forte, persistente finché non viene riconosciuta (non un toast auto-dismiss:
     // un allarme di emergenza non deve poter passare inosservato)
@@ -373,13 +373,20 @@ function displayMeshMessage(packet, isSentByMe) {
     }
 
     const msgDiv = document.createElement("div");
-    
+
+    // Un pacchetto mesh arriva da un altro client via WebSocket (vedi initMeshWebSocket):
+    // va trattato come dato non fidato ed escapato prima di finire in innerHTML, altrimenti
+    // chiunque potrebbe eseguire script arbitrario nel browser di chi legge semplicemente
+    // scrivendo HTML nel campo testo/nome (vedi caccia ai bug Fase H).
+    const senderFirstName = escapeHtml(typeof packet.senderName === 'string' ? packet.senderName.split(" ")[0] : 'Sconosciuto');
+    const text = escapeHtml(typeof packet.text === 'string' ? packet.text : '');
+
     if (packet.isSos) {
         msgDiv.className = "message sos blink";
-        msgDiv.innerHTML = `🚨 <strong>[SOS] ${packet.senderName.split(" ")[0]}</strong>: ${packet.text} <span class="small" style="display:block; font-weight:normal; opacity:0.8;">Pos: ${packet.lat.toFixed(5)}, ${packet.lng.toFixed(5)}</span>`;
+        msgDiv.innerHTML = `🚨 <strong>[SOS] ${senderFirstName}</strong>: ${text} <span class="small" style="display:block; font-weight:normal; opacity:0.8;">Pos: ${packet.lat.toFixed(5)}, ${packet.lng.toFixed(5)}</span>`;
     } else {
         msgDiv.className = `message ${isSentByMe ? 'sent' : 'received'}`;
-        msgDiv.innerHTML = `<strong>${packet.senderName.split(" ")[0]}</strong>: ${packet.text} <span class="small" style="font-size:0.6rem; display:block; opacity:0.6; text-align:right;">${packet.timestamp}</span>`;
+        msgDiv.innerHTML = `<strong>${senderFirstName}</strong>: ${text} <span class="small" style="font-size:0.6rem; display:block; opacity:0.6; text-align:right;">${escapeHtml(typeof packet.timestamp === 'string' ? packet.timestamp : '')}</span>`;
     }
 
     container.appendChild(msgDiv);

@@ -135,7 +135,7 @@ async function renderAddressPrivacyMatch(hike) {
     if (matches.length > 0) {
         statusBox.className = "privacy-status matching";
         
-        const matchedNames = matches.map(m => `<b>${m.user.username.split(" ")[0]}</b> (${m.city})`).join(", ");
+        const matchedNames = matches.map(m => `<b>${escapeHtml(m.user.username.split(" ")[0])}</b> (${escapeHtml(m.city)})`).join(", ");
         statusBox.innerHTML = `
             <i data-lucide="check-circle" style="color:var(--accent-green)"></i>
             <span><strong>CORRISPONDENZA PARTENZA TROVATA!</strong> Anche tu e ${matchedNames} partiti dalla stessa zona. Potete viaggiare insieme!</span>
@@ -144,7 +144,7 @@ async function renderAddressPrivacyMatch(hike) {
         statusBox.className = "privacy-status isolated";
         statusBox.innerHTML = `
             <i data-lucide="shield"></i>
-            <span><strong>Posizione protetta:</strong> Stai partendo da <i>"${myHomeCity}"</i>. Attualmente nessun altro partecipante parte dalla tua zona. La tua partenza rimarrà nascosta per motivi di privacy.</span>
+            <span><strong>Posizione protetta:</strong> Stai partendo da <i>"${escapeHtml(myHomeCity)}"</i>. Attualmente nessun altro partecipante parte dalla tua zona. La tua partenza rimarrà nascosta per motivi di privacy.</span>
         `;
     }
 
@@ -276,7 +276,7 @@ function renderDriversList(hike) {
                 const passUser = db.users.find(u => u.id === pId);
                 const name = passUser ? passUser.username.split(" ")[0] : "Passeggero";
                 const avatar = passUser ? passUser.avatar : "👤";
-                return `<span class="badge badge-primary" title="${passUser ? passUser.username : ''}">${avatar} ${name}</span>`;
+                return `<span class="badge badge-primary" title="${escapeHtml(passUser ? passUser.username : '')}">${avatar} ${escapeHtml(name)}</span>`;
             }).join(" ");
         } else {
             passengerListHtml = `<span class="text-muted small italic">Nessun passeggero a bordo</span>`;
@@ -303,10 +303,10 @@ function renderDriversList(hike) {
 
         item.innerHTML = `
             <div class="carpool-group-header">
-                <strong>🚗 Conducente: ${driverUser.username}</strong>
+                <strong>🚗 Conducente: ${escapeHtml(driverUser.username)}</strong>
                 <span>Posti liberi: <b>${seatsLeft}/${driver.seats}</b></span>
             </div>
-            <div class="text-muted small">Partenza da: <b>${driver.departureCity}</b> | Costo stimato passeggero: <strong style="color:var(--accent-green)">€ ${splitCost.toFixed(2)}</strong></div>
+            <div class="text-muted small">Partenza da: <b>${escapeHtml(driver.departureCity)}</b> | Costo stimato passeggero: <strong style="color:var(--accent-green)">€ ${splitCost.toFixed(2)}</strong></div>
             <div style="margin: 10px 0;">
                 <span class="small text-muted" style="display:block; margin-bottom:4px;">Equipaggio:</span>
                 <div class="carpool-passengers">${passengerListHtml}</div>
