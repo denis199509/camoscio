@@ -34,12 +34,7 @@ const activeHikeSessionSchema = new mongoose.Schema({
     // (null se non in pausa): serve per escludere le pause dal calcolo della durata, cosi'
     // il passo medio a fine escursione non viene falsato da una sosta lunga (es. pranzo).
     pausedMs: { type: Number, default: 0 },
-    pausedAt: { type: Date, default: null },
-    // Fase G: punti recenti non ancora agganciati a nessun sentiero noto, in attesa di
-    // capire se e' solo rumore GPS momentaneo o un tratto davvero non mappato (vedi
-    // snapAndBufferPoints in routes/tracking.js) - vuoto quasi sempre, si riempie solo
-    // durante un tratto fuori sentiero e si svuota appena si torna su uno conosciuto.
-    offTrailBuffer: { type: [[Number]], default: [] }
+    pausedAt: { type: Date, default: null }
 });
 
 activeHikeSessionSchema.index(

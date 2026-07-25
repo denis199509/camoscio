@@ -8,93 +8,14 @@ let activeHikePath = []; // Array di coordinate per il sentiero attivo
 let liveTrackPolyline = null; // Percorso REALMENTE registrato durante un tracciamento GPS live (Fase F)
 
 // Ambito geografico attuale della demo: Lazio, Molise, Abruzzo, Marche ("per ora", vedi nota owner).
-// Rettangolo di riserva usato SOLO se per qualche motivo non si riescono a caricare i confini
-// reali dal server (vedi ensureRegionBoundaries) - da Fase G in poi la fonte di verita' sono
-// i poligoni reali in data/region-boundaries.json, serviti da GET /api/regions/boundaries.
+// Unico punto da modificare per allargare l'ambito in futuro (es. a tutta Italia).
 window.CAMOSCIO_REGION_BOUNDS = { minLat: 40.8, maxLat: 43.9, minLng: 11.4, maxLng: 15.2 };
 
 // Coordinate di default (Campo Imperatore, Gran Sasso - Abruzzo)
 const defaultCenter = [42.62, 13.40];
 window.userSimulatedLocation = { lat: 42.4423, lng: 13.5581 }; // Partenza da Campo Imperatore di default
 
-// Ray-casting su un singolo anello [[lng,lat],...] - stessa identica logica di
-// lib/geometry.js lato server (duplicata qui perche' il frontend non ha un bundler/modulo
-// condiviso col backend, stesso criterio gia' in uso per altre piccole funzioni geometriche
-// come calculateDistance).
-function pointInRing(lng, lat, ring) {
-    let inside = false;
-    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-        const [xi, yi] = ring[i];
-        const [xj, yj] = ring[j];
-        const intersect = ((yi > lat) !== (yj > lat)) &&
-            (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi);
-        if (intersect) inside = !inside;
-    }
-    return inside;
-}
-
-function pointInGeojson(lng, lat, geojson) {
-    const ringsSets = geojson.type === 'Polygon' ? [geojson.coordinates] : geojson.coordinates;
-    for (const rings of ringsSets) {
-        let inside = false;
-        for (const ring of rings) {
-            if (pointInRing(lng, lat, ring)) inside = !inside;
-        }
-        if (inside) return true;
-    }
-    return false;
-}
-
-// Vero confine geografico (Fase G): true se il punto e' dentro una delle 4 regioni reali.
-// Finche' i confini reali non sono ancora arrivati dal server, usa il rettangolo di riserva
-// per non lasciare la validazione completamente aperta nel frattempo.
-window.CamoscioIsInRegion = function (lat, lng) {
-    if (window.CAMOSCIO_REGIONS_GEOJSON) {
-        for (const region of Object.values(window.CAMOSCIO_REGIONS_GEOJSON)) {
-            if (pointInGeojson(lng, lat, region)) return true;
-        }
-        return false;
-    }
-    const b = window.CAMOSCIO_REGION_BOUNDS;
-    return lat >= b.minLat && lat <= b.maxLat && lng >= b.minLng && lng <= b.maxLng;
-};
-
-// Scarica una volta sola per pagina i confini regionali reali (Fase G) dal server, e
-// aggiorna anche il rettangolo di riserva perche' racchiuda per bene i confini veri
-// (serve solo come limite morbido di trascinamento della mappa Leaflet, che richiede
-// per forza un rettangolo: la validazione vera e propria usa i poligoni, non questo).
-async function ensureRegionBoundaries() {
-    if (window.CAMOSCIO_REGIONS_GEOJSON) return;
-    try {
-        const res = await fetch('/api/regions/boundaries');
-        const geojson = await res.json();
-        window.CAMOSCIO_REGIONS_GEOJSON = geojson;
-
-        let minLat = Infinity, maxLat = -Infinity, minLng = Infinity, maxLng = -Infinity;
-        for (const region of Object.values(geojson)) {
-            const ringsSets = region.type === 'Polygon' ? [region.coordinates] : region.coordinates;
-            for (const rings of ringsSets) {
-                for (const ring of rings) {
-                    for (const [lng, lat] of ring) {
-                        if (lat < minLat) minLat = lat;
-                        if (lat > maxLat) maxLat = lat;
-                        if (lng < minLng) minLng = lng;
-                        if (lng > maxLng) maxLng = lng;
-                    }
-                }
-            }
-        }
-        window.CAMOSCIO_REGION_BOUNDS = { minLat, maxLat, minLng, maxLng };
-    } catch (e) {
-        console.error('Errore nel caricare i confini regionali reali, resto sul rettangolo approssimativo:', e);
-    }
-}
-
-async function initMapModule() {
-    // I confini reali servono gia' per il maxBounds qui sotto: si aspetta il loro
-    // caricamento (una singola richiesta di rete leggera, ~65KB) prima di creare la mappa.
-    await ensureRegionBoundaries();
-
+function initMapModule() {
     // Inizializza la mappa Leaflet, vincolata all'ambito geografico corrente
     const b = window.CAMOSCIO_REGION_BOUNDS;
     window.mapInstance = L.map('map', {

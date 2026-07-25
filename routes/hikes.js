@@ -6,7 +6,6 @@ const Squad = require('../models/Squad');
 const Notification = require('../models/Notification');
 const Completion = require('../models/Completion');
 const { requireAuth } = require('../middleware/auth');
-const { regionForPoint } = require('../lib/regions');
 
 // Ottieni escursioni
 router.get('/', requireAuth, async (req, res) => {
@@ -17,15 +16,6 @@ router.get('/', requireAuth, async (req, res) => {
 // Crea escursione - il creatore e' SEMPRE chi ha fatto login, mai un valore mandato dal client
 router.post('/', requireAuth, async (req, res) => {
     try {
-        // Vincolo hard di cose_da_fare.txt (solo Marche/Lazio/Abruzzo/Molise): finora
-        // controllato SOLO lato client con un rettangolo approssimativo (bypassabile da
-        // chiunque chiami questa rotta direttamente) - Fase G aggiunge lo stesso controllo,
-        // ma reale (poligoni dei confini) e qui, lato server, dove conta davvero.
-        const trailhead = req.body.trailhead;
-        if (!trailhead || !regionForPoint(trailhead.lng, trailhead.lat)) {
-            return res.status(400).json({ error: "Il punto di ritrovo deve trovarsi in Marche, Lazio, Abruzzo o Molise" });
-        }
-
         const creatorId = req.session.userId;
         const hike = await Hike.create({
             ...req.body,
@@ -34,15 +24,7 @@ router.post('/', requireAuth, async (req, res) => {
             pendingApproval: [],
             backpackTemplate: [],
             peaks: [],
-            carpool: { fuelPrice: 1.85, fuelConsumption: 7.0, tollCost: 0, drivers: [] },
-            // BUG preesistente scoperto testando la Fase G (mai passato inosservato prima
-            // perche' nessuno aveva ancora provato a creare un'escursione da quando esiste
-            // l'indice 2dsphere): il form di creazione manda solo "trailhead", mai
-            // "location". Senza queste coordinate l'indice geografico rifiutava OGNI nuova
-            // escursione con un errore MongoDB ("Can't extract geo keys"). Si deriva qui,
-            // una volta per tutte, dalla stessa posizione del trailhead - esattamente lo
-            // scopo per cui il campo "location" esiste (vedi models/Hike.js).
-            location: { type: 'Point', coordinates: [trailhead.lng, trailhead.lat] }
+            carpool: { fuelPrice: 1.85, fuelConsumption: 7.0, tollCost: 0, drivers: [] }
         });
 
         // Notifica automatica ai membri delle squadre ricorrenti del creatore (funzionalità 17b)

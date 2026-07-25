@@ -8,7 +8,6 @@ const fs = require('fs');
 const session = require('express-session');
 const { MongoStore } = require('connect-mongo');
 const { connectMongo } = require('./db/mongo');
-const { loadTrailIndex } = require('./lib/trailIndex');
 
 const authRouter = require('./routes/auth');
 const usersRouter = require('./routes/users');
@@ -22,7 +21,6 @@ const reviewsRouter = require('./routes/reviews');
 const squadsRouter = require('./routes/squads');
 const bookmarksRouter = require('./routes/bookmarks');
 const trackingRouter = require('./routes/tracking');
-const regionsRouter = require('./routes/regions');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -80,7 +78,6 @@ app.use('/api/reviews', reviewsRouter);
 app.use('/api/squads', squadsRouter);
 app.use('/api/bookmarks', bookmarksRouter);
 app.use('/api/tracking', trackingRouter);
-app.use('/api/regions', regionsRouter);
 
 // Carica una nota vocale del diario (base64 in JSON, nessuna dipendenza aggiuntiva).
 // Salva su disco, non nel database: resta qui perche' non riguarda MongoDB.
@@ -137,11 +134,6 @@ connectMongo()
             console.log(` Portale locale: http://localhost:${port}`);
             console.log(`===================================================`);
         });
-
-        // Non blocca l'avvio del server: il tracciamento GPS (Fase F) funziona comunque
-        // senza aggancio al sentiero (Fase G) finche' l'indice non e' pronto, si aggancia
-        // semplicemente da quel momento in poi (vedi lib/trailIndex.js).
-        loadTrailIndex().catch(err => console.error('Errore caricamento indice sentieri (Fase G):', err.message));
     })
     .catch((err) => {
         console.error('Impossibile connettersi a MongoDB Atlas, il server non parte:', err.message);
