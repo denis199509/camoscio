@@ -1,9 +1,16 @@
 ===================================================================
 CAMOSCIO — LEGGIMI (stato progetto, aggiornato automaticamente)
-Ultimo aggiornamento: 2026-07-25 — Fase G online su Render SOLO per
-Lazio e Abruzzo (Marche/Molise gia' scaricati, in pausa per prudenza
-sulla memoria - vedi nota sotto). In attesa di conferma che il sito
-resti stabile e di una prova dal vivo nel browser/telefono.
+Ultimo aggiornamento: 2026-07-25 (fine sessione) — Fase G online su
+Render SOLO per Lazio e Abruzzo, monitorata dal vivo per oltre 2 minuti
+consecutivi senza nessun errore dopo la correzione (vedi INCIDENTE
+sotto): stabile con buona fiducia, ma la conferma definitiva resta la
+prova a piedi dell'utente. In attesa che l'utente provi con calma dal
+telefono, magari facendo due passi in un parco - NESSUNA FRETTA, lo
+fara' quando gli e' comodo. Lavoro salvato/committato/pushato per
+intero, niente di in sospeso in locale, database ripulito da ogni
+residuo di test (verificato a fine sessione: restano solo le 3 sessioni
+vere della Fase F del 2026-07-24, nessuna delle sessioni/candidati di
+prova creati durante il lavoro sulla Fase G).
 ===================================================================
 
 NOTA IMPORTANTE PER CHI RIPARTE DA QUI - INCIDENTE E CORREZIONE
@@ -523,14 +530,23 @@ COSE CHE DEVE FARE L'UTENTE DI PERSONA (non automatizzabili)
    controllare che il percorso disegnato sulla mappa segua il cammino
    reale, provando anche pausa/ripresa/termine e il pulsante "scarica
    mappa offline". CHIEDERGLI COM'E' ANDATA appena possibile.
-7. Prova dal vivo nel browser/telefono della Fase G (aggancio al
-   sentiero) — DA FARE: creare un'escursione con ritrovo in Lazio o
-   Abruzzo (le uniche 2 regioni con sentieri caricati per ora), avviare
-   un tracciamento vicino a un sentiero conosciuto e controllare che il
-   percorso disegnato segua il sentiero vero invece che il segnale GPS
-   grezzo. Controllare anche solo con qualche minuto di navigazione
-   normale (dashboard, mappa, creare un'escursione) che il sito online
-   resti stabile - vedi nota incidente in cima al file.
+7. Prova dal vivo nel telefono della Fase G (aggancio al sentiero) —
+   DA FARE CON CALMA, NESSUNA FRETTA (richiesta esplicita dell'utente a
+   fine sessione 2026-07-25): quando gli e' comodo, anche solo facendo
+   due passi in un parco, aprire il sito da telefono, creare
+   un'escursione con ritrovo in Lazio o Abruzzo (le uniche 2 regioni con
+   sentieri caricati per ora) o usare "traccia libera" senza escursione
+   collegata, avviare un tracciamento vicino a un sentiero conosciuto e
+   controllare che il percorso disegnato segua il sentiero vero invece
+   che il segnale GPS grezzo. Utile anche solo per controllare con
+   qualche minuto di navigazione normale (dashboard, mappa) che il sito
+   online resti stabile nel tempo - vedi nota incidente in cima al file.
+   QUANDO L'UTENTE RIFERISCE L'ESITO (in questa sessione o in una
+   nuova): se e' andata bene, segnare la Fase G come completata nella
+   checklist sotto e proporre di riattivare anche Marche e Molise
+   (basta aggiungerle a ACTIVE_REGIONS in lib/trailIndex.js, i dati sono
+   gia' pronti su MongoDB, non serve altro) prima di passare alla Fase
+   H; se qualcosa non ha funzionato, capire cosa e risolverlo prima.
 
 
 CHECKLIST DI AVANZAMENTO (aggiornare via via che si procede)
