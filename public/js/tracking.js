@@ -34,6 +34,13 @@ const trackingState = {
 let lastLocalPoint = null;
 let isFlushInProgress = false;
 
+// Fase G - Sentieri conosciuti vicini alla zona dell'escursione (coordinate complete),
+// scaricati UNA VOLTA al primo fix GPS della sessione (non l'intero database regionale:
+// il telefono deve restare leggero) e usati solo per un aggancio "veloce e approssimato"
+// del puntino mostrato sulla mappa, in attesa della correzione autorevole del server ad
+// ogni sincronizzazione (vedi flushPendingPoints). null = non ancora richiesti.
+let nearbyTrailSegments = null;
+
 // --- Ciclo di vita della sessione ---
 
 function applySessionState(session) {
@@ -46,6 +53,7 @@ function applySessionState(session) {
     trackingState.baselineSeconds = session.durationSeconds || 0;
     trackingState.activeResumedAtMs = session.status === 'active' ? Date.now() : null;
     lastLocalPoint = null;
+    nearbyTrailSegments = null; // ogni escursione puo' essere in una zona diversa, si riscarica da capo
 }
 
 async function startTracking() {
@@ -225,18 +233,85 @@ async function onPositionUpdate(pos) {
 
     trackingState.lastAccuracy = point[4];
 
+    // Fase G - Al primissimo fix GPS della sessione si scaricano (una volta sola) i
+    // sentieri conosciuti nella zona, per un aggancio rapido e approssimato mostrato subito
+    // sulla mappa. Il dato definitivo resta comunque quello calcolato dal server (vedi
+    // flushPendingPoints): qui e' solo un riscontro visivo immediato, non autorevole.
+    if (nearbyTrailSegments === null) {
+        nearbyTrailSegments = [];
+        loadNearbyTrailSegments(longitude, latitude);
+    }
+    const quickSnapResult = quickSnapToNearbyTrail(longitude, latitude, point[4]);
+    const displayLng = quickSnapResult ? quickSnapResult.point[0] : longitude;
+    const displayLat = quickSnapResult ? quickSnapResult.point[1] : latitude;
+
     // Riscontro immediato lato client, prima ancora della risposta del server
-    accumulateLocalStats(point);
-    if (window.updateLiveGpsPosition) window.updateLiveGpsPosition(latitude, longitude);
-    if (window.addLiveTrackPoint) window.addLiveTrackPoint(latitude, longitude);
+    accumulateLocalStats([displayLng, displayLat, point[2], point[3], point[4]]);
+    if (window.updateLiveGpsPosition) window.updateLiveGpsPosition(displayLat, displayLng);
+    if (window.addLiveTrackPoint) window.addLiveTrackPoint(displayLat, displayLng);
     renderTrackingStats();
     renderGpsQuality();
 
     try {
+        // In coda/al server va SEMPRE il punto GPS grezzo, non quello corretto in locale:
+        // il server rifa' comunque l'aggancio per conto suo con l'intero database dei
+        // sentieri (non solo la zona vicina scaricata qui), e' lui il dato definitivo.
         await idbQueuePoints(trackingState.sessionId, [point]);
     } catch (e) {
         console.error("Impossibile mettere in coda il punto GPS:", e);
     }
+}
+
+// Scarica una volta sola (non l'intero database regionale: solo la zona interessata) i
+// sentieri noti vicini al punto dato, per il controllo rapido lato telefono.
+async function loadNearbyTrailSegments(lng, lat) {
+    try {
+        const res = await fetch(`/api/tracking/nearby-trails?lng=${lng}&lat=${lat}&radiusKm=5`);
+        nearbyTrailSegments = res.ok ? await res.json() : [];
+    } catch (e) {
+        console.error("Impossibile scaricare i sentieri vicini per l'aggancio rapido:", e);
+        nearbyTrailSegments = [];
+    }
+}
+
+// Punto piu' vicino sul segmento [a,b] a "pt" (tutti [lng,lat]) - stessa identica logica di
+// nearestPointOnSegment in lib/geometry.js lato server, duplicata qui perche' il frontend
+// non ha un bundler condiviso col backend (stesso criterio gia' in uso per altre piccole
+// funzioni geometriche come calculateDistance).
+function nearestPointOnSegmentClient(pt, a, b) {
+    const mLat = 111320, mLng = 111320 * Math.cos(pt[1] * Math.PI / 180);
+    const x0 = pt[0] * mLng, y0 = pt[1] * mLat;
+    const x1 = a[0] * mLng, y1 = a[1] * mLat;
+    const x2 = b[0] * mLng, y2 = b[1] * mLat;
+    const dx = x2 - x1, dy = y2 - y1;
+
+    let t = 0;
+    if (dx !== 0 || dy !== 0) {
+        t = Math.max(0, Math.min(1, ((x0 - x1) * dx + (y0 - y1) * dy) / (dx * dx + dy * dy)));
+    }
+    const px = x1 + t * dx, py = y1 + t * dy;
+    return { point: [px / mLng, py / mLat], distanceM: Math.hypot(x0 - px, y0 - py) };
+}
+
+// Aggancio "veloce e approssimato" lato telefono (Fase G): stessa soglia adattiva usata
+// dal server (10m di margine OSM + precisione GPS del momento, tetto 60m), ma solo contro
+// i sentieri della zona gia' scaricati - non e' quello autorevole, serve solo a mostrare
+// subito un puntino stabile invece che ballerino in attesa della sincronizzazione.
+function quickSnapToNearbyTrail(lng, lat, accuracyM) {
+    if (!nearbyTrailSegments || nearbyTrailSegments.length === 0) return null;
+
+    const threshold = Math.min(10 + (accuracyM || 20), 60);
+    let best = null;
+
+    for (const coords of nearbyTrailSegments) {
+        for (let i = 0; i < coords.length - 1; i++) {
+            const { point, distanceM } = nearestPointOnSegmentClient([lng, lat], coords[i], coords[i + 1]);
+            if (distanceM <= threshold && (!best || distanceM < best.distanceM)) {
+                best = { point, distanceM };
+            }
+        }
+    }
+    return best;
 }
 
 function onPositionError(err) {
@@ -547,6 +622,7 @@ function resetToIdleUi() {
     trackingState.avgSpeedKmh = 0;
     trackingState.lastAccuracy = null;
     lastLocalPoint = null;
+    nearbyTrailSegments = null;
     if (window.clearLiveTrackPolyline) window.clearLiveTrackPolyline();
     hidePanel();
     renderTrackingUi();

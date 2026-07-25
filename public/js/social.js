@@ -452,9 +452,10 @@ async function submitCreateHike() {
     const name = document.getElementById("hike-trailhead-name").value;
     const manualApproval = document.getElementById("hike-approval").value === "true";
 
-    // Vincolo hard: il ritrovo deve trovarsi nell'ambito geografico corrente (Lazio/Molise/Abruzzo/Marche)
-    const bounds = window.CAMOSCIO_REGION_BOUNDS;
-    if (bounds && (lat < bounds.minLat || lat > bounds.maxLat || lng < bounds.minLng || lng > bounds.maxLng)) {
+    // Vincolo hard: il ritrovo deve trovarsi in una delle 4 regioni reali (Fase G - prima
+    // era solo un rettangolo approssimativo). Ricontrollato comunque lato server in
+    // routes/hikes.js: questo e' solo per un messaggio d'errore immediato all'utente.
+    if (window.CamoscioIsInRegion && !window.CamoscioIsInRegion(lat, lng)) {
         window.showToast("Il punto di ritrovo inserito è fuori dall'ambito geografico attuale della demo (Lazio, Molise, Abruzzo, Marche). Inserisci coordinate all'interno di queste regioni.", "error");
         return;
     }
