@@ -2,15 +2,15 @@ const express = require('express');
 const router = express.Router();
 const ActiveHikeSession = require('../models/ActiveHikeSession');
 const Hike = require('../models/Hike');
+const TrailCandidate = require('../models/TrailCandidate');
 const { requireAuth } = require('../middleware/auth');
+const { isFiniteNum, haversineKm, simplifyTrack } = require('../lib/geometry');
+const trailIndex = require('../lib/trailIndex');
 
 const MAX_POINTS_PER_BATCH = 500; // un client onesto ne manda ~60-180 ogni 20-30s, mai a uno a uno
 const MIN_ELEVATION_DELTA_M = 3; // sotto questa soglia il "dislivello" e' rumore del GPS, non salita reale
 const SIMPLIFY_TOLERANCE_M = 8; // stessa scala dell'errore medio OSM (~10m) citato in tutto il progetto
-
-function isFiniteNum(n) {
-    return typeof n === 'number' && Number.isFinite(n);
-}
+const MIN_CANDIDATE_POINTS = 5; // sotto questa lunghezza un tratto "fuori sentiero" e' solo rumore GPS, non un percorso da segnalare
 
 // Ripulisce un gruppo di punti mandati dal client: scarta tuple malformate o fuori dai
 // range possibili (lat/lng invalide), tollera l'altitudine mancante (frequente sui telefoni
@@ -33,62 +33,58 @@ function sanitizePoints(raw, fallbackAlt) {
     return cleaned;
 }
 
-// Haversine in km (stessa formula di calculateDistance in public/js/map.js, qui in km non metri)
-function haversineKm(lat1, lon1, lat2, lon2) {
-    const R = 6371;
-    const toRad = d => d * Math.PI / 180;
-    const dLat = toRad(lat2 - lat1);
-    const dLon = toRad(lon2 - lon1);
-    const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
+// Fase G - Prova ad agganciare ogni punto al sentiero conosciuto piu' vicino (entro una
+// soglia che si adatta alla precisione GPS del momento). I punti che restano "fuori
+// sentiero" per un tratto consistente vengono accumulati in un buffer sulla sessione
+// stessa (dura tra piu' gruppi di punti, un tratto fuori sentiero puo' durare piu' di un
+// invio) e, appena si ritorna su un sentiero noto, salvati come TrailCandidate per una
+// futura mappatura manuale - esattamente come richiesto in cose_da_fare.txt.
+async function snapAndBufferPoints(newPoints, existingBuffer, context) {
+    const finalPoints = [];
+    let buffer = existingBuffer.slice();
+    const candidatesToCreate = [];
 
-// Distanza perpendicolare punto-segmento in metri, con una proiezione piana approssimata
-// (equirettangolare): a scala di una singola escursione l'approssimazione e' ampiamente
-// sufficiente per decidere quali punti scartare, e molto piu' leggera di un calcolo sferico esatto.
-function perpendicularDistanceMeters(pt, a, b, mLat, mLng) {
-    const x0 = pt[0] * mLng, y0 = pt[1] * mLat;
-    const x1 = a[0] * mLng, y1 = a[1] * mLat;
-    const x2 = b[0] * mLng, y2 = b[1] * mLat;
-    const dx = x2 - x1, dy = y2 - y1;
+    for (const p of newPoints) {
+        const [lng, lat, alt, t, acc] = p;
+        const snap = trailIndex.snapPoint(lng, lat, acc);
 
-    if (dx === 0 && dy === 0) return Math.hypot(x0 - x1, y0 - y1);
-
-    const t = Math.max(0, Math.min(1, ((x0 - x1) * dx + (y0 - y1) * dy) / (dx * dx + dy * dy)));
-    return Math.hypot(x0 - (x1 + t * dx), y0 - (y1 + t * dy));
-}
-
-function douglasPeucker(points, startIdx, endIdx, toleranceM, mLat, mLng, keep) {
-    if (endIdx <= startIdx + 1) return;
-
-    let maxDist = 0, maxIdx = -1;
-    for (let i = startIdx + 1; i < endIdx; i++) {
-        const d = perpendicularDistanceMeters(points[i], points[startIdx], points[endIdx], mLat, mLng);
-        if (d > maxDist) { maxDist = d; maxIdx = i; }
+        if (snap) {
+            finalPoints.push([snap.point[0], snap.point[1], alt, t, acc]);
+            if (buffer.length >= MIN_CANDIDATE_POINTS) {
+                candidatesToCreate.push(buffer);
+            }
+            buffer = [];
+        } else {
+            const rawPoint = [lng, lat, alt, t, acc];
+            finalPoints.push(rawPoint);
+            buffer.push(rawPoint);
+        }
     }
 
-    if (maxDist > toleranceM) {
-        keep.add(maxIdx);
-        douglasPeucker(points, startIdx, maxIdx, toleranceM, mLat, mLng, keep);
-        douglasPeucker(points, maxIdx, endIdx, toleranceM, mLat, mLng, keep);
+    for (const points of candidatesToCreate) {
+        await TrailCandidate.create({ ...context, points });
     }
+
+    return { finalPoints, buffer };
 }
 
-// Riduce il numero di punti salvati mantenendo la forma del percorso (Douglas-Peucker),
-// usata SOLO quando una sessione si chiude (i totali distanza/dislivello sono gia' stati
-// calcolati prima, sui dati completi: qui si riduce solo il dettaglio della traccia salvata).
-function simplifyTrack(points, toleranceM = SIMPLIFY_TOLERANCE_M) {
-    if (points.length <= 2) return points;
+const MAX_NEARBY_RADIUS_KM = 15; // tetto massimo: il telefono deve scaricare solo i sentieri di una zona, non l'intero database regionale
 
-    const midLat = points[Math.floor(points.length / 2)][1];
-    const mLat = 111320;
-    const mLng = 111320 * Math.cos(midLat * Math.PI / 180);
+// Fase G - Sentieri conosciuti vicini a un punto (coordinate complete), usata dal telefono
+// UNA VOLTA all'avvio di un tracciamento per un aggancio "veloce e approssimato" in locale,
+// mostrato subito mentre si aspetta la correzione autorevole del server ad ogni sincronizzazione.
+router.get('/nearby-trails', requireAuth, (req, res) => {
+    const lng = parseFloat(req.query.lng);
+    const lat = parseFloat(req.query.lat);
+    const radiusKm = Math.min(parseFloat(req.query.radiusKm) || 5, MAX_NEARBY_RADIUS_KM);
 
-    const keep = new Set([0, points.length - 1]);
-    douglasPeucker(points, 0, points.length - 1, toleranceM, mLat, mLng, keep);
+    if (!isFiniteNum(lng) || !isFiniteNum(lat)) {
+        return res.status(400).json({ error: 'Coordinate mancanti o non valide' });
+    }
 
-    return [...keep].sort((a, b) => a - b).map(i => points[i]);
-}
+    const trails = trailIndex.getNearbyTrails(lng, lat, radiusKm * 1000);
+    res.json(trails);
+});
 
 // Sessione di tracciamento attualmente aperta (active/paused) dell'utente loggato, se esiste.
 // Usata sia per "riprendi dopo un ricaricamento" sia da /start per non crearne una seconda.
@@ -129,12 +125,14 @@ router.post('/start', requireAuth, async (req, res) => {
 // di login, mai un valore mandato dal client, stesso criterio gia' usato in tutto il resto dell'app.
 router.post('/:id/points', requireAuth, async (req, res) => {
     try {
-        // Solo userId/status/ultimo punto: non serve leggere l'intera traccia (potenzialmente
-        // lunga ore) solo per aggiungere un piccolo gruppo di punti nuovi.
+        // Solo i campi che servono davvero: non serve leggere l'intera traccia
+        // (potenzialmente lunga ore) solo per aggiungere un piccolo gruppo di punti nuovi.
         const session = await ActiveHikeSession.findById(req.params.id, {
             userId: 1,
+            hikeId: 1,
             status: 1,
-            points: { $slice: -1 }
+            points: { $slice: -1 },
+            offTrailBuffer: 1
         });
 
         if (!session || String(session.userId) !== req.session.userId) {
@@ -145,10 +143,19 @@ router.post('/:id/points', requireAuth, async (req, res) => {
         }
 
         let lastPoint = session.points.length > 0 ? session.points[0] : null;
-        const newPoints = sanitizePoints(req.body.points, lastPoint ? lastPoint[2] : 0);
-        if (newPoints.length === 0) {
+        const sanitized = sanitizePoints(req.body.points, lastPoint ? lastPoint[2] : 0);
+        if (sanitized.length === 0) {
             return res.status(400).json({ error: 'Nessun punto GPS valido ricevuto' });
         }
+
+        // Fase G: prova ad agganciare ogni punto al sentiero noto piu' vicino prima di
+        // calcolare distanza/dislivello, cosi' un piccolo sbandamento del GPS non si
+        // traduce in metri di percorso o dislivello inventati (vedi snapAndBufferPoints).
+        const { finalPoints: newPoints, buffer: newBuffer } = await snapAndBufferPoints(
+            sanitized,
+            session.offTrailBuffer || [],
+            { userId: session.userId, hikeId: session.hikeId, sessionId: session._id }
+        );
 
         let addedDistanceKm = 0;
         let addedElevationM = 0;
@@ -172,7 +179,7 @@ router.post('/:id/points', requireAuth, async (req, res) => {
                     distanceKm: Math.round(addedDistanceKm * 1000) / 1000,
                     elevationGainM: Math.round(addedElevationM)
                 },
-                $set: { lastPointAt: new Date(), status: 'active' }
+                $set: { lastPointAt: new Date(), status: 'active', offTrailBuffer: newBuffer }
             },
             { new: true, select: '-points' }
         );
@@ -242,7 +249,20 @@ router.post('/:id/end', requireAuth, async (req, res) => {
             // Una volta archiviata la traccia dettagliata non serve piu' punto per punto:
             // viene semplificata per risparmiare spazio (vincolo hard di cose_da_fare.txt),
             // le statistiche sopra sono gia' state calcolate sui dati completi prima d'ora.
-            const simplifiedPoints = simplifyTrack(session.points);
+            const simplifiedPoints = simplifyTrack(session.points, SIMPLIFY_TOLERANCE_M);
+
+            // Fase G: se l'escursione finisce mentre si e' ancora su un tratto "fuori
+            // sentiero" (mai tornato su un sentiero noto per triggerare il flush in
+            // routes/tracking.js snapAndBufferPoints), quel tratto va comunque salvato ora,
+            // altrimenti andrebbe perso insieme al buffer temporaneo qui sotto.
+            if ((session.offTrailBuffer || []).length >= MIN_CANDIDATE_POINTS) {
+                await TrailCandidate.create({
+                    userId: session.userId,
+                    hikeId: session.hikeId,
+                    sessionId: session._id,
+                    points: session.offTrailBuffer
+                });
+            }
 
             // $unset esplicito invece di assegnare "undefined" + save(): con un campo che ha
             // un default nello schema, Mongoose lo ripristina invece di toglierlo davvero,
@@ -259,7 +279,7 @@ router.post('/:id/end', requireAuth, async (req, res) => {
                         pausedAt: null,
                         points: simplifiedPoints
                     },
-                    $unset: { openSession: 1 }
+                    $unset: { openSession: 1, offTrailBuffer: 1 }
                 },
                 { new: true }
             );
