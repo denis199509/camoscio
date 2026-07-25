@@ -1,19 +1,70 @@
 ===================================================================
 CAMOSCIO — LEGGIMI (stato progetto, aggiornato automaticamente)
-Ultimo aggiornamento: 2026-07-25 (fine sessione) — Fase G online su
-Render SOLO per Lazio e Abruzzo, monitorata dal vivo per oltre 2 minuti
-consecutivi senza nessun errore dopo la correzione (vedi INCIDENTE
-sotto): stabile con buona fiducia, ma la conferma definitiva resta la
-prova a piedi dell'utente. In attesa che l'utente provi con calma dal
-telefono, magari facendo due passi in un parco - NESSUNA FRETTA, lo
-fara' quando gli e' comodo. Lavoro salvato/committato/pushato per
-intero, niente di in sospeso in locale, database ripulito da ogni
-residuo di test (verificato a fine sessione: restano solo le 3 sessioni
-vere della Fase F del 2026-07-24, nessuna delle sessioni/candidati di
-prova creati durante il lavoro sulla Fase G).
+Ultimo aggiornamento: 2026-07-25 (nuova sessione, stesso giorno) — Fase
+H (caccia ai bug generale, richiesta esplicita punto 6 di
+cose_da_fare.txt) completata: revisione riga per riga di tutto il
+codice (~7400 righe, backend e frontend) e di tutte le 24+ rotte API,
+14 bug corretti (dettagli sotto e nella checklist), verificati con uno
+script di chiamate dirette alle API (32 controlli automatici, tutti
+superati) dato che anche in questa sessione il collegamento al browser
+Chrome non era disponibile. LAVORO SOLO COMMITTATO IN LOCALE, NON
+ANCORA PUSHATO SU GITHUB: un push fa ripartire il server su Render
+(redeploy automatico), il che chiuderebbe di colpo qualunque
+tracciamento GPS live in corso in quel momento - dato che la prova a
+piedi della Fase G era ancora in sospeso a fine sessione precedente,
+si e' aspettato l'ok esplicito dell'utente prima di pushare invece di
+farlo in automatico come nelle fasi precedenti. Database ripulito da
+ogni residuo di test a fine sessione (utenti/escursioni/segnalazioni
+con prefisso "TEST_H" rimossi, verificato con una query finale a zero
+risultati).
 ===================================================================
 
-NOTA IMPORTANTE PER CHI RIPARTE DA QUI - INCIDENTE E CORREZIONE
+NOTA IMPORTANTE PER CHI RIPARTE DA QUI - FASE H (CACCIA AI BUG)
+(2026-07-25): trovati e corretti 14 bug con una revisione sistematica
+di tutto il codice (non solo i punti gia' segnalati). I piu' seri, in
+ordine di gravita':
+1) XSS (cross-site scripting) in piu' punti: il piu' grave era la chat
+   mesh (public/js/safety.js) via WebSocket, raggiungibile SENZA
+   NESSUN login (bug distinto, vedi punto 2) - chiunque su internet
+   poteva far eseguire script arbitrario nel browser di chi avesse la
+   pagina Sicurezza aperta, potendo quindi agire nell'app come quella
+   persona (il cookie di sessione e' httpOnly quindi non leggibile da
+   JS, ma resta comunque inviato automaticamente dal browser in ogni
+   chiamata fetch). Altri punti simili trovati con una ricerca
+   sistematica di innerHTML in tutto public/js/: titolo/descrizione
+   escursione, username, nomi squadra, note diario, testo notifiche,
+   citta' di partenza carpooling, nome oggetti zaino condiviso, e lo
+   username degli account demo su public/demo.html (quest'ultimo
+   particolarmente delicato: chiunque puo' fare demo-login SENZA
+   password e rinominarsi, avvelenando permanentemente la pagina
+   pubblica /demo per ogni visitatore successivo). Corretto ovunque con
+   una funzione escapeHtml() condivisa (vedi decisione dedicata sotto).
+2) Il WebSocket della chat mesh non richiedeva ALCUN login (vedi sopra)
+   - corretto riusando lo stesso sessionMiddleware di Express anche
+   sull'evento 'upgrade' HTTP grezzo (vedi decisione dedicata sotto).
+3) PUT /api/hikes/:id non controllava affatto chi stesse chiamando:
+   chiunque fosse loggato poteva riscrivere qualunque campo di
+   qualunque escursione altrui (titolo, ritrovo, partecipanti...),
+   bypassando anche l'approvazione manuale del capogruppo. Corretto
+   distinguendo campo per campo cosa puo' fare un normale partecipante
+   da solo (vedi decisione dedicata sotto per la logica completa).
+4) PUT /api/users/:id usava una lista "vietati" invece di "permessi":
+   mancavano reputation/completedHikes/experienceLevel/averagePaceUp/
+   averagePaceDown, tutti campi calcolati SOLO dal server dallo storico
+   reale - chiunque poteva auto-assegnarsi una reputazione o un livello
+   a piacere. Corretto con una whitelist esplicita (SELF_EDITABLE_FIELDS
+   in routes/users.js).
+Tutti gli altri bug (nome/cognome che trapelavano pubblicamente, il
+bug del livello esperienza promosso troppo presto, la mancata
+idempotenza dei punti GPS, il campo homeCity mancante dallo schema,
+l'upload audio senza login, il bug gia' noto delle segnalazioni
+duplicate invece che risolte, e altri) sono elencati con tutti i
+dettagli nella checklist della Fase H piu' sotto e nelle decisioni
+dedicate. Verificati con chiamate dirette alle API (browser non
+disponibile anche in questa sessione) - VERIFICA MANCANTE: prova dal
+vivo nel browser una volta che l'utente da' l'ok per il deploy.
+
+NOTA IMPORTANTE PER CHI RIPARTE DA QUI - INCIDENTE E CORREZIONE FASE G
 (2026-07-25): il primo tentativo di mettere online la Fase G con TUTTE
 E 4 le regioni ha reso il sito instabile (rispondeva a intermittenza,
 codice 502 la maggior parte delle volte) subito dopo il deploy su
@@ -434,6 +485,172 @@ DECISIONI PRESE CON L'UTENTE (non richiedere di nuovo)
   dal database reale a fine verifica (sia prima che dopo l'incidente).
   ANCORA DA FARE (vedi checklist piu' sotto): una prova vera nel
   browser/telefono, non solo chiamate dirette alle API.
+- Fase H - Metodo: revisione manuale riga per riga di tutto il codice
+  (non solo grep mirati) - server.js, tutti i modelli Mongoose, tutte
+  le rotte, lib/, tutto public/js/ - proprio perche' molti dei bug piu'
+  seri (autorizzazione mancante, XSS) non emergono da un controllo
+  superficiale ma solo leggendo con attenzione cosa fa davvero ogni
+  endpoint con l'input ricevuto.
+- Fase H - XSS: funzione escapeHtml() condivisa aggiunta in
+  public/js/app.js (vicino a window.showToast, stesso criterio di
+  "chrome globale" usato li') invece che in un file a parte: app.js si
+  carica per ultimo negli script tag di index.html ma va bene lo
+  stesso, esattamente come gia' succede per showToast/CamoscioState -
+  nessuna funzione qui viene chiamata al caricamento della pagina, solo
+  dentro gestori di eventi che scattano dopo che tutti gli script sono
+  gia' stati eseguiti. public/demo.html ha una sua copia locale della
+  stessa funzione (pagina a se', senza gli altri script). Il campo
+  "avatar" (emoji libera, mai stato modificabile da nessuna schermata)
+  e' stato invece tolto dai campi automodificabili in routes/users.js
+  (SELF_EDITABLE_FIELDS) piuttosto che scovare ogni punto in cui viene
+  mostrato: chiude la falla alla fonte senza dover rincorrere l'intera
+  interfaccia. "bio" non e' stato toccato per lo stesso motivo opposto:
+  e' gia' modificabile ma non viene mostrato da nessuna parte
+  nell'interfaccia attuale, quindi non c'e' ancora nessun punto da
+  proteggere (da ricordare se in futuro si aggiunge una schermata che
+  la mostra).
+- Fase H - WebSocket mesh senza login: corretto SENZA aggiungere
+  dipendenze nuove (niente cookie-parser) - il server.js gia' crea un
+  sessionMiddleware (express-session) per le rotte HTTP normali; questo
+  viene semplicemente riusato "a mano" dentro server.on('upgrade', ...)
+  chiamandolo con un oggetto response finto ({}), leggendo poi
+  request.session.userId per decidere se completare l'handshake WS
+  (wss.handleUpgrade) o chiudere subito il socket. E' il pattern
+  standard documentato per integrare express-session con la libreria
+  "ws" quando si usa noServer:true. Verificato dal vivo con un client
+  WebSocket grezzo (script Node): connessione senza cookie di sessione
+  rifiutata, connessione con un cookie di demo-login valido accettata.
+- Fase H - Autorizzazione PUT /api/hikes/:id: invece di creare rotte
+  dedicate per ogni azione (unirsi, offrire un passaggio, riassegnare
+  zaino...) - il che avrebbe richiesto cambiare anche tutto il
+  frontend che gia' chiama questa rotta generica da 4 file diversi
+  (carpool.js, backpack.js, social.js) - si e' aggiunta
+  un'autorizzazione "a grana fine" DENTRO la stessa rotta: alcuni campi
+  (titolo, difficolta', ritrovo, ecc.) restano riservati al creatore;
+  per partecipanti/richieste di iscrizione, carpooling e lista zaino
+  si confronta lo stato PRIMA e DOPO la modifica (funzioni
+  diffIdLists/canNonCreatorEditParticipation/canNonCreatorEditCarpool/
+  canNonCreatorEditBackpack in routes/hikes.js) per permettere solo i
+  cambi che un partecipante normale dovrebbe davvero poter fare da
+  solo (iscriversi/ritirarsi, invitare altri se gia' dentro, gestire
+  SOLO la propria offerta di carpooling o salire/scendere da un'auto
+  altrui, riassegnare "chi porta cosa" nello zaino condiviso senza
+  toccare la lista stessa). Approvare/rifiutare una richiesta di
+  iscrizione altrui resta possibile solo al creatore ("Veto
+  Capogruppo", gia' cosi' nel frontend). Nessuna rotta nuova, nessun
+  cambio lato client: stesso identico contratto verso il frontend
+  esistente, verificato con chiamate dirette che riproducono sia i casi
+  legittimi (auto-iscrizione, ecc.) sia i tentativi che devono fallire.
+- Fase H - Autorizzazione PUT /api/users/:id: da lista "vietati" a
+  lista "permessi" esplicita (SELF_EDITABLE_FIELDS) - una lista
+  "vietati" e' fragile per costruzione, si e' gia' dimostrato che e'
+  facile dimenticare di aggiornarla quando lo schema cresce (esattamente
+  cosi' si era arrivati al bug). "kycVerified" e' rimasto
+  automodificabile nonostante non sia un controllo vero (vedi
+  public/js/profile.js, "Verifica KYC Light": codice OTP finto mostrato
+  a schermo, dichiaratamente solo simulato) - toglierlo avrebbe rotto
+  una funzionalita' esistente voluta cosi' fin dall'inizio, non e' un
+  bug. I 4 account demo storici non possono piu' cambiare il proprio
+  "username" tramite questa rotta (vedi punto successivo).
+- Fase H - Nome utente dei 4 account demo storici reso non modificabile
+  (prima lo era, come per un account vero): sono accessibili SENZA
+  password da chiunque (pagina /demo, per design), quindi chiunque
+  poteva gia' entrare come "Marco Alpinista" e rinominarlo, facendolo
+  sparire dalla lista demo - in diretto contrasto con la richiesta
+  esplicita di cose_da_fare.txt che quei 4 account "devono rimanere".
+  Tutti gli altri campi restano modificabili anche per i demo (bio,
+  interessi, ecc.: la pagina /demo dichiara esplicitamente "qualunque
+  modifica fatta qui e' visibile a chiunque usi la demo", e' li'
+  apposta per fare da terreno di prova).
+- Fase H - Recensioni (routes/reviews.js): hikeId reso obbligatorio
+  (prima, se omesso, saltava del tutto il blocco anti-doppia-recensione
+  su ReviewLock) e aggiunta la verifica che chi recensisce e chi viene
+  recensito abbiano DAVVERO in comune quell'escursione tra i
+  partecipanti, oltre al blocco della auto-recensione - nessuno di
+  questi controlli esisteva lato server, solo il frontend evitava di
+  proporre queste combinazioni nell'interfaccia normale.
+- Fase H - Livello di esperienza (routes/hikes.js, POST /:id/complete):
+  due correzioni alla logica del passo medio/livello, entrambe
+  scoperte leggendo con attenzione la formula, non da un test fallito:
+  1) il valore di default di averagePaceUp (350) coincide esattamente
+     con la soglia per "Intermedio" (>=350), quindi QUALUNQUE prima
+     escursione segnata come completata promuoveva l'utente a
+     Intermedio anche senza aver mai dichiarato un tempo reale - ora il
+     passo conta nella promozione solo se esiste almeno un tempo reale
+     misurato (prima o proprio adesso);
+  2) la media incrementale del passo usava completedHikes (numero
+     totale di escursioni completate) come proxy di "quanti campioni
+     di passo reali ho gia'", ma le due cose non coincidono se in
+     passato ci si e' segnati come completati senza indicare un tempo -
+     ora si conta con una query dedicata (Completion.countDocuments su
+     actualTimeHours non nullo) solo le escursioni che hanno DAVVERO
+     contribuito alla media.
+- Fase H - Idempotenza punti GPS (routes/tracking.js, POST
+  /:id/points): se il server salva con successo un gruppo di punti ma
+  la risposta si perde per strada (il caso "poco campo in montagna" per
+  cui esiste tutta questa funzionalita'), il telefono crede che
+  l'invio sia fallito e lo ritenta - senza protezione, distanza e
+  dislivello venivano ricontati e i punti duplicati. Corretto scartando
+  (server-side, prima di calcolare qualunque cosa) ogni punto in arrivo
+  il cui campo "secondi da inizio" non sia strettamente maggiore
+  dell'ultimo punto gia' salvato: nessuna modifica al client necessaria
+  dato che i punti sono comunque mandati in ordine cronologico.
+- Fase H - Campo "homeCity" (citta' di partenza per il matching
+  carpooling, public/js/carpool.js) aggiunto a models/User.js: mancava
+  del tutto dallo schema Mongoose, quindi ogni salvataggio lo scartava
+  silenziosamente (Mongoose in modalita' strict, nessun errore) - la
+  funzionalita' sembrava "funzionare" solo grazie a un fallback su
+  localStorage, che pero' e' per-browser: tra utenti veri su
+  dispositivi diversi il matching per citta' non aveva mai funzionato
+  davvero.
+- Fase H - Upload nota vocale (server.js, POST /api/uploads/audio) reso
+  protetto da login (requireAuth): prima chiunque, anche senza account,
+  poteva scrivere file audio arbitrari sul disco del server senza
+  nessun limite di quantita'.
+- Fase H - Segnalazioni (routes/reports.js): aggiunta una vera rotta
+  PATCH /:id per segnarle come risolte, che aggiorna il documento
+  esistente. Corregge il bug gia' noto (vedi sezione STATO DEL CODICE
+  PRIMA DI QUESTO LAVORO sotto): resolveReportDirectly() in map.js
+  chiamava POST /api/reports (creazione) invece di un aggiornamento,
+  quindi il "risolvi" o falliva silenziosamente (mancavano i campi
+  obbligatori type/lat/lng) o creava un duplicato - la segnalazione
+  originale restava comunque "attiva" per sempre. Chi puo' risolvere
+  una segnalazione: chiunque sia loggato, stesso spirito crowdsourcing
+  gia' in uso per crearle (come Waze), non solo chi l'ha creata.
+- Fase H - Privacy nome/cognome: aggiunti ad ALWAYS_PRIVATE_FIELDS in
+  routes/users.js (mancavano, nonostante la decisione gia' presa in
+  Fase C che questi due campi servono solo per identificazione reale e
+  non vanno mai mostrati pubblicamente) - trapelavano a chiunque fosse
+  loggato tramite GET /api/users e GET /api/users/:id.
+- Fase H - Bug trovato ma NON corretto (richiede una decisione
+  prodotto, non solo tecnica): chiunque puo' creare una squadra
+  (routes/squads.js, POST /) inserendo l'ID di un ALTRO utente in
+  "members" senza il suo consenso - non esiste nessun flusso di
+  invito/accettazione. Dato che condividere una squadra e' anche il
+  criterio con cui si diventa "amici" per la privacy SoloAmici (vedi
+  areSquadmates in routes/users.js), questo permette di aggirare quella
+  scelta di privacy creando una finta squadra con dentro la vittima,
+  senza che se ne accorga. Non corretto in questa sessione perche' la
+  soluzione corretta (un vero invito con accettazione) e' una
+  funzionalita' nuova, non solo una correzione, e cambierebbe il
+  comportamento attuale di "crea squadra scegliendo subito i membri" -
+  da decidere insieme all'utente come procedere.
+- Fase H - Bug trovati ma NON corretti (bassa priorita', per scelta
+  esplicita di design gia' esistente o impatto minimo, elencati per
+  completezza): (1) lo sblocco timbri/vette (routes/stamps.js) non fa
+  nessuna verifica reale di posizione nonostante il commento dica
+  "geofencing" - preesistente da prima di questa sessione, coerente col
+  fatto che la posizione durante l'esplorazione della mappa e' comunque
+  solo simulata/trascinabile (vedi teleportUserGps in map.js), non e'
+  un problema introdotto ora; (2) GET su bookmarks/completions/squads
+  non filtra per utente (restituisce i dati di tutti a chiunque sia
+  loggato) - stesso identico pattern gia' usato deliberatamente per
+  hikes/reports/diaries in tutto il resto dell'app, non un'eccezione;
+  (3) POST /api/auth/demo-login non validava il formato di
+  req.body.userId prima di usarlo in una query Mongoose (potenziale
+  pattern da NoSQL-injection) - corretto comunque per buona pratica,
+  ma l'impatto reale era gia' nullo dato che i 4 account demo sono
+  pubblici e senza password by design.
 
 
 STATO DEL CODICE PRIMA DI QUESTO LAVORO (come si presentava il progetto)
@@ -547,6 +764,16 @@ COSE CHE DEVE FARE L'UTENTE DI PERSONA (non automatizzabili)
    (basta aggiungerle a ACTIVE_REGIONS in lib/trailIndex.js, i dati sono
    gia' pronti su MongoDB, non serve altro) prima di passare alla Fase
    H; se qualcosa non ha funzionato, capire cosa e risolverlo prima.
+8. Ok esplicito per il push della Fase H — DA DARE: i 14 bug corretti
+   (vedi nota in cima al file) sono solo committati in locale, mai
+   pushati su GitHub. Un push fa scattare il redeploy automatico su
+   Render, che interromperebbe qualunque tracciamento GPS live in
+   corso in quel momento - per questo non e' stato fatto in automatico
+   come nelle fasi precedenti. APPENA L'UTENTE CONFERMA CHE NON STA
+   USANDO IL TRACCIAMENTO IN QUEL MOMENTO (non serve altro, i test via
+   API sono gia' stati fatti): eseguire git push, verificare il
+   redeploy su Render (home/demo/API raggiungibili), poi segnare la
+   Fase H come completata nella checklist sotto.
 
 
 CHECKLIST DI AVANZAMENTO (aggiornare via via che si procede)
@@ -791,10 +1018,53 @@ CHECKLIST DI AVANZAMENTO (aggiornare via via che si procede)
         prima di considerare la fase davvero conclusa
     [ ] Riattivare Marche e Molise in ACTIVE_REGIONS (lib/trailIndex.js)
         quando si e' sicuri che la memoria regga anche con tutte e 4
-[ ] Fase H — Caccia ai bug finale — NON INIZIATA (ma un bug preesistente
-    di Fase B, non elencato qui perche' scoperto solo ora, e' gia' stato
-    corretto durante la verifica della Fase G: vedi decisione sopra sulla
-    creazione escursioni)
+[ ] Fase H — Caccia ai bug finale — CODICE COMPLETO E TESTATO (2026-07-25),
+    MANCA IL PUSH (in attesa dell'ok esplicito dell'utente, vedi nota in
+    cima al file) E LA PROVA DAL VIVO NEL BROWSER (Chrome non disponibile
+    anche in questa sessione)
+    [x] Revisione manuale di tutto il codice (server.js, tutti i modelli,
+        tutte le rotte, lib/, tutto public/js/) - non solo grep mirati
+    [x] Sicurezza/autorizzazione - 4 bug seri corretti (vedi decisioni
+        dedicate sopra per tutti i dettagli):
+        - XSS in piu' punti (chat mesh via WebSocket, titoli/descrizioni
+          escursione, username ovunque mostrato, nomi squadra, note
+          diario, testo notifiche, citta' carpooling, oggetti zaino,
+          username degli account demo su /demo) - corretti con una
+          escapeHtml() condivisa
+        - WebSocket mesh senza login - ora richiede una sessione valida
+        - PUT /api/hikes/:id senza nessun controllo di chi chiama -
+          ora autorizzazione a grana fine campo per campo
+        - PUT /api/users/:id con lista "vietati" invece di "permessi" -
+          ora whitelist esplicita (SELF_EDITABLE_FIELDS)
+    [x] Altri bug corretti: nome/cognome che trapelavano pubblicamente,
+        username dei 4 account demo reso non modificabile, recensioni
+        senza verifica di escursione condivisa/auto-recensione, livello
+        di esperienza promosso troppo presto (default passo = soglia
+        Intermedio), media del passo diluita da completamenti senza
+        tempo reale, punti GPS ricontati due volte in caso di risposta
+        persa (idempotenza), campo homeCity mancante dallo schema,
+        upload audio senza login, segnalazioni duplicate invece che
+        risolte (bug gia' noto, vedi STATO DEL CODICE)
+    [x] 2 bug trovati ma lasciati NON corretti, con motivo (vedi
+        decisioni dedicate sopra): creazione squadre senza consenso dei
+        membri (richiede una vera funzionalita' di invito, decisione da
+        prendere insieme all'utente) e 3 di bassa priorita' (geofencing
+        timbri mai stato reale, liste non filtrate per utente - pattern
+        gia' esistente altrove, validazione formato ID su demo-login)
+    [x] Verificato con uno script di chiamate dirette alle API (32
+        controlli automatici in 2 batch, tutti superati): whitelist
+        profilo, autorizzazione escursioni, WebSocket con/senza sessione,
+        risoluzione segnalazioni, recensioni, idempotenza GPS, livello
+        esperienza, protezione username demo - dati di prova rimossi dal
+        database reale a fine verifica (verificato a zero residui)
+    [x] Commit locale creato (fixes Fase H) - NON ancora pushato
+    [ ] Push su GitHub + redeploy Render: IN ATTESA DELL'OK DELL'UTENTE
+        (non fatto in automatico come nelle fasi precedenti: un redeploy
+        interromperebbe qualunque tracciamento GPS live in corso, e la
+        prova a piedi della Fase G era ancora aperta a fine sessione
+        precedente - rischio troppo concreto per pushare senza chiedere)
+    [ ] Prova dal vivo nel browser una volta pushato (Chrome non
+        disponibile in questa sessione, verificato tutto via API dirette)
 
 
 COME RIPRENDERE IL LAVORO IN UNA NUOVA SESSIONE
