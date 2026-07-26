@@ -6,7 +6,12 @@ let socket = null;
 function initSafetyModule() {
     // Inizializza WebSocket per il Mesh Network Simulator
     initMeshWebSocket();
-    
+
+    // Punto 21 - PRIMA di ripristinare lo stato: il contatto non e' piu' una stringa scritta
+    // a mano in localStorage ma una scelta fra i contatti veri dell'utente, e restoreDeadManState
+    // deve trovare l'elenco gia' pronto per poter riselezionare quello di prima.
+    popolaContattiEmergenza();
+
     // Ripristina lo stato del Dead Man's Switch da LocalStorage se attivo
     restoreDeadManState();
 
@@ -18,7 +23,6 @@ function setupSafetyEvents() {
     const btnActivate = document.getElementById("btn-activate-switch");
     const btnDeactivate = document.getElementById("btn-deactivate-switch");
     const btnBannerCheckin = document.getElementById("btn-banner-checkin");
-    const btnDashCheckin = document.getElementById("btn-dash-checkin");
 
     if (btnActivate) {
         btnActivate.addEventListener("click", () => {
@@ -32,7 +36,25 @@ function setupSafetyEvents() {
 
     if (btnDeactivate) btnDeactivate.addEventListener("click", checkinHandler);
     if (btnBannerCheckin) btnBannerCheckin.addEventListener("click", checkinHandler);
-    if (btnDashCheckin) btnDashCheckin.addEventListener("click", checkinHandler);
+
+    // Punto 20 - il tasto SOS verso il 112, sulla mappa.
+    const btnSos = document.getElementById("btn-sos-112");
+    if (btnSos) btnSos.addEventListener("click", chiamaSos);
+
+    // Punto 21 - scelta del contatto e aggiunta di uno nuovo.
+    const selContatto = document.getElementById("safety-contact");
+    if (selContatto) selContatto.addEventListener("change", aggiornaHintContatto);
+
+    const btnMostraForm = document.getElementById("btn-toggle-add-contact");
+    if (btnMostraForm) {
+        btnMostraForm.addEventListener("click", () => {
+            const form = document.getElementById("safety-add-contact");
+            if (form) mostraFormContatto(form.classList.contains("hidden"));
+        });
+    }
+
+    const btnSalvaContatto = document.getElementById("btn-save-emergency-contact");
+    if (btnSalvaContatto) btnSalvaContatto.addEventListener("click", salvaNuovoContatto);
 
     // Form di invio chat mesh
     const formMesh = document.getElementById("mesh-send-form");
@@ -80,10 +102,190 @@ function initMeshWebSocket() {
     }
 }
 
+// --- PUNTO 20: CHIAMATA AL 112 ---
+//
+// Quello che una pagina web puo' fare e' UNA cosa sola: aprire il telefono col numero gia'
+// composto. Non puo' chiamare da sola, non puo' usare il satellite, non puo' mandare la
+// posizione a nessuno. Il valore aggiunto sta tutto nel passaggio prima: chi chiama il 112
+// dalla montagna quasi mai sa dire DOVE si trova, ed e' la prima cosa che gli chiedono.
+// Per questo la finestra mostra le coordinate da leggere ad alta voce.
+// Fa anche da conferma contro il tocco per sbaglio - che e' la ragione per cui l'utente
+// ha chiesto di tenere questo tasto lontano da quello di fine escursione.
+async function chiamaSos() {
+    const righe = ["Stai per chiamare il 112, il numero unico di emergenza.", ""];
+
+    // La posizione VERA del GPS (punto 26), non il segnaposto trascinabile: leggere al
+    // centralino delle coordinate simulate sarebbe peggio che non darne affatto.
+    const p = window.CamoscioGeo && window.CamoscioGeo.ultimaPosizione();
+    if (p) {
+        righe.push("LEGGI QUESTE COORDINATE ALL'OPERATORE:");
+        righe.push(`${p.lat.toFixed(5)}   ${p.lng.toFixed(5)}`);
+        righe.push(`(rilevata ${daQuantoInParole(p.quando)}, precisa entro ${Math.round(p.precisioneM || 0)} metri)`);
+    } else {
+        righe.push("NON HO LA TUA POSIZIONE.");
+        righe.push("Se hai un momento: chiudi, premi «Dove sono» in alto a destra sulla mappa e riprova. Sapere dove sei è la prima cosa che ti chiederanno.");
+        righe.push("Se non c'è tempo, chiama lo stesso e descrivi a voce dove ti trovi.");
+    }
+
+    righe.push("");
+    // Detto esplicitamente per non promettere quello che il sito non puo' garantire: e' la
+    // nota tecnica scritta nel punto 20 di cose_da_fare.txt.
+    righe.push("Il sito apre solo il telefono col numero pronto: la chiamata la fai tu. Se non c'è campo e il tuo telefono ha l'SOS satellitare, sarà il telefono a usarlo — non questo sito.");
+
+    const procedi = await window.showConfirmModal(righe.join("\n"), "Chiama 112");
+    if (procedi) window.location.href = "tel:112";
+}
+
+function daQuantoInParole(quando) {
+    const secondi = Math.max(0, Math.round((Date.now() - (quando || 0)) / 1000));
+    if (secondi < 60) return "adesso";
+    const minuti = Math.round(secondi / 60);
+    if (minuti < 60) return `${minuti} minut${minuti === 1 ? 'o' : 'i'} fa`;
+    const ore = Math.round(minuti / 60);
+    return `${ore} or${ore === 1 ? 'a' : 'e'} fa`;
+}
+
+// --- PUNTO 21: I CONTATTI DI EMERGENZA VERI ---
+//
+// Prima il contatto era una casella di testo libera con dentro un numero di esempio scritto
+// a mano nell'HTML, e finiva in localStorage: valeva solo su quel browser, e non aveva
+// NESSUN rapporto con i contatti di emergenza che l'utente inserisce obbligatoriamente in
+// registrazione e che stanno gia' sul database (Fase C). Due dati per la stessa cosa, di cui
+// quello usato davvero era il piu' fragile.
+
+function contattiUtente() {
+    const u = window.CamoscioState && window.CamoscioState.currentUser;
+    return (u && Array.isArray(u.emergencyContacts)) ? u.emergencyContacts : [];
+}
+
+function contattoScelto() {
+    const sel = document.getElementById("safety-contact");
+    if (!sel || sel.value === "") return null;
+    return contattiUtente()[Number(sel.value)] || null;
+}
+
+function mostraFormContatto(mostra) {
+    const form = document.getElementById("safety-add-contact");
+    const btn = document.getElementById("btn-toggle-add-contact");
+    if (!form) return;
+    form.classList.toggle("hidden", !mostra);
+    if (btn) btn.classList.toggle("hidden", mostra);
+}
+
+function aggiornaHintContatto() {
+    const hint = document.getElementById("safety-contact-hint");
+    if (!hint) return;
+    const c = contattoScelto();
+    // textContent, mai innerHTML: nome e numero li scrive l'utente (regola della Fase H).
+    hint.textContent = c
+        ? `Alla scadenza l'allarme andrebbe a ${c.phone}.`
+        : "";
+}
+
+function popolaContattiEmergenza() {
+    const sel = document.getElementById("safety-contact");
+    if (!sel) return;
+
+    const btnAttiva = document.getElementById("btn-activate-switch");
+    const hint = document.getElementById("safety-contact-hint");
+    const contatti = contattiUtente();
+    const sceltaPrecedente = sel.value;
+
+    sel.innerHTML = "";
+
+    if (!contatti.length) {
+        const opt = document.createElement("option");
+        opt.value = "";
+        opt.textContent = "Nessun contatto salvato";
+        sel.appendChild(opt);
+        sel.disabled = true;
+        if (btnAttiva) btnAttiva.disabled = true;
+        if (hint) {
+            hint.textContent = "Non hai nessun contatto di emergenza: senza, il timer non avrebbe nessuno da avvisare. Aggiungine uno qui sotto.";
+        }
+        mostraFormContatto(true);
+        return;
+    }
+
+    sel.disabled = false;
+    if (btnAttiva) btnAttiva.disabled = false;
+    contatti.forEach((c, i) => {
+        const opt = document.createElement("option");
+        opt.value = String(i);
+        opt.textContent = `${c.name} (${c.relationship})`;
+        sel.appendChild(opt);
+    });
+
+    // Conserva la scelta precedente se e' ancora valida: popolaContattiEmergenza() viene
+    // richiamata anche dopo aver aggiunto un contatto, e non deve far ricominciare da capo.
+    if (sceltaPrecedente !== "" && contatti[Number(sceltaPrecedente)]) {
+        sel.value = sceltaPrecedente;
+    }
+    mostraFormContatto(false);
+    aggiornaHintContatto();
+}
+
+async function salvaNuovoContatto() {
+    const nome = document.getElementById("safety-new-name").value.trim();
+    const relazione = document.getElementById("safety-new-rel").value.trim();
+    const telefono = document.getElementById("safety-new-phone").value.trim();
+
+    // Tutti e tre obbligatori come nello schema del database (emergencyContactSchema): se
+    // mancasse uno il server rifiuterebbe l'intero salvataggio con un errore di validazione,
+    // e da qui si vedrebbe solo "non funziona".
+    if (!nome || !relazione || !telefono) {
+        window.showToast("Servono tutti e tre i campi: nome, chi è e telefono.", "error");
+        return;
+    }
+
+    const usr = window.CamoscioState && window.CamoscioState.currentUser;
+    if (!usr) return;
+
+    const btn = document.getElementById("btn-save-emergency-contact");
+    const etichetta = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = "Salvataggio…";
+
+    // Si manda l'elenco COMPLETO e non solo il nuovo: emergencyContacts e' un array e il
+    // server lo sostituisce per intero (SELF_EDITABLE_FIELDS in routes/users.js). Mandare
+    // solo l'ultimo cancellerebbe gli altri.
+    const nuovi = contattiUtente().concat([{ name: nome, phone: telefono, relationship: relazione }]);
+
+    try {
+        const res = await fetch(`/api/users/${usr.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ emergencyContacts: nuovi })
+        });
+        if (!res.ok) throw new Error('Salvataggio rifiutato');
+
+        usr.emergencyContacts = nuovi;
+        document.getElementById("safety-new-name").value = "";
+        document.getElementById("safety-new-rel").value = "";
+        document.getElementById("safety-new-phone").value = "";
+        popolaContattiEmergenza();
+        // Si sceglie da solo quello appena aggiunto: e' quasi sempre quello che si voleva.
+        const sel = document.getElementById("safety-contact");
+        sel.value = String(nuovi.length - 1);
+        aggiornaHintContatto();
+        window.showToast("Contatto di emergenza salvato.", "success");
+    } catch (e) {
+        console.error("Salvataggio contatto di emergenza fallito:", e);
+        window.showToast("Non sono riuscito a salvare il contatto. Riprova.", "error");
+    } finally {
+        btn.disabled = false;
+        btn.textContent = etichetta;
+    }
+}
+
 // --- DEAD MAN'S SWITCH LOGIC ---
 
 function activateDeadManSwitch() {
-    const contact = document.getElementById("safety-contact").value;
+    const contatto = contattoScelto();
+    if (!contatto) {
+        window.showToast("Scegli chi avvisare prima di attivare il timer.", "error");
+        return;
+    }
     const durationHours = parseFloat(document.getElementById("safety-duration").value) || 0;
     const exactTime = document.getElementById("safety-time").value;
 
@@ -106,21 +308,24 @@ function activateDeadManSwitch() {
     deadManActive = true;
     returnTimestamp = targetTimeMs;
 
-    // Salva lo stato in local storage
+    // Salva lo stato in local storage.
+    // PUNTO 21 - qui finiva il NUMERO DI TELEFONO del contatto, copiato per intero. Ora si
+    // salva solo la POSIZIONE nell'elenco: il dato vero sta sul database e si rilegge da li'.
+    // Meno copie di un numero di telefono altrui in giro, e soprattutto una sola copia da
+    // tenere aggiornata - correggendo il contatto nel profilo, il timer gia' attivo usera'
+    // il numero nuovo invece di uno vecchio congelato al momento dell'attivazione.
     localStorage.setItem("deadman_active", "true");
     localStorage.setItem("deadman_timestamp", returnTimestamp.toString());
-    localStorage.setItem("deadman_contact", contact);
+    localStorage.setItem("deadman_contact_index", document.getElementById("safety-contact").value);
+    localStorage.removeItem("deadman_contact"); // vecchia chiave col numero dentro: si toglie
 
-    // Aggiorna UI
-    document.getElementById("btn-activate-switch").classList.add("hidden");
-    document.getElementById("btn-deactivate-switch").classList.remove("hidden");
-    document.getElementById("emergency-banner").classList.remove("hidden");
+    aggiornaStatoTimer();
 
     // Registra evento sul log satellitare simulato
-    logSimulatedSms("SYSTEM", `Switch Attivato. Rientro atteso: ${new Date(returnTimestamp).toLocaleTimeString()}. Contatto emergenza: ${escapeHtml(contact)}.`);
+    logSimulatedSms("SYSTEM", `Timer attivato. Rientro atteso: ${new Date(returnTimestamp).toLocaleTimeString()}. Da avvisare: ${escapeHtml(contatto.name)}.`);
 
     startSafetyCountdown();
-    updateDashboardSafetyCard();
+    aggiornaStatoTimer();
 }
 
 function deactivateDeadManSwitch(isSafeCheckin) {
@@ -132,33 +337,35 @@ function deactivateDeadManSwitch(isSafeCheckin) {
     // Cancella local storage
     localStorage.removeItem("deadman_active");
     localStorage.removeItem("deadman_timestamp");
+    localStorage.removeItem("deadman_contact_index");
 
-    // Aggiorna UI
-    document.getElementById("btn-activate-switch").classList.remove("hidden");
-    document.getElementById("btn-deactivate-switch").classList.add("hidden");
-    document.getElementById("emergency-banner").classList.add("hidden");
+    aggiornaStatoTimer();
 
     if (isSafeCheckin) {
         logSimulatedSms("SAFE", `Check-in completato con successo. Dispositivo disattivato. Stazione Sicura.`);
     }
 
-    updateDashboardSafetyCard();
+    aggiornaStatoTimer();
 }
 
 function restoreDeadManState() {
     const isActive = localStorage.getItem("deadman_active") === "true";
     const ts = parseInt(localStorage.getItem("deadman_timestamp")) || 0;
-    const contact = localStorage.getItem("deadman_contact") || "";
+    const indiceContatto = localStorage.getItem("deadman_contact_index");
 
     if (isActive && ts > Date.now()) {
         deadManActive = true;
         returnTimestamp = ts;
-        document.getElementById("safety-contact").value = contact;
-        
-        document.getElementById("btn-activate-switch").classList.add("hidden");
-        document.getElementById("btn-deactivate-switch").classList.remove("hidden");
-        document.getElementById("emergency-banner").classList.remove("hidden");
+        // Riseleziona il contatto scelto all'attivazione. Se nel frattempo e' stato tolto
+        // dal profilo, l'elenco non ha piu' quella posizione e resta selezionato il primo:
+        // meglio avvisare qualcuno che nessuno.
+        const sel = document.getElementById("safety-contact");
+        if (sel && indiceContatto !== null && contattiUtente()[Number(indiceContatto)]) {
+            sel.value = indiceContatto;
+        }
+        aggiornaHintContatto();
 
+        aggiornaStatoTimer();
         startSafetyCountdown();
     } else if (isActive && ts <= Date.now()) {
         // È già scaduto mentre era chiuso! Invia allarme retroattivo
@@ -186,26 +393,46 @@ function startSafetyCountdown() {
 
             document.getElementById("emergency-banner-timer").textContent = shortTimeStr;
             
-            const dashTimer = document.getElementById("dash-timer-countdown");
-            if (dashTimer) dashTimer.textContent = timeStr;
+            const contatore = document.getElementById("safety-countdown");
+            if (contatore) contatore.textContent = timeStr;
         }
     }, 1000);
 }
 
-// Scadenza del timer: scatta l'allarme SOS satellitare!
+// Scadenza del timer.
 function triggerEmergencyAlarm() {
-    const contact = localStorage.getItem("deadman_contact") || "Contatti fidati";
-    const lat = window.userSimulatedLocation.lat.toFixed(5);
-    const lng = window.userSimulatedLocation.lng.toFixed(5);
-    
-    // Costruisce il messaggio di allerta
-    const msg = `ALLARME SOS: L'escursionista non è rientrato in tempo. Ultima posizione GPS: Lat ${lat}, Lng ${lng}. Avviare ricerche!`;
+    // Punto 21 - il contatto si rilegge dal database attraverso l'indice salvato, non da una
+    // stringa congelata in localStorage.
+    const indice = localStorage.getItem("deadman_contact_index");
+    const contatto = contattiUtente()[Number(indice)] || null;
+    const aChi = contatto ? `${contatto.name} (${contatto.phone})` : "nessun contatto salvato";
 
-    logSimulatedSms("SOS", `A: ${escapeHtml(contact)} - MSG: ${escapeHtml(msg)}`);
+    // Punto 21 - la posizione VERA del GPS quando c'e' (punto 26). Prima si usava sempre e
+    // solo il segnaposto trascinabile, che di norma e' fermo a Campo Imperatore: un allarme
+    // con dentro una posizione inventata e' peggio di un allarme senza posizione, perche'
+    // manderebbe a cercare qualcuno nel posto sbagliato.
+    const p = window.CamoscioGeo && window.CamoscioGeo.ultimaPosizione();
+    const posizione = p
+        ? `${p.lat.toFixed(5)}, ${p.lng.toFixed(5)} (rilevata ${daQuantoInParole(p.quando)})`
+        : "sconosciuta - il GPS non ha mai dato una posizione";
+
+    const msg = `L'escursionista non è rientrato entro l'ora prevista. Ultima posizione nota: ${posizione}.`;
+
+    logSimulatedSms("SOS", `A: ${escapeHtml(aChi)} - MSG: ${escapeHtml(msg)}`);
 
     // Notifica visiva forte, persistente finché non viene riconosciuta (non un toast auto-dismiss:
-    // un allarme di emergenza non deve poter passare inosservato)
-    window.showAlertModal(`🚨 EMERGENZA SCATURITA 🚨\n\nSMS Satellitare inviato a: ${contact}\nMessaggio: ${msg}`);
+    // un allarme di emergenza non deve poter passare inosservato).
+    // DETTO IN CHIARO CHE NON E' PARTITO NIENTE: prima questa finestra diceva "SMS Satellitare
+    // inviato a...", che era falso - nessun messaggio e' mai stato spedito, ed e' esattamente
+    // la cosa che il punto 21 chiede di non far credere. L'invio vero resta da fare e dipende
+    // dalla decisione sul canale (email o SMS).
+    window.showAlertModal(
+        `⏰ IL TEMPO È SCADUTO\n\n${msg}\n\n` +
+        `Avresti dovuto avvisare: ${aChi}\n\n` +
+        `NESSUN MESSAGGIO È STATO INVIATO: questo avviso compare solo qui, su questo telefono. ` +
+        `Se sei tu a leggerlo e stai bene, fai il check-in. Se stai leggendo questo per conto ` +
+        `di qualcun altro, chiama tu il contatto qui sopra.`
+    );
 
     deactivateDeadManSwitch(false);
 }
@@ -240,19 +467,27 @@ function logSimulatedSms(type, text) {
     container.scrollTop = container.scrollHeight;
 }
 
-// Sincronizza la card della dashboard
-function updateDashboardSafetyCard() {
-    const idleBlock = document.getElementById("dash-safety-status-idle");
-    const activeBlock = document.getElementById("dash-safety-status-active");
-    if (!idleBlock || !activeBlock) return;
+// Punto 17 - unico posto che accende e spegne i comandi del timer. Prima le stesse tre
+// righe erano ripetute in attivazione, disattivazione e ripristino: tre copie della stessa
+// verita', ed e' il genere di duplicazione che prima o poi si disallinea (era gia' successo
+// col riquadro in Dashboard, che restava "attivo" dopo un check-in fatto da un'altra
+// schermata). Prende lo stato da deadManActive e basta.
+function aggiornaStatoTimer() {
+    const btnAttiva = document.getElementById("btn-activate-switch");
+    const btnDisattiva = document.getElementById("btn-deactivate-switch");
+    const banner = document.getElementById("emergency-banner");
+    const contatore = document.getElementById("safety-countdown");
+    if (!btnAttiva || !btnDisattiva) return;
 
-    if (deadManActive) {
-        idleBlock.classList.add("hidden");
-        activeBlock.classList.remove("hidden");
-    } else {
-        idleBlock.classList.remove("hidden");
-        activeBlock.classList.add("hidden");
-    }
+    btnAttiva.classList.toggle("hidden", deadManActive);
+    btnDisattiva.classList.toggle("hidden", !deadManActive);
+    if (banner) banner.classList.toggle("hidden", !deadManActive);
+    if (contatore) contatore.classList.toggle("hidden", !deadManActive);
+
+    // Mentre il timer corre non si cambia chi avvisare: sarebbe una modifica che non ha
+    // effetto sul conto alla rovescia gia' partito, e farebbe credere il contrario.
+    const sel = document.getElementById("safety-contact");
+    if (sel) sel.disabled = deadManActive || !contattiUtente().length;
 }
 
 // --- MESH NETWORKING SIMULATOR ---
@@ -395,7 +630,7 @@ function displayMeshMessage(packet, isSentByMe) {
 
 // Helper di renderizzazione generale
 function renderSafetyModule() {
-    updateDashboardSafetyCard();
+    aggiornaStatoTimer();
     renderRadarScreen(window.userSimulatedLocation);
 }
 
@@ -418,4 +653,4 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
 window.initSafetyModule = initSafetyModule;
 window.renderSafetyModule = renderSafetyModule;
 window.updateRadarPosition = updateRadarPosition;
-window.updateDashboardSafetyCard = updateDashboardSafetyCard;
+window.aggiornaStatoTimer = aggiornaStatoTimer;

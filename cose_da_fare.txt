@@ -233,9 +233,17 @@ memoria disponibile e fattibilita': ipotesi dell'utente, massimo 5 file
       a due colonne fisse e la colonna destra - dove sta la scheda nuova -
       finiva fuori dallo schermo.
 
-17) Il Dead Man's Switch va SPOSTATO nella sezione Mappe: serve durante
-l'escursione, non in Dashboard. Oggi c'e' un riquadro "Sicurezza Rapida"
-in Dashboard piu' la versione completa in "Sicurezza & Mesh".
+17) [FATTO 2026-07-26] Il Dead Man's Switch va SPOSTATO nella sezione Mappe:
+serve durante l'escursione, non in Dashboard. Oggi c'e' un riquadro "Sicurezza
+Rapida" in Dashboard piu' la versione completa in "Sicurezza & Mesh".
+   -> Fatto: ora e' la PRIMA scheda della barra laterale della Mappa, ed e'
+      l'unica copia in tutto il sito (prima erano due, con due stati da tenere
+      allineati a mano). Tolto il riquadro dalla Dashboard insieme al codice e
+      agli id rimasti orfani; in "Sicurezza & Mesh" resta il REGISTRO degli
+      avvisi - che si legge dopo, non durante - e un rimando alla Mappa, cosi'
+      chi lo cercava li' non trova un buco senza spiegazioni. Il conto alla
+      rovescia resta visibile da OGNI schermata nella fascia in cima alla
+      pagina, e ora compare anche nella scheda dove lo si e' attivato.
 
 18) Serve un tasto "Badge" che porti a una pagina con i badge dell'utente.
 La lista completa la definira' l'utente in futuro: per ora inserirne
@@ -257,19 +265,61 @@ deve essere cosi'. Le sfide vanno o create o accettate.
 
 --- MAPPE ---
 
-20) Aggiungere un tasto SOS che metta subito in contatto con il 112
-(dovrebbe funzionare anche via satellite). Deve essere ben visibile ma
-LONTANO dal tasto di fine escursione, per non premerlo per sbaglio.
+20) [FATTO 2026-07-26] Aggiungere un tasto SOS che metta subito in contatto
+con il 112 (dovrebbe funzionare anche via satellite). Deve essere ben visibile
+ma LONTANO dal tasto di fine escursione, per non premerlo per sbaglio.
    Nota tecnica: una pagina web non puo' usare il satellite da sola. Il
    massimo possibile e' un collegamento "tel:112" che apre il telefono col
    numero gia' pronto; se il telefono ha l'SOS satellitare (iPhone 14 e
    successivi, alcuni Android) sara' il telefono stesso a usarlo quando
    non c'e' rete. Da tenere presente per non promettere nell'interfaccia
    qualcosa che il sito non puo' garantire.
+   -> Fatto: tasto rosso "SOS 112" in ALTO A SINISTRA sulla mappa. La
+      posizione non e' casuale: il tasto di fine registrazione sta in basso a
+      destra, quindi l'angolo diagonalmente opposto e' la massima distanza
+      ottenibile su uno schermo. Misurato: 429 px di distanza su una diagonale
+      di mappa di 578 px, e su telefono - dove il tasto di registrazione
+      occupa tutta la larghezza in fondo - restano separati dall'altezza
+      intera della mappa. I comandi di zoom di Leaflet, che nascevano proprio
+      li', sono stati spostati sotto.
+      Premendolo NON parte la chiamata: si apre prima una finestra con le
+      proprie COORDINATE VERE da leggere all'operatore (chi chiama il 112
+      dalla montagna quasi mai sa dire dove si trova, ed e' la prima cosa che
+      gli chiedono), e il pulsante di conferma dice "Chiama 112" invece di
+      "OK". Fa anche da protezione contro il tocco involontario.
+      Sul satellite non si promette niente: la finestra dice per esteso che il
+      sito apre solo il telefono col numero pronto, e che l'eventuale SOS
+      satellitare lo fa il telefono, non il sito.
 
-21) Alla scadenza del Dead Man's Switch il messaggio di allarme deve
-essere inviato DAVVERO al numero del contatto di emergenza, non mostrato
-a me sulla pagina.
+21) [PRIMA META' FATTA 2026-07-26] Alla scadenza del Dead Man's Switch il
+messaggio di allarme deve essere inviato DAVVERO al numero del contatto di
+emergenza, non mostrato a me sulla pagina.
+   -> PRIMA META' FATTA (quella che non dipende da nessuna decisione):
+      - il contatto NON e' piu' una casella di testo libera con dentro un
+        numero di esempio scritto a mano nell'HTML: e' un elenco a tendina dei
+        contatti di emergenza VERI, quelli inseriti obbligatoriamente in
+        registrazione e gia' salvati sul database (Fase C);
+      - in localStorage finisce solo la POSIZIONE del contatto nell'elenco, non
+        piu' il numero di telefono copiato per intero. Cosi' il numero ha una
+        copia sola, e correggendolo nel profilo anche un timer gia' attivo usa
+        quello nuovo invece di uno congelato all'attivazione;
+      - senza nessun contatto salvato il timer NON si attiva piu' in silenzio:
+        lo dice e apre da solo il modulo per aggiungerne uno;
+      - l'allarme usa la POSIZIONE GPS VERA (punto 26) e non piu' il segnaposto
+        trascinabile, che di norma sta fermo a Campo Imperatore: mandare i
+        soccorsi in un posto inventato e' peggio che non dare posizione;
+      - la finestra di scadenza NON dice piu' il falso. Prima scriveva "SMS
+        Satellitare inviato a...", che non e' mai stato vero. Ora dice
+        chiaramente che nessun messaggio e' partito, e un avviso rosso nella
+        scheda avverte PRIMA di attivarlo che l'allarme vale solo su quel
+        telefono e solo a pagina aperta.
+      VUOTO TROVATO STRADA FACENDO e corretto: i contatti di emergenza si
+      inserivano SOLO in registrazione e nessuna schermata permetteva di
+      aggiungerne o correggerne uno dopo - chi sbagliava un numero non poteva
+      rimediare, e i 4 account demo (che non ne hanno nessuno) non avrebbero
+      potuto nemmeno provare il timer. Ora si aggiungono dalla scheda stessa.
+      RESTA LA SECONDA META' (invio vero + conto alla rovescia sul server),
+      bloccata dalla decisione sul canale - vedi sotto.
    Verificato: oggi e' tutto simulato. Alla scadenza compare solo una
    finestra sullo schermo e una riga in un finto registro SMS; non parte
    nessun messaggio. In piu' il contatto usato viene letto da localStorage

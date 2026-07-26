@@ -592,6 +592,17 @@ h1, h2, h3, h4, h5, h6 {
 .form-group input[type="number"],
 .form-group input[type="time"],
 .form-group input[type="date"],
+/* TRE TIPI MANCAVANO DA QUESTO ELENCO, trovato guardando le schermate del punto 21.
+   "tel" e' quello che serviva al campo del telefono, ma cercandolo sono saltati fuori
+   anche "email" e "password": erano senza stile DALL'INIZIO, cioe' proprio nella
+   schermata di accesso e in quella di registrazione - le prime due che vede chiunque.
+   Restavano con l'aspetto grezzo del browser e la larghezza predefinita, che in una
+   colonna stretta sborda dal riquadro.
+   Il campo del telefono resta type="tel" e non "text": sul telefono fa comparire il
+   tastierino numerico invece della tastiera intera. */
+.form-group input[type="tel"],
+.form-group input[type="email"],
+.form-group input[type="password"],
 .form-group select,
 .form-group textarea {
     background: rgba(255, 255, 255, 0.05);
@@ -603,6 +614,21 @@ h1, h2, h3, h4, h5, h6 {
     font-size: 0.9rem;
     outline: none;
     transition: all var(--transition-speed);
+}
+
+/* La vera causa del campo che sbordava. .form-group e' gia' "flex column", quindi gli
+   input si allargano da soli: quello che mancava e' che il GRUPPO potesse restringersi.
+   Un elemento flex non scende mai sotto la larghezza minima del suo contenuto finche'
+   non gli si dice min-width:0, e la larghezza minima di un input e' la sua dimensione
+   predefinita - circa 180px. Due affiancati in una colonna da 380px non ci stanno, e il
+   secondo usciva dal riquadro.
+   E' lo stesso min-width:0 gia' imparato impilando Dashboard e Zaino (vedi leggimi.txt).
+   Scritto qui e non dentro una @media perche' il difetto non dipende dalla larghezza
+   dello schermo ma da quella del contenitore: la barra laterale della mappa e' larga
+   380px anche su un monitor da 1440. Non puo' rompere niente che oggi ci stia gia':
+   agisce solo dove il contenuto straborderebbe, e strabordare non e' mai voluto. */
+.form-row .form-group {
+    min-width: 0;
 }
 
 .form-group input:focus,
@@ -1333,6 +1359,52 @@ h1, h2, h3, h4, h5, h6 {
     color: #2F7FD6;
 }
 
+/* ---- Punto 20: tasto SOS verso il 112 ----------------------------------------
+   IN ALTO A SINISTRA per una ragione precisa: il tasto di fine registrazione sta in
+   BASSO A DESTRA, e la richiesta e' che l'SOS sia ben visibile ma lontano da quello,
+   per non premerlo per sbaglio. L'angolo diagonalmente opposto e' la massima distanza
+   ottenibile su uno schermo, e resta vera su qualunque dimensione.
+   Rosso pieno e non semitrasparente: oltre al problema di leggibilita' sulle tile chiare
+   di OSM (vedi sopra), un comando di emergenza deve trovarsi senza cercarlo. */
+.map-sos-btn {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    z-index: 1000;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 14px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    color: #FFFFFF;
+    background: var(--accent-red);
+    border: 2px solid rgba(255, 255, 255, 0.55);
+    border-radius: 10px;
+    cursor: pointer;
+    box-shadow: 0 4px 18px rgba(168, 59, 46, 0.55);
+    transition: background var(--transition-speed), transform var(--transition-speed);
+}
+
+.map-sos-btn:hover {
+    background: #C24638;
+    transform: translateY(-1px);
+}
+
+.map-sos-btn i {
+    width: 17px;
+    height: 17px;
+}
+
+/* I comandi di zoom di Leaflet nascono in alto a sinistra, cioe' esattamente dove ora sta
+   l'SOS: si spostano sotto. Va scritto sul contenitore .leaflet-top.leaflet-left e non sul
+   singolo controllo, perche' e' quello a essere posizionato da Leaflet. */
+#map .leaflet-top.leaflet-left {
+    margin-top: 54px;
+}
+
 .map-sidebar {
     width: 380px;
     display: flex;
@@ -1694,6 +1766,45 @@ h1, h2, h3, h4, h5, h6 {
     display: flex;
     flex-direction: column;
     gap: 24px;
+}
+
+/* ---- Punto 21: aggiunta di un contatto di emergenza dal timer ---- */
+.safety-add-contact {
+    background: rgba(0, 0, 0, 0.22);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 10px;
+}
+
+/* Avviso che il messaggio NON parte davvero. Colore d'allarme e non grigio da nota a
+   pie' di pagina: e' il genere di avvertenza che, se passa inosservata, fa contare su
+   una sicurezza che non c'e'. */
+.safety-honesty-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-top: 14px;
+    padding: 10px 12px;
+    background: rgba(168, 59, 46, 0.12);
+    border: 1px solid rgba(168, 59, 46, 0.35);
+    border-radius: 10px;
+    color: #E8B4AC;
+    line-height: 1.45;
+}
+
+.safety-honesty-note i,
+.safety-honesty-note svg {
+    /* flex-shrink:0 perche' senza, l'icona si schiaccia a filo quando il testo va a capo
+       piu' volte - su 390px sono quattro righe. Regola scritta anche per "svg" perche'
+       lucide.createIcons() SOSTITUISCE il tag <i> con un <svg>: una regola sul solo "i"
+       vale per la frazione di secondo prima che le icone compaiano (difetto gia' trovato
+       e corretto una volta sulla lente della barra di ricerca). */
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    margin-top: 2px;
+    color: var(--accent-red);
 }
 
 .sms-log-box {
@@ -3135,11 +3246,17 @@ h1, h2, h3, h4, h5, h6 {
         flex-shrink: 0;
     }
 
-    /* La sidebar della mappa (meteo, sole, segnalazioni) va sotto la mappa e
-       scorre insieme alla pagina, non piu' per conto suo. */
+    /* La sidebar della mappa (timer di sicurezza, meteo, sole, segnalazioni) va sotto la
+       mappa e scorre insieme alla pagina, non piu' per conto suo.
+       padding-bottom: il pulsante flottante a scarpone e' FISSO in basso a destra, quindi
+       copre qualunque cosa si trovi li' a fine scorrimento. Senza questo spazio l'ultima
+       scheda resta sotto e non la si raggiunge - stessa correzione gia' fatta per le
+       schede escursione. Vale ancora di piu' ora che qui c'e' il timer di sicurezza, i cui
+       comandi non devono essere gli irraggiungibili di turno. */
     .map-sidebar {
         width: 100%;
         overflow-y: visible;
+        padding-bottom: 96px;
     }
 
     /* Il badge di istruzioni copriva meta' della mappa su schermo stretto. Si nasconde
@@ -3155,6 +3272,36 @@ h1, h2, h3, h4, h5, h6 {
         right: 10px;
         font-size: 0.72rem;
         padding: 6px 10px;
+    }
+
+    /* Punto 20 - l'SOS rimpicciolisce come gli altri comandi sulla mappa, ma meno: resta
+       il piu' grande dei due in alto, perche' e' quello che si deve trovare al primo
+       colpo d'occhio. Su telefono il tasto di registrazione occupa tutta la larghezza in
+       fondo alla mappa, quindi la distanza fra i due resta l'altezza intera della mappa. */
+    .map-sos-btn {
+        top: 10px;
+        left: 10px;
+        font-size: 0.78rem;
+        padding: 8px 11px;
+    }
+
+    #map .leaflet-top.leaflet-left {
+        margin-top: 46px;
+    }
+
+    /* --- Sezione Sicurezza & Mesh: due colonne fisse -> una sola ---
+       Era rimasta nell'elenco delle sezioni non responsive (vedi leggimi.txt): su 390px
+       la colonna del mesh finiva fuori schermo. Sistemata ora perche' e' qui che il
+       punto 17 lascia il rimando al timer, e un rimando irraggiungibile non serve.
+       min-width:0 sugli elementi della griglia: senza, una traccia 1fr non scende mai
+       sotto la larghezza minima del suo contenuto e le schede escono tagliate. */
+    .safety-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .safety-layout > .safety-column,
+    .safety-column > .glass-card {
+        min-width: 0;
     }
 
     /* Il tasto di registrazione e' l'azione principale su telefono: si prende tutta la

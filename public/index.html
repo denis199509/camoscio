@@ -437,19 +437,15 @@
 
                         <!-- Colonna Destra -->
                         <div class="dash-col">
-                            <!-- Card Stato Dead Man's Switch -->
-                            <div class="glass-card safety-quick-card">
-                                <h4><i data-lucide="shield"></i> Sicurezza Rapida</h4>
-                                <div id="dash-safety-status-idle" class="safety-status-block">
-                                    <p class="small text-muted">Nessun piano di sicurezza attivo per oggi. Imposta un timer di sicurezza prima di partire.</p>
-                                    <button class="btn btn-primary btn-block btn-nav-trigger" data-target="safety">Configura Dead Man's Switch</button>
-                                </div>
-                                <div id="dash-safety-status-active" class="safety-status-block hidden">
-                                    <div class="timer-display-large pulse-orange" id="dash-timer-countdown">00:00:00</div>
-                                    <p class="small text-warning text-center">Il sistema invierà un SOS ai contatti fidati alla scadenza se non effettui il check-in.</p>
-                                    <button class="btn btn-danger btn-block" id="btn-dash-checkin">DISATTIVA / CHECK-IN</button>
-                                </div>
-                            </div>
+                            <!-- Punto 17 di cose_da_fare.txt: qui c'era il riquadro "Sicurezza
+                                 Rapida" col Dead Man's Switch. Spostato nella sezione Mappa, dove
+                                 serve davvero. Non ne resta una copia qui di proposito: due
+                                 comandi per la stessa cosa vogliono dire due stati da tenere
+                                 allineati a mano, ed e' il genere di disallineamento che si
+                                 scopre nel momento sbagliato. Il conto alla rovescia resta
+                                 comunque visibile OVUNQUE, nella fascia #emergency-banner in cima
+                                 alla pagina, che e' il posto giusto per un avviso che non deve
+                                 dipendere dalla schermata aperta. -->
 
                             <!-- Punto 16 di cose_da_fare.txt: i totali REALI di quanto si e'
                                  camminato. I dati esistevano gia' (ogni tracciamento salva distanza
@@ -712,6 +708,23 @@
                             <div class="map-overlay-instructions">
                                 <span class="badge badge-primary"><i data-lucide="info"></i> Clicca sulla mappa per segnalare pericoli o simulare la posizione GPS per timbrare la vetta.</span>
                             </div>
+
+                            <!-- Punto 20 di cose_da_fare.txt: chiamata al 112.
+                                 POSIZIONE SCELTA CON UN CRITERIO PRECISO, non a caso: la richiesta
+                                 e' "ben visibile ma LONTANO dal tasto di fine escursione, per non
+                                 premerlo per sbaglio". Il tasto di registrazione sta in basso a
+                                 destra, quindi questo va in ALTO A SINISTRA - l'angolo
+                                 diagonalmente opposto, la massima distanza possibile su uno
+                                 schermo. (I comandi di zoom di Leaflet, che nascono li', sono
+                                 spostati piu' in basso da una regola in styles.css.)
+                                 E' un <button> e non un <a href="tel:112"> di proposito: prima di
+                                 chiamare si apre una finestra con le proprie coordinate da leggere
+                                 al centralino, che in montagna e' la cosa piu' utile da dire. Fa
+                                 anche da conferma contro il tocco involontario. -->
+                            <button type="button" class="map-sos-btn" id="btn-sos-112"
+                                title="Chiama il numero unico di emergenza 112">
+                                <i data-lucide="phone-call"></i> SOS 112
+                            </button>
                             <!-- Punto 26: e' il tasto che si preme aspettandosi di vedere "dove sono",
                                  quindi e' diventato il comando del puntino blu (accendi / ricentra /
                                  nascondi). L'etichetta la riscrive aggiornaTastoPosizione in map.js
@@ -733,8 +746,99 @@
                             </div>
                         </div>
 
-                        <!-- Sidebar Mappa (Meteo + Segnalazioni) -->
+                        <!-- Sidebar Mappa (Sicurezza + Meteo + Segnalazioni) -->
                         <div class="map-sidebar">
+                            <!-- Punto 17 di cose_da_fare.txt: il Dead Man's Switch stava in
+                                 Dashboard (riquadro "Sicurezza Rapida") e in "Sicurezza & Mesh".
+                                 Serve durante l'escursione, non mentre si guardano le statistiche:
+                                 e' stato spostato QUI, e messo per PRIMO nella barra laterale
+                                 perche' e' l'ultima cosa che si imposta prima di partire.
+                                 Ne esiste una copia sola: averlo in tre schermate avrebbe voluto
+                                 dire tre stati da tenere allineati a mano. -->
+                            <div class="glass-card dead-man-card">
+                                <h4><i data-lucide="heart-pulse"></i> Timer di Sicurezza (Dead Man's Switch)</h4>
+                                <p class="small text-muted">Imposta l'orario in cui pensi di essere rientrato. Se non fai il check-in entro quell'ora, scatta l'allarme verso il tuo contatto di emergenza.</p>
+
+                                <!-- Punto 21 di cose_da_fare.txt: qui c'era una casella di testo
+                                     libera, con dentro un numero di esempio scritto a mano, e il
+                                     valore finiva in localStorage - cioe' valeva solo su quel
+                                     browser. I contatti di emergenza sono obbligatori in
+                                     registrazione e stanno gia' sul database (Fase C): si scelgono
+                                     da li'. Riempita da popolaContattiEmergenza() in safety.js. -->
+                                <div class="form-group">
+                                    <label for="safety-contact">Chi avvisare:</label>
+                                    <select id="safety-contact"></select>
+                                    <p class="small text-muted" id="safety-contact-hint"></p>
+                                </div>
+
+                                <!-- VUOTO TROVATO FACENDO IL PUNTO 21, e corretto qui perche' senza
+                                     il resto non funziona: i contatti di emergenza si inseriscono
+                                     SOLO in registrazione, e nessuna schermata del sito permette di
+                                     aggiungerne o correggerne uno dopo. Chi ha sbagliato un numero
+                                     non poteva rimediare, e i 4 account demo - che non ne hanno
+                                     nessuno - non avrebbero potuto nemmeno provare il timer.
+                                     Sta qui, e non nel profilo, perche' e' qui che uno se ne
+                                     accorge: mentre sta per partire. -->
+                                <div id="safety-add-contact" class="safety-add-contact hidden">
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="safety-new-name">Nome</label>
+                                            <input type="text" id="safety-new-name" maxlength="60" placeholder="Es. Anna">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="safety-new-rel">Chi è</label>
+                                            <input type="text" id="safety-new-rel" maxlength="40" placeholder="Es. sorella">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="safety-new-phone">Telefono</label>
+                                        <input type="tel" id="safety-new-phone" maxlength="30" placeholder="Es. +39 333 1234567">
+                                    </div>
+                                    <button type="button" class="btn btn-secondary btn-sm btn-block" id="btn-save-emergency-contact">Salva il contatto</button>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-secondary btn-block" id="btn-toggle-add-contact">
+                                    <i data-lucide="user-plus"></i> Aggiungi un contatto
+                                </button>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="safety-duration">Fra quante ore rientri:</label>
+                                        <input type="number" id="safety-duration" value="3" min="1" max="24">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="safety-time">Oppure a che ora:</label>
+                                        <input type="time" id="safety-time" value="21:00">
+                                    </div>
+                                </div>
+
+                                <!-- Il conto alla rovescia dov'e' stato attivato. La fascia in cima
+                                     alla pagina mostra solo ore e minuti e serve a non dimenticarsene
+                                     girando per il sito; qui, dove si e' impostato il timer, ha senso
+                                     vedere anche i secondi. Riusa gli stili del contatore che stava
+                                     in Dashboard prima del punto 17. -->
+                                <div class="timer-display-large pulse-orange hidden" id="safety-countdown">00:00:00</div>
+
+                                <div class="safety-actions">
+                                    <button class="btn btn-primary" id="btn-activate-switch">Attiva il timer</button>
+                                    <button class="btn btn-danger hidden" id="btn-deactivate-switch">Sono al sicuro (disattiva)</button>
+                                </div>
+
+                                <!-- Detto in chiaro perche' e' una promessa che il sito NON puo'
+                                     ancora mantenere: alla scadenza oggi compare solo un avviso a
+                                     schermo, non parte nessun messaggio. E' la seconda meta' del
+                                     punto 21, ferma in attesa della decisione sul canale di invio
+                                     (email o SMS). Scriverlo qui e' l'unica cosa onesta: chi legge
+                                     "il sistema avvisera' i tuoi contatti" e' portato a fidarsene
+                                     proprio nel momento in cui non dovrebbe. -->
+                                <p class="small safety-honesty-note" id="safety-honesty-note">
+                                    <i data-lucide="alert-triangle"></i>
+                                    Attenzione: per ora l'allarme compare solo su questo telefono e
+                                    soltanto se la pagina resta aperta. L'invio vero del messaggio
+                                    non c'è ancora. Non usarlo come unica sicurezza: dì sempre a
+                                    qualcuno dove vai.
+                                </p>
+                            </div>
+
                             <!-- Sezione Meteo Multi-Quota -->
                             <div class="glass-card weather-widget-card">
                                 <h4><i data-lucide="cloud-lightning"></i> Meteo Multi-Quota & Microclima</h4>
@@ -1020,36 +1124,20 @@
                 <!-- 6. SICUREZZA & MESH -->
                 <section id="safety" class="page-section">
                     <div class="safety-layout">
-                        <!-- Dead Man's Switch -->
+                        <!-- Registro degli avvisi + rimando al timer, che dal punto 17 vive nella
+                             sezione Mappa. Il rimando non e' un riempitivo: chi cercava il Dead
+                             Man's Switch lo cercava qui, e trovare il posto vuoto senza spiegazioni
+                             farebbe pensare che sia sparito. Il REGISTRO invece resta qui, dove lo
+                             si legge dopo: durante l'escursione serve il comando, non lo storico. -->
                         <div class="safety-column">
                             <div class="glass-card dead-man-card">
-                                <h4><i data-lucide="heart-pulse"></i> Dead Man's Switch (Timer di Sicurezza)</h4>
-                                <p class="small text-muted">Configura un orario stimato di rientro prima di iniziare l'escursione. Se non disattivi il timer prima della scadenza, l'app simulerà l'invio di un SMS satellitare con la tua ultima posizione nota.</p>
-                                
-                                <div class="form-group">
-                                    <label for="safety-contact">Contatto di Emergenza (Nome e Numero):</label>
-                                    <input type="text" id="safety-contact" value="Mamma (333-1234567)" placeholder="Nome (Cellulare)" required>
-                                </div>
-                                
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label for="safety-duration">Durata stimata (ore):</label>
-                                        <input type="number" id="safety-duration" value="3" min="1" max="24">
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="safety-time">Oppure orario esatto rientro:</label>
-                                        <input type="time" id="safety-time" value="21:00">
-                                    </div>
-                                </div>
-
-                                <div class="safety-actions">
-                                    <button class="btn btn-primary" id="btn-activate-switch">Attiva Switch di Sicurezza</button>
-                                    <button class="btn btn-danger hidden" id="btn-deactivate-switch">Check-in Sicuro (Disattiva)</button>
-                                </div>
+                                <h4><i data-lucide="heart-pulse"></i> Timer di Sicurezza</h4>
+                                <p class="small text-muted">Il Dead Man's Switch si imposta dalla sezione <strong>Mappa &amp; Sentieri</strong>, insieme al tasto SOS: serve mentre sei in cammino, non da fermo.</p>
+                                <button class="btn btn-primary btn-block btn-nav-trigger" data-target="map-section">Vai alla Mappa</button>
 
                                 <!-- Log invio SMS simulato -->
                                 <div class="sms-log-box" id="sms-log-box">
-                                    <h5><i data-lucide="send"></i> Log Messaggi di Emergenza (Simulati)</h5>
+                                    <h5><i data-lucide="send"></i> Registro avvisi di emergenza (simulati)</h5>
                                     <div class="sms-log-entries" id="sms-log-entries">
                                         <div class="text-muted small italic">Nessun messaggio inviato. Il sistema è in stato sicuro.</div>
                                     </div>

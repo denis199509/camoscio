@@ -1,12 +1,15 @@
 ===================================================================
 CAMOSCIO — LEGGIMI (stato progetto, aggiornato automaticamente)
-Ultimo aggiornamento: 2026-07-26 (sera) — fatto il PUNTO 28, nato dalla
-SECONDA prova dell'utente dal telefono vero: "consenso dato, ma errore e
-nessun puntino blu". Il puntino funzionava; era la GUIDA allo sblocco a
-elencare due livelli di permesso su tre. Vedi la sezione dedicata subito
-sotto. Prima di questo, nella stessa giornata: il BLOCCO 1 dell'ordine di
-lavoro (punti 19, 23 prima meta', 16), i punti 26 e 27 (prima prova dal
-telefono vero), e prima ancora 9, 11, 12, 14, 8 e 10.
+Ultimo aggiornamento: 2026-07-26 (sera) — fatto il BLOCCO 2 (punti 17, 20 e
+la prima meta' del 21): il timer di sicurezza spostato nella Mappa, il tasto
+SOS verso il 112 e i contatti di emergenza veri al posto di una casella di
+testo. Vedi la sezione dedicata subito sotto.
+Prima di questo, nella stessa serata, il PUNTO 28 (geolocalizzazione dal
+telefono: il puntino funzionava, era la GUIDA allo sblocco a elencare due
+livelli di permesso su tre) — e l'utente ha poi CONFERMATO che dal telefono
+la posizione ora si vede, quindi 26 e 28 sono chiusi davvero.
+Prima ancora, nella stessa giornata: il BLOCCO 1 (punti 19, 23 prima meta',
+16), i punti 26 e 27 (prima prova dal telefono vero), e 9, 11, 12, 14, 8, 10.
 
 >>> SE STAI RIPRENDENDO IL LAVORO, VAI SUBITO IN FONDO A QUESTO FILE: la
     sezione "DA DOVE SI RIPARTE" dice in mezza pagina a che punto siamo,
@@ -33,6 +36,154 @@ una - nessuna implementata, sono materiale per una sessione futura. Vedi
 la sezione dedicata piu' sotto. La QUARTA lista (punti 26-27) e' invece
 gia' fatta, vedi qui sotto.
 ===================================================================
+
+NOTA IMPORTANTE PER CHI RIPARTE DA QUI - BLOCCO 2 FATTO (2026-07-26, sera):
+punti 17, 20 e la meta' non bloccata del 21. E' la sicurezza in montagna, la
+parte che non dipendeva da nessuna decisione dell'utente.
+Fatto DOPO il punto 28, e dopo che l'utente ha confermato che dal telefono la
+posizione ora si vede ("posizione sul telefono a posto, rileva la mia posizione
+attuale"): quindi i punti 26 e 28 sono chiusi davvero, non solo in teoria.
+
+--- PUNTO 17: il timer di sicurezza si sposta nella Mappa ---
+
+- Era in DUE posti: un riquadro "Sicurezza Rapida" in Dashboard e la versione
+  completa in "Sicurezza & Mesh". Ora e' la PRIMA scheda della barra laterale
+  della Mappa, ed e' l'UNICA copia in tutto il sito. Verificato dalla prova:
+  un solo #btn-activate-switch e un solo #safety-contact nell'intera pagina.
+- PERCHE' UNA COPIA SOLA E NON DUE COMODE: due comandi per la stessa cosa
+  vogliono dire due stati da tenere allineati a mano, ed e' il genere di
+  disallineamento che si scopre nel momento sbagliato - qui, letteralmente,
+  quando serve. Il conto alla rovescia resta comunque visibile da OGNI
+  schermata nella fascia #emergency-banner in cima alla pagina, che e' il
+  posto giusto per un avviso che non deve dipendere da dove ti trovi nel sito.
+- In "Sicurezza & Mesh" NON e' rimasto un buco: c'e' un rimando alla Mappa.
+  Chi cercava il Dead Man's Switch lo cercava li', e trovare il posto vuoto
+  senza spiegazioni farebbe pensare che sia sparito. Il REGISTRO degli avvisi
+  invece resta li', perche' lo si legge dopo: durante l'escursione serve il
+  comando, non lo storico.
+- Ripulito il codice rimasto orfano (stesso criterio del punto 19):
+  updateDashboardSafetyCard, btn-dash-checkin, dash-timer-countdown,
+  dash-safety-status-idle/active. Gli stili .timer-display-large e
+  .pulse-orange NON sono stati cancellati ma RIUSATI: ora disegnano il conto
+  alla rovescia dentro la scheda del timer, dove ha senso vedere anche i
+  secondi (la fascia in cima mostra solo ore e minuti).
+- Nata da qui una semplificazione vera: le tre righe che accendevano e
+  spegnevano i comandi erano ripetute in attivazione, disattivazione e
+  ripristino - tre copie della stessa verita'. Ora c'e' una funzione sola,
+  aggiornaStatoTimer(), che legge deadManActive e basta.
+
+--- PUNTO 20: il tasto SOS verso il 112 ---
+
+- POSIZIONE SCELTA CON UN CRITERIO, non a occhio. La richiesta era "ben
+  visibile ma LONTANO dal tasto di fine escursione". Quello di registrazione
+  sta in basso a destra, quindi l'SOS va in ALTO A SINISTRA: l'angolo
+  diagonalmente opposto e' la massima distanza ottenibile su uno schermo, e
+  resta vera a qualunque dimensione. MISURATO nella prova: 429 px su una
+  diagonale di mappa di 578 px (il 74%). Su telefono, dove il tasto di
+  registrazione occupa tutta la larghezza in fondo, i due restano separati
+  dall'altezza intera della mappa.
+- I comandi di zoom di Leaflet nascono in alto a sinistra, cioe' esattamente
+  li': spostati sotto con una regola su .leaflet-top.leaflet-left (va scritta
+  sul CONTENITORE, non sul singolo controllo: e' quello che Leaflet posiziona).
+- NON e' un <a href="tel:112"> ma un <button>: premendolo si apre prima una
+  finestra con le proprie COORDINATE VERE da leggere all'operatore. Non e' un
+  abbellimento - chi chiama il 112 dalla montagna quasi mai sa dire dove si
+  trova, ed e' la prima cosa che gli chiedono. Fa anche da conferma contro il
+  tocco involontario, che e' poi la ragione della richiesta sulla distanza.
+- showConfirmModal ora accetta l'etichetta del pulsante di conferma: davanti a
+  una finestra che sta per far partire una telefonata al 112, un pulsante che
+  dice "OK" non dice abbastanza. Dice "Chiama 112".
+- SUL SATELLITE NON SI PROMETTE NIENTE, ed e' scritto nella finestra: il sito
+  apre solo il telefono col numero pronto, e l'eventuale SOS satellitare lo fa
+  il telefono. Era la nota tecnica del punto 20, ed e' finita nell'interfaccia
+  invece che restare in un file che l'utente non legge.
+
+--- PUNTO 21 (prima meta'): i contatti di emergenza veri ---
+
+- Il contatto era una CASELLA DI TESTO LIBERA con dentro un numero di esempio
+  scritto a mano nell'HTML, e finiva in localStorage: valeva solo su quel
+  browser e non aveva NESSUN rapporto con i contatti di emergenza che l'utente
+  inserisce obbligatoriamente in registrazione e che stanno gia' sul database
+  (Fase C). Due dati per la stessa cosa, e quello usato era il piu' fragile.
+  Ora e' un elenco a tendina dei contatti veri.
+- In localStorage finisce solo la POSIZIONE nell'elenco, non piu' il numero
+  copiato per intero. Due vantaggi veri: una copia sola di un numero di
+  telefono altrui, e soprattutto un timer gia' attivo che usa il numero
+  AGGIORNATO se lo si corregge, invece di uno congelato all'attivazione.
+- L'allarme usa la POSIZIONE GPS VERA (punto 26) e non piu'
+  window.userSimulatedLocation, che e' il segnaposto trascinabile e di norma
+  sta fermo a Campo Imperatore. Un allarme con dentro una posizione inventata
+  e' PEGGIO di uno senza posizione: manda a cercare qualcuno nel posto
+  sbagliato.
+- LA FINESTRA DI SCADENZA NON DICE PIU' IL FALSO. Prima scriveva "SMS
+  Satellitare inviato a...", e non e' mai partito niente. Ora dice
+  chiaramente che nessun messaggio e' stato inviato e cosa fare. In piu' un
+  avviso rosso nella scheda lo dice PRIMA di attivare il timer: chi legge "il
+  sistema avvisera' i tuoi contatti" e' portato a fidarsene proprio nel
+  momento in cui non dovrebbe.
+- VUOTO TROVATO STRADA FACENDO, corretto perche' senza il resto non funziona:
+  i contatti di emergenza si inserivano SOLO in registrazione e NESSUNA
+  schermata del sito permetteva di aggiungerne o correggerne uno dopo. Chi
+  sbagliava un numero non poteva rimediare, e i 4 account demo - che non ne
+  hanno nessuno, verificato sul database - non avrebbero potuto nemmeno
+  provare il timer. Ora si aggiungono dalla scheda stessa: sta li' e non nel
+  profilo perche' e' li' che uno se ne accorge, cioe' mentre sta per partire.
+- La seconda meta' (invio vero + conto alla rovescia sul SERVER) resta ferma
+  in attesa della decisione sul canale: e' il BLOCCO 5.
+
+--- DUE DIFETTI PREESISTENTI TROVATI GUARDANDO LE SCHERMATE ---
+
+- .form-group NON stilava input[type="tel"], ma nemmeno "email" e "password".
+  Cercavo il primo per il campo del telefono e sono saltati fuori gli altri
+  due: erano senza stile DALL'INIZIO, cioe' proprio nella schermata di
+  ACCESSO e in quella di REGISTRAZIONE - le prime due che vede chiunque
+  arrivi sul sito. Restavano con l'aspetto grezzo del browser. Corretto per
+  tutti e tre. Il telefono resta type="tel" e non "text" perche' sul cellulare
+  fa comparire il tastierino numerico.
+- I due campi affiancati del nuovo modulo USCIVANO DAL RIQUADRO, e non solo su
+  telefono: anche su un monitor da 1440, perche' la barra laterale della mappa
+  e' larga 380px sempre. Causa: .form-group e' gia' "flex column" (quindi gli
+  input si allargano da soli), ma il GRUPPO non poteva restringersi - un
+  elemento flex non scende sotto la larghezza minima del contenuto finche' non
+  gli si dice min-width:0, e per un input quella minima e' ~180px. E' lo
+  stesso min-width:0 gia' imparato impilando Dashboard e Zaino.
+  DA RICORDARE: quel difetto NON dipende dalla larghezza dello schermo ma da
+  quella del CONTENITORE, quindi la correzione va fuori dalle @media - la
+  correzione gia' fatta per lo Zaino, essendo dentro una @media, non copriva
+  affatto il caso del monitor grande.
+- Aggiunto anche padding-bottom alla barra laterale della mappa su telefono:
+  il pulsante flottante a scarpone e' FISSO in basso a destra e copriva
+  l'ultima scheda. Vale ancora di piu' ora che li' c'e' il timer di sicurezza.
+
+--- ALTRO DEBITO TECNICO CHIUSO ---
+
+- "Sicurezza & Mesh" era fra le sezioni NON responsive (due colonne fisse, su
+  390px il mesh finiva fuori schermo). Sistemata ora perche' e' li' che il
+  punto 17 lascia il rimando al timer, e un rimando irraggiungibile non serve
+  a niente. Restano non responsive: Escursioni, Carpooling, Tribu' & Squadre.
+
+--- COME E' STATO VERIFICATO ---
+
+- Puppeteer, 390x844 e 1440x900, 39 controlli nella prova del Blocco 2, tutti
+  passati, PIU' le due prove del punto 28 rilanciate per verificare che le
+  modifiche al CSS non avessero rotto niente. Nessun errore JavaScript.
+- NESSUNA SCRITTURA SUL DATABASE: la PUT che salva il contatto di emergenza e'
+  stata intercettata e risposta dalla prova. Ricontrollato dopo: i 4 account
+  demo hanno ancora zero contatti, 6 utenti, 2 escursioni, 5 sessioni.
+- Provata anche la SCADENZA del timer, forzando returnTimestamp invece di
+  aspettare tre ore: la finestra dice che nessun messaggio e' partito, nomina
+  il contatto vero letto dal profilo, usa le coordinate GPS vere, e alla
+  chiusura lo stato torna a riposo in tutti i punti insieme.
+- FALSI ALLARMI DELLE PROVE, da ricordare: 1) la prova cercava il modale dopo
+  page.click e andava in timeout - riprovata identica due volte, passa sempre:
+  era un intoppo di tempi al primo giro dopo l'avvio del server, non un
+  difetto (verificato a parte che il click vero arriva e che nessun elemento
+  copre il tasto SOS); 2) il contenitore che scorre NON e' .main-content ne'
+  document.scrollingElement ma .page-container - scorrendo quello sbagliato la
+  prova diceva che l'ultima scheda era irraggiungibile mentre era a posto.
+- Gli errori JavaScript vanno stampati SUBITO e non raccolti per la fine: la
+  prima volta lo script e' morto su un timeout prima di stamparli, nascondendo
+  proprio quello che serviva vedere.
 
 NOTA IMPORTANTE PER CHI RIPARTE DA QUI - PUNTO 28 FATTO (2026-07-26, sera).
 Nato dalla SECONDA prova dell'utente dal telefono vero, fatta dopo che i
@@ -2019,17 +2170,27 @@ CHECKLIST DI AVANZAMENTO (aggiornare via via che si procede)
         di distanza, dislivello e velocita' media, sommati dal server
         (nuovo GET /api/tracking/totals). Le altre voci del punto 16 erano
         gia' fatte prima.
-    [ ] 17 — spostare il Dead Man's Switch nella sezione Mappe
+    [x] 17 — FATTO 2026-07-26: il timer di sicurezza e' la prima scheda
+        della barra laterale della Mappa, ed e' l'unica copia nel sito.
+        Tolto il riquadro dalla Dashboard col codice rimasto orfano; in
+        "Sicurezza & Mesh" restano il registro e un rimando alla Mappa.
     [ ] 18 — tasto e pagina "Badge" (per ora con qualche badge di prova)
     [x] 19 — FATTO 2026-07-26: tolte le finte "sfide in corso"
     Mappe:
-    [ ] 20 — tasto SOS verso il 112 (link "tel:112"), ben visibile ma
-        lontano dal tasto di fine escursione
-    [ ] 21 — far partire DAVVERO il messaggio al contatto di emergenza
-        alla scadenza del Dead Man's Switch. Due lavori distinti: uno
-        piccolo (leggere i contatti salvati in registrazione invece che
-        da localStorage) e uno grosso (spostare il conto alla rovescia
-        sul server, altrimenti chiudendo la pagina non succede nulla).
+    [x] 20 — FATTO 2026-07-26: tasto rosso "SOS 112" in alto a sinistra
+        sulla mappa, cioe' l'angolo diagonalmente opposto al tasto di fine
+        registrazione (misurati 429px su 578 di diagonale). Prima di
+        chiamare mostra le proprie coordinate vere da leggere all'operatore,
+        e non promette niente sul satellite.
+    [~] 21 — PRIMA META' FATTA 2026-07-26: il contatto non e' piu' una
+        casella di testo libera finita in localStorage ma la scelta fra i
+        contatti di emergenza VERI salvati in registrazione; in localStorage
+        va solo la posizione nell'elenco, non il numero; l'allarme usa la
+        posizione GPS vera; e la finestra di scadenza non dice piu' "SMS
+        Satellitare inviato", che era falso. Aggiunto anche il modo di
+        inserire un contatto dopo la registrazione, che non esisteva.
+        RESTA la seconda meta' (invio vero + conto alla rovescia sul
+        SERVER), bloccata dalla decisione sul canale — vedi blocco 5.
     [ ] 22 — WhatsApp: gia' risposto, non e' praticabile (vedi
         cose_da_fare.txt). Serve un canale vero: STESSA decisione del
         punto 7, da prendere una volta sola per entrambi.
@@ -2103,15 +2264,20 @@ sessioni di tracciamento: le 4 del 24-25 luglio piu' quella del 26 luglio
 pomeriggio, che e' la prova vera dell'utente dal telefono - 14 secondi,
 zero punti GPS - ed e' il riscontro del punto 28. NON vanno cancellate.
 
-IL PROSSIMO PASSO E' IL BLOCCO 2 (punti 17 + 20 insieme, poi la meta' non
-bloccata del 21). E' la sicurezza in montagna, ed e' la parte che NON
-dipende da nessuna decisione dell'utente.
+IL BLOCCO 2 E' FATTO (punti 17, 20 e la meta' non bloccata del 21) - vedi la
+sezione dedicata in cima al file. E l'utente ha CONFERMATO che dal telefono la
+posizione ora si vede: i punti 26 e 28 sono chiusi davvero.
 
-PRIMA DI TUTTO, PERO': chiedere all'utente com'e' andata la controprova
-dal telefono con le correzioni del punto 28. Se il puntino ora si vede,
-il punto 26 e il 28 sono chiusi davvero; se no, la pagina
-/diagnostica-gps.html dice da sola quale livello e' chiuso e il rapporto
-si copia con un tasto.
+IL PROSSIMO PASSO E' IL BLOCCO 3, lo zaino intelligente, tutto insieme e in
+quest'ordine obbligato:
+ 1. punto 24 - distinguere oggetti PERSONALI da CONDIVISIBILI. Per primo
+    perche' e' un cambio al modello dati: farlo dopo vorrebbe dire rifare il
+    lavoro degli altri due.
+ 2. punto 23, seconda meta' - oggetti condivisi SOLO in un'escursione di
+    gruppo. Ha bisogno della distinzione del punto 24.
+ 3. punto 25 - portata della tenda e verifica che basti per il gruppo. Si
+    appoggia direttamente al concetto di oggetto "che copre N persone".
+Poi il BLOCCO 4 (punto 18, pagina Badge), che e' puramente additivo.
 
 DECISIONE ANCORA IN ATTESA, che da sola sblocca tre punti (7, 21-resto e
 22): quale canale usare per mandare un messaggio, email o SMS. Finche' non
@@ -2152,11 +2318,16 @@ COSE DA SAPERE SULL'AMBIENTE, per non perderci tempo:
 
 DEBITO TECNICO NOTO, non urgente ma da non dimenticare:
  - LE ALTRE SEZIONI NON SONO RESPONSIVE. Il 2026-07-26 sono state
-   sistemate Mappa (punto 9), Dashboard e Zaino (punto 16/23), perche'
-   senza non si vedeva il lavoro fatto. Restano da fare Escursioni,
-   Carpooling, Sicurezza & Mesh, Tribu' & Squadre: hanno lo stesso difetto
-   (colonne fisse mai passate dalle @media). Ricordarsi del min-width:0,
-   senza il quale impilare le colonne non basta.
+   sistemate Mappa (punto 9), Dashboard e Zaino (punto 16/23) e infine
+   Sicurezza & Mesh (blocco 2), perche' senza non si vedeva il lavoro
+   fatto. Restano da fare Escursioni, Carpooling, Tribu' & Squadre: hanno
+   lo stesso difetto (colonne fisse mai passate dalle @media). Ricordarsi
+   del min-width:0, senza il quale impilare le colonne non basta.
+   E ATTENZIONE, imparato nel blocco 2: il min-width:0 sui gruppi di un
+   .form-row NON va dentro una @media, perche' quel difetto dipende dalla
+   larghezza del CONTENITORE e non dello schermo - la barra laterale della
+   mappa e' larga 380px anche su un monitor da 1440, e li' i campi
+   affiancati uscivano dal riquadro esattamente come su telefono.
  - MARCHE E MOLISE non sono attive nell'indice dei sentieri
    (lib/trailIndex.js, ACTIVE_REGIONS = ['Lazio','Abruzzo']): il sito dice
    di coprire quattro regioni ma il puntino si aggancia ai sentieri solo

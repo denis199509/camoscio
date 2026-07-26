@@ -85,9 +85,12 @@ function showGenericModal(message, { showInput = false, defaultValue = "", showC
     });
 }
 
-// Sostituisce confirm(): risolve a true/false
-window.showConfirmModal = function(message) {
-    return showGenericModal(message, { showInput: false });
+// Sostituisce confirm(): risolve a true/false.
+// L'etichetta del pulsante di conferma e' un parametro (punto 20): davanti a una finestra
+// che sta per far partire una telefonata al 112, un pulsante che dice "OK" non dice
+// abbastanza - deve dire cosa succede premendolo.
+window.showConfirmModal = function(message, confirmLabel = "OK") {
+    return showGenericModal(message, { showInput: false, confirmLabel });
 };
 
 // Sostituisce prompt(): risolve al testo inserito, o null se annullato
