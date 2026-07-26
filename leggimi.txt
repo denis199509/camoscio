@@ -3,7 +3,12 @@ CAMOSCIO — LEGGIMI (stato progetto, aggiornato automaticamente)
 Ultimo aggiornamento: 2026-07-26 — fatto il BLOCCO 1 dell'ordine di lavoro
 (punti 19, 23 prima meta', 16): vedi la sezione dedicata subito sotto.
 Prima di questo, nella stessa giornata: i punti 26 e 27 (nati da una prova
-dal TELEFONO VERO sul sito online), e prima ancora 9, 11, 12, 14, 8 e 10. Prima ancora, verificato che il sito online
+dal TELEFONO VERO sul sito online), e prima ancora 9, 11, 12, 14, 8 e 10.
+
+>>> SE STAI RIPRENDENDO IL LAVORO, VAI SUBITO IN FONDO A QUESTO FILE: la
+    sezione "DA DOVE SI RIPARTE" dice in mezza pagina a che punto siamo,
+    qual e' il prossimo passo, cosa aspetta una decisione dell'utente e
+    quali trappole sono gia' state pagate. Poi torna a leggere il resto. Prima ancora, verificato che il sito online
 e' rimasto STABILE dopo il push della Fase H: home/demo/confini/js tutti
 a 200, nessun 502 (la prima chiamata ha impiegato 25s perche' il piano
 gratuito di Render sospende il servizio quando non lo usa nessuno - e'
@@ -1930,10 +1935,73 @@ CHECKLIST DI AVANZAMENTO (aggiornare via via che si procede)
 
 COME RIPRENDERE IL LAVORO IN UNA NUOVA SESSIONE
 ----------------------------------------------------
-1. Leggi questo file per intero.
+1. Leggi questo file per intero, e leggi cose_da_fare.txt.
 2. Guarda la checklist sopra per capire a che punto siamo.
-3. Se il file di piano originale esiste ancora (percorso in cima a questo
-   file), rileggilo per i dettagli tecnici della fase corrente.
-4. Continua dalla prima fase/voce non completata nella checklist.
-5. Aggiorna questo file (checklist + eventuali nuove decisioni prese
-   insieme all'utente) man mano che avanzi.
+3. Continua dalla prima voce non completata, seguendo la sezione "ORDINE DI
+   LAVORO CONSIGLIATO" in cima al file.
+4. Aggiorna questo file (checklist + decisioni prese con l'utente) man mano
+   che avanzi, e a fine sessione fai un riassunto all'utente.
+5. In OGNI riassunto, ricorda i punti 7 e 13 come in sospeso (richiesta
+   esplicita dell'utente, vedi in cima al file). Non riproporli come
+   "prossimo passo": solo ricordarli.
+
+
+===================================================================
+DA DOVE SI RIPARTE — situazione al 2026-07-26, fine giornata
+===================================================================
+
+STATO: tutto salvato e ONLINE. Ultimo commit 545045c, GitHub allineato,
+sito verificato dal vivo su https://camoscio.onrender.com (tutte e 8 le
+sezioni si aprono e si riempiono, nessun errore JavaScript, nessuna
+richiesta fallita). Niente lavoro a meta' lasciato in sospeso nel codice.
+
+DATABASE PULITO: controllato a fine giornata, NESSUN dato di prova creato
+oggi. Restano 2 escursioni originali, 4 sessioni di tracciamento del 24-25
+luglio (una di quelle e' la prova vera fatta dall'utente da telefono) e 6
+utenti (4 demo + 2 reali). Le prove di oggi hanno intercettato tutte le
+chiamate che avrebbero scritto: e' il metodo da rifare.
+
+IL PROSSIMO PASSO E' IL BLOCCO 2 (punti 17 + 20 insieme, poi la meta' non
+bloccata del 21). E' la sicurezza in montagna, ed e' la parte che NON
+dipende da nessuna decisione dell'utente.
+
+DECISIONE ANCORA IN ATTESA, che da sola sblocca tre punti (7, 21-resto e
+22): quale canale usare per mandare un messaggio, email o SMS. Finche' non
+la prende l'utente non si scrive codice per quei tre. L'utente e' gia'
+stato informato che sono la stessa decisione; NON riproporgliela ad ogni
+occasione, ma se la riapre lui, affrontarli insieme.
+
+COSE DA SAPERE SULL'AMBIENTE, per non perderci tempo:
+ - Per le prove nel browser si usa PUPPETEER installato nella CARTELLA
+   TEMPORANEA, mai in package.json del progetto. Serve perche' permette
+   GPS finto in movimento e schermo da telefono.
+ - Il token di GitHub NON e' piu' scritto nell'indirizzo del repository
+   (2026-07-26): le credenziali le gestisce Git Credential Manager di
+   Windows. Se un push chiede l'accesso, deve farlo l'UTENTE dal browser -
+   non e' un errore.
+ - Trappole gia' pagate, elencate qui perche' non si ripaghino:
+   * page.setGeolocation vuole {latitude, longitude}, NON {lat, lng};
+   * una risposta finta verso un altro dominio senza l'intestazione
+     Access-Control-Allow-Origin viene scartata dal browser, e l'app
+     sembra rotta quando invece sta funzionando bene;
+   * accendere l'intercettazione delle richieste PRIMA di navigare
+     rallenta i caricamenti, e refreshState() finisce per riscrivere i
+     dati modificati in memoria: va accesa dopo;
+   * leggere il DOM "a tempo" da' falsi allarmi (numeri a zero, elementi
+     mancanti): usare waitForFunction su una condizione vera.
+
+DEBITO TECNICO NOTO, non urgente ma da non dimenticare:
+ - LE ALTRE SEZIONI NON SONO RESPONSIVE. Il 2026-07-26 sono state
+   sistemate Mappa (punto 9), Dashboard e Zaino (punto 16/23), perche'
+   senza non si vedeva il lavoro fatto. Restano da fare Escursioni,
+   Carpooling, Sicurezza & Mesh, Tribu' & Squadre: hanno lo stesso difetto
+   (colonne fisse mai passate dalle @media). Ricordarsi del min-width:0,
+   senza il quale impilare le colonne non basta.
+ - MARCHE E MOLISE non sono attive nell'indice dei sentieri
+   (lib/trailIndex.js, ACTIVE_REGIONS = ['Lazio','Abruzzo']): il sito dice
+   di coprire quattro regioni ma il puntino si aggancia ai sentieri solo
+   in due. Da riattivare quando si e' sicuri che la memoria regga.
+ - PROVA ALL'APERTO DA TELEFONO VERO mai fatta: Puppeteer simula il GPS
+   ma non l'imprecisione reale, i buchi di segnale e la batteria.
+ - Nessun file LICENSE: il repository e' pubblico ma non e' open source
+   (vedi la nota sulla privacy in cima al file).
