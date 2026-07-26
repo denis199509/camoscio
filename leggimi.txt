@@ -68,6 +68,96 @@ alcuni risultavano gia' fatti. Riassunto di cosa si e' verificato:
   alle librerie XML - in Fase G si e' gia' scartato osmtogeojson per
   vulnerabilita' critiche irrisolte in xmldom.
 
+===================================================================
+ORDINE DI LAVORO CONSIGLIATO PER LA PROSSIMA SESSIONE
+===================================================================
+L'utente ha lasciato decidere l'ordine (2026-07-26). Ecco quello proposto,
+con il motivo di ogni scelta scritto accanto: se una sessione futura (o
+l'utente) vuole cambiarlo, deve poter capire cosa salta.
+
+Criteri usati, in ordine di importanza:
+ 1) prima cio' che oggi e' ROTTO o mostra il falso, poi cio' che manca;
+ 2) raggruppare i punti che toccano gli stessi file, per non riaprire tre
+    volte lo stesso codice;
+ 3) rispettare le dipendenze vere (es. la portata della tenda non ha senso
+    finche' non esiste la distinzione personale/condiviso);
+ 4) tenere per ultimo cio' che e' bloccato da una decisione dell'utente o
+    che rischia di consumare spazio su MongoDB (vincolo hard).
+
+--- BLOCCO 1: correzioni rapide, alto impatto (mezza sessione scarsa) ---
+ 1. Punto 19 - togliere le finte "sfide in corso". E' il piu' veloce di
+    tutti (una manciata di righe in public/index.html) ed e' l'unico che
+    oggi mostra un'informazione FALSA a ogni utente appena registrato.
+    Primo per questo: costo minimo, bugia in meno.
+ 2. Punto 23, prima meta' - impedire allo Zaino di prendere la prima
+    escursione del database di chiunque essa sia. Anche questo e' un
+    comportamento sbagliato gia' oggi, non una funzionalita' mancante.
+    Nello stesso passaggio togliere stagione fissa "estate" e pioggia
+    sempre prevista, che sono nella stessa funzione.
+ 3. Punto 16 - totali di distanza, dislivello e velocita' media in
+    Dashboard. I dati esistono GIA' (ogni sessione di tracciamento li
+    salva dalla Fase F): manca solo sommarli e mostrarli. Poco lavoro,
+    molto valore, e chiude definitivamente il punto 16 dato che le altre
+    sue voci sono gia' fatte.
+
+--- BLOCCO 2: sicurezza in montagna, la parte NON bloccata ---
+ 4. Punto 17 - spostare il Dead Man's Switch nella sezione Mappe.
+ 5. Punto 20 - tasto SOS verso il 112 (link "tel:112").
+    17 e 20 vanno fatti INSIEME, non in momenti diversi: la richiesta
+    dell'utente e' che il tasto SOS sia ben visibile ma lontano da quello
+    di fine escursione, e questa e' una decisione di disposizione che si
+    puo' prendere bene solo avendo sotto gli occhi tutti e tre i comandi
+    (SOS, uomo morto, fine registrazione) nella stessa schermata.
+ 6. Punto 21, la meta' NON bloccata - far leggere al Dead Man's Switch i
+    contatti di emergenza salvati durante la registrazione invece di
+    quello scritto in localStorage. Lavoro piccolo, indipendente dalla
+    decisione sul canale di invio, e toglie un difetto vero (oggi il
+    contatto vale solo su quel browser).
+
+--- BLOCCO 3: zaino intelligente, tutto insieme ---
+ 7. Punto 24 - distinguere oggetti PERSONALI da CONDIVISIBILI. Va per
+    primo dei tre perche' e' un cambio al modello dati: farlo dopo
+    significherebbe rifare il lavoro degli altri due.
+ 8. Punto 23, seconda meta' - mostrare gli oggetti condivisi SOLO quando
+    si partecipa a un'escursione con piu' membri. Ha bisogno della
+    distinzione introdotta al punto 24.
+ 9. Punto 25 - portata della tenda e verifica che basti per il gruppo.
+    Ultimo dei tre: e' un controllo che si appoggia direttamente al
+    concetto di oggetto condiviso "che copre N persone" del punto 24.
+
+--- BLOCCO 4: aggiunta piacevole, nessuna urgenza ---
+10. Punto 18 - tasto e pagina "Badge" con qualche badge di prova. Messo
+    qui e non prima perche' non corregge niente di rotto e non blocca
+    nient'altro: e' l'unico dei punti nuovi puramente additivo. Da fare
+    quando i blocchi 1-3 sono chiusi.
+
+--- BLOCCO 5: bloccati o rischiosi, da affrontare con calma ---
+11. Punto 7 + punto 22 + punto 21 (seconda meta'). TUTTI E TRE dipendono
+    dalla STESSA decisione dell'utente: quale canale usare per mandare un
+    messaggio (email o SMS). Finche' non la prende, non si scrive codice.
+    Quando la prende, si fanno insieme: recupero password, invio vero del
+    messaggio di emergenza, e lo spostamento del conto alla rovescia dal
+    browser al SERVER (senza il quale l'uomo morto resta finto, perche'
+    chiudendo la pagina non parte piu' nulla).
+12. Punto 15 - caricamento file .gpx. Penultimo perche' e' l'unico che
+    puo' far crescere in fretta lo spazio occupato su MongoDB, che e' un
+    vincolo hard del progetto. Prima di scrivere codice va fatta una
+    stima vera: quanto pesa una traccia reale nel formato compatto della
+    Fase F, moltiplicata per i 5 file al mese ipotizzati dall'utente,
+    moltiplicata per il numero di utenti previsti. Se il conto non torna,
+    riparlarne con l'utente PRIMA di implementare.
+13. Punto 13 - progettazione percorso multi-punto sui sentieri. Ultimo
+    perche' e' il piu' grande di tutti (serve un algoritmo di ricerca
+    cammino su un grafo dei sentieri, oggi inesistente) ed e' gia' stato
+    messo in sospeso dall'utente proprio per questo: vuole una sessione
+    dedicata.
+
+NOTA SULLA PROVA DA TELEFONO: indipendente da tutto questo, resta da fare
+la prova all'aperto delle correzioni del 2026-07-26 (segnaposto che segue
+il GPS, tasto di registrazione sulla mappa, creazione escursione cercando
+il ritrovo per nome). Non blocca nessun punto: si puo' fare quando
+all'utente e' comodo.
+
 ATTENZIONE PRIVACY - IL REPOSITORY GITHUB E' PUBBLICO (verificato il
 2026-07-26 via API GitHub: "private": false). Questo file e
 cose_da_fare.txt sono tracciati da git fin dal PRIMO commit (f4da9c2) e
@@ -1512,7 +1602,9 @@ CHECKLIST DI AVANZAMENTO (aggiornare via via che si procede)
 [ ] TERZA LISTA (cose_da_fare.txt punti 15-25, dettata 2026-07-26) —
     NESSUNA RIGA DI CODICE SCRITTA, solo ricognizione gia' fatta (vedi la
     nota dedicata in cima al file per i dettagli di ogni verifica).
-    E' DA QUI CHE SI RIPARTE nella prossima sessione.
+    E' DA QUI CHE SI RIPARTE nella prossima sessione, seguendo la sezione
+    "ORDINE DI LAVORO CONSIGLIATO PER LA PROSSIMA SESSIONE" in cima al
+    file: si parte dal punto 19, poi 23 (prima meta') e 16.
     Dashboard:
     [ ] 15 — caricare file .gpx come escursioni gia' fatte (max 5/mese
         secondo l'ipotesi dell'utente). Attenzione al vincolo di spazio:
