@@ -6,13 +6,97 @@ di tutto questo, verificato che il sito online e' rimasto STABILE dopo il
 push della Fase H: home/demo/confini/js tutti a 200, nessun 502 (la prima
 chiamata ha impiegato 25s perche' il piano gratuito di Render sospende il
 servizio quando non lo usa nessuno - e' normale, non instabilita').
-RESTANO SOLO I PUNTI 7 E 13, entrambi messi IN SOSPESO SU RICHIESTA
-ESPLICITA DELL'UTENTE (2026-07-26): il 7 (recupero password) perche' deve
-decidere se agganciare una vera email o inventare un'alternativa; il 13
-(progettazione percorso multi-punto) perche' e' una richiesta grossa, da
-affrontare in una sessione nuova e dedicata. NON riproporli come "prossimo
-passo" senza che sia lui a riaprirli.
+DELLA SECONDA LISTA RESTANO SOLO I PUNTI 7 E 13, entrambi messi IN
+SOSPESO SU RICHIESTA ESPLICITA DELL'UTENTE (2026-07-26): il 7 (recupero
+password) perche' deve decidere se agganciare una vera email o inventare
+un'alternativa; il 13 (progettazione percorso multi-punto) perche' e' una
+richiesta grossa, da affrontare in una sessione nuova e dedicata.
+RICHIESTA ESPLICITA DELL'UTENTE: RICORDARGLI QUESTI DUE PUNTI OGNI VOLTA
+CHE SI FA UN RIASSUNTO - sia quando e' lui a chiederlo, sia alla fine di
+ogni lavoro quando il riassunto lo si scrive di propria iniziativa. Non
+vanno riproposti come "prossimo passo da fare adesso": vanno solo
+ricordati come in sospeso, finche' non e' lui a riaprirli.
+
+A fine sessione l'utente ha dettato una TERZA LISTA di richieste (punti
+15-25 di cose_da_fare.txt), gia' verificate nel codice e annotate una per
+una - nessuna implementata, sono materiale per la prossima sessione. Vedi
+la sezione dedicata piu' sotto.
 ===================================================================
+
+NOTA IMPORTANTE PER CHI RIPARTE DA QUI - TERZA LISTA (punti 15-25 di
+cose_da_fare.txt, dettati 2026-07-26 a fine sessione). NON e' stata
+scritta una riga di codice per questi punti: e' solo ricognizione, fatta
+subito perche' l'utente li aveva pensati PRIMA della sessione di oggi e
+alcuni risultavano gia' fatti. Riassunto di cosa si e' verificato:
+
+- GIA' FATTI dal lavoro di oggi, da non rifare: "escursioni pianificate"
+  in Dashboard (e' il gruppo "A cui partecipo" della nuova pagina "Le mie
+  escursioni") e "escursioni fatte" (contatore gia' esistente + gruppo
+  "Gia' fatte").
+- PARZIALE: i badge/timbri esistono gia' in Dashboard (Passaporto delle
+  Vette + contatore); manca solo la PAGINA dedicata chiesta al punto 18.
+- Punto 19, "un utente appena registrato ha gia' due sfide in corso":
+  verificato, la sezione "Sfide in corso" e' scritta A MANO dentro
+  public/index.html - una sola voce, "Le Vette del Gran Sasso (0/2)",
+  dove il (0/2) sono le vette, non le sfide. Non e' collegata a nessun
+  dato utente, compare identica per chiunque. Da togliere o sostituire.
+- Punto 21, Dead Man's Switch: verificato che oggi e' TUTTO SIMULATO -
+  alla scadenza compare solo una finestra e una riga in un finto registro
+  SMS, non parte nessun messaggio. Peggio: il contatto usato viene letto
+  da localStorage (vale solo su quel browser) e NON dai contatti di
+  emergenza salvati in registrazione (Fase C), che pure esistono gia' sul
+  database. Collegare quei due e' un lavoro piccolo e indipendente.
+  Il problema vero e' un altro: il conto alla rovescia vive nella PAGINA,
+  quindi se la pagina si chiude non succede piu' nulla - e un "uomo morto"
+  serve proprio quando l'escursionista non puo' fare niente. Va spostato
+  sul server prima di poter parlare di invii veri.
+- Punto 22, WhatsApp: risposta gia' scritta per esteso in cose_da_fare.txt
+  - non si puo' leggere la rubrica di nessuno da un sito, e l'invio
+  automatico richiede WhatsApp Business API (a pagamento, contro il
+  vincolo hard "tutto open source e gratuito"). Serve un canale vero
+  (SMS o email): E' LA STESSA DECISIONE del punto 7, conviene prenderla
+  una volta sola per entrambi.
+- Punto 23, Zaino: verificato il difetto segnalato. Aprendo la sezione
+  Zaino senza aver scelto un'escursione, il sistema prende la PRIMA
+  escursione del database - di chiunque sia, anche una a cui non si
+  partecipa - e ne mostra la lista con gli oggetti condivisi. Nello stesso
+  punto: la stagione e' fissata a "estate" e la pioggia e' data sempre per
+  prevista, ignorando meteo e data reali.
+- Punto 15, file .gpx: attenzione al vincolo hard di spazio. Un .gpx e'
+  XML e pesa molto piu' del formato compatto gia' in uso (Fase F): va
+  convertito e semplificato in ingresso, mai salvato com'e'. E attenzione
+  alle librerie XML - in Fase G si e' gia' scartato osmtogeojson per
+  vulnerabilita' critiche irrisolte in xmldom.
+
+ATTENZIONE PRIVACY - IL REPOSITORY GITHUB E' PUBBLICO (verificato il
+2026-07-26 via API GitHub: "private": false). Questo file e
+cose_da_fare.txt sono tracciati da git fin dal PRIMO commit (f4da9c2) e
+quindi sono leggibili da chiunque su
+https://github.com/denis199509/camoscio . Conseguenze pratiche:
+ - NON scrivere MAI dati personali in questi due file (numeri di telefono,
+   indirizzi, contatti di emergenza di terze persone). Il numero di
+   telefono del contatto di emergenza dettato dall'utente il 2026-07-26 e'
+   stato deliberatamente NON scritto per questo motivo: va inserito nel
+   campo "contatto di emergenza" del suo account dentro il sito, che per
+   scelta della Fase C non e' mai visibile ad altri utenti.
+ - Nessuna credenziale e' esposta (la password del database sta in .env,
+   che e' escluso da .gitignore fin dall'inizio). Sono pero' pubblici gli
+   HOST del cluster MongoDB e il nome del replica set, citati piu' sotto
+   in questo stesso file. Non bastano per entrare (Atlas richiede utente,
+   password e IP autorizzato) ma non avevano motivo di essere pubblici.
+ - DECISIONE PRESA DALL'UTENTE (2026-07-26): il repository RESTA PUBBLICO.
+   Gli era stata spiegata l'alternativa (renderlo privato non costa nulla,
+   Render continua a fare il deploy lo stesso perche' collegato via OAuth)
+   e ha scelto consapevolmente di lasciarlo com'e'. NON riproporgli la
+   domanda: vale invece la regola qui sopra, cioe' non scrivere mai dati
+   personali di terze persone in questi file.
+ - Da sapere, se un giorno si volesse aprirlo davvero: NON esiste nessun
+   file LICENSE nel progetto. Senza licenza il codice resta "tutti i
+   diritti riservati" anche se e' visibile a tutti, quindi oggi il
+   repository e' pubblico ma NON e' open source. Il vincolo hard "tutto
+   open source" di cose_da_fare.txt riguarda le fonti e le librerie usate
+   (verificate: tutte MIT o BSD, nessuna copyleft), non l'obbligo di
+   pubblicare il proprio codice - le due cose sono indipendenti.
 
 NOTA IMPORTANTE PER CHI RIPARTE DA QUI - PUNTI 8 E 10 FATTI (2026-07-26,
 stessa sessione dei punti 9/11/12/14).
@@ -537,9 +621,12 @@ DECISIONI PRESE CON L'UTENTE (non richiedere di nuovo)
   qualcosa (quasi certamente AVG o McAfee, entrambi installati insieme
   a Windows Defender) blocca specificamente le query DNS di tipo SRV
   fatte da Node.js, mentre le query DNS normali e le connessioni TCP
-  dirette funzionano bene. La stringa attuale è dentro .env, con gli
-  host espliciti (ac-fh8vbm9-shard-00-00/01/02.shlr4hq.mongodb.net:27017)
-  e il nome del replica set (atlas-aley8a-shard-0) letti a mano dal DNS.
+  dirette funzionano bene. La stringa attuale è dentro .env, con i tre
+  host degli shard scritti per esteso e il nome del replica set, letti a
+  mano dal DNS. I valori NON sono ripetuti qui: questo file finisce su
+  GitHub in un repository pubblico e gli indirizzi del cluster non hanno
+  motivo di essere pubblici (per vederli: aprire .env, che resta solo su
+  questo PC perché escluso da .gitignore).
   RISCHIO DA SAPERE: se in futuro Atlas cambia gli host del cluster
   (succede raramente, es. durante manutenzioni), questa stringa andrà
   rigenerata a mano (rifare la stessa procedura: Resolve-DnsName -Type
@@ -1422,6 +1509,40 @@ CHECKLIST DI AVANZAMENTO (aggiornare via via che si procede)
         algoritmo di ricerca cammino (Dijkstra/A*) su un grafo costruito
         dai segmenti dei sentieri, oggi inesistente nel progetto. La
         modalita' "senza aggancio" (linea retta) e' invece quasi gratis.
+[ ] TERZA LISTA (cose_da_fare.txt punti 15-25, dettata 2026-07-26) —
+    NESSUNA RIGA DI CODICE SCRITTA, solo ricognizione gia' fatta (vedi la
+    nota dedicata in cima al file per i dettagli di ogni verifica).
+    E' DA QUI CHE SI RIPARTE nella prossima sessione.
+    Dashboard:
+    [ ] 15 — caricare file .gpx come escursioni gia' fatte (max 5/mese
+        secondo l'ipotesi dell'utente). Attenzione al vincolo di spazio:
+        convertire e semplificare in ingresso, mai salvare l'XML com'e'.
+    [ ] 16 — mostrare in Dashboard i TOTALI di distanza e dislivello reali
+        e la velocita' media (i dati esistono gia' dalla Fase F, mancano
+        solo i totali). Le altre voci del punto 16 sono gia' fatte:
+        "escursioni fatte" e "escursioni pianificate" sono coperte dalla
+        pagina "Le mie escursioni"; i badge esistono gia' in Dashboard.
+    [ ] 17 — spostare il Dead Man's Switch nella sezione Mappe
+    [ ] 18 — tasto e pagina "Badge" (per ora con qualche badge di prova)
+    [ ] 19 — togliere le finte "sfide in corso" scritte a mano nell'HTML
+    Mappe:
+    [ ] 20 — tasto SOS verso il 112 (link "tel:112"), ben visibile ma
+        lontano dal tasto di fine escursione
+    [ ] 21 — far partire DAVVERO il messaggio al contatto di emergenza
+        alla scadenza del Dead Man's Switch. Due lavori distinti: uno
+        piccolo (leggere i contatti salvati in registrazione invece che
+        da localStorage) e uno grosso (spostare il conto alla rovescia
+        sul server, altrimenti chiudendo la pagina non succede nulla).
+    [ ] 22 — WhatsApp: gia' risposto, non e' praticabile (vedi
+        cose_da_fare.txt). Serve un canale vero: STESSA decisione del
+        punto 7, da prendere una volta sola per entrambi.
+    Zaino intelligente:
+    [ ] 23 — mostrare di base solo lo zaino personale; oggetti condivisi
+        solo se si partecipa a un'escursione di gruppo. Oggi prende la
+        prima escursione del database, di chiunque sia. Nello stesso
+        punto: stagione fissata a "estate" e pioggia sempre prevista.
+    [ ] 24 — distinguere oggetti personali da condivisibili
+    [ ] 25 — portata della tenda e verifica che basti per il gruppo
 
 
 COME RIPRENDERE IL LAVORO IN UNA NUOVA SESSIONE

@@ -187,3 +187,136 @@ Collegato al punto 11.
       percorso disegnato con linea blu chiaro continua (#7FB5C7), prima era arancione
       tratteggiata. Il pannello del pulsante a scarpone resta per le funzioni in piu'
       (scegliere l'escursione collegata, pausa, scaricare la mappa offline).
+
+=====================================================================
+TERZA LISTA (dettata 2026-07-26, a fine sessione) - piccole correzioni e
+richieste per sezione. Pensate PRIMA della sessione di oggi: per questo
+alcune risultano gia' fatte. Ogni voce e' stata verificata nel codice
+prima di scriverla qui.
+PROMEMORIA: i punti 7 (recupero password) e 13 (percorso multi-punto)
+restano IN SOSPESO per scelta esplicita dell'utente, non dimenticati.
+=====================================================================
+
+--- DASHBOARD ---
+
+15) Caricare file .gpx come escursioni gia' fatte, per costruirsi uno
+storico anche delle uscite fatte prima di usare il sito. DA VALUTARE BENE
+memoria disponibile e fattibilita': ipotesi dell'utente, massimo 5 file
+.gpx al mese per non riempire subito lo spazio.
+   Nota tecnica: un .gpx e' XML e occupa molto piu' spazio del formato
+   compatto gia' in uso (tuple [lng,lat,alt,secondi,precisione], Fase F).
+   Va convertito e semplificato in ingresso (Douglas-Peucker, gia'
+   scritto in lib/geometry.js), MAI salvato com'e'. Attenzione anche alle
+   librerie di lettura XML: in Fase G si e' gia' scartato osmtogeojson
+   proprio per vulnerabilita' critiche irrisolte in xmldom.
+
+16) La Dashboard deve mostrare:
+   - Escursioni fatte -> GIA' PRESENTE (contatore "Escursioni completate"),
+     e dal 2026-07-26 c'e' anche la pagina "Le mie escursioni" col gruppo
+     "Gia' fatte".
+   - Badge ottenuti -> PARZIALE: il "Passaporto delle Vette" con i timbri
+     e il contatore ci sono gia' in Dashboard. Manca la pagina dedicata
+     (vedi punto 18).
+   - Escursioni pianificate -> GIA' FATTO il 2026-07-26: e' il gruppo "A
+     cui partecipo" della pagina "Le mie escursioni".
+   - Distanza percorsa e dislivello reali -> DA FARE. I dati esistono gia'
+     (ogni sessione di tracciamento salva distanza e dislivello reali,
+     Fase F) ma la Dashboard non ne mostra i TOTALI.
+   - Velocita' media -> DA FARE. Anche questa e' gia' calcolata per ogni
+     sessione; la Dashboard oggi mostra solo il passo in m/h (salita e
+     discesa), non la velocita' media in km/h.
+
+17) Il Dead Man's Switch va SPOSTATO nella sezione Mappe: serve durante
+l'escursione, non in Dashboard. Oggi c'e' un riquadro "Sicurezza Rapida"
+in Dashboard piu' la versione completa in "Sicurezza & Mesh".
+
+18) Serve un tasto "Badge" che porti a una pagina con i badge dell'utente.
+La lista completa la definira' l'utente in futuro: per ora inserirne
+qualcuno di prova (qualche cima e qualche rifugio).
+
+19) BUG - un utente appena registrato ha gia' delle sfide in corso; non
+deve essere cosi'. Le sfide vanno o create o accettate.
+   Verificato: la sezione "Sfide in corso" della Dashboard e' scritta a
+   mano dentro public/index.html (una sola voce, "Le Vette del Gran Sasso
+   (0/2)" - il "(0/2)" indica 0 vette su 2, probabilmente letto come "due
+   sfide"). Non e' collegata a nessun dato dell'utente: compare identica
+   per chiunque, anche appena registrato. Va tolta e sostituita con vere
+   sfide create/accettate, oppure nascosta finche' non esistono davvero.
+
+--- MAPPE ---
+
+20) Aggiungere un tasto SOS che metta subito in contatto con il 112
+(dovrebbe funzionare anche via satellite). Deve essere ben visibile ma
+LONTANO dal tasto di fine escursione, per non premerlo per sbaglio.
+   Nota tecnica: una pagina web non puo' usare il satellite da sola. Il
+   massimo possibile e' un collegamento "tel:112" che apre il telefono col
+   numero gia' pronto; se il telefono ha l'SOS satellitare (iPhone 14 e
+   successivi, alcuni Android) sara' il telefono stesso a usarlo quando
+   non c'e' rete. Da tenere presente per non promettere nell'interfaccia
+   qualcosa che il sito non puo' garantire.
+
+21) Alla scadenza del Dead Man's Switch il messaggio di allarme deve
+essere inviato DAVVERO al numero del contatto di emergenza, non mostrato
+a me sulla pagina.
+   Verificato: oggi e' tutto simulato. Alla scadenza compare solo una
+   finestra sullo schermo e una riga in un finto registro SMS; non parte
+   nessun messaggio. In piu' il contatto usato viene letto da localStorage
+   (quindi vale solo su quel browser) e NON dai contatti di emergenza
+   inseriti durante la registrazione, che invece sono gia' salvati sul
+   database (Fase C). Collegare le due cose e' comunque un lavoro piccolo
+   e indipendente dal resto.
+   IL NUMERO VERO DEL CONTATTO DI EMERGENZA NON VA SCRITTO IN QUESTO FILE:
+   e' il dato personale di un'altra persona e questo file finisce su
+   GitHub. Va messo nel campo "contatto di emergenza" del proprio account
+   dentro il sito, che per scelta presa in Fase C non e' mai visibile ad
+   altri utenti.
+   PROBLEMA DI FONDO da risolvere prima di scrivere codice: un vero "uomo
+   morto" deve far partire l'allarme ANCHE se il telefono e' spento, senza
+   rete o con la pagina chiusa. Quindi l'attesa e la scadenza devono stare
+   sul SERVER, non nel browser: oggi il conto alla rovescia vive solo
+   nella pagina, e se la pagina si chiude non succede piu' niente.
+
+22) Domanda dell'utente: possiamo collegarci a WhatsApp per avere i
+contatti? Risposta da tenere agli atti:
+   - Leggere la rubrica WhatsApp di una persona da un sito NON e'
+     possibile: non esiste nessuna funzione che lo consenta, ne' in
+     WhatsApp ne' nel telefono, ed e' cosi' apposta per privacy.
+   - Inviare messaggi WhatsApp in automatico richiede WhatsApp Business
+     API: account aziendale Meta, messaggi approvati in anticipo e
+     servizio a pagamento. Va contro il vincolo hard "tutto open source
+     e gratuito" scritto in cima a questo file.
+   - Esiste il collegamento "wa.me" che apre WhatsApp col messaggio gia'
+     scritto, ma richiede che sia la persona a premere invio: inutile
+     proprio nel caso del Dead Man's Switch, dove il presupposto e' che
+     l'escursionista non sia in grado di fare nulla.
+   - Conclusione: per l'invio automatico serve un canale vero (SMS a
+     pagamento, oppure email) piu' la scadenza gestita dal server. E' la
+     STESSA decisione lasciata in sospeso al punto 7 (recupero password):
+     conviene deciderle insieme, una volta sola.
+
+--- ZAINO INTELLIGENTE ---
+
+23) Di base lo zaino deve mostrare solo le cose dell'utente che sta usando
+il sito (zaino base per il tipo di escursione, es. 1500/1700 m). Gli
+oggetti condivisi devono comparire SOLO quando si partecipa a
+un'escursione con piu' membri.
+   Verificato: oggi non e' cosi'. Aprendo la sezione Zaino, se non si e'
+   scelta un'escursione il sistema prende la PRIMA escursione presente nel
+   database - di chiunque essa sia, anche una a cui non si partecipa - e
+   ne mostra la lista con gli oggetti condivisi.
+   Difetti collegati trovati nello stesso punto: la stagione e' fissata a
+   "estate" e la pioggia e' data sempre per prevista, indipendentemente
+   dal meteo vero e dalla data reale dell'escursione.
+
+24) Distinguere oggetti PERSONALI da oggetti CONDIVISIBILI:
+   - personali, obbligatori per ogni membro: giacca, cibo, acqua,
+     maglietta, ecc.
+   - condivisibili tra piu' membri: fornello, bombola, pentole, tenda,
+     kit di primo soccorso, ecc.
+
+25) La tenda deve avere una PORTATA (quante persone ci stanno) e il
+sistema deve controllare che basti per il gruppo. Esempio dell'utente:
+porto io una tenda da 3 posti ma siamo in 4 -> la tenda non basta, serve
+una piu' grande oppure una piccola in piu'. Lo stesso ragionamento vale in
+generale per ogni oggetto condiviso che "copre" un numero limitato di
+persone.
