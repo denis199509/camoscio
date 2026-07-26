@@ -108,18 +108,28 @@ document.addEventListener("DOMContentLoaded", async () => {
     const authenticated = await checkAuthAndShowGate();
     if (!authenticated) return;
 
-    // Inizializza i moduli principali
-    await initApp();
-
-    // Inizializza gli event listeners di navigazione
+    // BUG TROVATO IL 2026-07-26 provando il sito online: la navigazione veniva
+    // collegata DOPO "await initApp()", che e' lento (carica tutti i dati dal server e
+    // inizializza nove moduli, uno dei quali scarica pure i confini regionali). Ma
+    // l'interfaccia viene mostrata PRIMA, da checkAuthAndShowGate: nel mezzo restava una
+    // finestra di alcuni secondi in cui il sito sembrava pronto ma i pulsanti del menu
+    // non facevano assolutamente niente, perche' non avevano ancora nessun listener.
+    // Sul piano gratuito di Render, che si risveglia con calma, la finestra e' lunga
+    // abbastanza da incontrarla davvero (riprodotta: il primo click andava perso, dal
+    // secondo in poi funzionava tutto).
+    // Ora la navigazione si collega SUBITO: non dipende dai dati, si limita a mostrare/
+    // nascondere sezioni e a chiedere il rendering, che a sua volta ricarica i dati.
     setupNavigation();
-
-    // Inizializza il centro notifiche
     setupNotificationBell();
 
-    // Collega il pulsante di uscita
+    // Stesso motivo: anche "Esci" deve funzionare da subito, non solo a caricamento
+    // finito - chi si accorge di essere entrato con l'account sbagliato vuole poterne
+    // uscire immediatamente.
     const btnLogout = document.getElementById("btn-logout");
     if (btnLogout) btnLogout.addEventListener("click", () => { if (window.performLogout) window.performLogout(); });
+
+    // Inizializza i moduli principali (lento: dati + nove moduli)
+    await initApp();
 });
 
 // Ritorna true (e mostra l'app) se esiste gia' una sessione valida (GET /api/auth/me),

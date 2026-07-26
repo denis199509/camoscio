@@ -80,9 +80,34 @@ stessa sessione dei punti 9/11/12/14).
   pagina perche' il pulsante flottante a scarpone non copra i comandi
   dell'ultima scheda.
 - Dati di prova rimossi dal database a fine sessione (1 escursione di
-  prova, 3 sessioni di tracciamento, 1 TrailCandidate), elencati per ID.
+  prova, 5 sessioni di tracciamento, 1 TrailCandidate), elencati per ID.
   Restano intatte le 2 escursioni originali e le 4 sessioni del 24-25
   luglio, che non sono state create da queste prove.
+
+- BUG SERIO E PREESISTENTE trovato PROVANDO IL SITO ONLINE dopo il push
+  dei punti 8/10 (non introdotto da quel lavoro: colpiva allo stesso modo
+  voci di menu vecchie come "Escursioni"). In public/js/app.js la
+  navigazione veniva collegata DOPO "await initApp()", che e' lento
+  (scarica tutti i dati dal server e inizializza nove moduli, uno dei
+  quali scarica anche i confini regionali). Ma l'interfaccia viene
+  mostrata PRIMA, da checkAuthAndShowGate: nel mezzo restava una finestra
+  di alcuni secondi in cui il sito SEMBRAVA pronto ma i pulsanti del menu
+  non facevano assolutamente nulla, perche' non avevano ancora nessun
+  listener. Riprodotto dal vivo in produzione: il PRIMO click andava
+  perso, dal secondo in poi funzionava tutto. Sul piano gratuito di
+  Render, che si risveglia con calma, la finestra e' lunga abbastanza da
+  incontrarla davvero usando il sito.
+  CORREZIONE: setupNavigation() e setupNotificationBell() (e il pulsante
+  "Esci") vengono collegati SUBITO, prima di initApp(). Non dipendono dai
+  dati: la navigazione si limita a mostrare/nascondere sezioni e a
+  chiedere il rendering, che a sua volta ricarica i dati per conto suo.
+  Verificato: cliccando una voce di menu nell'istante esatto in cui
+  compare l'interfaccia, la sezione cambia subito e il contenuto si
+  riempie appena i dati arrivano. Riprovate tutte e 8 le sezioni dopo lo
+  spostamento, nessuna regressione.
+  LEZIONE GENERALE per il futuro: su questo progetto non collegare mai
+  gli ascoltatori dell'interfaccia dopo un "await" che carica dati, se
+  l'interfaccia e' gia' visibile all'utente in quel momento.
 
 NOTA IMPORTANTE PER CHI RIPARTE DA QUI - PUNTI 9, 11, 12, 14 FATTI
 (2026-07-26). Per la prima volta in questo progetto le verifiche sono
