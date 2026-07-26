@@ -7,6 +7,21 @@ let peakMarkersGroup = null;
 let activeHikePath = []; // Array di coordinate per il sentiero attivo
 let liveTrackPolyline = null; // Percorso REALMENTE registrato durante un tracciamento GPS live (Fase F)
 
+// Punto 26 di cose_da_fare.txt - il puntino blu della posizione reale.
+// Fino a oggi sulla mappa c'era SOLO il segnaposto 🥾 trascinabile (posizione simulata,
+// ferma a Campo Imperatore finche' non la si trascina) e si muoveva da solo unicamente
+// durante una registrazione. Chi apriva la mappa aspettandosi il puntino di Google Maps non
+// lo trovava, perche' non e' mai esistito. Questi due livelli sono quel puntino: sono SOLO
+// visivi e non toccano ne' il tracciamento ne' i timbri delle vette.
+let posDotMarker = null;      // il puntino
+let posAccuracyCircle = null; // il cerchio della precisione dichiarata dal telefono
+let posLayerGroup = null;
+let posFollowEnabled = false; // il puntino ricentra la mappa mentre ci si muove
+// Blu deciso, DIVERSO dal #7FB5C7 della traccia registrata (vedi resetLiveTrackPolyline):
+// se fossero lo stesso colore, sulla mappa non si capirebbe piu' quale e' la strada gia'
+// fatta e quale il punto in cui ci si trova adesso.
+const POS_DOT_COLOR = '#2F7FD6';
+
 // Punto 11 di cose_da_fare.txt - "la mappa mi segue".
 // Il marker in realta' seguiva GIA' il GPS: misurato dal vivo (telefono emulato, GPS
 // simulato in cammino) TUTTI gli aggiornamenti arrivavano, la posizione cambiava e la
@@ -145,6 +160,9 @@ async function initMapModule() {
             liveFollowEnabled = false;
             updateRecenterButton();
         }
+        // Stesso ragionamento per il puntino blu (punto 26): chi sposta la mappa con un dito
+        // vuole guardare piu' in la', non essere riportato indietro al fix successivo.
+        posFollowEnabled = false;
     });
 
     // Cambio di dimensioni della finestra o rotazione del telefono: senza questo Leaflet
@@ -156,9 +174,25 @@ async function initMapModule() {
 
     // Carica i marker dei report Waze e i sentieri
     renderMapMarkers();
-    
+
     // Inizializza eventi dei form
     setupMapForms();
+
+    // Punto 26 - il puntino blu si disegna qui ogni volta che arriva una posizione, da
+    // qualunque fonte (watch del modulo geolocation o fix del tracciamento in corso).
+    if (window.CamoscioGeo) {
+        window.CamoscioGeo.onPosizione(aggiornaPuntinoPosizione);
+
+        // Se la sezione Mappa e' GIA' aperta quando initMapModule finisce, il puntino va
+        // acceso adesso: nessuno passera' piu' da navigateTo. E' la stessa finestra temporale
+        // del bug gia' documentato in leggimi.txt (interfaccia visibile ma moduli non ancora
+        // pronti), che su Render - dove il servizio gratuito si risveglia con calma - dura
+        // abbastanza da incontrarla davvero.
+        const sezione = document.getElementById('map-section');
+        if (sezione && sezione.classList.contains('active')) {
+            window.CamoscioGeo.accendi(true);
+        }
+    }
 }
 
 // Crea e gestisce il marker della posizione GPS simulata
@@ -301,6 +335,102 @@ function updateRecenterButton() {
     if (!btn) return;
     const recording = !!(window.CamoscioTrackingIsRecording && window.CamoscioTrackingIsRecording());
     btn.classList.toggle('hidden', !(recording && !liveFollowEnabled));
+}
+
+// --- Punto 26: il puntino blu della posizione reale ---
+//
+// Volutamente separato dal segnaposto 🥾: quello resta trascinabile (serve a simulare di
+// essere a una vetta per provare i timbri, vedi checkGeofencing) e verrebbe reso inutilizzabile
+// se il GPS glielo spostasse sotto le dita ad ogni fix. Qui invece si mostra e basta.
+
+function aggiornaPuntinoPosizione(lat, lng, precisioneM) {
+    if (!window.mapInstance) return;
+
+    if (!posLayerGroup) {
+        posLayerGroup = L.layerGroup().addTo(window.mapInstance);
+    }
+
+    // Il cerchio si disegna con la precisione VERA dichiarata dal telefono, non con un
+    // raggio fisso: in montagna passa spesso da 5 a 60 metri, e far credere a una precisione
+    // che non c'e' e' peggio che non mostrare niente, proprio nella schermata dove uno decide
+    // dove mettere i piedi. Se il telefono non la dichiara, il cerchio non si disegna.
+    const raggio = (typeof precisioneM === 'number' && precisioneM > 0) ? precisioneM : null;
+
+    const primoFix = !posDotMarker;
+
+    if (primoFix) {
+        posAccuracyCircle = L.circle([lat, lng], {
+            radius: raggio || 0,
+            color: POS_DOT_COLOR,
+            weight: 1,
+            opacity: 0.5,
+            fillColor: POS_DOT_COLOR,
+            fillOpacity: 0.15,
+            interactive: false // il cerchio non deve rubare i click destinati alla mappa
+        }).addTo(posLayerGroup);
+
+        posDotMarker = L.circleMarker([lat, lng], {
+            radius: 7,
+            color: '#FFFFFF',   // bordo bianco: si stacca sia dal verde dei boschi che dal grigio delle rocce
+            weight: 3,
+            fillColor: POS_DOT_COLOR,
+            fillOpacity: 1,
+            interactive: false
+        }).addTo(posLayerGroup);
+    } else {
+        posDotMarker.setLatLng([lat, lng]);
+        posAccuracyCircle.setLatLng([lat, lng]);
+        posAccuracyCircle.setRadius(raggio || 0);
+    }
+
+    posAccuracyCircle.setStyle({ opacity: raggio ? 0.5 : 0, fillOpacity: raggio ? 0.15 : 0 });
+
+    // Durante una registrazione l'inseguimento e' gia' di beginLiveGpsView/updateLiveGpsPosition
+    // (punto 11): due inseguimenti insieme farebbero litigare due panTo sullo stesso fix.
+    const registrando = !!(window.CamoscioTrackingIsRecording && window.CamoscioTrackingIsRecording());
+
+    // Al PRIMO fix la mappa va portata sul puntino, altrimenti non serve a niente: la mappa
+    // nasce a zoom 9 con tutta l'Italia centrale in uno schermo, e il puntino resta un
+    // granello fuori dallo schermo. E' lo stesso inganno del punto 11 ("il segnaposto non si
+    // muove": si muoveva, ma di tre pixel).
+    // Si sposta la vista SOLO se la mappa e' ancora sulla panoramica di partenza (zoom <= 10):
+    // se l'utente ha ingrandito una zona, o e' arrivato qui dal tasto "Mappa" di una scheda
+    // escursione che ha appena inquadrato il percorso, il puntino non deve rubargli la vista.
+    // Ci si centra UNA VOLTA, senza accendere l'inseguimento. Sono due cose diverse e va
+    // tenuta la distinzione: chi apre la mappa vuole vedere dove si trova, ma non vuole una
+    // mappa che gli scorre sotto le dita mentre guarda il sentiero piu' avanti. Da qui in
+    // poi l'inseguimento lo si chiede col tasto della posizione.
+    // (In piu', accenderlo qui renderebbe il PRIMO tocco del tasto uno spegnimento - vedi
+    // useRealGpsPosition -, cioe' esattamente il contrario di quello che uno si aspetta.)
+    if (primoFix && !registrando && window.mapInstance.getZoom() <= 10) {
+        window.mapInstance.setView([lat, lng], LIVE_FOLLOW_ZOOM);
+        return;
+    }
+
+    if (posFollowEnabled && !registrando) {
+        window.mapInstance.panTo([lat, lng], { animate: true, duration: 0.5 });
+    }
+}
+
+function rimuoviPuntinoPosizione() {
+    if (posLayerGroup) {
+        posLayerGroup.clearLayers();
+        window.mapInstance.removeLayer(posLayerGroup);
+    }
+    posLayerGroup = null;
+    posDotMarker = null;
+    posAccuracyCircle = null;
+    posFollowEnabled = false;
+}
+
+// Porta la mappa sul puntino. Usa lo stesso zoom da camminata del punto 11: piu' lontano di
+// cosi' (la mappa nasce a zoom 9) un passo si sposta di frazioni di pixel e sembra tutto fermo.
+function centraSuPuntino() {
+    const p = window.CamoscioGeo && window.CamoscioGeo.ultimaPosizione();
+    if (!p || !window.mapInstance) return false;
+    posFollowEnabled = true;
+    window.mapInstance.setView([p.lat, p.lng], Math.max(window.mapInstance.getZoom(), LIVE_FOLLOW_ZOOM));
+    return true;
 }
 
 // Percorso REALMENTE registrato durante un'escursione dal vivo (Fase F) - stile diverso
@@ -493,30 +623,13 @@ function setupMapForms() {
         });
     }
 
-    // Bottoni di selezione rapida meteo/mappa
-    const btnOrobie = document.getElementById("btn-weather-orobie");
-    const btnRosa = document.getElementById("btn-weather-rosa");
-
-    if (btnOrobie && btnRosa) {
-        // Cerca per titolo invece che per un ID fisso: dalla Fase B gli ID sono generati
-        // da MongoDB e cambiano ad ogni migrazione, il titolo invece resta stabile.
-        const findHikeByTitle = (fragment) =>
-            window.CamoscioState.hikes.find(h => h.title.includes(fragment));
-
-        btnOrobie.addEventListener("click", () => {
-            btnOrobie.classList.add("active");
-            btnRosa.classList.remove("active");
-            const hike = findHikeByTitle("Corno Grande");
-            if (hike) loadActiveHikeOnMap(hike.id);
-        });
-
-        btnRosa.addEventListener("click", () => {
-            btnRosa.classList.add("active");
-            btnOrobie.classList.remove("active");
-            const hike = findHikeByTitle("Vettore");
-            if (hike) loadActiveHikeOnMap(hike.id);
-        });
-    }
+    // Punto 27 - qui c'erano i due tasti fissi "Gran Sasso" e "Monte Vettore" del riquadro
+    // meteo. Non sceglievano affatto un punto meteo: caricavano l'escursione col titolo
+    // corrispondente, e il meteo si aggiornava di rimbalzo da loadActiveHikeOnMap. Il
+    // risultato era che il meteo si poteva vedere solo su quei due posti.
+    // Ora il punto lo si sceglie con una barra di ricerca (vedi weather.js), e caricare
+    // un'escursione sulla mappa resta possibile dalle sue schede (social.js -> loadActiveHikeOnMap),
+    // che continua ad aggiornare il meteo esattamente come prima.
 
     // Pulsante posizione GPS reale (aggiuntivo, il marker trascinabile resta il sistema principale)
     const btnRealGps = document.getElementById("btn-use-real-gps");
@@ -525,12 +638,27 @@ function setupMapForms() {
     }
 }
 
-// Usa la Geolocation API standard del browser per centrare il marker sulla posizione reale.
-// Funziona anche su http://localhost senza HTTPS (localhost è considerato un contesto sicuro).
-function useRealGpsPosition() {
+// Punto 26 - il tasto in alto a destra e' quello che l'utente preme aspettandosi di vedere
+// "dove sono": e' diventato il comando del puntino blu, invece di aggiungere un terzo
+// pulsante flottante che su uno schermo da 390px avrebbe affollato l'angolo.
+// Un solo tasto, tre situazioni - lo stesso giro delle app di mappe, che si impara premendo
+// invece di doverlo spiegare:
+//  - spento              -> accende, chiede il permesso (o spiega come si sblocca) e centra;
+//  - acceso, mappa spostata a mano -> ricentra sul puntino;
+//  - acceso e gia' centrato        -> spegne il puntino.
+// In tutti i casi porta il segnaposto 🥾 sulla posizione reale UNA VOLTA SOLA, come faceva
+// prima: cosi' il geofencing delle vette continua a funzionare identico, senza pero' litigare
+// col trascinamento manuale (che invece un inseguimento continuo renderebbe impossibile).
+async function useRealGpsPosition() {
     const btn = document.getElementById("btn-use-real-gps");
-    if (!navigator.geolocation) {
-        window.showToast("Il tuo browser non supporta la geolocalizzazione. Usa il marker trascinabile per simulare la posizione.", "error");
+    if (!window.CamoscioGeo) return;
+
+    if (window.CamoscioGeo.isAcceso() && window.CamoscioGeo.ultimaPosizione()) {
+        if (posFollowEnabled) {
+            window.CamoscioGeo.spegni();
+        } else {
+            centraSuPuntino(); // l'utente si era guardato intorno: riportalo su di se'
+        }
         return;
     }
 
@@ -539,27 +667,69 @@ function useRealGpsPosition() {
     btn.innerHTML = `<i data-lucide="loader"></i> Localizzazione in corso...`;
     if (window.lucide) window.lucide.createIcons();
 
-    navigator.geolocation.getCurrentPosition(
-        (position) => {
-            teleportUserGps(position.coords.latitude, position.coords.longitude);
-            window.mapInstance.setView([position.coords.latitude, position.coords.longitude], 13);
-            btn.disabled = false;
-            btn.innerHTML = originalLabel;
-            if (window.lucide) window.lucide.createIcons();
-        },
-        (error) => {
-            btn.disabled = false;
-            btn.innerHTML = originalLabel;
-            if (window.lucide) window.lucide.createIcons();
+    // automatico=false: qui l'utente ha chiesto esplicitamente la posizione, quindi si puo'
+    // far comparire il riquadro del permesso e, se e' bloccato, la guida per sbloccarlo.
+    const acceso = await window.CamoscioGeo.accendi(false);
 
-            let msg = "Impossibile ottenere la posizione GPS reale.";
-            if (error.code === error.PERMISSION_DENIED) {
-                msg = "Permesso di geolocalizzazione negato. Puoi comunque simulare la posizione trascinando il marker sulla mappa.";
-            }
-            window.showToast(msg, "error");
-        },
-        { enableHighAccuracy: true, timeout: 10000 }
-    );
+    btn.disabled = false;
+    btn.innerHTML = originalLabel;
+    if (window.lucide) window.lucide.createIcons();
+    aggiornaTastoPosizione(window.CamoscioGeo.isAcceso());
+
+    if (!acceso) return;
+
+    // Il primo fix puo' arrivare qualche istante dopo: si aspetta quello per centrare, invece
+    // di lasciare la mappa dov'era facendo credere che il tasto non abbia fatto niente.
+    const posizione = window.CamoscioGeo.ultimaPosizione();
+    if (posizione) {
+        centraSuPuntino();
+        teleportUserGps(posizione.lat, posizione.lng);
+    } else {
+        attendiPrimoFix();
+    }
+}
+
+// Aspetta il primo fix per centrare la mappa, ma non all'infinito: se il GPS non aggancia si
+// dice, invece di lasciare l'utente a fissare una mappa che non si muove.
+function attendiPrimoFix() {
+    let fatto = false;
+    let disiscrivi = null;
+
+    const chiudi = () => {
+        fatto = true;
+        if (disiscrivi) disiscrivi();
+    };
+
+    const scadenza = setTimeout(() => {
+        if (fatto) return;
+        chiudi();
+        window.showToast("Sto ancora cercando il segnale GPS: appena arriva, il puntino comparirà da solo.", "info");
+    }, 6000);
+
+    disiscrivi = window.CamoscioGeo.onPosizione((lat, lng) => {
+        if (fatto) return;
+        chiudi();
+        clearTimeout(scadenza);
+        centraSuPuntino();
+        teleportUserGps(lat, lng);
+    });
+}
+
+// Stato visibile del tasto. Lo sfondo pieno scuro non e' un vezzo: i pulsanti appoggiati
+// sopra la mappa non possono usare il semitrasparente di .btn-secondary, che sulle tile
+// chiare di OpenStreetMap diventa illeggibile (difetto gia' trovato e corretto una volta,
+// vedi il commento accanto a .map-gps-real-btn in styles.css).
+function aggiornaTastoPosizione(acceso) {
+    const btn = document.getElementById("btn-use-real-gps");
+    if (!btn) return;
+    btn.classList.toggle("is-active", !!acceso);
+    btn.innerHTML = acceso
+        ? `<i data-lucide="locate-fixed"></i> La mia posizione`
+        : `<i data-lucide="locate"></i> Dove sono`;
+    btn.title = acceso
+        ? "La tua posizione è sulla mappa: tocca per ricentrarti, tocca di nuovo da centrato per nasconderla"
+        : "Mostra la tua posizione reale sulla mappa";
+    if (window.lucide) window.lucide.createIcons();
 }
 
 // Render dei marker sulla mappa (Waze reports + Vette e Rifugi)
@@ -864,3 +1034,7 @@ window.beginLiveGpsView = beginLiveGpsView;
 window.endLiveGpsView = endLiveGpsView;
 window.recenterOnLiveGps = recenterOnLiveGps;
 window.updateRecenterButton = updateRecenterButton;
+// Punto 26 - puntino blu della posizione reale
+window.rimuoviPuntinoPosizione = rimuoviPuntinoPosizione;
+window.aggiornaTastoPosizione = aggiornaTastoPosizione;
+window.centraSuPuntino = centraSuPuntino;

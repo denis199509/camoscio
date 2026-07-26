@@ -1296,6 +1296,19 @@ h1, h2, h3, h4, h5, h6 {
     height: 16px;
 }
 
+/* Punto 26 - il tasto acceso, cioe' puntino blu visibile sulla mappa. Lo sfondo resta pieno
+   e scuro per la stessa ragione spiegata qui sopra (sulle tile chiare di OSM il
+   semitrasparente e' illeggibile): a cambiare sono solo il bordo e il testo, che prendono il
+   blu del puntino cosi' si capisce a colpo d'occhio che le due cose sono la stessa. */
+.map-gps-real-btn.is-active.btn-secondary {
+    border-color: #2F7FD6;
+    color: #9CC8F0;
+}
+
+.map-gps-real-btn.is-active i {
+    color: #2F7FD6;
+}
+
 .map-sidebar {
     width: 380px;
     display: flex;
@@ -2709,7 +2722,13 @@ h1, h2, h3, h4, h5, h6 {
     min-width: 0;
 }
 
-.trailhead-search-field i {
+/* Il selettore deve nominare ANCHE svg: lucide.createIcons() sostituisce il tag <i> con un
+   <svg>, quindi una regola scritta solo su "i" smette di valere appena le icone vengono
+   disegnate. Difetto preesistente del punto 8, trovato guardando le schermate della prova:
+   la lente finiva SOPRA la casella di ricerca invece che dentro, sia qui che nel modulo di
+   creazione escursione. Da tenere presente per qualunque altra icona posizionata. */
+.trailhead-search-field i,
+.trailhead-search-field svg {
     position: absolute;
     left: 12px;
     top: 50%;
@@ -2725,12 +2744,35 @@ h1, h2, h3, h4, h5, h6 {
     padding-left: 36px;
 }
 
-#btn-open-map-picker {
+#btn-open-map-picker,
+#btn-open-weather-map-picker {
     flex: 0 0 auto;
     white-space: nowrap;
     display: inline-flex;
     align-items: center;
     gap: 6px;
+}
+
+/* Punto 27 - stessa barra di ricerca del ritrovo, dentro il riquadro del meteo. Qui lo
+   spazio e' molto meno (la sidebar e' larga 380px), quindi il tasto della mappa e' di sola
+   icona e "Meteo dove mi trovo" sta su una riga sua. */
+.weather-point-picker {
+    margin-bottom: 12px;
+}
+
+.weather-here-btn {
+    margin-top: 8px;
+    /* flex e non inline-flex: questa regola viene dopo .btn-block nel foglio di stile e a
+       parita' di specificita' vincerebbe lei, togliendo al pulsante la larghezza piena. */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.weather-here-btn i {
+    width: 15px;
+    height: 15px;
 }
 
 /* Elenco dei luoghi trovati */
@@ -3068,7 +3110,8 @@ h1, h2, h3, h4, h5, h6 {
         flex-direction: column;
     }
 
-    #btn-open-map-picker {
+    #btn-open-map-picker,
+    #btn-open-weather-map-picker {
         justify-content: center;
     }
 

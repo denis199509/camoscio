@@ -287,6 +287,23 @@ function setupNavigation() {
             }, 100);
         }
 
+        // Punto 26 - il puntino blu della posizione vive solo mentre si guarda la Mappa:
+        // tenere acceso il GPS mentre si legge la Dashboard sarebbe batteria buttata.
+        // Questo e' l'unico imbuto della navigazione (ci passano sia i pulsanti della barra
+        // sia i .btn-nav-trigger), quindi basta metterlo qui.
+        // accendi(true) = accensione automatica: se il permesso e' bloccato o il consenso e'
+        // spento resta spento in silenzio, senza aprire finestre a chi voleva solo la mappa.
+        if (window.CamoscioGeo) {
+            if (targetId === "map-section") {
+                window.CamoscioGeo.accendi(true);
+            } else if (!(window.CamoscioTrackingIsRecording && window.CamoscioTrackingIsRecording())) {
+                // Durante una registrazione NON si spegne: il tracciamento continua da
+                // qualunque sezione (pulsante flottante a scarpone) e tornando alla mappa il
+                // percorso deve essere ancora li'.
+                window.CamoscioGeo.spegni();
+            }
+        }
+
         // Ri-esegui il rendering della sezione specifica per aggiornare i dati freschi
         triggerSectionRender(targetId);
     }

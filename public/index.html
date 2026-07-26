@@ -692,8 +692,12 @@
                             <div class="map-overlay-instructions">
                                 <span class="badge badge-primary"><i data-lucide="info"></i> Clicca sulla mappa per segnalare pericoli o simulare la posizione GPS per timbrare la vetta.</span>
                             </div>
-                            <button class="btn btn-sm btn-secondary map-gps-real-btn" id="btn-use-real-gps" title="Usa la posizione GPS reale del dispositivo al posto del marker simulato">
-                                <i data-lucide="locate-fixed"></i> Usa la mia posizione reale
+                            <!-- Punto 26: e' il tasto che si preme aspettandosi di vedere "dove sono",
+                                 quindi e' diventato il comando del puntino blu (accendi / ricentra /
+                                 nascondi). L'etichetta la riscrive aggiornaTastoPosizione in map.js
+                                 a seconda dello stato. -->
+                            <button class="btn btn-sm btn-secondary map-gps-real-btn" id="btn-use-real-gps" title="Mostra la tua posizione reale sulla mappa">
+                                <i data-lucide="locate"></i> Dove sono
                             </button>
 
                             <!-- Punto 14 di cose_da_fare.txt: un tasto unico e semplice per
@@ -715,12 +719,33 @@
                             <div class="glass-card weather-widget-card">
                                 <h4><i data-lucide="cloud-lightning"></i> Meteo Multi-Quota & Microclima</h4>
                                 <p class="small text-muted">Analisi delle temperature e del vento alle diverse altitudini del percorso.</p>
-                                
-                                <div class="weather-selector-row">
-                                    <button class="btn btn-sm btn-secondary active" id="btn-weather-orobie">Gran Sasso</button>
-                                    <button class="btn btn-sm btn-secondary" id="btn-weather-rosa">Monte Vettore</button>
+
+                                <!-- Punto 27: prima c'erano due soli tasti fissi (Gran Sasso / Monte
+                                     Vettore) e nessun modo di guardare il meteo altrove. Ora si sceglie
+                                     il punto esattamente come il ritrovo di un'escursione (punto 8):
+                                     stessa barra di ricerca, stessa mappa, stesso codice. -->
+                                <div class="form-group weather-point-picker">
+                                    <div class="trailhead-search-row">
+                                        <div class="trailhead-search-field">
+                                            <i data-lucide="search"></i>
+                                            <input type="text" id="weather-point-search" autocomplete="off"
+                                                placeholder="Cerca un luogo, es. Campo Imperatore">
+                                        </div>
+                                        <!-- Con l'etichetta e non di sola icona: su schermo stretto questa
+                                             riga si impila (@media in styles.css) e il pulsante diventa largo
+                                             quanto la casella - una lente da sola, larga 274px, non direbbe
+                                             niente a nessuno. -->
+                                        <button type="button" class="btn btn-secondary" id="btn-open-weather-map-picker"
+                                            title="Scegli il punto direttamente sulla mappa">
+                                            <i data-lucide="map-pin"></i> Mappa
+                                        </button>
+                                    </div>
+                                    <div id="weather-search-results" class="trailhead-results hidden"></div>
+                                    <button type="button" class="btn btn-sm btn-secondary btn-block weather-here-btn" id="btn-weather-here">
+                                        <i data-lucide="locate"></i> Meteo dove mi trovo
+                                    </button>
                                 </div>
-                                
+
                                 <div id="weather-details-container" class="weather-details-box">
                                     <!-- Caricato dinamicamente tramite API Open-Meteo -->
                                     <div class="text-center py-4">Seleziona una località o un sentiero...</div>
@@ -1214,16 +1239,18 @@
         </div>
     </div>
 
-    <!-- Punto 8: mappa a schermo intero per scegliere il punto di ritrovo con un dito,
-         invece di procurarsi latitudine e longitudine da soli. Vive fuori dal form
-         (come tutte le finestre) per non finire dentro un contenitore che scorre. -->
+    <!-- Punto 8: mappa a schermo intero per scegliere un punto con un dito, invece di
+         procurarsi latitudine e longitudine da soli. Vive fuori dal form (come tutte le
+         finestre) per non finire dentro un contenitore che scorre.
+         Dal punto 27 la stessa finestra serve a due cose - il ritrovo di un'escursione e il
+         punto del meteo - quindi titolo e spiegazione li scrive chi la apre. -->
     <div id="map-picker-modal" class="modal hidden">
         <div class="modal-content glass-card map-picker-content">
             <div class="map-picker-header">
-                <h4><i data-lucide="map-pin"></i> Scegli il punto di ritrovo</h4>
+                <h4><i data-lucide="map-pin"></i> <span id="map-picker-title">Scegli il punto di ritrovo</span></h4>
                 <button type="button" class="close-modal-btn" id="map-picker-close">&times;</button>
             </div>
-            <p class="small text-muted map-picker-hint">
+            <p class="small text-muted map-picker-hint" id="map-picker-hint">
                 Tocca la mappa nel punto dove vi trovate. Se vicino c'è un luogo conosciuto,
                 il suo nome verrà usato come riferimento.
             </p>
@@ -1369,6 +1396,9 @@
     <script src="js/backpack.js"></script>
     <script src="js/carpool.js"></script>
     <script src="js/social.js"></script>
+    <!-- Punto 26: permessi di posizione e puntino blu. Prima di map.js, che gli si iscrive
+         per disegnare il puntino, e di tracking.js, che gli passa i propri fix GPS. -->
+    <script src="js/geolocation.js"></script>
     <!-- Fase F: tracciamento GPS live (coda IndexedDB + mappa offline + mappa) -->
     <script src="js/idb.js"></script>
     <script src="js/offline-map.js"></script>

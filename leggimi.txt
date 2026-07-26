@@ -1,11 +1,13 @@
 ===================================================================
 CAMOSCIO — LEGGIMI (stato progetto, aggiornato automaticamente)
-Ultimo aggiornamento: 2026-07-26 — implementati i punti 9, 11, 12, 14 e
-poi anche 8 e 10 della nuova lista (vedi sezioni dedicate sotto). Prima
-di tutto questo, verificato che il sito online e' rimasto STABILE dopo il
-push della Fase H: home/demo/confini/js tutti a 200, nessun 502 (la prima
-chiamata ha impiegato 25s perche' il piano gratuito di Render sospende il
-servizio quando non lo usa nessuno - e' normale, non instabilita').
+Ultimo aggiornamento: 2026-07-26 — implementati i PUNTI 26 e 27, nati da
+una prova dell'utente dal TELEFONO VERO sul sito online (vedi la sezione
+dedicata subito sotto). Prima di questi, nella stessa giornata: i punti
+9, 11, 12, 14 e poi 8 e 10. Prima ancora, verificato che il sito online
+e' rimasto STABILE dopo il push della Fase H: home/demo/confini/js tutti
+a 200, nessun 502 (la prima chiamata ha impiegato 25s perche' il piano
+gratuito di Render sospende il servizio quando non lo usa nessuno - e'
+normale, non instabilita').
 DELLA SECONDA LISTA RESTANO SOLO I PUNTI 7 E 13, entrambi messi IN
 SOSPESO SU RICHIESTA ESPLICITA DELL'UTENTE (2026-07-26): il 7 (recupero
 password) perche' deve decidere se agganciare una vera email o inventare
@@ -19,9 +21,158 @@ ricordati come in sospeso, finche' non e' lui a riaprirli.
 
 A fine sessione l'utente ha dettato una TERZA LISTA di richieste (punti
 15-25 di cose_da_fare.txt), gia' verificate nel codice e annotate una per
-una - nessuna implementata, sono materiale per la prossima sessione. Vedi
-la sezione dedicata piu' sotto.
+una - nessuna implementata, sono materiale per una sessione futura. Vedi
+la sezione dedicata piu' sotto. La QUARTA lista (punti 26-27) e' invece
+gia' fatta, vedi qui sotto.
 ===================================================================
+
+NOTA IMPORTANTE PER CHI RIPARTE DA QUI - PUNTI 26 E 27 FATTI (2026-07-26).
+Nati da una prova dell'utente dal TELEFONO VERO su
+https://camoscio.onrender.com, non da una lista pensata a tavolino.
+
+--- PUNTO 26: "permesso negato, e comunque non vedo il puntino blu" ---
+
+- ERANO DUE PROBLEMI DIVERSI, e il secondo era quello grosso. Il primo e'
+  il permesso davvero bloccato dal browser (il sito e' in HTTPS su Render,
+  quindi il contesto era sicuro: nessun difetto tecnico da correggere).
+  IL SECONDO E' CHE IL PUNTINO BLU NON ESISTEVA. Quello che c'era sulla
+  mappa era il segnaposto 🥾 trascinabile, fermo a Campo Imperatore, che
+  si muoveva da solo SOLO durante una registrazione (punto 11). Un puntino
+  che segue il GPS appena si apre la mappa non era mai stato costruito:
+  anche concedendo il permesso l'utente non avrebbe visto niente. Da qui
+  in avanti: se un utente dice "non vedo X", controllare PRIMA che X esista.
+- Una pagina web, quando il permesso e' negato, NON PUO' PIU' chiederlo:
+  non esiste nessuna funzione per farlo, ed e' cosi' apposta. L'unica cosa
+  utile e' spiegare dove si sblocca. Prima l'app diceva solo "negato" e si
+  fermava li'. Ora compare una guida con i passaggi per Chrome/Android e
+  per Safari/iPhone. Su iPhone la causa piu' frequente e' Impostazioni iOS
+  -> Privacy -> Localizzazione -> Safari, che dall'interno del browser NON
+  e' distinguibile da un blocco del singolo sito: per questo la guida li
+  nomina tutti e due invece di indovinare.
+- NUOVO FILE public/js/geolocation.js (window.CamoscioGeo): unico
+  proprietario della geolocalizzazione "di visualizzazione". TRAPPOLA da
+  ricordare: Safari NON implementa 'geolocation' nella Permissions API,
+  navigator.permissions.query SOLLEVA un'eccezione invece di rispondere.
+  Va sempre avvolta in try/catch, altrimenti su iPhone si rompe tutto
+  prima ancora di chiedere la posizione.
+- BATTERIA: durante una registrazione NON si aprono due watchPosition. Il
+  tracciamento ne ha gia' uno acceso e passa i suoi fix al puntino
+  (usaFonteEsterna + pushPosition). Misurato: 1 watch acceso prima, 1
+  durante, 1 dopo, controllando ENTRAMBE le transizioni - sono il punto in
+  cui e' facile lasciarne due o nessuno.
+- Al puntino va la posizione GREZZA, non quella agganciata al sentiero
+  (quickSnapToNearbyTrail): il puntino deve dire dove il telefono crede di
+  essere e quanto poco ne e' sicuro. Il cerchio usa la precisione VERA del
+  fix; se il telefono non la dichiara, il cerchio non si disegna.
+- CONSENSO: chi in registrazione ha detto NO alla geolocalizzazione (campo
+  geolocationConsent, Fase C) non si ritrova il GPS acceso da solo. Il
+  puntino non parte in automatico; parte premendo il tasto, che propone di
+  attivare il consenso. Quella richiesta e il suo salvataggio ora stanno
+  in un posto solo (assicuraConsenso in geolocation.js): prima erano solo
+  in tracking.js, e da oggi servono a due chiamanti.
+- UN SOLO TASTO, non due. #btn-use-real-gps in alto a destra e' il tasto
+  che l'utente aveva premuto aspettandosi di vedersi: e' diventato lui il
+  comando del puntino (accendi / ricentra / nascondi, a giro). Aggiungere
+  un terzo pulsante flottante avrebbe affollato l'angolo su 390px. Fa
+  ancora anche il suo vecchio lavoro (portare il segnaposto 🥾 sulla
+  posizione reale), ma UNA VOLTA SOLA alla pressione: un inseguimento
+  continuo renderebbe impossibile trascinarlo a mano.
+- SCELTA CORRETTA STRADA FACENDO, vale la pena saperlo: all'inizio, al
+  primo fix, si accendeva anche l'inseguimento. Misurando il giro del
+  tasto si e' visto che cosi' il PRIMO tocco diventava uno SPEGNIMENTO -
+  cioe' l'esatto contrario di quello che uno si aspetta premendo "La mia
+  posizione". Ora al primo fix la mappa si centra e basta (una volta,
+  a zoom 16); l'inseguimento lo si chiede col tasto.
+- Il segnaposto 🥾 RESTA e non viene spostato dai fix automatici: serve
+  ancora alla simulazione trascinabile e al popup "TIMBRA PASSAPORTO"
+  (checkGeofencing). Verificato che funziona ancora.
+- SCELTA DELIBERATA, NON DIMENTICANZA: il popup della vetta resta ancorato
+  al segnaposto 🥾 e NON e' stato collegato al puntino blu. Sarebbe un
+  lavoro sui timbri del passaporto, non su "far vedere dove sono", e un
+  popup che si apre lontano dal puntino confonderebbe. Da valutare a parte.
+
+--- PUNTO 27: scegliere il punto del meteo multi-quota ---
+
+- I due tasti fissi "Gran Sasso" / "Monte Vettore" non sceglievano affatto
+  un punto meteo: caricavano l'escursione col titolo corrispondente, e il
+  meteo si aggiornava di rimbalzo. Sono stati tolti. Caricare
+  un'escursione sulla mappa resta possibile dal tasto "Mappa" di ogni
+  scheda (social.js -> loadHikeOnMapDirectly), che aggiorna il meteo
+  esattamente come prima: verificato dal vivo.
+- Il componente di ricerca del punto 8 e' stato ESTRATTO invece di essere
+  copiato: window.CamoscioPlaceSearch (attachSearch + openMapPicker) in
+  trailhead-picker.js, usato sia dal ritrovo dell'escursione sia dal
+  meteo. Stesso criterio di buildHikeCard al punto 10: due copie sarebbero
+  divergite alla prima correzione. Titolo e spiegazione della finestra
+  della mappa ora sono parametri.
+- CORREZIONE DI SOSTANZA, non un abbellimento: le tre quote erano fisse a
+  800/1800/2500 m con la quota della stazione SUPPOSTA a 600 m. Con un
+  punto fisso era una semplificazione accettabile; potendo scegliere il
+  punto diventava un errore vero - la temperatura di ogni riga si calcola
+  a partire dalla quota di base, quindi sbagliare quella sposta tutti e
+  tre i valori. Open-Meteo restituisce gia' l'altitudine vera della cella
+  (campo "elevation") nella stessa risposta: ora si usa quella. Misurato
+  sul ritrovo del Corno Grande: 2119 m reali, dove prima si sarebbe letto
+  "Fondo Valle 800 m".
+- Le quote salgono di +400 e +800 dal punto scelto, non +500/+1000:
+  misurato che da Campo Imperatore (2119 m) si arriva cosi' a 2919 m,
+  cioe' praticamente in vetta al Corno Grande (2912 m). Con +1000 si
+  sarebbe mostrata una quota di 3119 m, che in queste quattro regioni non
+  esiste da nessuna parte.
+- Per lo stesso motivo il punto di partenza predefinito e' il RITROVO di
+  Campo Imperatore e non piu' la VETTA del Corno Grande: partendo da una
+  vetta le tre righe finivano tutte per aria (fino a 3473 m).
+- AGGIUNTO timezone=auto alla chiamata Open-Meteo. Senza, l'API risponde
+  in GMT ma l'ora corrente veniva letta dall'orologio locale: d'estate in
+  Italia sono due ore di scarto, cioe' si mostrava il meteo di due ore
+  prima proprio nelle ore in cui si formano i temporali.
+- L'ultimo punto guardato si ricorda in localStorage, NON su MongoDB: e'
+  una preferenza pubblica e sempre riottenibile, metterla sul database
+  consumerebbe spazio in cambio di niente (vincolo hard).
+
+--- DIFETTO PREESISTENTE TROVATO GUARDANDO LE SCHERMATE ---
+
+- La lente della barra di ricerca finiva SOPRA la casella invece che
+  dentro. Causa: lucide.createIcons() SOSTITUISCE il tag <i> con un <svg>,
+  quindi la regola CSS scritta su ".trailhead-search-field i" smetteva di
+  valere appena le icone venivano disegnate. Il difetto c'era gia' dal
+  punto 8 e colpiva anche il modulo di creazione escursione; corretto per
+  entrambi nominando anche "svg" nel selettore.
+  DA RICORDARE: qualunque regola CSS su un'icona lucide va scritta per
+  "i" E per "svg", altrimenti vale solo per la frazione di secondo prima
+  che le icone compaiano.
+
+--- COME E' STATO VERIFICATO ---
+
+- Di nuovo con PUPPETEER nella cartella temporanea (mai in package.json
+  del progetto), schermo 390x844, GPS finto in cammino. Confermata la
+  trappola gia' nota: page.setGeolocation vuole {latitude, longitude},
+  NON {lat, lng}.
+- MIGLIORAMENTO SUL METODO rispetto alle sessioni precedenti: questa volta
+  NON e' rimasto NESSUN dato di prova sul database. Le chiamate che
+  avrebbero scritto (creazione escursione, sessioni di tracciamento,
+  salvataggio del consenso) sono state INTERCETTATE e risposte dal test.
+  Nelle sessioni precedenti si erano create 13 sessioni + 3 TrailCandidate
+  da cancellare poi a mano una per una. Conviene rifare cosi'.
+- Per provare il caso "consenso spento" non e' stato creato nessun utente:
+  si e' modificato l'utente in memoria, che e' esattamente da dove
+  serveConsenso() legge. ATTENZIONE se si rifa': va fatto DOPO la
+  navigazione, perche' triggerSectionRender chiama refreshState() che
+  riscrive currentUser coi dati del server.
+- Provato: permesso concesso (puntino disegnato, 7 spostamenti su 7 passi,
+  cerchio di precisione coerente), permesso negato (guida allo sblocco e
+  mappa ancora funzionante, larga 306px), consenso spento (non parte da
+  solo; rifiutando non parte nessuna scrittura; accettando si salva),
+  registrazione (un solo watch, entrambe le transizioni), segnaposto e
+  popup vetta ancora funzionanti, punto 8 completo fino all'invio del
+  modulo con le coordinate giuste, meteo per nome / dalla mappa / sulla
+  propria posizione / ricordato dopo il ricaricamento, e la disposizione
+  a 390px e 1440px (niente fuori schermo, niente sovrapposizioni).
+
+DA FARE ANCORA: la prova all'aperto da TELEFONO VERO. Puppeteer simula
+bene un GPS che cammina ma non l'imprecisione reale, i buchi di segnale e
+la batteria - ed e' proprio il caso in cui il cerchio di precisione del
+puntino si vedra' per quello che serve.
 
 NOTA IMPORTANTE PER CHI RIPARTE DA QUI - TERZA LISTA (punti 15-25 di
 cose_da_fare.txt, dettati 2026-07-26 a fine sessione). NON e' stata
@@ -74,6 +225,11 @@ ORDINE DI LAVORO CONSIGLIATO PER LA PROSSIMA SESSIONE
 L'utente ha lasciato decidere l'ordine (2026-07-26). Ecco quello proposto,
 con il motivo di ogni scelta scritto accanto: se una sessione futura (o
 l'utente) vuole cambiarlo, deve poter capire cosa salta.
+
+NOTA: questo elenco riguarda i punti 15-25 (terza lista) piu' 7 e 13. I
+punti 26 e 27, arrivati DOPO da una prova dal telefono vero, sono gia'
+stati fatti nella stessa giornata e per questo non compaiono qui: erano
+difetti di cose gia' in uso, non funzionalita' da programmare.
 
 Criteri usati, in ordine di importanza:
  1) prima cio' che oggi e' ROTTO o mostra il falso, poi cio' che manca;
@@ -1635,6 +1791,22 @@ CHECKLIST DI AVANZAMENTO (aggiornare via via che si procede)
         punto: stagione fissata a "estate" e pioggia sempre prevista.
     [ ] 24 — distinguere oggetti personali da condivisibili
     [ ] 25 — portata della tenda e verifica che basti per il gruppo
+[x] QUARTA LISTA (cose_da_fare.txt punti 26-27, 2026-07-26) — FATTA.
+    Nata da una prova dell'utente dal telefono vero sul sito online, non
+    da una lista pensata a tavolino: erano difetti di cose gia' in uso.
+    [x] 26 — posizione reale e puntino blu. Erano DUE problemi: il
+        permesso davvero bloccato dal browser (ora c'e' una guida per
+        sbloccarlo, prima l'app diceva solo "negato") e soprattutto il
+        fatto che IL PUNTINO BLU NON ESISTEVA. Nuovo modulo
+        public/js/geolocation.js, puntino + cerchio della precisione vera
+        in map.js, un solo watchPosition anche durante la registrazione,
+        e il consenso scelto in registrazione viene rispettato.
+    [x] 27 — barra di ricerca per il meteo multi-quota (+ tasto mappa e
+        "Meteo dove mi trovo"), riusando il componente del punto 8 estratto
+        in CamoscioPlaceSearch. Corrette anche le tre quote, che erano
+        fisse e partivano da un'altitudine supposta: ora usano quella vera
+        restituita da Open-Meteo.
+    [ ] Resta la prova all'aperto da TELEFONO VERO (non blocca nulla).
 
 
 COME RIPRENDERE IL LAVORO IN UNA NUOVA SESSIONE

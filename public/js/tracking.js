@@ -62,20 +62,14 @@ async function startTracking() {
         return;
     }
 
-    const usr = window.CamoscioState.currentUser;
-    if (usr && !usr.geolocationConsent && !usr.isDemoAccount) {
-        const proceed = await window.showConfirmModal("Per registrare il percorso GPS dell'escursione serve la posizione reale del telefono. Avevi lasciato il consenso alla geolocalizzazione disattivato in registrazione: vuoi attivarlo ora e continuare?");
-        if (!proceed) return;
-        try {
-            await fetch(`/api/users/${usr.id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ geolocationConsent: true })
-            });
-            usr.geolocationConsent = true;
-        } catch (e) {
-            console.error("Impossibile aggiornare il consenso geolocalizzazione:", e);
-        }
+    // Il consenso scelto in registrazione (Fase C) e il suo salvataggio stanno ora in un
+    // punto solo, geolocation.js: da quando esiste anche il puntino blu (punto 26) la stessa
+    // richiesta parte da due posti diversi, e due copie sarebbero finite per divergere.
+    if (window.CamoscioGeo) {
+        const ok = await window.CamoscioGeo.assicuraConsenso(
+            "Per registrare il percorso GPS dell'escursione serve la posizione reale del telefono. Avevi lasciato il consenso alla geolocalizzazione disattivato in registrazione: vuoi attivarlo ora e continuare?"
+        );
+        if (!ok) return;
     }
 
     const hikeSelect = document.getElementById('tracking-hike-select');
@@ -211,6 +205,13 @@ async function completeLinkedHike(durationSeconds) {
 
 function beginWatchingPosition() {
     if (trackingState.watchId !== null) return;
+
+    // Punto 26 - da qui in poi il GPS lo tiene acceso il tracciamento, e il puntino blu si
+    // limita a consumare i fix che arrivano di qua (vedi onPositionUpdate). Senza questa
+    // riga resterebbero DUE watchPosition accesi insieme per tutta l'escursione: proprio nel
+    // momento in cui la batteria conta di piu'.
+    if (window.CamoscioGeo) window.CamoscioGeo.usaFonteEsterna(true);
+
     trackingState.watchId = navigator.geolocation.watchPosition(onPositionUpdate, onPositionError, {
         enableHighAccuracy: true,
         maximumAge: 5000,
@@ -223,6 +224,10 @@ function stopWatchingPosition() {
         navigator.geolocation.clearWatch(trackingState.watchId);
         trackingState.watchId = null;
     }
+    // L'altra meta' della transizione: il puntino torna a procurarsi i fix da solo. Va fatto
+    // SEMPRE, anche se il watch era gia' chiuso, altrimenti una pausa seguita da uno stop
+    // lascerebbe il puntino in attesa di fix da una fonte che non c'e' piu'.
+    if (window.CamoscioGeo) window.CamoscioGeo.usaFonteEsterna(false);
 }
 
 async function onPositionUpdate(pos) {
@@ -251,6 +256,12 @@ async function onPositionUpdate(pos) {
     const quickSnapResult = quickSnapToNearbyTrail(longitude, latitude, point[4]);
     const displayLng = quickSnapResult ? quickSnapResult.point[0] : longitude;
     const displayLat = quickSnapResult ? quickSnapResult.point[1] : latitude;
+
+    // Punto 26 - al puntino blu va la posizione GREZZA con la sua precisione vera, non quella
+    // agganciata al sentiero qui sopra: il puntino deve dire dove il telefono crede di essere
+    // e quanto poco ne e' sicuro, mentre l'aggancio e' una correzione utile alla traccia ma
+    // che darebbe l'impressione di una precisione che il GPS non ha.
+    if (window.CamoscioGeo) window.CamoscioGeo.pushPosition(latitude, longitude, accuracy);
 
     // Riscontro immediato lato client, prima ancora della risposta del server
     accumulateLocalStats([displayLng, displayLat, point[2], point[3], point[4]]);

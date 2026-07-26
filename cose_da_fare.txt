@@ -320,3 +320,56 @@ porto io una tenda da 3 posti ma siamo in 4 -> la tenda non basta, serve
 una piu' grande oppure una piccola in piu'. Lo stesso ragionamento vale in
 generale per ogni oggetto condiviso che "copre" un numero limitato di
 persone.
+
+=====================================================================
+QUARTA LISTA (2026-07-26) - segnalazioni dell'utente dopo una prova dal
+TELEFONO VERO sul sito online (https://camoscio.onrender.com). Sono i
+primi due difetti trovati usando il sito fuori dal PC.
+PROMEMORIA: i punti 7 (recupero password) e 13 (percorso multi-punto)
+restano IN SOSPESO per scelta esplicita dell'utente, non dimenticati.
+=====================================================================
+
+--- MAPPE ---
+
+26) Sulla mappa, premendo il tasto della posizione (in alto a destra),
+esce "permesso di geolocalizzazione negato" e non si vede nessun puntino
+blu con la posizione attuale.
+   Verificato nel codice: sono DUE problemi diversi.
+   a) Il messaggio arriva dal ramo PERMISSION_DENIED di map.js. Il sito e'
+      in HTTPS su Render, quindi il contesto e' sicuro e il blocco e'
+      vero: l'ha messo il browser o le impostazioni del telefono. Una
+      pagina web, una volta bloccata, NON puo' piu' richiedere il permesso
+      da sola - l'unica cosa utile e' spiegare a schermo come si sblocca,
+      cosa che oggi non fa (dice solo "negato" e si ferma li').
+      Su iPhone la causa piu' frequente e' Impostazioni iOS -> Privacy ->
+      Localizzazione -> Safari, che dall'interno del browser non e'
+      distinguibile in nessun modo da un blocco del singolo sito.
+   b) IL PUNTINO BLU NON ESISTE PROPRIO. Il segnaposto sulla mappa e' una
+      emoji 🥾 trascinabile che parte da una posizione fissa (Campo
+      Imperatore) e si muove solo DURANTE una registrazione (punto 11).
+      Un puntino blu con il cerchio della precisione che segue il GPS
+      appena si apre la mappa non e' mai stato costruito: anche dando il
+      permesso, l'utente non lo vedrebbe.
+   Scelta dell'utente: il puntino deve essere attivo SEMPRE quando si apre
+   la Mappa, con la possibilita' di spegnerlo.
+   Vincolo tecnico da rispettare: chi in registrazione ha detto NO alla
+   geolocalizzazione (campo geolocationConsent, punto 8 della prima lista)
+   non deve ritrovarsi il GPS acceso da solo. E durante una registrazione
+   non devono restare accesi due watchPosition insieme, per la batteria.
+
+27) Il meteo multi-quota mostra sempre e solo Corno Grande e Monti
+Sibillini, non c'e' modo di cambiare punto. Serve una barra di ricerca,
+allo stesso modo di quando si sceglie il punto di partenza
+dell'escursione (punto 8).
+   Verificato: le coordinate di partenza sono scritte a mano in
+   weather.js, e i due tasti "Gran Sasso" / "Monte Vettore" non scelgono
+   affatto un punto meteo - caricano l'escursione col titolo
+   corrispondente, che di rimbalzo aggiorna il meteo.
+   Scelta dell'utente: barra di ricerca + tasto mappa (identici al punto
+   8) + un tasto "Meteo qui" sulla posizione reale.
+   Nota emersa pianificando: le tre quote sono fisse a 800/1800/2500 m e
+   la quota della stazione e' SUPPOSTA a 600 m. Con un solo punto fisso
+   era una semplificazione accettabile; potendo scegliere il punto diventa
+   sbagliata (un punto a 2000 m mostrerebbe comunque "Fondo Valle 800 m").
+   Open-Meteo restituisce gia' l'altitudine vera della cella nella stessa
+   risposta: va usata quella, senza nessuna chiamata in piu'.
