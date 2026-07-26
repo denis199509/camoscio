@@ -24,6 +24,12 @@
 
     --accent-blue: #4C7E90;
     --accent-blue-glow: rgba(76, 126, 144, 0.25);
+    /* Schiarita del blu lago, per il percorso registrato dal vivo sulla mappa (punto 14
+       di cose_da_fare.txt: "linea blu chiaro"). Il --accent-blue pieno, su tile
+       OpenStreetMap, si confondeva con laghi e corsi d'acqua. Stesso valore ripetuto a
+       mano in public/js/map.js (resetLiveTrackPolyline): Leaflet vuole un colore vero,
+       non una variabile CSS - stesso criterio gia' in uso per gli altri colori mappa. */
+    --accent-blue-light: #7FB5C7;
 
     --accent-red: #A83B2E;
     --accent-red-glow: rgba(168, 59, 46, 0.3);
@@ -1194,13 +1200,71 @@ h1, h2, h3, h4, h5, h6 {
     background: #111b27;
 }
 
+/* Spostato da centrato a sinistra: il centro-basso ora e' zona del tasto di
+   registrazione (punto 14), i due si sovrapponevano. */
 .map-overlay-instructions {
     position: absolute;
     bottom: 16px;
-    left: 50%;
-    transform: translateX(-50%);
+    left: 16px;
+    max-width: 52%;
     z-index: 1000;
     pointer-events: none;
+}
+
+/* Stesso problema di contrasto dei pulsanti qui sopra: il badge, pensato per il fondo
+   scuro dell'app, sulle tile chiare della mappa risultava quasi illeggibile. */
+.map-overlay-instructions .badge {
+    background: rgba(20, 21, 15, 0.88);
+    border: 1px solid rgba(243, 239, 230, 0.25);
+    color: var(--color-text-primary);
+    backdrop-filter: blur(4px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.35);
+}
+
+/* --- Punto 14: comandi di registrazione direttamente sulla mappa --- */
+.map-record-controls {
+    position: absolute;
+    bottom: 16px;
+    right: 16px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+}
+
+.map-record-btn {
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+    font-weight: 700;
+    padding: 12px 18px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.map-record-btn i {
+    width: 18px;
+    height: 18px;
+}
+
+/* Mentre registra, il tasto "pulsa" piano: da lontano (telefono nello zaino, occhiata
+   veloce) si capisce a colpo d'occhio che la registrazione e' viva. */
+.map-record-btn.is-recording {
+    animation: recordPulse 2s ease-in-out infinite;
+}
+
+@keyframes recordPulse {
+    0%, 100% { box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45); }
+    50% { box-shadow: 0 6px 26px var(--accent-red-glow), 0 0 0 4px var(--accent-red-glow); }
+}
+
+.map-recenter-btn {
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.35);
+}
+
+.map-recenter-btn i {
+    width: 15px;
+    height: 15px;
 }
 
 .map-gps-real-btn {
@@ -1209,6 +1273,22 @@ h1, h2, h3, h4, h5, h6 {
     right: 16px;
     z-index: 1000;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.35);
+}
+
+/* I pulsanti appoggiati SOPRA la mappa non possono usare lo sfondo semitrasparente di
+   .btn-secondary (8% di bianco): funziona sul fondo scuro dell'app, ma sulle tile chiare
+   di OpenStreetMap diventa testo quasi bianco su sfondo quasi bianco - illeggibile.
+   Qui serve uno sfondo pieno scuro. */
+.map-gps-real-btn.btn-secondary,
+.map-recenter-btn.btn-secondary {
+    background: rgba(20, 21, 15, 0.88);
+    border-color: rgba(243, 239, 230, 0.25);
+    backdrop-filter: blur(4px);
+}
+
+.map-gps-real-btn.btn-secondary:hover,
+.map-recenter-btn.btn-secondary:hover {
+    background: rgba(20, 21, 15, 0.96);
 }
 
 .map-gps-real-btn i {
@@ -2554,4 +2634,177 @@ h1, h2, h3, h4, h5, h6 {
     padding: 0 10px;
     font-size: 0.75rem;
     color: var(--color-text-secondary);
+}
+
+/* ==========================================================================
+   SCHERMO STRETTO / TELEFONO — punto 9 di cose_da_fare.txt
+   ==========================================================================
+   Misurato dal vivo prima di scrivere queste regole (telefono emulato 390x844):
+   il contenitore della mappa risultava largo ZERO pixel. Motivo strutturale:
+   la barra di navigazione e' larga 260px fissi e la sidebar della mappa altri
+   380px fissi (flex-shrink:0 su entrambe), che su 390px di schermo non lasciano
+   niente alla mappa.
+
+   Per questo qui si tocca anche la barra di navigazione, non solo la mappa:
+   senza recuperare quei 260px la mappa resterebbe inutilizzabile comunque. La
+   barra non sparisce (servirebbe un menu a panino e del JS in piu'): diventa
+   una colonnina di sole icone, quindi la navigazione resta sempre raggiungibile
+   con un dito. NIENTE di tutto questo vale su schermo grande: sopra i 900px il
+   layout resta identico a prima, come da scelta gia' presa in passato di non
+   rendere responsive il resto dell'app. */
+
+@media (max-width: 900px) {
+    /* --- Barra di navigazione: solo icone --- */
+    .sidebar {
+        width: 62px;
+    }
+
+    .brand {
+        padding: 16px 0;
+        justify-content: center;
+    }
+
+    .logo-text,
+    .nav-btn span,
+    .sidebar-footer {
+        display: none;
+    }
+
+    .nav-menu {
+        padding: 12px 8px;
+    }
+
+    .nav-btn {
+        justify-content: center;
+        padding: 12px 0;
+    }
+
+    /* Il bordo sinistro dell'elemento attivo, su una colonnina di sole icone,
+       schiaccerebbe l'icona di lato: si sostituisce con il solo sfondo. */
+    .nav-btn.active {
+        border-left: none;
+        border-radius: 12px;
+    }
+
+    /* --- Intestazione: deve stare su UNA riga sola ---
+       Titolo + Esci + campanella + scheda utente (nome, reputazione, livello) non
+       entrano in 390px: il titolo andava a capo su tre righe e la scheda utente usciva
+       dallo schermo. Qui il titolo viene troncato con i puntini e della scheda utente
+       resta solo l'icona, che basta a capire con quale account si e' dentro. */
+    .top-header {
+        height: 56px;
+        padding: 0 10px;
+        gap: 8px;
+    }
+
+    .header-search {
+        min-width: 0;
+        flex: 1 1 auto;
+        overflow: hidden;
+    }
+
+    .section-title {
+        font-size: 1rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .user-status-widget {
+        flex: 0 0 auto;
+        gap: 6px;
+    }
+
+    /* Il testo "Esci" sparisce, resta l'icona: il pulsante e' comunque riconoscibile
+       e recupera spazio prezioso. */
+    #btn-logout {
+        font-size: 0;
+        padding: 8px;
+    }
+
+    #btn-logout i {
+        margin: 0;
+    }
+
+    .active-user-badge .user-details {
+        display: none;
+    }
+
+    .page-container {
+        padding: 14px;
+    }
+
+    /* --- Sezione Mappa: si impila invece di affiancare --- */
+    .map-layout {
+        flex-direction: column;
+        height: auto;
+        gap: 14px;
+    }
+
+    /* La mappa prende tutta la larghezza disponibile e un'altezza vera:
+       min-height evita che si schiacci se il contenuto attorno cresce. */
+    .map-container-wrapper {
+        width: 100%;
+        height: 62vh;
+        min-height: 300px;
+        flex-grow: 0;
+        flex-shrink: 0;
+    }
+
+    /* La sidebar della mappa (meteo, sole, segnalazioni) va sotto la mappa e
+       scorre insieme alla pagina, non piu' per conto suo. */
+    .map-sidebar {
+        width: 100%;
+        overflow-y: visible;
+    }
+
+    /* Il badge di istruzioni copriva meta' della mappa su schermo stretto. Si nasconde
+       senza perdere nulla: ora che il layout e' impilato, la stessa indicazione ("clicca
+       sulla mappa per collocare una segnalazione") si legge nella scheda "Segnala Stato
+       Sentiero" subito sotto la mappa. */
+    .map-overlay-instructions {
+        display: none;
+    }
+
+    .map-gps-real-btn {
+        top: 10px;
+        right: 10px;
+        font-size: 0.72rem;
+        padding: 6px 10px;
+    }
+
+    /* Il tasto di registrazione e' l'azione principale su telefono: si prende tutta la
+       larghezza in fondo alla mappa, comodo da premere con il pollice anche con i guanti. */
+    .map-record-controls {
+        left: 10px;
+        right: 10px;
+        bottom: 10px;
+        align-items: stretch;
+    }
+
+    .map-record-btn {
+        justify-content: center;
+        padding: 14px 16px;
+        font-size: 0.95rem;
+    }
+
+    .map-recenter-btn {
+        align-self: center;
+    }
+}
+
+/* Schermi molto stretti (telefoni piccoli): stessa logica, misure piu' strette. */
+@media (max-width: 480px) {
+    .page-container {
+        padding: 10px;
+    }
+
+    .map-container-wrapper {
+        height: 58vh;
+        min-height: 260px;
+    }
+
+    .glass-card {
+        padding: 16px;
+    }
 }

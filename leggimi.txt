@@ -1,6 +1,126 @@
 ===================================================================
 CAMOSCIO — LEGGIMI (stato progetto, aggiornato automaticamente)
-Ultimo aggiornamento: 2026-07-25 (nuova sessione, stesso giorno) — Fase
+Ultimo aggiornamento: 2026-07-26 — implementati i punti 9, 11, 12 e 14
+della nuova lista (vedi sezione dedicata subito sotto). Prima di quello,
+verificato che il sito online e' rimasto STABILE dopo il push della Fase
+H: home/demo/confini/js tutti a 200, nessun 502 (la prima chiamata ha
+impiegato 25s perche' il piano gratuito di Render sospende il servizio
+quando non lo usa nessuno - e' normale, non instabilita'). Restano da
+fare i punti 7, 8, 10 e 13.
+===================================================================
+
+NOTA IMPORTANTE PER CHI RIPARTE DA QUI - PUNTI 9, 11, 12, 14 FATTI
+(2026-07-26). Per la prima volta in questo progetto le verifiche sono
+state fatte DAVVERO IN UN BROWSER e con GPS finto in movimento, non solo
+con chiamate dirette alle API. L'estensione Chrome non era collegata
+nemmeno stavolta, quindi si e' installato PUPPETEER (un Chrome pilotabile
+da script) NELLA CARTELLA TEMPORANEA, non nel progetto: package.json e
+node_modules del progetto sono rimasti intatti. Serviva perche' permette
+due cose che l'estensione non avrebbe dato comunque: simulare un GPS che
+cammina (page.setGeolocation) e uno schermo da telefono (390x844).
+CONSIGLIO PER LE PROSSIME SESSIONI: rifare cosi'. Gli script di prova
+sono usa-e-getta nella cartella temporanea, ma il metodo vale: avviare il
+server in locale, login demo via API, poi pilotare l'interfaccia vera.
+TRAPPOLA IN CUI SI E' GIA' CADUTI UNA VOLTA: page.setGeolocation vuole
+{latitude, longitude}, NON {lat, lng} - passando le chiavi sbagliate il
+GPS finto non parte affatto e l'app sembra rotta quando invece e' sana
+(errore code 2, POSITION_UNAVAILABLE).
+
+COSA SI E' SCOPERTO, punto per punto:
+
+- Punto 11 (segnaposto fermo): IL CODICE ERA SANO. Misurato dal vivo:
+  su 11 fix GPS arrivati, 11 hanno aggiornato il marker, la posizione
+  cambiava davvero, la distanza veniva registrata (0,71 km) e non c'era
+  NESSUN errore in console. Il vero problema era lo ZOOM: la mappa nasce
+  a zoom 9 (tutta l'Italia centrale in uno schermo) e nessuno la portava
+  mai piu' vicino. A zoom 9 un pixel vale ~227 metri, quindi 700 metri
+  camminati spostavano il segnaposto di TRE PIXEL - indistinguibile da
+  "fermo". Trascinandolo a mano invece si coprivano decine di km, ed era
+  l'unica cosa che sembrava funzionare. Da qui la falsa impressione.
+  Nessuno dei due sospetti della ricognizione precedente era la causa:
+  l'invalidateSize mancante era reale ma secondario (corretto lo stesso,
+  vedi sotto), e checkGeofencing non puo' lanciare eccezioni perche'
+  "peaks" e' un array Mongoose, quindi vale [] e non undefined.
+  CORREZIONE: nuove funzioni in map.js (beginLiveGpsView / endLiveGpsView
+  / recenterOnLiveGps). All'avvio di una registrazione la mappa salta
+  sulla posizione vera a zoom 16 (~2 m per pixel: un passo si vede) e da
+  li' la insegue ad ogni fix. Il segnaposto resta al centro dello
+  schermo mentre scorre la mappa sotto, come in un navigatore.
+- Punto 11, correzione secondaria: invalidateSize() ora viene chiamato
+  anche all'avvio di una registrazione, non solo navigando alla Mappa
+  dalla barra laterale (app.js). Serve perche' il pulsante a scarpone
+  funziona da QUALUNQUE sezione: verificato dal vivo il caso peggiore
+  (registrazione avviata dalla Dashboard con la mappa mai aperta, poi
+  camminata, poi apertura della mappa) - all'apertura la mappa e' gia'
+  a zoom 16, centrata sulla posizione e con la traccia gia' disegnata.
+- Punto 11, scelta di comportamento: se l'utente trascina la mappa a
+  mano l'inseguimento si SPEGNE (altrimenti non potrebbe guardarsi
+  intorno: ad ogni fix la mappa gli tornerebbe sotto i piedi) e compare
+  un tasto "Ricentra su di me" per riaccenderlo. Si distingue il
+  trascinamento umano da quello del codice con l'evento Leaflet
+  'dragstart', che NON scatta sui panTo/setView programmatici.
+- Punto 11, ultima cosa: durante una registrazione vera il segnaposto
+  non e' piu' trascinabile (lo ridiventa a fine registrazione).
+  Trascinarlo mentre il GPS registra significherebbe falsificare a mano
+  la propria posizione, ed e' proprio quello che confondeva.
+- Punto 14: nuovo tasto unico sulla mappa ("Comincia registrazione" ->
+  "Termina registrazione" mentre registra, con una pulsazione lenta per
+  vedere a colpo d'occhio che sta registrando). Non duplica la logica:
+  chiama le stesse startTracking()/endTracking() del pannello, cosi' i
+  due percorsi non possono divergere. Il pannello del pulsante a
+  scarpone RESTA, serve per le cose in piu' (scegliere l'escursione
+  collegata, pausa/ripresa, scaricare la mappa offline).
+- Punto 14: il percorso registrato ora e' una linea BLU CHIARA continua
+  (#7FB5C7, schiarita del blu lago --accent-blue: il blu pieno si
+  confondeva con laghi e fiumi delle tile OSM). Prima era arancione
+  tratteggiata; il tratteggio faceva sembrare la traccia provvisoria.
+  Verificato che conserva tutti i punti (13 su 13 con un percorso a
+  zigzag). ATTENZIONE se si ricontrolla: con un percorso DIRITTO il path
+  SVG mostra solo 2 punti, ma non e' un bug - e' la semplificazione di
+  disegno di Leaflet (smoothFactor); il dato vero sta in getLatLngs().
+- Punto 9 (mappa inutilizzabile su telefono): misurato, era PEGGIO di
+  "troppo piccolo" - il contenitore della mappa era largo ZERO PIXEL su
+  uno schermo da 390px. Motivo strutturale: barra di navigazione 260px
+  fissi + sidebar mappa 380px fissi, entrambe flex-shrink:0. Aggiunte le
+  PRIME @media query del progetto (max-width 900px e 480px), in fondo a
+  styles.css. Ora su telefono la mappa e' larga 306px e alta 488.
+- Punto 9, scelta importante da sapere: si e' dovuta toccare ANCHE la
+  barra di navigazione, che una decisione precedente diceva di lasciare
+  non responsive. Senza recuperare quei 260px la mappa restava
+  inutilizzabile comunque. Non sparisce (servirebbe un menu a panino e
+  altro JS): diventa una colonnina di sole icone, quindi si naviga
+  ancora con un dito. Sopra i 900px NON cambia assolutamente nulla.
+- Punto 9, correzione emersa guardando le schermate: l'intestazione in
+  alto andava a capo su tre righe e il riquadro utente usciva dallo
+  schermo. Ora il titolo si tronca con i puntini, di "Esci" resta la
+  sola icona e del riquadro utente resta il solo avatar. Verificato su
+  tutte e 7 le sezioni: intestazione alta 56px, una riga, nessuno
+  straripamento, nessuno scorrimento orizzontale.
+- BUG DI LEGGIBILITA' PREESISTENTE trovato guardando le schermate (non
+  introdotto ora, non era in nessuna lista): i pulsanti appoggiati sopra
+  la mappa usano .btn-secondary, che ha sfondo bianco all'8%. Funziona
+  sul fondo scuro dell'app, ma sulle tile chiare di OpenStreetMap
+  diventava testo quasi bianco su sfondo quasi bianco, illeggibile.
+  Riguardava "Usa la mia posizione reale" e il badge di istruzioni.
+  Corretto dando a quegli elementi uno sfondo pieno scuro.
+- Punto 12: fatto, "Mappa & Waze" -> "Mappa & Sentieri" (voce della
+  barra, titolo dell'intestazione, badge sulla mappa). Verificato in
+  modo automatico che la parola "Waze" non compaia piu' in NESSUN testo
+  visibile della pagina. Restano solo id/classi/commenti/nomi di
+  funzione interni (es. renderWazeReportsList, .waze-card): invisibili
+  all'utente, lasciati apposta per non toccare codice funzionante.
+- Dati di prova: le prove hanno creato 13 sessioni di tracciamento e 3
+  TrailCandidate sul database reale, tutti rimossi a fine sessione
+  elencandoli per ID uno per uno. NON sono state toccate le 4 sessioni
+  del 24-25 luglio (prove precedenti, e una di quelle - 8 punti, 0,547
+  km - potrebbe essere la prova vera fatta dall'utente da telefono).
+
+DA FARE ANCORA su questi punti: la prova da TELEFONO VERO all'aperto.
+Puppeteer simula bene il GPS che cammina, ma non sostituisce un GPS
+reale con la sua imprecisione, i buchi di segnale e la batteria.
+
+===================================================================
+STORICO PRECEDENTE (2026-07-25) — Fase
 H (caccia ai bug generale) COMPLETATA E ONLINE: 14 bug corretti (vedi
 sotto e checklist), pushata su GitHub (commit 516badd) su richiesta
 esplicita dell'utente ("manda tutto online, salva tutto correttamente
@@ -1173,16 +1293,39 @@ CHECKLIST DI AVANZAMENTO (aggiornare via via che si procede)
         sicurezza"), redeploy Render avviato automaticamente
     [x] Home page ricontrollata raggiungibile (codice 200) subito dopo
         il push
-    [ ] Verifica di stabilita' piu' lunga (qualche minuto di normale
-        navigazione) - NON fatta, sessione chiusa subito dopo il primo
-        controllo per limite di utilizzo dell'utente: PRIMA COSA da fare
-        a inizio prossima sessione
-    [ ] Prova dal vivo nel browser (Chrome non disponibile in questa
-        sessione, verificato tutto via API dirette)
-    [ ] Nuova lista di richieste dell'utente (uso reale del sito online)
-        aggiunta in cose_da_fare.txt punti 7-14, ricognizione tecnica
-        gia' fatta (vedi nota dedicata in cima al file) - da pianificare
-        e implementare in una sessione futura, NON ancora iniziata
+    [x] Verifica di stabilita' (2026-07-26): sito online ricontrollato,
+        home/demo/confini/js tutti a 200, nessun 502. La prima chiamata
+        ha impiegato 25s: e' il risveglio del piano gratuito Render dopo
+        inattivita', non instabilita' (le successive: meno di 1s).
+    [ ] Prova dal vivo nel browser DEL SITO ONLINE (l'estensione Chrome
+        non e' collegata; dal 2026-07-26 le prove si fanno con Puppeteer
+        sul server LOCALE, vedi nota in cima al file)
+[ ] NUOVA LISTA (cose_da_fare.txt punti 7-14) — 4 di 8 FATTI
+    [x] Punto 9 — mappa usabile da telefono (2026-07-26)
+    [x] Punto 11 — la mappa segue la posizione GPS reale (2026-07-26)
+    [x] Punto 12 — via il nome "Waze" (2026-07-26)
+    [x] Punto 14 — tasto unico registrazione + traccia blu chiaro (2026-07-26)
+    [ ] Punto 7 — recupero password: BLOCCATO da una decisione non
+        tecnica (serve un canale email, che la Fase C aveva escluso).
+        Da decidere con l'utente prima di scrivere qualunque codice.
+    [ ] Punto 8 — scelta del ritrovo dalla mappa invece che a coordinate
+        scritte a mano. Serve un endpoint server che faccia da proxy
+        verso Nominatim (mai chiamarlo dal browser: violerebbe la loro
+        policy sull'User-Agent). NOTA: risolverebbe anche un bug trovato
+        il 2026-07-26 e non ancora corretto (vedi sotto).
+    [ ] Punto 10 — pagina "Le mie escursioni"
+    [ ] Punto 13 — progettazione percorso multi-punto sui sentieri: la
+        piu' impegnativa, serve un vero algoritmo di ricerca cammino
+        (Dijkstra/A*) su un grafo dei sentieri, oggi inesistente
+    [ ] BUG TROVATO 2026-07-26, NON ANCORA CORRETTO: il form "crea
+        escursione" ha come valori predefiniti latitudine 45.9698 e
+        longitudine 9.8115, che sono in LOMBARDIA - fuori dalle 4
+        regioni ammesse. Residuo del progetto originale (era ambientato
+        sulle Alpi). Dalla Fase G il server rifiuta le escursioni fuori
+        regione, quindi chi apre il form, scrive solo il nome e invia
+        prende un errore. Si sistema naturalmente insieme al punto 8
+        (che rifa' proprio quella parte del form); se il punto 8 slitta,
+        correggere almeno i valori predefiniti su un punto in Abruzzo.
 
 
 COME RIPRENDERE IL LAVORO IN UNA NUOVA SESSIONE

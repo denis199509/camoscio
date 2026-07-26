@@ -276,7 +276,7 @@
                 </button>
                 <button class="nav-btn" data-target="map-section" id="btn-nav-map">
                     <i data-lucide="map"></i>
-                    <span>Mappa & Waze</span>
+                    <span>Mappa & Sentieri</span>
                 </button>
                 <button class="nav-btn" data-target="carpool" id="btn-nav-carpool">
                     <i data-lucide="car"></i>
@@ -611,11 +611,23 @@
                         <div class="map-container-wrapper">
                             <div id="map"></div>
                             <div class="map-overlay-instructions">
-                                <span class="badge badge-primary"><i data-lucide="info"></i> Clicca sulla mappa per segnalare pericoli (Waze) o simulare la posizione GPS per timbrare la vetta.</span>
+                                <span class="badge badge-primary"><i data-lucide="info"></i> Clicca sulla mappa per segnalare pericoli o simulare la posizione GPS per timbrare la vetta.</span>
                             </div>
                             <button class="btn btn-sm btn-secondary map-gps-real-btn" id="btn-use-real-gps" title="Usa la posizione GPS reale del dispositivo al posto del marker simulato">
                                 <i data-lucide="locate-fixed"></i> Usa la mia posizione reale
                             </button>
+
+                            <!-- Punto 14 di cose_da_fare.txt: un tasto unico e semplice per
+                                 registrare il percorso, direttamente sulla mappa (senza dover
+                                 passare dal pannello del pulsante a scarpone). -->
+                            <div class="map-record-controls">
+                                <button class="btn btn-sm btn-secondary map-recenter-btn hidden" id="btn-map-recenter" title="Torna a seguire la mia posizione GPS">
+                                    <i data-lucide="crosshair"></i> Ricentra su di me
+                                </button>
+                                <button class="btn btn-primary map-record-btn" id="btn-map-quick-record" type="button">
+                                    <i data-lucide="circle-dot"></i> <span id="map-record-label">Comincia registrazione</span>
+                                </button>
+                            </div>
                         </div>
 
                         <!-- Sidebar Mappa (Meteo + Segnalazioni) -->

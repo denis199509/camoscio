@@ -7,6 +7,20 @@ let peakMarkersGroup = null;
 let activeHikePath = []; // Array di coordinate per il sentiero attivo
 let liveTrackPolyline = null; // Percorso REALMENTE registrato durante un tracciamento GPS live (Fase F)
 
+// Punto 11 di cose_da_fare.txt - "la mappa mi segue".
+// Il marker in realta' seguiva GIA' il GPS: misurato dal vivo (telefono emulato, GPS
+// simulato in cammino) TUTTI gli aggiornamenti arrivavano, la posizione cambiava e la
+// distanza veniva registrata. Il problema e' che la mappa resta allo zoom iniziale 9,
+// dove tutta l'Italia centrale sta in uno schermo: a quella scala 1 pixel vale ~227
+// metri, quindi 700 metri camminati spostavano il segnaposto di 3 pixel - visivamente
+// fermo. Trascinandolo a mano invece si copriva mezzo schermo = decine di km, e sembrava
+// l'unica cosa che "funzionasse".
+// Da qui la correzione: all'avvio di una registrazione la mappa si porta sulla posizione
+// vera a uno zoom da camminata e poi la insegue ad ogni fix.
+let liveFollowEnabled = false;
+let liveViewNeedsInitialCenter = false; // il primo fix "salta" sul posto, i successivi scorrono
+const LIVE_FOLLOW_ZOOM = 16; // ~2 metri per pixel: un passo si vede
+
 // Ambito geografico attuale della demo: Lazio, Molise, Abruzzo, Marche ("per ora", vedi nota owner).
 // Rettangolo di riserva usato SOLO se per qualche motivo non si riescono a caricare i confini
 // reali dal server (vedi ensureRegionBoundaries) - da Fase G in poi la fonte di verita' sono
@@ -122,6 +136,24 @@ async function initMapModule() {
     // Event listener per il click sulla mappa (per Waze crowdsourcing)
     window.mapInstance.on('click', onMapClick);
 
+    // Se l'utente trascina la mappa a mano durante una registrazione, smette di essere
+    // inseguito (altrimenti non potrebbe guardarsi intorno: ad ogni fix GPS la mappa
+    // gli tornerebbe sotto i piedi). 'dragstart' scatta solo per il trascinamento umano,
+    // non per i panTo/setView fatti dal codice: e' proprio la distinzione che serve qui.
+    window.mapInstance.on('dragstart', () => {
+        if (liveFollowEnabled) {
+            liveFollowEnabled = false;
+            updateRecenterButton();
+        }
+    });
+
+    // Cambio di dimensioni della finestra o rotazione del telefono: senza questo Leaflet
+    // continua a usare le misure vecchie e la mappa resta tagliata (rilevante ora che su
+    // schermo stretto il layout si impila, vedi @media in styles.css - punto 9).
+    window.addEventListener('resize', () => {
+        if (window.mapInstance) window.mapInstance.invalidateSize();
+    });
+
     // Carica i marker dei report Waze e i sentieri
     renderMapMarkers();
     
@@ -182,10 +214,93 @@ function updateLiveGpsPosition(lat, lng, recenter = false) {
         createUserGpsMarker();
     }
     userGpsMarker.setLatLng([lat, lng]);
-    if (recenter && window.mapInstance) {
-        window.mapInstance.panTo([lat, lng]);
+
+    // Con l'inseguimento attivo la mappa scorre da sola dietro al segnaposto: e' questo
+    // che mancava al punto 11 (vedi commento in cima al file). Resta comunque possibile
+    // guardarsi intorno: appena si trascina la mappa a mano l'inseguimento si spegne
+    // (evento 'dragstart', vedi initMapModule) e compare il tasto "Ricentra su di me".
+    if (window.mapInstance && (recenter || liveFollowEnabled)) {
+        if (liveViewNeedsInitialCenter) {
+            // Primo fix della registrazione: si arriva qui con la mappa ancora sulla vista
+            // panoramica di partenza. Un panTo animato attraverserebbe mezza regione a
+            // zoom 16 (lentissimo e inutile): meglio saltare direttamente sul posto.
+            liveViewNeedsInitialCenter = false;
+            window.mapInstance.setView([lat, lng], Math.max(window.mapInstance.getZoom(), LIVE_FOLLOW_ZOOM));
+        } else {
+            window.mapInstance.panTo([lat, lng], { animate: true, duration: 0.5 });
+        }
     }
     checkGeofencing(lat, lng);
+}
+
+// Inizio di una registrazione dal vivo: porta la mappa sulla posizione reale a uno zoom
+// utile a piedi e accende l'inseguimento.
+function beginLiveGpsView(lat, lng) {
+    if (!window.mapInstance) return;
+
+    // La mappa Leaflet viene creata all'avvio dell'app, quando la sezione Mappa e' ancora
+    // display:none: in quel caso Leaflet memorizza dimensioni sbagliate finche' non riceve
+    // un invalidateSize(). Finora quell'invalidateSize arrivava SOLO navigando alla Mappa
+    // dalla barra laterale (app.js), ma una registrazione puo' partire da qualunque
+    // sezione tramite il pulsante flottante: senza questa riga la mappa resterebbe
+    // disallineata proprio durante l'escursione.
+    window.mapInstance.invalidateSize();
+
+    liveFollowEnabled = true;
+
+    // Durante una registrazione VERA il segnaposto non deve piu' essere trascinabile:
+    // trascinarlo significherebbe falsificare a mano la propria posizione mentre il GPS
+    // la sta registrando (ed e' esattamente cio' che confondeva, vedi punto 11).
+    if (userGpsMarker && userGpsMarker.dragging) userGpsMarker.dragging.disable();
+    if (userGpsMarker) {
+        userGpsMarker.unbindTooltip();
+        userGpsMarker.bindTooltip("<b>Tu</b><br>Posizione GPS reale, registrazione in corso", {
+            permanent: false, direction: 'top'
+        });
+    }
+
+    if (typeof lat === 'number' && typeof lng === 'number') {
+        liveViewNeedsInitialCenter = false;
+        window.mapInstance.setView([lat, lng], Math.max(window.mapInstance.getZoom(), LIVE_FOLLOW_ZOOM));
+    } else {
+        // Nessuna posizione ancora nota (si e' appena premuto "Comincia registrazione" e il
+        // primo fix GPS deve ancora arrivare): ci pensera' updateLiveGpsPosition.
+        liveViewNeedsInitialCenter = true;
+    }
+    updateRecenterButton();
+}
+
+// Fine registrazione: si torna al comportamento normale (marker trascinabile per la
+// simulazione/esplorazione, nessun inseguimento).
+function endLiveGpsView() {
+    liveFollowEnabled = false;
+    if (userGpsMarker && userGpsMarker.dragging) userGpsMarker.dragging.enable();
+    if (userGpsMarker) {
+        userGpsMarker.unbindTooltip();
+        userGpsMarker.bindTooltip("<b>Tu (Tracciamento GPS)</b><br>Trascina il marker per spostarti sui sentieri", {
+            permanent: false, direction: 'top'
+        });
+    }
+    updateRecenterButton();
+}
+
+// Riaccende l'inseguimento dopo che l'utente si e' guardato intorno spostando la mappa.
+function recenterOnLiveGps() {
+    liveFollowEnabled = true;
+    const p = window.userSimulatedLocation;
+    if (window.mapInstance && p) {
+        window.mapInstance.setView([p.lat, p.lng], Math.max(window.mapInstance.getZoom(), LIVE_FOLLOW_ZOOM));
+    }
+    updateRecenterButton();
+}
+
+// Il tasto "Ricentra su di me" ha senso solo mentre una registrazione e' in corso E
+// l'utente ha spostato la mappa per conto suo.
+function updateRecenterButton() {
+    const btn = document.getElementById('btn-map-recenter');
+    if (!btn) return;
+    const recording = !!(window.CamoscioTrackingIsRecording && window.CamoscioTrackingIsRecording());
+    btn.classList.toggle('hidden', !(recording && !liveFollowEnabled));
 }
 
 // Percorso REALMENTE registrato durante un'escursione dal vivo (Fase F) - stile diverso
@@ -194,12 +309,19 @@ function resetLiveTrackPolyline() {
     if (liveTrackPolyline) {
         window.mapInstance.removeLayer(liveTrackPolyline);
     }
+    // Punto 14 di cose_da_fare.txt: il percorso realmente camminato si disegna con una
+    // linea BLU CHIARA continua (prima era arancione tratteggiata). Il tratteggio faceva
+    // sembrare la traccia "provvisoria"; qui invece sono i punti dove si e' passati
+    // davvero. Blu chiaro = schiarita di --accent-blue (#4C7E90, blu lago alpino della
+    // palette montagna, vedi :root in styles.css e --accent-blue-light li' accanto):
+    // resta in famiglia con la palette e si stacca bene dal verde del percorso
+    // pianificato e dall'arancione degli accenti.
     liveTrackPolyline = L.polyline([], {
-        color: '#C1662E',
+        color: '#7FB5C7',
         weight: 5,
         opacity: 0.95,
-        dashArray: '2, 8',
-        lineCap: 'round'
+        lineCap: 'round',
+        lineJoin: 'round'
     }).addTo(window.mapInstance);
 }
 
@@ -738,3 +860,7 @@ window.updateLiveGpsPosition = updateLiveGpsPosition;
 window.resetLiveTrackPolyline = resetLiveTrackPolyline;
 window.addLiveTrackPoint = addLiveTrackPoint;
 window.clearLiveTrackPolyline = clearLiveTrackPolyline;
+window.beginLiveGpsView = beginLiveGpsView;
+window.endLiveGpsView = endLiveGpsView;
+window.recenterOnLiveGps = recenterOnLiveGps;
+window.updateRecenterButton = updateRecenterButton;

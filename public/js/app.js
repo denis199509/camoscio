@@ -259,7 +259,7 @@ function setupNavigation() {
             const prettyNames = {
                 "dashboard": "Dashboard",
                 "hikes": "Escursioni",
-                "map-section": "Mappa & Crowdsourcing Waze",
+                "map-section": "Mappa & Sentieri",
                 "carpool": "Carpooling & Spese Viaggio",
                 "backpack": "Zaino Intelligente Checklist",
                 "safety": "Sicurezza & Mesh Simulator",

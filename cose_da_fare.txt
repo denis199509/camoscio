@@ -137,20 +137,30 @@ come numeri, troppo difficile da trovare per una persona normale). Vorrei:
  - se il punto non ha nessun riferimento vicino, tenere le coordinate come
    informazione, con la possibilita' di copiarle per incollarle su Google Maps.
 
-9) La mappa sul telefono e' inutilizzabile, tutto troppo piccolo (provato sia da
-telefono che da PC creando un'escursione di prova).
+9) [FATTO 2026-07-26] La mappa sul telefono e' inutilizzabile, tutto troppo piccolo
+(provato sia da telefono che da PC creando un'escursione di prova).
+   -> Misurato: il contenitore della mappa era largo ZERO pixel su schermo da 390px
+      (barra di navigazione 260px fissi + sidebar mappa 380px fissi). Aggiunte le prime
+      @media query del progetto: barra a sole icone, mappa impilata sopra le schede.
+      Ora la mappa e' larga 306px su telefono. Vedi leggimi.txt per i dettagli.
 
 10) Manca una pagina "Le mie escursioni": le escursioni che ho creato, quelle a cui
 partecipo e quelle gia' fatte non si trovano facilmente sul sito (oggi c'e' solo
 un elenco generale di tutte le escursioni di tutti).
 
-11) Quando avvio il tracciamento dal pulsante a forma di scarpone (in basso a
-destra), tempo/distanza/dislivello si aggiornano correttamente, ma SULLA MAPPA il
-mio segnaposto non si muove seguendo la posizione GPS reale - resta fermo dov'era,
-lo posso solo trascinare a mano. Deve seguire la posizione GPS vera durante il
-tracciamento.
+11) [FATTO 2026-07-26] Quando avvio il tracciamento dal pulsante a forma di scarpone
+(in basso a destra), tempo/distanza/dislivello si aggiornano correttamente, ma SULLA
+MAPPA il mio segnaposto non si muove seguendo la posizione GPS reale - resta fermo
+dov'era, lo posso solo trascinare a mano. Deve seguire la posizione GPS vera durante
+il tracciamento.
+   -> Riprodotto dal vivo: il marker seguiva GIA' il GPS (11 aggiornamenti su 11,
+      posizione e distanza corrette, nessun errore). Il problema era lo ZOOM: la mappa
+      restava a zoom 9 (tutta l'Italia centrale), dove 1 pixel vale ~227 metri, quindi
+      700 metri camminati spostavano il segnaposto di 3 pixel. Ora all'avvio la mappa
+      va a zoom 16 sulla posizione vera e la insegue. Vedi leggimi.txt.
 
-12) Nella pagina "Mappa & Waze": togliere il nome "Waze" (non deve piu' comparire).
+12) [FATTO 2026-07-26] Nella pagina "Mappa & Waze": togliere il nome "Waze" (non deve
+piu' comparire). -> Ora si chiama "Mappa & Sentieri".
 
 13) Nuova funzionalita' sulla pagina Mappa: poter progettare in anticipo il percorso
 di una futura escursione scegliendo piu' punti sulla mappa. Esempio: escursione al
@@ -160,6 +170,11 @@ i sentieri conosciuti. Se passo per una zona senza sentieri mappati, voglio pote
 scegliere di NON agganciarmi ai sentieri mentre creo il progetto: in quel caso i
 punti si collegano in linea d'aria (retta), senza seguire nessun sentiero.
 
-14) Semplificare il tracciamento live: una volta aperta la mappa, un tasto semplice
-"Comincia registrazione" che segue il GPS reale sulla mappa e disegna il percorso
-fatto con una linea blu chiaro (i punti dove sono passato). Collegato al punto 11.
+14) [FATTO 2026-07-26] Semplificare il tracciamento live: una volta aperta la mappa,
+un tasto semplice "Comincia registrazione" che segue il GPS reale sulla mappa e
+disegna il percorso fatto con una linea blu chiaro (i punti dove sono passato).
+Collegato al punto 11.
+   -> Tasto unico sulla mappa (diventa "Termina registrazione" mentre registra) e
+      percorso disegnato con linea blu chiaro continua (#7FB5C7), prima era arancione
+      tratteggiata. Il pannello del pulsante a scarpone resta per le funzioni in piu'
+      (scegliere l'escursione collegata, pausa, scaricare la mappa offline).

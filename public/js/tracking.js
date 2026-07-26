@@ -94,10 +94,15 @@ async function startTracking() {
 
         applySessionState(session);
         if (window.resetLiveTrackPolyline) window.resetLiveTrackPolyline();
+        // Punto 11: porta la mappa sulla posizione reale a zoom da camminata e falla
+        // seguire. Senza questo la mappa resta a zoom 9, dove un'ora di cammino si
+        // sposta di pochi pixel e il segnaposto sembra bloccato.
+        if (window.beginLiveGpsView) window.beginLiveGpsView();
         beginWatchingPosition();
         startUiTimer();
         startFlushTimer();
         renderTrackingUi();
+        updateMapRecordButton();
         window.showToast("Tracciamento GPS avviato: buona escursione! 🥾", "success");
     } catch (e) {
         console.error("Errore avvio tracciamento:", e);
@@ -170,6 +175,8 @@ async function endTracking() {
     }
 
     trackingState.status = 'ended';
+    if (window.endLiveGpsView) window.endLiveGpsView();
+    updateMapRecordButton();
     renderSummary(finalSession);
 }
 
@@ -495,6 +502,43 @@ function renderMiniBarIcon() {
     if (icon) icon.textContent = trackingState.status === 'paused' ? '⏸️' : '🔴';
 }
 
+// --- Punto 14: tasto unico "Comincia registrazione" sulla mappa ---
+// Il pannello del pulsante a scarpone resta (serve per scegliere l'escursione collegata,
+// scaricare la mappa offline, mettere in pausa). Questo invece e' la scorciatoia chiesta
+// esplicitamente: sei sulla mappa, premi un tasto, parte la registrazione.
+
+// Una registrazione e' "in corso" sia mentre si cammina sia durante una pausa: in
+// entrambi i casi la sessione e' aperta e il tasto sulla mappa deve dire "Termina".
+window.CamoscioTrackingIsRecording = function () {
+    return trackingState.status === 'active' || trackingState.status === 'paused';
+};
+
+function updateMapRecordButton() {
+    const btn = document.getElementById('btn-map-quick-record');
+    const label = document.getElementById('map-record-label');
+    if (!btn || !label) return;
+
+    const recording = window.CamoscioTrackingIsRecording();
+    label.textContent = recording ? 'Termina registrazione' : 'Comincia registrazione';
+    btn.classList.toggle('btn-danger', recording);
+    btn.classList.toggle('btn-primary', !recording);
+    btn.classList.toggle('is-recording', recording);
+
+    if (window.updateRecenterButton) window.updateRecenterButton();
+}
+
+async function onMapRecordButtonClick() {
+    if (window.CamoscioTrackingIsRecording()) {
+        await endTracking();
+    } else {
+        // Si riusa esattamente startTracking(), cosi' questo tasto e quello del pannello
+        // non possono divergere nel comportamento (consenso geolocalizzazione, escursione
+        // collegata gia' selezionata, gestione errori: tutto in un posto solo).
+        await startTracking();
+    }
+    updateMapRecordButton();
+}
+
 function updatePanelButtonsForStatus() {
     const btnPause = document.getElementById('btn-tracking-pause');
     const btnResume = document.getElementById('btn-tracking-resume');
@@ -624,8 +668,10 @@ function resetToIdleUi() {
     lastLocalPoint = null;
     nearbyTrailSegments = null;
     if (window.clearLiveTrackPolyline) window.clearLiveTrackPolyline();
+    if (window.endLiveGpsView) window.endLiveGpsView();
     hidePanel();
     renderTrackingUi();
+    updateMapRecordButton();
 }
 
 // --- Mappa offline ---
@@ -702,12 +748,20 @@ async function checkForResumableSession() {
         }
 
         if (session.status === 'active') {
+            // Anche riprendendo dopo un ricaricamento della pagina la mappa deve tornare
+            // a inseguire la posizione reale (punto 11), non restare sulla panoramica.
+            if (window.beginLiveGpsView) {
+                const last = (session.points || [])[(session.points || []).length - 1];
+                if (last) window.beginLiveGpsView(last[1], last[0]);
+                else window.beginLiveGpsView();
+            }
             beginWatchingPosition();
             startUiTimer();
             startFlushTimer();
         }
 
         renderTrackingUi();
+        updateMapRecordButton();
         window.showToast("Tracciamento GPS ripreso da dove eri rimasto.", "info");
     } catch (e) {
         console.error("Impossibile verificare un tracciamento GPS in corso:", e);
@@ -736,6 +790,15 @@ function initTrackingModule() {
     if (btnEnd) btnEnd.addEventListener('click', endTracking);
     if (btnDownload) btnDownload.addEventListener('click', handleDownloadOfflineMap);
     if (btnSummaryClose) btnSummaryClose.addEventListener('click', resetToIdleUi);
+
+    // Punto 14: tasto unico sulla mappa + tasto per tornare a farsi seguire (punto 11)
+    const btnMapRecord = document.getElementById('btn-map-quick-record');
+    const btnMapRecenter = document.getElementById('btn-map-recenter');
+    if (btnMapRecord) btnMapRecord.addEventListener('click', onMapRecordButtonClick);
+    if (btnMapRecenter) btnMapRecenter.addEventListener('click', () => {
+        if (window.recenterOnLiveGps) window.recenterOnLiveGps();
+    });
+    updateMapRecordButton();
 
     window.addEventListener('online', () => {
         if (trackingState.sessionId && trackingState.status === 'active') flushPendingPoints();
