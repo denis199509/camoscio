@@ -1,9 +1,12 @@
 ===================================================================
 CAMOSCIO — LEGGIMI (stato progetto, aggiornato automaticamente)
-Ultimo aggiornamento: 2026-07-26 (sera) — fatto il BLOCCO 2 (punti 17, 20 e
-la prima meta' del 21): il timer di sicurezza spostato nella Mappa, il tasto
-SOS verso il 112 e i contatti di emergenza veri al posto di una casella di
-testo. Vedi la sezione dedicata subito sotto.
+Ultimo aggiornamento: 2026-07-26 (sera) — fatto il BLOCCO 3 (punti 24, 23
+seconda meta' e 25): lo zaino distingue finalmente gli oggetti personali da
+quelli che si dividono, i condivisi compaiono solo in gruppo, e la portata
+della tenda viene controllata. Vedi la sezione dedicata subito sotto.
+Prima, nella stessa serata, il BLOCCO 2 (punti 17, 20 e la prima meta' del
+21): timer di sicurezza spostato nella Mappa, tasto SOS verso il 112 e
+contatti di emergenza veri al posto di una casella di testo.
 Prima di questo, nella stessa serata, il PUNTO 28 (geolocalizzazione dal
 telefono: il puntino funzionava, era la GUIDA allo sblocco a elencare due
 livelli di permesso su tre) — e l'utente ha poi CONFERMATO che dal telefono
@@ -36,6 +39,110 @@ una - nessuna implementata, sono materiale per una sessione futura. Vedi
 la sezione dedicata piu' sotto. La QUARTA lista (punti 26-27) e' invece
 gia' fatta, vedi qui sotto.
 ===================================================================
+
+NOTA IMPORTANTE PER CHI RIPARTE DA QUI - BLOCCO 3 FATTO (2026-07-26, sera):
+punti 24, 23 (seconda meta') e 25, cioe' lo zaino intelligente per intero.
+Fatti nell'ordine obbligato: il 24 per primo perche' e' un cambio al modello
+dati, gli altri due gli si appoggiano.
+
+--- PUNTO 24: personali contro condivisibili ---
+
+- LA DISTINZIONE NON ESISTEVA PROPRIO. Ogni articolo del template
+  dell'escursione veniva marcato isShared e finiva nella ripartizione dei
+  pesi. Sulle due escursioni gia' sul database succedeva davvero: il sistema
+  "assegnava a Marco" il Guscio impermeabile e la Giacca antivento, cioe'
+  proponeva che una persona sola portasse la giacca di tutti. Misurato dalla
+  prova: il peso ripartito era 2,20 kg, ora e' 1,40 - la differenza sono
+  proprio guscio e ramponcini, che non si dividono.
+- DUE CAMPI NUOVI sul modello (models/Hike.js): shareable e covers, con
+  default: undefined e NON false/0. Con un default vero Mongoose li
+  scriverebbe su OGNI oggetto di OGNI escursione anche quando non aggiungono
+  niente, e c'e' il vincolo hard sullo spazio. Verificato sul database: su un
+  articolo personale il campo non compare affatto.
+- NESSUNA MIGRAZIONE. Gli oggetti gia' salvati non hanno i campi nuovi e
+  continuano a funzionare: li classifica un catalogo per parole chiave in
+  backpack.js. Il campo salvato, quando c'e', vince sempre sul catalogo - il
+  catalogo e' un ripiego ragionevole, non un'autorita'.
+- NEL DUBBIO UN OGGETTO E' PERSONALE. E' il verso giusto in cui sbagliare: al
+  massimo si porta in due una cosa che bastava a uno, mentre il contrario
+  vuol dire arrivare in cima convinti che il fornello ce l'abbia qualcun
+  altro.
+- SEMPRE PERSONALI PER SCELTA ESPLICITA, e controllati PRIMA del catalogo:
+  ARTVA, pala, sonda, casco, imbrago, ramponi, piccozza. In valanga l'ARTVA
+  serve a OGNI singola persona e uno solo per comitiva e' inutile - chi resta
+  sepolto non lo sta portando. Non e' una raffinatezza: e' il genere di
+  "ottimizzazione" che ammazza qualcuno.
+
+--- PUNTO 23 (seconda meta'): condivisi solo in gruppo ---
+
+- Gli oggetti condivisi compaiono SOLO se l'escursione ha almeno due persone.
+  Da soli restano in lista - se vai in tenda da solo la tenda ti serve
+  comunque - ma senza "chi lo porta" e senza ripartizione, che a un gruppo di
+  uno non dicono niente. Anche il modulo per aggiungere oggetti di gruppo si
+  nasconde.
+- gruppoDi() fa l'unione di partecipanti e creatore senza doppioni. Oggi il
+  creatore risulta gia' fra i partecipanti (verificato sul database), ma
+  dipendere da quella coincidenza vorrebbe dire rompersi in silenzio il
+  giorno che cambia.
+
+--- PUNTO 25: la portata ---
+
+- Generalizzato oltre le tende, come chiesto: vale per qualunque oggetto
+  condiviso con una portata. Gli oggetti dello STESSO GENERE sommano i posti,
+  quindi una tenda da 3 piu' una da 1 bastano per quattro - verificato dal
+  vivo, l'avviso compare e poi sparisce.
+- L'avviso dice quanti posti MANCANO, non solo che c'e' un problema: un
+  avviso che non si sa come risolvere e' un avviso che si impara a ignorare.
+- DIFETTO TROVATO DALLA PROVA, e non era estetico: il catalogo riconosceva le
+  tende con /\btend[ae]\b/, che NON prende "tendina" - parola normalissima.
+  Due tende finivano in generi diversi e non sommavano i posti, cioe' saltava
+  proprio il conto per cui la portata esiste. Ora le forme sono elencate per
+  esteso (tenda/tende/tendina/tendine/tendone/tendoni).
+- SERVITO ANCHE aggiungere il modo di dichiarare cosa porti tu: prima di oggi
+  NESSUNA schermata permetteva di aggiungere un articolo alla lista di
+  un'escursione. I due template esistenti arrivavano dallo script di
+  popolamento, quindi "porto io una tenda da 3 posti" non si poteva proprio
+  dire, e il punto 25 non sarebbe stato provabile da nessuno.
+
+--- REGOLE LATO SERVER (routes/hikes.js) ---
+
+- canNonCreatorEditBackpack e' stata allargata con criterio. Un partecipante
+  ora puo' AGGIUNGERE IN FONDO articoli a carico SUO (serve al punto 25), e
+  puo' ancora riassegnare chi porta cosa. Resta vietato tutto il resto.
+- shareable e covers sono stati messi fra i campi IMMUTABILI per i non
+  creatori, ed e' la parte che conta di piu': senza, chiunque partecipi
+  potrebbe dichiarare personale la tenda del gruppo, o gonfiarne la portata
+  da 2 a 10 posti facendo sparire l'avviso "non basta per tutti" - cioe'
+  disattivare proprio il controllo che quel campo esiste per fare.
+- Gli articoli aggiunti devono essere assegnati a chi li aggiunge: e' una
+  dichiarazione di cosa porti tu, non un modo per caricare lo zaino di un
+  altro. Provato: 403.
+
+--- COME E' STATO VERIFICATO ---
+
+- Due prove separate. La prima nell'interfaccia (Puppeteer, 390 e 1440), 32
+  controlli: personali contro condivisi, ripartizione che conta solo i
+  condivisi, caso "da solo", tenda da 3 in un gruppo di 4, due tende che
+  sommano, e l'aggiunta di un oggetto con la PUT intercettata.
+- La seconda sulle REGOLE DEL SERVER, che non si possono intercettare perche'
+  girano sul server: si crea UNA escursione temporanea, ci si prova sopra
+  tutti e otto i casi (cosa puo' e cosa non puo' fare un partecipante) e la
+  si CANCELLA in un blocco finally, cosi' anche se qualcosa va storto a meta'
+  non resta niente. Verificato dopo: database identico a prima, 2 escursioni,
+  zero escursioni di prova, e i template originali ancora senza i campi nuovi.
+- Rilanciate anche le prove del blocco 2 e del punto 28: nessuna regressione.
+- TRAPPOLE PAGATE IN QUESTA SESSIONE, da non ripagare:
+  * l'account demo Sofia FotoPasso HA COMPLETATO il Corno Grande, quindi per
+    lei quell'escursione non e' piu' di riferimento (giustamente: non si
+    prepara lo zaino per una gita gia' fatta). Per provare lo zaino di gruppo
+    serve Giulia Escursionista, che partecipa senza averla completata;
+  * modificare i dati IN MEMORIA e poi leggere "a tempo" da' risultati che
+    cambiano da un giro all'altro: triggerSectionRender chiama refreshState()
+    e li riscrive. Va aspettato l'aggiornamento in volo e poi neutralizzata
+    la funzione, altrimenti la prova fallisce a caso;
+  * la difficolta' di un'escursione NON e' 'E'/'EE' nel modello ma
+    'Principiante'/'Intermedio'/'Esperto': con il valore sbagliato la
+    creazione risponde 400 con un messaggio generico e si perde tempo.
 
 NOTA IMPORTANTE PER CHI RIPARTE DA QUI - BLOCCO 2 FATTO (2026-07-26, sera):
 punti 17, 20 e la meta' non bloccata del 21. E' la sicurezza in montagna, la
@@ -2195,14 +2302,23 @@ CHECKLIST DI AVANZAMENTO (aggiornare via via che si procede)
         cose_da_fare.txt). Serve un canale vero: STESSA decisione del
         punto 7, da prendere una volta sola per entrambi.
     Zaino intelligente:
-    [~] 23 — PRIMA META' FATTA 2026-07-26: lo zaino non prende piu' la
-        prima escursione del database di chiunque sia (guarda solo fra le
-        proprie, e senza nessuna mostra lo zaino personale); stagione dalla
-        data vera e pioggia dalla previsione vera. RESTA la seconda meta':
-        mostrare gli oggetti condivisi SOLO in un'escursione di gruppo,
-        che dipende dal punto 24 (blocco 3).
-    [ ] 24 — distinguere oggetti personali da condivisibili
-    [ ] 25 — portata della tenda e verifica che basti per il gruppo
+    [x] 23 — CHIUSO 2026-07-26. Prima meta': lo zaino non prende piu' la
+        prima escursione del database di chiunque sia; stagione dalla data
+        vera e pioggia dalla previsione vera. Seconda meta' (blocco 3): gli
+        oggetti condivisi compaiono SOLO in un'escursione con almeno due
+        persone; da soli restano in lista ma senza "chi lo porta" e senza
+        ripartizione dei pesi.
+    [x] 24 — FATTO 2026-07-26: oggetti personali contro condivisibili. La
+        distinzione non esisteva: la ripartizione dei pesi divideva anche le
+        giacche. Due campi nuovi (shareable, covers) scritti solo quando
+        servono, piu' un catalogo per parole chiave che classifica gli
+        oggetti gia' salvati senza nessuna migrazione. ARTVA, pala e sonda
+        sono sempre personali per scelta esplicita.
+    [x] 25 — FATTO 2026-07-26: portata degli oggetti condivisi e avviso
+        quando non basta per il gruppo ("tenda da 3 posti, siete in 4, ne
+        manca 1"). Generalizzato a qualunque oggetto con una portata; oggetti
+        dello stesso genere sommano i posti. Aggiunto anche il modo di
+        dichiarare cosa porti tu, che non esisteva.
 [x] QUARTA LISTA (cose_da_fare.txt punti 26-27, 2026-07-26) — FATTA.
     Nata da una prova dell'utente dal telefono vero sul sito online, non
     da una lista pensata a tavolino: erano difetti di cose gia' in uso.
@@ -2264,20 +2380,18 @@ sessioni di tracciamento: le 4 del 24-25 luglio piu' quella del 26 luglio
 pomeriggio, che e' la prova vera dell'utente dal telefono - 14 secondi,
 zero punti GPS - ed e' il riscontro del punto 28. NON vanno cancellate.
 
-IL BLOCCO 2 E' FATTO (punti 17, 20 e la meta' non bloccata del 21) - vedi la
-sezione dedicata in cima al file. E l'utente ha CONFERMATO che dal telefono la
-posizione ora si vede: i punti 26 e 28 sono chiusi davvero.
+BLOCCHI 1, 2 e 3 FATTI - vedi le sezioni dedicate in cima al file. L'utente ha
+anche CONFERMATO che dal telefono la posizione ora si vede: i punti 26 e 28
+sono chiusi davvero.
 
-IL PROSSIMO PASSO E' IL BLOCCO 3, lo zaino intelligente, tutto insieme e in
-quest'ordine obbligato:
- 1. punto 24 - distinguere oggetti PERSONALI da CONDIVISIBILI. Per primo
-    perche' e' un cambio al modello dati: farlo dopo vorrebbe dire rifare il
-    lavoro degli altri due.
- 2. punto 23, seconda meta' - oggetti condivisi SOLO in un'escursione di
-    gruppo. Ha bisogno della distinzione del punto 24.
- 3. punto 25 - portata della tenda e verifica che basti per il gruppo. Si
-    appoggia direttamente al concetto di oggetto "che copre N persone".
-Poi il BLOCCO 4 (punto 18, pagina Badge), che e' puramente additivo.
+IL PROSSIMO PASSO E' IL BLOCCO 4: punto 18, tasto e pagina "Badge" con
+qualche badge di prova (qualche cima e qualche rifugio; la lista completa la
+definira' l'utente in futuro). E' l'unico punto rimasto puramente additivo -
+non corregge niente di rotto e non blocca nient'altro - ed e' anche l'ultimo
+non bloccato: dopo restano solo il BLOCCO 5 e i punti in sospeso.
+Materiale gia' esistente da riusare: il "Passaporto delle Vette" con i timbri
+e il contatore sono gia' in Dashboard (Fase C/D), quindi manca la PAGINA
+dedicata, non i dati.
 
 DECISIONE ANCORA IN ATTESA, che da sola sblocca tre punti (7, 21-resto e
 22): quale canale usare per mandare un messaggio, email o SMS. Finche' non

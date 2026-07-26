@@ -1089,9 +1089,36 @@
                             <!-- Reputazione Pesi Condivisi -->
                             <div class="glass-card weight-distribution-card">
                                 <h4><i data-lucide="scale"></i> Ripartizione dei Pesi del Gruppo</h4>
-                                <p class="small text-muted">Dividi i pesi degli oggetti comuni tra i partecipanti dell'escursione selezionata per non sovraccaricare nessuno.</p>
+                                <p class="small text-muted">Solo gli oggetti che si dividono: tenda, fornello, kit di primo soccorso. Le cose personali (giacca, acqua, cibo) le porta ognuno e non compaiono qui.</p>
                                 <div id="backpack-weight-distribution" class="weight-dist-list">
                                     <!-- Renderizzato da JS -->
+                                </div>
+
+                                <!-- Punto 25 di cose_da_fare.txt: dichiarare un oggetto che
+                                     porti TU per il gruppo, con quante persone copre. Prima del
+                                     blocco 3 nessuna schermata permetteva di aggiungere un
+                                     articolo alla lista dell'escursione - i due template
+                                     esistenti arrivavano dallo script di popolamento - quindi
+                                     "porto io una tenda da 3 posti" non si poteva proprio dire.
+                                     Riempito e mostrato/nascosto da renderWeightDistribution. -->
+                                <div id="backpack-add-shared" class="backpack-add-shared hidden">
+                                    <h5><i data-lucide="plus-circle"></i> Porto io una cosa per tutti</h5>
+                                    <div class="form-group">
+                                        <label for="shared-item-name">Che cosa:</label>
+                                        <input type="text" id="shared-item-name" maxlength="60" placeholder="Es. Tenda 3 posti">
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="shared-item-weight">Peso (grammi):</label>
+                                            <input type="number" id="shared-item-weight" min="1" max="30000" placeholder="Es. 2400">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="shared-item-covers">Per quante persone:</label>
+                                            <input type="number" id="shared-item-covers" min="1" max="20" placeholder="Vuoto = tutti">
+                                        </div>
+                                    </div>
+                                    <p class="small text-muted">Il numero di persone serve alle cose che bastano per pochi, come la tenda. Un fornello basta al gruppo: lascia vuoto.</p>
+                                    <button type="button" class="btn btn-secondary btn-sm btn-block" id="btn-add-shared-item">Aggiungi alla lista del gruppo</button>
                                 </div>
                             </div>
                         </div>
@@ -1107,6 +1134,11 @@
                                     <i data-lucide="alert-triangle"></i>
                                     <span>Quota superiore a 2500 metri ed è prevista pioggia: <strong>Guscio Impermeabile</strong> e <strong>Ramponcini</strong> sono stati inseriti come obbligatori!</span>
                                 </div>
+
+                                <!-- Punto 25: avviso quando un oggetto condiviso non basta per
+                                     tutti (la tenda da 3 posti mentre si e' in 4). Riempito da
+                                     mostraAvvisiCopertura in backpack.js. -->
+                                <div class="backpack-rules-notice danger hidden" id="backpack-coverage-alert"></div>
 
                                 <!-- Punto 23: prima la pioggia era data SEMPRE per prevista. Ora la
                                      previsione e' vera, e quando non si puo' sapere (escursione troppo

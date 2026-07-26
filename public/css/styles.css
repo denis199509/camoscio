@@ -1656,10 +1656,71 @@ h1, h2, h3, h4, h5, h6 {
     margin-bottom: 16px;
 }
 
-.backpack-rules-notice i {
+.backpack-rules-notice i,
+/* Anche "svg", perche' lucide.createIcons() SOSTITUISCE il tag <i> con un <svg>: una
+   regola scritta sul solo "i" vale per la frazione di secondo prima che le icone
+   compaiano. Difetto gia' pagato una volta sulla lente della barra di ricerca. */
+.backpack-rules-notice svg {
     width: 24px;
     height: 24px;
     color: var(--accent-orange);
+    flex-shrink: 0;
+}
+
+/* Punto 25 - l'avviso "la tenda non basta per tutti" e' rosso e non arancione: gli altri
+   avvisi dello zaino dicono cosa e' stato aggiunto in automatico (informazione), questo
+   dice che manca qualcosa e che il gruppo deve rimediare prima di partire (azione). */
+.backpack-rules-notice.danger {
+    background: rgba(168, 59, 46, 0.12);
+    border-color: rgba(168, 59, 46, 0.4);
+}
+
+.backpack-rules-notice.danger i,
+.backpack-rules-notice.danger svg {
+    color: var(--accent-red);
+}
+
+.backpack-rules-notice.danger ul {
+    margin: 6px 0 0 18px;
+}
+
+.backpack-rules-notice.danger li + li {
+    margin-top: 6px;
+}
+
+/* Portata di un oggetto condiviso, accanto al suo nome nella checklist: "3 posti".
+   Serve a poter contare le teste da soli, senza fidarsi ciecamente dell'avviso. */
+.item-covers {
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 20px;
+    background: rgba(76, 126, 144, 0.18);
+    border: 1px solid rgba(76, 126, 144, 0.4);
+    color: #9FC4D0;
+    white-space: nowrap;
+}
+
+/* Modulo "porto io una cosa per tutti" (punto 25) */
+.backpack-add-shared {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-color);
+}
+
+.backpack-add-shared h5 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    margin-bottom: 12px;
+}
+
+.backpack-add-shared h5 i,
+.backpack-add-shared h5 svg {
+    width: 16px;
+    height: 16px;
+    color: var(--accent-green);
     flex-shrink: 0;
 }
 
@@ -3123,6 +3184,11 @@ h1, h2, h3, h4, h5, h6 {
     .backpack-layout {
         grid-template-columns: 1fr;
         gap: 16px;
+        /* Il pulsante flottante a scarpone e' FISSO in basso a destra e copre quello che
+           gli finisce sotto a fine scorrimento. Serviva gia' prima; dal blocco 3 ancora di
+           piu', perche' in fondo alla scheda dei pesi c'e' il modulo "porto io una cosa per
+           tutti" - e un pulsante di salvataggio irraggiungibile e' come non averlo. */
+        padding-bottom: 96px;
     }
 
     .backpack-config,

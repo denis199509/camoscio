@@ -381,21 +381,47 @@ un'escursione con piu' membri.
       Pioggia: previsione vera per il giorno dell'escursione (Open-Meteo).
       Quando non si puo' sapere (oltre due settimane) NON si inventa: si
       scrive che le previsioni non ci sono ancora.
-      RESTA DA FARE la seconda meta' (oggetti condivisi solo in gruppo),
-      che dipende dal punto 24 - vedi l'ordine di lavoro in leggimi.txt.
+      SECONDA META' FATTA il 2026-07-26 insieme al punto 24: gli oggetti
+      condivisi compaiono SOLO in un'escursione con almeno due persone.
+      Da soli restano in lista - se vai in tenda da solo la tenda ti serve
+      comunque - ma senza "chi lo porta" e senza ripartizione dei pesi, che
+      a un gruppo di uno non dicono niente. Il punto 23 e' chiuso.
 
-24) Distinguere oggetti PERSONALI da oggetti CONDIVISIBILI:
+24) [FATTO 2026-07-26] Distinguere oggetti PERSONALI da oggetti CONDIVISIBILI:
    - personali, obbligatori per ogni membro: giacca, cibo, acqua,
      maglietta, ecc.
    - condivisibili tra piu' membri: fornello, bombola, pentole, tenda,
      kit di primo soccorso, ecc.
+   -> Fatto. La distinzione non esisteva proprio: OGNI articolo della lista
+      dell'escursione veniva trattato come condiviso e finiva nella
+      ripartizione dei pesi. Sulle due escursioni gia' sul database
+      succedeva davvero - il sistema "assegnava a Marco" il guscio
+      impermeabile e la giacca antivento, cioe' proponeva che una persona
+      sola portasse la giacca di tutti.
+      Aggiunti al modello due campi (shareable, covers) scritti SOLO quando
+      servono, per il vincolo hard sullo spazio. Gli oggetti gia' salvati non
+      li hanno e non e' servita nessuna migrazione: li riconosce un catalogo
+      per parole chiave. Nel dubbio un oggetto e' PERSONALE, che e' il verso
+      giusto in cui sbagliare. ARTVA, pala, sonda, casco, imbrago, ramponi e
+      piccozza sono sempre personali per scelta esplicita: uno solo per
+      comitiva non serve a niente, e per l'ARTVA e' proprio pericoloso.
 
-25) La tenda deve avere una PORTATA (quante persone ci stanno) e il
-sistema deve controllare che basti per il gruppo. Esempio dell'utente:
-porto io una tenda da 3 posti ma siamo in 4 -> la tenda non basta, serve
-una piu' grande oppure una piccola in piu'. Lo stesso ragionamento vale in
-generale per ogni oggetto condiviso che "copre" un numero limitato di
-persone.
+25) [FATTO 2026-07-26] La tenda deve avere una PORTATA (quante persone ci
+stanno) e il sistema deve controllare che basti per il gruppo. Esempio
+dell'utente: porto io una tenda da 3 posti ma siamo in 4 -> la tenda non
+basta, serve una piu' grande oppure una piccola in piu'. Lo stesso
+ragionamento vale in generale per ogni oggetto condiviso che "copre" un
+numero limitato di persone.
+   -> Fatto, e generalizzato come chiesto: vale per qualunque oggetto
+      condiviso con una portata, non solo per le tende. Gli oggetti dello
+      stesso genere sommano i posti, quindi una tenda da 3 piu' una da 1
+      bastano per quattro. L'avviso dice quanti posti MANCANO, non solo che
+      c'e' un problema.
+      Servito anche aggiungere il modo di dichiarare cosa porti tu: prima di
+      oggi NESSUNA schermata permetteva di aggiungere un articolo alla lista
+      di un'escursione (i due template esistenti arrivavano dallo script di
+      popolamento), quindi "porto io una tenda da 3 posti" non si poteva
+      proprio dire.
 
 =====================================================================
 QUARTA LISTA (2026-07-26) - segnalazioni dell'utente dopo una prova dal

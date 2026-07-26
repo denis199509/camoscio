@@ -84,20 +84,42 @@ function canNonCreatorEditCarpool(hike, userId, newCarpool) {
     return true;
 }
 
-// Un utente normale puo' solo riassegnare "a chi tocca portarlo" (assignedTo) sugli oggetti gia'
-// esistenti della lista zaino condivisa, mai cambiare nome/categoria/peso/obbligatorieta' o la
-// lista stessa (aggiungere/togliere articoli).
-function canNonCreatorEditBackpack(hike, newTemplate) {
-    const oldTemplate = hike.backpackTemplate || [];
-    if (!Array.isArray(newTemplate) || newTemplate.length !== oldTemplate.length) return false;
+// Campi di un oggetto della lista zaino che un partecipante NON puo' toccare su articoli
+// gia' esistenti. "shareable" e "covers" sono qui dal punto 24/25 e non sono un dettaglio:
+// senza, chiunque potrebbe dichiarare personale la tenda del gruppo, o gonfiarne la portata
+// da 2 a 10 posti facendo sparire l'avviso "non basta per tutti" - cioe' proprio il
+// controllo che quel campo esiste per fare.
+const CAMPI_ZAINO_IMMUTABILI = ['name', 'category', 'mandatory', 'weight', 'shareable', 'covers'];
 
-    return oldTemplate.every((oldItem, i) => {
+// Un partecipante che non ha creato l'escursione puo' fare due cose sulla lista zaino:
+//  1) riassegnare "a chi tocca portarlo" (assignedTo) sugli articoli gia' esistenti;
+//  2) AGGIUNGERE IN FONDO articoli che porta LUI - punto 25, "porto io una tenda da 3
+//     posti". Senza questo la richiesta non starebbe in piedi: la portata della tenda non
+//     si potrebbe mai dichiarare, perche' prima dell'aggiunta esisteva solo il creatore a
+//     poter modificare la lista, e nessuna schermata per farlo.
+// Quello che resta vietato: cambiare o cancellare gli articoli degli altri, e aggiungere
+// roba a carico di qualcun altro.
+function canNonCreatorEditBackpack(hike, newTemplate, userIdStr) {
+    const oldTemplate = hike.backpackTemplate || [];
+    if (!Array.isArray(newTemplate)) return false;
+
+    // Non si tolgono articoli: la lista puo' solo restare uguale o allungarsi in fondo.
+    if (newTemplate.length < oldTemplate.length) return false;
+
+    const vecchiIntatti = oldTemplate.every((oldItem, i) => {
         const newItem = newTemplate[i];
         if (!newItem) return false;
-        return ['name', 'category', 'mandatory', 'weight'].every(
+        return CAMPI_ZAINO_IMMUTABILI.every(
             key => JSON.stringify(newItem[key]) === JSON.stringify(oldItem[key])
         );
     });
+    if (!vecchiIntatti) return false;
+
+    // Gli articoli aggiunti devono essere a carico di chi li aggiunge: e' una dichiarazione
+    // di cosa porti tu, non un modo per caricare lo zaino di un altro.
+    return newTemplate.slice(oldTemplate.length).every(
+        nuovo => nuovo && String(nuovo.assignedTo || '') === userIdStr
+    );
 }
 
 // Ottieni escursioni
@@ -203,7 +225,7 @@ router.put('/:id', requireAuth, async (req, res) => {
         }
 
         if (body.backpackTemplate !== undefined) {
-            if (!isCreator && !canNonCreatorEditBackpack(hike, body.backpackTemplate)) {
+            if (!isCreator && !canNonCreatorEditBackpack(hike, body.backpackTemplate, String(userId))) {
                 return res.status(403).json({ error: 'Non puoi modificare così la lista zaino' });
             }
             update.backpackTemplate = body.backpackTemplate;

@@ -21,7 +21,27 @@ const backpackItemSchema = new mongoose.Schema({
     category: String,
     mandatory: Boolean,
     assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
-    weight: Number
+    weight: Number,
+
+    // --- Punto 24 di cose_da_fare.txt: personale o condivisibile ---
+    // Un oggetto PERSONALE lo deve avere ognuno (giacca, acqua, cibo): dividerlo fra i
+    // membri non ha senso, e infatti la ripartizione dei pesi lo faceva - arrivando a
+    // "assegnare" a una persona sola la giacca di tutti.
+    // Un oggetto CONDIVISIBILE lo porta uno per tutti (fornello, tenda, kit di primo
+    // soccorso), e li' la ripartizione serve davvero.
+    //
+    // default: undefined e NON false, di proposito. Con false Mongoose scriverebbe il
+    // campo su OGNI oggetto di OGNI escursione anche quando non aggiunge niente, e c'e'
+    // il vincolo hard sullo spazio in cima a cose_da_fare.txt. Quando manca, la
+    // classificazione la fa il catalogo per parole chiave in public/js/backpack.js:
+    // cosi' gli oggetti gia' salvati continuano a funzionare senza nessuna migrazione.
+    shareable: { type: Boolean, default: undefined },
+
+    // --- Punto 25: quante persone copre ---
+    // Serve agli oggetti condivisi che bastano per un numero limitato di persone: una
+    // tenda da 3 posti non copre un gruppo di 4. Vale in generale, non solo per le tende.
+    // Assente = copre tutti (un fornello basta al gruppo, non ha una "portata").
+    covers: { type: Number, default: undefined, min: 1 }
 }, { _id: false });
 
 const hikeSchema = new mongoose.Schema({
