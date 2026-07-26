@@ -16,28 +16,37 @@ Prima ancora, nella stessa giornata: il BLOCCO 1 (punti 19, 23 prima meta',
 
 >>> SE STAI RIPRENDENDO IL LAVORO, VAI SUBITO IN FONDO A QUESTO FILE: la
     sezione "DA DOVE SI RIPARTE" dice in mezza pagina a che punto siamo,
-    qual e' il prossimo passo, cosa aspetta una decisione dell'utente e
-    quali trappole sono gia' state pagate. Poi torna a leggere il resto. Prima ancora, verificato che il sito online
-e' rimasto STABILE dopo il push della Fase H: home/demo/confini/js tutti
-a 200, nessun 502 (la prima chiamata ha impiegato 25s perche' il piano
-gratuito di Render sospende il servizio quando non lo usa nessuno - e'
-normale, non instabilita').
-DELLA SECONDA LISTA RESTANO SOLO I PUNTI 7 E 13, entrambi messi IN
-SOSPESO SU RICHIESTA ESPLICITA DELL'UTENTE (2026-07-26): il 7 (recupero
-password) perche' deve decidere se agganciare una vera email o inventare
-un'alternativa; il 13 (progettazione percorso multi-punto) perche' e' una
-richiesta grossa, da affrontare in una sessione nuova e dedicata.
+    qual e' il prossimo passo, che cosa resta in tutto, cosa aspetta una
+    decisione dell'utente e quali trappole sono gia' state pagate. Poi
+    torna a leggere il resto.
+
+A CHE PUNTO SIAMO, in breve: dei 28 punti di cose_da_fare.txt ne restano
+quattro. Uno solo e' libero e si puo' iniziare subito - il punto 18, la
+pagina Badge (BLOCCO 4). Gli altri tre sono fermi per un motivo:
+ - punto 15 (.gpx) va valutato prima per lo spazio su MongoDB;
+ - punti 7, 22 e la seconda meta' del 21 aspettano UNA decisione
+   dell'utente: quale canale usare per mandare un messaggio, email o SMS;
+ - punto 13 (percorso multi-punto) e' in sospeso per sua scelta.
+Tutto il resto e' fatto, provato e online.
+
+I PUNTI 7 E 13 SONO IN SOSPESO SU RICHIESTA ESPLICITA DELL'UTENTE
+(2026-07-26): il 7 (recupero password) perche' deve decidere se agganciare
+una vera email o inventare un'alternativa; il 13 (progettazione percorso
+multi-punto) perche' e' una richiesta grossa, da affrontare in una
+sessione nuova e dedicata.
 RICHIESTA ESPLICITA DELL'UTENTE: RICORDARGLI QUESTI DUE PUNTI OGNI VOLTA
 CHE SI FA UN RIASSUNTO - sia quando e' lui a chiederlo, sia alla fine di
 ogni lavoro quando il riassunto lo si scrive di propria iniziativa. Non
 vanno riproposti come "prossimo passo da fare adesso": vanno solo
 ricordati come in sospeso, finche' non e' lui a riaprirli.
 
-A fine sessione l'utente ha dettato una TERZA LISTA di richieste (punti
-15-25 di cose_da_fare.txt), gia' verificate nel codice e annotate una per
-una - nessuna implementata, sono materiale per una sessione futura. Vedi
-la sezione dedicata piu' sotto. La QUARTA lista (punti 26-27) e' invece
-gia' fatta, vedi qui sotto.
+LE QUATTRO LISTE DETTATE DALL'UTENTE, stato aggiornato:
+ - seconda lista (punti 7-14): fatta, tranne il 7 e il 13 (in sospeso);
+ - terza lista (punti 15-25): fatta, tranne il 15 e il 18. Il 21 e' fatto
+   a meta' (la meta' non bloccata). Quando questa nota diceva "nessuna
+   implementata" era vero il 25 luglio, non lo e' piu';
+ - quarta lista (punti 26-27): fatta;
+ - quinta lista (punto 28): fatta, e confermata dall'utente dal telefono.
 ===================================================================
 
 NOTA IMPORTANTE PER CHI RIPARTE DA QUI - BLOCCO 3 FATTO (2026-07-26, sera):
@@ -765,6 +774,10 @@ Criteri usati, in ordine di importanza:
     sue voci sono gia' fatte.
 
 --- BLOCCO 2: sicurezza in montagna, la parte NON bloccata ---
+    [FATTO IL 2026-07-26 - tutti e tre. Vedi la sezione dedicata in cima al
+     file. 17 e 20 sono stati fatti insieme come previsto qui sotto, ed e'
+     servito: la posizione del tasto SOS si e' decisa guardando tutti e tre
+     i comandi nella stessa schermata.]
  4. Punto 17 - spostare il Dead Man's Switch nella sezione Mappe.
  5. Punto 20 - tasto SOS verso il 112 (link "tel:112").
     17 e 20 vanno fatti INSIEME, non in momenti diversi: la richiesta
@@ -779,6 +792,11 @@ Criteri usati, in ordine di importanza:
     contatto vale solo su quel browser).
 
 --- BLOCCO 3: zaino intelligente, tutto insieme ---
+    [FATTO IL 2026-07-26 - tutti e tre, nell'ordine indicato qui sotto. La
+     scelta di mettere il 24 per primo si e' rivelata giusta: e' un cambio
+     al modello dati su cui gli altri due si appoggiano direttamente.
+     Vedi la sezione dedicata in cima al file.
+     SI RIPARTE DAL BLOCCO 4.]
  7. Punto 24 - distinguere oggetti PERSONALI da CONDIVISIBILI. Va per
     primo dei tre perche' e' un cambio al modello dati: farlo dopo
     significherebbe rifare il lavoro degli altri due.
@@ -2263,12 +2281,11 @@ CHECKLIST DI AVANZAMENTO (aggiornare via via che si procede)
         algoritmo di ricerca cammino (Dijkstra/A*) su un grafo costruito
         dai segmenti dei sentieri, oggi inesistente nel progetto. La
         modalita' "senza aggancio" (linea retta) e' invece quasi gratis.
-[ ] TERZA LISTA (cose_da_fare.txt punti 15-25, dettata 2026-07-26) —
-    NESSUNA RIGA DI CODICE SCRITTA, solo ricognizione gia' fatta (vedi la
-    nota dedicata in cima al file per i dettagli di ogni verifica).
-    E' DA QUI CHE SI RIPARTE nella prossima sessione, seguendo la sezione
-    "ORDINE DI LAVORO CONSIGLIATO PER LA PROSSIMA SESSIONE" in cima al
-    file: si parte dal punto 19, poi 23 (prima meta') e 16.
+[~] TERZA LISTA (cose_da_fare.txt punti 15-25, dettata 2026-07-26) —
+    QUASI TUTTA FATTA il 2026-07-26 nei blocchi 1, 2 e 3. Restano solo il
+    punto 15 (.gpx, da valutare per lo spazio), il punto 18 (pagina Badge,
+    che e' il PROSSIMO PASSO) e la seconda meta' del 21, bloccata dalla
+    decisione sul canale di invio.
     Dashboard:
     [ ] 15 — caricare file .gpx come escursioni gia' fatte (max 5/mese
         secondo l'ipotesi dell'utente). Attenzione al vincolo di spazio:
@@ -2367,11 +2384,26 @@ COME RIPRENDERE IL LAVORO IN UNA NUOVA SESSIONE
 DA DOVE SI RIPARTE — situazione al 2026-07-26, fine giornata
 ===================================================================
 
-STATO: tutto salvato e ONLINE. GitHub allineato. L'ultimo lavoro e' il
-PUNTO 28 (geolocalizzazione dal telefono: guida ai tre livelli di permesso,
-pagina di diagnosi, ripiego sulla posizione approssimata) - vedi la sezione
-dedicata in cima al file. Niente lavoro a meta' lasciato in sospeso nel
-codice.
+STATO: tutto salvato e ONLINE, sessione chiusa in modo ordinato (non per
+limite di tempo o di utilizzo). Ultimo commit 23bf0f0, GitHub allineato,
+deploy su Render verificato dal vivo file per file. NIENTE lavoro a meta'
+lasciato nel codice: ogni punto toccato e' finito e provato.
+
+FATTO IN QUESTA SESSIONE, in ordine:
+ 1. PUNTO 28 - la geolocalizzazione dal telefono. Il puntino blu funzionava:
+    era la GUIDA allo sblocco a elencare due livelli di permesso invece di
+    tre, e mancava proprio quello che manca piu' spesso (l'interruttore
+    generale di Android). Aggiunta la pagina /diagnostica-gps.html e il
+    ripiego sulla posizione approssimata. L'UTENTE HA POI CONFERMATO che dal
+    telefono la posizione ora si vede: i punti 26 e 28 sono chiusi davvero.
+ 2. BLOCCO 2 - punti 17, 20 e prima meta' del 21: timer di sicurezza
+    spostato nella Mappa, tasto SOS verso il 112 con le coordinate da
+    leggere all'operatore, contatti di emergenza veri al posto di una
+    casella di testo.
+ 3. BLOCCO 3 - punti 24, 23 (seconda meta') e 25: lo zaino distingue le cose
+    personali da quelle che si dividono, i condivisi compaiono solo in
+    gruppo, e la portata della tenda viene controllata.
+Dettagli di ognuno nelle sezioni dedicate in cima al file.
 
 DATABASE PULITO: controllato a fine giornata, NESSUN dato di prova creato
 dalle prove automatiche (tutte le scritture intercettate: e' il metodo da
@@ -2379,10 +2411,6 @@ rifare). Restano 2 escursioni originali, 6 utenti (4 demo + 2 reali) e 5
 sessioni di tracciamento: le 4 del 24-25 luglio piu' quella del 26 luglio
 pomeriggio, che e' la prova vera dell'utente dal telefono - 14 secondi,
 zero punti GPS - ed e' il riscontro del punto 28. NON vanno cancellate.
-
-BLOCCHI 1, 2 e 3 FATTI - vedi le sezioni dedicate in cima al file. L'utente ha
-anche CONFERMATO che dal telefono la posizione ora si vede: i punti 26 e 28
-sono chiusi davvero.
 
 IL PROSSIMO PASSO E' IL BLOCCO 4: punto 18, tasto e pagina "Badge" con
 qualche badge di prova (qualche cima e qualche rifugio; la lista completa la
@@ -2392,6 +2420,22 @@ non bloccato: dopo restano solo il BLOCCO 5 e i punti in sospeso.
 Materiale gia' esistente da riusare: il "Passaporto delle Vette" con i timbri
 e il contatore sono gia' in Dashboard (Fase C/D), quindi manca la PAGINA
 dedicata, non i dati.
+
+CHE COSA RESTA IN TUTTO, in mezza riga ciascuno:
+ - punto 18 (blocco 4)  -> pagina Badge. LIBERO, e' da qui che si riparte.
+ - punto 15             -> caricamento file .gpx. Prima di scrivere codice
+                           serve una stima vera dello spazio su MongoDB: e'
+                           l'unico punto che puo' farlo crescere in fretta.
+ - punti 7, 22, 21-resto -> BLOCCATI dalla stessa decisione dell'utente
+                           (email o SMS), vedi qui sotto.
+ - punto 13             -> percorso multi-punto sui sentieri. IN SOSPESO per
+                           scelta dell'utente, vuole una sessione dedicata.
+Tutti gli altri punti di cose_da_fare.txt (1-12, 14, 16, 17, 19, 20, 23, 24,
+25, 26, 27, 28) sono FATTI.
+
+DA RICORDARE ALL'UTENTE IN OGNI RIASSUNTO, per sua richiesta esplicita: i
+punti 7 e 13 restano in sospeso. Non vanno riproposti come prossimo passo -
+solo ricordati, finche' non e' lui a riaprirli.
 
 DECISIONE ANCORA IN ATTESA, che da sola sblocca tre punti (7, 21-resto e
 22): quale canale usare per mandare un messaggio, email o SMS. Finche' non
@@ -2403,6 +2447,18 @@ COSE DA SAPERE SULL'AMBIENTE, per non perderci tempo:
  - Per le prove nel browser si usa PUPPETEER installato nella CARTELLA
    TEMPORANEA, mai in package.json del progetto. Serve perche' permette
    GPS finto in movimento e schermo da telefono.
+ - PYTHON NON E' INSTALLATO su questo PC (il punto 3 dei vincoli hard diceva
+   di installarlo in caso servisse): non e' mai servito, node basta per
+   tutto - prove, sostituzioni di testo nei file, query al database. Non
+   installarlo senza un motivo vero.
+ - LE REGOLE DEL SERVER NON SI POSSONO INTERCETTARE dal browser: girano sul
+   server. Il metodo messo a punto nel blocco 3 e' creare UNA escursione
+   temporanea via API, provarci sopra tutti i casi, e cancellarla dal
+   database in un blocco finally - cosi' anche se qualcosa va storto a meta'
+   non resta niente. Ha funzionato bene, conviene rifare cosi'.
+   ATTENZIONE: non esiste una rotta DELETE per le escursioni, la
+   cancellazione va fatta direttamente su MongoDB (e vanno tolte anche le
+   notifiche che la creazione genera per le squadre del creatore).
  - Il token di GitHub NON e' piu' scritto nell'indirizzo del repository
    (2026-07-26): le credenziali le gestisce Git Credential Manager di
    Windows. Se un push chiede l'accesso, deve farlo l'UTENTE dal browser -
@@ -2428,7 +2484,24 @@ COSE DA SAPERE SULL'AMBIENTE, per non perderci tempo:
      rallenta i caricamenti, e refreshState() finisce per riscrivere i
      dati modificati in memoria: va accesa dopo;
    * leggere il DOM "a tempo" da' falsi allarmi (numeri a zero, elementi
-     mancanti): usare waitForFunction su una condizione vera.
+     mancanti): usare waitForFunction su una condizione vera;
+   * modificare i dati IN MEMORIA della pagina e poi leggere il risultato
+     "a tempo" da' esiti che cambiano da un giro all'altro:
+     triggerSectionRender chiama refreshState(), che li riscrive coi dati
+     del server. Va aspettato l'aggiornamento in volo e poi neutralizzata
+     la funzione (window.refreshState = async () => {}), altrimenti la
+     stessa prova passa e fallisce senza che il codice sia cambiato;
+   * gli errori JavaScript vanno STAMPATI SUBITO, non raccolti per la fine:
+     se lo script muore su un timeout prima di stamparli, si perde proprio
+     l'informazione che serviva;
+   * l'account demo Sofia FotoPasso HA COMPLETATO l'escursione del Corno
+     Grande, quindi per lei non e' piu' l'escursione di riferimento dello
+     zaino (giustamente: non si prepara lo zaino per una gita gia' fatta).
+     Per provare lo zaino di GRUPPO serve Giulia Escursionista, che
+     partecipa senza averla completata;
+   * la difficolta' di un'escursione NON e' 'E'/'EE' nel modello ma
+     'Principiante'/'Intermedio'/'Esperto': col valore sbagliato la
+     creazione risponde 400 con un messaggio generico.
 
 DEBITO TECNICO NOTO, non urgente ma da non dimenticare:
  - LE ALTRE SEZIONI NON SONO RESPONSIVE. Il 2026-07-26 sono state
@@ -2446,7 +2519,16 @@ DEBITO TECNICO NOTO, non urgente ma da non dimenticare:
    (lib/trailIndex.js, ACTIVE_REGIONS = ['Lazio','Abruzzo']): il sito dice
    di coprire quattro regioni ma il puntino si aggancia ai sentieri solo
    in due. Da riattivare quando si e' sicuri che la memoria regga.
- - PROVA ALL'APERTO DA TELEFONO VERO mai fatta: Puppeteer simula il GPS
-   ma non l'imprecisione reale, i buchi di segnale e la batteria.
+ - PROVA ALL'APERTO DA TELEFONO VERO, CAMMINANDO, ancora mai fatta. Quella
+   ferma e' stata fatta e ha dato esito buono (l'utente vede la sua
+   posizione, punti 26 e 28 chiusi), ma resta da provare in movimento il
+   tracciamento del percorso, il tasto di registrazione sulla mappa e il
+   tasto SOS: Puppeteer simula un GPS che cammina, non l'imprecisione
+   reale, i buchi di segnale e la batteria. Non blocca nessun punto.
+ - IL DEAD MAN'S SWITCH E' ANCORA FINTO, ed e' scritto a schermo. Il conto
+   alla rovescia vive nella pagina: se la si chiude non succede piu' niente,
+   e alla scadenza non parte nessun messaggio. Nel blocco 2 si e' fatta la
+   meta' onesta (contatti veri, posizione vera, e l'avviso che dice
+   chiaramente che nessun messaggio parte). Il resto e' nel BLOCCO 5.
  - Nessun file LICENSE: il repository e' pubblico ma non e' open source
    (vedi la nota sulla privacy in cima al file).
