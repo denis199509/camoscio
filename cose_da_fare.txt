@@ -399,3 +399,55 @@ dell'escursione (punto 8).
    sbagliata (un punto a 2000 m mostrerebbe comunque "Fondo Valle 800 m").
    Open-Meteo restituisce gia' l'altitudine vera della cella nella stessa
    risposta: va usata quella, senza nessuna chiamata in piu'.
+
+
+=====================================================================
+QUINTA LISTA (2026-07-26, sera) - seconda prova dell'utente dal TELEFONO
+VERO sul sito online, fatta dopo che i punti 26 e 27 erano gia' stati
+messi online.
+PROMEMORIA: i punti 7 (recupero password) e 13 (percorso multi-punto)
+restano IN SOSPESO per scelta esplicita dell'utente, non dimenticati.
+=====================================================================
+
+--- MAPPE ---
+
+28) [FATTO 2026-07-26] Dal telefono, pur avendo dato il consenso alla
+geolocalizzazione, esce errore e non compare il puntino blu con la
+posizione reale. Controllato dall'utente: Impostazioni telefono > Chrome >
+Autorizzazioni > Posizione risulta ATTIVA; premendo il lucchetto accanto
+all'indirizzo la posizione risulta consentita, ma accanto ha un punto
+esclamativo dentro un triangolo blu.
+   Verificato nel codice: il puntino blu e tutta la catena che lo disegna
+   FUNZIONANO (provati tre scenari nell'app vera, vedi leggimi.txt). Il
+   difetto era nella SPIEGAZIONE, ed era concreto: la guida allo sblocco
+   elencava DUE livelli di permesso - il sito e l'app Chrome, cioe'
+   esattamente i due che l'utente aveva gia' controllato e trovato a
+   posto - e si fermava li'. Su Android i livelli sono TRE, e il primo e'
+   l'interruttore generale della posizione del telefono (tendina delle
+   impostazioni rapide): l'unico che non si trova cercando "Chrome" nelle
+   impostazioni, ed e' quello che manca piu' spesso. Il triangolo di
+   avviso di Chrome segnala proprio questo: sito a posto, livello sotto
+   chiuso.
+   RISCONTRO SUL DATABASE, trovato controllando i dati di prova: la
+   sessione di tracciamento avviata dal telefono quel pomeriggio e'
+   durata 14 secondi e non ha registrato NEMMENO UN punto GPS
+   (lastPointAt null, 0 km). Non e' l'app che perde i punti: e' il
+   telefono che non dava nessuna posizione.
+   -> Fatto tutto:
+      - guida riscritta con tutti e TRE i livelli, davanti quello che
+        manca piu' spesso, piu' la spiegazione del triangolo di avviso;
+      - il messaggio dell'errore codice 2 non dice piu' solo "prova
+        all'aperto" (mandava fuori casa chi aveva soltanto un
+        interruttore spento): ora nomina entrambe le cause;
+      - nuova pagina /diagnostica-gps.html: prova la posizione in tre
+        modi diversi, mostra il codice d'errore grezzo del browser e dice
+        quale livello e' chiuso. Ha un tasto per copiare il rapporto, che
+        NON include le coordinate (per la diagnosi conta se una posizione
+        arriva, non dove ci si trova);
+      - RIPIEGO sulla posizione approssimata da wi-fi e celle quando il
+        GPS non vede i satelliti: in casa prima non compariva niente, ora
+        il puntino compare col cerchio che dichiara l'imprecisione. Vale
+        SOLO per il puntino, mai per registrare una traccia - segnare
+        chilometri stimati dal wi-fi falserebbe lo storico.
+   RESTA DA FARE: la controprova dell'utente dal telefono vero, che e' la
+   sola cosa che questa correzione non poteva verificare da sola.

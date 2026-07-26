@@ -23,7 +23,8 @@ const geoState = {
     ultimaPosizione: null,   // { lat, lng, precisioneM, quando }
     acceso: false,           // l'utente vuole vedere il puntino
     fonteEsterna: false,     // i fix arrivano da tracking.js: non aprire un secondo watch
-    guidaGiaMostrata: false  // non ripetere la finestra ad ogni fix fallito
+    guidaGiaMostrata: false, // non ripetere la finestra ad ogni fix fallito
+    approssimata: false      // si e' dovuto ripiegare sulla stima wi-fi/celle (vedi sotto)
 };
 
 const ascoltatoriPosizione = [];
@@ -33,6 +34,21 @@ const ascoltatoriPosizione = [];
 // un GPS che parte da freddo all'aperto ci mette spesso piu' di 10 secondi al primo fix, e
 // col vecchio timeout di 10s l'utente vedeva un errore invece della sua posizione.
 const OPZIONI_GPS = { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 };
+
+// RIPIEGO (punto 28): posizione stimata da wi-fi e celle telefoniche, senza satelliti.
+// Serve nel caso piu' comune di tutti mentre si prova il sito: dentro casa il GPS non
+// vede il cielo e fallisce con codice 2 o 3, mentre la stima di rete arriva quasi
+// sempre. Un puntino largo trecento metri, col suo cerchio che lo dichiara, e' comunque
+// un'informazione vera; nessun puntino non lo e'.
+// Solo per il PUNTINO, mai per il tracciamento: registrare una traccia GPS con fix da
+// wi-fi vorrebbe dire scrivere nello storico dei chilometri che non si sono camminati.
+// maximumAge piu' alto (1 minuto) perche' una stima di rete di un minuto fa e' comunque
+// buona quanto quella nuova: sono entrambe centinaia di metri.
+const OPZIONI_GPS_APPROSSIMATE = { enableHighAccuracy: false, maximumAge: 60000, timeout: 15000 };
+
+// Indirizzo della pagina di diagnosi (punto 28). Sta in public/ e non richiede accesso:
+// deve funzionare anche quando il resto dell'app non funziona.
+const PAGINA_DIAGNOSI = '/diagnostica-gps.html';
 
 // --- Permessi ---
 
@@ -105,9 +121,14 @@ function descriviErrore(err) {
         return { negato: true, testo: "Permesso di posizione negato." };
     }
     if (err.code === 2 /* POSITION_UNAVAILABLE */) {
+        // Punto 28 - questo messaggio prima diceva SOLO "prova all'aperto", e mandava
+        // fuori casa per niente chi aveva semplicemente l'interruttore della posizione
+        // spento. Le due cause sono diversissime e vanno nominate entrambe, con davanti
+        // quella che si risolve senza muoversi.
         return {
             negato: false,
-            testo: "Il telefono non riesce a calcolare la posizione. Succede al chiuso o in una valle stretta: prova all'aperto, con il cielo in vista."
+            configurazione: true,
+            testo: "Il telefono non dà nessuna posizione. O la localizzazione del dispositivo è spenta, o sei al chiuso e il GPS non vede i satelliti."
         };
     }
     if (err.code === 3 /* TIMEOUT */) {
@@ -122,7 +143,15 @@ function descriviErrore(err) {
 // Guida allo sblocco. Nomina ENTRAMBI i casi (sito bloccato / localizzazione spenta per il
 // browser) perche' da dentro la pagina non c'e' modo di distinguerli, e mette per primo
 // quello del sistema che si sta usando.
-function mostraGuidaSblocco() {
+//
+// PUNTO 28 - DIFETTO VERO TROVATO QUI, segnalato dall'utente provando dal telefono: questa
+// guida elencava DUE livelli (il sito e l'app Chrome) e si fermava li'. Su Android i livelli
+// sono TRE, e il primo - l'interruttore generale della posizione del telefono - e' proprio
+// quello che manca piu' spesso, perche' e' l'unico che non si trova cercando "Chrome" nelle
+// impostazioni. L'utente aveva controllato i due elencati qui, li aveva trovati a posto, e la
+// guida non aveva altro da dirgli. Il triangolo di avviso che Chrome disegna accanto a un
+// permesso "consentito" segnala esattamente questo: sito a posto, livello sotto chiuso.
+async function mostraGuidaSblocco() {
     // Il caso dell'indirizzo locale http://192.168... aperto dal telefono in wifi: li' il
     // browser risponde "negato" anche se l'utente non ha mai bloccato niente, ed e' una
     // trappola in cui e' facilissimo cadere provando il sito senza metterlo online.
@@ -138,37 +167,57 @@ function mostraGuidaSblocco() {
     const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
 
     const safari =
-        "iPhone / iPad (Safari)\n" +
-        "1. Tocca «aA» a sinistra nella barra dell'indirizzo\n" +
-        "2. Impostazioni sito web → Posizione → Consenti\n" +
-        "3. Se non basta: Impostazioni iOS → Privacy e sicurezza → Localizzazione → Safari → Durante l'uso dell'app\n" +
-        "   (è il caso più frequente, e dal sito non si può distinguere dal primo)";
+        "iPhone / iPad (Safari) — tre livelli, servono tutti e tre\n" +
+        "1. Impostazioni iOS → Privacy e sicurezza → Localizzazione: accesa\n" +
+        "2. Nella stessa schermata, più in basso: Safari → «Durante l'uso dell'app»\n" +
+        "   (è il caso più frequente, e dal sito non si può distinguere dal punto 3)\n" +
+        "3. Nel sito: «aA» nella barra dell'indirizzo → Impostazioni sito web → Posizione → Consenti";
 
     const chrome =
-        "Android (Chrome)\n" +
-        "1. Tocca il lucchetto accanto all'indirizzo\n" +
-        "2. Autorizzazioni → Posizione → Consenti\n" +
-        "3. Se non basta: Impostazioni Android → App → Chrome → Autorizzazioni → Posizione";
+        "Android (Chrome) — tre livelli, servono tutti e tre\n" +
+        "1. Posizione del TELEFONO: scorri in giù la tendina delle impostazioni rapide e\n" +
+        "   controlla che «Posizione» sia accesa (o Impostazioni Android → Posizione).\n" +
+        "   È quello che manca più spesso, ed è l'unico che non si trova cercando «Chrome».\n" +
+        "2. Permesso dell'APP Chrome: Impostazioni Android → App → Chrome → Autorizzazioni\n" +
+        "   → Posizione → consentita, con «posizione precisa» attiva\n" +
+        "3. Permesso del SITO: tocca il lucchetto accanto all'indirizzo → Autorizzazioni\n" +
+        "   → Posizione → Consenti\n" +
+        "Se accanto al permesso vedi un triangolo di avviso, il sito è a posto ed è chiuso\n" +
+        "uno dei due livelli sopra: toccando il triangolo Chrome dice quale.";
 
-    window.showAlertModal(
-        "Il permesso di posizione è bloccato dal browser, e da qui non posso richiederlo: va riattivato a mano.\n\n" +
+    const apri = await window.showConfirmModal(
+        "La posizione non arriva, e da qui non posso sbloccarla: va riattivata a mano.\n\n" +
         (iOS ? safari + "\n\n" + chrome : chrome + "\n\n" + safari) +
-        "\n\nPoi ricarica la pagina."
+        "\n\nPoi ricarica la pagina.\n\n" +
+        "Se dopo questi passaggi non funziona ancora, apri la pagina di diagnosi: prova la " +
+        "posizione in tre modi diversi e dice quale dei livelli è chiuso.\n\n" +
+        "Vuoi aprirla adesso?"
     );
+    if (apri) window.location.href = PAGINA_DIAGNOSI;
 }
 
 // Da usare quando l'errore arriva davvero da un tentativo: mostra la guida solo se il
 // problema e' il permesso, e una volta sola per non tempestare di finestre chi cammina.
+//
+// PUNTO 28 - la guida ora si apre anche per il codice 2, ma SOLO se non si e' mai avuta
+// una posizione da quando la pagina e' aperta. E' la differenza fra due situazioni che
+// arrivano con lo stesso identico codice d'errore:
+//  - non e' MAI arrivato niente -> qualcosa e' spento, e serve la guida coi tre livelli;
+//  - arrivava e si e' interrotto -> una galleria, un bosco fitto, un tornante in ombra:
+//    e' normale, passa da solo, e una finestra da chiudere mentre si cammina sarebbe
+//    solo un fastidio (per giunta col telefono in tasca).
 function segnalaErrore(err, forzaGuida = false) {
-    const { negato, testo } = descriviErrore(err);
-    if (negato) {
+    const { negato, configurazione, testo } = descriviErrore(err);
+    const maiAvutaPosizione = !geoState.ultimaPosizione;
+
+    if (negato || (configurazione && maiAvutaPosizione)) {
         if (!geoState.guidaGiaMostrata || forzaGuida) {
             geoState.guidaGiaMostrata = true;
             mostraGuidaSblocco();
+            return { negato, testo };
         }
-    } else if (window.showToast) {
-        window.showToast(testo, "error");
     }
+    if (window.showToast) window.showToast(testo, "error");
     return { negato, testo };
 }
 
@@ -193,14 +242,29 @@ function avviaWatch() {
             // Un errore isolato durante il cammino (una galleria, un bosco fitto) non deve
             // spegnere il puntino: si tiene l'ultima posizione nota e si aspetta il fix dopo.
             console.warn("Errore geolocalizzazione (puntino):", err.message);
+
             if (err.code === 1) {
                 fermaWatch();
                 geoState.acceso = false;
                 aggiornaTasto();
                 segnalaErrore(err);
+                return;
+            }
+
+            // Punto 28 - il GPS non aggancia e non abbiamo ancora mostrato NIENTE: prima di
+            // lasciare la mappa vuota si riprova con la stima da wi-fi e celle. Una volta
+            // sola: qui sotto approssimata e' gia' true, quindi questo ramo non si ripete e
+            // non c'e' modo di entrare in un giro infinito di riavvii.
+            // Non si degrada se una posizione era gia' arrivata: in quel caso il problema e'
+            // passeggero e il fix buono torna da solo, mentre passare alla stima di rete
+            // farebbe PEGGIORARE il puntino da dieci metri a trecento.
+            if (!geoState.approssimata && !geoState.ultimaPosizione) {
+                geoState.approssimata = true;
+                fermaWatch();
+                avviaWatch();
             }
         },
-        OPZIONI_GPS
+        geoState.approssimata ? OPZIONI_GPS_APPROSSIMATE : OPZIONI_GPS
     );
 }
 
@@ -250,9 +314,33 @@ async function accendi(automatico = false) {
     // Il watch puo' metterci un po' a dare il primo fix; una lettura singola in parallelo
     // fa comparire il puntino subito quando la posizione e' gia' nota al telefono.
     if (!geoState.fonteEsterna) {
+        const arrivata = pos =>
+            notificaPosizione(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
+
         navigator.geolocation.getCurrentPosition(
-            pos => notificaPosizione(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy),
+            arrivata,
             err => {
+                // Punto 28 - stesso ripiego del watch: prima di dire all'utente che non si
+                // puo', si prova la stima da wi-fi e celle. Il codice 1 (permesso negato) e'
+                // escluso di proposito - li' non c'e' niente da riprovare, nessuna opzione
+                // cambia un permesso bloccato, e insistere ruberebbe solo qualche secondo
+                // prima della spiegazione che serve davvero.
+                if (err.code === 2 || err.code === 3) {
+                    navigator.geolocation.getCurrentPosition(
+                        pos => { geoState.approssimata = true; arrivata(pos); },
+                        errRipiego => {
+                            // Ne' i satelliti ne' la stima di rete, e niente e' mai arrivato:
+                            // qui non c'e' piu' nulla da aspettare. Si spegne tutto invece di
+                            // lasciare acceso un watch condannato - che consuma batteria per
+                            // niente - e il tasto illuminato come se il puntino fosse sulla
+                            // mappa. Il tasto torna a dire "Dove sono", che e' la verita'.
+                            if (!geoState.ultimaPosizione) spegni();
+                            if (!automatico) segnalaErrore(errRipiego);
+                        },
+                        OPZIONI_GPS_APPROSSIMATE
+                    );
+                    return;
+                }
                 if (!automatico) segnalaErrore(err);
             },
             OPZIONI_GPS
@@ -264,6 +352,13 @@ async function accendi(automatico = false) {
 function spegni() {
     geoState.acceso = false;
     fermaWatch();
+    // Il ripiego sulla stima di rete vale per il tentativo appena concluso, non per sempre:
+    // uscendo di casa il GPS torna a vedere il cielo, e la riaccensione successiva deve
+    // ripartire dall'alta precisione. Si azzera QUI e non in accendi() di proposito: qui il
+    // watch e' appena stato fermato, mentre accendi() puo' essere richiamata a puntino gia'
+    // acceso (ci passa la navigazione ogni volta che si apre la Mappa) e cambiare la bandiera
+    // sotto a un watch in corso vorrebbe dire dichiarare opzioni diverse da quelle in uso.
+    geoState.approssimata = false;
     if (window.rimuoviPuntinoPosizione) window.rimuoviPuntinoPosizione();
     aggiornaTasto();
 }

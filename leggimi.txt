@@ -1,9 +1,12 @@
 ===================================================================
 CAMOSCIO — LEGGIMI (stato progetto, aggiornato automaticamente)
-Ultimo aggiornamento: 2026-07-26 — fatto il BLOCCO 1 dell'ordine di lavoro
-(punti 19, 23 prima meta', 16): vedi la sezione dedicata subito sotto.
-Prima di questo, nella stessa giornata: i punti 26 e 27 (nati da una prova
-dal TELEFONO VERO sul sito online), e prima ancora 9, 11, 12, 14, 8 e 10.
+Ultimo aggiornamento: 2026-07-26 (sera) — fatto il PUNTO 28, nato dalla
+SECONDA prova dell'utente dal telefono vero: "consenso dato, ma errore e
+nessun puntino blu". Il puntino funzionava; era la GUIDA allo sblocco a
+elencare due livelli di permesso su tre. Vedi la sezione dedicata subito
+sotto. Prima di questo, nella stessa giornata: il BLOCCO 1 dell'ordine di
+lavoro (punti 19, 23 prima meta', 16), i punti 26 e 27 (prima prova dal
+telefono vero), e prima ancora 9, 11, 12, 14, 8 e 10.
 
 >>> SE STAI RIPRENDENDO IL LAVORO, VAI SUBITO IN FONDO A QUESTO FILE: la
     sezione "DA DOVE SI RIPARTE" dice in mezza pagina a che punto siamo,
@@ -30,6 +33,130 @@ una - nessuna implementata, sono materiale per una sessione futura. Vedi
 la sezione dedicata piu' sotto. La QUARTA lista (punti 26-27) e' invece
 gia' fatta, vedi qui sotto.
 ===================================================================
+
+NOTA IMPORTANTE PER CHI RIPARTE DA QUI - PUNTO 28 FATTO (2026-07-26, sera).
+Nato dalla SECONDA prova dell'utente dal telefono vero, fatta dopo che i
+punti 26 e 27 erano gia' online: "pur avendo dato il consenso, mi da'
+errore e non vedo il puntino blu; nelle impostazioni del telefono il
+permesso di Chrome e' attivo, e sul lucchetto la posizione risulta
+consentita ma accanto ha un triangolo blu con il punto esclamativo".
+
+--- IL PUNTINO FUNZIONAVA. ERA LA SPIEGAZIONE A ESSERE INCOMPLETA ---
+
+- Prima cosa fatta: ripercorrere tutta la catena che disegna il puntino
+  (accendi -> avviaWatch -> notificaPosizione -> ascoltatori ->
+  aggiornaPuntinoPosizione in map.js). E' sana, e le prove nell'app vera lo
+  confermano: con un GPS che risponde, il puntino e il cerchio compaiono.
+  Il punto 26 aveva gia' fatto il suo lavoro.
+- IL DIFETTO VERO, e non e' un dettaglio: la guida allo sblocco elencava
+  DUE livelli di permesso - il sito (lucchetto) e l'app Chrome (Impostazioni
+  Android -> App -> Chrome). Sono esattamente i due che l'utente aveva
+  gia' controllato e trovato a posto. Su Android i livelli sono TRE, e il
+  primo e' l'INTERRUTTORE GENERALE della posizione del telefono, nella
+  tendina delle impostazioni rapide: e' l'unico che non si trova cercando
+  "Chrome" nelle impostazioni, ed e' quello che manca piu' spesso. La
+  guida non ne parlava affatto, quindi chi la seguiva fino in fondo
+  restava esattamente dov'era.
+- Il TRIANGOLO DI AVVISO che Chrome disegna accanto a un permesso
+  "consentito" e' proprio il suo modo di dire "il sito ce l'ha, ma sotto
+  c'e' un livello chiuso". Ora la guida lo nomina e dice di toccarlo:
+  Chrome stesso spiega cosa gli manca e apre le impostazioni giuste.
+  DA RICORDARE: quel triangolo e' l'indizio piu' informativo che una
+  segnalazione di questo tipo possa contenere, vale piu' di "mi da' errore".
+- RISCONTRO INDIPENDENTE TROVATO SUL DATABASE, controllando che le prove
+  non avessero sporcato i dati: c'era una sessione di tracciamento in piu'
+  rispetto alle 4 di fine giornata precedente. Non era delle prove - e'
+  del pomeriggio, prima dell'inizio della sessione - ed e' la prova
+  dell'utente dal telefono: durata 14 secondi, lastPointAt NULL, zero
+  punti GPS, 0 km. Cioe' il telefono non ha dato NEMMENO UNA posizione.
+  Conferma dall'esterno che non e' l'app a perdere i punti. NON e' stata
+  cancellata: e' un dato vero dell'utente, non un residuo di prova.
+  Vale come metodo: prima di dare la colpa al codice, guardare se i dati
+  gia' sul database dicono qualcosa.
+
+--- COSA E' CAMBIATO NEL CODICE ---
+
+- descriviErrore, codice 2: diceva SOLO "succede al chiuso, prova
+  all'aperto". Mandava fuori casa chi aveva soltanto un interruttore
+  spento. Ora nomina entrambe le cause, con davanti quella che si risolve
+  senza muoversi. Il codice 2 porta anche un flag "configurazione".
+- segnalaErrore: la guida si apre anche per il codice 2, ma SOLO se non e'
+  mai arrivata una posizione da quando la pagina e' aperta. E' la
+  differenza fra due situazioni che arrivano con lo STESSO codice: "non e'
+  mai arrivato niente" (qualcosa e' spento, serve la guida) e "arrivava e
+  si e' interrotto" (una galleria, un bosco fitto: passa da solo, e una
+  finestra da chiudere mentre si cammina sarebbe solo un fastidio).
+- RIPIEGO SULLA POSIZIONE APPROSSIMATA (OPZIONI_GPS_APPROSSIMATE): quando
+  il GPS non vede i satelliti e fallisce con codice 2 o 3, si riprova con
+  la stima da wi-fi e celle invece di non mostrare niente. E' il caso piu'
+  comune di tutti mentre si prova il sito, perche' si prova in casa.
+  Misurato nell'app: prima nessun puntino, ora puntino a 780 m di
+  precisione col cerchio che lo dichiara. Un puntino largo trecento metri
+  e' comunque un'informazione vera; nessun puntino non lo e'.
+  SOLO PER IL PUNTINO, MAI PER IL TRACCIAMENTO: registrare una traccia con
+  fix da wi-fi vorrebbe dire scrivere nello storico chilometri non
+  camminati. tracking.js non e' stato toccato.
+  Il ripiego si azzera in spegni() e non in accendi(): accendi() puo'
+  essere richiamata a puntino gia' acceso (ci passa la navigazione ogni
+  volta che si apre la Mappa) e cambiare la bandiera sotto a un watch in
+  corso vorrebbe dire dichiarare opzioni diverse da quelle in uso.
+- Quando NON arriva niente da nessuna delle due vie, ora si spegne tutto:
+  prima restava acceso un watch condannato (batteria per niente) e il
+  tasto illuminato come se il puntino fosse sulla mappa. Ora torna a dire
+  "Dove sono", che e' la verita'.
+
+--- NUOVA PAGINA public/diagnostica-gps.html ---
+
+- Serve perche' il difetto si vedeva SOLO sul telefono dell'utente, e da
+  qui non c'e' modo di guardarci dentro. Prova la posizione in tre modi
+  (alta precisione, approssimata, inseguimento per 20s) e mostra il CODICE
+  E IL MESSAGGIO GREZZI del browser, che sono l'unica cosa che distingue i
+  casi ("User denied Geolocation", "Location services disabled",
+  "Timeout expired"...).
+- SENZA DIPENDENZE E SENZA LOGIN, di proposito: niente Leaflet, niente
+  lucide, niente app.js, nessuna chiamata al database. Una pagina di
+  diagnosi che si rompe quando l'app e' rotta non serve a niente. Sta in
+  public/, quindi express.static la serve a chiunque abbia il link.
+- IL DISCRIMINANTE PIU' UTILE non e' un errore ma un CONFRONTO: alta
+  precisione fallita + approssimata riuscita = permessi a posto, e' il GPS
+  che non vede il cielo. Entrambe fallite col codice 2 IN POCHI DECIMI DI
+  SECONDO = nessuna fonte di posizione accesa, cioe' l'interruttore
+  generale. Il TEMPO conta quanto il codice: un rifiuto immediato non e' un
+  GPS che ci prova e non ce la fa.
+- Tasto "Copia il rapporto": senza, l'unica alternativa sarebbe chiedere di
+  ricopiare a mano dei messaggi tecnici da uno schermo da telefono, cioe'
+  non ottenerli mai. Il rapporto NON contiene le coordinate, di proposito:
+  per la diagnosi conta se una posizione arriva e con che precisione, non
+  dove si trova la persona. Stessa regola dei contatti di emergenza.
+
+--- COME E' STATO VERIFICATO ---
+
+- Puppeteer nella cartella temporanea, schermo 390x844. NOVITA' DI METODO
+  rispetto alle sessioni precedenti: page.setGeolocation NON basta piu',
+  perche' qui serviva controllare il CODICE d'errore e distinguere alta da
+  bassa precisione. Si sostituisce navigator.geolocation con
+  evaluateOnNewDocument, allineando anche navigator.permissions.query -
+  altrimenti la pagina direbbe "consentito" mentre il GPS finto risponde
+  "negato", uno stato che sul telefono vero non esiste.
+- 7 scenari, tutti passati. Sulla pagina di diagnosi: tutto funziona /
+  permesso negato / dispositivo spento / solo approssimata. Nell'app vera:
+  al chiuso il puntino compare lo stesso (780 m, puntino e cerchio
+  disegnati); dispositivo spento -> guida coi tre livelli, triangolo
+  spiegato, diagnosi offerta, tasto tornato "Dove sono"; GPS buono ->
+  NESSUNA REGRESSIONE (precisione 9 m, nessun ripiego chiamato, nessuna
+  finestra). Quest'ultimo controlla che il ripiego non parta quando non
+  serve, ed e' quello che vale di piu' dei tre.
+- NESSUN dato di prova scritto sul database: tutte le scritture
+  intercettate e risposte dalla prova.
+- DUE FALSI ALLARMI DELLE PROVE, ricordati per non ripagarli: la prima
+  volta la prova cercava un apostrofo tipografico dove la pagina ne usa uno
+  dritto (era sbagliata la prova, non la pagina); e l'elenco degli account
+  demo espone "id", NON "_id" - passando _id il login demo risponde 400 e
+  l'app resta ferma sulla schermata di accesso senza dire perche'.
+
+DA FARE ANCORA: la controprova dell'utente dal telefono vero. E' la sola
+cosa che questa correzione non poteva verificare da sola - e stavolta la
+pagina di diagnosi dice da sola cosa e' andato storto.
 
 NOTA IMPORTANTE PER CHI RIPARTE DA QUI - BLOCCO 1 FATTO (2026-07-26):
 punti 19, 23 (prima meta') e 16, cioe' i tre che l'ordine di lavoro qui
@@ -1931,6 +2058,19 @@ CHECKLIST DI AVANZAMENTO (aggiornare via via che si procede)
         fisse e partivano da un'altitudine supposta: ora usano quella vera
         restituita da Open-Meteo.
     [ ] Resta la prova all'aperto da TELEFONO VERO (non blocca nulla).
+[x] QUINTA LISTA (cose_da_fare.txt punto 28, 2026-07-26 sera) — FATTA.
+    Seconda prova dell'utente dal telefono vero, dopo che 26 e 27 erano gia'
+    online: "consenso dato, ma errore e nessun puntino blu".
+    [x] 28 — il puntino funzionava: era la GUIDA a essere incompleta.
+        Elencava due livelli di permesso (sito e app Chrome), cioe' proprio
+        i due che l'utente aveva gia' controllato; su Android sono TRE e
+        mancava il primo, l'interruttore generale della posizione. Ora la
+        guida li elenca tutti e tre e spiega il triangolo di avviso di
+        Chrome. In piu': messaggio del codice 2 non piu' fuorviante, nuova
+        pagina /diagnostica-gps.html, e ripiego sulla posizione
+        approssimata quando il GPS non vede i satelliti.
+    [ ] Resta la CONTROPROVA dal telefono vero: e' la sola cosa che questa
+        correzione non poteva verificare da sola.
 
 
 COME RIPRENDERE IL LAVORO IN UNA NUOVA SESSIONE
@@ -1950,20 +2090,28 @@ COME RIPRENDERE IL LAVORO IN UNA NUOVA SESSIONE
 DA DOVE SI RIPARTE — situazione al 2026-07-26, fine giornata
 ===================================================================
 
-STATO: tutto salvato e ONLINE. Ultimo commit 545045c, GitHub allineato,
-sito verificato dal vivo su https://camoscio.onrender.com (tutte e 8 le
-sezioni si aprono e si riempiono, nessun errore JavaScript, nessuna
-richiesta fallita). Niente lavoro a meta' lasciato in sospeso nel codice.
+STATO: tutto salvato e ONLINE. GitHub allineato. L'ultimo lavoro e' il
+PUNTO 28 (geolocalizzazione dal telefono: guida ai tre livelli di permesso,
+pagina di diagnosi, ripiego sulla posizione approssimata) - vedi la sezione
+dedicata in cima al file. Niente lavoro a meta' lasciato in sospeso nel
+codice.
 
 DATABASE PULITO: controllato a fine giornata, NESSUN dato di prova creato
-oggi. Restano 2 escursioni originali, 4 sessioni di tracciamento del 24-25
-luglio (una di quelle e' la prova vera fatta dall'utente da telefono) e 6
-utenti (4 demo + 2 reali). Le prove di oggi hanno intercettato tutte le
-chiamate che avrebbero scritto: e' il metodo da rifare.
+dalle prove automatiche (tutte le scritture intercettate: e' il metodo da
+rifare). Restano 2 escursioni originali, 6 utenti (4 demo + 2 reali) e 5
+sessioni di tracciamento: le 4 del 24-25 luglio piu' quella del 26 luglio
+pomeriggio, che e' la prova vera dell'utente dal telefono - 14 secondi,
+zero punti GPS - ed e' il riscontro del punto 28. NON vanno cancellate.
 
 IL PROSSIMO PASSO E' IL BLOCCO 2 (punti 17 + 20 insieme, poi la meta' non
 bloccata del 21). E' la sicurezza in montagna, ed e' la parte che NON
 dipende da nessuna decisione dell'utente.
+
+PRIMA DI TUTTO, PERO': chiedere all'utente com'e' andata la controprova
+dal telefono con le correzioni del punto 28. Se il puntino ora si vede,
+il punto 26 e il 28 sono chiusi davvero; se no, la pagina
+/diagnostica-gps.html dice da sola quale livello e' chiuso e il rapporto
+si copia con un tasto.
 
 DECISIONE ANCORA IN ATTESA, che da sola sblocca tre punti (7, 21-resto e
 22): quale canale usare per mandare un messaggio, email o SMS. Finche' non
@@ -1981,6 +2129,18 @@ COSE DA SAPERE SULL'AMBIENTE, per non perderci tempo:
    non e' un errore.
  - Trappole gia' pagate, elencate qui perche' non si ripaghino:
    * page.setGeolocation vuole {latitude, longitude}, NON {lat, lng};
+   * ...e NON basta quando serve controllare il CODICE d'errore o
+     distinguere alta da bassa precisione (punto 28): li' si sostituisce
+     navigator.geolocation con evaluateOnNewDocument, allineando anche
+     navigator.permissions.query, altrimenti la pagina dice "consentito"
+     mentre il GPS finto risponde "negato" - uno stato che sul telefono
+     vero non esiste e che falsa la prova;
+   * l'elenco degli account demo (/api/auth/demo-accounts) espone "id",
+     NON "_id": passando _id il login demo risponde 400 e l'app resta
+     ferma sulla schermata di accesso senza dire perche';
+   * quando una prova fallisce su un confronto di testo, sospettare prima
+     la prova: e' gia' successo con un apostrofo tipografico cercato dove
+     la pagina ne usa uno dritto;
    * una risposta finta verso un altro dominio senza l'intestazione
      Access-Control-Allow-Origin viene scartata dal browser, e l'app
      sembra rotta quando invece sta funzionando bene;
