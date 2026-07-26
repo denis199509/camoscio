@@ -1,13 +1,88 @@
 ===================================================================
 CAMOSCIO — LEGGIMI (stato progetto, aggiornato automaticamente)
-Ultimo aggiornamento: 2026-07-26 — implementati i punti 9, 11, 12 e 14
-della nuova lista (vedi sezione dedicata subito sotto). Prima di quello,
-verificato che il sito online e' rimasto STABILE dopo il push della Fase
-H: home/demo/confini/js tutti a 200, nessun 502 (la prima chiamata ha
-impiegato 25s perche' il piano gratuito di Render sospende il servizio
-quando non lo usa nessuno - e' normale, non instabilita'). Restano da
-fare i punti 7, 8, 10 e 13.
+Ultimo aggiornamento: 2026-07-26 — implementati i punti 9, 11, 12, 14 e
+poi anche 8 e 10 della nuova lista (vedi sezioni dedicate sotto). Prima
+di tutto questo, verificato che il sito online e' rimasto STABILE dopo il
+push della Fase H: home/demo/confini/js tutti a 200, nessun 502 (la prima
+chiamata ha impiegato 25s perche' il piano gratuito di Render sospende il
+servizio quando non lo usa nessuno - e' normale, non instabilita').
+RESTANO SOLO I PUNTI 7 E 13, entrambi messi IN SOSPESO SU RICHIESTA
+ESPLICITA DELL'UTENTE (2026-07-26): il 7 (recupero password) perche' deve
+decidere se agganciare una vera email o inventare un'alternativa; il 13
+(progettazione percorso multi-punto) perche' e' una richiesta grossa, da
+affrontare in una sessione nuova e dedicata. NON riproporli come "prossimo
+passo" senza che sia lui a riaprirli.
 ===================================================================
+
+NOTA IMPORTANTE PER CHI RIPARTE DA QUI - PUNTI 8 E 10 FATTI (2026-07-26,
+stessa sessione dei punti 9/11/12/14).
+
+- Punto 10 (pagina "Le mie escursioni"): nuova voce di menu e nuova
+  sezione #my-hikes con tre gruppi (Organizzate da me / A cui partecipo /
+  Gia' fatte) piu' i contatori in cima. NON e' stata riscritta la scheda
+  dell'escursione: e' stata ESTRATTA da renderHikesList in una funzione
+  buildHikeCard(hike) usata da entrambe le pagine, cosi' non possono
+  divergere. Allo stesso scopo renderMyHikes() viene richiamata in fondo
+  a renderHikesList() invece che nei dodici punti sparsi che aggiornano
+  le escursioni (iscriversi, approvare, completare, creare...).
+- Punto 10 - regola di precedenza: "gia' fatta" vince su tutto. Un'
+  escursione completata sparisce da "organizzate da me" e compare solo
+  tra le fatte, altrimenti sarebbe in due gruppi insieme. Verificato dal
+  vivo anche il caso delicato: il completamento di UN ALTRO utente sulla
+  mia escursione NON la fa comparire tra le mie fatte.
+- Punto 8 (ritrovo dalla mappa): il form non chiede piu' latitudine e
+  longitudine. Ora c'e' una barra di ricerca ("Campo Imperatore") e un
+  pulsante che apre la mappa vera dove si tocca il punto. I due campi
+  numerici sono diventati input nascosti (tutto il resto del codice
+  continua a leggerli da li'), riempiti dalla ricerca o dal tocco.
+- Punto 8 - nuovo file routes/geocoding.js: proxy verso Nominatim, MAI
+  chiamato dal browser (policy sullo User-Agent + limite di 1 richiesta
+  al secondo COMPLESSIVE: dal browser ogni visitatore farebbe richieste
+  per conto suo e basterebbero pochi utenti insieme per far bloccare
+  l'IP del server). Tutte le chiamate passano da una coda che ne fa
+  partire una per volta con almeno 1,1s di distacco, piu' una memoria
+  dei risultati gia' visti (in RAM, non su MongoDB: sono dati pubblici e
+  riscaricabili, e c'e' il vincolo hard di spazio).
+- Punto 8 - SCOPERTA IMPORTANTE, misurata prima di scegliere: il reverse
+  geocoding di Nominatim NON va bene per la montagna. Sul punto di Campo
+  Imperatore risponde "L'Aquila" (il comune) o addirittura il nome di una
+  strada ("SR17bisC"), e sul Corno Grande "variante aerea" (un sentiero).
+  Overpass invece sa cercare elementi CON NOME entro un raggio e risponde
+  "Campo Imperatore" a 5 metri, "Corno Grande - Vetta Occidentale" a 102
+  metri - cioe' esattamente l'esempio della richiesta.
+- Punto 8 - ...ma Overpass e' INAFFIDABILE: sempre misurato, quando
+  risponde impiega ~0,4s, pero' va in errore 504 spesso, con attese fino
+  a 36 secondi, su entrambi i server pubblici provati. Per questo e'
+  usato solo come MIGLIORIA OPZIONALE: parte insieme a Nominatim, ha un
+  tetto di 3,5s e se non risponde in tempo si tiene tranquillamente il
+  nome di Nominatim, senza mostrare nessun errore. Il tetto e' 3,5s e non
+  meno perche' l'attesa totale e' comunque dominata da Nominatim (~2,6s
+  per via della pausa obbligatoria): allargarlo non peggiora quasi mai il
+  tempo percepito ma alza molto le probabilita' di ottenere il nome buono.
+- Punto 8 - durata della memoria dei risultati: 24 ore se ha risposto
+  Overpass (risultato buono), soli 10 minuti se siamo ripiegati sul nome
+  amministrativo. Senza questa distinzione un timeout di Overpass avrebbe
+  congelato il risultato PEGGIORE per un giorno intero, impedendo a un
+  tentativo successivo di ottenere il nome giusto.
+- Punto 8 - CORRETTO il bug delle coordinate lombarde segnalato nella
+  sessione precedente: i valori predefiniti 45.9698/9.8115 (Lombardia,
+  fuori dalle 4 regioni) non esistono piu', i campi partono vuoti.
+- Punto 8 - BUG PREESISTENTE corretto strada facendo: submitCreateHike
+  non mostrava NIENTE quando il server rifiutava la creazione (la
+  finestra restava aperta senza spiegazioni e sembrava che il pulsante
+  non funzionasse). Il caso piu' probabile era proprio il rifiuto per
+  ritrovo fuori regione. Ora l'errore del server viene mostrato.
+- Punti 8/10 - schede escursione su telefono: erano su DUE colonne anche
+  a 390px (~150px per scheda) e il riquadro della difficolta', in
+  posizione assoluta, copriva il titolo. Aggiunte regole nella @media
+  gia' esistente: una colonna sola, riquadro difficolta' non piu'
+  sovrapposto, dati su due colonne invece di tre, e spazio in fondo alla
+  pagina perche' il pulsante flottante a scarpone non copra i comandi
+  dell'ultima scheda.
+- Dati di prova rimossi dal database a fine sessione (1 escursione di
+  prova, 3 sessioni di tracciamento, 1 TrailCandidate), elencati per ID.
+  Restano intatte le 2 escursioni originali e le 4 sessioni del 24-25
+  luglio, che non sono state create da queste prove.
 
 NOTA IMPORTANTE PER CHI RIPARTE DA QUI - PUNTI 9, 11, 12, 14 FATTI
 (2026-07-26). Per la prima volta in questo progetto le verifiche sono
@@ -1300,32 +1375,28 @@ CHECKLIST DI AVANZAMENTO (aggiornare via via che si procede)
     [ ] Prova dal vivo nel browser DEL SITO ONLINE (l'estensione Chrome
         non e' collegata; dal 2026-07-26 le prove si fanno con Puppeteer
         sul server LOCALE, vedi nota in cima al file)
-[ ] NUOVA LISTA (cose_da_fare.txt punti 7-14) — 4 di 8 FATTI
+[ ] NUOVA LISTA (cose_da_fare.txt punti 7-14) — 6 di 8 FATTI
+    [x] Punto 8 — ritrovo scelto per nome o dalla mappa (2026-07-26)
     [x] Punto 9 — mappa usabile da telefono (2026-07-26)
+    [x] Punto 10 — pagina "Le mie escursioni" (2026-07-26)
     [x] Punto 11 — la mappa segue la posizione GPS reale (2026-07-26)
     [x] Punto 12 — via il nome "Waze" (2026-07-26)
     [x] Punto 14 — tasto unico registrazione + traccia blu chiaro (2026-07-26)
-    [ ] Punto 7 — recupero password: BLOCCATO da una decisione non
-        tecnica (serve un canale email, che la Fase C aveva escluso).
-        Da decidere con l'utente prima di scrivere qualunque codice.
-    [ ] Punto 8 — scelta del ritrovo dalla mappa invece che a coordinate
-        scritte a mano. Serve un endpoint server che faccia da proxy
-        verso Nominatim (mai chiamarlo dal browser: violerebbe la loro
-        policy sull'User-Agent). NOTA: risolverebbe anche un bug trovato
-        il 2026-07-26 e non ancora corretto (vedi sotto).
-    [ ] Punto 10 — pagina "Le mie escursioni"
-    [ ] Punto 13 — progettazione percorso multi-punto sui sentieri: la
-        piu' impegnativa, serve un vero algoritmo di ricerca cammino
-        (Dijkstra/A*) su un grafo dei sentieri, oggi inesistente
-    [ ] BUG TROVATO 2026-07-26, NON ANCORA CORRETTO: il form "crea
-        escursione" ha come valori predefiniti latitudine 45.9698 e
-        longitudine 9.8115, che sono in LOMBARDIA - fuori dalle 4
-        regioni ammesse. Residuo del progetto originale (era ambientato
-        sulle Alpi). Dalla Fase G il server rifiuta le escursioni fuori
-        regione, quindi chi apre il form, scrive solo il nome e invia
-        prende un errore. Si sistema naturalmente insieme al punto 8
-        (che rifa' proprio quella parte del form); se il punto 8 slitta,
-        correggere almeno i valori predefiniti su un punto in Abruzzo.
+    [x] Bug delle coordinate predefinite lombarde (45.9698/9.8115, fuori
+        dalle 4 regioni): risolto insieme al punto 8, quei campi non
+        esistono piu'
+    [~] Punto 7 — recupero password: IN SOSPESO PER SCELTA DELL'UTENTE
+        (2026-07-26). Deve decidere se agganciare una vera email o
+        un'alternativa: in Fase C si era escluso qualunque servizio
+        email, e senza un canale per dimostrare l'identita' un recupero
+        password standard non si puo' fare. NON riproporlo finche' non
+        e' lui a riaprirlo.
+    [~] Punto 13 — progettazione percorso multi-punto sui sentieri: IN
+        SOSPESO PER SCELTA DELL'UTENTE (2026-07-26), da fare in una
+        sessione nuova e dedicata perche' e' grosso. Serve un vero
+        algoritmo di ricerca cammino (Dijkstra/A*) su un grafo costruito
+        dai segmenti dei sentieri, oggi inesistente nel progetto. La
+        modalita' "senza aggancio" (linea retta) e' invece quasi gratis.
 
 
 COME RIPRENDERE IL LAVORO IN UNA NUOVA SESSIONE

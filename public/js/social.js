@@ -27,6 +27,9 @@ function setupSocialEvents() {
             modal.classList.remove("hidden");
             // Imposta la data minima a oggi
             document.getElementById("hike-date").min = new Date().toISOString().split("T")[0];
+            // Punto 8: form.reset() non basta a ripulire il punto di ritrovo scelto,
+            // perche' nome/coordinate/avvisi stanno anche fuori dai campi del modulo.
+            if (window.resetTrailheadPicker) window.resetTrailheadPicker();
         });
     }
 
@@ -138,163 +141,274 @@ function renderHikesList() {
         return;
     }
 
-    filteredHikes.forEach(hike => {
-        const creator = db.users.find(u => u.id === hike.creatorId);
-        const creatorName = creator ? creator.username : "Escursionista";
-        const isCreatorMe = hike.creatorId === currentUser.id;
+    filteredHikes.forEach(hike => container.appendChild(buildHikeCard(hike)));
 
-        // Calcola tempi (standard CAI vs Personalizzati)
-        const times = window.calculateHikeTimes(hike, currentUser);
-        
-        // Verifica idoneità fisica
-        const eligibility = window.getEligibilityBadge(hike, currentUser);
+    if (window.lucide) window.lucide.createIcons();
 
-        // Preferito sentiero
-        const isBookmarked = db.bookmarks.some(b => b.userId === currentUser.id && b.hikeId === hike.id);
+    // "Le mie escursioni" mostra le stesse escursioni divise per gruppo: si ridisegna
+    // insieme a questo elenco invece di aggiungere una chiamata in ognuno dei dodici
+    // punti che aggiornano le escursioni (iscriversi, approvare, completare, creare...).
+    // Cosi' i due elenchi non possono raccontare due cose diverse.
+    if (window.renderMyHikes) window.renderMyHikes();
+}
 
-        // Trova compagno per questo percorso specifico: mostrato solo se anche io l'ho salvato,
-        // per scoprire chi altro ha lo stesso interesse su QUESTO sentiero (non un match generico)
-        let trailMatchHtml = "";
-        if (isBookmarked) {
-            const otherBookmarkers = db.bookmarks
-                .filter(b => b.hikeId === hike.id && b.userId !== currentUser.id)
-                .map(b => db.users.find(u => u.id === b.userId))
-                .filter(Boolean);
-            if (otherBookmarkers.length > 0) {
-                const names = otherBookmarkers.map(u => `<b>${escapeHtml(u.username.split(" ")[0])}</b>`).join(" e ");
-                trailMatchHtml = `<div class="trail-match-line small"><i data-lucide="star"></i> Anche ${names} ${otherBookmarkers.length === 1 ? "ha" : "hanno"} messo questo sentiero nei preferiti.</div>`;
-            }
+// --- LE MIE ESCURSIONI (punto 10 di cose_da_fare.txt) ---
+//
+// Le informazioni "l'ho creata io / ci partecipo / l'ho gia' fatta" esistevano gia', ma
+// solo come riquadri colorati DENTRO le singole schede dell'elenco generale: per trovare
+// le proprie escursioni bisognava scorrere quelle di tutti e guardare scheda per scheda.
+// Qui si usano gli stessi identici criteri (stessi confronti su creatorId, participants,
+// pendingApproval e db.completions) ma per DIVIDERE le escursioni in tre gruppi.
+
+function classificaMieEscursioni() {
+    const db = window.CamoscioState;
+    const utente = db.currentUser;
+    if (!utente) return { create: [], partecipo: [], fatte: [] };
+
+    const idFatte = new Set(
+        (db.completions || []).filter(c => c.userId === utente.id).map(c => c.hikeId)
+    );
+
+    const create = [];
+    const partecipo = [];
+    const fatte = [];
+
+    (db.hikes || []).forEach(h => {
+        const completata = idFatte.has(h.id);
+        const sonoIscritto = (h.participants || []).includes(utente.id);
+        const inAttesa = (h.pendingApproval || []).includes(utente.id);
+        const laHoCreata = h.creatorId === utente.id;
+
+        // "Gia' fatta" vince su tutto: una volta completata non ha piu' senso mostrarla
+        // tra quelle in programma, indipendentemente dal fatto che l'avessi creata tu.
+        if (completata) {
+            fatte.push(h);
+            return;
         }
+        if (laHoCreata) create.push(h);
+        // Chi ha creato l'escursione ne fa anche parte: senza questo controllo
+        // comparirebbe due volte, in "organizzate da me" e in "a cui partecipo".
+        else if (sonoIscritto || inAttesa) partecipo.push(h);
+    });
 
-        const card = document.createElement("div");
-        card.className = "glass-card hike-card";
+    // La piu' vicina nel tempo per prima: e' quella di cui importa davvero.
+    const perData = (a, b) => new Date(a.date) - new Date(b.date);
+    create.sort(perData);
+    partecipo.sort(perData);
+    // Le gia' fatte al contrario: l'ultima cosa fatta e' la prima da rivedere.
+    fatte.sort((a, b) => new Date(b.date) - new Date(a.date));
 
-        // Costruzione partecipanti
-        const participantsHtml = hike.participants.map(pId => {
-            const pUser = db.users.find(u => u.id === pId);
-            if (!pUser) return "";
-            const isLocalExpert = pUser.localExpert && pUser.localExpert.active;
-            const expertTitlePart = isLocalExpert ? ` — Esperto locale: ${escapeHtml(pUser.localExpert.area)}` : "";
+    return { create, partecipo, fatte };
+}
+
+function riempiGruppo(idContenitore, escursioni, messaggioVuoto) {
+    const box = document.getElementById(idContenitore);
+    if (!box) return;
+    box.innerHTML = "";
+
+    if (!escursioni.length) {
+        box.innerHTML = `<div class="glass-card text-center py-4 text-muted col-span-2">${messaggioVuoto}</div>`;
+        return;
+    }
+    escursioni.forEach(h => box.appendChild(buildHikeCard(h)));
+}
+
+function renderMyHikes() {
+    const db = window.CamoscioState;
+    if (!db || !db.currentUser) return;
+    if (!document.getElementById("my-hikes-created")) return;
+
+    const { create, partecipo, fatte } = classificaMieEscursioni();
+
+    document.getElementById("count-created").textContent = create.length;
+    document.getElementById("count-joined").textContent = partecipo.length;
+    document.getElementById("count-done").textContent = fatte.length;
+
+    riempiGruppo("my-hikes-created", create,
+        "Non hai ancora organizzato nessuna escursione. Puoi crearne una dalla sezione Escursioni.");
+    riempiGruppo("my-hikes-joined", partecipo,
+        "Non sei iscritto a nessuna escursione in programma. Guarda quelle degli altri nella sezione Escursioni.");
+    riempiGruppo("my-hikes-done", fatte,
+        "Nessuna escursione completata per ora. Dopo un'uscita ricordati di segnarla come completata.");
+
+    const riepilogo = document.getElementById("my-hikes-summary");
+    if (riepilogo) {
+        const totale = create.length + partecipo.length + fatte.length;
+        riepilogo.innerHTML = totale === 0
+            ? `<div class="glass-card text-center py-4 text-muted">Qui compariranno le tue escursioni: quelle che organizzi, quelle a cui ti iscrivi e quelle che hai già fatto.</div>`
+            : `<div class="glass-card my-hikes-counters">
+                   <div><strong>${create.length}</strong><span>organizzate</span></div>
+                   <div><strong>${partecipo.length}</strong><span>in programma</span></div>
+                   <div><strong>${fatte.length}</strong><span>completate</span></div>
+               </div>`;
+    }
+
+    if (window.lucide) window.lucide.createIcons();
+}
+
+window.renderMyHikes = renderMyHikes;
+
+// Costruisce la scheda di UNA escursione. Estratta da renderHikesList (punto 10 di
+// cose_da_fare.txt) per poterla riusare identica anche nella pagina "Le mie escursioni":
+// due elenchi che mostrano le stesse schede devono restare uguali da soli, senza doverle
+// aggiornare in due punti ogni volta che cambia qualcosa.
+function buildHikeCard(hike) {
+    const db = window.CamoscioState;
+    const currentUser = db.currentUser;
+
+    const creator = db.users.find(u => u.id === hike.creatorId);
+    const creatorName = creator ? creator.username : "Escursionista";
+    const isCreatorMe = hike.creatorId === currentUser.id;
+
+    // Calcola tempi (standard CAI vs Personalizzati)
+    const times = window.calculateHikeTimes(hike, currentUser);
+    
+    // Verifica idoneità fisica
+    const eligibility = window.getEligibilityBadge(hike, currentUser);
+
+    // Preferito sentiero
+    const isBookmarked = db.bookmarks.some(b => b.userId === currentUser.id && b.hikeId === hike.id);
+
+    // Trova compagno per questo percorso specifico: mostrato solo se anche io l'ho salvato,
+    // per scoprire chi altro ha lo stesso interesse su QUESTO sentiero (non un match generico)
+    let trailMatchHtml = "";
+    if (isBookmarked) {
+        const otherBookmarkers = db.bookmarks
+            .filter(b => b.hikeId === hike.id && b.userId !== currentUser.id)
+            .map(b => db.users.find(u => u.id === b.userId))
+            .filter(Boolean);
+        if (otherBookmarkers.length > 0) {
+            const names = otherBookmarkers.map(u => `<b>${escapeHtml(u.username.split(" ")[0])}</b>`).join(" e ");
+            trailMatchHtml = `<div class="trail-match-line small"><i data-lucide="star"></i> Anche ${names} ${otherBookmarkers.length === 1 ? "ha" : "hanno"} messo questo sentiero nei preferiti.</div>`;
+        }
+    }
+
+    const card = document.createElement("div");
+    card.className = "glass-card hike-card";
+
+    // Costruzione partecipanti
+    const participantsHtml = hike.participants.map(pId => {
+        const pUser = db.users.find(u => u.id === pId);
+        if (!pUser) return "";
+        const isLocalExpert = pUser.localExpert && pUser.localExpert.active;
+        const expertTitlePart = isLocalExpert ? ` — Esperto locale: ${escapeHtml(pUser.localExpert.area)}` : "";
+        return `
+            <div class="p-avatar ${pUser.kycVerified ? 'verified' : ''} ${isLocalExpert ? 'local-expert' : ''}" title="${escapeHtml(pUser.username)} (Rep: ${pUser.reputation}%)${expertTitlePart}">
+                ${pUser.avatar}
+            </div>
+        `;
+    }).join("");
+
+    // Bottone Iscrizione / Stato partecipazione
+    let actionBtnHtml = "";
+    const isParticipant = hike.participants.includes(currentUser.id);
+    const isPending = hike.pendingApproval.includes(currentUser.id);
+
+    if (isCreatorMe) {
+        actionBtnHtml = `<span class="badge badge-accent">Organizzatore</span>`;
+    } else if (isParticipant) {
+        actionBtnHtml = `<span class="badge badge-green">Partecipi ✓</span>`;
+    } else if (isPending) {
+        actionBtnHtml = `<span class="badge badge-primary">In attesa approvazione...</span>`;
+    } else {
+        actionBtnHtml = `<button class="btn btn-sm btn-primary" onclick="joinHikeRequest('${hike.id}', ${eligibility.eligible})">Iscriviti</button>`;
+    }
+
+    // Segna come completata: solo per un partecipante, dopo la data dell'escursione, una volta sola
+    let completionBtnHtml = "";
+    const hasCompletedThisHike = db.completions.some(c => c.userId === currentUser.id && c.hikeId === hike.id);
+    if (isParticipant && new Date(hike.date) < new Date()) {
+        completionBtnHtml = hasCompletedThisHike
+            ? `<span class="badge badge-green">Escursione Completata ✓</span>`
+            : `<button class="btn btn-sm btn-success" onclick="markHikeCompleted('${hike.id}')">Segna come completata</button>`;
+    }
+
+    // Pannello Veto del Capogruppo (solo per l'organizzatore)
+    let vetoSectionHtml = "";
+    if (isCreatorMe && hike.pendingApproval && hike.pendingApproval.length > 0) {
+        const pendingItemsHtml = hike.pendingApproval.map(pendingId => {
+            const pendingUser = db.users.find(u => u.id === pendingId);
+            if (!pendingUser) return "";
+            
             return `
-                <div class="p-avatar ${pUser.kycVerified ? 'verified' : ''} ${isLocalExpert ? 'local-expert' : ''}" title="${escapeHtml(pUser.username)} (Rep: ${pUser.reputation}%)${expertTitlePart}">
-                    ${pUser.avatar}
+                <div class="veto-request-item">
+                    <span>${pendingUser.avatar} <b>${escapeHtml(pendingUser.username)}</b> (Rep: ${pendingUser.reputation}%, ${pendingUser.experienceLevel})</span>
+                    <div class="veto-actions">
+                        <button class="btn btn-sm btn-success" style="padding:2px 6px;" onclick="approveParticipant('${hike.id}', '${pendingId}')">Accetta</button>
+                        <button class="btn btn-sm btn-danger" style="padding:2px 6px;" onclick="declineParticipant('${hike.id}', '${pendingId}')">Rifiuta</button>
+                    </div>
                 </div>
             `;
         }).join("");
 
-        // Bottone Iscrizione / Stato partecipazione
-        let actionBtnHtml = "";
-        const isParticipant = hike.participants.includes(currentUser.id);
-        const isPending = hike.pendingApproval.includes(currentUser.id);
-
-        if (isCreatorMe) {
-            actionBtnHtml = `<span class="badge badge-accent">Organizzatore</span>`;
-        } else if (isParticipant) {
-            actionBtnHtml = `<span class="badge badge-green">Partecipi ✓</span>`;
-        } else if (isPending) {
-            actionBtnHtml = `<span class="badge badge-primary">In attesa approvazione...</span>`;
-        } else {
-            actionBtnHtml = `<button class="btn btn-sm btn-primary" onclick="joinHikeRequest('${hike.id}', ${eligibility.eligible})">Iscriviti</button>`;
-        }
-
-        // Segna come completata: solo per un partecipante, dopo la data dell'escursione, una volta sola
-        let completionBtnHtml = "";
-        const hasCompletedThisHike = db.completions.some(c => c.userId === currentUser.id && c.hikeId === hike.id);
-        if (isParticipant && new Date(hike.date) < new Date()) {
-            completionBtnHtml = hasCompletedThisHike
-                ? `<span class="badge badge-green">Escursione Completata ✓</span>`
-                : `<button class="btn btn-sm btn-success" onclick="markHikeCompleted('${hike.id}')">Segna come completata</button>`;
-        }
-
-        // Pannello Veto del Capogruppo (solo per l'organizzatore)
-        let vetoSectionHtml = "";
-        if (isCreatorMe && hike.pendingApproval && hike.pendingApproval.length > 0) {
-            const pendingItemsHtml = hike.pendingApproval.map(pendingId => {
-                const pendingUser = db.users.find(u => u.id === pendingId);
-                if (!pendingUser) return "";
-                
-                return `
-                    <div class="veto-request-item">
-                        <span>${pendingUser.avatar} <b>${escapeHtml(pendingUser.username)}</b> (Rep: ${pendingUser.reputation}%, ${pendingUser.experienceLevel})</span>
-                        <div class="veto-actions">
-                            <button class="btn btn-sm btn-success" style="padding:2px 6px;" onclick="approveParticipant('${hike.id}', '${pendingId}')">Accetta</button>
-                            <button class="btn btn-sm btn-danger" style="padding:2px 6px;" onclick="declineParticipant('${hike.id}', '${pendingId}')">Rifiuta</button>
-                        </div>
-                    </div>
-                `;
-            }).join("");
-
-            vetoSectionHtml = `
-                <div class="veto-management-box">
-                    <span class="small font-bold text-warning" style="display:block; margin-bottom:6px;"><i data-lucide="shield-alert"></i> Richieste Pendenti (Veto):</span>
-                    ${pendingItemsHtml}
-                </div>
-            `;
-        }
-
-        card.innerHTML = `
-            <span class="badge badge-primary hike-difficulty-badge">${hike.difficulty}</span>
-            <h4 style="color:#FFF; margin-bottom: 4px;">${escapeHtml(hike.title)}</h4>
-            <p class="small text-muted" style="margin-bottom: 8px;">Organizzato da: <b>${escapeHtml(creatorName)}</b> ${creator && creator.kycVerified ? '🔹' : ''}</p>
-
-            <p class="small text-secondary" style="line-height:1.4; height: 60px; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(hike.description)}</p>
-            
-            <div class="hike-meta-row">
-                <div class="hike-meta-item">
-                    <span>Dislivello D+</span>
-                    <strong>${hike.elevationGain}m</strong>
-                </div>
-                <div class="hike-meta-item">
-                    <span>Quota Max</span>
-                    <strong>${hike.maxAltitude}m</strong>
-                </div>
-                <div class="hike-meta-item">
-                    <span>Distanza</span>
-                    <strong>${hike.distanceKm} km</strong>
-                </div>
-            </div>
-
-            <div style="background: rgba(0,0,0,0.15); padding: 8px; border-radius: 8px; border: 1px solid var(--border-color); font-size: 0.8rem;">
-                <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
-                    <span>Tempo CAI Standard:</span>
-                    <strong>${times.standardText}</strong>
-                </div>
-                <div style="display:flex; justify-content:space-between; color:var(--accent-blue)">
-                    <span>Il tuo Tempo Personalizzato:</span>
-                    <strong>${times.customText}</strong>
-                </div>
-            </div>
-
-            <div class="tag-list">
-                ${hike.tribeTags.map(t => `<span class="tag">${t}</span>`).join("")}
-                <span class="badge ${eligibility.class}">${eligibility.text}</span>
-            </div>
-
-            <div class="participants-section">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <span class="small text-muted">Partecipanti (${hike.participants.length}):</span>
-                    <div style="display:flex; gap:6px;">
-                        <button class="btn btn-sm btn-secondary" style="padding:2px 6px;" onclick="loadHikeOnMapDirectly('${hike.id}')" title="Vedi sentiero sulla mappa">Mappa</button>
-                        <button class="btn btn-sm btn-secondary" style="padding:2px 6px;" onclick="toggleBookmark('${hike.id}')" title="${isBookmarked ? 'Rimuovi dai preferiti' : 'Aggiungi ai preferiti'}">
-                            ${isBookmarked ? '★' : '☆'}
-                        </button>
-                    </div>
-                </div>
-                <div class="participants-avatars">${participantsHtml}</div>
-            </div>
-
-            ${trailMatchHtml}
-            ${vetoSectionHtml}
-
-            <div style="display:flex; justify-content: flex-end; gap: 8px; margin-top: auto; padding-top: 12px;">
-                ${completionBtnHtml}
-                ${actionBtnHtml}
+        vetoSectionHtml = `
+            <div class="veto-management-box">
+                <span class="small font-bold text-warning" style="display:block; margin-bottom:6px;"><i data-lucide="shield-alert"></i> Richieste Pendenti (Veto):</span>
+                ${pendingItemsHtml}
             </div>
         `;
-        container.appendChild(card);
-    });
+    }
 
-    if (window.lucide) window.lucide.createIcons();
+    card.innerHTML = `
+        <span class="badge badge-primary hike-difficulty-badge">${hike.difficulty}</span>
+        <h4 style="color:#FFF; margin-bottom: 4px;">${escapeHtml(hike.title)}</h4>
+        <p class="small text-muted" style="margin-bottom: 8px;">Organizzato da: <b>${escapeHtml(creatorName)}</b> ${creator && creator.kycVerified ? '🔹' : ''}</p>
+
+        <p class="small text-secondary" style="line-height:1.4; height: 60px; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(hike.description)}</p>
+        
+        <div class="hike-meta-row">
+            <div class="hike-meta-item">
+                <span>Dislivello D+</span>
+                <strong>${hike.elevationGain}m</strong>
+            </div>
+            <div class="hike-meta-item">
+                <span>Quota Max</span>
+                <strong>${hike.maxAltitude}m</strong>
+            </div>
+            <div class="hike-meta-item">
+                <span>Distanza</span>
+                <strong>${hike.distanceKm} km</strong>
+            </div>
+        </div>
+
+        <div style="background: rgba(0,0,0,0.15); padding: 8px; border-radius: 8px; border: 1px solid var(--border-color); font-size: 0.8rem;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                <span>Tempo CAI Standard:</span>
+                <strong>${times.standardText}</strong>
+            </div>
+            <div style="display:flex; justify-content:space-between; color:var(--accent-blue)">
+                <span>Il tuo Tempo Personalizzato:</span>
+                <strong>${times.customText}</strong>
+            </div>
+        </div>
+
+        <div class="tag-list">
+            ${hike.tribeTags.map(t => `<span class="tag">${t}</span>`).join("")}
+            <span class="badge ${eligibility.class}">${eligibility.text}</span>
+        </div>
+
+        <div class="participants-section">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span class="small text-muted">Partecipanti (${hike.participants.length}):</span>
+                <div style="display:flex; gap:6px;">
+                    <button class="btn btn-sm btn-secondary" style="padding:2px 6px;" onclick="loadHikeOnMapDirectly('${hike.id}')" title="Vedi sentiero sulla mappa">Mappa</button>
+                    <button class="btn btn-sm btn-secondary" style="padding:2px 6px;" onclick="toggleBookmark('${hike.id}')" title="${isBookmarked ? 'Rimuovi dai preferiti' : 'Aggiungi ai preferiti'}">
+                        ${isBookmarked ? '★' : '☆'}
+                    </button>
+                </div>
+            </div>
+            <div class="participants-avatars">${participantsHtml}</div>
+        </div>
+
+        ${trailMatchHtml}
+        ${vetoSectionHtml}
+
+        <div style="display:flex; justify-content: flex-end; gap: 8px; margin-top: auto; padding-top: 12px;">
+            ${completionBtnHtml}
+            ${actionBtnHtml}
+        </div>
+    `;
+    return card;
 }
 
 // Richiesta iscrizione con avviso se inesperto
@@ -452,6 +566,17 @@ async function submitCreateHike() {
     const name = document.getElementById("hike-trailhead-name").value;
     const manualApproval = document.getElementById("hike-approval").value === "true";
 
+    // Punto 8: le coordinate non si scrivono piu' a mano, arrivano dalla ricerca per nome
+    // o dalla scelta sulla mappa. Se sono vuote vuol dire che quel passaggio e' stato
+    // saltato: i campi sono nascosti, quindi il browser non puo' segnalarlo da solo con
+    // il classico "campo obbligatorio" (su un campo invisibile non funziona).
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+        window.showToast("Scegli prima il punto di ritrovo: cercalo per nome oppure indicalo sulla mappa.", "error");
+        const ricerca = document.getElementById("hike-trailhead-search");
+        if (ricerca) ricerca.focus();
+        return;
+    }
+
     // Vincolo hard: il ritrovo deve trovarsi in una delle 4 regioni reali (Fase G - prima
     // era solo un rettangolo approssimativo). Ricontrollato comunque lato server in
     // routes/hikes.js: questo e' solo per un messaggio d'errore immediato all'utente.
@@ -490,13 +615,22 @@ async function submitCreateHike() {
         if (response.ok) {
             document.getElementById("create-hike-modal").classList.add("hidden");
             document.getElementById("create-hike-form").reset();
-            
+            if (window.resetTrailheadPicker) window.resetTrailheadPicker();
+
             await refreshState();
-            renderHikesList();
+            renderHikesList(); // ridisegna anche "Le mie escursioni", vedi commento li'
             if (window.populateHikeSelects) window.populateHikeSelects();
+            window.showToast("Escursione pubblicata!", "success");
+        } else {
+            // Prima non si diceva NIENTE quando il server rifiutava: la finestra restava
+            // aperta senza spiegazioni e sembrava che il pulsante non funzionasse. Il caso
+            // piu' probabile e' proprio il rifiuto per ritrovo fuori dalle 4 regioni.
+            const body = await response.json().catch(() => ({}));
+            window.showToast(body.error || "Non è stato possibile pubblicare l'escursione. Controlla i dati inseriti.", "error");
         }
     } catch(e) {
         console.error("Errore creazione escursione:", e);
+        window.showToast("Errore di rete: l'escursione non è stata pubblicata.", "error");
     }
 }
 

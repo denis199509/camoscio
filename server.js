@@ -24,6 +24,7 @@ const squadsRouter = require('./routes/squads');
 const bookmarksRouter = require('./routes/bookmarks');
 const trackingRouter = require('./routes/tracking');
 const regionsRouter = require('./routes/regions');
+const geocodingRouter = require('./routes/geocoding');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -86,6 +87,7 @@ app.use('/api/squads', squadsRouter);
 app.use('/api/bookmarks', bookmarksRouter);
 app.use('/api/tracking', trackingRouter);
 app.use('/api/regions', regionsRouter);
+app.use('/api/geocoding', geocodingRouter);
 
 // Carica una nota vocale del diario (base64 in JSON, nessuna dipendenza aggiuntiva).
 // Salva su disco, non nel database: resta qui perche' non riguarda MongoDB. requireAuth

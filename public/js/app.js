@@ -170,6 +170,7 @@ async function initApp() {
         if (window.initSafetyModule) window.initSafetyModule();
         if (window.initSocialModule) window.initSocialModule();
         if (window.initTrackingModule) window.initTrackingModule();
+        if (window.initTrailheadPicker) window.initTrailheadPicker();
 
         // Forza il render della dashboard iniziale
         renderDashboard();
@@ -259,6 +260,7 @@ function setupNavigation() {
             const prettyNames = {
                 "dashboard": "Dashboard",
                 "hikes": "Escursioni",
+                "my-hikes": "Le mie escursioni",
                 "map-section": "Mappa & Sentieri",
                 "carpool": "Carpooling & Spese Viaggio",
                 "backpack": "Zaino Intelligente Checklist",
@@ -306,6 +308,9 @@ function triggerSectionRender(sectionId) {
                 break;
             case "hikes":
                 if (window.renderHikesList) window.renderHikesList();
+                break;
+            case "my-hikes":
+                if (window.renderMyHikes) window.renderMyHikes();
                 break;
             case "map-section":
                 if (window.renderWazeReportsList) window.renderWazeReportsList();

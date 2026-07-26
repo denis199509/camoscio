@@ -2637,6 +2637,238 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* ==========================================================================
+   LE MIE ESCURSIONI — punto 10 di cose_da_fare.txt
+   ========================================================================== */
+.my-hikes-summary {
+    margin-bottom: 22px;
+}
+
+.my-hikes-counters {
+    display: flex;
+    gap: 28px;
+    justify-content: center;
+    flex-wrap: wrap;
+    padding: 18px 24px;
+}
+
+.my-hikes-counters div {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 90px;
+}
+
+.my-hikes-counters strong {
+    font-size: 1.9rem;
+    color: var(--accent-orange);
+    line-height: 1.1;
+}
+
+.my-hikes-counters span {
+    font-size: 0.78rem;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.my-hikes-group {
+    margin-bottom: 30px;
+}
+
+.my-hikes-group-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 4px;
+    font-size: 1.15rem;
+    color: var(--color-text-primary);
+}
+
+.my-hikes-group-title i {
+    width: 20px;
+    height: 20px;
+    color: var(--accent-orange);
+}
+
+.my-hikes-group > .small {
+    margin-bottom: 14px;
+}
+
+/* ==========================================================================
+   SCELTA DEL PUNTO DI RITROVO — punto 8 di cose_da_fare.txt
+   ========================================================================== */
+.trailhead-search-row {
+    display: flex;
+    gap: 10px;
+    align-items: stretch;
+}
+
+.trailhead-search-field {
+    position: relative;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.trailhead-search-field i {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 16px;
+    color: var(--color-text-muted);
+    pointer-events: none;
+}
+
+.trailhead-search-field input {
+    width: 100%;
+    padding-left: 36px;
+}
+
+#btn-open-map-picker {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Elenco dei luoghi trovati */
+.trailhead-results {
+    margin-top: 6px;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    background: rgba(20, 21, 15, 0.96);
+    max-height: 230px;
+    overflow-y: auto;
+}
+
+.trailhead-result-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--color-text-primary);
+    padding: 10px 12px;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+
+.trailhead-result-item:last-child {
+    border-bottom: none;
+}
+
+.trailhead-result-item:hover {
+    background: var(--accent-orange-glow);
+}
+
+.trailhead-result-name {
+    display: block;
+    font-weight: 600;
+}
+
+/* Riepilogo del punto scelto */
+.trailhead-chosen {
+    margin-top: 10px;
+    padding: 12px;
+    border: 1px solid var(--accent-green);
+    border-radius: 10px;
+    background: var(--accent-green-glow);
+}
+
+.trailhead-chosen-main {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+}
+
+.trailhead-chosen-main i {
+    width: 18px;
+    height: 18px;
+    color: var(--accent-green);
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.trailhead-chosen-coords {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border-color);
+    font-family: monospace;
+    font-size: 0.82rem;
+    color: var(--color-text-secondary);
+    flex-wrap: wrap;
+}
+
+.trailhead-warning {
+    margin-top: 8px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--accent-red);
+    background: var(--accent-red-glow);
+    color: var(--color-text-primary);
+    font-size: 0.82rem;
+}
+
+/* Finestra con la mappa per scegliere il punto */
+.map-picker-content {
+    width: min(860px, 96vw);
+    max-width: 96vw;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.map-picker-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.map-picker-header h4 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+}
+
+.map-picker-hint {
+    margin: 0;
+}
+
+.map-picker-canvas {
+    height: min(52vh, 460px);
+    min-height: 260px;
+    width: 100%;
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    background: #111b27;
+}
+
+.map-picker-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.map-picker-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.map-picker-info span {
+    font-family: monospace;
+}
+
+/* ==========================================================================
    SCHERMO STRETTO / TELEFONO — punto 9 di cose_da_fare.txt
    ==========================================================================
    Misurato dal vivo prima di scrivere queste regole (telefono emulato 390x844):
@@ -2732,6 +2964,9 @@ h1, h2, h3, h4, h5, h6 {
 
     .page-container {
         padding: 14px;
+        /* Spazio in fondo per il pulsante flottante a scarpone: e' fisso in basso a
+           destra e senza questo margine coprirebbe i comandi dell'ultima scheda. */
+        padding-bottom: 96px;
     }
 
     /* --- Sezione Mappa: si impila invece di affiancare --- */
@@ -2790,6 +3025,69 @@ h1, h2, h3, h4, h5, h6 {
 
     .map-recenter-btn {
         align-self: center;
+    }
+
+    /* --- Schede escursione su schermo stretto ---
+       Due colonne su 390px lasciano ~150px per scheda: titolo e numeri diventano
+       illeggibili. Una colonna sola, e il riquadro della difficolta' smette di essere
+       "appiccicato" sopra il titolo (in assoluto lo copriva). Vale per l'elenco
+       generale e per "Le mie escursioni", che usano le stesse schede. */
+    .hikes-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .hike-difficulty-badge {
+        position: static;
+        align-self: flex-start;
+        margin-bottom: -6px;
+    }
+
+    /* I tre dati (dislivello, quota, distanza) affiancati si schiacciavano:
+       meglio due per riga. */
+    .hike-meta-row {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .my-hikes-counters {
+        gap: 14px;
+        padding: 14px;
+    }
+
+    .my-hikes-counters strong {
+        font-size: 1.5rem;
+    }
+
+    .my-hikes-group-title {
+        font-size: 1.02rem;
+    }
+
+    /* Punto 8 su schermo stretto: ricerca e pulsante mappa uno sotto l'altro
+       (affiancati, il pulsante schiaccerebbe la casella di ricerca). */
+    .trailhead-search-row {
+        flex-direction: column;
+    }
+
+    #btn-open-map-picker {
+        justify-content: center;
+    }
+
+    .map-picker-content {
+        width: 96vw;
+        padding: 14px;
+    }
+
+    .map-picker-canvas {
+        height: 46vh;
+    }
+
+    .map-picker-footer {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .map-picker-footer .btn {
+        width: 100%;
     }
 }
 

@@ -123,9 +123,10 @@ Da pianificare e implementare in una sessione futura.
 
 7) Recupero password in caso di dimenticanza - manca del tutto, va aggiunto.
 
-8) Scelta del punto di ritrovo di un'escursione dalla mappa invece che a coordinate
-scritte a mano (oggi il form di creazione escursione chiede latitudine/longitudine
-come numeri, troppo difficile da trovare per una persona normale). Vorrei:
+8) [FATTO 2026-07-26] Scelta del punto di ritrovo di un'escursione dalla mappa invece
+che a coordinate scritte a mano (oggi il form di creazione escursione chiede
+latitudine/longitudine come numeri, troppo difficile da trovare per una persona
+normale). Vorrei:
  - una barra di ricerca con affianco un simbolo di mappa;
  - se scrivo un nome di luogo (es. "Campo Imperatore") il sistema lo deve trovare
    sulla mappa;
@@ -136,6 +137,11 @@ come numeri, troppo difficile da trovare per una persona normale). Vorrei:
    un principiante) invece delle sole coordinate;
  - se il punto non ha nessun riferimento vicino, tenere le coordinate come
    informazione, con la possibilita' di copiarle per incollarle su Google Maps.
+   -> Fatto tutto. Le due caselle numeriche lat/lng sono sparite dal form. Nuovo
+      endpoint server /api/geocoding (proxy verso Nominatim, mai chiamato dal
+      browser) + ricerca dei punti di riferimento di montagna via Overpass. Provato
+      dal vivo: cliccando sull'altopiano il sistema risponde "Campo Imperatore (a 3
+      m)", proprio l'esempio della richiesta. Vedi leggimi.txt per i dettagli.
 
 9) [FATTO 2026-07-26] La mappa sul telefono e' inutilizzabile, tutto troppo piccolo
 (provato sia da telefono che da PC creando un'escursione di prova).
@@ -144,9 +150,12 @@ come numeri, troppo difficile da trovare per una persona normale). Vorrei:
       @media query del progetto: barra a sole icone, mappa impilata sopra le schede.
       Ora la mappa e' larga 306px su telefono. Vedi leggimi.txt per i dettagli.
 
-10) Manca una pagina "Le mie escursioni": le escursioni che ho creato, quelle a cui
-partecipo e quelle gia' fatte non si trovano facilmente sul sito (oggi c'e' solo
-un elenco generale di tutte le escursioni di tutti).
+10) [FATTO 2026-07-26] Manca una pagina "Le mie escursioni": le escursioni che ho
+creato, quelle a cui partecipo e quelle gia' fatte non si trovano facilmente sul
+sito (oggi c'e' solo un elenco generale di tutte le escursioni di tutti).
+   -> Nuova voce di menu "Le mie escursioni" con tre gruppi (Organizzate da me / A
+      cui partecipo / Gia' fatte) e i contatori in cima. Riusa le stesse schede
+      dell'elenco generale, quindi restano allineate da sole.
 
 11) [FATTO 2026-07-26] Quando avvio il tracciamento dal pulsante a forma di scarpone
 (in basso a destra), tempo/distanza/dislivello si aggiornano correttamente, ma SULLA

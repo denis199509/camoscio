@@ -274,6 +274,10 @@
                     <i data-lucide="compass"></i>
                     <span>Escursioni</span>
                 </button>
+                <button class="nav-btn" data-target="my-hikes" id="btn-nav-my-hikes">
+                    <i data-lucide="footprints"></i>
+                    <span>Le mie escursioni</span>
+                </button>
                 <button class="nav-btn" data-target="map-section" id="btn-nav-map">
                     <i data-lucide="map"></i>
                     <span>Mappa & Sentieri</span>
@@ -565,20 +569,57 @@
                                         <input type="number" id="hike-dist" step="0.1" required value="10">
                                     </div>
                                 </div>
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label for="hike-trailhead-lat">Latitudine Ritrovo:</label>
-                                        <input type="number" id="hike-trailhead-lat" step="0.0001" required value="45.9698">
+                                <!-- Punto di ritrovo (punto 8 di cose_da_fare.txt): prima erano tre
+                                     caselle, due delle quali chiedevano latitudine e longitudine come
+                                     numeri - impossibili da trovare per una persona normale. Ora si
+                                     cerca il luogo per nome, oppure lo si sceglie direttamente sulla
+                                     mappa. Le coordinate restano (servono al sistema) ma sono un
+                                     risultato, non piu' qualcosa da procurarsi da soli. -->
+                                <div class="form-group trailhead-picker">
+                                    <label for="hike-trailhead-search">Punto di ritrovo:</label>
+                                    <div class="trailhead-search-row">
+                                        <div class="trailhead-search-field">
+                                            <i data-lucide="search"></i>
+                                            <input type="text" id="hike-trailhead-search" autocomplete="off"
+                                                placeholder="Cerca un luogo, es. Campo Imperatore">
+                                        </div>
+                                        <button type="button" class="btn btn-secondary" id="btn-open-map-picker"
+                                            title="Scegli il punto direttamente sulla mappa">
+                                            <i data-lucide="map-pin"></i> Scegli sulla mappa
+                                        </button>
                                     </div>
-                                    <div class="form-group">
-                                        <label for="hike-trailhead-lng">Longitudine Ritrovo:</label>
-                                        <input type="number" id="hike-trailhead-lng" step="0.0001" required value="9.8115">
+                                    <div id="trailhead-search-results" class="trailhead-results hidden"></div>
+
+                                    <!-- Riepilogo del punto scelto -->
+                                    <div id="trailhead-chosen" class="trailhead-chosen hidden">
+                                        <div class="trailhead-chosen-main">
+                                            <i data-lucide="map-pin"></i>
+                                            <div>
+                                                <strong id="trailhead-chosen-name">—</strong>
+                                                <div class="small text-muted" id="trailhead-chosen-context"></div>
+                                            </div>
+                                        </div>
+                                        <div class="trailhead-chosen-coords">
+                                            <span id="trailhead-chosen-coords-text">—</span>
+                                            <button type="button" class="btn btn-sm btn-secondary" id="btn-copy-coords"
+                                                title="Copia le coordinate (es. per incollarle su Google Maps)">
+                                                <i data-lucide="copy"></i> Copia
+                                            </button>
+                                        </div>
                                     </div>
-                                    <div class="form-group">
-                                        <label for="hike-trailhead-name">Nome Località Ritrovo:</label>
-                                        <input type="text" id="hike-trailhead-name" required placeholder="Es. Rifugio Franchetti">
-                                    </div>
+                                    <div id="trailhead-warning" class="trailhead-warning hidden"></div>
                                 </div>
+
+                                <div class="form-group">
+                                    <label for="hike-trailhead-name">Come chiamare il ritrovo (modificabile):</label>
+                                    <input type="text" id="hike-trailhead-name" required placeholder="Es. Rifugio Franchetti">
+                                </div>
+
+                                <!-- Le coordinate non si scrivono piu' a mano: le riempie la ricerca
+                                     o la scelta sulla mappa. Restano nel form perche' tutto il resto
+                                     del codice (submitCreateHike, validazione regione) le legge da qui. -->
+                                <input type="hidden" id="hike-trailhead-lat" value="">
+                                <input type="hidden" id="hike-trailhead-lng" value="">
                                 <div class="form-group">
                                     <label>Seleziona i Tag Tribù (stile di vita):</label>
                                     <div class="checkbox-group">
@@ -601,6 +642,44 @@
                                 <button type="submit" class="btn btn-primary btn-block">Pubblica Escursione</button>
                             </form>
                         </div>
+                    </div>
+                </section>
+
+                <!-- LE MIE ESCURSIONI (punto 10 di cose_da_fare.txt) -->
+                <!-- Prima esisteva solo l'elenco generale con le escursioni di tutti:
+                     capire quali erano "le mie" richiedeva di scorrerlo tutto cercando i
+                     riquadri colorati dentro le singole schede. Qui le stesse schede sono
+                     divise in tre gruppi chiari. -->
+                <section id="my-hikes" class="page-section">
+                    <div class="my-hikes-summary" id="my-hikes-summary">
+                        <!-- contatori generati da JS -->
+                    </div>
+
+                    <div class="my-hikes-group">
+                        <h3 class="my-hikes-group-title">
+                            <i data-lucide="flag"></i> Organizzate da me
+                            <span class="badge badge-accent" id="count-created">0</span>
+                        </h3>
+                        <p class="small text-muted">Escursioni che hai creato tu. Qui approvi o rifiuti chi chiede di partecipare.</p>
+                        <div class="hikes-grid" id="my-hikes-created"></div>
+                    </div>
+
+                    <div class="my-hikes-group">
+                        <h3 class="my-hikes-group-title">
+                            <i data-lucide="users"></i> A cui partecipo
+                            <span class="badge badge-green" id="count-joined">0</span>
+                        </h3>
+                        <p class="small text-muted">Escursioni in programma a cui sei iscritto, più quelle in attesa di approvazione.</p>
+                        <div class="hikes-grid" id="my-hikes-joined"></div>
+                    </div>
+
+                    <div class="my-hikes-group">
+                        <h3 class="my-hikes-group-title">
+                            <i data-lucide="circle-check-big"></i> Già fatte
+                            <span class="badge badge-primary" id="count-done">0</span>
+                        </h3>
+                        <p class="small text-muted">Escursioni che hai segnato come completate.</p>
+                        <div class="hikes-grid" id="my-hikes-done"></div>
                     </div>
                 </section>
 
@@ -1135,6 +1214,32 @@
         </div>
     </div>
 
+    <!-- Punto 8: mappa a schermo intero per scegliere il punto di ritrovo con un dito,
+         invece di procurarsi latitudine e longitudine da soli. Vive fuori dal form
+         (come tutte le finestre) per non finire dentro un contenitore che scorre. -->
+    <div id="map-picker-modal" class="modal hidden">
+        <div class="modal-content glass-card map-picker-content">
+            <div class="map-picker-header">
+                <h4><i data-lucide="map-pin"></i> Scegli il punto di ritrovo</h4>
+                <button type="button" class="close-modal-btn" id="map-picker-close">&times;</button>
+            </div>
+            <p class="small text-muted map-picker-hint">
+                Tocca la mappa nel punto dove vi trovate. Se vicino c'è un luogo conosciuto,
+                il suo nome verrà usato come riferimento.
+            </p>
+            <div id="map-picker" class="map-picker-canvas"></div>
+            <div class="map-picker-footer">
+                <div class="map-picker-info">
+                    <strong id="map-picker-name">Nessun punto scelto</strong>
+                    <span class="small text-muted" id="map-picker-coords"></span>
+                </div>
+                <button type="button" class="btn btn-primary" id="btn-confirm-map-point" disabled>
+                    Usa questo punto
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Fase F: Tracciamento GPS live. Pulsante flottante + pannello indipendenti dalla
          sidebar (che non e' responsive), raggiungibili da qualunque sezione dell'app:
          e' l'unica parte dell'interfaccia pensata apposta per essere comoda anche su
@@ -1269,6 +1374,7 @@
     <script src="js/offline-map.js"></script>
     <script src="js/map.js"></script>
     <script src="js/tracking.js"></script>
+    <script src="js/trailhead-picker.js"></script>
     <script src="js/app.js"></script>
     
     <script>
