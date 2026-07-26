@@ -93,6 +93,52 @@ router.get('/active', requireAuth, async (req, res) => {
     res.json(session || null);
 });
 
+// Punto 16 di cose_da_fare.txt - i TOTALI reali dell'utente per la Dashboard.
+//
+// I dati esistevano gia' dalla Fase F (ogni sessione salva distanza e dislivello davvero
+// percorsi): mancava solo sommarli. Il conto si fa QUI e non nel browser perche' altrimenti
+// bisognerebbe spedire al telefono l'elenco di tutte le sessioni per poi ridurlo a tre
+// numeri - e le sessioni contengono le tracce GPS, che sono la cosa piu' pesante del
+// database. Cosi' invece viaggiano solo i tre numeri.
+//
+// Si escludono i punti dalla query (.select) proprio per questo: sono migliaia di coordinate
+// per escursione e qui non servono. NON si usa .lean() di proposito - durationSeconds e'
+// una proprieta' calcolata dello schema (vedi models/ActiveHikeSession.js), e ricalcolarne
+// la formula a mano dentro una aggregazione vorrebbe dire tenerne due copie allineate.
+router.get('/totals', requireAuth, async (req, res) => {
+    try {
+        // Solo le sessioni CONCLUSE: una registrazione ancora aperta e' un'escursione in
+        // corso, e farla entrare nei totali li farebbe crescere sotto gli occhi dell'utente
+        // mentre cammina, senza che sia ancora "fatta".
+        const sessioni = await ActiveHikeSession
+            .find({ userId: req.session.userId, status: 'ended' })
+            .select('-points -offTrailBuffer');
+
+        let distanzaKm = 0, dislivelloM = 0, secondi = 0;
+        for (const s of sessioni) {
+            distanzaKm += s.distanceKm || 0;
+            dislivelloM += s.elevationGainM || 0;
+            secondi += s.durationSeconds || 0;
+        }
+
+        // Velocita' media sui TOTALI, non media delle medie: una registrazione di 10 minuti
+        // e una di 6 ore non possono pesare uguale. (Media delle medie = errore classico.)
+        const ore = secondi / 3600;
+        const velocitaMediaKmh = ore > 0 ? Math.round((distanzaKm / ore) * 10) / 10 : 0;
+
+        res.json({
+            sessioni: sessioni.length,
+            distanzaKm: Math.round(distanzaKm * 10) / 10,
+            dislivelloM: Math.round(dislivelloM),
+            secondi: Math.round(secondi),
+            velocitaMediaKmh
+        });
+    } catch (e) {
+        console.error('Errore nel calcolo dei totali di tracciamento:', e);
+        res.status(500).json({ error: 'Impossibile calcolare i totali' });
+    }
+});
+
 router.post('/start', requireAuth, async (req, res) => {
     try {
         const existing = await ActiveHikeSession.findOne({ userId: req.session.userId, openSession: true });

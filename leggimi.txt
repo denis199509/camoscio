@@ -1,9 +1,9 @@
 ===================================================================
 CAMOSCIO — LEGGIMI (stato progetto, aggiornato automaticamente)
-Ultimo aggiornamento: 2026-07-26 — implementati i PUNTI 26 e 27, nati da
-una prova dell'utente dal TELEFONO VERO sul sito online (vedi la sezione
-dedicata subito sotto). Prima di questi, nella stessa giornata: i punti
-9, 11, 12, 14 e poi 8 e 10. Prima ancora, verificato che il sito online
+Ultimo aggiornamento: 2026-07-26 — fatto il BLOCCO 1 dell'ordine di lavoro
+(punti 19, 23 prima meta', 16): vedi la sezione dedicata subito sotto.
+Prima di questo, nella stessa giornata: i punti 26 e 27 (nati da una prova
+dal TELEFONO VERO sul sito online), e prima ancora 9, 11, 12, 14, 8 e 10. Prima ancora, verificato che il sito online
 e' rimasto STABILE dopo il push della Fase H: home/demo/confini/js tutti
 a 200, nessun 502 (la prima chiamata ha impiegato 25s perche' il piano
 gratuito di Render sospende il servizio quando non lo usa nessuno - e'
@@ -25,6 +25,122 @@ una - nessuna implementata, sono materiale per una sessione futura. Vedi
 la sezione dedicata piu' sotto. La QUARTA lista (punti 26-27) e' invece
 gia' fatta, vedi qui sotto.
 ===================================================================
+
+NOTA IMPORTANTE PER CHI RIPARTE DA QUI - BLOCCO 1 FATTO (2026-07-26):
+punti 19, 23 (prima meta') e 16, cioe' i tre che l'ordine di lavoro qui
+sotto metteva per primi. Erano tutti e tre "cose che oggi dicono il falso",
+non funzionalita' mancanti.
+
+--- PUNTO 19: via le finte "sfide in corso" ---
+
+- Tolta la sezione dalla scheda del Passaporto, insieme al codice che la
+  riempiva e agli stili CSS rimasti senza padrone (.challenges-section,
+  .challenge-item, .challenge-info, .progress-bar, .progress-fill:
+  verificato che nessuno di quei nomi compaia piu' nell'HTML o nel JS).
+- COSA SI E' SCOPERTO GUARDANDO DAVVERO IL CODICE: la percentuale NON era
+  finta, la calcolava dai timbri sbloccati dell'utente. Finto era il resto:
+  l'etichetta "(0/2)" era scritta a mano e restava 0 anche dopo aver preso
+  i timbri, e soprattutto era presentata come una SFIDA che nessuno aveva
+  mai creato o accettato. Il Passaporto delle Vette e il contatore "Timbri
+  Vette" restano: quelli sono dati veri.
+
+--- PUNTO 23 (prima meta'): lo zaino di uno sconosciuto ---
+
+- Il difetto vero era una riga: "db.hikes.find(...) || db.hikes[0]". In
+  mancanza di una scelta esplicita lo zaino prendeva LA PRIMA ESCURSIONE
+  DEL DATABASE, di chiunque fosse, e ne mostrava perfino gli oggetti
+  condivisi e la ripartizione dei pesi fra persone mai viste.
+- Ora si guarda solo fra le proprie, RIUSANDO classificaMieEscursioni()
+  della pagina "Le mie escursioni" (punto 10) invece di riscrivere i
+  confronti: altrimenti "mia escursione" finirebbe per voler dire due cose
+  diverse in due punti del sito. Ordine di scelta: quella scelta a mano se
+  e' davvero mia, altrimenti la PROSSIMA in programma, altrimenti la piu'
+  recente fra le mie.
+- Se non ce n'e' nessuna: zaino PERSONALE, senza oggetti condivisi e senza
+  ripartizione pesi. Provato con tutti e 4 gli account demo - Sofia
+  FotoPasso, che non ha escursioni, prima vedeva quella di Marco.
+- Nuovo riquadro in cima che dice sempre PER QUALE escursione e' la lista.
+  Prima il sistema sceglieva da solo e dallo schermo non c'era modo di
+  accorgersene: e' proprio cosi' che il difetto era passato inosservato.
+- STAGIONE: ricavata dalla data vera (era scritta "estate" e basta). Sopra
+  i 2000 m i mesi invernali vanno da NOVEMBRE ad APRILE, non da dicembre a
+  febbraio: in Appennino centrale a marzo a quella quota c'e' ancora
+  ghiaccio, e usare i mesi da calendario manderebbe qualcuno in montagna
+  senza ramponi. Verificato: 20 marzo a 2400 m -> inverno (ramponi in
+  lista), stessa data a 900 m -> mezza stagione.
+- PIOGGIA: previsione vera per il giorno dell'escursione (Open-Meteo,
+  precipitation_probability_max, soglia 40%), al posto del "rainExpected =
+  true" fisso. Quando NON si puo' sapere - escursione fra piu' di due
+  settimane, o gia' passata - la funzione torna null e lo si SCRIVE
+  ("previsioni non ancora disponibili") invece di inventare un valore. Il
+  null e' un terzo stato apposta: "non pioverà" e "non si può sapere" sono
+  due cose diverse e cambiano cosa metti nello zaino.
+- La lista si disegna SUBITO con quello che si sa gia' (stagione e quota,
+  che non dipendono dalla rete) e la pioggia si aggiunge quando la
+  previsione arriva: in montagna la connessione e' quella che e', e una
+  lista che non compare finche' non risponde un server esterno sarebbe
+  peggio di una lista senza la riga della mantella.
+
+--- PUNTO 16: i totali di cammino ---
+
+- Nuova scheda "Quanto hai camminato" in Dashboard: km percorsi, metri di
+  dislivello, velocita' media. I dati esistevano gia' dalla Fase F.
+- Nuovo endpoint GET /api/tracking/totals: la somma la fa il SERVER. Farla
+  nel browser vorrebbe dire spedire al telefono l'elenco di tutte le
+  sessioni per ridurlo a tre numeri, e le sessioni contengono le tracce
+  GPS, la cosa piu' pesante del database. Cosi' viaggiano solo tre numeri.
+- Nel calcolo: velocita' media sui TOTALI (distanza totale / tempo totale),
+  NON media delle medie - una registrazione di 10 minuti e una di 6 ore non
+  possono pesare uguale. E si contano solo le sessioni CONCLUSE: una
+  registrazione aperta e' un'escursione in corso, non una fatta.
+- La query esclude i punti GPS (.select) ma NON usa .lean(): durationSeconds
+  e' una proprieta' calcolata dello schema, e rifarne la formula dentro una
+  aggregazione vorrebbe dire tenerne due copie allineate a mano.
+- Se non c'e' ancora nulla registrato si mostrano trattini e una spiegazione,
+  non degli zeri: uno zero verrebbe letto come "non hai mai camminato".
+
+--- CORREZIONE NECESSARIA EMERSA STRADA FACENDO: DASHBOARD E ZAINO SU
+    TELEFONO ---
+
+- La Dashboard era a DUE COLONNE FISSE (1fr 1fr) e non era mai passata
+  dalle @media: su 390px la colonna destra finiva fuori dallo schermo e non
+  si raggiungeva in nessun modo. La scheda dei totali appena aggiunta stava
+  proprio li': il punto 16 sarebbe stato "fatto" ma invisibile sull'unico
+  apparecchio su cui questo sito viene usato davvero. Stessa identica cosa
+  per lo Zaino (360px + 1fr), dove finiva fuori schermo LA CHECKLIST, cioe'
+  la ragione per cui si apre quella schermata.
+- TRAPPOLA CSS da ricordare, e' costato un giro di misure: impilare le
+  colonne con "grid-template-columns: 1fr" NON BASTA. Una traccia 1fr non
+  scende mai sotto la larghezza minima del suo contenuto: misurato, la
+  colonna restava larga 366px dentro un contenitore di 308 e le schede
+  uscivano tagliate. Serve min-width:0 sugli elementi della griglia (e sulle
+  schede dentro). Vale per qualunque altra sezione si vorra' sistemare.
+- Corretti nella stessa passata: i quattro timbri del Passaporto (il terzo e
+  il quarto restavano fuori dallo schermo -> due per riga) e la riga
+  "Quota Massima / Durata Escursione" dello Zaino. Quest'ultima limitata a
+  #backpack di proposito: .form-row la usano anche altri moduli del sito,
+  non provati in questa sessione.
+- RESTANO NON RESPONSIVE le altre sezioni (Escursioni, Carpooling,
+  Sicurezza, Tribu'). Non e' stato toccato niente li': meglio dirlo che
+  lasciar credere che il sito sia tutto a posto da telefono.
+
+--- COME E' STATO VERIFICATO ---
+
+- Puppeteer nella cartella temporanea, come per i punti 26/27. Nessun dato
+  di prova scritto sul database: le escursioni sono state modificate SOLO
+  IN MEMORIA nella pagina, e le risposte del meteo intercettate.
+- TRAPPOLA nelle prove (ci si e' persi tempo due volte): 1) intercettare le
+  richieste PRIMA di navigare rallenta i caricamenti, e refreshState()
+  arriva DOPO la modifica in memoria riscrivendola - va acceso dopo;
+  2) una risposta finta verso un altro dominio senza l'intestazione
+  Access-Control-Allow-Origin viene SCARTATA dal browser, e l'app finisce
+  giustamente nel ramo "previsione non disponibile": sembrava un difetto
+  del sito, era la prova scritta male.
+- Provato: nessuna traccia delle sfide finte, timbri ancora al loro posto
+  (4 disegnati, 2 sbloccati); totali corretti dal server e formattati in
+  italiano; zaino con tutti e 4 gli account demo; stagione e pioggia in sei
+  combinazioni di data e quota; entrambi i rami della previsione (80% e
+  15%); e la disposizione a 390px e 1440px.
 
 NOTA IMPORTANTE PER CHI RIPARTE DA QUI - PUNTI 26 E 27 FATTI (2026-07-26).
 Nati da una prova dell'utente dal TELEFONO VERO su
@@ -241,6 +357,8 @@ Criteri usati, in ordine di importanza:
     che rischia di consumare spazio su MongoDB (vincolo hard).
 
 --- BLOCCO 1: correzioni rapide, alto impatto (mezza sessione scarsa) ---
+    [FATTO IL 2026-07-26 - tutti e tre. Vedi la sezione dedicata in cima al
+     file. Si riparte dal BLOCCO 2.]
  1. Punto 19 - togliere le finte "sfide in corso". E' il piu' veloce di
     tutti (una manciata di righe in public/index.html) ed e' l'unico che
     oggi mostra un'informazione FALSA a ogni utente appena registrato.
@@ -1765,14 +1883,13 @@ CHECKLIST DI AVANZAMENTO (aggiornare via via che si procede)
     [ ] 15 — caricare file .gpx come escursioni gia' fatte (max 5/mese
         secondo l'ipotesi dell'utente). Attenzione al vincolo di spazio:
         convertire e semplificare in ingresso, mai salvare l'XML com'e'.
-    [ ] 16 — mostrare in Dashboard i TOTALI di distanza e dislivello reali
-        e la velocita' media (i dati esistono gia' dalla Fase F, mancano
-        solo i totali). Le altre voci del punto 16 sono gia' fatte:
-        "escursioni fatte" e "escursioni pianificate" sono coperte dalla
-        pagina "Le mie escursioni"; i badge esistono gia' in Dashboard.
+    [x] 16 — FATTO 2026-07-26: scheda "Quanto hai camminato" con i totali
+        di distanza, dislivello e velocita' media, sommati dal server
+        (nuovo GET /api/tracking/totals). Le altre voci del punto 16 erano
+        gia' fatte prima.
     [ ] 17 — spostare il Dead Man's Switch nella sezione Mappe
     [ ] 18 — tasto e pagina "Badge" (per ora con qualche badge di prova)
-    [ ] 19 — togliere le finte "sfide in corso" scritte a mano nell'HTML
+    [x] 19 — FATTO 2026-07-26: tolte le finte "sfide in corso"
     Mappe:
     [ ] 20 — tasto SOS verso il 112 (link "tel:112"), ben visibile ma
         lontano dal tasto di fine escursione
@@ -1785,10 +1902,12 @@ CHECKLIST DI AVANZAMENTO (aggiornare via via che si procede)
         cose_da_fare.txt). Serve un canale vero: STESSA decisione del
         punto 7, da prendere una volta sola per entrambi.
     Zaino intelligente:
-    [ ] 23 — mostrare di base solo lo zaino personale; oggetti condivisi
-        solo se si partecipa a un'escursione di gruppo. Oggi prende la
-        prima escursione del database, di chiunque sia. Nello stesso
-        punto: stagione fissata a "estate" e pioggia sempre prevista.
+    [~] 23 — PRIMA META' FATTA 2026-07-26: lo zaino non prende piu' la
+        prima escursione del database di chiunque sia (guarda solo fra le
+        proprie, e senza nessuna mostra lo zaino personale); stagione dalla
+        data vera e pioggia dalla previsione vera. RESTA la seconda meta':
+        mostrare gli oggetti condivisi SOLO in un'escursione di gruppo,
+        che dipende dal punto 24 (blocco 3).
     [ ] 24 — distinguere oggetti personali da condivisibili
     [ ] 25 — portata della tenda e verifica che basti per il gruppo
 [x] QUARTA LISTA (cose_da_fare.txt punti 26-27, 2026-07-26) — FATTA.

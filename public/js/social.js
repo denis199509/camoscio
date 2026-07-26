@@ -247,6 +247,10 @@ function renderMyHikes() {
 }
 
 window.renderMyHikes = renderMyHikes;
+// Esportata anche per lo Zaino (punto 23): deve sapere quali escursioni sono DAVVERO
+// dell'utente, e deve usare gli stessi identici criteri di questa pagina - altrimenti
+// "mia escursione" finirebbe per voler dire due cose diverse in due punti del sito.
+window.classificaMieEscursioni = classificaMieEscursioni;
 
 // Costruisce la scheda di UNA escursione. Estratta da renderHikesList (punto 10 di
 // cose_da_fare.txt) per poterla riusare identica anche nella pagina "Le mie escursioni":

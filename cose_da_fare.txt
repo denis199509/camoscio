@@ -210,7 +210,7 @@ memoria disponibile e fattibilita': ipotesi dell'utente, massimo 5 file
    librerie di lettura XML: in Fase G si e' gia' scartato osmtogeojson
    proprio per vulnerabilita' critiche irrisolte in xmldom.
 
-16) La Dashboard deve mostrare:
+16) [FATTO 2026-07-26] La Dashboard deve mostrare:
    - Escursioni fatte -> GIA' PRESENTE (contatore "Escursioni completate"),
      e dal 2026-07-26 c'e' anche la pagina "Le mie escursioni" col gruppo
      "Gia' fatte".
@@ -225,6 +225,13 @@ memoria disponibile e fattibilita': ipotesi dell'utente, massimo 5 file
    - Velocita' media -> DA FARE. Anche questa e' gia' calcolata per ogni
      sessione; la Dashboard oggi mostra solo il passo in m/h (salita e
      discesa), non la velocita' media in km/h.
+   -> FATTO: nuova scheda "Quanto hai camminato" con i tre totali. La somma
+      la fa il server (nuovo GET /api/tracking/totals) invece di spedire al
+      telefono tutte le sessioni con dentro le tracce GPS. La velocita'
+      media e' calcolata sui totali, non come media delle medie.
+      Nel farlo si e' dovuta rendere la Dashboard usabile su telefono: era
+      a due colonne fisse e la colonna destra - dove sta la scheda nuova -
+      finiva fuori dallo schermo.
 
 17) Il Dead Man's Switch va SPOSTATO nella sezione Mappe: serve durante
 l'escursione, non in Dashboard. Oggi c'e' un riquadro "Sicurezza Rapida"
@@ -234,7 +241,7 @@ in Dashboard piu' la versione completa in "Sicurezza & Mesh".
 La lista completa la definira' l'utente in futuro: per ora inserirne
 qualcuno di prova (qualche cima e qualche rifugio).
 
-19) BUG - un utente appena registrato ha gia' delle sfide in corso; non
+19) [FATTO 2026-07-26] BUG - un utente appena registrato ha gia' delle sfide in corso; non
 deve essere cosi'. Le sfide vanno o create o accettate.
    Verificato: la sezione "Sfide in corso" della Dashboard e' scritta a
    mano dentro public/index.html (una sola voce, "Le Vette del Gran Sasso
@@ -242,6 +249,11 @@ deve essere cosi'. Le sfide vanno o create o accettate.
    sfide"). Non e' collegata a nessun dato dell'utente: compare identica
    per chiunque, anche appena registrato. Va tolta e sostituita con vere
    sfide create/accettate, oppure nascosta finche' non esistono davvero.
+   -> FATTO: tolta. Nota emersa lavorandoci: la PERCENTUALE era vera (la
+      calcolava dai timbri sbloccati), ma il "(0/2)" accanto era scritto a
+      mano e restava 0 anche dopo aver preso i timbri. Restano il
+      Passaporto delle Vette e il contatore "Timbri Vette", che sono dati
+      veri. Tolti anche gli stili CSS rimasti senza padrone.
 
 --- MAPPE ---
 
@@ -296,7 +308,7 @@ contatti? Risposta da tenere agli atti:
 
 --- ZAINO INTELLIGENTE ---
 
-23) Di base lo zaino deve mostrare solo le cose dell'utente che sta usando
+23) [PRIMA META' FATTA 2026-07-26] Di base lo zaino deve mostrare solo le cose dell'utente che sta usando
 il sito (zaino base per il tipo di escursione, es. 1500/1700 m). Gli
 oggetti condivisi devono comparire SOLO quando si partecipa a
 un'escursione con piu' membri.
@@ -307,6 +319,20 @@ un'escursione con piu' membri.
    Difetti collegati trovati nello stesso punto: la stagione e' fissata a
    "estate" e la pioggia e' data sempre per prevista, indipendentemente
    dal meteo vero e dalla data reale dell'escursione.
+   -> PRIMA META' FATTA: lo zaino guarda solo fra le PROPRIE escursioni
+      (stessi criteri della pagina "Le mie escursioni", riusando la sua
+      funzione). Se non ce ne sono, mostra lo zaino PERSONALE invece di
+      quello di uno sconosciuto, senza oggetti condivisi ne' ripartizione
+      dei pesi. Un riquadro in cima dice sempre per quale escursione e' la
+      lista. Provato con tutti e 4 gli account demo.
+      Stagione: ricavata dalla data vera. Sopra i 2000 m i mesi invernali
+      vanno da novembre ad aprile e non da dicembre a febbraio - in
+      Appennino a marzo a quella quota c'e' ancora ghiaccio.
+      Pioggia: previsione vera per il giorno dell'escursione (Open-Meteo).
+      Quando non si puo' sapere (oltre due settimane) NON si inventa: si
+      scrive che le previsioni non ci sono ancora.
+      RESTA DA FARE la seconda meta' (oggetti condivisi solo in gruppo),
+      che dipende dal punto 24 - vedi l'ordine di lavoro in leggimi.txt.
 
 24) Distinguere oggetti PERSONALI da oggetti CONDIVISIBILI:
    - personali, obbligatori per ogni membro: giacca, cibo, acqua,

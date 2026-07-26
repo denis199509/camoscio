@@ -843,44 +843,68 @@ h1, h2, h3, h4, h5, h6 {
     color: var(--color-text-secondary);
 }
 
-/* Sfide */
-.challenges-section {
-    border-top: 1px solid var(--border-color);
-    padding-top: 16px;
-    margin-top: 16px;
+/* Punto 16 - totali reali di cammino in Dashboard. Stessa impostazione di .pace-stats qui
+   sotto (tre riquadri affiancati), cosi' le due schede della colonna destra si somigliano
+   invece di sembrare disegnate da due persone diverse. */
+.totals-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin: 16px 0 12px;
 }
 
-.challenges-section h5 {
-    font-size: 0.9rem;
-    margin-bottom: 12px;
-}
-
-.challenge-item {
-    background: rgba(255, 255, 255, 0.03);
+.total-box {
+    background: rgba(0, 0, 0, 0.2);
     padding: 12px;
     border-radius: 10px;
-}
-
-.challenge-info {
+    text-align: center;
     display: flex;
-    justify-content: space-between;
-    font-size: 0.8rem;
-    margin-bottom: 6px;
+    flex-direction: column;
+    gap: 4px;
 }
 
-.progress-bar {
-    height: 8px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 10px;
-    overflow: hidden;
+.total-val {
+    font-family: 'Outfit', sans-serif; /* stesso font dei numeri grandi di .q-val */
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--accent-orange);
+    line-height: 1.1;
 }
 
-.progress-fill {
-    height: 100%;
-    background: var(--accent-orange);
-    border-radius: 10px;
-    transition: width 0.6s ease;
+.total-lbl {
+    font-size: 0.72rem;
+    color: var(--color-text-secondary);
 }
+
+/* Punto 23 - riquadro "per quale escursione e' questo zaino", in cima al generatore. */
+.backpack-context-box {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    background: rgba(0, 0, 0, 0.22);
+    border: 1px solid var(--border-color);
+    border-left: 3px solid var(--accent-orange);
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 14px;
+}
+
+/* Lo zaino puramente personale si distingue a colpo d'occhio da quello di un'escursione di
+   gruppo: sono due situazioni diverse e devono sembrarlo. */
+.backpack-context-box.personale {
+    border-left-color: var(--accent-green);
+}
+
+.backpack-context-box .small {
+    color: var(--color-text-secondary);
+}
+
+/* Punto 19: qui stavano gli stili della finta sezione "Sfide in corso"
+   (.challenges-section, .challenge-item, .challenge-info) piu' la sua barra di avanzamento
+   (.progress-bar / .progress-fill). Tolti tutti insieme al riquadro: verificato che nessuno
+   di questi nomi compare piu' nell'HTML o nel JavaScript - la barra di avanzamento della
+   mappa offline usa una classe sua (.tracking-download-progress-fill). Quando le sfide vere
+   verranno costruite, la loro barra andra' scritta su misura del dato reale. */
 
 /* Pace stats */
 .pace-stats {
@@ -2928,6 +2952,89 @@ h1, h2, h3, h4, h5, h6 {
    rendere responsive il resto dell'app. */
 
 @media (max-width: 900px) {
+    /* --- Dashboard su schermo stretto (punto 16) ---
+       La Dashboard era a DUE colonne fisse (grid-template-columns: 1fr 1fr) e non era mai
+       stata toccata dalle @media: su 390px la colonna destra finiva fuori dallo schermo e
+       non la si raggiungeva in nessun modo. Con i totali di cammino appena aggiunti proprio
+       li' dentro, il punto 16 sarebbe stato "fatto" ma invisibile sull'unico apparecchio su
+       cui questo sito viene usato davvero. Una colonna sola, e si scorre. */
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    /* min-width:0 non e' una rifinitura, senza non funziona niente: una colonna "1fr" di
+       una griglia non scende MAI sotto la larghezza minima del suo contenuto, a meno che
+       non glielo si dica. Misurato: la colonna restava larga 366px dentro un contenitore
+       di 308, e le schede uscivano dallo schermo tagliate a destra. */
+    .dash-col {
+        gap: 16px;
+        min-width: 0;
+    }
+
+    /* Stesso motivo, un livello piu' sotto: senza questo sono le schede a non poter
+       rimpicciolire, e il problema si sposta invece di risolversi. */
+    .dash-col > .glass-card {
+        min-width: 0;
+    }
+
+    /* Tre numeri affiancati in 330px diventano illeggibili: i totali e le statistiche del
+       passo passano a due colonne, con l'ultimo riquadro che occupa tutta la riga. */
+    .totals-grid,
+    .pace-stats {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .totals-grid > :last-child,
+    .pace-stats > :last-child {
+        grid-column: 1 / -1;
+    }
+
+    /* Stesso problema nella scheda di benvenuto: "Punteggio Reputazione" usciva dal bordo. */
+    .quick-stats-row {
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    /* Quattro timbri affiancati in 280px: il terzo e il quarto restavano tagliati fuori
+       dallo schermo. Due per riga si leggono. (Difetto preesistente, saltato all'occhio
+       lavorando sulla stessa scheda per il punto 19.) */
+    .stamps-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+
+    /* --- Zaino su schermo stretto (punto 23) ---
+       Stessa malattia della Dashboard: due colonne fisse (360px + 1fr) mai passate dalle
+       @media. Su 390px la colonna con la CHECKLIST - cioe' la ragione per cui si apre questa
+       schermata - finiva interamente fuori dallo schermo, e la ripartizione dei pesi usciva
+       dal bordo destro. Impilate, e min-width:0 per gli stessi motivi spiegati sopra. */
+    .backpack-layout {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .backpack-config,
+    .backpack-list-area,
+    .backpack-layout > * {
+        min-width: 0;
+    }
+
+    /* Nome, menu a tendina e chilogrammi su una riga sola non entrano: il peso va sotto. */
+    .weight-dist-item {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    /* "Quota Massima" e "Durata Escursione" affiancate escono dallo schermo (la seconda
+       restava tagliata a meta'). Limitato a #backpack di proposito: .form-row la usano
+       anche altri moduli del sito, che non sono stati provati in questa sessione - meglio
+       una correzione che si sa dove arriva che una che tocca schermate mai guardate. */
+    #backpack .form-row {
+        flex-direction: column;
+        gap: 0;
+    }
+
     /* --- Barra di navigazione: solo icone --- */
     .sidebar {
         width: 62px;

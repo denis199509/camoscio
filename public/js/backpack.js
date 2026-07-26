@@ -13,32 +13,143 @@ function setupBackpackEvents() {
     }
 }
 
+// Punto 23 di cose_da_fare.txt (prima meta') - lo zaino deve partire da una escursione MIA.
+//
+// Prima qui c'era "db.hikes.find(h => h.id === db.activeHikeId) || db.hikes[0]": in mancanza
+// di una scelta esplicita prendeva LA PRIMA ESCURSIONE DEL DATABASE, di chiunque essa fosse,
+// e ne mostrava perfino la lista degli oggetti condivisi e la ripartizione dei pesi fra
+// persone mai viste. Ora si guarda solo fra le proprie, e se non ce ne sono si mostra lo
+// zaino personale invece di quello di uno sconosciuto.
+function escursioneDiRiferimento() {
+    const db = window.CamoscioState;
+    if (!db.currentUser) return null;
+
+    // Stessi criteri della pagina "Le mie escursioni" (punto 10): organizzate da me + quelle
+    // a cui partecipo. Riusare quella funzione, invece di riscrivere i confronti, evita che
+    // un domani "mia escursione" voglia dire due cose diverse in due punti del sito.
+    const mie = window.classificaMieEscursioni
+        ? (() => { const c = window.classificaMieEscursioni(); return c.create.concat(c.partecipo); })()
+        : [];
+
+    // Se l'utente ha scelto un'escursione (es. dal pulsante "Mappa" di una scheda) vale solo
+    // se e' davvero sua: altrimenti si tornerebbe a mostrare lo zaino di un altro.
+    const scelta = mie.find(h => h.id === db.activeHikeId);
+    if (scelta) return scelta;
+
+    // Altrimenti la PROSSIMA in programma: e' quella per cui uno sta preparando lo zaino.
+    // Le date sono stringhe "YYYY-MM-DD" (vedi models/Hike.js), quindi si ordinano da sole.
+    const oggi = new Date().toISOString().slice(0, 10);
+    const future = mie.filter(h => h.date && h.date >= oggi).sort((a, b) => a.date.localeCompare(b.date));
+    if (future.length) return future[0];
+
+    // Nessuna in programma: si prende comunque la piu' recente fra le proprie, se c'e'.
+    const passate = mie.filter(h => h.date).sort((a, b) => b.date.localeCompare(a.date));
+    return passate[0] || null;
+}
+
 // Renderizza il modulo zaino in base all'escursione attiva o a input dell'utente
 function renderBackpackModule() {
-    const db = window.CamoscioState;
+    const hike = escursioneDiRiferimento();
 
-    // Usa l'escursione scelta dall'utente (es. dal pulsante "Mappa" di una card); in mancanza, la prima disponibile
-    const activeHike = db.hikes.find(h => h.id === db.activeHikeId) || db.hikes[0];
-    if (!activeHike) return;
+    renderWeightDistribution(hike);
+    mostraEscursioneDiRiferimento(hike);
 
-    // Popola i pesi condivisi per i partecipanti dell'escursione
-    renderWeightDistribution(activeHike);
+    if (hike) {
+        generateChecklistFromHike(hike);
+    } else {
+        // Zaino PERSONALE: nessuna escursione di gruppo, quindi nessun oggetto condiviso e
+        // nessuna ripartizione dei pesi. La stagione la si ricava da oggi, e la pioggia non
+        // si da' per scontata.
+        const altitudine = parseInt(document.getElementById("backpack-altitude").value) || 1500;
+        applyBackpackRules(stagioneDaData(null, altitudine), altitudine, "giornata", false, [], 'generic');
+        nascondiNotaPioggia();
+    }
+}
 
-    // Genera la lista zaino di default per l'altitudine e meteo dell'escursione
-    generateChecklistFromHike(activeHike);
+function nascondiNotaPioggia() {
+    const box = document.getElementById("backpack-weather-note");
+    if (box) box.classList.add("hidden");
+}
+
+// Stagione ricavata dalla data vera dell'escursione (prima era scritta "estate" e basta).
+// La soglia di quota non e' un dettaglio: a 2000 metri sull'Appennino centrale, neve e
+// ghiaccio ci sono da novembre ad aprile, mentre in valle negli stessi mesi si cammina in
+// pile. Usare i soli mesi "da calendario" manderebbe in montagna a marzo senza ramponi.
+function stagioneDaData(dataISO, altitudine) {
+    const d = dataISO ? new Date(dataISO + 'T12:00:00') : new Date();
+    if (Number.isNaN(d.getTime())) return "estate";
+    const mese = d.getMonth() + 1;
+
+    const altaQuota = (altitudine || 0) >= 2000;
+    const mesiInvernali = altaQuota ? [11, 12, 1, 2, 3, 4] : [12, 1, 2];
+
+    if (mesiInvernali.includes(mese)) return "inverno";
+    if ([6, 7, 8].includes(mese)) return "estate";
+    return "autunno-primavera";
+}
+
+// Previsione di pioggia VERA per il giorno dell'escursione, invece di darla sempre per
+// scontata come prima ("const rainExpected = true").
+// Ritorna true / false / null, dove null vuol dire "non lo so": le previsioni esistono solo
+// per i prossimi giorni, e per un'escursione fra due mesi nessuno puo' saperlo. In quel caso
+// non si forza niente nello zaino e lo si dice, invece di inventare.
+async function pioggiaPrevista(hike) {
+    if (!hike || !hike.date || !hike.trailhead) return null;
+
+    const oggi = new Date().toISOString().slice(0, 10);
+    if (hike.date < oggi) return null; // gia' passata: la previsione non ha senso
+
+    const giorniMancanti = (new Date(hike.date + 'T12:00:00') - new Date(oggi + 'T12:00:00')) / 86400000;
+    if (giorniMancanti > 14) return null; // oltre l'orizzonte delle previsioni
+
+    try {
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${hike.trailhead.lat}&longitude=${hike.trailhead.lng}` +
+            `&daily=precipitation_probability_max&start_date=${hike.date}&end_date=${hike.date}&timezone=auto`;
+        const res = await fetch(url);
+        if (!res.ok) return null;
+        const dati = await res.json();
+        const prob = dati.daily && dati.daily.precipitation_probability_max && dati.daily.precipitation_probability_max[0];
+        if (typeof prob !== 'number') return null;
+        // Sopra il 40% conviene avere la mantella nello zaino: sotto, portarla sempre vuol
+        // dire abituarsi a ignorare l'avviso proprio il giorno che serve.
+        return prob >= 40;
+    } catch (e) {
+        console.warn("Impossibile leggere la previsione di pioggia per l'escursione:", e);
+        return null;
+    }
 }
 
 // Genera checklist basata direttamente sui dettagli dell'escursione selezionata
-function generateChecklistFromHike(hike) {
-    const isHighAltitude = hike.maxAltitude >= 2500;
-    
-    // Simula previsione pioggia leggendo i dati meteo correnti (di default assume pioggia se impostato)
-    const rainExpected = true; 
-    
-    const season = "estate"; // Assumi estate per l'escursione di default (Gran Sasso)
-    const duration = "giornata";
+async function generateChecklistFromHike(hike) {
+    const stagione = stagioneDaData(hike.date, hike.maxAltitude);
 
-    applyBackpackRules(season, hike.maxAltitude, duration, rainExpected, hike.backpackTemplate, hike.id);
+    // Si disegna SUBITO con quello che si sa gia' (stagione e quota, che non dipendono dalla
+    // rete), e la pioggia si aggiunge quando la previsione arriva: in montagna la connessione
+    // e' quello che e', e una lista che non compare finche' non risponde un server esterno
+    // sarebbe peggio di una lista senza la riga della mantella.
+    // Nessun campo "durata" esiste ancora sull'escursione: resta "giornata" (vedi models/Hike.js).
+    applyBackpackRules(stagione, hike.maxAltitude, "giornata", false, hike.backpackTemplate, hike.id);
+    aggiornaFormDaEscursione(stagione, hike.maxAltitude, false);
+
+    const pioggia = await pioggiaPrevista(hike);
+    if (pioggia === null) {
+        mostraNotaPioggia(null, hike);
+        return;
+    }
+    applyBackpackRules(stagione, hike.maxAltitude, "giornata", pioggia, hike.backpackTemplate, hike.id);
+    aggiornaFormDaEscursione(stagione, hike.maxAltitude, pioggia);
+    mostraNotaPioggia(pioggia, hike);
+}
+
+// Il modulo qui accanto deve dire la stessa cosa della lista, altrimenti mostra i suoi
+// valori predefiniti mentre la checklist ne usa altri, e non si capisce da dove esca cosa.
+function aggiornaFormDaEscursione(stagione, altitudine, pioggia) {
+    const campoStagione = document.getElementById("backpack-season");
+    const campoQuota = document.getElementById("backpack-altitude");
+    const campoPioggia = document.getElementById("backpack-rain-expected");
+    if (campoStagione) campoStagione.value = stagione;
+    if (campoQuota && typeof altitudine === 'number') campoQuota.value = altitudine;
+    if (campoPioggia) campoPioggia.checked = !!pioggia;
 }
 
 // Genera checklist in base alle scelte manuali del form
@@ -47,6 +158,10 @@ function generateChecklistFromInputs() {
     const altitude = parseInt(document.getElementById("backpack-altitude").value);
     const duration = document.getElementById("backpack-duration").value;
     const rainExpected = document.getElementById("backpack-rain-expected").checked;
+
+    // Scelte fatte a mano: la nota sulla previsione va tolta, altrimenti resterebbe a
+    // raccontare un meteo che non c'entra piu' con la lista appena generata.
+    nascondiNotaPioggia();
 
     applyBackpackRules(season, altitude, duration, rainExpected, [], 'generic');
 }
@@ -234,6 +349,48 @@ function renderChecklistUI(items, hikeId) {
     }
 }
 
+// Riquadro in cima allo zaino: per QUALE escursione e' questa lista. Prima non c'era, e
+// siccome il sistema sceglieva da solo (perfino un'escursione di un altro) non c'era modo di
+// accorgersene guardando lo schermo.
+function mostraEscursioneDiRiferimento(hike) {
+    const box = document.getElementById("backpack-hike-context");
+    if (!box) return;
+
+    if (!hike) {
+        box.className = "backpack-context-box personale";
+        box.innerHTML = `<strong>Zaino personale</strong>
+            <span class="small">Non hai escursioni in programma: questa e' la lista delle tue cose.
+            Iscriviti a un'escursione per vedere anche gli oggetti da dividere col gruppo.</span>`;
+        return;
+    }
+
+    const db = window.CamoscioState;
+    const mia = hike.creatorId === (db.currentUser || {}).id;
+    box.className = "backpack-context-box";
+    box.innerHTML = `<strong>Zaino per: ${escapeHtml(hike.title)}</strong>
+        <span class="small">${hike.date ? new Date(hike.date + 'T12:00:00').toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' }) : 'data non indicata'}
+        · quota massima ${hike.maxAltitude || '?'} m · ${mia ? 'organizzata da te' : 'a cui partecipi'}</span>`;
+}
+
+// Nota sulla previsione di pioggia. Il caso "non lo so" va detto, non nascosto: e' la
+// differenza fra "non pioverà" e "è troppo presto per saperlo", e cambia cosa metti in zaino.
+function mostraNotaPioggia(pioggia, hike) {
+    const box = document.getElementById("backpack-weather-note");
+    if (!box) return;
+
+    box.classList.remove("hidden");
+    if (pioggia === null) {
+        const troppoLontana = hike && hike.date && hike.date > new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10);
+        box.textContent = troppoLontana
+            ? "Previsioni non ancora disponibili: mancano più di due settimane. Ricontrolla lo zaino nei giorni prima di partire."
+            : "Previsioni meteo non disponibili per questa data: la lista non tiene conto della pioggia.";
+        return;
+    }
+    box.textContent = pioggia
+        ? "Previsione: pioggia probabile il giorno dell'escursione. Mantella e coprizaino sono stati resi obbligatori."
+        : "Previsione: giornata senza pioggia. L'attrezzatura antipioggia non è stata forzata nella lista.";
+}
+
 // Renderizza il widget di suddivisione pesi tra gli amici della gita
 function renderWeightDistribution(hike) {
     const container = document.getElementById("backpack-weight-distribution");
@@ -241,6 +398,13 @@ function renderWeightDistribution(hike) {
 
     container.innerHTML = "";
     const db = window.CamoscioState;
+
+    // Senza un'escursione di gruppo non c'e' niente da dividere: prima si finiva qui con
+    // l'escursione di un estraneo e si vedevano i nomi dei suoi partecipanti.
+    if (!hike) {
+        container.innerHTML = `<p class="small text-muted">Nessuna escursione di gruppo in programma: non c'è nulla da ripartire.</p>`;
+        return;
+    }
 
     // Calcola il peso assegnato a ciascun partecipante dell'escursione in base alla lista zaino comune
     const weights = {};

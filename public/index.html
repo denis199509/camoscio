@@ -399,18 +399,14 @@
                                 <div class="stamps-grid" id="stamps-collection">
                                     <!-- Stamp sbloccati renderizzati da JS -->
                                 </div>
-                                <div class="challenges-section">
-                                    <h5>Sfide in corso:</h5>
-                                    <div class="challenge-item">
-                                        <div class="challenge-info">
-                                            <span>Le Vette del Gran Sasso (0/2)</span>
-                                            <span class="small font-bold" id="challenge-percent">0%</span>
-                                        </div>
-                                        <div class="progress-bar">
-                                            <div class="progress-fill" id="challenge-fill" style="width: 0%"></div>
-                                        </div>
-                                    </div>
-                                </div>
+                                <!-- Punto 19 di cose_da_fare.txt: qui c'era una sezione "Sfide in
+                                     corso" con la voce "Le Vette del Gran Sasso (0/2)" scritta a mano
+                                     nell'HTML. Compariva IDENTICA per chiunque, anche per un utente
+                                     appena registrato che non aveva creato ne' accettato nessuna sfida,
+                                     e il "(0/2)" restava 0 anche dopo aver preso i timbri. Tolta: le
+                                     sfide dovranno essere create o accettate davvero, e finche' non
+                                     esistono e' meglio non mostrarne nessuna che mostrarne una finta.
+                                     Il conteggio vero dei timbri resta qui sopra e in "Timbri Vette". -->
                             </div>
 
                             <!-- Card Profilo: verifica KYC + Layer Esperto Locale -->
@@ -453,6 +449,30 @@
                                     <p class="small text-warning text-center">Il sistema invierà un SOS ai contatti fidati alla scadenza se non effettui il check-in.</p>
                                     <button class="btn btn-danger btn-block" id="btn-dash-checkin">DISATTIVA / CHECK-IN</button>
                                 </div>
+                            </div>
+
+                            <!-- Punto 16 di cose_da_fare.txt: i totali REALI di quanto si e'
+                                 camminato. I dati esistevano gia' (ogni tracciamento salva distanza
+                                 e dislivello veri dalla Fase F), ma la Dashboard non ne mostrava
+                                 mai la somma. Riempiti da renderTrackingTotals in app.js. -->
+                            <div class="glass-card totals-card">
+                                <h4><i data-lucide="mountain-snow"></i> Quanto hai camminato</h4>
+                                <p class="small text-muted">Somma di tutte le escursioni che hai registrato con il GPS.</p>
+                                <div class="totals-grid" id="dash-totals">
+                                    <div class="total-box">
+                                        <span class="total-val" id="total-distance">—</span>
+                                        <span class="total-lbl">km percorsi</span>
+                                    </div>
+                                    <div class="total-box">
+                                        <span class="total-val" id="total-elevation">—</span>
+                                        <span class="total-lbl">m di dislivello</span>
+                                    </div>
+                                    <div class="total-box">
+                                        <span class="total-val" id="total-speed">—</span>
+                                        <span class="total-lbl">km/h di media</span>
+                                    </div>
+                                </div>
+                                <p class="small text-muted" id="dash-totals-note"></p>
                             </div>
 
                             <!-- Card Statistiche Passo Personalizzato -->
@@ -927,7 +947,12 @@
                             <div class="glass-card config-backpack-card">
                                 <h4><i data-lucide="settings"></i> Generatore Checklist Intelligente</h4>
                                 <p class="small text-muted">Inserisci i dati ambientali dell'escursione per ottenere una checklist consigliata e dividere i pesi con il gruppo.</p>
-                                
+
+                                <!-- Punto 23: dire per QUALE escursione e' questa lista. Prima il
+                                     sistema sceglieva da solo, arrivando a prendere l'escursione di
+                                     un altro utente, e dallo schermo non c'era modo di accorgersene. -->
+                                <div id="backpack-hike-context" class="backpack-context-box"></div>
+
                                 <form id="backpack-generator-form">
                                     <div class="form-group">
                                         <label for="backpack-season">Stagione:</label>
@@ -978,6 +1003,11 @@
                                     <i data-lucide="alert-triangle"></i>
                                     <span>Quota superiore a 2500 metri ed è prevista pioggia: <strong>Guscio Impermeabile</strong> e <strong>Ramponcini</strong> sono stati inseriti come obbligatori!</span>
                                 </div>
+
+                                <!-- Punto 23: prima la pioggia era data SEMPRE per prevista. Ora la
+                                     previsione e' vera, e quando non si puo' sapere (escursione troppo
+                                     lontana nel tempo) lo si dice invece di inventare. -->
+                                <p class="small text-muted hidden" id="backpack-weather-note"></p>
                                 
                                 <div class="backpack-items-categories" id="backpack-categories-container">
                                     <!-- Renderizzato da JS in categorie: Abbigliamento, Attrezzatura, Alimentazione, Sicurezza/Emergenza -->

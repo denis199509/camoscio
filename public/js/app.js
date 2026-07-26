@@ -465,6 +465,11 @@ function renderDashboard() {
     // Disegna il grafico del passo
     renderPaceChart(usr);
 
+    // Punto 16: i totali reali di distanza, dislivello e velocita' media. Non si aspetta la
+    // sua risposta (nessun await): il resto della Dashboard deve comparire subito, e i tre
+    // numeri si riempiono da soli un istante dopo.
+    renderTrackingTotals();
+
     // Timbri delle Vette
     renderDashboardStamps();
 
@@ -475,6 +480,45 @@ function renderDashboard() {
 
     // Card Profilo: verifica KYC + Layer Esperto Locale
     renderProfileCard(usr);
+}
+
+// Punto 16 di cose_da_fare.txt - totali reali di cammino in Dashboard.
+// La somma la fa il server (GET /api/tracking/totals): qui arrivano gia' tre numeri, invece
+// dell'elenco di tutte le sessioni con dentro le tracce GPS complete.
+async function renderTrackingTotals() {
+    const elDistanza = document.getElementById("total-distance");
+    const elDislivello = document.getElementById("total-elevation");
+    const elVelocita = document.getElementById("total-speed");
+    const nota = document.getElementById("dash-totals-note");
+    if (!elDistanza) return;
+
+    try {
+        const res = await fetch('/api/tracking/totals');
+        if (!res.ok) throw new Error('Richiesta fallita');
+        const t = await res.json();
+
+        elDistanza.textContent = t.distanzaKm.toLocaleString('it-IT');
+        elDislivello.textContent = t.dislivelloM.toLocaleString('it-IT');
+        // La velocita' media a 0 non si scrive "0": senza tempo registrato non e' zero, e'
+        // che non si sa ancora. Sono due cose diverse e mostrarle uguali sarebbe una bugia.
+        elVelocita.textContent = t.velocitaMediaKmh > 0 ? t.velocitaMediaKmh.toLocaleString('it-IT') : "—";
+
+        if (nota) {
+            if (t.sessioni === 0) {
+                nota.textContent = "Non hai ancora registrato nessuna escursione: avvia il tracciamento GPS dalla mappa e questi numeri cominceranno a salire.";
+            } else {
+                const ore = Math.floor(t.secondi / 3600);
+                const minuti = Math.round((t.secondi % 3600) / 60);
+                const tempo = ore > 0 ? `${ore}h ${minuti}min` : `${minuti} min`;
+                nota.textContent = `${t.sessioni} ${t.sessioni === 1 ? 'escursione registrata' : 'escursioni registrate'}, ${tempo} di cammino in totale.`;
+            }
+        }
+    } catch (e) {
+        console.error("Impossibile calcolare i totali delle escursioni:", e);
+        // Meglio lasciare i trattini e dirlo, che mostrare degli zeri: uno zero verrebbe
+        // letto come "non hai mai camminato", che e' un'informazione sbagliata.
+        if (nota) nota.textContent = "Non è stato possibile caricare i totali. Riprova più tardi.";
+    }
 }
 
 // Aggiorna la card "Il Tuo Profilo" (verifica KYC, esperto locale)
@@ -572,12 +616,9 @@ function renderDashboardStamps() {
     ];
 
     container.innerHTML = "";
-    
-    let unlockedCount = 0;
-    
+
     allStamps.forEach(stamp => {
         const isUnlocked = window.CamoscioState.stamps.some(s => s.stampId === stamp.id);
-        if (isUnlocked) unlockedCount++;
 
         const slot = document.createElement("div");
         slot.className = `stamp-slot ${isUnlocked ? 'unlocked' : ''}`;
@@ -593,15 +634,8 @@ function renderDashboardStamps() {
         container.appendChild(slot);
     });
 
-    // Aggiorna progressi della sfida Gran Sasso
-    const challengePercentText = document.getElementById("challenge-percent");
-    const challengeFill = document.getElementById("challenge-fill");
-
-    // Conta quanti timbri del Gran Sasso (rifugio Franchetti e Corno Grande) sono sbloccati
-    const gransassoStamps = ["stamp_mezzeno", "stamp_gemelli"];
-    const orobieUnlocked = window.CamoscioState.stamps.filter(s => gransassoStamps.includes(s.stampId)).length;
-    const progressPercent = Math.round((orobieUnlocked / 2) * 100);
-
-    challengePercentText.textContent = `${progressPercent}%`;
-    challengeFill.style.width = `${progressPercent}%`;
+    // Punto 19: qui si aggiornava la barra della "sfida Gran Sasso". La percentuale era vera
+    // (contava i timbri sbloccati), ma la sfida NO: nessuno l'aveva mai creata o accettata,
+    // compariva a chiunque appena registrato, e l'etichetta "(0/2)" accanto era scritta a mano
+    // nell'HTML e restava 0 anche dopo aver preso i timbri. Tolta insieme al suo riquadro.
 }
