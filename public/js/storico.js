@@ -72,7 +72,85 @@
         }
 
         box.innerHTML = `<div class="outings-grid">${vere.map(schedaUscita).join('')}</div>`;
+
+        // Un ascoltatore solo sul contenitore invece di uno per scheda: le schede vengono
+        // ridisegnate ad ogni caricamento, e agganciarli uno per uno vorrebbe dire
+        // riagganciarli ogni volta (e ricordarsi di farlo).
+        box.querySelectorAll('[data-del-outing]').forEach(b => {
+            b.addEventListener('click', () => cancellaUscita(b.getAttribute('data-del-outing')));
+        });
+
         if (window.lucide) window.lucide.createIcons();
+    }
+
+    // --- CANCELLAZIONE DI UN'USCITA ---
+    //
+    // La conferma dice tre cose precise, perche' sono le tre che uno si chiede prima di
+    // premere: che i chilometri spariranno dai totali, che il posto nel mese torna
+    // disponibile se era un file importato, e che i badge conquistati RESTANO (vedi la
+    // spiegazione nella rotta DELETE in routes/tracking.js: non e' registrato perche' un
+    // timbro sia stato preso, quindi revocarlo rischierebbe di togliere un badge vero).
+    async function cancellaUscita(id) {
+        const scheda = document.querySelector(`.outing-card[data-outing-id="${id}"]`);
+        const titolo = scheda ? (scheda.querySelector('.outing-card-title')?.textContent || 'questa uscita') : 'questa uscita';
+        const importata = !!(scheda && scheda.querySelector('.outing-tag i[data-lucide="upload"], .outing-tag svg.lucide-upload'));
+
+        const righe = [
+            `Cancellare "${titolo}" dallo storico?`,
+            '',
+            'I suoi chilometri e il dislivello spariranno dai totali della Dashboard.',
+            importata
+                ? 'Essendo un file importato, il posto che occupa nel tetto mensile torna libero.'
+                : 'Attenzione: questa uscita e\' stata REGISTRATA col GPS, quindi sono dati misurati sul posto e non si possono ricaricare da nessun file.',
+            '',
+            'I badge che hai conquistato restano nel passaporto.'
+        ];
+        const procedi = window.showConfirmModal
+            ? await window.showConfirmModal(righe.join('\n'), 'Cancella')
+            : true;
+        if (!procedi) return;
+
+        try {
+            const res = await fetch(`/api/tracking/sessions/${encodeURIComponent(id)}`, { method: 'DELETE' });
+            const dati = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                if (window.showToast) window.showToast(dati.error || 'Non è stato possibile cancellare l\'uscita.', 'error');
+                return;
+            }
+            if (window.showToast) window.showToast('Uscita cancellata dallo storico.', 'success');
+
+            await renderStorico();
+            // I totali cambiano, e cambia anche quanti file puoi ancora caricare questo
+            // mese: si rileggono entrambi invece di lasciare due numeri vecchi a schermo.
+            if (window.renderDashboard) window.renderDashboard();
+            aggiornaQuotaDalServer();
+        } catch (e) {
+            console.error('Cancellazione uscita fallita:', e);
+            if (window.showToast) window.showToast('Non è stato possibile contattare il server.', 'error');
+        }
+    }
+
+    // Quanti file risultano caricati questo mese, secondo il server. Si ricava dallo storico
+    // stesso (le uscite importate di questo mese) invece di aggiungere una rotta solo per un
+    // numero che si puo' contare da dati che il browser ha gia'.
+    async function aggiornaQuotaDalServer() {
+        try {
+            const res = await fetch('/api/tracking/sessions');
+            if (!res.ok) return;
+            const sessioni = await res.json();
+            const ora = new Date();
+            const importateQuestoMese = sessioni.filter(s => {
+                if (s.importedFrom !== 'gpx') return false;
+                // La data del CARICAMENTO sta nell'_id (ObjectId): i primi 8 caratteri esadecimali
+                // sono i secondi Unix. Si usa quella e non startedAt, che e' la data
+                // dell'escursione e per un file del 2019 sarebbe il conto sbagliato.
+                const secondi = parseInt(String(s.id).slice(0, 8), 16);
+                if (!Number.isFinite(secondi)) return false;
+                const caricato = new Date(secondi * 1000);
+                return caricato.getFullYear() === ora.getFullYear() && caricato.getMonth() === ora.getMonth();
+            }).length;
+            aggiornaNotaQuota(importateQuestoMese, 5);
+        } catch (e) { /* la nota resta com'e': non vale un messaggio d'errore */ }
     }
 
     function schedaUscita(s) {
@@ -86,12 +164,15 @@
         const sottotitolo = (importata && s.importedName) ? dataItaliana(s.startedAt) : '';
 
         return `
-            <div class="outing-card">
+            <div class="outing-card" data-outing-id="${esc(s.id)}">
                 <div class="outing-card-head">
                     <span class="outing-card-title">${titolo}</span>
                     ${importata
                         ? `<span class="badge badge-accent outing-tag" title="Traccia caricata da un file .gpx, non registrata dal sito"><i data-lucide="upload"></i> importata</span>`
                         : `<span class="badge badge-green outing-tag" title="Registrata col GPS durante l'escursione"><i data-lucide="satellite-dish"></i> registrata</span>`}
+                    <button class="outing-card-del" data-del-outing="${esc(s.id)}"
+                            title="Cancella questa uscita dallo storico"
+                            aria-label="Cancella questa uscita dallo storico"><i data-lucide="trash-2"></i></button>
                 </div>
                 ${sottotitolo ? `<span class="outing-card-sub">${sottotitolo}</span>` : ''}
                 <div class="outing-card-stats">

@@ -218,6 +218,54 @@ router.get('/sessions', requireAuth, async (req, res) => {
     }
 });
 
+// Cancellare un'uscita dallo storico (richiesta dell'utente, 2026-07-27).
+//
+// PERCHE' SERVE: da quando si accettano anche i file .gpx senza orari e gli itinerari
+// progettati (punto 29) e' molto piu' facile importare il file sbagliato. Senza questa
+// rotta quell'uscita restava nei totali PER SEMPRE e continuava a occupare uno dei cinque
+// caricamenti del mese: un errore di un secondo senza rimedio.
+//
+// DUE COSE DA SAPERE, entrambe volute:
+//
+// 1) IL POSTO NEL MESE SI RIPRENDE DA SOLO. Il tetto mensile conta i documenti con
+//    importedFrom='gpx' creati questo mese (vedi /import-gpx): cancellandone uno il conto
+//    scende e il caricamento torna disponibile. Non serve nessun contatore a parte - ed e'
+//    giusto cosi', perche' un file caricato per errore non deve costare un posto.
+//
+// 2) I TIMBRI GIA' CONQUISTATI NON VENGONO REVOCATI, e non e' una dimenticanza. Sul
+//    database non e' registrato PERCHE' un timbro e' stato preso: potrebbe venire da questa
+//    traccia, da un'altra, o dal geofencing sulla Mappa mentre si camminava. Revocarlo
+//    rischierebbe di togliere un badge guadagnato davvero, che e' l'errore peggiore fra i
+//    due. La finestra di conferma lo dice per esteso, cosi' non e' una sorpresa.
+router.delete('/sessions/:id', requireAuth, async (req, res) => {
+    try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(400).json({ error: 'Identificativo non valido.' });
+        }
+        const sessione = await ActiveHikeSession.findById(req.params.id).select('userId status importedFrom');
+        if (!sessione) return res.status(404).json({ error: 'Questa uscita non esiste (forse e\' gia\' stata cancellata).' });
+
+        // Il confronto e' con req.session.userId, MAI con un id mandato dal client: e' la
+        // regola presa in Fase C per tutte le rotte del progetto.
+        if (String(sessione.userId) !== String(req.session.userId)) {
+            return res.status(403).json({ error: 'Puoi cancellare solo le tue uscite.' });
+        }
+        // Una registrazione ancora aperta non si cancella da qui: va prima terminata, e il
+        // pulsante per farlo e' quello della Mappa. Cancellarla mentre il telefono le sta
+        // ancora mandando punti lascerebbe il tracciamento a scrivere su una cosa che non
+        // c'e' piu'.
+        if (sessione.status !== 'ended') {
+            return res.status(409).json({ error: 'Questa registrazione e\' ancora in corso: terminala prima di cancellarla.' });
+        }
+
+        await ActiveHikeSession.deleteOne({ _id: sessione._id, userId: req.session.userId });
+        res.json({ success: true, eraImportata: sessione.importedFrom === 'gpx' });
+    } catch (e) {
+        console.error('Cancellazione uscita fallita:', e);
+        res.status(500).json({ error: 'Non e\' stato possibile cancellare l\'uscita. Riprova.' });
+    }
+});
+
 // --- Badge conquistati da una traccia importata (richiesta dell'utente, 2026-07-27) ---
 //
 // "Importando la traccia dimostri di averlo gia' conquistato": e' vero, ed era un buco.

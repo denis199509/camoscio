@@ -3055,6 +3055,38 @@ h1, h2, h3, h4, h5, h6 {
 .outing-tag i,
 .outing-tag svg { width: 11px; height: 11px; }
 
+/* Cestino per cancellare un'uscita dallo storico. Volutamente DISCRETO a riposo (lo
+   stesso grigio del testo secondario) e rosso mattone solo al passaggio del mouse: e'
+   un comando distruttivo accanto a dei dati, e non deve invitare a premerlo.
+   flex-shrink:0 perche' in un .outing-card-head con un titolo lungo un'icona senza
+   quella regola si schiaccia fino a diventare un rettangolo. */
+.outing-card-del {
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    padding: 2px;
+    cursor: pointer;
+    color: var(--color-text-secondary);
+    opacity: 0.6;
+    transition: color 0.15s, opacity 0.15s;
+    line-height: 1;
+}
+
+.outing-card-del:hover,
+.outing-card-del:focus-visible {
+    color: var(--accent-red);
+    opacity: 1;
+}
+
+/* La regola va scritta per "i" E per "svg": lucide.createIcons() sostituisce il tag <i>
+   con un <svg>, quindi una regola sul solo <i> vale per la frazione di secondo prima che
+   le icone compaiano (trappola gia' pagata al punto 27 con la lente della ricerca). */
+.outing-card-del i,
+.outing-card-del svg {
+    width: 16px;
+    height: 16px;
+}
+
 .outing-card-sub {
     display: block;
     margin-top: 2px;

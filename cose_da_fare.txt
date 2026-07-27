@@ -635,3 +635,28 @@ posto, quindi il badge va dato in automatico.
       traccia vera dell'utente: la distanza dalla vetta del Corno Grande passa
       da 128 m a 6 m. Gli stampId non sono stati toccati, altrimenti si
       perderebbero i timbri gia' presi.
+
+--- STORICO DELLE USCITE ---
+
+31) [FATTO 2026-07-27] Cancellare un'uscita dallo storico. Non era una richiesta
+iniziale: e' emersa facendo il punto 29 ed e' stata proposta all'utente, che ha
+scelto di farla subito.
+   MOTIVO: da quando si accettano anche i file senza orari e gli itinerari
+   progettati e' molto piu' facile importare il file sbagliato, e quello restava
+   nei totali PER SEMPRE continuando a occupare uno dei cinque caricamenti del
+   mese. Un errore di un secondo senza rimedio.
+   -> Fatto: cestino sulla scheda dell'uscita in "Le mie escursioni", con
+      conferma che dice le tre cose che uno si chiede prima di premere - che i
+      chilometri spariranno dai totali, che il posto nel mese torna libero se era
+      un file importato, e che i badge conquistati RESTANO.
+      Il posto nel mese si riprende da solo, senza contatori in piu': il tetto
+      conta i documenti importati del mese, quindi cancellandone uno il conto
+      scende. Provato dal vivo.
+      I TIMBRI NON VENGONO REVOCATI, ed e' una scelta: sul database non e'
+      registrato PERCHE' un timbro sia stato preso (potrebbe venire da un'altra
+      traccia o dal geofencing sulla Mappa camminando), quindi revocarlo
+      rischierebbe di togliere un badge guadagnato davvero.
+      Non si cancella l'uscita di un altro (403) ne' una registrazione ancora in
+      corso (409, con l'invito a terminarla prima). Su una traccia REGISTRATA col
+      GPS l'avviso e' piu' forte, perche' sono dati misurati sul posto e non si
+      possono ricaricare da nessun file.

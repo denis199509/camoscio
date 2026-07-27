@@ -35,10 +35,10 @@ Prima ancora, nella stessa giornata: il BLOCCO 1 (punti 19, 23 prima meta',
     decisione dell'utente e quali trappole sono gia' state pagate. Poi
     torna a leggere il resto.
 
-A CHE PUNTO SIAMO, in breve: dei 30 punti di cose_da_fare.txt ne restano DUE.
+A CHE PUNTO SIAMO, in breve: dei 31 punti di cose_da_fare.txt ne restano DUE.
  - PUNTO 13 (percorso multi-punto): e' IL LAVORO DELLA PROSSIMA SESSIONE, deciso
    dall'utente. Nessun codice ancora scritto. Era previsto per questa sessione,
-   ma l'utente ha segnalato un difetto vero sul caricamento .gpx (punti 29-30) e
+   ma l'utente ha segnalato un difetto vero sul caricamento .gpx (punti 29-31) e
    il file diceva giustamente che quello veniva prima. L'accordo sul 13 e le
    misure sono nella sezione dedicata qui sotto, ancora tutti validi.
  - punti 7, 22 e la seconda meta' del 21 aspettano ancora UNA decisione sua:
@@ -68,13 +68,13 @@ LE LISTE DETTATE DALL'UTENTE, stato aggiornato:
    nota diceva "nessuna implementata" era vero il 25 luglio, non lo e' piu';
  - quarta lista (punti 26-27): fatta;
  - quinta lista (punto 28): fatta, e confermata dall'utente dal telefono;
- - sesta lista (punti 29-30, 2026-07-27 seconda sessione): fatta. Nata dalla
+ - sesta lista (punti 29-31, 2026-07-27 seconda sessione): fatta. Nata dalla
    prova dell'utente col caricamento .gpx dei suoi file veri - la sola prova che
    le verifiche automatiche non potevano fare, ed e' servita: ha trovato un
    difetto vero al primo colpo.
 ===================================================================
 
-NOTA IMPORTANTE PER CHI RIPARTE DA QUI - PUNTI 29 E 30 FATTI (2026-07-27,
+NOTA IMPORTANTE PER CHI RIPARTE DA QUI - PUNTI 29, 30 E 31 FATTI (2026-07-27,
 seconda sessione della giornata). Nati dalla prova dell'utente col caricamento
 .gpx dei suoi FILE VERI, che la sessione precedente aveva lasciato come "prima
 cosa da chiedergli". Chiederglielo e' servito: ha trovato un difetto al primo
@@ -230,24 +230,45 @@ colpo, e poi un secondo piu' grave scoperto lavorandoci.
   di fila e poi 429, kumi 502 e 504. Con quattro server in fila e attese
   crescenti tutte e quattro le ricerche sono andate a buon fine.
 
+--- PUNTO 31: CANCELLARE UN'USCITA (proposto, non chiesto) ---
+
+- NON ERA UNA RICHIESTA: e' emersa facendo il punto 29. Accettando anche i file
+  senza orari e gli itinerari progettati e' molto piu' facile importare il file
+  sbagliato, e prima quello restava nei totali PER SEMPRE continuando a occupare
+  uno dei cinque caricamenti del mese. E' stata PROPOSTA all'utente invece di
+  essere infilata nel lavoro, e l'ha voluta subito.
+- IL POSTO NEL MESE SI RIPRENDE DA SOLO, senza nessun contatore in piu': il tetto
+  conta i documenti con importedFrom='gpx' creati nel mese, quindi cancellandone
+  uno il conto scende. Provato dal vivo: cinque importazioni, la sesta rifiutata
+  con 429, cancellata una, la successiva passa.
+- I TIMBRI NON VENGONO REVOCATI, ed e' una scelta ragionata, non una
+  dimenticanza. Sul database non e' registrato PERCHE' un timbro sia stato preso:
+  potrebbe venire da questa traccia, da un'altra o dal geofencing sulla Mappa
+  mentre si camminava. Revocarlo rischierebbe di togliere un badge guadagnato
+  davvero, che fra i due errori possibili e' il peggiore. La finestra di conferma
+  lo dice per esteso, cosi' non e' una sorpresa.
+- LA CONFERMA DICE LE TRE COSE che uno si chiede prima di premere: i chilometri
+  spariranno dai totali, il posto nel mese torna libero (se era un file), i badge
+  restano. E su una traccia REGISTRATA col GPS l'avviso e' piu' forte: sono dati
+  misurati sul posto, non si possono ricaricare da nessun file. Il pulsante di
+  conferma dice "Cancella", non "OK" - stesso criterio del tasto SOS al punto 20.
+- Rifiutate: l'uscita di un altro utente (403, confronto con req.session.userId e
+  mai con un id mandato dal client) e una registrazione ancora in corso (409, con
+  l'invito a terminarla prima - cancellarla mentre il telefono le manda ancora
+  punti lascerebbe il tracciamento a scrivere su una cosa che non c'e' piu').
+- 34 controlli (18 sulle rotte, 16 nel browser a 1440 e 390 px), tutti passati.
+
 --- UNA COSA NON FATTA, DI PROPOSITO ---
 
-- NON ESISTE UN MODO DI CANCELLARE UN'USCITA IMPORTATA PER ERRORE. Non e' un
-  problema nuovo, ma adesso pesa di piu': accettando anche i file senza orari e
-  gli itinerari progettati, e' piu' facile importare il file sbagliato, e quello
-  resta nei totali per sempre (e consuma uno dei 5 caricamenti del mese).
-  Non e' stato aggiunto perche' e' una funzionalita' nuova che l'utente non ha
-  chiesto - va proposta, non infilata. Se la vuole, e' piccola: una rotta DELETE
-  su una sessione propria piu' un pulsante nella scheda dello storico.
 - Il popup del geofencing dice "Vetta Raggiunta!" anche per un rifugio. E' un
   testo preesistente, non un difetto introdotto ora; lasciato com'e' per non
-  cambiare cose non chieste.
+  cambiare cose non chieste. Da sistemare se un giorno si tocca quel popup.
 
 NOTA IMPORTANTE PER CHI RIPARTE DA QUI - PUNTO 13: ACCORDO PRESO CON L'UTENTE
 (2026-07-27, prima sessione della giornata). NESSUNA RIGA DI CODICE SCRITTA.
 L'utente aveva detto "sono solo indicazioni, non cominciare il lavoro", e poi che
 la sessione successiva sarebbe stata dedicata a questo: e' ancora il prossimo
-passo, perche' la seconda sessione del 27 e' andata sui punti 29-30 (un difetto
+passo, perche' la seconda sessione del 27 e' andata sui punti 29-31 (un difetto
 vero segnalato dall'utente, che veniva prima). Questa sezione esiste perche' le
 decisioni prese qui, senza scriverle, andrebbero perse.
 
@@ -3010,7 +3031,7 @@ CHECKLIST DI AVANZAMENTO (aggiornare via via che si procede)
         approssimata quando il GPS non vede i satelliti.
     [ ] Resta la CONTROPROVA dal telefono vero: e' la sola cosa che questa
         correzione non poteva verificare da sola.
-[x] SESTA LISTA (cose_da_fare.txt punti 29-30, 2026-07-27 seconda sessione) —
+[x] SESTA LISTA (cose_da_fare.txt punti 29-31, 2026-07-27 seconda sessione) —
     FATTA. Nata dalla prova dell'utente col caricamento .gpx dei suoi FILE VERI,
     che la sessione precedente aveva lasciato come "prima cosa da chiedergli".
     [x] 29 — i file .gpx senza gli orari dei punti non vengono piu' rifiutati.
@@ -3031,6 +3052,12 @@ CHECKLIST DI AVANZAMENTO (aggiornare via via che si procede)
         badge storici avevano coordinate sbagliate fino a 2,4 km, cioe' erano
         impossibili da conquistare stando nel posto vero. Corrette e verificate
         sulla traccia dell'utente (da 128 m a 6 m dalla vetta).
+    [x] 31 — cancellare un'uscita dallo storico. NON era una richiesta: e' emersa
+        facendo il 29 (accettando piu' file e' piu' facile importare quello
+        sbagliato, e restava nei totali per sempre occupando un posto del mese)
+        ed e' stata PROPOSTA all'utente, che l'ha voluta subito. Il posto nel mese
+        si riprende da solo; i timbri non vengono revocati, perche' non e'
+        registrato perche' siano stati presi.
     [ ] Resta la CONTROPROVA dell'utente: ricaricare il file che dava errore, e
         controllare che il badge del Corno Grande risulti conquistato.
 
@@ -3055,7 +3082,7 @@ DA DOVE SI RIPARTE — situazione al 2026-07-27, fine SECONDA sessione
 >>> LA PROSSIMA SESSIONE E' DEDICATA AL PUNTO 13 (percorso multi-punto sui
     sentieri). L'utente l'ha deciso lui. Era previsto per la seconda sessione
     del 27, ma la sua prova col caricamento .gpx ha segnalato un difetto vero
-    (punti 29-30) e questo stesso file diceva giustamente che quello veniva
+    (punti 29-31) e questo stesso file diceva giustamente che quello veniva
     prima: e' stato fatto, e il 13 e' rimasto intatto.
     L'accordo completo, le misure e il primo passo stanno nella sezione
     "PUNTO 13: ACCORDO PRESO CON L'UTENTE" in cima a questo file: leggerla PRIMA
@@ -3074,13 +3101,10 @@ DA DOVE SI RIPARTE — situazione al 2026-07-27, fine SECONDA sessione
     routes/tracking.js (150 m, la stessa della Mappa) e le coordinate stanno in
     public/js/badge-points.js.
 
->>> COSA GLI VA PROPOSTO, e non e' stato fatto di iniziativa: NON ESISTE UN MODO
-    DI CANCELLARE UN'USCITA IMPORTATA PER ERRORE. Adesso che si accettano anche
-    i file senza orari e gli itinerari progettati e' piu' facile importare quello
-    sbagliato, e quello resta nei totali per sempre consumando uno dei 5
-    caricamenti del mese. E' un lavoro piccolo (una rotta DELETE su una sessione
-    propria piu' un pulsante nella scheda dello storico) ma e' una funzionalita'
-    nuova che non ha chiesto, quindi va proposta e non infilata.
+>>> FATTO ANCHE IL PUNTO 31 (cancellare un'uscita dallo storico): non era una
+    richiesta, e' emersa facendo il 29 ed e' stata proposta all'utente, che l'ha
+    voluta subito. Se ha importato per errore il file sbagliato, ora dalla scheda
+    dell'uscita c'e' un cestino. Il posto nel tetto mensile torna libero da solo.
 
 >>> DA CHIEDERGLI ANCHE, in sospeso dalla sessione precedente: il DISLIVELLO
     delle tracce importate, confrontato con quello che dice l'app da cui esporta.
@@ -3102,7 +3126,11 @@ FATTO NELLA SECONDA SESSIONE DEL 2026-07-27:
    erano badge impossibili da conquistare stando nel posto vero. Non era in
    nessuna lista: e' emerso verificando che il badge chiesto al punto 30 fosse
    davvero raggiungibile.
+ - PUNTO 31 - cancellare un'uscita dallo storico. Non era una richiesta: e'
+   emersa facendo il 29 ed e' stata proposta all'utente, che l'ha voluta subito.
+   Il posto nel tetto mensile si riprende da solo; i timbri non vengono revocati.
  Dettagli nella sezione dedicata in cima al file.
+ In tutto 131 controlli in sette prove, tutti passati, database identico a prima.
 
 FATTO NELLA PRIMA SESSIONE DEL 2026-07-27:
  - PUNTO 18, BLOCCO 4 - tasto e pagina "Badge". Voce nella barra a sinistra
@@ -3158,7 +3186,7 @@ CHE COSA RESTA IN TUTTO, in mezza riga ciascuno:
                            cima al file.
  - punti 7, 22, 21-resto -> BLOCCATI dalla stessa decisione dell'utente
                            (email o SMS), vedi qui sotto.
-Tutti gli altri punti di cose_da_fare.txt (1-12, 14-20, 23-30) sono FATTI.
+Tutti gli altri punti di cose_da_fare.txt (1-12, 14-20, 23-31) sono FATTI.
 
 DA CHIEDERE ALL'UTENTE PER PRIMA COSA: la controprova delle due correzioni della
 seconda sessione del 27 - il file .gpx che dava errore ora si carica? e il badge
