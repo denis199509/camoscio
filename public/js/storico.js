@@ -221,12 +221,29 @@
         }
 
         try {
-            const res = await fetch('/api/tracking/import-gpx', {
+            let res = await fetch('/api/tracking/import-gpx', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ gpx: testo })
             });
-            const dati = await res.json();
+            let dati = await res.json();
+
+            // PUNTO 32: il file non ha gli orari, quindi il giorno dell'escursione lo deve
+            // dire l'utente. Il server ha risposto 422 senza salvare niente (e senza
+            // consumare un posto del mese): si chiede la data e si rimanda.
+            if (res.status === 422 && dati.richiedeData) {
+                const esito = await chiediData(file, dati);
+                if (!esito) {
+                    return mostraEsito(`<i data-lucide="circle-alert"></i> <span>Caricamento annullato: senza il giorno dell'escursione la traccia non entra nello storico.</span>`, 'errore');
+                }
+                mostraEsito(`<i data-lucide="loader"></i> <span>Sto importando "${esc(file.name)}"…</span>`, 'attesa');
+                res = await fetch('/api/tracking/import-gpx', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ gpx: testo, dataUscita: esito })
+                });
+                dati = await res.json();
+            }
 
             if (!res.ok) {
                 // Il server manda un messaggio gia' scritto per l'utente e che spiega il
@@ -287,6 +304,48 @@
             console.error('Errore importazione .gpx:', e);
             mostraEsito(`<i data-lucide="circle-alert"></i> <span>Non è stato possibile contattare il server. Riprova.</span>`, 'errore');
         }
+    }
+
+    // Chiede all'utente il giorno dell'escursione per un file senza orari.
+    // Restituisce "YYYY-MM-DD", oppure null se ha annullato.
+    //
+    // LA DATA PROPOSTA NON SI PRESENTA COME CERTA, ed e' il punto di tutta questa
+    // finestra: viene dall'intestazione del file, che in molti programmi e' il momento
+    // dell'ESPORTAZIONE e non della camminata. Se la si scrivesse nel campo senza dirlo,
+    // uno confermerebbe a occhi chiusi una data sbagliata - che e' esattamente quello che
+    // e' successo prima che questa finestra esistesse.
+    async function chiediData(file, dati) {
+        const km = (dati.distanzaKm || 0).toFixed(1).replace('.', ',');
+        const righe = [
+            `"${dati.nome || file.name}" non contiene gli orari dei punti.`,
+            '',
+            `La traccia è buona (${km} km, ${Math.round(dati.dislivelloM || 0)} m di dislivello), ma senza orari il sito non può sapere che giorno hai camminato.`,
+            '',
+            dati.dataProposta
+                ? `Nel file c'è la data ${italiana(dati.dataProposta)}, ma spesso è il giorno in cui hai ESPORTATO il file, non quello dell'escursione. Controllala.`
+                : 'Nel file non c\'è nessuna data.',
+            '',
+            'Che giorno era?'
+        ];
+        const scelta = window.showDateModal
+            ? await window.showDateModal(righe.join('\n'), dati.dataProposta || '', 'Importa')
+            : await window.showPromptModal(righe.join('\n'), dati.dataProposta || '');
+
+        if (!scelta) return null;
+        const pulita = String(scelta).trim();
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(pulita)) {
+            if (window.showToast) window.showToast('Data non valida: serve nel formato giorno/mese/anno.', 'error');
+            return null;
+        }
+        return pulita;
+    }
+
+    // "2026-06-14" -> "14/06/2026". Si spezza la stringa invece di usare new Date(): una
+    // data "YYYY-MM-DD" viene letta come mezzanotte UTC e in un fuso dietro Greenwich
+    // mostrerebbe il giorno prima (stessa trappola gia' scritta in badges.js).
+    function italiana(iso) {
+        const p = String(iso || '').split('-');
+        return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : String(iso || '');
     }
 
     function aggiornaNotaQuota(caricati, massimo) {

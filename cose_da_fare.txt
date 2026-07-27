@@ -660,3 +660,22 @@ scelto di farla subito.
       corso (409, con l'invito a terminarla prima). Su una traccia REGISTRATA col
       GPS l'avviso e' piu' forte, perche' sono dati misurati sul posto e non si
       possono ricaricare da nessun file.
+
+32) [FATTO 2026-07-27] La data di un'escursione importata da un file senza orari
+era sbagliata. Trovato sui DATI VERI dell'utente subito dopo il punto 29: il suo
+file "Monte Gorzano 14/06/26" e' entrato nello storico con la data del 10 luglio,
+e con quella data e' finito anche il badge.
+   CAUSA: non avendo gli orari sui punti, la data veniva presa dall'intestazione
+   del file (<metadata><time>). In quel file - come in molti - quella non e' il
+   giorno della camminata ma IL MOMENTO IN CUI IL FILE E' STATO ESPORTATO. Il
+   sito non puo' distinguerle: sono la stessa cosa guardando il file.
+   -> Scelta dell'utente: CHIEDERE LA DATA AL MOMENTO DEL CARICAMENTO. Ora, se il
+      file non ha gli orari, il server risponde senza salvare niente e il sito
+      chiede che giorno era, proponendo la data trovata nel file e avvertendo per
+      esteso che potrebbe essere quella di esportazione.
+      Il campo e' un calendario vero (type="date"), quindi sul telefono si sceglie
+      la data invece di scriverla; non si puo' scegliere un giorno futuro.
+      La data scelta vale anche per il BADGE conquistato con quella traccia.
+      Il tentativo rifiutato NON consuma uno dei 5 caricamenti del mese, perche'
+      non salva niente. I file CON gli orari non chiedono niente e continuano a
+      prendere la data dai punti, che e' quella giusta.

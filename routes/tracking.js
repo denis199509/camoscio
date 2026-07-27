@@ -412,6 +412,52 @@ router.post('/import-gpx', requireAuth, async (req, res) => {
             throw e;
         }
 
+        // PUNTO 32: se il file non ha gli orari, LA DATA LA DICE L'UTENTE.
+        //
+        // Nato da un caso vero (2026-07-27): un file dell'utente senza orari e' entrato con
+        // la data del 10 luglio, mentre l'escursione era del 14 giugno. La data veniva
+        // dall'intestazione del file (<metadata><time>), che in quel file - come in molti -
+        // non e' il giorno della camminata ma IL MOMENTO IN CUI IL FILE E' STATO ESPORTATO.
+        // Il sito non puo' saperlo: le due date sono indistinguibili guardando il file.
+        // Quindi non si indovina. Si risponde 422 SENZA salvare niente, si propone la data
+        // trovata e si aspetta che l'utente confermi o la corregga.
+        // NON consuma un posto del tetto mensile, proprio perche' non salva niente.
+        if (letto.durataIgnota && !req.body.dataUscita) {
+            const { distanzaKm, dislivelloM } = statisticheTraccia(letto.punti, SOGLIA_DISLIVELLO_IMPORT_M, haversineKm);
+            return res.status(422).json({
+                richiedeData: true,
+                dataProposta: letto.inizio ? letto.inizio.toISOString().split('T')[0] : null,
+                nome: letto.nome || null,
+                distanzaKm, dislivelloM,
+                puntiLetti: letto.punti.length
+            });
+        }
+
+        // La data scelta dall'utente vince sempre su quella del file.
+        if (req.body.dataUscita) {
+            const scelta = String(req.body.dataUscita).trim();
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(scelta)) {
+                return res.status(400).json({ error: 'La data non e\' in un formato valido.' });
+            }
+            // Mezzogiorno e non mezzanotte: una data "YYYY-MM-DD" letta come mezzanotte UTC,
+            // riletta in un fuso dietro Greenwich, mostrerebbe il giorno PRIMA. E' la stessa
+            // trappola gia' scritta per le date dei timbri in public/js/badges.js.
+            const d = new Date(`${scelta}T12:00:00Z`);
+            if (isNaN(d.getTime())) {
+                return res.status(400).json({ error: 'La data non e\' valida.' });
+            }
+            if (d.getTime() > Date.now()) {
+                return res.status(400).json({ error: 'La data e\' nel futuro: un\'escursione gia\' fatta non puo\' essere domani.' });
+            }
+            if (d.getFullYear() < 1990) {
+                return res.status(400).json({ error: 'La data e\' troppo indietro nel tempo per essere una traccia GPS.' });
+            }
+            letto.inizio = d;
+            letto.fine = d;
+            // L'avviso sulla data mancante non ha piu' senso: la data ora c'e' ed e' sua.
+            letto.avvisi = (letto.avvisi || []).filter(a => !/nessuna data/i.test(a));
+        }
+
         // Vincolo geografico del progetto: Marche, Lazio, Abruzzo, Molise. Si guarda un
         // campione di punti e si chiede che la MAGGIORANZA sia dentro, invece del solo punto
         // di partenza come fa la creazione di un'escursione: un sentiero di crinale entra ed

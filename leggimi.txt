@@ -1,15 +1,21 @@
 ===================================================================
 CAMOSCIO — LEGGIMI (stato progetto, aggiornato automaticamente)
 Ultimo aggiornamento: 2026-07-27 (SECONDA sessione della giornata) — fatti i
-PUNTI 29 e 30, nati dalla prova dell'utente col caricamento .gpx dei suoi FILE
-VERI. In breve: i file senza gli orari dei punti non vengono piu' rifiutati (ma
-la loro durata resta ignota e non entra nella velocita' media), e importando una
-traccia i badge conquistati vengono assegnati da soli. Facendolo si e' scoperto
-che TRE dei quattro badge storici avevano coordinate sbagliate fino a 2,4 km,
-cioe' erano impossibili da conquistare stando nel posto vero: corrette.
-IL PUNTO 13 NON E' STATO INIZIATO: la prova dell'utente ha segnalato un difetto
-vero, e come previsto quello veniva prima. La prossima sessione riparte dal 13,
-il cui accordo e' nella sezione dedicata piu' sotto, ancora valido.
+PUNTI 29, 30, 31 e 32, nati dalla prova dell'utente col caricamento .gpx dei suoi
+FILE VERI. In breve: i file senza gli orari dei punti non vengono piu' rifiutati
+(ma la loro durata resta ignota e non entra nella velocita' media), importando una
+traccia i badge conquistati vengono assegnati da soli, un'uscita si puo'
+cancellare dallo storico, e per i file senza orari la data dell'escursione la dice
+l'utente invece di prenderla dal file. Facendolo si e' scoperto che TRE dei
+quattro badge storici avevano coordinate sbagliate fino a 2,4 km, cioe' erano
+impossibili da conquistare stando nel posto vero: corrette.
+L'UTENTE HA CONFERMATO dal sito vero che tutto funziona.
+
+IL PUNTO 13 NON E' STATO INIZIATO, ED E' UNA CONSEGNA ESPLICITA DELL'UTENTE
+(2026-07-27, a fine sessione): "aspetta mie indicazioni prima di cominciare il
+punto 13". Quindi la prossima sessione NON deve partire da sola: il 13 e' il
+prossimo lavoro, ma il via lo da' lui. L'accordo e le misure sono nella sezione
+dedicata piu' sotto, ancora tutti validi.
 
 Prima, nella PRIMA sessione del 2026-07-27: il PUNTO 18 (tasto e pagina "Badge")
 e il PUNTO 15 (caricamento di file .gpx come uscite gia' fatte, piu' l'elenco
@@ -35,10 +41,10 @@ Prima ancora, nella stessa giornata: il BLOCCO 1 (punti 19, 23 prima meta',
     decisione dell'utente e quali trappole sono gia' state pagate. Poi
     torna a leggere il resto.
 
-A CHE PUNTO SIAMO, in breve: dei 31 punti di cose_da_fare.txt ne restano DUE.
+A CHE PUNTO SIAMO, in breve: dei 32 punti di cose_da_fare.txt ne restano DUE.
  - PUNTO 13 (percorso multi-punto): e' IL LAVORO DELLA PROSSIMA SESSIONE, deciso
    dall'utente. Nessun codice ancora scritto. Era previsto per questa sessione,
-   ma l'utente ha segnalato un difetto vero sul caricamento .gpx (punti 29-31) e
+   ma l'utente ha segnalato un difetto vero sul caricamento .gpx (punti 29-32) e
    il file diceva giustamente che quello veniva prima. L'accordo sul 13 e le
    misure sono nella sezione dedicata qui sotto, ancora tutti validi.
  - punti 7, 22 e la seconda meta' del 21 aspettano ancora UNA decisione sua:
@@ -68,13 +74,14 @@ LE LISTE DETTATE DALL'UTENTE, stato aggiornato:
    nota diceva "nessuna implementata" era vero il 25 luglio, non lo e' piu';
  - quarta lista (punti 26-27): fatta;
  - quinta lista (punto 28): fatta, e confermata dall'utente dal telefono;
- - sesta lista (punti 29-31, 2026-07-27 seconda sessione): fatta. Nata dalla
+ - sesta lista (punti 29-32, 2026-07-27 seconda sessione): fatta e CONFERMATA
+   dall utente dal sito vero. Nata dalla
    prova dell'utente col caricamento .gpx dei suoi file veri - la sola prova che
    le verifiche automatiche non potevano fare, ed e' servita: ha trovato un
    difetto vero al primo colpo.
 ===================================================================
 
-NOTA IMPORTANTE PER CHI RIPARTE DA QUI - PUNTI 29, 30 E 31 FATTI (2026-07-27,
+NOTA IMPORTANTE PER CHI RIPARTE DA QUI - PUNTI 29, 30, 31 E 32 FATTI (2026-07-27,
 seconda sessione della giornata). Nati dalla prova dell'utente col caricamento
 .gpx dei suoi FILE VERI, che la sessione precedente aveva lasciato come "prima
 cosa da chiedergli". Chiederglielo e' servito: ha trovato un difetto al primo
@@ -230,6 +237,41 @@ colpo, e poi un secondo piu' grave scoperto lavorandoci.
   di fila e poi 429, kumi 502 e 504. Con quattro server in fila e attese
   crescenti tutte e quattro le ricerche sono andate a buon fine.
 
+--- PUNTO 32: LA DATA LA DICE L'UTENTE (trovato sui dati veri, dopo il 29) ---
+
+- L'UTENTE HA CONFERMATO che i punti 29, 30 e 31 funzionano dal sito vero: il file
+  che dava errore ora si carica e il badge del Corno Grande c'e'. Controllato anche
+  sul database, ed e' li' che e' saltato fuori un difetto NUOVO.
+- COSA E' SUCCESSO: il suo file "Monte Gorzano 14/06/26" (senza orari, confermato -
+  tutti i secondi a zero) e' entrato nello storico con la data del 10 LUGLIO, e con
+  quella data e' finito anche il badge. La data veniva da <metadata><time>, che in
+  quel file e' il momento dell'ESPORTAZIONE, non della camminata. Il sito non puo'
+  distinguerle: guardando il file sono la stessa cosa.
+  Vale come metodo: la conferma "funziona" e' il momento GIUSTO per guardare i dati
+  veri, non quello per smettere di guardare. Il difetto era invisibile alle 131
+  prove automatiche perche' tutte usavano file costruiti da noi, dove le due date
+  coincidono per costruzione.
+- SCELTA DELL'UTENTE fra quattro proposte: CHIEDERE LA DATA AL CARICAMENTO.
+  Ora, se il file non ha gli orari, il server risponde 422 SENZA SALVARE NIENTE e
+  il sito chiede che giorno era, proponendo la data trovata e dicendo per esteso
+  che potrebbe essere quella di esportazione. Se non la si conferma, non si importa.
+- DETTAGLI CHE CONTANO:
+  * il tentativo rifiutato NON consuma uno dei 5 caricamenti del mese, proprio
+    perche' non salva niente;
+  * la data scelta vale anche per il TIMBRO conquistato con quella traccia, non
+    solo per l'uscita: sono la stessa escursione;
+  * il campo e' un calendario vero (type="date"), cosi' sul telefono si sceglie la
+    data invece di scriverla col pollice; niente date future;
+  * la data si salva a MEZZOGIORNO e non a mezzanotte: "YYYY-MM-DD" letta come
+    mezzanotte UTC e rimostrata in un fuso dietro Greenwich darebbe il giorno prima
+    (stessa trappola gia' scritta per le date dei timbri in badges.js);
+  * showGenericModal ha ora un parametro per il TIPO del campo, e lo rimette sempre
+    a "text": il campo e' UNO SOLO riusato da tutte le finestre, e lasciarlo su
+    "date" farebbe comparire un calendario alla prossima richiesta di testo.
+    C'e' un controllo apposta che lo verifica.
+- I file CON gli orari non chiedono niente e continuano a prendere la data dai
+  punti: verificato che non sia cambiato niente per loro.
+
 --- PUNTO 31: CANCELLARE UN'USCITA (proposto, non chiesto) ---
 
 - NON ERA UNA RICHIESTA: e' emersa facendo il punto 29. Accettando anche i file
@@ -268,7 +310,7 @@ NOTA IMPORTANTE PER CHI RIPARTE DA QUI - PUNTO 13: ACCORDO PRESO CON L'UTENTE
 (2026-07-27, prima sessione della giornata). NESSUNA RIGA DI CODICE SCRITTA.
 L'utente aveva detto "sono solo indicazioni, non cominciare il lavoro", e poi che
 la sessione successiva sarebbe stata dedicata a questo: e' ancora il prossimo
-passo, perche' la seconda sessione del 27 e' andata sui punti 29-31 (un difetto
+passo, perche' la seconda sessione del 27 e' andata sui punti 29-32 (un difetto
 vero segnalato dall'utente, che veniva prima). Questa sezione esiste perche' le
 decisioni prese qui, senza scriverle, andrebbero perse.
 
@@ -3031,7 +3073,7 @@ CHECKLIST DI AVANZAMENTO (aggiornare via via che si procede)
         approssimata quando il GPS non vede i satelliti.
     [ ] Resta la CONTROPROVA dal telefono vero: e' la sola cosa che questa
         correzione non poteva verificare da sola.
-[x] SESTA LISTA (cose_da_fare.txt punti 29-31, 2026-07-27 seconda sessione) —
+[x] SESTA LISTA (cose_da_fare.txt punti 29-32, 2026-07-27 seconda sessione) —
     FATTA. Nata dalla prova dell'utente col caricamento .gpx dei suoi FILE VERI,
     che la sessione precedente aveva lasciato come "prima cosa da chiedergli".
     [x] 29 — i file .gpx senza gli orari dei punti non vengono piu' rifiutati.
@@ -3058,8 +3100,15 @@ CHECKLIST DI AVANZAMENTO (aggiornare via via che si procede)
         ed e' stata PROPOSTA all'utente, che l'ha voluta subito. Il posto nel mese
         si riprende da solo; i timbri non vengono revocati, perche' non e'
         registrato perche' siano stati presi.
-    [ ] Resta la CONTROPROVA dell'utente: ricaricare il file che dava errore, e
-        controllare che il badge del Corno Grande risulti conquistato.
+    [x] 32 — per i file senza orari la DATA dell'escursione la dice l'utente al
+        caricamento (calendario, con proposta quella trovata nel file e l'avviso
+        che potrebbe essere quella di esportazione). Trovato guardando i suoi dati
+        VERI dopo la conferma: il suo file era entrato con la data di esportazione
+        invece di quella della camminata, e il badge con essa. Il tentativo
+        rifiutato non consuma un posto del mese; la data scelta vale anche per il
+        timbro.
+    [x] CONTROPROVA DELL'UTENTE FATTA: ha ricaricato il file che dava errore, si
+        carica, e il badge del Corno Grande c'e'. Verificato anche sul database.
 
 
 COME RIPRENDERE IL LAVORO IN UNA NUOVA SESSIONE
@@ -3079,38 +3128,37 @@ COME RIPRENDERE IL LAVORO IN UNA NUOVA SESSIONE
 DA DOVE SI RIPARTE — situazione al 2026-07-27, fine SECONDA sessione
 ===================================================================
 
->>> LA PROSSIMA SESSIONE E' DEDICATA AL PUNTO 13 (percorso multi-punto sui
-    sentieri). L'utente l'ha deciso lui. Era previsto per la seconda sessione
-    del 27, ma la sua prova col caricamento .gpx ha segnalato un difetto vero
-    (punti 29-31) e questo stesso file diceva giustamente che quello veniva
-    prima: e' stato fatto, e il 13 e' rimasto intatto.
-    L'accordo completo, le misure e il primo passo stanno nella sezione
-    "PUNTO 13: ACCORDO PRESO CON L'UTENTE" in cima a questo file: leggerla PRIMA
-    di toccare qualunque cosa, perche' contiene tre decisioni gia' prese che non
-    vanno richieste di nuovo. Il primo passo e' una MISURA su Overpass (quanto
-    costerebbe allargare il filtro dei sentieri), non del codice.
+>>> NON COMINCIARE IL PUNTO 13 DA SOLO. L'utente ha detto testualmente, a fine
+    sessione del 2026-07-27: "aspetta mie indicazioni prima di cominciare il
+    punto 13". E' il prossimo lavoro e lo ha deciso lui, ma il via lo da' lui.
+    Fino ad allora: rispondere alle sue domande, non aprire il cantiere.
+    Quando dara' il via: l'accordo completo, le misure e il primo passo stanno
+    nella sezione "PUNTO 13: ACCORDO PRESO CON L'UTENTE" in cima a questo file.
+    Leggerla PRIMA di toccare qualunque cosa, perche' contiene tre decisioni gia'
+    prese che non vanno richieste di nuovo. Il primo passo e' una MISURA su
+    Overpass (quanto costerebbe allargare il filtro dei sentieri), non del codice.
+    Il 13 era previsto per la seconda sessione del 27, ma la prova dell'utente
+    col caricamento .gpx ha segnalato un difetto vero (punti 29-32) e questo
+    stesso file diceva giustamente che quello veniva prima: e' stato fatto, e il
+    13 e' rimasto intatto.
 
->>> PRIMA COSA DA CHIEDERGLI, appena si riapre: SE IL FILE CHE DAVA ERRORE ORA
-    SI CARICA, e se il badge del Corno Grande risulta conquistato. Sono le due
-    correzioni della seconda sessione del 27, e la controprova puo' farla solo
-    lui perche' il file e' suo.
-    Se il file dovesse dare ancora errore, il messaggio ora dice i NUMERI
-    (quanti punti ha trovato e quanti validi): farsi riferire quello che compare
-    a schermo basta per capire dove intervenire.
-    Se invece il badge non comparisse: la soglia e' SOGLIA_TIMBRO_M in
-    routes/tracking.js (150 m, la stessa della Mappa) e le coordinate stanno in
-    public/js/badge-points.js.
+>>> NIENTE E' IN SOSPESO DA VERIFICARE. L'utente ha gia' confermato dal sito vero
+    che il file che dava errore si carica e che il badge del Corno Grande c'e'.
+    Il punto 32 e' nato proprio da quella conferma, guardando i suoi dati veri:
+    la conferma "funziona" e' il momento giusto per guardare il database, non
+    quello per smettere di guardare.
 
->>> FATTO ANCHE IL PUNTO 31 (cancellare un'uscita dallo storico): non era una
-    richiesta, e' emersa facendo il 29 ed e' stata proposta all'utente, che l'ha
-    voluta subito. Se ha importato per errore il file sbagliato, ora dalla scheda
-    dell'uscita c'e' un cestino. Il posto nel tetto mensile torna libero da solo.
-
->>> DA CHIEDERGLI ANCHE, in sospeso dalla sessione precedente: il DISLIVELLO
-    delle tracce importate, confrontato con quello che dice l'app da cui esporta.
-    Se risulta sistematicamente piu' basso del vero, la soglia e'
-    SOGLIA_DISLIVELLO_IMPORT_M in routes/tracking.js (oggi 10 m) ed e' un numero
-    solo da cambiare.
+>>> SE SEGNALASSE ANCORA QUALCOSA sul caricamento .gpx, dove intervenire:
+      - file rifiutato -> il messaggio ora dice i NUMERI (quanti punti trovati e
+        quanti validi): farsi riferire quello che compare a schermo basta;
+      - badge non assegnato -> soglia SOGLIA_TIMBRO_M in routes/tracking.js
+        (150 m, la stessa della Mappa), coordinate in public/js/badge-points.js;
+      - DISLIVELLO piu' basso del vero (mai verificato con lui, resta da chiedere:
+        va confrontato con quello che dice l'app da cui esporta) -> soglia
+        SOGLIA_DISLIVELLO_IMPORT_M in routes/tracking.js, oggi 10 m, e' un numero
+        solo da cambiare;
+      - uscita importata per sbaglio -> ora si cancella dal cestino sulla scheda
+        (punto 31), e il posto nel tetto mensile torna libero da solo.
 
 FATTO NELLA SECONDA SESSIONE DEL 2026-07-27:
  - PUNTO 29 - i file .gpx senza gli orari dei punti non si rifiutano piu'.
@@ -3129,8 +3177,13 @@ FATTO NELLA SECONDA SESSIONE DEL 2026-07-27:
  - PUNTO 31 - cancellare un'uscita dallo storico. Non era una richiesta: e'
    emersa facendo il 29 ed e' stata proposta all'utente, che l'ha voluta subito.
    Il posto nel tetto mensile si riprende da solo; i timbri non vengono revocati.
+ - PUNTO 32 - per i file senza orari la data dell'escursione la dice l'utente al
+   caricamento, invece di prenderla dal file. Trovato guardando i DATI VERI dopo
+   la sua conferma: un suo file era entrato con la data di esportazione (10
+   luglio) invece di quella della camminata (14 giugno), e il badge con essa.
  Dettagli nella sezione dedicata in cima al file.
- In tutto 131 controlli in sette prove, tutti passati, database identico a prima.
+ In tutto 171 controlli in nove prove, tutti passati, database identico a prima.
+ L'UTENTE HA CONFERMATO dal sito vero che i punti 29-31 funzionano.
 
 FATTO NELLA PRIMA SESSIONE DEL 2026-07-27:
  - PUNTO 18, BLOCCO 4 - tasto e pagina "Badge". Voce nella barra a sinistra
@@ -3186,7 +3239,7 @@ CHE COSA RESTA IN TUTTO, in mezza riga ciascuno:
                            cima al file.
  - punti 7, 22, 21-resto -> BLOCCATI dalla stessa decisione dell'utente
                            (email o SMS), vedi qui sotto.
-Tutti gli altri punti di cose_da_fare.txt (1-12, 14-20, 23-31) sono FATTI.
+Tutti gli altri punti di cose_da_fare.txt (1-12, 14-20, 23-32) sono FATTI.
 
 DA CHIEDERE ALL'UTENTE PER PRIMA COSA: la controprova delle due correzioni della
 seconda sessione del 27 - il file .gpx che dava errore ora si carica? e il badge
@@ -3274,6 +3327,25 @@ COSE DA SAPERE SULL'AMBIENTE, per non perderci tempo:
      gia' funzionante in routes/geocoding.js: Content-Type text/plain,
      User-Agent, corpo grezzo. Confermata anche la sua inaffidabilita': il
      primo tentativo ha dato 504 in tutte e tre le interrogazioni fatte;
+   * (dal punto 32) PUPPETEER: elementHandle.uploadFile IMPOSTA il file ma NON fa
+     scattare l'evento 'change'. Se il caricamento e' agganciato li' (come in
+     storico.js) non succede niente e sembra che il pulsante sia rotto: va
+     lanciato a mano con dispatchEvent(new Event('change', {bubbles:true}));
+   * (dal punto 32) ASPETTARE currentUser NON BASTA per poter usare l'interfaccia.
+     initStorico() e' l'ULTIMO della catena di initApp(), che e' lenta, mentre
+     currentUser viene valorizzato prima: una prova che carica un file appena vede
+     currentUser passa e fallisce a giri alterni. E' la stessa cosa del bug vero
+     corretto il 2026-07-26 (navigazione collegata dopo initApp, primo click
+     perso). Nelle prove: insistere finche' l'effetto non c'e' davvero, non
+     aspettare un tempo fisso;
+   * (dal punto 32) I CONTEGGI DI PARTENZA DEL DATABASE NON SI SCRIVONO A MANO
+     nelle prove. Una prova che verificava "6 sessioni e 4 timbri" ha cominciato a
+     fallire da sola appena l'utente ha caricato le sue tracce vere: un controllo
+     che dipende da quanti dati ha l'utente non sta provando il codice. Vanno letti
+     all'inizio e riconfrontati alla fine;
+   * (dal punto 32) UNA PROVA CHE FINISCE CON process.exit() DENTRO IL finally
+     uccide il .catch in fondo: la prova muore senza stampare NIENTE e sembra che
+     non sia partita. L'errore va stampato dentro un catch prima del finally;
    * (dal punto 30) LA SINTASSI DI OVERPASS E' "out tags center;", col modo di
      uscita PRIMA della geometria. Scritta al contrario ("out center tags;") la
      query NON da' errore: risponde VUOTA. Ed e' molto peggio di un errore,

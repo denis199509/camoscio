@@ -48,7 +48,7 @@ window.showToast = function(message, type = "info") {
     }, 4000);
 };
 
-function showGenericModal(message, { showInput = false, defaultValue = "", showCancel = true, confirmLabel = "OK" } = {}) {
+function showGenericModal(message, { showInput = false, defaultValue = "", showCancel = true, confirmLabel = "OK", inputType = "text", inputMax = null } = {}) {
     return new Promise((resolve) => {
         const modal = document.getElementById("generic-modal");
         const messageEl = document.getElementById("generic-modal-message");
@@ -62,6 +62,14 @@ function showGenericModal(message, { showInput = false, defaultValue = "", showC
         btnCancel.classList.toggle("hidden", !showCancel);
         if (showInput) {
             inputWrapper.classList.remove("hidden");
+            // Il TIPO del campo e' un parametro: per una data, type="date" fa comparire il
+            // calendario del telefono invece della tastiera, ed e' l'unico modo perche' uno
+            // non debba scrivere a mano "2026-06-14" col pollice. Si rimette sempre a posto
+            // (anche nel ramo "text") perche' il campo e' UNO SOLO riusato da tutte le
+            // finestre: lasciarlo su "date" farebbe comparire un calendario alla prossima
+            // richiesta di testo.
+            input.type = inputType;
+            if (inputMax) input.setAttribute("max", inputMax); else input.removeAttribute("max");
             input.value = defaultValue;
         } else {
             inputWrapper.classList.add("hidden");
@@ -96,6 +104,15 @@ window.showConfirmModal = function(message, confirmLabel = "OK") {
 // Sostituisce prompt(): risolve al testo inserito, o null se annullato
 window.showPromptModal = function(message, defaultValue = "") {
     return showGenericModal(message, { showInput: true, defaultValue });
+};
+
+// Come showPromptModal ma con un campo DATA (calendario nativo sul telefono) e un tetto
+// a oggi: un'escursione gia' fatta non puo' essere nel futuro. Serve al caricamento dei
+// file .gpx senza orari, dove la data la deve dire l'utente (punto 32).
+window.showDateModal = function(message, defaultValue = "", confirmLabel = "Conferma") {
+    const oggi = new Date();
+    const max = `${oggi.getFullYear()}-${String(oggi.getMonth() + 1).padStart(2, '0')}-${String(oggi.getDate()).padStart(2, '0')}`;
+    return showGenericModal(message, { showInput: true, defaultValue, confirmLabel, inputType: "date", inputMax: max });
 };
 
 // Notifica persistente a riconoscimento singolo (no Annulla) - per messaggi che non devono
