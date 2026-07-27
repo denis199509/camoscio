@@ -365,6 +365,7 @@ function triggerSectionRender(sectionId) {
                 // pagina ma legge da un'altra rotta (le sessioni di tracciamento, non le
                 // escursioni), quindi si aggiorna per conto suo.
                 if (window.renderStorico) window.renderStorico();
+                if (window.renderProgetti) window.renderProgetti(); // punto 13: i miei progetti
                 break;
             case "badges":
                 if (window.renderBadges) window.renderBadges();

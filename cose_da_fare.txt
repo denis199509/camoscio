@@ -743,3 +743,26 @@ e con quella data e' finito anche il badge.
    DA VALUTARE A PARTE, non fatto di proposito: collegare una bozza a
    un'escursione (avevi detto che e' un passo successivo) e il dislivello dei
    percorsi progettati (servirebbe una fonte di altitudini, va misurata prima).
+
+33) [DA FARE] Trovare il modo di segnare anche il DISLIVELLO nei progetti di
+escursione. E' fondamentale per capire se un percorso e' alla propria portata o no:
+dieci chilometri in piano e dieci con mille metri di salita sono due escursioni
+diverse, e oggi il progetto mostra solo la lunghezza.
+   PERCHE' OGGI NON C'E': i sentieri estratti da OpenStreetMap hanno solo latitudine
+   e longitudine, senza la quota - verificato, 0 su 15.228 ce l'hanno. Il sito lo
+   dice a schermo invece di inventare un numero, ma resta un buco vero.
+   DA VALUTARE quando ci si mette mano (nessuna di queste e' ancora stata misurata):
+    - un modello digitale del terreno da cui leggere la quota di ogni punto del
+      percorso. Ne esistono di aperti e gratuiti che coprono l'Italia; va misurato
+      quanto pesa tenerne una parte e se sta nei vincoli hard di spazio e memoria;
+    - un servizio esterno che restituisca le quote di un elenco di punti. Piu'
+      semplice, ma va verificato che sia gratuito e aperto, e che regga il numero di
+      richieste - un percorso ha centinaia di punti;
+    - le quote che il sito ha gia': le vette dei badge e delle escursioni hanno
+      l'altitudine. Non basta per un profilo altimetrico, ma potrebbe bastare per
+      dire "da 2130 a 2912 m" quando il percorso tocca punti noti.
+   ATTENZIONE, lezione del punto 15: il dislivello e' il numero piu' delicato di
+   tutti. Se lo si calcola da quote poco precise viene fuori un valore gonfiato dal
+   rumore (era gia' successo con le tracce GPS: un percorso piatto dava 800 m di
+   dislivello inventato). Meglio nessun numero che un numero sbagliato, su un dato
+   che serve a decidere se un'escursione e' sicura per te.

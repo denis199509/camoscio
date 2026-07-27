@@ -135,6 +135,7 @@
                         <div><strong>${metri(e.metriRetta)}</strong><span>in linea d'aria</span></div>
                     </div>
                     ${avviso}
+                    ${esposizioneSolare(e)}
                     <p class="small text-muted rp-nota-dislivello"><i data-lucide="info"></i> Il dislivello non si puo' calcolare: i sentieri della mappa non hanno la quota salvata.</p>
                     <button class="btn btn-sm btn-primary" id="btn-rp-salva" type="button"><i data-lucide="save"></i> Salva come bozza</button>
                 </div>`;
@@ -168,6 +169,72 @@
     }
 
     let aggancia = true;
+
+    // L'ESPOSIZIONE AL SOLE DEL PERCORSO PROGETTATO (chiesta dall'utente il 2026-07-27:
+    // "una volta che abbiamo il progetto possiamo proporre l'esposizione solare sul
+    // sentiero").
+    //
+    // Per un'escursione il sito la stima gia' (renderSolarExposureAdvice in map.js), ma da
+    // UN SOLO dato: la direzione dal ritrovo all'ultima vetta. Qui si ha molto di piu' -
+    // la linea vera del percorso - quindi si guarda l'orientamento di OGNI TRATTO e si
+    // dice quanto del cammino guarda a sud e quanto a nord. E' il dato che serve davvero
+    // a decidere a che ora partire.
+    // NON si inventa niente sul dislivello o sull'ombra degli avvallamenti: senza le quote
+    // non si puo' sapere, e sotto e' scritto.
+    function esposizioneSolare(e) {
+        if (typeof window.calculateBearing !== 'function' || typeof window.bearingToCompassSector !== 'function') return '';
+
+        // Ogni tratto pesa per la sua LUNGHEZZA: mezzo chilometro esposto a sud conta piu'
+        // di venti metri girati a nord.
+        const versanti = new Map();
+        let totale = 0;
+        for (const t of e.tappe) {
+            for (let i = 1; i < t.coordinate.length; i++) {
+                const a = t.coordinate[i - 1], b = t.coordinate[i];
+                const dx = (b[0] - a[0]) * 111320 * Math.cos(a[1] * Math.PI / 180);
+                const dy = (b[1] - a[1]) * 111320;
+                const lung = Math.hypot(dx, dy);
+                if (lung < 1) continue;
+                const settore = window.bearingToCompassSector(window.calculateBearing(a[1], a[0], b[1], b[0]));
+                versanti.set(settore.key, (versanti.get(settore.key) || 0) + lung);
+                totale += lung;
+            }
+        }
+        if (!totale) return '';
+
+        const quota = k => Math.round(((versanti.get(k) || 0) / totale) * 100);
+        const sud = quota('S') + quota('SE') + quota('SW');
+        const nord = quota('N') + quota('NE') + quota('NW');
+        const prevalente = [...versanti.entries()].sort((a, b) => b[1] - a[1])[0];
+        const etichetta = window.bearingToCompassSector(['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'].indexOf(prevalente[0]) * 45).label;
+
+        const mese = new Date().getMonth();
+        const estate = mese >= 5 && mese <= 8;
+
+        let consiglio;
+        if (sud >= 50 && estate) {
+            consiglio = `Piu' della meta' del percorso e' rivolta a sud e si scalda presto: in questa stagione conviene partire entro le 7:00, e ricorda che i temporali di calore arrivano dal primo pomeriggio.`;
+        } else if (sud >= 50) {
+            consiglio = `Piu' della meta' del percorso e' rivolta a sud: prende sole a lungo, il che d'inverno aiuta - la neve si scioglie prima e il fondo e' meno gelato al mattino.`;
+        } else if (nord >= 50) {
+            consiglio = estate
+                ? `Piu' della meta' del percorso e' rivolta a nord: resta piu' fresco anche d'estate, buono per le ore centrali.`
+                : `Piu' della meta' del percorso e' rivolta a nord: nei mesi freddi il ghiaccio ci resta a lungo anche col sole. Valuta i ramponcini.`;
+        } else {
+            consiglio = `Il percorso cambia versante spesso, quindi alterna tratti al sole e all'ombra: nessuna esposizione domina.`;
+        }
+
+        return `
+            <div class="rp-sole">
+                <div class="rp-sole-testa"><i data-lucide="sun"></i> <b>Esposizione al sole</b> · direzione prevalente ${esc(etichetta)}</div>
+                <div class="rp-sole-barre">
+                    <div><span>${sud}%</span><small>a sud</small></div>
+                    <div><span>${nord}%</span><small>a nord</small></div>
+                </div>
+                <p class="small">${consiglio}</p>
+                <p class="small text-muted">Calcolata dall'orientamento del tracciato. Non tiene conto dell'ombra delle pareti vicine, che senza le quote non si puo' sapere.</p>
+            </div>`;
+    }
 
     function dopoModifica() {
         disegnaSegnaposti();
@@ -334,6 +401,70 @@
         aggiornaPannello();
     }
 
-    window.CamoscioRoutePlanner = { gestisciClickMappa, init: initRoutePlanner };
+    // --- "I MIEI PROGETTI" nella pagina "Le mie escursioni" ---
+    //
+    // Segnalato dall'utente: "una volta creato il progetto dell'escursione non trovo piu'
+    // il progetto". Aveva ragione: si vedevano SOLO dentro la scheda della Mappa, cioe'
+    // bisognava gia' sapere dov'erano. Un percorso che ci si e' costruiti si cerca nella
+    // pagina delle proprie cose, insieme alle proprie escursioni e alle proprie uscite.
+    async function renderProgetti() {
+        const box = document.getElementById('projects-list');
+        if (!box) return;
+        let bozze = [];
+        try {
+            const res = await fetch('/api/routing/drafts');
+            if (!res.ok) throw new Error('richiesta fallita');
+            bozze = await res.json();
+        } catch (e) {
+            box.innerHTML = `<div class="glass-card text-center py-4 text-muted">Non è stato possibile caricare i tuoi progetti. Riprova più tardi.</div>`;
+            return;
+        }
+
+        const contatore = document.getElementById('count-projects');
+        if (contatore) contatore.textContent = bozze.length;
+
+        if (!bozze.length) {
+            box.innerHTML = `<div class="glass-card text-center py-4 text-muted">
+                Nessun progetto per ora. Vai su <b>Mappa &amp; Sentieri</b>, apri "Progetta un percorso" e tocca i punti che vuoi collegare.
+            </div>`;
+            return;
+        }
+
+        box.innerHTML = `<div class="outings-grid">${bozze.map(b => `
+            <div class="outing-card" data-progetto-id="${esc(b.id)}">
+                <div class="outing-card-head">
+                    <span class="outing-card-title">${esc(b.nome)}</span>
+                    <span class="badge badge-accent outing-tag" title="Percorso progettato da te, non ancora fatto"><i data-lucide="route"></i> progetto</span>
+                    <button class="outing-card-del" data-prog-del="${esc(b.id)}" title="Cancella questo progetto" aria-label="Cancella ${esc(b.nome)}"><i data-lucide="trash-2"></i></button>
+                </div>
+                <div class="outing-card-stats">
+                    <div><strong>${b.punti.length}</strong><span>tappe</span></div>
+                    <div><strong>${metri(b.metriTotali || 0)}</strong><span>lunghezza</span></div>
+                    ${b.metriRetta > 0
+                        ? `<div title="Tratti dove non esiste un sentiero conosciuto che colleghi i punti"><strong>${metri(b.metriRetta)}</strong><span>in linea d'aria</span></div>`
+                        : `<div><strong>✓</strong><span>tutto su sentieri</span></div>`}
+                </div>
+                <button class="btn btn-sm btn-secondary rp-apri-mappa" data-prog-apri="${esc(b.id)}"><i data-lucide="map"></i> Apri sulla mappa</button>
+            </div>`).join('')}</div>`;
+
+        box.querySelectorAll('[data-prog-apri]').forEach(b => b.addEventListener('click', () => {
+            const bozza = bozze.find(x => x.id === b.getAttribute('data-prog-apri'));
+            // Si passa alla Mappa con lo stesso meccanismo di navigazione del resto del
+            // sito, poi si apre la bozza: cosi' il percorso e l'esposizione al sole si
+            // vedono dove servono, sulla mappa.
+            const voce = document.querySelector('.nav-btn[data-target="map-section"]');
+            if (voce) voce.click();
+            setTimeout(() => apriBozza(bozza), 400);
+        }));
+        box.querySelectorAll('[data-prog-del]').forEach(b => b.addEventListener('click', async () => {
+            await cancellaBozza(b.getAttribute('data-prog-del'));
+            renderProgetti();
+        }));
+
+        if (window.lucide) window.lucide.createIcons();
+    }
+
+    window.CamoscioRoutePlanner = { gestisciClickMappa, init: initRoutePlanner, renderProgetti };
     window.initRoutePlanner = initRoutePlanner;
+    window.renderProgetti = renderProgetti;
 })();

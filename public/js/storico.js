@@ -55,13 +55,19 @@
             return;
         }
 
-        const contatore = document.getElementById('count-outings');
-        if (contatore) contatore.textContent = sessioni.length;
-
         // Le sessioni senza nemmeno un punto GPS non si mostrano: sono avvii annullati
         // o prove finite subito (ce n'e' piu' d'una sul database, da prove vere fatte dal
         // telefono). In un elenco di uscite fatte direbbero solo "0 km, 0 min".
         const vere = sessioni.filter(s => (s.distanceKm || 0) > 0.05);
+
+        // IL CONTATORE CONTA QUELLO CHE SI VEDE, non tutte le sessioni.
+        // Segnalato dall'utente il 2026-07-27: "vedo 3 registrazioni ma solo due file
+        // importati e visibili". Aveva ragione, ed era un difetto vero: il contatore
+        // diceva 3 perche' contava anche un avvio di tracciamento a zero punti GPS, che
+        // l'elenco giustamente nasconde. Un numero che promette una scheda che non c'e'
+        // e' la stessa classe di difetto delle finte "sfide in corso" del punto 19.
+        const contatore = document.getElementById('count-outings');
+        if (contatore) contatore.textContent = vere.length;
 
         if (vere.length === 0) {
             box.innerHTML = `<div class="glass-card text-center py-4 text-muted">

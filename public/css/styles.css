@@ -61,7 +61,15 @@ body {
     background-color: var(--bg-dark);
     color: var(--color-text-primary);
     overflow: hidden;
+    /* 100dvh e non solo 100vh: su un telefono vero 100vh e' l'altezza della finestra
+       SENZA le barre del browser, ma le barre di solito ci sono - e il fondo del layout
+       finisce dietro la barra inferiore, irraggiungibile perche' il body non scorre.
+       Segnalato dall'utente il 2026-07-27 ("quando scendi fino in basso la pagina non e'
+       ben visibile"), e invisibile alle prove automatiche: il browser headless non ha
+       barre, quindi li' il difetto non si manifesta.
+       Le due righe insieme sono una scala: chi non capisce dvh usa vh e resta com'era. */
     height: 100vh;
+    height: 100dvh;
     width: 100vw;
 }
 
@@ -93,6 +101,7 @@ h1, h2, h3, h4, h5, h6 {
 .app-container {
     display: flex;
     height: 100vh;
+    height: 100dvh;
     width: 100vw;
 }
 
@@ -188,6 +197,7 @@ h1, h2, h3, h4, h5, h6 {
     display: flex;
     flex-direction: column;
     height: 100vh;
+    height: 100dvh;
     overflow: hidden;
     position: relative;
 }
@@ -682,6 +692,7 @@ h1, h2, h3, h4, h5, h6 {
     left: 0;
     width: 100vw;
     height: 100vh;
+    height: 100dvh;
     background: rgba(0, 0, 0, 0.6);
     backdrop-filter: blur(5px);
     display: flex;
@@ -1209,6 +1220,7 @@ h1, h2, h3, h4, h5, h6 {
     display: flex;
     gap: 24px;
     height: calc(100vh - var(--topbar-height) - 64px);
+    height: calc(100dvh - var(--topbar-height) - 64px);
 }
 
 .map-container-wrapper {
@@ -2333,6 +2345,7 @@ h1, h2, h3, h4, h5, h6 {
 .auth-gate {
     width: 100vw;
     height: 100vh;
+    height: 100dvh;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -2615,6 +2628,7 @@ h1, h2, h3, h4, h5, h6 {
     background: var(--bg-dark);
     color: var(--color-text-primary);
     min-height: 100vh;
+    min-height: 100dvh;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -3711,8 +3725,13 @@ h1, h2, h3, h4, h5, h6 {
     .page-container {
         padding: 14px;
         /* Spazio in fondo per il pulsante flottante a scarpone: e' fisso in basso a
-           destra e senza questo margine coprirebbe i comandi dell'ultima scheda. */
-        padding-bottom: 96px;
+           destra e senza questo margine coprirebbe i comandi dell'ultima scheda.
+           Ci si somma env(safe-area-inset-bottom), che sugli iPhone con la barra di
+           navigazione a sfioramento vale ~34px e altrove zero: senza, l'ultima riga
+           finisce sotto quella barra. E' il secondo modo in cui il fondo di una pagina
+           sparisce su un telefono vero, insieme alle barre del browser (vedi 100dvh in
+           cima al file); nessuno dei due si vede in un browser headless. */
+        padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
     }
 
     /* --- Sezione Mappa: si impila invece di affiancare --- */
@@ -3878,6 +3897,19 @@ h1, h2, h3, h4, h5, h6 {
 @media (max-width: 480px) {
     .page-container {
         padding: 10px;
+        /* IL PADDING-BOTTOM VA RIMESSO, e non e' una ripetizione inutile.
+           "padding: 10px" e' una scorciatoia che AZZERA anche il padding-bottom di 96px
+           messo nella @media da 900px, e questa regola viene dopo, quindi vince. Il
+           risultato era che su ogni telefono in verticale (sotto i 480px, cioe' la quasi
+           totalita') lo spazio in fondo crollava da 96 a 10 pixel e il pulsante flottante
+           a scarpone copriva i comandi dell'ultima scheda.
+           Difetto SEGNALATO DALL'UTENTE il 2026-07-27 ("quando scendi fino in basso la
+           pagina non e' ben visibile, se abbiamo qualche tasto molto in basso rischia di
+           non essere visibile"): la correzione fatta al punto 15 c'era, ma valeva solo fra
+           480 e 900 px - cioe' su nessun telefono vero.
+           DA RICORDARE: quando una @media piu' stretta usa la scorciatoia "padding", si
+           porta via tutti i padding specifici scritti in quelle piu' larghe. */
+        padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
     }
 
     .map-container-wrapper {
@@ -4141,4 +4173,68 @@ h1, h2, h3, h4, h5, h6 {
 .rp-bozza-dati {
     font-size: 0.72rem;
     color: var(--color-text-secondary);
+}
+
+/* Esposizione al sole di un percorso progettato (punto 13). Chiesta dall'utente:
+   "una volta che abbiamo il progetto possiamo proporre l'esposizione solare sul
+   sentiero". Calcolata dall'orientamento del tracciato vero, non da un solo
+   punto come si fa per le escursioni. */
+.rp-sole {
+    margin-top: 10px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--accent-tan);
+    background: rgba(168, 143, 107, 0.12);
+}
+
+.rp-sole-testa {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.82rem;
+    margin-bottom: 6px;
+}
+
+.rp-sole-testa i,
+.rp-sole-testa svg {
+    flex-shrink: 0;
+    width: 15px;
+    height: 15px;
+}
+
+.rp-sole-barre {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 6px;
+}
+
+.rp-sole-barre div {
+    display: flex;
+    flex-direction: column;
+}
+
+.rp-sole-barre span {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--accent-orange);
+    line-height: 1.1;
+}
+
+.rp-sole-barre small {
+    font-size: 0.68rem;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+}
+
+.rp-sole p {
+    margin: 4px 0 0;
+    line-height: 1.45;
+}
+
+/* Il pulsante "Apri sulla mappa" di un progetto: a tutta larghezza sotto i dati,
+   cosi' su telefono si prende comodamente col pollice. */
+.rp-apri-mappa {
+    width: 100%;
+    margin-top: 12px;
+    justify-content: center;
 }
