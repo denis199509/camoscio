@@ -712,3 +712,34 @@ e con quella data e' finito anche il badge.
       Il tentativo rifiutato NON consuma uno dei 5 caricamenti del mese, perche'
       non salva niente. I file CON gli orari non chiedono niente e continuano a
       prendere la data dai punti, che e' quella giusta.
+
+--- AGGIORNAMENTO DEL PUNTO 13 (2026-07-27, terza sessione) ---
+
+13) [FATTO 2026-07-27] Progettazione del percorso multi-punto sui sentieri.
+   COME E' ANDATA, in breve:
+   - MISURATO PRIMA, come da tua decisione 3. Provati sette filtri diversi. Il
+     salto piu' grande non erano le strade ma togliere la pretesa del tag
+     sac_scale: da 74,9% a 91,8% di percorsi esistenti. Oggi il sito scartava un
+     sentiero perfettamente mappato solo perche' nessuno gli aveva messo
+     l'etichetta di difficolta'.
+   - LA TUA IDEA (tenere conto delle strade sterrate vicino ai sentieri) ha
+     portato al 95,5%. Poi, vedendo il confronto completo, hai scelto il livello
+     i - tutto cio' che si cammina entro 200 m dalla rete conosciuta: stesso
+     beneficio, 37% di dati in meno (65 MB invece di 103), meta' delle reti
+     spezzate.
+   - SCRITTO E PROVATO: si tocca la mappa, il sito collega i punti seguendo i
+     sentieri conosciuti, e dove non ci riesce tira una retta ROSSA E TRATTEGGIATA
+     con scritto quanti metri sono e l'avviso di non seguirla (la tua decisione 1).
+     C'e' l'interruttore per collegare sempre in linea retta, che era la richiesta
+     originale. Le bozze sono personali, riapribili e cancellabili (decisione 2).
+   - DETTO A SCHERMO CHE IL DISLIVELLO NON SI PUO' DARE: i sentieri della mappa
+     non hanno la quota salvata (0 su 15.228). E' forse il dato piu' utile per
+     capire se un'escursione e' alla propria portata, e tacerlo sarebbe peggio.
+   - 66 controlli, tutti passati. L'esempio che avevi fatto tu (Campo Imperatore
+     -> Sella di Monte Aquila) trova un percorso sui sentieri.
+   RESTA: l'estrazione dei dati del livello i, che gira a parte ed e' ripartibile.
+   Finche' non finisce il sito usa i dati vecchi, quindi i tratti in rosso sono
+   piu' di quanti saranno. Vedi leggimi.txt.
+   DA VALUTARE A PARTE, non fatto di proposito: collegare una bozza a
+   un'escursione (avevi detto che e' un passo successivo) e il dislivello dei
+   percorsi progettati (servirebbe una fonte di altitudini, va misurata prima).

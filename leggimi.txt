@@ -11,12 +11,12 @@ quattro badge storici avevano coordinate sbagliate fino a 2,4 km, cioe' erano
 impossibili da conquistare stando nel posto vero: corrette.
 L'UTENTE HA CONFERMATO dal sito vero che tutto funziona.
 
-PUNTO 13 — TERZA SESSIONE DEL 2026-07-27: l'utente ha dato il via, e' stato fatto
-il PRIMO PASSO concordato (le misure), lui ha SCELTO IL LIVELLO f, e poi ha chiesto
-di fermarsi e di preparare tutto per scrivere il codice aspettando il suo via.
-NESSUNA RIGA DI CODICE SCRITTA. Due sezioni da leggere in cima a questo file:
-"MISURE FATTE IL 2026-07-27" (i numeri e la scelta) e "PIANO PRONTO PER SCRIVERE IL
-CODICE" (sei passi, file per file). Il via lo da' lui.
+PUNTO 13 — FATTO NELLA TERZA SESSIONE DEL 2026-07-27: misurato, deciso il livello
+i con l'utente, e scritto tutto il codice. Progettare un percorso su piu' punti
+funziona: si tocca la mappa, il sito collega seguendo i sentieri, e dove non ci
+riesce tira una retta ROSSA E TRATTEGGIATA con l'avviso di non seguirla. Le bozze si
+salvano, si riaprono e si cancellano. 66 controlli, tutti passati.
+RESTA SOLO l'estrazione dei dati del livello i, che gira a parte ed e' ripartibile.
 
 PUNTO 7 — l'utente ha aggiunto informazioni il 2026-07-27 (l'email e' gia' usata
 per fare login: verificato e confermato) e ha detto che il punto 7 SI FA IN UNA
@@ -47,13 +47,14 @@ Prima ancora, nella stessa giornata: il BLOCCO 1 (punti 19, 23 prima meta',
     torna a leggere il resto.
 
 A CHE PUNTO SIAMO, in breve: dei 32 punti di cose_da_fare.txt ne restano DUE.
- - PUNTO 13 (percorso multi-punto): e' IL LAVORO DELLA PROSSIMA SESSIONE, deciso
-   dall'utente. Nessun codice ancora scritto. Era previsto per questa sessione,
-   ma l'utente ha segnalato un difetto vero sul caricamento .gpx (punti 29-32) e
-   il file diceva giustamente che quello veniva prima. L'accordo sul 13 e le
-   misure sono nella sezione dedicata qui sotto, ancora tutti validi.
+ - PUNTO 13 (percorso multi-punto): FATTO il 2026-07-27, terza sessione. Codice
+   scritto, provato (66 controlli) e online. Resta solo da finire l'ESTRAZIONE dei
+   dati del livello i, che gira a parte ed e' RIPARTIBILE: si rilancia
+   "node scripts/fetch-trails-nearby.js" e riprende da dove era.
  - punti 7, 22 e la seconda meta' del 21 aspettano ancora UNA decisione sua:
-   quale canale usare per mandare un messaggio, email o SMS.
+   quale canale usare per mandare un messaggio, email o SMS. Sul punto 7 l'utente
+   ha aggiunto informazioni il 2026-07-27 (l'email e' gia' usata per il login:
+   verificato) e ha detto che si fa in una sessione futura.
 Tutto il resto e' fatto e provato. Il 2026-07-27 sono stati chiusi il punto 18
 (pagina Badge), il punto 15 (caricamento .gpx) e poi i punti 29 e 30 (i file
 senza orari e i badge assegnati dalle tracce importate).
@@ -447,152 +448,78 @@ La correzione: le coppie devono essere LE STESSE per tutti i livelli, prese dai
 sentieri veri, e ogni estremo si aggancia al nodo piu' vicino di quel grafo (entro
 50 m). Cosi' si confronta la stessa domanda su reti diverse.
 
---- PIANO PRONTO PER SCRIVERE IL CODICE (preparato 2026-07-27 su richiesta
-    dell'utente: "prepara tutto per scrivere il codice e aspetta il mio via") ---
+--- PUNTO 13: A CHE PUNTO E' (aggiornato 2026-07-27, terza sessione) ---
 
-NON INIZIARE SENZA IL SUO VIA. Qui c'e' tutto quello che serve per partire subito.
+IL CODICE E' SCRITTO, PROVATO E ONLINE. Manca solo che finisca l'ESTRAZIONE DEI DATI
+del livello i, che gira a parte e non ha bisogno di nessuno. Vedi "SE L'ESTRAZIONE
+SI E' INTERROTTA" qui sotto: e' l'unica cosa che potrebbe aver bisogno di aiuto.
 
-PASSO 0 - [FATTO 2026-07-27] LE DUE MISURE CHE MANCAVANO
+FATTO:
+ 1. models/Trail.js - due campi nuovi:
+    * routingOnly (scritto SOLO quando e' true): tiene i dati nuovi FUORI dall'indice
+      in RAM. E' la cosa piu' importante di tutto il punto 13, vedi sotto.
+    * cells: le celle di una griglia 0,1 gradi attraversate dal sentiero, per poter
+      leggere "solo i sentieri di questa zona" da MongoDB. Prima non c'era nessun
+      indice geografico sulla collezione, solo wayId.
+      Costo reale misurato: 1,1 celle per sentiero, +0,4 MB di dati e +0,3 di indice.
+ 2. lib/trailCells.js - la griglia. celleDiLinea campiona anche FRA due punti
+    consecutivi: un rettilineo lungo con pochi vertici puo' attraversare una cella
+    senza avere nessun vertice dentro, e quel sentiero risulterebbe assente proprio
+    dove passa.
+ 3. lib/trailIndex.js - filtra { routingOnly: { : true } }.
+    VERIFICATO che carichi ESATTAMENTE gli stessi numeri di prima: 15.228 sentieri,
+    594.359 segmenti. E' il controllo che dice se la protezione funziona senza aver
+    rotto niente: se quel numero cambia, la modifica e' sbagliata.
+ 4. lib/trailGraph.js - la ricerca vera. Legge da MongoDB il riquadro che serve,
+    costruisce il grafo (un nodo per coordinata esatta) e cerca con A*.
+    UNA LETTURA SOLA per tutto il percorso, non una per tappa: misurato 1,4 s per tre
+    tappe invece di ~2 con letture separate, e i riquadri di tappe vicine si
+    sovrappongono quasi sempre.
+    Tetti su tutto (nodi, esplorazioni, dimensione riquadro): superarli NON e' un
+    errore, si tira la retta, che e' gia' il comportamento concordato.
+ 5. routes/routing.js - POST /plan piu' le tre rotte delle bozze.
+ 6. models/RouteDraft.js - le bozze. SI SALVANO SOLO I PUNTI SCELTI, non la linea
+    calcolata: due o tre coordinate invece di centinaia, e riaprendo si ricalcola in
+    poco piu' di un secondo. Vantaggio meno ovvio: se i dati dei sentieri migliorano,
+    una bozza riaperta trova il percorso NUOVO invece di una linea congelata.
+ 7. public/js/routeplanner.js + scheda nella barra della Mappa + stili.
+ 8. scripts/fetch-trails-nearby.js - l'estrazione del livello i, ripartibile.
+ 9. scripts/backfill-trail-cells.js - le celle sui 24.675 sentieri gia' presenti
+    (fatto: tutti ce l'hanno).
 
-  0.2 QUANTO SI RISPARMIA RESTRINGENDO ANCHE LE CARRARECCE (calcolato in locale sui
-      dati OSM gia' scaricati, nessuna chiamata nuova). Livelli confrontati:
-        f) tutti path/track/bridleway + strade minori vicine ai sentieri  [scelto prima]
-        h) come f, ma anche le carrarecce solo se vicine a un sentiero conosciuto
-        i) TUTTO solo se entro 200 m da un sentiero conosciuto
-      Gran Sasso:  f) 78.053 punti 95,7%  |  h) 64.345 (-17,6%) 95,7%  |  i) 62.087 (-20,5%) 95,7%
-      L'Aquila:    f) 25.160 punti 64,6%  |  h) 14.056 (-44,1%) 64,1%  |  i) 11.115 (-55,8%) 63,5%
-      IN MONTAGNA IL BENEFICIO E' IDENTICO, 95,7% in tutti e tre. Nelle zone abitate
-      si risparmia oltre meta' perdendo un punto percentuale, dove per giunta non si
-      va a camminare. E la rete risulta piu' PULITA: 211 pezzi separati invece di 434.
+PROVATO: 8 controlli sulla griglia, 13 sulla ricerca, 21 sulla rotta, 24 nel browser.
+Tutti passati. L'esempio dell'utente (Campo Imperatore -> Sella di Monte Aquila) trova
+un percorso sui sentieri di 4,3 km contro 1,3 in linea d'aria.
 
-  0.1 QUANTO COSTANO DAVVERO SULLE 4 REGIONI. Fatto a campione: i sentieri
-      conosciuti toccano 522 celle da 0,1 gradi, ne sono state campionate 36 (9 per
-      regione, scelte a caso). Si contano i PUNTI CHE CADONO DENTRO LA CELLA, non i
-      way: i punti sono l'unita' che determina lo spazio E sono additivi, mentre un
-      way a cavallo di due celle verrebbe contato due volte.
-        livello   punti stimati   rispetto a oggi   spazio su MongoDB
-          a) oggi      894.918          1,00x             29 MB
-          b)         2.819.937          3,15x             92 MB
-          f)         3.132.713          3,50x            103 MB
-          i)         1.994.345          2,23x             65 MB
-      DA SAPERE SULL'ATTENDIBILITA': il campione proietta 1.349.921 punti al livello
-      a mentre il numero vero e' 894.918, quindi le celle campionate sono circa una
-      volta e mezzo piu' fitte della media; la correzione (x0,66) e' gia' applicata a
-      tutti i livelli. Per il livello i la correzione e' ben fondata, perche' i e'
-      ANCORATO ai sentieri e quindi scala con la loro densita'. Per il livello b lo e'
-      meno (b non dipende dai sentieri), quindi quei 92 MB vanno presi come minimo.
+--- SE L'ESTRAZIONE SI E' INTERROTTA (sessione finita, PC spento, Overpass) ---
 
-  >>> DECISIONE FINALE DELL'UTENTE (2026-07-27): SI USA IL LIVELLO i. <<<
-      Aveva scelto il f prima di vedere questi numeri; messo davanti al confronto ha
-      scelto il i, che e' migliore sotto ogni aspetto: stesso beneficio (95,7% in
-      montagna), 37% di dati in meno (65 MB invece di 103), meta' delle reti spezzate,
-      e una regola piu' semplice da spiegare - "tutto cio' che si cammina entro 200 m
-      dalla rete dei sentieri conosciuti". Il database passa da 33 MB a circa 69 su 512.
-      IL LIMITE DEL LIVELLO i, detto all'utente e accettato: in una zona dove non
-      esistono ancora sentieri mappati non aggiunge niente, quindi li' resta scoperto
-      come oggi. Se un domani se ne aggiungessero, basta rilanciare l'estrazione.
-      SE SERVISSE RIALLARGARE: si cambia solo il filtro in scripts/fetch-trails.js e si
-      rilancia. Il resto del codice non se ne accorge - i livelli sono una scelta di
-      ESTRAZIONE, non di architettura, ed e' bene che restino tali.
+NON SI E' PERSO NIENTE. Si rilancia e riprende da dove era:
+    node scripts/fetch-trails-nearby.js
+I riquadri gia' fatti sono in data/estrazione-progresso.json (escluso da git). Lo
+script li salta da solo. Con --daccapo si ricomincia da zero, ma non serve quasi mai.
+Riquadri totali: 173, da 0,2 gradi. Solo quelli che contengono sentieri gia'
+conosciuti: fuori da li' il livello i non aggiungerebbe niente per definizione.
+Durata: circa due ore in tutto (misurata, non stimata).
 
-PASSO 1 - ESTRAZIONE DATI (scripts/fetch-trails.js)
-  NUOVO FILTRO, LIVELLO i (scelto dall'utente): prima si prende la rete CONOSCIUTA
-  con il criterio di oggi, poi tutto cio' che si cammina entro 200 m da quella.
-      way["highway"~"^(path|track|bridleway)$"]["sac_scale"](area.regione)  -> .s1
-      relation["route"="hiking"](area.regione) -> .rel
-      way(r.rel)["highway"~"^(path|track|bridleway)$"]                      -> .s2
-      (.s1; .s2;) -> .noti          // la rete conosciuta = il livello a di oggi
-      (
-        .noti;
-        way["highway"~"^(path|track|bridleway|unclassified|service)$"](around.noti:200)(area.regione);
-      );
-  ATTENZIONE, TRAPPOLA GIA' PAGATA: le query "around" su una REGIONE INTERA superano i
-  4 minuti e il server chiude. L'estrazione va fatta A RIQUADRI (0,1 gradi funziona
-  bene: 36 celle campionate senza un solo errore) e non regione per regione.
-  Le celle da interrogare NON sono tutte: sono le 522 che contengono gia' sentieri
-  conosciuti, e si ricavano dal database in un istante. Fuori da quelle il livello i
-  non aggiungerebbe niente per definizione.
-  DA AGGIUNGERE AL MODELLO Trail (models/Trail.js):
-   - perAggancio: Boolean. TRUE solo per i way che passano il filtro di OGGI
-     (sac_scale presente oppure membro di una relation route=hiking).
-     E' LA COSA PIU' IMPORTANTE DI TUTTO IL PIANO, vedi PASSO 2.
-   - cells: [Number]. Le celle di una griglia (0,1 gradi) attraversate dal sentiero,
-     come latIdx*10000+lngIdx. Serve a leggere i sentieri di un riquadro da MongoDB:
-     oggi NON c'e' nessun indice geografico sulla collezione trails, solo wayId.
-     Indice multikey su cells (e su region). Costa ~3 numeri per sentiero.
-     Si e' scelta la griglia invece di 2dsphere perche' un indice geografico
-     richiederebbe un campo GeoJSON, cioe' le coordinate SCRITTE DUE VOLTE: contro
-     il vincolo hard sullo spazio, e proprio sui documenti piu' grossi che ci sono.
-  Lo script e' gia' idempotente (upsert per wayId): si puo' rilanciare senza paura.
+COME SI CONTROLLA CHE SIA ANDATA BENE, quando finisce:
+  - i sentieri sul database devono essere cresciuti (erano 24.675) e quelli con
+    routingOnly: true sono i nuovi;
+  - RILANCIARE IL SERVER IN LOCALE e guardare la riga "Indice sentieri ... caricato":
+    DEVE ancora dire 15.228 sentieri e 594.359 segmenti. Se dice di piu', il filtro
+    routingOnly non sta funzionando e il sito online cadrebbe per memoria al primo
+    riavvio - e' successo in Fase G ed e' il rischio piu' serio di tutto il punto 13;
+  - riprovare Campo Imperatore -> Sella di Monte Aquila: il percorso dovrebbe
+    accorciarsi rispetto ai 4.332 m di oggi, perche' con piu' sentieri collegati
+    l'A* trova strade piu' dirette.
 
-PASSO 2 - NON FAR CRESCERE LA RAM (lib/trailIndex.js) — IL RISCHIO VERO
-  In Fase G l'indice in RAM ha gia' fatto cadere il sito (512 MB in tutto su
-  Render, picco misurato ~394 MB). Con il livello f i dati crescono di circa sei
-  volte: CARICARLI IN RAM RIFAREBBE L'INCIDENTE, in peggio.
-  Percio': loadTrailIndex deve filtrare { perAggancio: true }, cosi' l'indice in
-  memoria resta ESATTAMENTE quello di oggi, stessi numeri, stesso consumo.
-  I dati nuovi servono solo alla ricerca del percorso, che li legge da MongoDB a
-  richiesta (PASSO 3). Ed e' anche corretto nel merito: il GPS va agganciato ai
-  sentieri veri, non a una strada di servizio che passa li' vicino.
-  DA VERIFICARE DOPO IL CAMBIO: che l'indice carichi lo stesso numero di sentieri
-  di oggi (15.228 sentieri / 594.359 segmenti per Lazio+Abruzzo) e che l'aggancio
-  GPS dia gli stessi risultati di prima. Se quei numeri cambiano, si e' sbagliato.
+--- COSA RESTA DA DECIDERE O DA FARE ---
 
-PASSO 3 - RICERCA DEL PERCORSO (nuovo lib/trailGraph.js)
-  - caricaArea(riquadro): legge da MongoDB i sentieri le cui celle intersecano il
-    riquadro. NIENTE indice globale in RAM (vedi PASSO 2) e funziona anche in
-    Marche e Molise, che sono sul database ma non in memoria.
-  - costruisciGrafo(sentieri): un nodo per COORDINATA ESATTA. Due sentieri che si
-    incontrano su un nodo OSM hanno coordinate identiche - verificato: sul database
-    sono salvate a precisione piena, non arrotondate. Chiave "lng.toFixed(7),lat".
-    Archi fra punti consecutivi, peso = metri (haversine).
-  - trovaPercorso(da, a): aggancia i due estremi al nodo piu' vicino (tolleranza da
-    decidere, ~100 m) e cerca con A* usando la distanza in linea d'aria come stima.
-    Il codice di prova gia' scritto nelle misure fa esattamente questo, si riusa.
-  - TETTI OBBLIGATORI, per non ripetere l'incidente della Fase G: massimo di nodi
-    caricati, massimo di nodi esplorati, e un riquadro che non puo' superare una
-    dimensione data. Se si superano: si risponde "non trovato" e si tira la retta,
-    che e' il comportamento gia' concordato, non un errore.
-
-PASSO 4 - LA ROTTA (nuovo routes/routing.js)
-  POST /api/routing/plan  { punti: [[lng,lat],...], agganciaAiSentieri: true }
-  Risponde con una TAPPA per ogni coppia consecutiva:
-     { tipo: 'sentiero', coordinate: [...], metri }   oppure
-     { tipo: 'retta',    coordinate: [a,b],  metri }
-  Riquadro di ricerca per tappa: i due punti piu' un margine (1,5 volte la distanza
-  in linea d'aria, minimo 2 km).
-  requireAuth + controllo delle 4 regioni (lib/regions.js), come POST /api/hikes.
-  DECISIONE 1 DELL'UTENTE: dove il percorso sui sentieri non esiste NON si rifiuta e
-  non si chiede niente - retta automatica per quella tappa, e il tipo 'retta' e' cio'
-  che permette all'interfaccia di segnalarla bene.
-
-PASSO 5 - LE BOZZE (nuovo models/RouteDraft.js + rotte)
-  DECISIONE 2 DELL'UTENTE: bozza PERSONALE riapribile, NON collegata a un'escursione
-  e non visibile ai partecipanti.
-  Campi: userId, nome, punti scelti, percorso calcolato, createdAt.
-  Il percorso si salva SEMPLIFICATO (Douglas-Peucker, lib/geometry.js): e' un disegno,
-  non una misura. Rotte: POST crea, GET elenco (solo le proprie), GET una, DELETE.
-  Il DELETE si fa subito, non dopo: il punto 31 ha insegnato che una cosa creata per
-  errore e non cancellabile e' un problema che torna.
-
-PASSO 6 - INTERFACCIA (public/js/map.js + una scheda nella barra della Mappa)
-  - modalita' "Progetta percorso": si tocca la mappa e si aggiungono punti in fila;
-  - il percorso si ridisegna ad ogni punto aggiunto;
-  - i tratti IN LINEA D'ARIA vanno disegnati DIVERSI (tratteggio + colore diverso)
-    e va scritto quanti metri sono: e' la decisione 1 dell'utente, e la segnalazione
-    non e' un dettaglio estetico - e' il modo in cui si capisce dove il sistema non
-    sa guidare;
-  - interruttore "non agganciare ai sentieri" (retta sempre), che era la richiesta
-    originale;
-  - salva bozza / riapri bozza / cancella.
-  DA DIRE A SCHERMO, NON NASCONDERE: di un percorso progettato NON si puo' dare il
-  DISLIVELLO, perche' i sentieri sul database non hanno la quota (0 su 15.228). E'
-  forse il dato piu' utile per capire se un'escursione e' alla propria portata, e
-  tacerlo sarebbe peggio che dirlo. Come ricavarlo e' da decidere a parte.
-
-ORDINE CONSIGLIATO: 0 -> 1 -> 2 -> 3 -> 4 (qui si puo' gia' provare tutto con
-chiamate dirette) -> 6 -> 5. Le bozze per ultime perche' sono la parte che non
-serve a far funzionare il percorso, e il resto si prova senza.
+ - LA PROVA DELL'UTENTE dal sito vero, che e' l'unica che conta davvero.
+ - Il DISLIVELLO di un percorso progettato non si puo' dare (i sentieri non hanno la
+   quota, 0 su 15.228) e l'interfaccia lo dice. Come ricavarlo e' una decisione a
+   parte: servirebbe una fonte di altitudini, e va misurata prima come tutto il resto.
+ - COLLEGARE UNA BOZZA A UN'ESCURSIONE: l'utente aveva detto esplicitamente che e'
+   "un passo successivo, non ora". Non farlo di iniziativa.
 
 --- COSA PROPORRE ALLA RIPRESA (proposto, NON ancora confermato) ---
 
@@ -3361,31 +3288,38 @@ COME RIPRENDERE IL LAVORO IN UNA NUOVA SESSIONE
 DA DOVE SI RIPARTE — situazione al 2026-07-27, fine SECONDA sessione
 ===================================================================
 
->>> PUNTO 13: PRIMO PASSO FATTO, PIANO PRONTO, SI ASPETTA IL VIA PER IL CODICE.
-    L'utente ha detto: "prepara tutto per scrivere il codice e aspetta il mio via".
-    Il piano operativo completo (sei passi, file per file) e' nella sezione
-    "PIANO PRONTO PER SCRIVERE IL CODICE" in cima a questo file. NON si comincia
-    da soli: si aspetta che lo dica lui.
-    ATTENZIONE, il punto piu' importante del piano: con il livello f i dati dei
-    sentieri crescono di circa sei volte, e caricarli nell'indice in RAM rifarebbe
-    l'incidente della Fase G che ha gia' fatto cadere il sito. La difesa e' il
-    campo perAggancio (PASSO 2): l'indice in memoria resta esattamente quello di
-    oggi, i dati nuovi li legge solo la ricerca del percorso, da MongoDB.
-    A CHE PUNTO E': la misura concordata (decisione 3) E' STATA FATTA e l'utente
-    HA SCELTO IL LIVELLO f) - sentieri senza pretendere sac_scale, piu' le strade
-    minori entro 200 m dai sentieri. I numeri, il perche', e l'errore di misura in
-    cui si e' caduti stanno nella sezione "MISURE FATTE IL 2026-07-27" in cima a
-    questo file. NESSUNA RIGA DI CODICE SCRITTA per il punto 13.
-    COSA MANCA PRIMA DI SCRIVERE CODICE:
-      - completare il conteggio del livello f sulle 4 regioni (le query "around"
-        su regione intera vanno oltre i 4 minuti: vanno spezzate per riquadri);
-      - decidere con lui se restringere anche i track a "vicino a un sentiero
-        conosciuto": al livello b le 4 regioni fanno 155.938 way contro i 24.675
-        di oggi, e gran parte sono carrarecce agricole di pianura.
-    Le tre decisioni prese in precedenza (retta automatica ben segnalata dove i
-    sentieri non bastano, salvataggio come bozza personale, misurare prima di
-    allargare) restano valide e NON vanno richieste di nuovo: sezione "PUNTO 13:
-    ACCORDO PRESO CON L'UTENTE".
+>>> PUNTO 13: IL CODICE E' SCRITTO, PROVATO E ONLINE. Progettare un percorso su
+    piu' punti funziona: si tocca la mappa, il sito collega seguendo i sentieri, e
+    dove non ci riesce tira una retta ROSSA E TRATTEGGIATA con l'avviso di non
+    seguirla. Le bozze si salvano, si riaprono e si cancellano.
+    66 controlli, tutti passati. Stato completo, file per file, nella sezione
+    "PUNTO 13: A CHE PUNTO E'" in cima a questo file.
+
+    RESTA SOLO DA FINIRE L'ESTRAZIONE DEI DATI del livello i, che gira per conto
+    suo ed e' RIPARTIBILE. Se si e' interrotta (sessione finita, PC spento,
+    Overpass) NON si e' perso niente: si rilancia
+        node scripts/fetch-trails-nearby.js
+    e riprende da dove era, perche' tiene il segno in
+    data/estrazione-progresso.json (escluso da git). 173 riquadri in tutto, circa
+    due ore misurate.
+
+    QUANDO FINISCE, TRE CONTROLLI. Il secondo e' quello che conta davvero:
+      1) i sentieri sul database sono cresciuti (erano 24.675, e i nuovi hanno
+         routingOnly: true);
+      2) RILANCIARE IL SERVER IN LOCALE e guardare la riga "Indice sentieri ...
+         caricato": DEVE ancora dire 15.228 sentieri e 594.359 segmenti. Se dice
+         di piu', il filtro routingOnly non sta funzionando e il sito online
+         cadrebbe per memoria al primo riavvio - e' esattamente l'incidente della
+         Fase G, ed e' il rischio piu' serio di tutto il punto 13;
+      3) riprovare Campo Imperatore -> Sella di Monte Aquila: il percorso dovrebbe
+         ACCORCIARSI rispetto ai 4.332 m di oggi, perche' con piu' sentieri
+         collegati l'A* trova strade piu' dirette. Se non cambia niente, i dati
+         nuovi non stanno arrivando dove servono.
+
+    L'utente aveva scelto il livello f e poi, messo davanti al confronto completo,
+    ha scelto il i: stesso beneficio, 37% di dati in meno. Le tre decisioni prese
+    prima (retta automatica ben segnalata, bozza personale, misurare prima di
+    allargare) sono tutte rispettate nel codice e NON vanno richieste di nuovo.
 
 >>> NIENTE E' IN SOSPESO DA VERIFICARE. L'utente ha gia' confermato dal sito vero
     che il file che dava errore si carica e che il badge del Corno Grande c'e'.
