@@ -450,14 +450,43 @@ sentieri veri, e ogni estremo si aggancia al nodo piu' vicino di quel grafo (ent
 
 NON INIZIARE SENZA IL SUO VIA. Qui c'e' tutto quello che serve per partire subito.
 
-PASSO 0 - QUELLO CHE MANCA PRIMA DI TOCCARE I DATI (mezz'ora scarsa)
-  0.1 Completare il conteggio del livello f sulle 4 regioni. Le query "around" su
-      regione intera vanno oltre i 4 minuti: vanno spezzate in riquadri (es. 0,5
-      gradi) e sommate. Serve per sapere lo spazio PRIMA di scaricare, non dopo.
-  0.2 Misurare quanto si risparmia restringendo anche i TRACK a "vicino a un
-      sentiero conosciuto". Al livello b le 4 regioni fanno 155.938 way contro i
-      24.675 di oggi, e gran parte sono carrarecce agricole di pianura che a un
-      escursionista non servono. Poi decidere INSIEME ALL'UTENTE.
+PASSO 0 - [FATTO 2026-07-27] LE DUE MISURE CHE MANCAVANO
+
+  0.2 QUANTO SI RISPARMIA RESTRINGENDO ANCHE LE CARRARECCE (calcolato in locale sui
+      dati OSM gia' scaricati, nessuna chiamata nuova). Livelli confrontati:
+        f) tutti path/track/bridleway + strade minori vicine ai sentieri  [scelto prima]
+        h) come f, ma anche le carrarecce solo se vicine a un sentiero conosciuto
+        i) TUTTO solo se entro 200 m da un sentiero conosciuto
+      Gran Sasso:  f) 78.053 punti 95,7%  |  h) 64.345 (-17,6%) 95,7%  |  i) 62.087 (-20,5%) 95,7%
+      L'Aquila:    f) 25.160 punti 64,6%  |  h) 14.056 (-44,1%) 64,1%  |  i) 11.115 (-55,8%) 63,5%
+      IN MONTAGNA IL BENEFICIO E' IDENTICO, 95,7% in tutti e tre. Nelle zone abitate
+      si risparmia oltre meta' perdendo un punto percentuale, dove per giunta non si
+      va a camminare. E la rete risulta piu' PULITA: 211 pezzi separati invece di 434.
+
+  0.1 QUANTO COSTANO DAVVERO SULLE 4 REGIONI. Fatto a campione: i sentieri
+      conosciuti toccano 522 celle da 0,1 gradi, ne sono state campionate 36 (9 per
+      regione, scelte a caso). Si contano i PUNTI CHE CADONO DENTRO LA CELLA, non i
+      way: i punti sono l'unita' che determina lo spazio E sono additivi, mentre un
+      way a cavallo di due celle verrebbe contato due volte.
+        livello   punti stimati   rispetto a oggi   spazio su MongoDB
+          a) oggi      894.918          1,00x             29 MB
+          b)         2.819.937          3,15x             92 MB
+          f)         3.132.713          3,50x            103 MB
+          i)         1.994.345          2,23x             65 MB
+      DA SAPERE SULL'ATTENDIBILITA': il campione proietta 1.349.921 punti al livello
+      a mentre il numero vero e' 894.918, quindi le celle campionate sono circa una
+      volta e mezzo piu' fitte della media; la correzione (x0,66) e' gia' applicata a
+      tutti i livelli. Per il livello i la correzione e' ben fondata, perche' i e'
+      ANCORATO ai sentieri e quindi scala con la loro densita'. Per il livello b lo e'
+      meno (b non dipende dai sentieri), quindi quei 92 MB vanno presi come minimo.
+
+  >>> CONCLUSIONE DA PORTARE ALL'UTENTE: IL LIVELLO i E' MIGLIORE DEL f SOTTO OGNI
+      ASPETTO. Stesso beneficio (95,7% in montagna), 37% di dati in meno (65 MB
+      invece di 103), meno reti spezzate, e una regola piu' semplice da spiegare:
+      "tutto cio' che si cammina entro 200 m dalla rete dei sentieri conosciuti".
+      Il totale del database passerebbe da 33 MB a circa 69 su 512: comodo.
+      L'utente aveva scelto il livello f PRIMA di vedere questi numeri: la scelta fra
+      f e i va rifatta con lui, non cambiata di iniziativa.
 
 PASSO 1 - ESTRAZIONE DATI (scripts/fetch-trails.js)
   Nuovo filtro, livello f:
