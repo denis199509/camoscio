@@ -274,6 +274,7 @@ function setupNavigation() {
                 "dashboard": "Dashboard",
                 "hikes": "Escursioni",
                 "my-hikes": "Le mie escursioni",
+                "badges": "I tuoi Badge",
                 "map-section": "Mappa & Sentieri",
                 "carpool": "Carpooling & Spese Viaggio",
                 "backpack": "Zaino Intelligente Checklist",
@@ -341,6 +342,9 @@ function triggerSectionRender(sectionId) {
                 break;
             case "my-hikes":
                 if (window.renderMyHikes) window.renderMyHikes();
+                break;
+            case "badges":
+                if (window.renderBadges) window.renderBadges();
                 break;
             case "map-section":
                 if (window.renderWazeReportsList) window.renderWazeReportsList();
@@ -605,37 +609,52 @@ function renderPaceChart(user) {
     });
 }
 
-// Render dei Timbri sbloccati nella dashboard
+// Render dei Timbri sbloccati nella dashboard.
+// PUNTO 18: l'elenco dei quattro timbri era scritto a mano proprio qui. Ora la fonte e'
+// una sola, il catalogo di public/js/badges.js, usato anche dalla pagina Badge e dal
+// geofencing della Mappa: tre copie dello stesso elenco sarebbero divergite alla prima
+// aggiunta, ed e' lo stesso motivo per cui al punto 10 la scheda dell'escursione era
+// stata estratta in buildHikeCard invece di essere copiata.
+// Qui restano solo QUATTRO riquadri anche se i badge sono di piu': questa e' una scheda
+// di riepilogo, l'elenco intero e' la pagina Badge. Quali quattro lo decide anteprima():
+// prima quelli presi, poi i piu' alti da prendere.
 function renderDashboardStamps() {
     const container = document.getElementById("stamps-collection");
     if (!container) return;
 
-    // Punti timbrabili fissi nel nostro simulatore alpino
-    const allStamps = [
-        { id: "stamp_mezzeno", name: "Rifugio Franchetti", emoji: "🧗", alt: 2433 },
-        { id: "stamp_gemelli", name: "Corno Grande", emoji: "⛺", alt: 2912 },
-        { id: "stamp_gnifetti", name: "Rifugio Zilioli", emoji: "❄️", alt: 2250 },
-        { id: "stamp_margherita", name: "Monte Vettore", emoji: "👑", alt: 2476 }
-    ];
+    const daMostrare = window.CamoscioBadges
+        ? window.CamoscioBadges.anteprima(4)
+        : [];
 
     container.innerHTML = "";
 
-    allStamps.forEach(stamp => {
-        const isUnlocked = window.CamoscioState.stamps.some(s => s.stampId === stamp.id);
-
+    daMostrare.forEach(badge => {
         const slot = document.createElement("div");
-        slot.className = `stamp-slot ${isUnlocked ? 'unlocked' : ''}`;
-        
-        const unlockedInfo = window.CamoscioState.stamps.find(s => s.stampId === stamp.id);
-        const dateText = unlockedInfo ? unlockedInfo.dateUnlocked : "Bloccato";
+        slot.className = `stamp-slot ${badge.sbloccato ? 'unlocked' : ''}`;
 
         slot.innerHTML = `
-            <span class="stamp-icon">${stamp.emoji}</span>
-            <span class="stamp-name">${stamp.name}</span>
-            <span class="stamp-date">${dateText}</span>
+            <span class="stamp-icon">${escapeHtml(badge.emoji)}</span>
+            <span class="stamp-name">${escapeHtml(badge.nome)}</span>
+            <span class="stamp-date">${escapeHtml(badge.sbloccato ? window.CamoscioBadges.dataItaliana(badge.data) : "Bloccato")}</span>
         `;
         container.appendChild(slot);
     });
+
+    // "3 badge su 10": senza questa riga la scheda mostrerebbe quattro riquadri senza
+    // far capire che gli altri esistono, e il pulsante qui sotto sembrerebbe portare
+    // alla stessa cosa vista piu' in grande.
+    const contatore = document.getElementById("passport-count");
+    if (contatore && window.CamoscioBadges) {
+        const tutti = window.CamoscioBadges.statoBadge();
+        const presi = tutti.filter(b => b.sbloccato).length;
+        contatore.textContent = `${presi} badge su ${tutti.length}`;
+    }
+
+    // La pagina Badge mostra gli stessi dati di questa scheda: si ridisegna insieme,
+    // cosi' chi sblocca un timbro dalla Mappa la ritrova aggiornata senza che ogni
+    // punto che tocca i timbri debba ricordarsi di chiamarla. Stesso criterio gia' in
+    // uso fra renderHikesList e renderMyHikes (punto 10).
+    if (window.renderBadges) window.renderBadges();
 
     // Punto 19: qui si aggiornava la barra della "sfida Gran Sasso". La percentuale era vera
     // (contava i timbri sbloccati), ma la sfida NO: nessuno l'aveva mai creata o accettata,

@@ -203,6 +203,17 @@ restano IN SOSPESO per scelta esplicita dell'utente, non dimenticati.
 storico anche delle uscite fatte prima di usare il sito. DA VALUTARE BENE
 memoria disponibile e fattibilita': ipotesi dell'utente, massimo 5 file
 .gpx al mese per non riempire subito lo spazio.
+   -> STIMA FATTA (2026-07-27, su richiesta dell'utente, nessun codice ancora
+      scritto). ESITO: lo spazio NON e' un ostacolo. Misurato sul database
+      vero: 33,45 MB occupati su 512, margine libero 478,55 MB. Un file .gpx
+      di una giornata da 5 ore, convertito e semplificato, costa circa 30 KB.
+      Con 4 utenti e 5 file al mese fanno 7,2 MB all'anno, cioe' l'1,5% del
+      margine ogni anno. Il tetto di 5 file al mese ipotizzato dall'utente e'
+      molto piu' prudente del necessario.
+      Scoperto misurando: il vero consumo di spazio di questo progetto NON
+      sono le tracce ma le FOTO PROFILO (base64 nel documento utente, fino a
+      1,5 MB l'una). Una sola foto al limite pesa quanto quattro anni di .gpx
+      di un utente. Vedi leggimi.txt.
    Nota tecnica: un .gpx e' XML e occupa molto piu' spazio del formato
    compatto gia' in uso (tuple [lng,lat,alt,secondi,precisione], Fase F).
    Va convertito e semplificato in ingresso (Douglas-Peucker, gia'
@@ -245,9 +256,24 @@ Rapida" in Dashboard piu' la versione completa in "Sicurezza & Mesh".
       rovescia resta visibile da OGNI schermata nella fascia in cima alla
       pagina, e ora compare anche nella scheda dove lo si e' attivato.
 
-18) Serve un tasto "Badge" che porti a una pagina con i badge dell'utente.
-La lista completa la definira' l'utente in futuro: per ora inserirne
+18) [FATTO 2026-07-27] Serve un tasto "Badge" che porti a una pagina con i badge
+dell'utente. La lista completa la definira' l'utente in futuro: per ora inserirne
 qualcuno di prova (qualche cima e qualche rifugio).
+   -> Fatto. Il tasto e' in DUE posti: voce "Badge" nella barra a sinistra e
+      pulsante "Vedi tutti i badge" sotto il Passaporto in Dashboard, che e'
+      dove viene voglia di vederli. Dieci badge di prova: sei cime e quattro
+      rifugi, almeno uno per ognuna delle quattro regioni.
+      COORDINATE VERE, non inventate: cercate una per una su Overpass e
+      verificate con lib/regions.js che cadano dentro le 4 regioni.
+      I badge NON sono salvati su MongoDB (vincolo hard sullo spazio): si
+      ricavano dai timbri che il database ha gia'. Per aggiungerne altri, quando
+      l'utente dettera' la lista definitiva, basta una riga in
+      public/js/badges.js - niente migrazioni.
+      COSA E' SERVITO IN PIU', e non era un di piu': il geofencing conosceva solo
+      le vette elencate dentro le escursioni, quindi i badge nuovi sarebbero
+      stati impossibili da conquistare. Ora i punti timbrabili arrivano dal
+      catalogo dei badge, cosi' tutto quello che la pagina mostra si puo'
+      davvero andare a prendere. Vedi leggimi.txt per i dettagli.
 
 19) [FATTO 2026-07-26] BUG - un utente appena registrato ha gia' delle sfide in corso; non
 deve essere cosi'. Le sfide vanno o create o accettate.

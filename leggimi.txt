@@ -1,9 +1,12 @@
 ===================================================================
 CAMOSCIO — LEGGIMI (stato progetto, aggiornato automaticamente)
-Ultimo aggiornamento: 2026-07-26 (sera) — fatto il BLOCCO 3 (punti 24, 23
-seconda meta' e 25): lo zaino distingue finalmente gli oggetti personali da
-quelli che si dividono, i condivisi compaiono solo in gruppo, e la portata
-della tenda viene controllata. Vedi la sezione dedicata subito sotto.
+Ultimo aggiornamento: 2026-07-27 — fatto il BLOCCO 4 (punto 18): il tasto e la
+pagina "Badge", con dieci badge di prova fra cime e rifugi, coordinate vere e
+tutti davvero conquistabili. Era l'ultimo punto libero della lista.
+Vedi la sezione dedicata subito sotto.
+Il 2026-07-26 (sera) era stato fatto il BLOCCO 3 (punti 24, 23 seconda meta' e
+25): lo zaino distingue gli oggetti personali da quelli che si dividono, i
+condivisi compaiono solo in gruppo, e la portata della tenda viene controllata.
 Prima, nella stessa serata, il BLOCCO 2 (punti 17, 20 e la prima meta' del
 21): timer di sicurezza spostato nella Mappa, tasto SOS verso il 112 e
 contatti di emergenza veri al posto di una casella di testo.
@@ -21,13 +24,15 @@ Prima ancora, nella stessa giornata: il BLOCCO 1 (punti 19, 23 prima meta',
     torna a leggere il resto.
 
 A CHE PUNTO SIAMO, in breve: dei 28 punti di cose_da_fare.txt ne restano
-quattro. Uno solo e' libero e si puo' iniziare subito - il punto 18, la
-pagina Badge (BLOCCO 4). Gli altri tre sono fermi per un motivo:
+TRE, e NESSUNO E' LIBERO - sono tutti fermi per un motivo, non per mancanza
+di tempo:
  - punto 15 (.gpx) va valutato prima per lo spazio su MongoDB;
  - punti 7, 22 e la seconda meta' del 21 aspettano UNA decisione
    dell'utente: quale canale usare per mandare un messaggio, email o SMS;
  - punto 13 (percorso multi-punto) e' in sospeso per sua scelta.
-Tutto il resto e' fatto, provato e online.
+Tutto il resto e' fatto e provato. Il punto 18 (pagina Badge) e' stato chiuso
+il 2026-07-27 ed era l'ultimo punto libero: da qui in avanti serve una
+risposta dell'utente per andare avanti su qualunque cosa.
 
 I PUNTI 7 E 13 SONO IN SOSPESO SU RICHIESTA ESPLICITA DELL'UTENTE
 (2026-07-26): il 7 (recupero password) perche' deve decidere se agganciare
@@ -42,12 +47,239 @@ ricordati come in sospeso, finche' non e' lui a riaprirli.
 
 LE QUATTRO LISTE DETTATE DALL'UTENTE, stato aggiornato:
  - seconda lista (punti 7-14): fatta, tranne il 7 e il 13 (in sospeso);
- - terza lista (punti 15-25): fatta, tranne il 15 e il 18. Il 21 e' fatto
-   a meta' (la meta' non bloccata). Quando questa nota diceva "nessuna
-   implementata" era vero il 25 luglio, non lo e' piu';
+ - terza lista (punti 15-25): fatta, tranne il 15. Il 18 e' stato chiuso il
+   2026-07-27. Il 21 e' fatto a meta' (la meta' non bloccata). Quando questa
+   nota diceva "nessuna implementata" era vero il 25 luglio, non lo e' piu';
  - quarta lista (punti 26-27): fatta;
  - quinta lista (punto 28): fatta, e confermata dall'utente dal telefono.
 ===================================================================
+
+NOTA IMPORTANTE PER CHI RIPARTE DA QUI - PUNTO 15, LA STIMA DELLO SPAZIO
+(2026-07-27). Chiesta dall'utente prima di decidere se implementare il
+caricamento dei .gpx, ed e' la condizione che questo stesso file poneva.
+NESSUN CODICE SCRITTO per il punto 15: solo misure.
+
+--- STATO DEL DATABASE, MISURATO ---
+
+- Occupati 33,45 MB su 512 del piano gratuito M0. Margine libero: 478,55 MB.
+- L'83% di quello che c'e' NON sono dati degli utenti: sono i 24.675 sentieri
+  OSM (27,9 MB). Tutto il resto dell'app sta in poco piu' di 2 MB.
+
+--- QUANTO COSTA UNA TRACCIA ---
+
+- Un punto GPS nel formato compatto della Fase F costa 53,9 byte misurati
+  (tupla [lng,lat,alt,secondi,precisione]).
+- La semplificazione Douglas-Peucker gia' in uso (tolleranza 8 m,
+  routes/tracking.js) e' quello che rende il punto 15 sostenibile. Misurata su
+  tracce ricavate da SENTIERI OSM VERI, ricampionate a passo d'uomo con rumore
+  GPS correlato: sopravvive il 3,4% dei punti e la lunghezza del percorso
+  cambia solo del -2,2%.
+- STIMA DI RIFERIMENTO, PRUDENTE: 30 KB per file .gpx di una giornata da 5 ore.
+  Le misure danno un intervallo fra 7 KB (tracce da sentieri veri, che sono
+  gia' geometrie semplificate e quindi il caso piu' favorevole) e 32 KB
+  (tracce sintetiche piu' rumorose). Per pianificare si usa il numero alto.
+- SENZA semplificare, salvando l'XML com'e': 350 KB per file, cioe' 11 volte
+  tanto. E' la conferma misurata del "mai salvare il .gpx com'e'".
+
+--- LA PROIEZIONE ---
+
+- 4 utenti x 5 file al mese: 0,6 MB al mese, 7,2 MB all'anno = l'1,5% del
+  margine libero ogni anno. Anche caricando dieci volte tanto resterebbe
+  sotto il 15% all'anno. Per la prova con 3-4 persone il consumo NON e' un
+  problema, e non lo e' con nessuna delle ipotesi provate.
+- 100 utenti x 5 file al mese: 40 MB all'anno, margine esaurito in ~12 anni.
+- CONCLUSIONE: il vincolo hard sullo spazio NON e' un ostacolo per il punto
+  15, purche' si converta e si semplifichi in ingresso. Il punto 15 puo'
+  essere implementato.
+
+--- IL VERO CONSUMO DI SPAZIO E' UN ALTRO, ED E' STATO TROVATO QUI ---
+
+- Nella tabella per collezione 6 utenti occupavano 748 KB, cioe' 125 KB a
+  testa: troppo per nome, email e preferenze. Andando a vedere: UN SOLO utente
+  reale ha una foto profilo da 745 KB, che da sola e' il 99,6% dell'intera
+  collezione utenti.
+- Le foto profilo sono salvate in base64 dentro il documento utente (scelta
+  della Fase C, per sopravvivere ai riavvii di Render) con un limite di ~1,5 MB
+  ciascuna. Quindi UNA foto al limite pesa quanto QUATTRO ANNI di caricamenti
+  .gpx di un utente.
+- Proiezione: 300 utenti con foto vicine al limite riempirebbero da soli il 94%
+  del margine. Sono le foto, non le tracce GPS, la cosa che puo' far finire lo
+  spazio su questo progetto.
+- NON e' stato cambiato niente: e' una segnalazione, non un intervento. Se un
+  giorno il database si avvicinasse al limite, il primo posto dove guardare e'
+  questo - e la correzione naturale sarebbe ridimensionare la foto lato client
+  prima di caricarla (una foto profilo mostrata a 40-100 px non ha nessun
+  bisogno di 1,5 MB), non toccare le tracce.
+
+--- SE E QUANDO SI IMPLEMENTA, DUE AVVERTENZE ---
+
+- LIMITE ALLA DIMENSIONE DEL FILE IN INGRESSO, prima di leggerlo. Un .gpx e'
+  XML e va aperto in memoria: su Render ci sono 512 MB in tutto e in Fase G il
+  sito e' gia' andato in 502 proprio per memoria esaurita. Un file da qualche
+  decina di MB caricato da qualcuno basterebbe a rifare l'incidente.
+- LIBRERIA XML: in Fase G si e' gia' scartato osmtogeojson per vulnerabilita'
+  critiche irrisolte in xmldom. La stessa cautela vale qui - un .gpx e' un
+  formato semplice e la lettura si puo' scrivere a mano senza dipendenze.
+
+NOTA IMPORTANTE PER CHI RIPARTE DA QUI - BLOCCO 4 FATTO (2026-07-27):
+punto 18, il tasto e la pagina "Badge". Era l'ultimo punto libero della lista.
+
+--- DOV'E' IL TASTO, E PERCHE' IN DUE POSTI ---
+
+- Voce "Badge" nella barra di navigazione a sinistra (icona award, fra "Le mie
+  escursioni" e "Mappa & Sentieri"), piu' un pulsante "Vedi tutti i badge" in
+  fondo alla scheda del Passaporto in Dashboard. Non e' un doppione per pigrizia:
+  la voce di menu serve a chi i badge li cerca, il pulsante a chi ci arriva
+  guardando i timbri e si chiede se ce ne siano altri. Il secondo usa la classe
+  .btn-nav-trigger, il meccanismo di navigazione interna gia' esistente.
+- La scheda del Passaporto in Dashboard resta a QUATTRO riquadri anche se i badge
+  ora sono dieci: e' un riepilogo, l'elenco intero e' la pagina. Quali quattro lo
+  decide anteprima(): prima quelli gia' presi (il piu' recente davanti), poi i
+  piu' alti ancora da prendere. Cosi' la scheda mostra sempre qualcosa e mette
+  davanti quello che l'utente ha fatto, invece di una fetta arbitraria.
+  Sotto c'e' "2 badge su 10": senza, i quattro riquadri non farebbero capire che
+  gli altri esistono, e il pulsante sembrerebbe portare alla stessa cosa.
+
+--- I BADGE NON SONO SALVATI SUL DATABASE, ED E' UNA SCELTA ---
+
+- Si ricavano dai timbri che esistono gia' (collezione Stamp, sbloccati dal
+  geofencing). Salvarli sarebbe un documento per utente per badge che non aggiunge
+  NIENTE a quello che il database sa gia' - contro il vincolo hard sullo spazio.
+- Il secondo motivo conta di piu' del primo: l'utente ha detto che la lista
+  definitiva la decidera' lui. Una lista SALVATA andrebbe migrata ad ogni
+  ripensamento; una calcolata si aggiorna da sola cambiando una riga di
+  public/js/badges.js. E' la stessa logica del punto 24 (campi scritti solo
+  quando servono) applicata un livello piu' su.
+
+--- UN ELENCO SOLO, USATO DA TRE POSTI ---
+
+- I quattro timbri erano scritti a mano dentro renderDashboardStamps in app.js.
+  Con la pagina nuova sarebbero diventati DUE elenchi, e col geofencing TRE. Ora
+  il catalogo sta in public/js/badges.js e lo usano tutti e tre. Stesso criterio
+  di buildHikeCard al punto 10 e di CamoscioPlaceSearch al punto 27: due copie
+  divergono alla prima aggiunta.
+- catalogo() e' l'elenco fisso PIU' le vette delle escursioni sul database che non
+  ci siano gia'. Quindi chi crea un'escursione con una vetta nuova si ritrova il
+  badge senza che nessuno tocchi il codice.
+- puntiTimbrabili() restituisce {name, lat, lng, altitude, stampId}, cioe' la
+  STESSA forma delle vette delle escursioni: cosi' checkGeofencing in map.js ha
+  cambiato solo quale elenco scorre, non come lo legge.
+
+--- IL PEZZO CHE NON ERA FACOLTATIVO: RENDERLI OTTENIBILI ---
+
+- checkGeofencing guardava SOLO le vette dentro le escursioni. Aggiungere Monte
+  Amaro o il Terminillo alla pagina senza toccare quello avrebbe creato badge
+  impossibili da prendere: il sito avrebbe detto "vai li' e lo conquisti" e non
+  sarebbe successo niente. E' lo stesso difetto tolto al punto 19 (le finte sfide)
+  e al punto 21 (l'"SMS satellitare inviato" che non partiva). Per questo il
+  geofencing ora legge il catalogo. Provato dal vivo: arrivando sul Terminillo e
+  sul Rifugio Pomilio il sito propone davvero il timbro.
+- CORREZIONE EMERSA FACENDOLO: checkGeofencing teneva l'ULTIMO punto trovato entro
+  150 m, non il piu' vicino. Con una manciata di punti passava inosservato; con
+  dieci no - Rifugio Franchetti e Corno Grande distano poche centinaia di metri, e
+  a decidere quale timbro proporre sarebbe stato l'ordine dell'array. Ora vince il
+  piu' vicino.
+
+--- COORDINATE VERE, E COME SI SONO OTTENUTE ---
+
+- Dieci badge: sei cime e quattro rifugi, almeno uno per ognuna delle quattro
+  regioni (Marche, Lazio, Abruzzo, Molise). Le quattro gia' esistenti piu' Monte
+  Amaro, Monte Gorzano, Monte Terminillo, Monte Miletto, Rifugio Bruno Pomilio e
+  Rifugio Pino Ciuffarella.
+- Le coordinate sono state cercate una per una e verificate con lib/regions.js che
+  cadessero DENTRO le 4 regioni. Un badge con coordinate inventate manderebbe
+  qualcuno a cercare una cima dove non c'e'.
+- CONFERMATA UNA TRAPPOLA GIA' NOTA: Nominatim e' stato provato per primo e non ha
+  trovato quasi nessuna cima (7 ricerche su 13 a vuoto, fra cui Monte Amaro e
+  Monte Vettore). E' la stessa cosa scritta al punto 8, "Nominatim non va bene per
+  la montagna", e vale anche per la ricerca per nome, non solo per il reverse.
+  Overpass, cercando per TAG (natural=peak, tourism=alpine_hut), le ha trovate
+  tutte con la quota giusta.
+- TRAPPOLA NUOVA, da non ripagare: mandando la query a Overpass in
+  application/x-www-form-urlencoded senza User-Agent risponde 406. Va usata la
+  stessa forma gia' funzionante in routes/geocoding.js: Content-Type text/plain,
+  User-Agent, corpo grezzo. E confermata la sua inaffidabilita' - il primo
+  tentativo ha dato 504 in tutte e tre le interrogazioni, il secondo e' andato.
+- I CODICI STORICI NON SONO STATI TOCCATI: stamp_mezzeno, stamp_gemelli,
+  stamp_gnifetti e stamp_margherita sono nomi rimasti da una demo alpina
+  (Rifugio Mezzeno, Laghi Gemelli, Gnifetti, Capanna Margherita) e non c'entrano
+  con i luoghi appenninici che indicano oggi. Rinominarli farebbe perdere i timbri
+  gia' presi dagli utenti, che li cercano con quel codice.
+  Per lo stesso motivo restano le loro EMOJI, anche se un ⛺ su una cima da 2912 m
+  non e' il massimo: sono quelle che l'utente vede gia' nel suo passaporto.
+  DA CHIEDERGLI quando dettera' la lista definitiva - e' una scelta sua, non una
+  dimenticanza.
+
+--- BUG PREESISTENTE TROVATO E CORRETTO STRADA FACENDO ---
+
+- Il blocco che disegna i marker delle vette era scritto DUE VOLTE, in
+  renderMapMarkers e in loadActiveHikeOnMap, e le due copie avevano gia'
+  cominciato a divergere: in una il nome della vetta passava da escapeHtml,
+  nell'altra finiva dentro innerHTML cosi' com'era. Un nome di vetta arriva dal
+  database e lo scrive il creatore dell'escursione: e' esattamente il buco XSS
+  chiuso ovunque in Fase H, rimasto aperto li' PERCHE' ERA UNA COPIA. Le due sono
+  diventate una funzione sola, drawStampablePoints.
+  VALE COME METODO: quando si trova lo stesso blocco due volte, guardare se le due
+  copie sono ancora identiche - la differenza e' quasi sempre un difetto.
+- Nello stesso passaggio i marker sono diventati TUTTI i punti timbrabili invece
+  delle sole vette dell'escursione attiva: sono punti del passaporto, non tappe
+  del percorso, e meta' dei badge sarebbe stata invisibile proprio sulla mappa
+  dove la si conquista.
+
+--- DUE DIFETTI VISTI SOLO GUARDANDO LE SCHERMATE ---
+
+- La data del timbro usciva nel formato del database ("2026-06-15") e nella scheda
+  andava pure a capo in mezzo ("2026-06-" / "15"). Ora e' 15/06/2026, in Dashboard
+  e nella pagina. La conversione spezza la stringa e NON usa new Date(): una data
+  "YYYY-MM-DD" viene letta come mezzanotte UTC, e in un fuso dietro Greenwich un
+  timbro preso il 15 comparirebbe preso il 14.
+- DIFETTO MIO, introdotto e corretto: la riga "come si conquistano" e' display:flex
+  per allineare l'icona, e in un flex OGNI figlio diventa una colonna - il
+  <b>Mappa</b> in mezzo alla frase finiva incolonnato accanto al resto invece che
+  dentro. Su schermo largo non si notava, su 390px la frase si spezzava in tre
+  colonne illeggibili. Risolto mettendo il testo dentro un solo <span>.
+  DA RICORDARE: display:flex su un paragrafo che contiene <b>, <a> o <span> in
+  mezzo al testo lo fa a pezzi. Guardare sempre la schermata, non solo i controlli:
+  tutti e 29 passavano mentre quella frase era illeggibile.
+
+--- RESPONSIVE FIN DA SUBITO, SENZA @MEDIA ---
+
+- La griglia usa auto-fill/minmax(160px, 1fr): il numero di colonne lo decide lo
+  spazio, non una soglia scritta a mano, e su 390px viene una colonna sola da
+  sola. E' la lezione dei punti 9/16/23 (schermate "fatte" ma invisibili da
+  telefono) applicata PRIMA e non dopo. Misurato: contenitore 328px, schede 308px,
+  nessuno scorrimento orizzontale, tutte e 10 le schede disegnate.
+- I badge bloccati sono a opacita' 0,55 e non 0,4 come i timbri della Dashboard:
+  in una pagina fatta quasi solo di badge da conquistare, a 0,4 non si leggeva
+  dove andare.
+
+--- COME E' STATO VERIFICATO ---
+
+- Puppeteer nella cartella temporanea, mai in package.json. Due prove separate,
+  59 controlli in tutto, tutti passati, e RILANCIATE DUE VOLTE per escludere
+  l'instabilita': 31 sulla pagina Badge (a 1440 e a 390) e 28 di non regressione.
+- La non regressione copre tutti e QUATTRO gli account demo, compreso Luca
+  TrailRunner che non ha nessun timbro: a zero badge la pagina dice "0
+  conquistati, 0% completato" e non inventa niente. Per ognuno si e' confrontato
+  il numero di badge accesi con i timbri VERI letti dal database.
+- Provato anche il caso XSS: iniettando <img src=x onerror=...> nel nome di una
+  vetta, il codice non viene eseguito ne' compare come tale nella pagina.
+- NESSUNA SCRITTURA SUL DATABASE: la POST /api/stamps e' stata intercettata e
+  risposta dalla prova. Ricontrollato dopo: 6 utenti, 2 escursioni, 5 sessioni, 4
+  timbri, ZERO timbri con i codici nuovi, vette delle escursioni intatte.
+- FALSI ALLARMI DELLE PROVE, tutti e quattro colpa della prova e non dell'app:
+  1) innerText restituisce il testo COME RESO, quindi le etichette in maiuscolo
+     per CSS non corrispondono a un confronto sensibile alle maiuscole;
+  2) cercato "gia' collezionato" con un apostrofo dritto dove la pagina scrive
+     "gia'" con l'accento - e' la seconda volta che succede con un accento o un
+     apostrofo, sospettare sempre prima la prova;
+  3) letto il numero di marker DOPO un'attesa fissa di 1,5s: passava e falliva a
+     giri alterni, perche' renderMapMarkers gira dopo refreshState(). Con
+     waitForFunction su una condizione vera e' stabile;
+  4) chiamata una funzione col nome sbagliato (loadHikeOnMap invece di
+     loadActiveHikeOnMap): la prova diceva "fallito" ma soprattutto NON stava
+     provando il ramo modificato. Un controllo che fallisce per il motivo
+     sbagliato e' peggio di uno che manca, perche' sembra copertura.
 
 NOTA IMPORTANTE PER CHI RIPARTE DA QUI - BLOCCO 3 FATTO (2026-07-26, sera):
 punti 24, 23 (seconda meta') e 25, cioe' lo zaino intelligente per intero.
@@ -2381,15 +2613,28 @@ COME RIPRENDERE IL LAVORO IN UNA NUOVA SESSIONE
 
 
 ===================================================================
-DA DOVE SI RIPARTE — situazione al 2026-07-26, fine giornata
+DA DOVE SI RIPARTE — situazione al 2026-07-27
 ===================================================================
 
-STATO: tutto salvato e ONLINE, sessione chiusa in modo ordinato (non per
-limite di tempo o di utilizzo). Ultimo commit 23bf0f0, GitHub allineato,
-deploy su Render verificato dal vivo file per file. NIENTE lavoro a meta'
-lasciato nel codice: ogni punto toccato e' finito e provato.
+STATO: punto 18 (pagina Badge) FINITO E PROVATO in locale. Da decidere con
+l'utente se mandarlo online: al momento della scrittura di questa nota il
+lavoro e' nella cartella, NON ancora committato ne' pushato - controllare con
+"git status" prima di dare per scontato qualcosa.
+Il resto (fino al commit 23bf0f0 piu' d0b7b93) era gia' online e verificato.
 
-FATTO IN QUESTA SESSIONE, in ordine:
+FATTO IL 2026-07-27:
+ - PUNTO 18, BLOCCO 4 - tasto e pagina "Badge". Voce nella barra a sinistra
+   piu' pulsante sotto il Passaporto in Dashboard; dieci badge di prova (sei
+   cime, quattro rifugi, tutte e quattro le regioni) con coordinate vere prese
+   da Overpass e verificate contro i confini regionali.
+   I badge NON sono salvati sul database: si ricavano dai timbri che c'e' gia'.
+   E' servito estendere il geofencing, altrimenti i badge nuovi sarebbero stati
+   impossibili da conquistare. Corretti strada facendo un buco XSS preesistente
+   (nome della vetta non messo in sicurezza in una delle due copie del blocco
+   dei marker) e la scelta del punto piu' vicino invece dell'ultimo trovato.
+   Dettagli nella sezione dedicata in cima al file.
+
+FATTO IL 2026-07-26 (sessione precedente, gia' online):
  1. PUNTO 28 - la geolocalizzazione dal telefono. Il puntino blu funzionava:
     era la GUIDA allo sblocco a elencare due livelli di permesso invece di
     tre, e mancava proprio quello che manca piu' spesso (l'interruttore
@@ -2405,33 +2650,29 @@ FATTO IN QUESTA SESSIONE, in ordine:
     gruppo, e la portata della tenda viene controllata.
 Dettagli di ognuno nelle sezioni dedicate in cima al file.
 
-DATABASE PULITO: controllato a fine giornata, NESSUN dato di prova creato
-dalle prove automatiche (tutte le scritture intercettate: e' il metodo da
-rifare). Restano 2 escursioni originali, 6 utenti (4 demo + 2 reali) e 5
-sessioni di tracciamento: le 4 del 24-25 luglio piu' quella del 26 luglio
-pomeriggio, che e' la prova vera dell'utente dal telefono - 14 secondi,
-zero punti GPS - ed e' il riscontro del punto 28. NON vanno cancellate.
+DATABASE PULITO: ricontrollato il 2026-07-27 dopo le prove del punto 18.
+NESSUN dato di prova creato (tutte le scritture intercettate: e' il metodo da
+rifare). Restano 2 escursioni originali, 6 utenti (4 demo + 2 reali), 5
+sessioni di tracciamento e 4 timbri. Le 5 sessioni sono le 4 del 24-25 luglio
+piu' quella del 26 luglio pomeriggio, che e' la prova vera dell'utente dal
+telefono - 14 secondi, zero punti GPS - ed e' il riscontro del punto 28. NON
+vanno cancellate.
 
-IL PROSSIMO PASSO E' IL BLOCCO 4: punto 18, tasto e pagina "Badge" con
-qualche badge di prova (qualche cima e qualche rifugio; la lista completa la
-definira' l'utente in futuro). E' l'unico punto rimasto puramente additivo -
-non corregge niente di rotto e non blocca nient'altro - ed e' anche l'ultimo
-non bloccato: dopo restano solo il BLOCCO 5 e i punti in sospeso.
-Materiale gia' esistente da riusare: il "Passaporto delle Vette" con i timbri
-e il contatore sono gia' in Dashboard (Fase C/D), quindi manca la PAGINA
-dedicata, non i dati.
+IL PROSSIMO PASSO NON E' UNA COSA DA PROGRAMMARE, E' UNA RISPOSTA DA AVERE.
+Chiuso il punto 18 non resta piu' NIENTE di libero: i tre punti rimasti sono
+tutti fermi in attesa di una decisione dell'utente o di una valutazione da
+fare con lui. Vedi qui sotto.
 
 CHE COSA RESTA IN TUTTO, in mezza riga ciascuno:
- - punto 18 (blocco 4)  -> pagina Badge. LIBERO, e' da qui che si riparte.
  - punto 15             -> caricamento file .gpx. Prima di scrivere codice
                            serve una stima vera dello spazio su MongoDB: e'
                            l'unico punto che puo' farlo crescere in fretta.
+                           E' il piu' vicino a essere affrontabile dei tre.
  - punti 7, 22, 21-resto -> BLOCCATI dalla stessa decisione dell'utente
                            (email o SMS), vedi qui sotto.
  - punto 13             -> percorso multi-punto sui sentieri. IN SOSPESO per
                            scelta dell'utente, vuole una sessione dedicata.
-Tutti gli altri punti di cose_da_fare.txt (1-12, 14, 16, 17, 19, 20, 23, 24,
-25, 26, 27, 28) sono FATTI.
+Tutti gli altri punti di cose_da_fare.txt (1-12, 14, 16-20, 23-28) sono FATTI.
 
 DA RICORDARE ALL'UTENTE IN OGNI RIASSUNTO, per sua richiesta esplicita: i
 punti 7 e 13 restano in sospeso. Non vanno riproposti come prossimo passo -
@@ -2501,7 +2742,31 @@ COSE DA SAPERE SULL'AMBIENTE, per non perderci tempo:
      partecipa senza averla completata;
    * la difficolta' di un'escursione NON e' 'E'/'EE' nel modello ma
      'Principiante'/'Intermedio'/'Esperto': col valore sbagliato la
-     creazione risponde 400 con un messaggio generico.
+     creazione risponde 400 con un messaggio generico;
+   * (dal punto 18) NOMINATIM NON TROVA LE CIME nemmeno cercandole per nome,
+     non solo in reverse: 7 ricerche su 13 a vuoto, fra cui Monte Amaro e
+     Monte Vettore. Per cime e rifugi si usa Overpass cercando per TAG
+     (natural=peak, tourism=alpine_hut), che le trova tutte con la quota;
+   * (dal punto 18) OVERPASS RISPONDE 406 se la query viene mandata in
+     application/x-www-form-urlencoded senza User-Agent. Va usata la forma
+     gia' funzionante in routes/geocoding.js: Content-Type text/plain,
+     User-Agent, corpo grezzo. Confermata anche la sua inaffidabilita': il
+     primo tentativo ha dato 504 in tutte e tre le interrogazioni fatte;
+   * (dal punto 18) DISPLAY:FLEX SU UN PARAGRAFO lo fa a pezzi se dentro c'e'
+     un <b>, un <a> o uno <span> in mezzo al testo: ogni figlio diventa una
+     colonna. Il testo va messo dentro UN SOLO figlio. Si vede solo su
+     schermo stretto, e nessun controllo automatico se ne accorge - va
+     GUARDATA la schermata;
+   * (dal punto 18) una prova che chiama una funzione col NOME SBAGLIATO
+     fallisce, ma il guaio vero e' un altro: non sta provando niente. Un
+     controllo che fallisce per il motivo sbagliato e' peggio di uno che
+     manca, perche' sembra copertura. Verificare che il nome esista davvero
+     prima di fidarsi di un "OK";
+   * (dal punto 18) quando lo stesso blocco compare DUE VOLTE nel codice,
+     confrontare le due copie prima di accorparle: la differenza fra loro e'
+     quasi sempre un difetto rimasto aperto in una sola: qui era escapeHtml
+     mancante sul nome della vetta, cioe' un buco XSS sopravvissuto alla
+     Fase H proprio perche' era una copia.
 
 DEBITO TECNICO NOTO, non urgente ma da non dimenticare:
  - LE ALTRE SEZIONI NON SONO RESPONSIVE. Il 2026-07-26 sono state

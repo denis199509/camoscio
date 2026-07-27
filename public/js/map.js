@@ -473,15 +473,27 @@ function checkGeofencing(lat, lng) {
     let foundNearPeak = null;
     let distance = Infinity;
 
-    // Controlla tutte le vette in tutte le escursioni
-    db.hikes.forEach(hike => {
-        hike.peaks.forEach(peak => {
-            const dist = calculateDistance(lat, lng, peak.lat, peak.lng);
-            if (dist < 150) { // Distanza in metri per sbloccare (150m)
-                foundNearPeak = peak;
-                distance = dist;
-            }
-        });
+    // PUNTO 18: i punti timbrabili arrivano dal catalogo dei badge, non piu' solo dalle
+    // vette elencate dentro le escursioni. Il catalogo COMPRENDE gia' quelle vette (vedi
+    // catalogo() in badges.js), quindi non si perde niente di quello che si sbloccava
+    // prima; si aggiungono le cime e i rifugi della pagina Badge, che altrimenti sarebbero
+    // rimasti impossibili da conquistare - un badge che il sito mostra ma che non si puo'
+    // prendere e' una promessa che non puo' mantenere.
+    // Se badges.js non fosse caricato si torna alle sole vette delle escursioni, cioe' al
+    // comportamento di prima: meglio meno timbri che una schermata mappa rotta.
+    const puntiTimbrabili = window.CamoscioBadges
+        ? window.CamoscioBadges.puntiTimbrabili()
+        : (db.hikes || []).flatMap(h => h.peaks || []);
+
+    puntiTimbrabili.forEach(peak => {
+        const dist = calculateDistance(lat, lng, peak.lat, peak.lng);
+        // Il piu' vicino, non l'ultimo trovato: con piu' punti in elenco (rifugio e cima
+        // possono stare a poche centinaia di metri, es. Franchetti e Corno Grande) l'ordine
+        // dell'array avrebbe deciso quale timbro proporre.
+        if (dist < 150 && dist < distance) { // Distanza in metri per sbloccare (150m)
+            foundNearPeak = peak;
+            distance = dist;
+        }
     });
 
     if (foundNearPeak) {
@@ -732,6 +744,62 @@ function aggiornaTastoPosizione(acceso) {
     if (window.lucide) window.lucide.createIcons();
 }
 
+// Disegna sulla mappa TUTTI i punti che fanno scattare un timbro (cime e rifugi del
+// catalogo dei badge, punto 18).
+//
+// Perche' esiste questa funzione: lo stesso blocco era scritto DUE VOLTE, in
+// renderMapMarkers e in loadHikeOnMap, e le due copie avevano gia' cominciato a
+// divergere - in una il nome della vetta passava da escapeHtml, nell'altra finiva
+// dentro innerHTML cosi' com'era. Un nome di vetta arriva dal database e lo scrive il
+// creatore dell'escursione: e' esattamente il buco XSS chiuso ovunque in Fase H,
+// rimasto aperto in quella copia perche' era una copia. Una funzione sola non puo'
+// avere questo problema.
+//
+// Perche' ora si disegnano tutti i punti e non solo le vette dell'escursione attiva:
+// sono i punti del PASSAPORTO, non tappe del percorso. Prima meta' dei badge sarebbe
+// stata invisibile proprio sulla mappa dove la si conquista, e trascinando il
+// segnaposto sarebbe comparso un "Vetta Raggiunta!" in un punto dove non c'era niente
+// da vedere.
+function drawStampablePoints() {
+    if (!peakMarkersGroup) return;
+    peakMarkersGroup.clearLayers();
+
+    const db = window.CamoscioState;
+    const punti = window.CamoscioBadges
+        ? window.CamoscioBadges.puntiTimbrabili()
+        : (db.hikes || []).flatMap(h => h.peaks || []);
+
+    punti.forEach(peak => {
+        if (!Number.isFinite(peak.lat) || !Number.isFinite(peak.lng)) return;
+
+        const peakIcon = L.divIcon({
+            className: 'peak-leaflet-marker',
+            html: `<div style="font-size: 1.6rem; background: rgba(0,0,0,0.6); padding: 4px; border-radius: 50%; border: 1.5px solid #4C7E90; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">🏔️</div>`,
+            iconSize: [32, 32],
+            iconAnchor: [16, 16]
+        });
+
+        const marker = L.marker([peak.lat, peak.lng], { icon: peakIcon });
+        const isUnlocked = db.stamps.some(s => s.stampId === peak.stampId);
+
+        marker.bindPopup(`
+            <div style="color: white; font-family: inherit; text-align: center;">
+                <h5 style="margin: 0 0 4px 0;">📍 ${escapeHtml(peak.name)}</h5>
+                ${Number.isFinite(peak.altitude)
+                    ? `<p style="font-size: 0.8rem; margin: 0 0 6px 0;">Altitudine: <b>${peak.altitude}m</b></p>`
+                    : ''}
+                <span class="badge ${isUnlocked ? 'badge-green' : 'badge-accent'}">
+                    ${isUnlocked ? 'Timbro Collezionato ✓' : 'Timbro non Sbloccato'}
+                </span>
+                <br><br>
+                <button class="btn btn-sm btn-secondary" onclick="teleportUserGps(${peak.lat}, ${peak.lng})">Teletrasporta GPS qui</button>
+            </div>
+        `);
+
+        peakMarkersGroup.addLayer(marker);
+    });
+}
+
 // Render dei marker sulla mappa (Waze reports + Vette e Rifugi)
 function renderMapMarkers() {
     if (!window.mapInstance) return;
@@ -782,36 +850,8 @@ function renderMapMarkers() {
         reportMarkersGroup.addLayer(marker);
     });
 
-    // Disegna vette/rifugi legati al percorso attivo
-    const activeHike = db.hikes.find(h => h.id === db.activeHikeId) || db.hikes[0]; // Escursione scelta, o la prima disponibile
-    if (activeHike) {
-        activeHike.peaks.forEach(peak => {
-            const peakIcon = L.divIcon({
-                className: 'peak-leaflet-marker',
-                html: `<div style="font-size: 1.6rem; background: rgba(0,0,0,0.6); padding: 4px; border-radius: 50%; border: 1.5px solid #4C7E90; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">🏔️</div>`,
-                iconSize: [32, 32],
-                iconAnchor: [16, 16]
-            });
-
-            const marker = L.marker([peak.lat, peak.lng], { icon: peakIcon });
-            
-            const isUnlocked = db.stamps.some(s => s.stampId === peak.stampId);
-            
-            marker.bindPopup(`
-                <div style="color: white; font-family: inherit; text-align: center;">
-                    <h5 style="margin: 0 0 4px 0;">📍 ${escapeHtml(peak.name)}</h5>
-                    <p style="font-size: 0.8rem; margin: 0 0 6px 0;">Altitudine: <b>${peak.altitude}m</b></p>
-                    <span class="badge ${isUnlocked ? 'badge-green' : 'badge-accent'}">
-                        ${isUnlocked ? 'Timbro Collezionato ✓' : 'Timbro non Sbloccato'}
-                    </span>
-                    <br><br>
-                    <button class="btn btn-sm btn-secondary" onclick="teleportUserGps(${peak.lat}, ${peak.lng})">Teletrasporta GPS qui</button>
-                </div>
-            `);
-            
-            peakMarkersGroup.addLayer(marker);
-        });
-    }
+    // Disegna cime e rifugi timbrabili (vedi drawStampablePoints)
+    drawStampablePoints();
 }
 
 // Render della lista segnalazioni nella sidebar mappa
@@ -910,33 +950,9 @@ function loadActiveHikeOnMap(hikeId) {
     // Sposta il marker GPS dell'utente alla partenza
     teleportUserGps(activeHikePath[0][0], activeHikePath[0][1]);
 
-    // Rigenera i marker delle vette relative a questa escursione
-    peakMarkersGroup.clearLayers();
-    hike.peaks.forEach(peak => {
-        const peakIcon = L.divIcon({
-            className: 'peak-leaflet-marker',
-            html: `<div style="font-size: 1.6rem; background: rgba(0,0,0,0.6); padding: 4px; border-radius: 50%; border: 1.5px solid #4C7E90; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">🏔️</div>`,
-            iconSize: [32, 32],
-            iconAnchor: [16, 16]
-        });
-
-        const marker = L.marker([peak.lat, peak.lng], { icon: peakIcon });
-        const isUnlocked = db.stamps.some(s => s.stampId === peak.stampId);
-        
-        marker.bindPopup(`
-            <div style="color: white; font-family: inherit; text-align: center;">
-                <h5 style="margin: 0 0 4px 0;">📍 ${peak.name}</h5>
-                <p style="font-size: 0.8rem; margin: 0 0 6px 0;">Altitudine: <b>${peak.altitude}m</b></p>
-                <span class="badge ${isUnlocked ? 'badge-green' : 'badge-accent'}">
-                    ${isUnlocked ? 'Timbro Collezionato ✓' : 'Timbro non Sbloccato'}
-                </span>
-                <br><br>
-                <button class="btn btn-sm btn-secondary" onclick="teleportUserGps(${peak.lat}, ${peak.lng})">Teletrasporta GPS qui</button>
-            </div>
-        `);
-        
-        peakMarkersGroup.addLayer(marker);
-    });
+    // Rigenera i marker dei punti timbrabili (era la seconda copia dello stesso blocco,
+    // quella dove il nome della vetta non passava da escapeHtml - vedi drawStampablePoints)
+    drawStampablePoints();
 
     // Aggiorna consigli esposizione solare nella sidebar della mappa
     renderSolarExposureAdvice(hike);

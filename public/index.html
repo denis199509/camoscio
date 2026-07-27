@@ -278,6 +278,10 @@
                     <i data-lucide="footprints"></i>
                     <span>Le mie escursioni</span>
                 </button>
+                <button class="nav-btn" data-target="badges" id="btn-nav-badges">
+                    <i data-lucide="award"></i>
+                    <span>Badge</span>
+                </button>
                 <button class="nav-btn" data-target="map-section" id="btn-nav-map">
                     <i data-lucide="map"></i>
                     <span>Mappa & Sentieri</span>
@@ -398,6 +402,17 @@
                                 <p class="small text-muted">Raggiungi le vette e i rifugi per sbloccare i timbri digitali collezionabili. Usa la mappa per simulare la tua posizione GPS!</p>
                                 <div class="stamps-grid" id="stamps-collection">
                                     <!-- Stamp sbloccati renderizzati da JS -->
+                                </div>
+                                <!-- Punto 18: il "tasto Badge" chiesto dall'utente. Sta qui, sotto i
+                                     timbri, perche' e' guardando questi che viene voglia di vedere
+                                     tutti gli altri; la voce nella barra a sinistra serve a chi
+                                     invece li cerca direttamente. La scheda mostra solo i primi
+                                     quattro, il conteggio dice quanti sono in tutto. -->
+                                <div class="passport-more">
+                                    <span class="small text-muted" id="passport-count">—</span>
+                                    <button class="btn btn-sm btn-secondary btn-nav-trigger" data-target="badges">
+                                        <i data-lucide="award"></i> Vedi tutti i badge
+                                    </button>
                                 </div>
                                 <!-- Punto 19 di cose_da_fare.txt: qui c'era una sezione "Sfide in
                                      corso" con la voce "Le Vette del Gran Sasso (0/2)" scritta a mano
@@ -696,6 +711,51 @@
                         </h3>
                         <p class="small text-muted">Escursioni che hai segnato come completate.</p>
                         <div class="hikes-grid" id="my-hikes-done"></div>
+                    </div>
+                </section>
+
+                <!-- BADGE (punto 18 di cose_da_fare.txt) -->
+                <!-- I timbri esistevano gia' (Passaporto delle Vette in Dashboard) ma stavano
+                     tutti dentro una scheda di riepilogo, quattro riquadri senza contesto:
+                     niente quota, niente zona, nessun modo di sapere quanti ne mancassero.
+                     Qui sono divisi per genere, con quota e regione, e il conteggio di quelli
+                     presi. L'elenco definitivo lo decidera' l'utente: per aggiungerne altri
+                     basta una riga in public/js/badges.js. -->
+                <section id="badges" class="page-section">
+                    <div class="badges-summary" id="badges-summary">
+                        <!-- contatori e barra di avanzamento generati da JS -->
+                    </div>
+
+                    <!-- Detto qui e non altrove perche' e' la prima domanda che viene guardando
+                         dei badge bloccati ("e come li prendo?"), e la risposta e' vera: e' lo
+                         stesso geofencing gia' in funzione sulla Mappa, 150 metri di raggio. -->
+                    <!-- Il testo sta dentro uno <span> e non sciolto nel <p>: il paragrafo e'
+                         "display:flex" per allineare l'icona, e in un flex OGNI figlio diventa
+                         una colonna a se' - il <b>Mappa</b> finiva incolonnato accanto al resto
+                         della frase invece che dentro. Si vedeva solo su schermo stretto. -->
+                    <p class="small text-muted badges-howto">
+                        <i data-lucide="info"></i>
+                        <span>I badge si conquistano sul posto: apri la <b>Mappa</b> con la
+                        posizione attiva e avvicinati a meno di 150 metri dal punto. Ogni badge
+                        si prende una volta sola e resta per sempre.</span>
+                    </p>
+
+                    <div class="badges-group">
+                        <h3 class="badges-group-title">
+                            <i data-lucide="mountain"></i> Cime
+                            <span class="badge badge-accent" id="count-badges-cime">0/0</span>
+                        </h3>
+                        <p class="small text-muted">Le vette delle quattro regioni: Marche, Lazio, Abruzzo e Molise.</p>
+                        <div class="badges-grid" id="badges-cime"></div>
+                    </div>
+
+                    <div class="badges-group">
+                        <h3 class="badges-group-title">
+                            <i data-lucide="tent"></i> Rifugi
+                            <span class="badge badge-green" id="count-badges-rifugi">0/0</span>
+                        </h3>
+                        <p class="small text-muted">Rifugi e punti di appoggio lungo i percorsi.</p>
+                        <div class="badges-grid" id="badges-rifugi"></div>
                     </div>
                 </section>
 
@@ -1546,6 +1606,7 @@
     <script src="js/backpack.js"></script>
     <script src="js/carpool.js"></script>
     <script src="js/social.js"></script>
+    <script src="js/badges.js"></script>
     <!-- Punto 26: permessi di posizione e puntino blu. Prima di map.js, che gli si iscrive
          per disegnare il puntino, e di tracking.js, che gli passa i propri fix GPS. -->
     <script src="js/geolocation.js"></script>
