@@ -3221,6 +3221,13 @@ FATTO IL 2026-07-26 (sessione precedente, gia' online):
     gruppo, e la portata della tenda viene controllata.
 Dettagli di ognuno nelle sezioni dedicate in cima al file.
 
+INCIDENTE DELLA SECONDA SESSIONE DEL 2026-07-27, da sapere: una pulizia di prova
+non filtrata per utente ha CANCELLATO IL TIMBRO VERO dell'utente per il Corno
+Grande (dettagli e le due regole che ne derivano nell'elenco delle trappole piu'
+sotto). E' stato ripristinato con la data giusta, 2024-08-11, e ricontrollato.
+Se un giorno mancasse di nuovo un timbro: si ricrea con
+Stamp.create({userId, stampId, dateUnlocked}) - non c'e' niente da ricalcolare.
+
 DATABASE PULITO: ricontrollato il 2026-07-27 alla fine della SECONDA sessione.
 Restano 2 escursioni originali, 6 utenti (4 demo + 2 reali), 6 sessioni di
 tracciamento e 4 timbri. Le prove di questa sessione hanno dovuto SCRIVERE dati
@@ -3327,6 +3334,25 @@ COSE DA SAPERE SULL'AMBIENTE, per non perderci tempo:
      gia' funzionante in routes/geocoding.js: Content-Type text/plain,
      User-Agent, corpo grezzo. Confermata anche la sua inaffidabilita': il
      primo tentativo ha dato 504 in tutte e tre le interrogazioni fatte;
+   * (dal punto 32, IL PIU' IMPORTANTE) UNA PULIZIA DI PROVA VA SEMPRE FILTRATA
+     PER L'UTENTE DI PROVA. In questa sessione una riga di pulizia cancellava i
+     timbri per stampId + data senza dire DI CHI:
+       deleteMany({ stampId, dateUnlocked: '2024-08-11' })
+     La traccia finta usava la stessa data dell'escursione VERA dell'utente
+     (11/08/2024, presa dai suoi dati per essere realistica), quindi ha cancellato
+     il SUO timbro del Corno Grande - un dato vero, guadagnato camminando.
+     Trovato solo perche' a fine sessione si ricontano SEMPRE i documenti: erano 6
+     timbri e ne risultavano 5. Ripristinato subito.
+     DUE REGOLE DA QUI IN AVANTI:
+       1) ogni deleteMany di una prova porta userId dell'account di prova, sempre,
+          anche quando "tanto quel valore ce l'ho solo io";
+       2) i dati finti NON devono somigliare ai dati veri dell'utente. Usare date
+          e nomi riconoscibili come di prova e' l'unica difesa che funziona anche
+          quando la prima regola viene dimenticata.
+     E ATTENZIONE: /api/auth/demo-accounts espone "id", NON "_id" (trappola gia'
+     scritta piu' sotto) - usando luca._id la pulizia va in errore e non cancella
+     niente, lasciando dati di prova in giro che falsano le prove successive. E'
+     successo, e ha fatto fallire la prova del geofencing al giro dopo;
    * (dal punto 32) PUPPETEER: elementHandle.uploadFile IMPOSTA il file ma NON fa
      scattare l'evento 'change'. Se il caricamento e' agganciato li' (come in
      storico.js) non succede niente e sembra che il pulsante sia rotto: va
