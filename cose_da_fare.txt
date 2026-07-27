@@ -122,6 +122,39 @@ Da pianificare e implementare in una sessione futura.
 =====================================================================
 
 7) Recupero password in caso di dimenticanza - manca del tutto, va aggiunto.
+   [INFORMAZIONI AGGIUNTE DALL'UTENTE 2026-07-27, seconda sessione. NESSUN CODICE
+   SCRITTO: il punto 7 si fa in una sessione futura, per sua richiesta esplicita.]
+   OSSERVAZIONE DELL'UTENTE, VERIFICATA E CONFERMATA: "quando fai login chiede
+   comunque email e password, quindi l'email viene usata gia' per accedere".
+   E' vero. Controllato nel codice e sul database:
+     - POST /api/auth/login (routes/auth.js) cerca l'utente PER EMAIL e poi
+       confronta la password: l'email e' gia' l'identificativo di accesso;
+     - nel modello User l'email e' unique e sparse, quindi identifica una persona
+       sola;
+     - entrambi gli account reali sul database hanno un'email di formato valido.
+       I 4 account demo non ne hanno, ma entrano senza password per scelta: il
+       recupero non li riguarda.
+   PROCEDURA VOLUTA DALL'UTENTE: alla richiesta di recupero il sistema genera una
+   password nuova sul momento, la salva, e la manda all'utente via email; lui entra
+   con quella e poi se la cambia a piacimento.
+   DA VALUTARE INSIEME A LUI PRIMA DI SCRIVERE CODICE (due conseguenze concrete di
+   quella procedura, non obiezioni di principio):
+     1) cambiando la password SUBITO, chiunque conosca l'indirizzo email di un
+        utente puo' far smettere di funzionare la sua password, anche senza avere
+        accesso alla casella. Non entra al posto suo, ma lo lascia fuori;
+     2) una password mandata per email resta scritta nella casella e vale finche'
+        non la si cambia.
+     L'alternativa standard evita entrambe le cose: si manda un LINK con scadenza
+     che permette di SCEGLIERE la nuova password, e quella vecchia continua a
+     funzionare finche' non se ne imposta una nuova. Costa lo stesso lavoro.
+   DA RICORDARE: in Fase C si era deciso "email SOLO SALVATA, nessuna verifica
+   reale" - quindi nessuno ha mai dimostrato di possedere l'indirizzo scritto in
+   registrazione. Chi ha sbagliato a digitarlo non potra' recuperare la password, e
+   un indirizzo di un'altra persona riceverebbe le sue credenziali. Va deciso se
+   introdurre una verifica dell'email almeno al primo recupero.
+   RESTA DA DECIDERE il servizio di invio (il vincolo hard dice tutto open source e
+   gratuito): questa e' la stessa decisione che blocca il punto 22 e la seconda
+   meta' del 21.
 
 8) [FATTO 2026-07-26] Scelta del punto di ritrovo di un'escursione dalla mappa invece
 che a coordinate scritte a mano (oggi il form di creazione escursione chiede
