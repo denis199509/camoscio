@@ -11,12 +11,20 @@ quattro badge storici avevano coordinate sbagliate fino a 2,4 km, cioe' erano
 impossibili da conquistare stando nel posto vero: corrette.
 L'UTENTE HA CONFERMATO dal sito vero che tutto funziona.
 
-PUNTO 13 — FATTO NELLA TERZA SESSIONE DEL 2026-07-27: misurato, deciso il livello
-i con l'utente, e scritto tutto il codice. Progettare un percorso su piu' punti
-funziona: si tocca la mappa, il sito collega seguendo i sentieri, e dove non ci
-riesce tira una retta ROSSA E TRATTEGGIATA con l'avviso di non seguirla. Le bozze si
-salvano, si riaprono e si cancellano. 66 controlli, tutti passati.
-RESTA SOLO l'estrazione dei dati del livello i, che gira a parte ed e' ripartibile.
+PUNTO 13 — FATTO E CHIUSO NELLA TERZA SESSIONE DEL 2026-07-27. Misurato, deciso il
+livello i con l'utente, scritto tutto il codice ed estratti i dati (91.340 sentieri
+sul database, erano 24.675). Progettare un percorso su piu' punti funziona: si tocca
+la mappa, il sito collega seguendo i sentieri, e dove non ci riesce tira una retta
+ROSSA E TRATTEGGIATA con l'avviso di non seguirla. Le bozze si salvano, si riaprono
+e si ritrovano in "Le mie escursioni" sotto "I miei progetti", con l'esposizione al
+sole del tracciato.
+IL NUMERO CHE CONTA: un percorso sui sentieri esisteva nel 77,5% dei casi, ora nel
+95,7%. E l'indice in RAM e' rimasto identico (15.228 sentieri), che era il rischio.
+Nella stessa sessione, dalle segnalazioni dell'utente: il contatore delle uscite che
+diceva il falso, i progetti che non si ritrovavano, e DUE difetti del fondo pagina
+sul telefono che nessuna prova automatica poteva vedere (100vh contro le barre del
+browser, e un "padding" scorciatoia che azzerava lo spazio per il pulsante flottante
+su ogni telefono in verticale).
 
 PUNTO 7 — l'utente ha aggiunto informazioni il 2026-07-27 (l'email e' gia' usata
 per fare login: verificato e confermato) e ha detto che il punto 7 SI FA IN UNA
@@ -491,26 +499,45 @@ PROVATO: 8 controlli sulla griglia, 13 sulla ricerca, 21 sulla rotta, 24 nel bro
 Tutti passati. L'esempio dell'utente (Campo Imperatore -> Sella di Monte Aquila) trova
 un percorso sui sentieri di 4,3 km contro 1,3 in linea d'aria.
 
---- SE L'ESTRAZIONE SI E' INTERROTTA (sessione finita, PC spento, Overpass) ---
+--- L'ESTRAZIONE E' FATTA (2026-07-27 sera). I NUMERI VERI ---
 
-NON SI E' PERSO NIENTE. Si rilancia e riprende da dove era:
+173 riquadri su 173, 53 minuti. Non serve rilanciarla.
+  - sentieri sul database: 91.340 (erano 24.675). 66.665 nuovi con routingOnly: true,
+    e i 24.675 conosciuti INTATTI;
+  - scartati perche' lontani dai sentieri o fuori regione: 482.175, cioe' l'87,6% di
+    quello che Overpass ha restituito. E' il filtro del livello i che fa il suo lavoro;
+  - spazio: 76,4 MB di dati + 5,3 di indici, database in tutto 83,4 MB su 512
+    (era 33). La stima diceva 65 MB: era prudente al punto giusto.
+
+I QUATTRO CONTROLLI, tutti fatti:
+ 1) i dati sono arrivati e i conosciuti sono intatti: SI;
+ 2) INDICE IN RAM: "15228 sentieri, 594359 segmenti", IDENTICI a prima. E' il
+    controllo che protegge il sito dal cadere per memoria come in Fase G, ed e' quello
+    che conta piu' di tutti. Se un giorno quel numero cresce, il filtro routingOnly
+    non sta funzionando;
+ 3) l'esempio dell'utente (Campo Imperatore -> Sella di Monte Aquila): 4.340 m contro
+    4.332 di prima. NON si e' accorciato, si e' allungato di 8 metri.
+    ERA UNA PREVISIONE SBAGLIATA, ed e' istruttivo: quel percorso era GIA' fra i casi
+    che funzionavano (uno dei 77,5% riusciti), quindi non aveva margine di
+    miglioramento. Gli 8 metri vengono dall'aggancio, che ora trova un nodo diverso.
+    UN SOLO ESEMPIO NON PUO' DIRE SE UN LAVORO E' SERVITO: serve la misura sotto;
+ 4) LA MISURA CHE CONTA, su 3.000 coppie di punti sul Gran Sasso (le stesse per
+    entrambi i casi): un percorso esisteva nel 77,5%, ora esiste nel 95,7%.
+    DICIOTTO PUNTI PERCENTUALI. Su 100 coppie, 18 in piu' si collegano seguendo i
+    sentieri invece di essere unite da una retta. E' esattamente quanto previsto
+    dalle misure fatte prima di scrivere il codice.
+
+SE UN GIORNO SERVISSE RIFARLA (dati OSM aggiornati, filtro cambiato):
     node scripts/fetch-trails-nearby.js
-I riquadri gia' fatti sono in data/estrazione-progresso.json (escluso da git). Lo
-script li salta da solo. Con --daccapo si ricomincia da zero, ma non serve quasi mai.
-Riquadri totali: 173, da 0,2 gradi. Solo quelli che contengono sentieri gia'
-conosciuti: fuori da li' il livello i non aggiungerebbe niente per definizione.
-Durata: circa due ore in tutto (misurata, non stimata).
-
-COME SI CONTROLLA CHE SIA ANDATA BENE, quando finisce:
-  - i sentieri sul database devono essere cresciuti (erano 24.675) e quelli con
-    routingOnly: true sono i nuovi;
-  - RILANCIARE IL SERVER IN LOCALE e guardare la riga "Indice sentieri ... caricato":
-    DEVE ancora dire 15.228 sentieri e 594.359 segmenti. Se dice di piu', il filtro
-    routingOnly non sta funzionando e il sito online cadrebbe per memoria al primo
-    riavvio - e' successo in Fase G ed e' il rischio piu' serio di tutto il punto 13;
-  - riprovare Campo Imperatore -> Sella di Monte Aquila: il percorso dovrebbe
-    accorciarsi rispetto ai 4.332 m di oggi, perche' con piu' sentieri collegati
-    l'A* trova strade piu' dirette.
+E' ripartibile: tiene il segno in data/estrazione-progresso.json (escluso da git) e
+salta i riquadri gia' fatti. Con --daccapo ricomincia da zero.
+!!! FARLA PARTIRE UNA VOLTA SOLA !!! In questa sessione e' stata avviata due volte
+per sbaglio, e i due processi si sovrascrivevano il file del progresso a vicenda: il
+conteggio ANDAVA INDIETRO (131 -> 103). I dati non ne hanno sofferto, perche' la
+scrittura e' un upsert per wayId e ripassare e' innocuo, ma si sono sprecate un'ora e
+centinaia di chiamate a Overpass. Prima di lanciarla, controllare:
+    wmic process where "name='node.exe'" get CommandLine | grep -c fetch-trails-nearby
+Un conteggio del progresso che DIMINUISCE e' il sintomo: significa due scrittori.
 
 --- COSA RESTA DA DECIDERE O DA FARE ---
 
@@ -3288,38 +3315,24 @@ COME RIPRENDERE IL LAVORO IN UNA NUOVA SESSIONE
 DA DOVE SI RIPARTE — situazione al 2026-07-27, fine SECONDA sessione
 ===================================================================
 
->>> PUNTO 13: IL CODICE E' SCRITTO, PROVATO E ONLINE. Progettare un percorso su
-    piu' punti funziona: si tocca la mappa, il sito collega seguendo i sentieri, e
-    dove non ci riesce tira una retta ROSSA E TRATTEGGIATA con l'avviso di non
-    seguirla. Le bozze si salvano, si riaprono e si cancellano.
-    66 controlli, tutti passati. Stato completo, file per file, nella sezione
-    "PUNTO 13: A CHE PUNTO E'" in cima a questo file.
+>>> PUNTO 13: FATTO E CHIUSO. Codice scritto, dati estratti, tutto verificato e
+    online. Progettare un percorso su piu' punti funziona: si tocca la mappa, il
+    sito collega seguendo i sentieri, e dove non ci riesce tira una retta ROSSA E
+    TRATTEGGIATA con l'avviso di non seguirla. Le bozze si salvano, si riaprono e
+    si cancellano, e si ritrovano in "Le mie escursioni" sotto "I miei progetti",
+    con l'esposizione al sole del tracciato.
+    IL NUMERO CHE DICE SE E' SERVITO: su 3.000 coppie di punti sul Gran Sasso, un
+    percorso sui sentieri esisteva nel 77,5% dei casi, ora esiste nel 95,7%.
+    Diciotto punti percentuali.
+    Dettagli, misure e i quattro controlli fatti: sezione "PUNTO 13: A CHE PUNTO E'"
+    in cima a questo file.
 
-    RESTA SOLO DA FINIRE L'ESTRAZIONE DEI DATI del livello i, che gira per conto
-    suo ed e' RIPARTIBILE. Se si e' interrotta (sessione finita, PC spento,
-    Overpass) NON si e' perso niente: si rilancia
-        node scripts/fetch-trails-nearby.js
-    e riprende da dove era, perche' tiene il segno in
-    data/estrazione-progresso.json (escluso da git). 173 riquadri in tutto, circa
-    due ore misurate.
-
-    QUANDO FINISCE, TRE CONTROLLI. Il secondo e' quello che conta davvero:
-      1) i sentieri sul database sono cresciuti (erano 24.675, e i nuovi hanno
-         routingOnly: true);
-      2) RILANCIARE IL SERVER IN LOCALE e guardare la riga "Indice sentieri ...
-         caricato": DEVE ancora dire 15.228 sentieri e 594.359 segmenti. Se dice
-         di piu', il filtro routingOnly non sta funzionando e il sito online
-         cadrebbe per memoria al primo riavvio - e' esattamente l'incidente della
-         Fase G, ed e' il rischio piu' serio di tutto il punto 13;
-      3) riprovare Campo Imperatore -> Sella di Monte Aquila: il percorso dovrebbe
-         ACCORCIARSI rispetto ai 4.332 m di oggi, perche' con piu' sentieri
-         collegati l'A* trova strade piu' dirette. Se non cambia niente, i dati
-         nuovi non stanno arrivando dove servono.
-
-    L'utente aveva scelto il livello f e poi, messo davanti al confronto completo,
-    ha scelto il i: stesso beneficio, 37% di dati in meno. Le tre decisioni prese
-    prima (retta automatica ben segnalata, bozza personale, misurare prima di
-    allargare) sono tutte rispettate nel codice e NON vanno richieste di nuovo.
+>>> NON C'E' NIENTE DI SOSPESO DAL PUNTO 13. Se il sito dovesse dare problemi di
+    memoria dopo un riavvio, la prima cosa da guardare e' la riga "Indice sentieri
+    ... caricato": DEVE dire 15.228 sentieri e 594.359 segmenti. Se dice di piu',
+    il filtro routingOnly in lib/trailIndex.js non sta funzionando e i 66.665
+    tratti aggiunti per la ricerca del percorso stanno finendo in RAM - e' il
+    rischio che ha gia' fatto cadere il sito in Fase G.
 
 >>> NIENTE E' IN SOSPESO DA VERIFICARE. L'utente ha gia' confermato dal sito vero
     che il file che dava errore si carica e che il badge del Corno Grande c'e'.
@@ -3523,6 +3536,35 @@ COSE DA SAPERE SULL'AMBIENTE, per non perderci tempo:
      gia' funzionante in routes/geocoding.js: Content-Type text/plain,
      User-Agent, corpo grezzo. Confermata anche la sua inaffidabilita': il
      primo tentativo ha dato 504 in tutte e tre le interrogazioni fatte;
+   * (dal punto 13) FAR PARTIRE DUE VOLTE UNO SCRIPT LUNGO che tiene il segno su un
+     file: i due processi si sovrascrivono a vicenda e il conteggio del progresso VA
+     INDIETRO. E' successo con l'estrazione dei sentieri (131 -> 103). I dati non ne
+     hanno sofferto, perche' la scrittura e' un upsert per wayId e ripassare e' innocuo,
+     ma si e' sprecata un'ora e centinaia di chiamate a Overpass.
+     Un progresso che DIMINUISCE e' sempre il sintomo di due scrittori: si contano i
+     processi prima di rilanciare, non dopo;
+   * (dal punto 13) pkill NON FUNZIONA su Windows/Git Bash. Un "pkill -f node server.js"
+     non chiude niente, il server nuovo muore con EADDRINUSE e - siccome il vecchio resta
+     a rispondere sulla 3000 - sembra tutto a posto mentre si sta misurando la versione
+     SBAGLIATA. E' successo proprio col controllo dell'indice in RAM, che e' il piu'
+     importante di tutti. Si usa taskkill //F //PID <pid>, col pid preso da
+     netstat -ano | grep :3000, e si VERIFICA che la porta sia libera prima di riavviare;
+   * (dal punto 13) UN LOG IN SOTTOFONDO PUO' ESSERE VECCHIO: l'output resta nel buffer e
+     "tail" mostra righe di minuti prima. Per sapere davvero a che punto e' uno script
+     lungo si guarda il file di stato che scrive lui, e il suo orario di modifica;
+   * (dal punto 13, INTERFACCIA) height: 100vh NON basta su un telefono vero: 100vh e'
+     l'altezza della finestra SENZA le barre del browser, ma le barre di solito ci sono,
+     e il fondo della pagina finisce dietro quella inferiore, irraggiungibile perche' il
+     body non scorre. Va aggiunto 100dvh come seconda riga.
+     NON SI VEDE IN PUPPETEER, che non ha barre: e' un difetto che le prove automatiche
+     non possono trovare per costruzione. L'ha segnalato l'utente usando il telefono, e
+     la prova automatica diceva "nessun problema";
+   * (dal punto 13, INTERFACCIA) in una @media piu' stretta la scorciatoia "padding: Npx"
+     AZZERA i padding specifici scritti nelle @media piu' larghe. Cosi' il padding-bottom
+     di 96px che teneva il pulsante flottante lontano dall'ultima scheda spariva sotto i
+     480px, cioe' su OGNI telefono in verticale: la correzione del punto 15 esisteva ma
+     valeva solo fra 480 e 900 px. Aggiungere anche env(safe-area-inset-bottom) per gli
+     iPhone con la barra a sfioramento;
    * (dal punto 32, IL PIU' IMPORTANTE) UNA PULIZIA DI PROVA VA SEMPRE FILTRATA
      PER L'UTENTE DI PROVA. In questa sessione una riga di pulizia cancellava i
      timbri per stampId + data senza dire DI CHI:
