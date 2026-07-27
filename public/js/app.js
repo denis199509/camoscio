@@ -522,7 +522,20 @@ async function renderTrackingTotals() {
                 const ore = Math.floor(t.secondi / 3600);
                 const minuti = Math.round((t.secondi % 3600) / 60);
                 const tempo = ore > 0 ? `${ore}h ${minuti}min` : `${minuti} min`;
-                nota.textContent = `${t.sessioni} ${t.sessioni === 1 ? 'escursione registrata' : 'escursioni registrate'}, ${tempo} di cammino in totale.`;
+                let testo = `${t.sessioni} ${t.sessioni === 1 ? 'escursione registrata' : 'escursioni registrate'}, ${tempo} di cammino in totale.`;
+
+                // Le uscite importate da un file .gpx senza orari hanno km e dislivello veri
+                // ma nessuna durata, quindi restano fuori dal tempo e dalla velocita' media
+                // (vedi /totals in routes/tracking.js). Va DETTO: chi conosce i propri numeri
+                // e vede una velocita' media che non torna coi chilometri mostrati sopra
+                // penserebbe a un errore del sito, e avrebbe ragione a pensarlo.
+                const senza = t.sessioniSenzaDurata || 0;
+                if (senza > 0) {
+                    testo += senza === 1
+                        ? " Un'uscita importata è senza orari: i suoi chilometri sono contati, il tempo e la velocità media no."
+                        : ` ${senza} uscite importate sono senza orari: i loro chilometri sono contati, il tempo e la velocità media no.`;
+                }
+                nota.textContent = testo;
             }
         }
     } catch (e) {

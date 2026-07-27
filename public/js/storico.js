@@ -97,7 +97,13 @@
                 <div class="outing-card-stats">
                     <div><strong>${(s.distanceKm || 0).toFixed(1).replace('.', ',')}</strong><span>km</span></div>
                     <div><strong>${Math.round(s.elevationGainM || 0)}</strong><span>m disliv.</span></div>
-                    <div><strong>${durata(s.durationSeconds)}</strong><span>durata</span></div>
+                    ${s.durationUnknown
+                        // Il file non aveva gli orari: si scrive che la durata non si sa,
+                        // invece di un trattino muto che sembrerebbe un dato mancante per
+                        // sbaglio. Il titolo spiega anche la conseguenza, che e' la cosa
+                        // che uno si chiede guardando la Dashboard.
+                        ? `<div title="Il file .gpx non conteneva gli orari dei punti, quindi la durata non si può ricavare. Questa uscita non entra nel tempo totale né nella velocità media, che restano così corretti."><strong>—</strong><span>durata ignota</span></div>`
+                        : `<div><strong>${durata(s.durationSeconds)}</strong><span>durata</span></div>`}
                 </div>
             </div>`;
     }
@@ -152,23 +158,47 @@
                 ? `<div class="gpx-import-warn">${dati.avvisi.map(a => esc(a)).join('<br>')}</div>`
                 : '';
 
+            // I badge conquistati dalla traccia. Vanno detti QUI e non lasciati scoprire
+            // per caso nella pagina Badge: e' il momento in cui l'utente sta guardando, ed
+            // e' la ricompensa di quello che ha appena fatto.
+            const badge = (dati.badge || []).length
+                ? `<div class="gpx-import-badges">
+                       <b>${dati.badge.length === 1 ? 'Badge conquistato' : 'Badge conquistati'}:</b>
+                       ${dati.badge.map(b => `${esc(b.emoji)} ${esc(b.nome)}`).join(' · ')}
+                       <br><span class="small text-muted">Aggiunti al tuo passaporto con la data dell'escursione.</span>
+                   </div>`
+                : '';
+
             mostraEsito(`
                 <i data-lucide="circle-check-big"></i>
                 <span>
                     <b>${esc(dati.nome || 'Uscita')} del ${dataItaliana(dati.inizio)}</b> importata.
                     ${(dati.distanzaKm || 0).toFixed(1).replace('.', ',')} km,
-                    ${Math.round(dati.dislivelloM || 0)} m di dislivello, ${durata(dati.durataSecondi)}.
+                    ${Math.round(dati.dislivelloM || 0)} m di dislivello${dati.durataIgnota
+                        ? ', durata non disponibile'
+                        : `, ${durata(dati.durataSecondi)}`}.
                     <br>
                     <span class="small text-muted">
                         ${dati.puntiLetti.toLocaleString('it-IT')} punti nel file, ${dati.puntiSalvati.toLocaleString('it-IT')} salvati
                         dopo la semplificazione (il percorso disegnato resta lo stesso, occupa molto meno spazio).
                         Hai caricato ${dati.caricatiQuestoMese} file su ${dati.massimoAlMese} questo mese.
                     </span>
+                    ${badge}
                     ${avvisi}
                 </span>`, 'ok');
 
             aggiornaNotaQuota(dati.caricatiQuestoMese, dati.massimoAlMese);
             await renderStorico();
+
+            // Se sono stati conquistati dei badge, i timbri sul database sono cambiati e
+            // quelli in memoria no: senza rileggerli, il Passaporto e la pagina Badge
+            // continuerebbero a mostrare quel badge come "non ancora conquistato" proprio
+            // mentre il messaggio qui sopra dice che l'hai preso. refreshState() e' la
+            // funzione che ricarica anche i timbri (vedi app.js).
+            if ((dati.badge || []).length && window.refreshState) {
+                await window.refreshState();
+                if (window.renderBadges) window.renderBadges();
+            }
             // I totali della Dashboard cambiano: si ridisegna, cosi' i due posti non
             // raccontano due cose diverse finche' non si ricarica la pagina.
             if (window.renderDashboard) window.renderDashboard();

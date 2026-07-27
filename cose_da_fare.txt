@@ -585,3 +585,53 @@ esclamativo dentro un triangolo blu.
         chilometri stimati dal wi-fi falserebbe lo storico.
    RESTA DA FARE: la controprova dell'utente dal telefono vero, che e' la
    sola cosa che questa correzione non poteva verificare da sola.
+
+=====================================================================
+SESTA LISTA (2026-07-27) - segnalazioni dell'utente dopo aver provato il
+caricamento .gpx con i suoi FILE VERI. Era proprio la prova che le
+verifiche automatiche non potevano fare: ogni programma (Garmin, Strava,
+Komoot, OsmAnd) scrive il .gpx a modo suo.
+PROMEMORIA: i punti 7 (recupero password) e 13 (percorso multi-punto)
+restano IN SOSPESO per scelta esplicita dell'utente, non dimenticati.
+=====================================================================
+
+--- CARICAMENTO .GPX ---
+
+29) [FATTO 2026-07-27] Il primo file .gpx si e' importato senza problemi, ma
+dal secondo esce l'errore "Nel file mancano gli orari dei punti (<time>),
+quindi non si puo' sapere quanto sia durata l'escursione ne' a che velocita'",
+anche se il file caricato e' una traccia vera dell'utente.
+   -> CONTROLLATO PRIMA DI TOCCARE NIENTE: il lettore non ha un buco sui
+      formati. Provato contro 20 dialetti veri (Garmin con extensions, Strava,
+      Komoot, OsmAnd, namespace espliciti, GPX 1.0, BOM, CRLF) e contro tutti i
+      modi strani di scrivere l'orario (offset senza due punti, sette decimali,
+      spazio invece della T): 20 su 20 passano. Quindi il file non ha davvero
+      l'orario dentro i <trkpt> - capita alle tracce esportate come "percorso"
+      invece che come "attivita'", o scaricate da un sito di sentieri.
+   -> DECISIONE DELL'UTENTE: accettarlo senza la durata. Il rifiuto era voluto
+      (senza durata la velocita' media di tutto lo storico risulterebbe
+      sbagliata verso l'alto) ma il punto 15 serve a "costruirsi uno storico":
+      rifiutare un'escursione vera va contro il suo scopo.
+      Ora la traccia entra con distanza e dislivello VERI, marcata "durata
+      ignota", ed e' esclusa dal tempo totale e dalla velocita' media. Il
+      motivo del divieto e' stato rispettato, non il divieto.
+      La DATA si recupera dall'intestazione del file (<metadata><time>), che
+      quasi tutti scrivono anche quando non mettono l'orario sui punti.
+      Vedi leggimi.txt per il dettaglio e per i numeri misurati.
+
+30) [FATTO 2026-07-27] Importata la traccia del Corno Grande, il badge e'
+rimasto "da conquistare". Importando la traccia si dimostra di essere stati sul
+posto, quindi il badge va dato in automatico.
+   -> Fatto lato server, con la stessa soglia di 150 m e lo stesso catalogo del
+      geofencing della Mappa: due regole diverse vorrebbero dire che camminare
+      col sito aperto e importare la stessa traccia danno risultati diversi.
+      La data del timbro e' quella dell'ESCURSIONE, non del caricamento: chi
+      importa nel 2026 una salita del 2024 l'ha conquistata nel 2024.
+   -> TROVATO FACENDOLO, ed era il difetto piu' grave della giornata: TRE dei
+      quattro badge storici avevano coordinate sbagliate di 493 m (Corno
+      Grande), 2.440 m (Rifugio Franchetti) e 744 m (Rifugio Zilioli). Con una
+      soglia di 150 m erano badge che il sito mostrava e che stando nel posto
+      VERO non si potevano prendere. Corrette da Overpass e verificate sulla
+      traccia vera dell'utente: la distanza dalla vetta del Corno Grande passa
+      da 128 m a 6 m. Gli stampId non sono stati toccati, altrimenti si
+      perderebbero i timbri gia' presi.

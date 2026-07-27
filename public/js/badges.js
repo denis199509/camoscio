@@ -23,47 +23,23 @@
 //    timbrabili da qui: questo file e' l'UNICO elenco, e tutto cio' che compare
 //    nella pagina si puo' andare a prendere davvero.
 //
-// 3) LE COORDINATE SONO VERE, non inventate: cercate una per una su Overpass
-//    (natural=peak e tourism=alpine_hut) e verificate con lib/regions.js che
-//    cadano dentro Marche, Lazio, Abruzzo o Molise. Nominatim era stato provato
-//    per primo e non trovava quasi nessuna cima - la stessa trappola gia' scritta
-//    in leggimi.txt al punto 8 ("il reverse geocoding di Nominatim non va bene
-//    per la montagna"). Un badge con coordinate sbagliate sarebbe peggio che non
-//    averlo: manderebbe qualcuno a cercare una cima dove non c'e'.
-//
-// 4) I QUATTRO CODICI STORICI NON SI TOCCANO. stamp_mezzeno, stamp_gemelli,
-//    stamp_gnifetti e stamp_margherita sono nomi rimasti da una demo alpina di
-//    prima del progetto (Rifugio Mezzeno, Laghi Gemelli, Gnifetti, Capanna
-//    Margherita) e non c'entrano niente con i luoghi appenninici che indicano
-//    oggi. Rinominarli farebbe perdere i timbri gia' presi dagli utenti sul
-//    database, che li cercano con quel codice: restano cosi'.
-//    Per lo stesso motivo restano le loro emoji, anche se un ⛺ su una cima da
-//    2912 m non e' il massimo: sono quelle che l'utente vede gia' oggi nel suo
-//    passaporto, e cambiarle senza che le abbia chieste sarebbe rumore.
+// 3) L'ELENCO DEI BADGE NON STA PIU' QUI: dal 2026-07-27 e' in
+//    public/js/badge-points.js, perche' serve anche al server (importando una
+//    traccia .gpx i badge conquistati vengono assegnati da soli). E' una copia
+//    sola letta da entrambi, e le regole per modificarla - gli stampId non si
+//    cambiano mai, le coordinate vanno cercate su Overpass - sono scritte la',
+//    accanto ai dati a cui si applicano, invece di essere ripetute qui.
 // ==========================================================================
 
 (function () {
-    // Elenco di prova chiesto dal punto 18: sei cime e quattro rifugi, almeno uno
-    // per ognuna delle quattro regioni del progetto. Per aggiungerne altri in
-    // futuro basta scrivere una riga qui: la pagina, il conteggio e il geofencing
-    // si aggiornano da soli.
-    const CATALOGO_FISSO = [
-        // --- CIME ---
-        // I due gia' esistenti (stesse coordinate delle escursioni sul database)
-        { stampId: 'stamp_gemelli',     nome: 'Corno Grande',            tipo: 'cima',    quota: 2912, lat: 42.4691,  lng: 13.5595,  zona: 'Gran Sasso',     regione: 'Abruzzo', emoji: '⛺'  },
-        { stampId: 'stamp_margherita',  nome: 'Monte Vettore',           tipo: 'cima',    quota: 2476, lat: 42.8244,  lng: 13.2750,  zona: 'Monti Sibillini', regione: 'Marche',  emoji: '👑'  },
-        // I nuovi, coordinate da Overpass
-        { stampId: 'badge_amaro',       nome: 'Monte Amaro',             tipo: 'cima',    quota: 2793, lat: 42.08633, lng: 14.08591, zona: 'Maiella',        regione: 'Abruzzo', emoji: '🗻'  },
-        { stampId: 'badge_gorzano',     nome: 'Monte Gorzano',           tipo: 'cima',    quota: 2458, lat: 42.61822, lng: 13.39560, zona: 'Monti della Laga', regione: 'Abruzzo', emoji: '⛰️' },
-        { stampId: 'badge_terminillo',  nome: 'Monte Terminillo',        tipo: 'cima',    quota: 2217, lat: 42.47330, lng: 12.99736, zona: 'Terminillo',     regione: 'Lazio',   emoji: '🏔️' },
-        { stampId: 'badge_miletto',     nome: 'Monte Miletto',           tipo: 'cima',    quota: 2050, lat: 41.44962, lng: 14.37209, zona: 'Matese',         regione: 'Molise',  emoji: '🌄'  },
-
-        // --- RIFUGI ---
-        { stampId: 'stamp_mezzeno',     nome: 'Rifugio Franchetti',      tipo: 'rifugio', quota: 2433, lat: 42.4614,  lng: 13.5445,  zona: 'Gran Sasso',     regione: 'Abruzzo', emoji: '🧗'  },
-        { stampId: 'stamp_gnifetti',    nome: 'Rifugio Zilioli',         tipo: 'rifugio', quota: 2250, lat: 42.8150,  lng: 13.2600,  zona: 'Monti Sibillini', regione: 'Marche',  emoji: '❄️' },
-        { stampId: 'badge_pomilio',     nome: 'Rifugio Bruno Pomilio',   tipo: 'rifugio', quota: 1930, lat: 42.16084, lng: 14.13258, zona: 'Maiella',        regione: 'Abruzzo', emoji: '🛖'  },
-        { stampId: 'badge_ciuffarella', nome: 'Rifugio Pino Ciuffarella', tipo: 'rifugio', quota: 1770, lat: 41.79662, lng: 13.50140, zona: 'Monti Ernici',   regione: 'Lazio',   emoji: '🏕️' }
-    ];
+    // L'elenco NON sta piu' qui. Dal 2026-07-27 e' in public/js/badge-points.js, perche'
+    // serve anche al SERVER: importando una traccia .gpx i badge conquistati vengono
+    // assegnati da solo, e quel conto lo fa il server. Una copia sola, letta da entrambi -
+    // vedi la spiegazione lunga in cima a quel file. Per aggiungere un badge si scrive una
+    // riga LA'; pagina, conteggio, geofencing e importazione si aggiornano da soli.
+    // Se il file non fosse caricato si va avanti con le sole vette delle escursioni, come
+    // faceva il sito prima del punto 18: meglio meno badge che una schermata rotta.
+    const CATALOGO_FISSO = window.CAMOSCIO_BADGE_POINTS || [];
 
     // Catalogo completo = elenco fisso + le vette delle escursioni presenti sul
     // database che non siano gia' qui dentro. Cosi' chi crea un'escursione con una

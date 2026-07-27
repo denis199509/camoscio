@@ -3,6 +3,7 @@ const router = express.Router();
 const ActiveHikeSession = require('../models/ActiveHikeSession');
 const Hike = require('../models/Hike');
 const TrailCandidate = require('../models/TrailCandidate');
+const Stamp = require('../models/Stamp'); // timbri assegnati dalle tracce .gpx importate
 const { requireAuth } = require('../middleware/auth');
 const { isFiniteNum, haversineKm, simplifyTrack } = require('../lib/geometry');
 const { regionForPoint } = require('../lib/regions');
@@ -144,24 +145,47 @@ router.get('/totals', requireAuth, async (req, res) => {
             .find({ userId: req.session.userId, status: 'ended' })
             .select('-points -offTrailBuffer');
 
-        let distanzaKm = 0, dislivelloM = 0, secondi = 0;
+        // DUE COPPIE DI SOMME, e la distinzione e' il punto delicato di tutta questa rotta.
+        //
+        // Da quando si accettano i file .gpx senza orari (decisione dell'utente del
+        // 2026-07-27) esistono uscite di cui si sanno i chilometri ma NON il tempo. Quei
+        // chilometri sono stati camminati davvero e devono comparire nel totale.
+        // Ma la velocita' media e' distanza diviso tempo: mettere quei chilometri al
+        // numeratore SENZA il tempo corrispondente al denominatore la gonfierebbe - ed e'
+        // esattamente il numero falso per cui prima questi file venivano respinti. Il
+        // divieto e' stato tolto, il motivo del divieto no.
+        // Quindi: distanza e dislivello si sommano su TUTTE le uscite; la velocita' media
+        // si calcola SOLO su quelle di cui si conoscono entrambi i termini.
+        let distanzaKm = 0, dislivelloM = 0;
+        let distanzaConTempoKm = 0, secondi = 0, senzaDurata = 0;
         for (const s of sessioni) {
             distanzaKm += s.distanceKm || 0;
             dislivelloM += s.elevationGainM || 0;
+
+            if (s.durationUnknown) {
+                senzaDurata++;
+                continue;
+            }
+            distanzaConTempoKm += s.distanceKm || 0;
             secondi += s.durationSeconds || 0;
         }
 
         // Velocita' media sui TOTALI, non media delle medie: una registrazione di 10 minuti
         // e una di 6 ore non possono pesare uguale. (Media delle medie = errore classico.)
         const ore = secondi / 3600;
-        const velocitaMediaKmh = ore > 0 ? Math.round((distanzaKm / ore) * 10) / 10 : 0;
+        const velocitaMediaKmh = ore > 0 ? Math.round((distanzaConTempoKm / ore) * 10) / 10 : 0;
 
         res.json({
             sessioni: sessioni.length,
             distanzaKm: Math.round(distanzaKm * 10) / 10,
             dislivelloM: Math.round(dislivelloM),
             secondi: Math.round(secondi),
-            velocitaMediaKmh
+            velocitaMediaKmh,
+            // Quante uscite non hanno potuto entrare nel tempo e nella velocita'. Serve a
+            // schermo: una velocita' media calcolata su una parte delle uscite va detto che
+            // e' calcolata su una parte, altrimenti sembra semplicemente sbagliata a chi
+            // conosce i propri numeri.
+            sessioniSenzaDurata: senzaDurata
         });
     } catch (e) {
         console.error('Errore nel calcolo dei totali di tracciamento:', e);
@@ -193,6 +217,101 @@ router.get('/sessions', requireAuth, async (req, res) => {
         res.status(500).json({ error: 'Impossibile caricare lo storico' });
     }
 });
+
+// --- Badge conquistati da una traccia importata (richiesta dell'utente, 2026-07-27) ---
+//
+// "Importando la traccia dimostri di averlo gia' conquistato": e' vero, ed era un buco.
+// L'utente ha importato la sua salita al Corno Grande e il badge e' rimasto da conquistare,
+// perche' i timbri si sbloccavano SOLO col geofencing della Mappa (checkGeofencing in
+// public/js/map.js), che gira nel browser mentre si cammina. Una traccia importata non
+// passava da nessuna parte.
+//
+// STESSA REGOLA DELLA MAPPA, di proposito: gli stessi 150 metri e lo stesso catalogo di
+// punti (public/js/badge-points.js, letto da qui e dal browser). Due soglie diverse
+// vorrebbero dire che camminare con il sito aperto e importare la stessa traccia danno
+// risultati diversi - cioe' che uno dei due sta sbagliando, senza poter dire quale.
+const SOGLIA_TIMBRO_M = 150;
+const CATALOGO_BADGE = require('../public/js/badge-points.js');
+
+// Il catalogo fisso PIU' le vette delle escursioni sul database, come fa catalogo() in
+// public/js/badges.js: chi crea un'escursione con una vetta nuova si ritrova il badge
+// senza che nessuno tocchi il codice, e la pagina Badge e l'importazione mostrano lo
+// stesso elenco.
+async function puntiTimbrabili() {
+    const perCodice = new Map();
+    for (const b of CATALOGO_BADGE) {
+        if (isFiniteNum(b.lat) && isFiniteNum(b.lng)) perCodice.set(b.stampId, b);
+    }
+
+    const escursioni = await Hike.find({}).select('peaks').lean();
+    for (const h of escursioni) {
+        for (const p of (h.peaks || [])) {
+            if (!p || !p.stampId || perCodice.has(p.stampId)) continue;
+            if (!isFiniteNum(p.lat) || !isFiniteNum(p.lng)) continue;
+            perCodice.set(p.stampId, { stampId: p.stampId, nome: p.name || 'Punto senza nome', emoji: '⛰️' });
+            // Le coordinate arrivano dal documento, non dal catalogo: si riscrivono qui
+            // per non dipendere dall'ordine dei campi.
+            perCodice.get(p.stampId).lat = p.lat;
+            perCodice.get(p.stampId).lng = p.lng;
+        }
+    }
+    return Array.from(perCodice.values());
+}
+
+// Restituisce i badge NUOVI conquistati dalla traccia, gia' salvati sul database.
+// Non solleva mai: un badge non assegnato e' un dispiacere, un'importazione fallita dopo
+// che la traccia e' gia' salvata sarebbe un guaio (l'utente ha consumato uno dei 5
+// caricamenti del mese e vede un errore).
+async function assegnaTimbriDallaTraccia(userId, punti, dataUscita) {
+    try {
+        const candidati = await puntiTimbrabili();
+        if (!candidati.length || !punti.length) return [];
+
+        // Una passata sola sui punti. Per ogni candidato si tiene una finestra in gradi
+        // larga quanto la soglia: il confronto costa due sottrazioni e scarta subito la
+        // quasi totalita' dei punti, cosi' anche una traccia da decine di migliaia di
+        // punti non diventa un calcolo pesante sul server.
+        const gradiLat = SOGLIA_TIMBRO_M / 111320;
+        const raggiunti = new Map();
+
+        for (const c of candidati) {
+            const gradiLng = SOGLIA_TIMBRO_M / (111320 * Math.max(0.1, Math.cos(c.lat * Math.PI / 180)));
+            let minimo = Infinity;
+            for (const p of punti) {
+                if (Math.abs(p[1] - c.lat) > gradiLat) continue;
+                if (Math.abs(p[0] - c.lng) > gradiLng) continue;
+                const d = haversineKm(p[1], p[0], c.lat, c.lng) * 1000;
+                if (d < minimo) minimo = d;
+            }
+            if (minimo <= SOGLIA_TIMBRO_M) raggiunti.set(c.stampId, { punto: c, distanzaM: Math.round(minimo) });
+        }
+        if (!raggiunti.size) return [];
+
+        // La DATA del timbro e' quella dell'ESCURSIONE, non quella del caricamento: chi
+        // importa nel 2026 una salita del 2024 l'ha conquistata nel 2024, e il passaporto
+        // ordina i timbri per data. Stesso formato "YYYY-MM-DD" usato da routes/stamps.js.
+        const giorno = dataUscita.toISOString().split('T')[0];
+
+        const gia = await Stamp.find({ userId, stampId: { $in: [...raggiunti.keys()] } }).select('stampId').lean();
+        const giaPresi = new Set(gia.map(s => s.stampId));
+
+        const nuovi = [];
+        for (const [stampId, info] of raggiunti) {
+            if (giaPresi.has(stampId)) continue;
+            try {
+                await Stamp.create({ userId, stampId, dateUnlocked: giorno });
+                nuovi.push({ stampId, nome: info.punto.nome, emoji: info.punto.emoji || '⛰️', distanzaM: info.distanzaM });
+            } catch (e) {
+                // 11000 = indice unico: il timbro e' comparso nel frattempo. Non e' un errore.
+                if (e.code !== 11000) throw e;
+            }
+        }
+        return nuovi;
+    } catch (e) {
+        console.error('Assegnazione timbri dalla traccia importata fallita:', e);
+        return [];
+    }
+}
 
 // --- PUNTO 15: importazione di una traccia .gpx come escursione gia' fatta ---
 //
@@ -268,33 +387,50 @@ router.post('/import-gpx', requireAuth, async (req, res) => {
         const { distanzaKm, dislivelloM } = statisticheTraccia(letto.punti, SOGLIA_DISLIVELLO_IMPORT_M, haversineKm);
         const puntiSemplificati = simplifyTrack(letto.punti, SIMPLIFY_TOLERANCE_M);
 
+        // Quando il file non porta nessuna data (ne' sui punti ne' nell'intestazione) si usa
+        // il momento del caricamento, perche' startedAt e' obbligatorio nello schema e senza
+        // una data l'uscita non si collocherebbe nello storico. NON si finge che sia un dato
+        // del file: parseGpx ha gia' aggiunto l'avviso che lo dice a schermo.
+        const inizio = letto.inizio || new Date();
+        const fine = letto.fine || inizio;
+
         const sessione = await ActiveHikeSession.create({
             userId: req.session.userId,
             hikeId: null,
             status: 'ended',
-            startedAt: letto.inizio,
-            lastPointAt: letto.fine,
-            endedAt: letto.fine,
+            startedAt: inizio,
+            lastPointAt: fine,
+            endedAt: fine,
             distanceKm: distanzaKm,
             elevationGainM: dislivelloM,
             points: puntiSemplificati,
             importedFrom: 'gpx',
-            importedName: (letto.nome || '').slice(0, 120) || undefined
+            importedName: (letto.nome || '').slice(0, 120) || undefined,
+            // Solo dove serve: su una traccia con gli orari il campo non viene scritto affatto.
+            durationUnknown: letto.durataIgnota ? true : undefined
             // openSession NON impostato di proposito: una traccia importata e' gia' conclusa,
             // e l'indice unico parziale su openSession impedirebbe di caricarne una seconda
             // mentre una registrazione dal vivo e' in corso.
         });
+
+        // Timbri conquistati da questa traccia: chi e' passato su una vetta ce l'ha
+        // raggiunta, e il badge glielo si deve. Vedi assegnaTimbriDallaTraccia.
+        // Si guardano i punti COMPLETI, non quelli semplificati: la semplificazione puo'
+        // spostare la linea fino a 8 metri e su una vetta contano i metri.
+        const timbri = await assegnaTimbriDallaTraccia(req.session.userId, letto.punti, inizio);
 
         res.json({
             id: sessione._id,
             nome: sessione.importedName || null,
             distanzaKm,
             dislivelloM,
-            durataSecondi: sessione.durationSeconds,
+            durataSecondi: letto.durataIgnota ? null : sessione.durationSeconds,
+            durataIgnota: !!letto.durataIgnota,
             puntiLetti: letto.punti.length,
             puntiSalvati: puntiSemplificati.length,
-            inizio: letto.inizio,
+            inizio,
             avvisi: letto.avvisi,
+            badge: timbri,
             caricatiQuestoMese: giaCaricati + 1,
             massimoAlMese: MAX_GPX_AL_MESE
         });

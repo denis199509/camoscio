@@ -53,7 +53,18 @@ const activeHikeSessionSchema = new mongoose.Schema({
     // Il nome scritto dentro il file (<name>), quando c'e': senza, in elenco una traccia
     // importata sarebbe solo una data. NON e' il nome del file caricato, che spesso e'
     // solo un codice tipo "activity_1234567.gpx".
-    importedName: { type: String, default: undefined }
+    importedName: { type: String, default: undefined },
+    // Presente (true) solo sulle tracce importate da un file SENZA gli orari dei punti,
+    // accettate su decisione dell'utente del 2026-07-27 invece di essere respinte.
+    // Di queste uscite si sanno distanza e dislivello - che stanno nel file e sono veri -
+    // ma NON la durata, e quindi nemmeno la velocita'. Il campo serve a una cosa sola ma
+    // essenziale: farle SALTARE dal tempo totale e dalla velocita' media in
+    // GET /api/tracking/totals. Senza, una durata pari a zero entrerebbe nella somma e
+    // gonfierebbe la velocita' media di tutto lo storico - che era esattamente la ragione
+    // per cui prima questi file venivano rifiutati.
+    // default: undefined come importedFrom/importedName e come shareable/covers al punto
+    // 24: scritto solo dove serve, mai sulle sessioni normali (vincolo hard sullo spazio).
+    durationUnknown: { type: Boolean, default: undefined }
 });
 
 activeHikeSessionSchema.index(

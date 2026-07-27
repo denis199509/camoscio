@@ -1,11 +1,20 @@
 ===================================================================
 CAMOSCIO — LEGGIMI (stato progetto, aggiornato automaticamente)
-Ultimo aggiornamento: 2026-07-27 — sessione chiusa in modo ordinato, tutto
-online. Fatti il PUNTO 18 (tasto e pagina "Badge") e il PUNTO 15 (caricamento
-di file .gpx come uscite gia' fatte, piu' l'elenco dello storico che non
-esisteva). In chiusura si e' concordato con l'utente il PUNTO 13, senza
-scrivere codice: LA PROSSIMA SESSIONE E' DEDICATA A QUELLO, e l'accordo e' nella
-sezione dedicata qui sotto.
+Ultimo aggiornamento: 2026-07-27 (SECONDA sessione della giornata) — fatti i
+PUNTI 29 e 30, nati dalla prova dell'utente col caricamento .gpx dei suoi FILE
+VERI. In breve: i file senza gli orari dei punti non vengono piu' rifiutati (ma
+la loro durata resta ignota e non entra nella velocita' media), e importando una
+traccia i badge conquistati vengono assegnati da soli. Facendolo si e' scoperto
+che TRE dei quattro badge storici avevano coordinate sbagliate fino a 2,4 km,
+cioe' erano impossibili da conquistare stando nel posto vero: corrette.
+IL PUNTO 13 NON E' STATO INIZIATO: la prova dell'utente ha segnalato un difetto
+vero, e come previsto quello veniva prima. La prossima sessione riparte dal 13,
+il cui accordo e' nella sezione dedicata piu' sotto, ancora valido.
+
+Prima, nella PRIMA sessione del 2026-07-27: il PUNTO 18 (tasto e pagina "Badge")
+e il PUNTO 15 (caricamento di file .gpx come uscite gia' fatte, piu' l'elenco
+dello storico che non esisteva), piu' l'accordo sul PUNTO 13 senza scrivere
+codice.
 Vedi le sezioni dedicate subito sotto.
 Il 2026-07-26 (sera) era stato fatto il BLOCCO 3 (punti 24, 23 seconda meta' e
 25): lo zaino distingue gli oggetti personali da quelli che si dividono, i
@@ -26,15 +35,17 @@ Prima ancora, nella stessa giornata: il BLOCCO 1 (punti 19, 23 prima meta',
     decisione dell'utente e quali trappole sono gia' state pagate. Poi
     torna a leggere il resto.
 
-A CHE PUNTO SIAMO, in breve: dei 28 punti di cose_da_fare.txt ne restano DUE.
- - PUNTO 13 (percorso multi-punto): non e' piu' in sospeso. Il 2026-07-27
-   l'utente ha deciso le tre cose che mancavano e ha detto che LA PROSSIMA
-   SESSIONE E' DEDICATA A QUESTO. Si riparte da li'. Nessun codice ancora
-   scritto: l'utente ha chiesto esplicitamente di non cominciare.
+A CHE PUNTO SIAMO, in breve: dei 30 punti di cose_da_fare.txt ne restano DUE.
+ - PUNTO 13 (percorso multi-punto): e' IL LAVORO DELLA PROSSIMA SESSIONE, deciso
+   dall'utente. Nessun codice ancora scritto. Era previsto per questa sessione,
+   ma l'utente ha segnalato un difetto vero sul caricamento .gpx (punti 29-30) e
+   il file diceva giustamente che quello veniva prima. L'accordo sul 13 e le
+   misure sono nella sezione dedicata qui sotto, ancora tutti validi.
  - punti 7, 22 e la seconda meta' del 21 aspettano ancora UNA decisione sua:
    quale canale usare per mandare un messaggio, email o SMS.
 Tutto il resto e' fatto e provato. Il 2026-07-27 sono stati chiusi il punto 18
-(pagina Badge) e il punto 15 (caricamento .gpx), entrambi online.
+(pagina Badge), il punto 15 (caricamento .gpx) e poi i punti 29 e 30 (i file
+senza orari e i badge assegnati dalle tracce importate).
 
 IL PUNTO 7 E' ANCORA IN SOSPESO SU RICHIESTA ESPLICITA DELL'UTENTE
 (2026-07-26): deve decidere se agganciare una vera email o inventare
@@ -50,19 +61,194 @@ ogni lavoro quando il riassunto lo si scrive di propria iniziativa. Non
 vanno riproposti come "prossimo passo da fare adesso": vanno solo
 ricordati come in sospeso, finche' non e' lui a riaprirli.
 
-LE QUATTRO LISTE DETTATE DALL'UTENTE, stato aggiornato:
+LE LISTE DETTATE DALL'UTENTE, stato aggiornato:
  - seconda lista (punti 7-14): fatta, tranne il 7 e il 13 (in sospeso);
- - terza lista (punti 15-25): fatta, tranne il 15. Il 18 e' stato chiuso il
+ - terza lista (punti 15-25): fatta. Il 15 e il 18 sono stati chiusi il
    2026-07-27. Il 21 e' fatto a meta' (la meta' non bloccata). Quando questa
    nota diceva "nessuna implementata" era vero il 25 luglio, non lo e' piu';
  - quarta lista (punti 26-27): fatta;
- - quinta lista (punto 28): fatta, e confermata dall'utente dal telefono.
+ - quinta lista (punto 28): fatta, e confermata dall'utente dal telefono;
+ - sesta lista (punti 29-30, 2026-07-27 seconda sessione): fatta. Nata dalla
+   prova dell'utente col caricamento .gpx dei suoi file veri - la sola prova che
+   le verifiche automatiche non potevano fare, ed e' servita: ha trovato un
+   difetto vero al primo colpo.
 ===================================================================
 
+NOTA IMPORTANTE PER CHI RIPARTE DA QUI - PUNTI 29 E 30 FATTI (2026-07-27,
+seconda sessione della giornata). Nati dalla prova dell'utente col caricamento
+.gpx dei suoi FILE VERI, che la sessione precedente aveva lasciato come "prima
+cosa da chiedergli". Chiederglielo e' servito: ha trovato un difetto al primo
+colpo, e poi un secondo piu' grave scoperto lavorandoci.
+
+--- COSA HA SEGNALATO ---
+
+1) "Il primo file .gpx importato senza problemi, dal secondo dava errore: nel
+   file mancano gli orari dei punti. Anche se il file che ho caricato e' una mia
+   traccia."
+2) "Una volta importata la prima traccia (nel mio caso Corno Grande) il badge e'
+   rimasto da conquistare. In questo caso il badge viene dato in automatico,
+   visto che importando la traccia dimostri di averlo gia' conquistato."
+
+--- IL PRIMO: PRIMA MISURARE, POI CORREGGERE ---
+
+- Non si e' toccato il lettore prima di sapere se avesse un buco. Provato contro
+  20 DIALETTI VERI (Garmin con extensions, Strava, Komoot, OsmAnd, namespace
+  espliciti tipo <gpx:trkpt>, GPX 1.0, attributi su piu' righe, apici singoli,
+  BOM, CRLF, DOCTYPE) e contro sette modi diversi di scrivere l'orario, compresi
+  quelli che rompono i parser stretti: offset "+0200" senza i due punti, sette
+  decimali di secondo (tool .NET), spazio invece della T, nessuna zona.
+  RISULTATO: 20 su 20 passano, e Date.parse legge tutti e sette i formati.
+  Quindi il file dell'utente non ha davvero l'orario dentro i <trkpt>. Capita
+  alle tracce esportate come "percorso" invece che come "attivita'".
+  VALE COME METODO: la segnalazione diceva "il lettore sbaglia", i numeri dicono
+  che il lettore va bene e il file e' diverso da come lo si immaginava. Sono due
+  correzioni completamente diverse.
+- RISCONTRO INDIPENDENTE SUL DATABASE, guardato prima di scrivere una riga: la
+  traccia che ERA entrata e' sana e vera - "Corno Grande - Vetta Occidentale e
+  Orientale 11/08/24", 13,787 km, 1232 m di dislivello, 7,78 ore, quote da 2125
+  a 2911 m. Cioe' il caricamento funziona: il problema era solo il secondo file.
+
+--- LA DECISIONE DELL'UTENTE, E PERCHE' IL DIVIETO ESISTEVA ---
+
+- Il rifiuto dei file senza orari era VOLUTO, e il motivo era buono: la durata
+  non si inventa, e una durata pari a zero dentro i totali gonfierebbe la
+  velocita' media di TUTTO lo storico.
+- Solo che il punto 15 serve a "costruirsi uno storico": rifiutare
+  un'escursione davvero fatta perche' il file non porta gli orari va esattamente
+  contro il suo scopo. Messa cosi', l'utente ha scelto di ACCETTARLI.
+- COME SI E' RISPETTATO IL MOTIVO DEL DIVIETO invece del divieto: la traccia
+  entra con distanza e dislivello VERI (stanno nel file) e con un campo nuovo
+  durationUnknown. In GET /api/tracking/totals ci sono ora DUE coppie di somme -
+  distanza e dislivello su TUTTE le uscite, tempo e velocita' SOLO su quelle di
+  cui si conoscono entrambi i termini.
+  IL PUNTO DELICATO, ed e' facile sbagliarlo: non basta escludere il TEMPO.
+  Se si tolgono i secondi ma si lasciano i chilometri al numeratore, la velocita'
+  media si gonfia - cioe' si ottiene esattamente il numero falso per cui il
+  divieto esisteva. MISURATO nella prova: 0,6 km/h corretti contro 1,4 km/h se si
+  sbaglia, un fattore 2,3.
+- LA DATA si recupera dall'intestazione del file (<metadata><time> o <trk><time>),
+  che quasi tutti i programmi scrivono anche quando non mettono l'orario sui
+  singoli punti. Se anche quella manca si usa il giorno del caricamento e LO SI
+  DICE a schermo, invece di far passare per data dell'escursione una data
+  inventata.
+- Gli <rtept> (itinerario progettato) ora si accettano come i <trkpt> senza
+  orari: senza durata sono la stessa cosa, cioe' una forma senza tempi. Il
+  messaggio dice per esteso che ha letto un itinerario, cosi' se il file era
+  quello sbagliato l'utente lo vede subito.
+- A SCHERMO: la scheda dello storico dice "durata ignota" e non un trattino muto
+  (un trattino sembra un dato mancante per sbaglio), col perche' nel title. E la
+  nota dei totali in Dashboard avverte quando la velocita' media e' calcolata su
+  una parte delle uscite - chi conosce i propri numeri, vedendo una media che non
+  torna coi chilometri mostrati sopra, penserebbe a un errore del sito.
+
+--- IL SECONDO: I BADGE DALLE TRACCE IMPORTATE ---
+
+- L'utente ha ragione e il buco era vero: i timbri si sbloccavano SOLO col
+  geofencing della Mappa (checkGeofencing in public/js/map.js), che gira nel
+  browser mentre si cammina. Una traccia importata non passava da nessuna parte.
+- Fatto lato server con la STESSA soglia (150 m) e lo STESSO catalogo della
+  Mappa. Due regole diverse vorrebbero dire che camminare col sito aperto e
+  importare la stessa traccia danno risultati diversi, cioe' che uno dei due
+  sbaglia senza poter dire quale.
+- Si guardano i punti COMPLETI, non quelli semplificati: Douglas-Peucker puo'
+  spostare la linea fino a 8 metri, e su una vetta gli 8 metri contano.
+- La DATA del timbro e' quella dell'escursione nel file, non del caricamento:
+  chi importa nel 2026 una salita del 2024 l'ha conquistata nel 2024, e il
+  passaporto ordina i timbri per data.
+- Costo: una passata sola sui punti, con una finestra in gradi che scarta la
+  quasi totalita' dei confronti prima di calcolare una distanza vera. Anche una
+  traccia da decine di migliaia di punti non diventa un peso per il server.
+- L'assegnazione NON PUO' far fallire l'importazione: e' tutta in un try/catch che
+  torna un elenco vuoto. Un badge non assegnato e' un dispiacere; un errore dopo
+  che la traccia e' salvata farebbe consumare uno dei 5 caricamenti del mese e
+  mostrerebbe un errore per una cosa riuscita.
+
+--- IL CATALOGO DEI BADGE E' DIVENTATO UNA FONTE UNICA (public/js/badge-points.js) ---
+
+- Il catalogo stava dentro public/js/badges.js, cioe' solo nel browser. Al server
+  serviva adesso. La strada facile era copiarlo in lib/: NON si e' fatto, per la
+  lezione del punto 18 scritta piu' sotto in questo file ("quando lo stesso blocco
+  compare due volte, la differenza fra le copie e' quasi sempre un difetto rimasto
+  aperto in una sola" - li' era un escapeHtml mancante, cioe' un buco XSS).
+  Qui divergere avrebbe voluto dire un badge che la pagina mostra e che
+  l'importazione non sa assegnare, o il contrario.
+- Il file si fa leggere da entrambi con un giro di scatole minimo: module.exports
+  sul server, window.CAMOSCIO_BADGE_POINTS nel browser. Nessun endpoint da
+  interrogare, perche' il browser ha bisogno dell'elenco SUBITO (badges.js mentre
+  disegna, map.js ad ogni fix GPS) e un endpoint avrebbe reso asincrono del codice
+  che non ha motivo di esserlo.
+- ATTENZIONE: <script src="js/badge-points.js"> va PRIMA di badges.js in
+  public/index.html.
+
+--- IL DIFETTO PIU' GRAVE DELLA GIORNATA, TROVATO STRADA FACENDO ---
+
+- Verificando che il badge del Corno Grande fosse davvero raggiungibile, la
+  traccia vera dell'utente e' risultata passare a 128 m dal punto in catalogo:
+  dentro i 150 m, ma con soli 22 m di margine su un'escursione che ha toccato
+  2911 m su una vetta di 2912. Un margine cosi' su un dato che dovrebbe essere
+  esatto e' un indizio, non un caso fortunato.
+- Cercate su Overpass, TRE delle quattro coordinate storiche erano sbagliate:
+  Corno Grande di 493 m, RIFUGIO FRANCHETTI DI 2.440 m, Rifugio Zilioli di 744 m.
+  Solo Monte Vettore era giusto (3 m).
+  Con una soglia di 150 m volevano dire tre badge che il sito mostrava e che
+  STANDO NEL POSTO VERO non si potevano prendere - lo stesso difetto che il punto
+  18 aveva chiuso per i badge nuovi, rimasto aperto proprio sui piu' vecchi
+  perche' quelli erano ereditati dalla vecchia demo alpina e mai verificati.
+- CHE I LUOGHI PREVISTI FOSSERO QUELLI GIUSTI lo conferma la quota: 2912, 2476 e
+  2433 metri coincidono ESATTAMENTE con quelle di OSM. Erano sbagliate solo le
+  posizioni, non le intenzioni.
+- VERIFICA SUI DATI VERI, che e' quella che conta: dopo la correzione la traccia
+  dell'utente passa a 6 METRI dalla vetta del Corno Grande (era 128). E nel
+  browser, sulla VECCHIA coordinata, ora non compare nessun invito a timbrare -
+  cioe' la correzione ha davvero effetto e non e' solo un numero cambiato.
+- Gli stampId NON sono stati toccati: cambiarli farebbe sparire dal passaporto i
+  timbri gia' presi dagli utenti, che li cercano con quel codice.
+
+--- COME E' STATO VERIFICATO ---
+
+- 77 controlli in quattro prove separate, tutti passati:
+  20 sui dialetti .gpx, 18 sul lettore (comprese le due di SICUREZZA - XXE e
+  "billion laughs" - rifatte perche' il lettore e' stato riscritto), 30
+  end-to-end contro il server vero, 19 nel browser con Puppeteer a 1440 e 390 px,
+  piu' 10 mirati sul geofencing.
+- NESSUN DATO DI PROVA RIMASTO: le sessioni e i timbri creati sono stati
+  cancellati in un blocco finally, e ogni prova ricontrolla i conteggi alla fine.
+  Database identico a prima: 6 sessioni, 4 timbri, 6 utenti.
+- UN CONTROLLO CHE PASSAVA PER IL MOTIVO SBAGLIATO, ed e' il caso da ricordare:
+  la prima prova del geofencing cercava un testo generico in TUTTA la pagina e
+  usava Marco Alpinista, che il timbro del Corno Grande LO HA GIA' - quindi non
+  avrebbe mai potuto vedere l'invito a timbrare. Passava, ma non stava provando
+  niente. Rifatta leggendo il POPUP di Leaflet e con Luca TrailRunner, che non ha
+  timbri, piu' il caso di Marco come controprova ("ce l'hai gia'").
+  E' la stessa trappola del punto 18 (funzione chiamata col nome sbagliato):
+  quando un controllo passa, chiedersi se poteva fallire.
+- TRAPPOLA NUOVA DI OVERPASS, da non ripagare: la sintassi giusta e'
+  "out tags center;", con il modo di uscita PRIMA della geometria. Scritta
+  "out center tags;" la query NON da' errore - risponde vuota, che e' molto
+  peggio, perche' sembra "questo posto non esiste in OSM" quando invece esiste.
+  Confermata anche la sua inaffidabilita': overpass-api.de ha dato 504 tre volte
+  di fila e poi 429, kumi 502 e 504. Con quattro server in fila e attese
+  crescenti tutte e quattro le ricerche sono andate a buon fine.
+
+--- UNA COSA NON FATTA, DI PROPOSITO ---
+
+- NON ESISTE UN MODO DI CANCELLARE UN'USCITA IMPORTATA PER ERRORE. Non e' un
+  problema nuovo, ma adesso pesa di piu': accettando anche i file senza orari e
+  gli itinerari progettati, e' piu' facile importare il file sbagliato, e quello
+  resta nei totali per sempre (e consuma uno dei 5 caricamenti del mese).
+  Non e' stato aggiunto perche' e' una funzionalita' nuova che l'utente non ha
+  chiesto - va proposta, non infilata. Se la vuole, e' piccola: una rotta DELETE
+  su una sessione propria piu' un pulsante nella scheda dello storico.
+- Il popup del geofencing dice "Vetta Raggiunta!" anche per un rifugio. E' un
+  testo preesistente, non un difetto introdotto ora; lasciato com'e' per non
+  cambiare cose non chieste.
+
 NOTA IMPORTANTE PER CHI RIPARTE DA QUI - PUNTO 13: ACCORDO PRESO CON L'UTENTE
-(2026-07-27). NESSUNA RIGA DI CODICE SCRITTA, e l'utente ha detto esplicitamente
-di non cominciare: "sono solo indicazioni, non cominciare il lavoro". Questa
-sezione esiste perche' la prossima sessione sara' dedicata al punto 13 e le
+(2026-07-27, prima sessione della giornata). NESSUNA RIGA DI CODICE SCRITTA.
+L'utente aveva detto "sono solo indicazioni, non cominciare il lavoro", e poi che
+la sessione successiva sarebbe stata dedicata a questo: e' ancora il prossimo
+passo, perche' la seconda sessione del 27 e' andata sui punti 29-30 (un difetto
+vero segnalato dall'utente, che veniva prima). Questa sezione esiste perche' le
 decisioni prese qui, senza scriverle, andrebbero perse.
 
 --- COSA VUOLE L'UTENTE, IN UNA FRASE ---
@@ -2728,14 +2914,19 @@ CHECKLIST DI AVANZAMENTO (aggiornare via via che si procede)
         dai segmenti dei sentieri, oggi inesistente nel progetto. La
         modalita' "senza aggancio" (linea retta) e' invece quasi gratis.
 [~] TERZA LISTA (cose_da_fare.txt punti 15-25, dettata 2026-07-26) —
-    QUASI TUTTA FATTA il 2026-07-26 nei blocchi 1, 2 e 3. Restano solo il
-    punto 15 (.gpx, da valutare per lo spazio), il punto 18 (pagina Badge,
-    che e' il PROSSIMO PASSO) e la seconda meta' del 21, bloccata dalla
-    decisione sul canale di invio.
+    FATTA, tranne la seconda meta' del 21 che resta bloccata dalla decisione
+    sul canale di invio. I blocchi 1, 2 e 3 il 2026-07-26; il 15 e il 18 il
+    2026-07-27.
     Dashboard:
-    [ ] 15 — caricare file .gpx come escursioni gia' fatte (max 5/mese
-        secondo l'ipotesi dell'utente). Attenzione al vincolo di spazio:
-        convertire e semplificare in ingresso, mai salvare l'XML com'e'.
+    [x] 15 — FATTO 2026-07-27: caricamento di file .gpx come uscite gia' fatte,
+        con la stima dello spazio fatta prima (l'utente l'aveva chiesta come
+        condizione: esito, lo spazio non e' un ostacolo). E' servito costruire
+        anche l'ELENCO delle uscite, che non esisteva. Lettura scritta a mano
+        senza librerie XML, tetto di 5 file al mese, traccia convertita e
+        semplificata in ingresso: l'XML non viene mai salvato.
+        Corretto anche un difetto vero del dislivello sulle tracce importate.
+        AMPLIATO il 2026-07-27 (seconda sessione, punto 29) dopo la prova
+        dell'utente coi file veri: i file senza orari non si rifiutano piu'.
     [x] 16 — FATTO 2026-07-26: scheda "Quanto hai camminato" con i totali
         di distanza, dislivello e velocita' media, sommati dal server
         (nuovo GET /api/tracking/totals). Le altre voci del punto 16 erano
@@ -2744,7 +2935,15 @@ CHECKLIST DI AVANZAMENTO (aggiornare via via che si procede)
         della barra laterale della Mappa, ed e' l'unica copia nel sito.
         Tolto il riquadro dalla Dashboard col codice rimasto orfano; in
         "Sicurezza & Mesh" restano il registro e un rimando alla Mappa.
-    [ ] 18 — tasto e pagina "Badge" (per ora con qualche badge di prova)
+    [x] 18 — FATTO 2026-07-27: tasto e pagina "Badge". Voce nella barra a
+        sinistra piu' pulsante sotto il Passaporto in Dashboard; dieci badge di
+        prova (sei cime, quattro rifugi, tutte e quattro le regioni) con
+        coordinate cercate su Overpass. I badge non sono salvati sul database: si
+        ricavano dai timbri. E' servito estendere il geofencing, altrimenti i
+        badge nuovi sarebbero stati impossibili da conquistare.
+        Le quattro coordinate STORICHE (quelle non cercate su Overpass) sono
+        state corrette il 2026-07-27, seconda sessione: tre erano sbagliate fino
+        a 2,4 km, cioe' impossibili da conquistare stando nel posto vero.
     [x] 19 — FATTO 2026-07-26: tolte le finte "sfide in corso"
     Mappe:
     [x] 20 — FATTO 2026-07-26: tasto rosso "SOS 112" in alto a sinistra
@@ -2811,6 +3010,29 @@ CHECKLIST DI AVANZAMENTO (aggiornare via via che si procede)
         approssimata quando il GPS non vede i satelliti.
     [ ] Resta la CONTROPROVA dal telefono vero: e' la sola cosa che questa
         correzione non poteva verificare da sola.
+[x] SESTA LISTA (cose_da_fare.txt punti 29-30, 2026-07-27 seconda sessione) —
+    FATTA. Nata dalla prova dell'utente col caricamento .gpx dei suoi FILE VERI,
+    che la sessione precedente aveva lasciato come "prima cosa da chiedergli".
+    [x] 29 — i file .gpx senza gli orari dei punti non vengono piu' rifiutati.
+        Prima si e' verificato che il lettore non avesse un buco (20 dialetti
+        veri, 20 su 20 passano): il file dell'utente non ha davvero gli orari.
+        Su sua decisione ora si accettano, con distanza e dislivello veri e la
+        durata dichiarata ignota. Il motivo del vecchio divieto e' rispettato:
+        tempo e velocita' media si calcolano solo sulle uscite di cui si sanno
+        entrambi i termini, altrimenti la media si gonfierebbe (misurato: 0,6
+        km/h corretti contro 1,4 sbagliati). La data si recupera
+        dall'intestazione del file.
+    [x] 30 — importando una traccia i badge conquistati vengono assegnati da
+        soli, lato server, con la stessa soglia di 150 m e lo stesso catalogo del
+        geofencing della Mappa. Il catalogo e' diventato una fonte unica
+        (public/js/badge-points.js) letta dal browser e dal server, invece di
+        farne due copie. Data del timbro = data dell'escursione.
+        E qui si e' trovato il difetto piu' grave della giornata: tre dei quattro
+        badge storici avevano coordinate sbagliate fino a 2,4 km, cioe' erano
+        impossibili da conquistare stando nel posto vero. Corrette e verificate
+        sulla traccia dell'utente (da 128 m a 6 m dalla vetta).
+    [ ] Resta la CONTROPROVA dell'utente: ricaricare il file che dava errore, e
+        controllare che il badge del Corno Grande risulti conquistato.
 
 
 COME RIPRENDERE IL LAVORO IN UNA NUOVA SESSIONE
@@ -2827,36 +3049,62 @@ COME RIPRENDERE IL LAVORO IN UNA NUOVA SESSIONE
 
 
 ===================================================================
-DA DOVE SI RIPARTE — situazione al 2026-07-27, fine giornata
+DA DOVE SI RIPARTE — situazione al 2026-07-27, fine SECONDA sessione
 ===================================================================
 
 >>> LA PROSSIMA SESSIONE E' DEDICATA AL PUNTO 13 (percorso multi-punto sui
-    sentieri). L'utente l'ha deciso lui in chiusura. L'accordo completo, le
-    misure e il primo passo da fare stanno nella sezione "PUNTO 13: ACCORDO
-    PRESO CON L'UTENTE" in cima a questo file: leggerla PRIMA di toccare
-    qualunque cosa, perche' contiene tre decisioni gia' prese che non vanno
-    richieste di nuovo.
+    sentieri). L'utente l'ha deciso lui. Era previsto per la seconda sessione
+    del 27, ma la sua prova col caricamento .gpx ha segnalato un difetto vero
+    (punti 29-30) e questo stesso file diceva giustamente che quello veniva
+    prima: e' stato fatto, e il 13 e' rimasto intatto.
+    L'accordo completo, le misure e il primo passo stanno nella sezione
+    "PUNTO 13: ACCORDO PRESO CON L'UTENTE" in cima a questo file: leggerla PRIMA
+    di toccare qualunque cosa, perche' contiene tre decisioni gia' prese che non
+    vanno richieste di nuovo. Il primo passo e' una MISURA su Overpass (quanto
+    costerebbe allargare il filtro dei sentieri), non del codice.
 
->>> PRIMA COSA DA CHIEDERGLI, appena si riapre: COM'E' ANDATO IL CARICAMENTO
-    DEI FILE .GPX. A fine sessione stava provando dal suo profilo con file
-    veri, ed e' l'unica prova che le verifiche automatiche non potevano fare:
-    ogni programma (Garmin, Strava, Komoot, OsmAnd) scrive il .gpx a modo suo.
-    Se qualcosa non ha funzionato, quello viene prima del punto 13.
-    Le cose da guardare per prime, se segnala un problema:
-      - il DISLIVELLO, che e' il numero piu' delicato: si confronta con quello
-        che dice l'app da cui ha esportato. Se risulta sistematicamente piu'
-        basso del vero, la soglia e' SOGLIA_DISLIVELLO_IMPORT_M in
-        routes/tracking.js (oggi 10 m) ed e' un numero solo da cambiare;
-      - i messaggi di rifiuto sono scritti per dire il motivo vero, quindi
-        farsi riferire quello che compare a schermo basta per capire dove
-        intervenire.
+>>> PRIMA COSA DA CHIEDERGLI, appena si riapre: SE IL FILE CHE DAVA ERRORE ORA
+    SI CARICA, e se il badge del Corno Grande risulta conquistato. Sono le due
+    correzioni della seconda sessione del 27, e la controprova puo' farla solo
+    lui perche' il file e' suo.
+    Se il file dovesse dare ancora errore, il messaggio ora dice i NUMERI
+    (quanti punti ha trovato e quanti validi): farsi riferire quello che compare
+    a schermo basta per capire dove intervenire.
+    Se invece il badge non comparisse: la soglia e' SOGLIA_TIMBRO_M in
+    routes/tracking.js (150 m, la stessa della Mappa) e le coordinate stanno in
+    public/js/badge-points.js.
 
-STATO: TUTTO SALVATO E ONLINE, sessione chiusa in modo ordinato (non per limite
-di tempo o di utilizzo). Niente lavoro a meta' lasciato nel codice: ogni punto
-toccato e' finito, provato e pushato. Deploy su Render verificato dal vivo,
-file per file e rotta per rotta.
+>>> COSA GLI VA PROPOSTO, e non e' stato fatto di iniziativa: NON ESISTE UN MODO
+    DI CANCELLARE UN'USCITA IMPORTATA PER ERRORE. Adesso che si accettano anche
+    i file senza orari e gli itinerari progettati e' piu' facile importare quello
+    sbagliato, e quello resta nei totali per sempre consumando uno dei 5
+    caricamenti del mese. E' un lavoro piccolo (una rotta DELETE su una sessione
+    propria piu' un pulsante nella scheda dello storico) ma e' una funzionalita'
+    nuova che non ha chiesto, quindi va proposta e non infilata.
 
-FATTO IL 2026-07-27:
+>>> DA CHIEDERGLI ANCHE, in sospeso dalla sessione precedente: il DISLIVELLO
+    delle tracce importate, confrontato con quello che dice l'app da cui esporta.
+    Se risulta sistematicamente piu' basso del vero, la soglia e'
+    SOGLIA_DISLIVELLO_IMPORT_M in routes/tracking.js (oggi 10 m) ed e' un numero
+    solo da cambiare.
+
+FATTO NELLA SECONDA SESSIONE DEL 2026-07-27:
+ - PUNTO 29 - i file .gpx senza gli orari dei punti non si rifiutano piu'.
+   Verificato PRIMA che il lettore non avesse un buco (20 dialetti veri, tutti
+   passano), quindi il file dell'utente non ha davvero gli orari. Su sua decisione
+   ora si accettano con la durata dichiarata ignota, e tempo e velocita' media si
+   calcolano solo sulle uscite che hanno entrambi i termini - altrimenti la media
+   si gonfia (0,6 km/h corretti contro 1,4).
+ - PUNTO 30 - importando una traccia i badge conquistati si assegnano da soli,
+   con la stessa soglia e lo stesso catalogo della Mappa. Il catalogo e' diventato
+   una fonte unica letta da browser e server (public/js/badge-points.js).
+ - CORRETTE TRE COORDINATE SBAGLIATE dei badge storici (fino a 2,4 km di errore):
+   erano badge impossibili da conquistare stando nel posto vero. Non era in
+   nessuna lista: e' emerso verificando che il badge chiesto al punto 30 fosse
+   davvero raggiungibile.
+ Dettagli nella sezione dedicata in cima al file.
+
+FATTO NELLA PRIMA SESSIONE DEL 2026-07-27:
  - PUNTO 18, BLOCCO 4 - tasto e pagina "Badge". Voce nella barra a sinistra
    piu' pulsante sotto il Passaporto in Dashboard; dieci badge di prova (sei
    cime, quattro rifugi, tutte e quattro le regioni) con coordinate vere prese
@@ -2892,13 +3140,16 @@ FATTO IL 2026-07-26 (sessione precedente, gia' online):
     gruppo, e la portata della tenda viene controllata.
 Dettagli di ognuno nelle sezioni dedicate in cima al file.
 
-DATABASE PULITO: ricontrollato il 2026-07-27 dopo le prove del punto 18.
-NESSUN dato di prova creato (tutte le scritture intercettate: e' il metodo da
-rifare). Restano 2 escursioni originali, 6 utenti (4 demo + 2 reali), 5
-sessioni di tracciamento e 4 timbri. Le 5 sessioni sono le 4 del 24-25 luglio
-piu' quella del 26 luglio pomeriggio, che e' la prova vera dell'utente dal
-telefono - 14 secondi, zero punti GPS - ed e' il riscontro del punto 28. NON
-vanno cancellate.
+DATABASE PULITO: ricontrollato il 2026-07-27 alla fine della SECONDA sessione.
+Restano 2 escursioni originali, 6 utenti (4 demo + 2 reali), 6 sessioni di
+tracciamento e 4 timbri. Le prove di questa sessione hanno dovuto SCRIVERE dati
+veri (le regole del server non si intercettano dal browser): sessioni e timbri
+creati sono stati cancellati in un blocco finally, e ogni prova ricontrolla i
+conteggi alla fine - verificato che tornino esatti.
+Le 6 sessioni sono le 4 del 24-25 luglio, quella del 26 luglio pomeriggio (la
+prova vera dell'utente dal telefono, 14 secondi e zero punti GPS, riscontro del
+punto 28) e LA TRACCIA .GPX IMPORTATA DALL'UTENTE il 27 (Corno Grande dell'11
+agosto 2024, 13,787 km, 1232 m). NON vanno cancellate: sono dati suoi.
 
 CHE COSA RESTA IN TUTTO, in mezza riga ciascuno:
  - punto 13             -> percorso multi-punto sui sentieri. E' IL LAVORO
@@ -2907,13 +3158,15 @@ CHE COSA RESTA IN TUTTO, in mezza riga ciascuno:
                            cima al file.
  - punti 7, 22, 21-resto -> BLOCCATI dalla stessa decisione dell'utente
                            (email o SMS), vedi qui sotto.
-Tutti gli altri punti di cose_da_fare.txt (1-12, 14-20, 23-28) sono FATTI.
+Tutti gli altri punti di cose_da_fare.txt (1-12, 14-20, 23-30) sono FATTI.
 
-IN CORSO DA PARTE DELL'UTENTE, da chiedere per prima cosa: sta provando il
-caricamento .gpx con FILE VERI dal suo profilo. Le prove automatiche usano
-tracce costruite apposta e geometrie di sentieri OSM veri, ma non un file
-uscito davvero da un Garmin, da Strava o da Komoot - ognuno scrive il .gpx a
-modo suo, ed e' li' che salta fuori quello che non e' stato previsto.
+DA CHIEDERE ALL'UTENTE PER PRIMA COSA: la controprova delle due correzioni della
+seconda sessione del 27 - il file .gpx che dava errore ora si carica? e il badge
+del Corno Grande risulta conquistato? Puo' farla solo lui, perche' il file e' suo.
+Vale la pena ricordare come e' andata la volta scorsa: chiedergli di provare coi
+file veri ha trovato un difetto al primo colpo, che nessuna prova automatica
+aveva visto in 80 controlli. Le tracce costruite apposta non sostituiscono un
+file uscito davvero da un Garmin, da Strava o da Komoot.
 
 DA RICORDARE ALL'UTENTE IN OGNI RIASSUNTO, per sua richiesta esplicita: i
 punti 7 e 13 restano in sospeso. Non vanno riproposti come prossimo passo -
@@ -2993,6 +3246,20 @@ COSE DA SAPERE SULL'AMBIENTE, per non perderci tempo:
      gia' funzionante in routes/geocoding.js: Content-Type text/plain,
      User-Agent, corpo grezzo. Confermata anche la sua inaffidabilita': il
      primo tentativo ha dato 504 in tutte e tre le interrogazioni fatte;
+   * (dal punto 30) LA SINTASSI DI OVERPASS E' "out tags center;", col modo di
+     uscita PRIMA della geometria. Scritta al contrario ("out center tags;") la
+     query NON da' errore: risponde VUOTA. Ed e' molto peggio di un errore,
+     perche' sembra "questo posto non esiste in OSM" quando invece esiste - ci si
+     e' perso un giro credendo che il Corno Grande non fosse mappato.
+     Se una query Overpass torna zero elementi su qualcosa che deve esserci:
+     stampare la risposta GREZZA e cercare il campo "remark", prima di
+     concludere qualunque cosa sui dati;
+   * (dal punto 30) OVERPASS: conviene fare piu' query PICCOLE che una grande, e
+     insistere su piu' server. Misurato in questa sessione: overpass-api.de ha
+     dato 504 tre volte di fila e poi 429, kumi 502 e 504. Con quattro server
+     provati in fila e attese crescenti, tutte e quattro le ricerche sono andate
+     a buon fine. Gli altri due che hanno risposto: overpass.private.coffee e
+     maps.mail.ru/osm/tools/overpass;
    * (dal punto 18) DISPLAY:FLEX SU UN PARAGRAFO lo fa a pezzi se dentro c'e'
      un <b>, un <a> o uno <span> in mezzo al testo: ogni figlio diventa una
      colonna. Il testo va messo dentro UN SOLO figlio. Si vede solo su
@@ -3038,3 +3305,15 @@ DEBITO TECNICO NOTO, non urgente ma da non dimenticare:
    chiaramente che nessun messaggio parte). Il resto e' nel BLOCCO 5.
  - Nessun file LICENSE: il repository e' pubblico ma non e' open source
    (vedi la nota sulla privacy in cima al file).
+ - NON SI PUO' CANCELLARE UN'USCITA IMPORTATA PER ERRORE. Da quando si
+   accettano anche i file senza orari e gli itinerari progettati (punto 29) e'
+   piu' facile importare il file sbagliato, e quello resta nei totali per sempre
+   consumando uno dei 5 caricamenti del mese. Non e' stato aggiunto perche' e'
+   una funzionalita' nuova che l'utente non ha chiesto: va PROPOSTA. Lavoro
+   piccolo: una rotta DELETE su una sessione propria (verificando che sia sua) e
+   un pulsante nella scheda dello storico.
+ - Le coordinate delle vette dentro i documenti Hike sul database restano quelle
+   vecchie e imprecise: per i badge non conta, perche' il catalogo di
+   public/js/badge-points.js vince sempre sulle vette delle escursioni (sia in
+   catalogo() nel browser sia in puntiTimbrabili() sul server). Se un giorno
+   servisse allineare anche il database, il posto e' il campo peaks di Hike.
