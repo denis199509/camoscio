@@ -372,7 +372,9 @@ FATTO IL PRIMO PASSO CONCORDATO (decisione 3: "prima misurare quanto costa allar
 i dati dei sentieri"). NESSUN CODICE SCRITTO PER IL PUNTO 13: solo misure. L'utente
 ha poi detto di fermarsi, quindi si riparte da qui.
 
->>> DECISIONE PRESA DALL'UTENTE: SI USA IL LIVELLO f). <<<
+>>> DECISIONE PRESA DALL'UTENTE: SI USA IL LIVELLO i). <<<
+    (aveva scelto il f, poi ha visto il confronto completo e ha scelto il i, che da'
+     lo stesso risultato con il 37% di dati in meno - vedi in fondo a questa sezione)
 
 L'IDEA E' SUA e ha cambiato il risultato: "dovremmo tenere conto delle strade
 sterrate vicino ai sentieri, spesso i sentieri si collegano proprio attraverso
@@ -480,19 +482,36 @@ PASSO 0 - [FATTO 2026-07-27] LE DUE MISURE CHE MANCAVANO
       ANCORATO ai sentieri e quindi scala con la loro densita'. Per il livello b lo e'
       meno (b non dipende dai sentieri), quindi quei 92 MB vanno presi come minimo.
 
-  >>> CONCLUSIONE DA PORTARE ALL'UTENTE: IL LIVELLO i E' MIGLIORE DEL f SOTTO OGNI
-      ASPETTO. Stesso beneficio (95,7% in montagna), 37% di dati in meno (65 MB
-      invece di 103), meno reti spezzate, e una regola piu' semplice da spiegare:
-      "tutto cio' che si cammina entro 200 m dalla rete dei sentieri conosciuti".
-      Il totale del database passerebbe da 33 MB a circa 69 su 512: comodo.
-      L'utente aveva scelto il livello f PRIMA di vedere questi numeri: la scelta fra
-      f e i va rifatta con lui, non cambiata di iniziativa.
+  >>> DECISIONE FINALE DELL'UTENTE (2026-07-27): SI USA IL LIVELLO i. <<<
+      Aveva scelto il f prima di vedere questi numeri; messo davanti al confronto ha
+      scelto il i, che e' migliore sotto ogni aspetto: stesso beneficio (95,7% in
+      montagna), 37% di dati in meno (65 MB invece di 103), meta' delle reti spezzate,
+      e una regola piu' semplice da spiegare - "tutto cio' che si cammina entro 200 m
+      dalla rete dei sentieri conosciuti". Il database passa da 33 MB a circa 69 su 512.
+      IL LIMITE DEL LIVELLO i, detto all'utente e accettato: in una zona dove non
+      esistono ancora sentieri mappati non aggiunge niente, quindi li' resta scoperto
+      come oggi. Se un domani se ne aggiungessero, basta rilanciare l'estrazione.
+      SE SERVISSE RIALLARGARE: si cambia solo il filtro in scripts/fetch-trails.js e si
+      rilancia. Il resto del codice non se ne accorge - i livelli sono una scelta di
+      ESTRAZIONE, non di architettura, ed e' bene che restino tali.
 
 PASSO 1 - ESTRAZIONE DATI (scripts/fetch-trails.js)
-  Nuovo filtro, livello f:
-      way["highway"~"^(path|track|bridleway)$"](area.regione)          -> .sent
-      way["highway"~"^(unclassified|service)$"](around.sent:200)(area.regione)
-      + i way delle relation route=hiking, come oggi (aggiungono le reti CAI)
+  NUOVO FILTRO, LIVELLO i (scelto dall'utente): prima si prende la rete CONOSCIUTA
+  con il criterio di oggi, poi tutto cio' che si cammina entro 200 m da quella.
+      way["highway"~"^(path|track|bridleway)$"]["sac_scale"](area.regione)  -> .s1
+      relation["route"="hiking"](area.regione) -> .rel
+      way(r.rel)["highway"~"^(path|track|bridleway)$"]                      -> .s2
+      (.s1; .s2;) -> .noti          // la rete conosciuta = il livello a di oggi
+      (
+        .noti;
+        way["highway"~"^(path|track|bridleway|unclassified|service)$"](around.noti:200)(area.regione);
+      );
+  ATTENZIONE, TRAPPOLA GIA' PAGATA: le query "around" su una REGIONE INTERA superano i
+  4 minuti e il server chiude. L'estrazione va fatta A RIQUADRI (0,1 gradi funziona
+  bene: 36 celle campionate senza un solo errore) e non regione per regione.
+  Le celle da interrogare NON sono tutte: sono le 522 che contengono gia' sentieri
+  conosciuti, e si ricavano dal database in un istante. Fuori da quelle il livello i
+  non aggiungerebbe niente per definizione.
   DA AGGIUNGERE AL MODELLO Trail (models/Trail.js):
    - perAggancio: Boolean. TRUE solo per i way che passano il filtro di OGGI
      (sac_scale presente oppure membro di una relation route=hiking).
