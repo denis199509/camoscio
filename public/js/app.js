@@ -202,6 +202,7 @@ async function initApp() {
         if (window.initTrackingModule) window.initTrackingModule();
         if (window.initTrailheadPicker) window.initTrailheadPicker();
         if (window.initStorico) window.initStorico();
+        if (window.initRoutePlanner) window.initRoutePlanner(); // punto 13
 
         // Forza il render della dashboard iniziale
         renderDashboard();

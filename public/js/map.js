@@ -577,6 +577,12 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
 
 // Click sulla mappa per segnalare anomalia (Waze)
 function onMapClick(e) {
+    // Punto 13: mentre si sta progettando un percorso, il click sulla mappa serve ad
+    // aggiungere una tappa, non ad aprire il modulo delle segnalazioni. Il progettista
+    // dice lui se ha preso il click: cosi' i due usi della mappa non si pestano i piedi
+    // e qui non serve sapere niente di come funziona.
+    if (window.CamoscioRoutePlanner && window.CamoscioRoutePlanner.gestisciClickMappa(e)) return;
+
     const formContainer = document.getElementById("waze-form-container");
     if (!formContainer) return;
 

@@ -846,6 +846,18 @@
 
                         <!-- Sidebar Mappa (Sicurezza + Meteo + Segnalazioni) -->
                         <div class="map-sidebar">
+                            <!-- PUNTO 13 di cose_da_fare.txt: progettare in anticipo il percorso di
+                                 una futura escursione scegliendo piu' punti sulla mappa.
+                                 Sta nella barra della Mappa perche' e' li' che si guarda il
+                                 territorio, e subito sotto il timer di sicurezza perche' quello e'
+                                 l'ultima cosa che si imposta prima di partire, questa la prima che
+                                 si fa quando si programma.
+                                 Il contenuto lo disegna public/js/routeplanner.js. -->
+                            <div class="glass-card route-planner-card">
+                                <h4><i data-lucide="route"></i> Progetta un percorso</h4>
+                                <div id="route-planner-body"></div>
+                            </div>
+
                             <!-- Punto 17 di cose_da_fare.txt: il Dead Man's Switch stava in
                                  Dashboard (riquadro "Sicurezza Rapida") e in "Sicurezza & Mesh".
                                  Serve durante l'escursione, non mentre si guardano le statistiche:
@@ -1657,6 +1669,7 @@
     <script src="js/idb.js"></script>
     <script src="js/offline-map.js"></script>
     <script src="js/map.js"></script>
+    <script src="js/routeplanner.js"></script>
     <script src="js/tracking.js"></script>
     <script src="js/trailhead-picker.js"></script>
     <script src="js/app.js"></script>

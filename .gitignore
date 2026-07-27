@@ -12,3 +12,6 @@ public/uploads/*
 
 # File di sistema Windows
 Thumbs.db
+
+# Progresso dell'estrazione dei sentieri (punto 13): file di lavoro, si rigenera
+data/estrazione-progresso.json

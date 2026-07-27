@@ -3889,3 +3889,256 @@ h1, h2, h3, h4, h5, h6 {
         padding: 16px;
     }
 }
+
+/* ==========================================================================
+   PUNTO 13 — Progettare un percorso sulla mappa
+   La cosa che questi stili devono ottenere sopra tutto: che un tratto IN LINEA
+   D'ARIA non possa essere scambiato per un sentiero. Colore diverso, tratteggio
+   e un avviso in chiaro - se una retta sembrasse un percorso, uno programmerebbe
+   di passare dove non si passa.
+   ========================================================================== */
+
+/* Il numero della tappa sulla mappa. Tondo pieno e leggibile anche sulle tile
+   chiare di OpenStreetMap, dove il testo chiaro sparisce (difetto gia' visto e
+   corretto al punto 9 per i pulsanti sopra la mappa). */
+.route-point-marker span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--accent-blue);
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.8rem;
+    border: 2px solid #fff;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* Mentre si progetta, il cursore dice che la mappa e' in ascolto. */
+#map.modalita-progetto {
+    cursor: crosshair;
+}
+
+.route-planner-card .rp-switch {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 10px 0 2px;
+    cursor: pointer;
+}
+
+.rp-spiega-switch {
+    margin: 0 0 10px;
+}
+
+.rp-punti {
+    list-style: none;
+    margin: 10px 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.rp-punti li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.82rem;
+}
+
+.rp-num {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--accent-blue);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 700;
+}
+
+.rp-coord {
+    flex: 1;
+    min-width: 0;
+    color: var(--color-text-secondary);
+    overflow-wrap: anywhere;
+}
+
+/* Discreto a riposo, rosso solo al passaggio: e' un comando che cancella, non
+   deve invitare a premerlo (stesso criterio del cestino dello storico). */
+.rp-del {
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    padding: 2px;
+    cursor: pointer;
+    color: var(--color-text-secondary);
+    opacity: 0.6;
+    line-height: 1;
+    transition: color 0.15s, opacity 0.15s;
+}
+
+.rp-del:hover,
+.rp-del:focus-visible {
+    color: var(--accent-red);
+    opacity: 1;
+}
+
+.rp-del i,
+.rp-del svg {
+    width: 15px;
+    height: 15px;
+}
+
+.rp-comandi {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.rp-esito {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-color);
+}
+
+.rp-esito.attesa {
+    color: var(--color-text-secondary);
+    font-size: 0.85rem;
+}
+
+.rp-totali {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+}
+
+.rp-totali div {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.rp-totali strong {
+    font-size: 1.05rem;
+    color: var(--accent-orange);
+    line-height: 1.2;
+}
+
+.rp-totali span {
+    font-size: 0.7rem;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+}
+
+/* L'AVVISO SUI TRATTI IN LINEA D'ARIA. In rosso mattone e con il bordo pieno:
+   e' la meta' della richiesta del punto 13, non una nota a margine. */
+.rp-avviso {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--accent-red);
+    background: rgba(168, 59, 46, 0.14);
+    font-size: 0.8rem;
+    line-height: 1.45;
+}
+
+.rp-avviso i,
+.rp-avviso svg {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    margin-top: 2px;
+}
+
+.rp-tutto-bene {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    font-size: 0.8rem;
+    color: var(--accent-green);
+}
+
+.rp-tutto-bene i,
+.rp-tutto-bene svg {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+}
+
+/* display:flex su un paragrafo con dentro del testo lo spezzerebbe in colonne
+   (trappola del punto 18): qui l'icona e il testo stanno in linea con gap. */
+.rp-nota-dislivello {
+    display: flex;
+    gap: 6px;
+    align-items: flex-start;
+    margin: 10px 0;
+}
+
+.rp-nota-dislivello i,
+.rp-nota-dislivello svg {
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
+    margin-top: 2px;
+}
+
+.rp-titolo-bozze {
+    margin: 14px 0 6px;
+    font-size: 0.85rem;
+}
+
+.rp-bozze {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.rp-bozze li {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.rp-apri {
+    flex: 1;
+    min-width: 0;
+    text-align: left;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 6px 8px;
+    cursor: pointer;
+    color: var(--color-text-primary);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.rp-apri:hover {
+    border-color: var(--accent-blue);
+}
+
+.rp-bozza-nome {
+    font-size: 0.85rem;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.rp-bozza-dati {
+    font-size: 0.72rem;
+    color: var(--color-text-secondary);
+}
