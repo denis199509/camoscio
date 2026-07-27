@@ -1,10 +1,11 @@
 ===================================================================
 CAMOSCIO — LEGGIMI (stato progetto, aggiornato automaticamente)
-Ultimo aggiornamento: 2026-07-27 — fatto il PUNTO 15: caricamento di file .gpx
-come uscite gia' fatte, piu' l'elenco dello storico che non esisteva. Prima,
-nella stessa giornata, il BLOCCO 4 (punto 18): il tasto e la pagina "Badge",
-con dieci badge di prova fra cime e rifugi, coordinate vere e tutti davvero
-conquistabili — quello e' gia' online.
+Ultimo aggiornamento: 2026-07-27 — sessione chiusa in modo ordinato, tutto
+online. Fatti il PUNTO 18 (tasto e pagina "Badge") e il PUNTO 15 (caricamento
+di file .gpx come uscite gia' fatte, piu' l'elenco dello storico che non
+esisteva). In chiusura si e' concordato con l'utente il PUNTO 13, senza
+scrivere codice: LA PROSSIMA SESSIONE E' DEDICATA A QUELLO, e l'accordo e' nella
+sezione dedicata qui sotto.
 Vedi le sezioni dedicate subito sotto.
 Il 2026-07-26 (sera) era stato fatto il BLOCCO 3 (punti 24, 23 seconda meta' e
 25): lo zaino distingue gli oggetti personali da quelli che si dividono, i
@@ -25,20 +26,24 @@ Prima ancora, nella stessa giornata: il BLOCCO 1 (punti 19, 23 prima meta',
     decisione dell'utente e quali trappole sono gia' state pagate. Poi
     torna a leggere il resto.
 
-A CHE PUNTO SIAMO, in breve: dei 28 punti di cose_da_fare.txt ne restano
-DUE, e nessuno dei due si puo' iniziare senza l'utente:
- - punti 7, 22 e la seconda meta' del 21 aspettano UNA decisione sua: quale
-   canale usare per mandare un messaggio, email o SMS;
- - punto 13 (percorso multi-punto) e' in sospeso per sua scelta.
+A CHE PUNTO SIAMO, in breve: dei 28 punti di cose_da_fare.txt ne restano DUE.
+ - PUNTO 13 (percorso multi-punto): non e' piu' in sospeso. Il 2026-07-27
+   l'utente ha deciso le tre cose che mancavano e ha detto che LA PROSSIMA
+   SESSIONE E' DEDICATA A QUESTO. Si riparte da li'. Nessun codice ancora
+   scritto: l'utente ha chiesto esplicitamente di non cominciare.
+ - punti 7, 22 e la seconda meta' del 21 aspettano ancora UNA decisione sua:
+   quale canale usare per mandare un messaggio, email o SMS.
 Tutto il resto e' fatto e provato. Il 2026-07-27 sono stati chiusi il punto 18
-(pagina Badge, gia' online) e il punto 15 (caricamento .gpx): erano gli ultimi
-due non bloccati.
+(pagina Badge) e il punto 15 (caricamento .gpx), entrambi online.
 
-I PUNTI 7 E 13 SONO IN SOSPESO SU RICHIESTA ESPLICITA DELL'UTENTE
-(2026-07-26): il 7 (recupero password) perche' deve decidere se agganciare
-una vera email o inventare un'alternativa; il 13 (progettazione percorso
-multi-punto) perche' e' una richiesta grossa, da affrontare in una
-sessione nuova e dedicata.
+IL PUNTO 7 E' ANCORA IN SOSPESO SU RICHIESTA ESPLICITA DELL'UTENTE
+(2026-07-26): deve decidere se agganciare una vera email o inventare
+un'alternativa.
+IL PUNTO 13 E' STATO RIAPERTO DALL'UTENTE il 2026-07-27: ha voluto un
+riassunto, ha preso le decisioni che mancavano e ha detto che la sessione
+successiva sara' dedicata a quello. Resta pero' NON INIZIATO per sua
+richiesta esplicita ("sono solo indicazioni, non cominciare il lavoro"):
+finche' non e' lui a dare il via, non si scrive codice.
 RICHIESTA ESPLICITA DELL'UTENTE: RICORDARGLI QUESTI DUE PUNTI OGNI VOLTA
 CHE SI FA UN RIASSUNTO - sia quando e' lui a chiederlo, sia alla fine di
 ogni lavoro quando il riassunto lo si scrive di propria iniziativa. Non
@@ -53,6 +58,89 @@ LE QUATTRO LISTE DETTATE DALL'UTENTE, stato aggiornato:
  - quarta lista (punti 26-27): fatta;
  - quinta lista (punto 28): fatta, e confermata dall'utente dal telefono.
 ===================================================================
+
+NOTA IMPORTANTE PER CHI RIPARTE DA QUI - PUNTO 13: ACCORDO PRESO CON L'UTENTE
+(2026-07-27). NESSUNA RIGA DI CODICE SCRITTA, e l'utente ha detto esplicitamente
+di non cominciare: "sono solo indicazioni, non cominciare il lavoro". Questa
+sezione esiste perche' la prossima sessione sara' dedicata al punto 13 e le
+decisioni prese qui, senza scriverle, andrebbero perse.
+
+--- COSA VUOLE L'UTENTE, IN UNA FRASE ---
+
+Sulla pagina Mappa, scegliere piu' punti in sequenza e vederli collegati
+seguendo i sentieri conosciuti, con la possibilita' di NON agganciarsi ai
+sentieri (linea d'aria) dove non ce ne sono di mappati.
+
+--- MISURE FATTE PRIMA DI PARLARNE (sui dati veri, Lazio + Abruzzo) ---
+
+- 15.228 sentieri, 609.587 punti nelle due regioni caricate.
+- LA RETE E' MOLTO FRAMMENTATA: 2.315 reti separate fra loro, e la piu' grande
+  contiene solo il 4% dei sentieri. 1.019 sentieri sono completamente isolati.
+- UNIRE I SENTIERI CHE SI SFIORANO NON RISOLVE, provato: con 50 m di tolleranza
+  la rete piu' grande passa dal 4,0% al 5,7%. Non e' un problema di coordinate
+  che non combaciano per poco.
+  LA CAUSA VERA: scripts/fetch-trails.js tiene solo i way CON sac_scale o dentro
+  una relation route=hiking. Tutto cio' che li collega e non ha quel tag - una
+  carrareccia, una strada bianca, un tratto di asfalto fra due imbocchi - e'
+  escluso, e la rete si spezza esattamente li'.
+- IL NUMERO CHE CONTA: su 4.000 coppie di punti su sentieri diversi distanti fra
+  0,3 e 5 km (mediana 1,75 km), cioe' due tappe della stessa escursione, UN
+  PERCORSO SUI SENTIERI CONOSCIUTI ESISTE NEL 51% DEI CASI. Nel 49% no.
+- L'ESEMPIO DELL'UTENTE FUNZIONA: Campo Imperatore (42.44283, 13.55771) e Sella
+  di Monte Aquila (42.45478, 13.55904, in OSM e' un nodo natural=saddle) stanno
+  nella stessa rete percorribile, 1,33 km in linea d'aria.
+  ATTENZIONE AL METODO: al primo tentativo avevo usato coordinate a memoria e il
+  risultato diceva "nessun percorso". Erano sbagliate le coordinate, non i dati.
+  Le posizioni dei luoghi vanno SEMPRE cercate su Overpass, mai ricordate.
+- NIENTE QUOTA: le coordinate dei sentieri sono [lng,lat] e basta (0 sentieri su
+  15.228 hanno l'altitudine). Di un percorso progettato NON si puo' calcolare il
+  dislivello con i dati che abbiamo, ed e' forse il dato piu' utile per capire
+  se un'escursione e' alla propria portata. Da affrontare a parte.
+
+--- LE TRE DECISIONI PRESE DALL'UTENTE ---
+
+1. QUANDO NON ESISTE UN PERCORSO SUI SENTIERI (circa meta' delle volte):
+   RETTA AUTOMATICA PER QUEL TRATTO, BEN SEGNALATA. Non una finestra da
+   rispondere ogni volta, non un rifiuto. Il percorso si completa sempre, ma il
+   tratto in linea d'aria deve VEDERSI (disegno diverso + avviso), cosi' si
+   capisce subito dove il sistema non sa guidare. Nota: e' proprio la modalita'
+   che l'utente voleva poter scegliere; qui diventa anche il ripiego automatico,
+   e per questo la segnalazione a schermo non e' un dettaglio estetico.
+2. DOVE FINISCE IL PERCORSO PROGETTATO: salvato come BOZZA PERSONALE,
+   riapribile. NON collegato a un'escursione e non visibile ai partecipanti -
+   quello e' un passo successivo, non ora.
+3. DATI DEI SENTIERI: PRIMA MISURARE QUANTO COSTA allargare il filtro, poi
+   decidere. Stessa procedura del punto 15, che ha funzionato bene.
+
+--- COSA PROPORRE ALLA RIPRESA (proposto, NON ancora confermato) ---
+
+- RICERCA DEL PERCORSO A RICHIESTA SULL'AREA INTERESSATA, non un grafo globale
+  tenuto in RAM. Due vantaggi veri: evita il rischio memoria che in Fase G ha
+  gia' fatto cadere il sito (512 MB in tutto su Render), e fa funzionare la cosa
+  anche in MARCHE E MOLISE, che sono sul database ma non vengono caricate in
+  memoria (ACTIVE_REGIONS in lib/trailIndex.js). L'indice in RAM resterebbe
+  com'e', per l'aggancio del GPS.
+  ATTENZIONE: per leggere i sentieri di un riquadro da MongoDB non c'e' un
+  indice geografico sulla collezione trails (c'e' solo wayId unico). Va
+  aggiunto, o si filtra per regione e si scarta in memoria.
+- IL DISLIVELLO del percorso progettato: da decidere a parte se e come ricavarlo.
+
+--- PRIMO PASSO DELLA PROSSIMA SESSIONE ---
+
+La misura del punto 3: quanto crescerebbero dati e memoria allargando il filtro
+dei sentieri. Va chiesto a Overpass solo il CONTEGGIO (out count), senza
+scaricare le geometrie. I livelli da confrontare, dal piu' stretto al piu' largo:
+  a) oggi: path/track/bridleway CON sac_scale
+  b) gli stessi SENZA pretendere sac_scale
+  c) + footway e steps
+  d) + unclassified e service (strade bianche e minori)
+Poi si applica il rapporto ai totali gia' noti: oggi 4 regioni fanno ~1.000.000
+di punti, 31,4 MB su MongoDB e ~247 MB di RAM a regime (picco misurato ~394 MB
+in Fase G, che e' il numero che ha fatto cadere il sito).
+DA RICORDARE nel valutare: lo spazio su MongoDB non e' un problema (478 MB
+liberi), la RAM si'. Se la ricerca del percorso legge da MongoDB a richiesta
+invece che dall'indice in RAM, un filtro piu' largo costa solo disco - ed e'
+questo che potrebbe rendere l'allargamento accettabile.
 
 NOTA IMPORTANTE PER CHI RIPARTE DA QUI - PUNTO 15 FATTO (2026-07-27):
 caricamento di file .gpx come uscite gia' fatte. Fatto DOPO la stima dello
@@ -2739,14 +2827,34 @@ COME RIPRENDERE IL LAVORO IN UNA NUOVA SESSIONE
 
 
 ===================================================================
-DA DOVE SI RIPARTE — situazione al 2026-07-27
+DA DOVE SI RIPARTE — situazione al 2026-07-27, fine giornata
 ===================================================================
 
-STATO: punto 18 (pagina Badge) FINITO E PROVATO in locale. Da decidere con
-l'utente se mandarlo online: al momento della scrittura di questa nota il
-lavoro e' nella cartella, NON ancora committato ne' pushato - controllare con
-"git status" prima di dare per scontato qualcosa.
-Il resto (fino al commit 23bf0f0 piu' d0b7b93) era gia' online e verificato.
+>>> LA PROSSIMA SESSIONE E' DEDICATA AL PUNTO 13 (percorso multi-punto sui
+    sentieri). L'utente l'ha deciso lui in chiusura. L'accordo completo, le
+    misure e il primo passo da fare stanno nella sezione "PUNTO 13: ACCORDO
+    PRESO CON L'UTENTE" in cima a questo file: leggerla PRIMA di toccare
+    qualunque cosa, perche' contiene tre decisioni gia' prese che non vanno
+    richieste di nuovo.
+
+>>> PRIMA COSA DA CHIEDERGLI, appena si riapre: COM'E' ANDATO IL CARICAMENTO
+    DEI FILE .GPX. A fine sessione stava provando dal suo profilo con file
+    veri, ed e' l'unica prova che le verifiche automatiche non potevano fare:
+    ogni programma (Garmin, Strava, Komoot, OsmAnd) scrive il .gpx a modo suo.
+    Se qualcosa non ha funzionato, quello viene prima del punto 13.
+    Le cose da guardare per prime, se segnala un problema:
+      - il DISLIVELLO, che e' il numero piu' delicato: si confronta con quello
+        che dice l'app da cui ha esportato. Se risulta sistematicamente piu'
+        basso del vero, la soglia e' SOGLIA_DISLIVELLO_IMPORT_M in
+        routes/tracking.js (oggi 10 m) ed e' un numero solo da cambiare;
+      - i messaggi di rifiuto sono scritti per dire il motivo vero, quindi
+        farsi riferire quello che compare a schermo basta per capire dove
+        intervenire.
+
+STATO: TUTTO SALVATO E ONLINE, sessione chiusa in modo ordinato (non per limite
+di tempo o di utilizzo). Niente lavoro a meta' lasciato nel codice: ogni punto
+toccato e' finito, provato e pushato. Deploy su Render verificato dal vivo,
+file per file e rotta per rotta.
 
 FATTO IL 2026-07-27:
  - PUNTO 18, BLOCCO 4 - tasto e pagina "Badge". Voce nella barra a sinistra
@@ -2758,7 +2866,15 @@ FATTO IL 2026-07-27:
    impossibili da conquistare. Corretti strada facendo un buco XSS preesistente
    (nome della vetta non messo in sicurezza in una delle due copie del blocco
    dei marker) e la scelta del punto piu' vicino invece dell'ultimo trovato.
-   Dettagli nella sezione dedicata in cima al file.
+ - PUNTO 15 - caricamento di file .gpx come uscite gia' fatte, con la stima
+   dello spazio fatta prima (l'utente l'aveva chiesta come condizione).
+   E' servito costruire anche l'ELENCO delle uscite, che non esisteva: prima le
+   sessioni registrate finivano solo dentro i tre totali della Dashboard.
+   Trovato e corretto un difetto vero del calcolo del dislivello: con la regola
+   del tracciamento dal vivo una traccia da orologio con altimetro barometrico
+   dava ZERO metri di dislivello.
+ - PUNTO 13 - solo l'accordo con l'utente, NESSUN CODICE. Vedi sopra.
+   Dettagli di tutti e tre nelle sezioni dedicate in cima al file.
 
 FATTO IL 2026-07-26 (sessione precedente, gia' online):
  1. PUNTO 28 - la geolocalizzazione dal telefono. Il puntino blu funzionava:
@@ -2784,22 +2900,20 @@ piu' quella del 26 luglio pomeriggio, che e' la prova vera dell'utente dal
 telefono - 14 secondi, zero punti GPS - ed e' il riscontro del punto 28. NON
 vanno cancellate.
 
-IL PROSSIMO PASSO NON E' UNA COSA DA PROGRAMMARE, E' UNA RISPOSTA DA AVERE.
-Chiusi il 18 e il 15 non resta piu' NIENTE di libero: i due punti rimasti sono
-fermi in attesa di una decisione dell'utente. Vedi qui sotto.
-
 CHE COSA RESTA IN TUTTO, in mezza riga ciascuno:
+ - punto 13             -> percorso multi-punto sui sentieri. E' IL LAVORO
+                           DELLA PROSSIMA SESSIONE, deciso dall'utente.
+                           Accordo e primo passo nella sezione dedicata in
+                           cima al file.
  - punti 7, 22, 21-resto -> BLOCCATI dalla stessa decisione dell'utente
                            (email o SMS), vedi qui sotto.
- - punto 13             -> percorso multi-punto sui sentieri. IN SOSPESO per
-                           scelta dell'utente, vuole una sessione dedicata.
 Tutti gli altri punti di cose_da_fare.txt (1-12, 14-20, 23-28) sono FATTI.
 
-DA PROVARE DAL VIVO, non blocca niente ma e' la cosa piu' utile che l'utente
-possa fare adesso: il caricamento .gpx con FILE VERI, in 3-4 persone, come
-aveva proposto lui. Le prove automatiche usano tracce costruite apposta e
-geometrie di sentieri OSM veri, ma non un file uscito davvero da un Garmin,
-da Strava o da Komoot - ognuno scrive il .gpx a modo suo.
+IN CORSO DA PARTE DELL'UTENTE, da chiedere per prima cosa: sta provando il
+caricamento .gpx con FILE VERI dal suo profilo. Le prove automatiche usano
+tracce costruite apposta e geometrie di sentieri OSM veri, ma non un file
+uscito davvero da un Garmin, da Strava o da Komoot - ognuno scrive il .gpx a
+modo suo, ed e' li' che salta fuori quello che non e' stato previsto.
 
 DA RICORDARE ALL'UTENTE IN OGNI RIASSUNTO, per sua richiesta esplicita: i
 punti 7 e 13 restano in sospeso. Non vanno riproposti come prossimo passo -

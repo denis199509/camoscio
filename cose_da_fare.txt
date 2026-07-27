@@ -171,13 +171,31 @@ il tracciamento.
 12) [FATTO 2026-07-26] Nella pagina "Mappa & Waze": togliere il nome "Waze" (non deve
 piu' comparire). -> Ora si chiama "Mappa & Sentieri".
 
-13) Nuova funzionalita' sulla pagina Mappa: poter progettare in anticipo il percorso
+13) [PROSSIMA SESSIONE - concordato 2026-07-27, nessun codice ancora scritto]
+Nuova funzionalita' sulla pagina Mappa: poter progettare in anticipo il percorso
 di una futura escursione scegliendo piu' punti sulla mappa. Esempio: escursione al
 Corno Grande, primo punto a Campo Imperatore (partenza), secondo punto alla Sella
 del Monte Aquila. Il sistema deve collegare automaticamente i punti scelti seguendo
 i sentieri conosciuti. Se passo per una zona senza sentieri mappati, voglio poter
 scegliere di NON agganciarmi ai sentieri mentre creo il progetto: in quel caso i
 punti si collegano in linea d'aria (retta), senza seguire nessun sentiero.
+   -> DECISO CON L'UTENTE il 2026-07-27, dopo avergli portato le misure sui dati
+      veri. Le tre cose che mancavano:
+      1) dove NON esiste un percorso sui sentieri (circa meta' delle volte, vedi
+         sotto): retta automatica per quel tratto, BEN SEGNALATA a schermo;
+      2) il percorso progettato si salva come BOZZA PERSONALE riapribile, non
+         collegato a un'escursione (quello sara' eventualmente un passo dopo);
+      3) prima di allargare i dati dei sentieri, MISURARE quanto costa - stessa
+         procedura seguita per il punto 15.
+      MISURATO, e cambia le aspettative: la rete dei sentieri e' frammentata in
+      2.315 pezzi separati (la piu' grande e' il 4% dei sentieri), perche' lo
+      script di estrazione tiene solo i sentieri con sac_scale ed esclude le
+      carrarecce che li collegano. Su 4.000 coppie di punti realistiche, un
+      percorso lungo i sentieri conosciuti ESISTE NEL 51% DEI CASI.
+      L'esempio qui sopra (Campo Imperatore -> Sella di Monte Aquila) funziona:
+      verificato, sono nella stessa rete.
+      Da sapere: i sentieri non hanno la quota salvata, quindi di un percorso
+      progettato non si puo' dare il dislivello. Vedi leggimi.txt per tutto.
 
 14) [FATTO 2026-07-26] Semplificare il tracciamento live: una volta aperta la mappa,
 un tasto semplice "Comincia registrazione" che segue il GPS reale sulla mappa e
