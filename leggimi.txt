@@ -1,9 +1,11 @@
 ===================================================================
 CAMOSCIO — LEGGIMI (stato progetto, aggiornato automaticamente)
-Ultimo aggiornamento: 2026-07-27 — fatto il BLOCCO 4 (punto 18): il tasto e la
-pagina "Badge", con dieci badge di prova fra cime e rifugi, coordinate vere e
-tutti davvero conquistabili. Era l'ultimo punto libero della lista.
-Vedi la sezione dedicata subito sotto.
+Ultimo aggiornamento: 2026-07-27 — fatto il PUNTO 15: caricamento di file .gpx
+come uscite gia' fatte, piu' l'elenco dello storico che non esisteva. Prima,
+nella stessa giornata, il BLOCCO 4 (punto 18): il tasto e la pagina "Badge",
+con dieci badge di prova fra cime e rifugi, coordinate vere e tutti davvero
+conquistabili — quello e' gia' online.
+Vedi le sezioni dedicate subito sotto.
 Il 2026-07-26 (sera) era stato fatto il BLOCCO 3 (punti 24, 23 seconda meta' e
 25): lo zaino distingue gli oggetti personali da quelli che si dividono, i
 condivisi compaiono solo in gruppo, e la portata della tenda viene controllata.
@@ -24,15 +26,13 @@ Prima ancora, nella stessa giornata: il BLOCCO 1 (punti 19, 23 prima meta',
     torna a leggere il resto.
 
 A CHE PUNTO SIAMO, in breve: dei 28 punti di cose_da_fare.txt ne restano
-TRE, e NESSUNO E' LIBERO - sono tutti fermi per un motivo, non per mancanza
-di tempo:
- - punto 15 (.gpx) va valutato prima per lo spazio su MongoDB;
- - punti 7, 22 e la seconda meta' del 21 aspettano UNA decisione
-   dell'utente: quale canale usare per mandare un messaggio, email o SMS;
+DUE, e nessuno dei due si puo' iniziare senza l'utente:
+ - punti 7, 22 e la seconda meta' del 21 aspettano UNA decisione sua: quale
+   canale usare per mandare un messaggio, email o SMS;
  - punto 13 (percorso multi-punto) e' in sospeso per sua scelta.
-Tutto il resto e' fatto e provato. Il punto 18 (pagina Badge) e' stato chiuso
-il 2026-07-27 ed era l'ultimo punto libero: da qui in avanti serve una
-risposta dell'utente per andare avanti su qualunque cosa.
+Tutto il resto e' fatto e provato. Il 2026-07-27 sono stati chiusi il punto 18
+(pagina Badge, gia' online) e il punto 15 (caricamento .gpx): erano gli ultimi
+due non bloccati.
 
 I PUNTI 7 E 13 SONO IN SOSPESO SU RICHIESTA ESPLICITA DELL'UTENTE
 (2026-07-26): il 7 (recupero password) perche' deve decidere se agganciare
@@ -53,6 +53,132 @@ LE QUATTRO LISTE DETTATE DALL'UTENTE, stato aggiornato:
  - quarta lista (punti 26-27): fatta;
  - quinta lista (punto 28): fatta, e confermata dall'utente dal telefono.
 ===================================================================
+
+NOTA IMPORTANTE PER CHI RIPARTE DA QUI - PUNTO 15 FATTO (2026-07-27):
+caricamento di file .gpx come uscite gia' fatte. Fatto DOPO la stima dello
+spazio qui sotto, che l'utente aveva chiesto come condizione.
+
+--- DOVE SI CARICA, E COSA MANCAVA PRIMA ---
+
+- Nella pagina "Le mie escursioni", nuovo gruppo "Uscite registrate".
+- SERVIVA COSTRUIRE ANCHE L'ELENCO, e non era previsto: prima di oggi NESSUNA
+  schermata e nessuna rotta mostrava le uscite passate. Le sessioni di
+  tracciamento venivano lette solo da /totals, che ne ricava tre numeri per la
+  Dashboard. Quindi ogni escursione registrata spariva dentro un totale, e un
+  .gpx importato avrebbe fatto la stessa fine: l'utente avrebbe visto salire i
+  chilometri senza mai vedere l'uscita. Ma la richiesta e' letteralmente
+  "costruirsi uno storico". Nuova rotta GET /api/tracking/sessions (senza i
+  punti GPS, che in un elenco non servono e sono la cosa piu' pesante) e nuovo
+  file public/js/storico.js.
+- Come effetto secondario ora si vedono anche le uscite REGISTRATE col GPS, che
+  erano invisibili allo stesso modo. Ogni scheda dice se e' "registrata" o
+  "importata": sono due cose diverse ed e' giusto non farle sembrare uguali.
+
+--- NIENTE LIBRERIE XML, ED E' SICUREZZA NON PESO ---
+
+- lib/gpx.js legge il file con delle espressioni regolari e non costruisce
+  nessun albero XML. La conseguenza importante: NON SI RISOLVE NESSUNA ENTITA',
+  ed e' proprio la risoluzione delle entita' a rendere possibili i due attacchi
+  classici dei lettori XML. Provati tutti e due nelle prove:
+  * XXE - un file che dichiara un'entita' puntata a C:/...camoscio/.env. Un
+    lettore XML normale leggerebbe quel file e lo restituirebbe dentro la
+    risposta. Qui il nome resta la stringa "&xxe;" e nel risultato non c'e'
+    nessuna traccia della stringa di connessione al database;
+  * "billion laughs" - entita' annidate che si espandono in gigabyte. Qui non
+    si espande niente: 0 ms, nome lungo 3 caratteri.
+- E' la stessa cautela della Fase G, dove osmtogeojson era stato scartato per
+  le vulnerabilita' irrisolte di xmldom. Li' si era evitata la libreria, qui si
+  evita anche la classe di problemi.
+- TETTI CONTRO L'ESAURIMENTO DI MEMORIA (su Render ce ne sono 512 MB in tutto e
+  in Fase G il sito e' gia' andato in 502 per questo): 10 MB per file,
+  controllati sia nel browser sia sul server, e 200.000 punti massimi.
+
+--- IL DIFETTO PIU' SERIO TROVATO, E NON ERA NEL CODICE NUOVO ---
+
+- Il primo giro di prove dava ZERO metri di dislivello su una salita di 598.
+  Non era un errore di calcolo: era la regola gia' in uso nel progetto.
+  Il tracciamento dal vivo somma il salto di quota fra DUE PUNTI CONSECUTIVI
+  solo se supera 3 metri (MIN_ELEVATION_DELTA_M), e funziona perche' il GPS di
+  un telefono ballonzola di parecchi metri fra un fix e l'altro: la soglia
+  serve a togliere quel tremolio.
+  Ma un .gpx puo' arrivare da un OROLOGIO CON ALTIMETRO BAROMETRICO, che
+  produce una quota liscia e precisa: su una salita costante ogni passo sale di
+  pochi centimetri, nessun salto supera i 3 metri, e il totale viene ZERO. Su
+  un'escursione da 600 metri di dislivello e' un numero visibilmente falso.
+- CORRETTO PER LE TRACCE IMPORTATE: la soglia si applica al dislivello
+  ACCUMULATO sopra l'ultimo avvallamento, non al singolo passo, ed e' 10 metri
+  (SOGLIA_DISLIVELLO_IMPORT_M). I due numeri non sono confrontabili: 3 e' un
+  salto fra due punti, 10 e' quanto bisogna essere saliti in tutto.
+  Misurato: salita regolare da 598 m -> 596 con la nuova regola (0 con quella
+  vecchia); tremolio di +-2 m su percorso PIATTO -> 0 (era 800 m inventati con
+  entrambe le vecchie soglie); tre gobbe da 100 m -> 297.
+- PERCHE' DUE REGOLE DIVERSE E NON UNA: dal vivo i punti arrivano a gruppi e il
+  totale si aggiorna man mano, quindi non si puo' guardare tutta la traccia
+  insieme; qui il file c'e' tutto. Sono situazioni diverse, non una svista.
+  DA SAPERE PERO': la stessa camminata registrata dal vivo e importata da file
+  puo' dare due dislivelli leggermente diversi. Se un giorno si vorra' una
+  regola sola, quella giusta e' questa, e andra' portata nel tracciamento -
+  non il contrario.
+
+--- ALTRE SCELTE ---
+
+- Una traccia importata e' una ActiveHikeSession con status 'ended', non un
+  tipo nuovo: cosi' entra da sola nei totali della Dashboard senza aggiungere
+  nessun collegamento. openSession NON viene impostato, altrimenti l'indice
+  unico parziale impedirebbe di importare mentre una registrazione e' in corso.
+- Due campi nuovi sul modello, importedFrom e importedName, con
+  default: undefined e non null - stesso criterio di shareable/covers al punto
+  24: con un default vero Mongoose li scriverebbe su OGNI sessione registrata
+  dal vivo, dove non aggiungono niente.
+- IL TETTO MENSILE SI CONTA SUL MOMENTO DEL CARICAMENTO, non sulla data
+  dell'escursione: chi importa dieci uscite del 2019 le sta caricando adesso.
+  Quel momento e' gia' dentro l'_id del documento (ObjectId), quindi non serve
+  un campo in piu' - vincolo hard sullo spazio.
+- FILE SENZA ORARI RIFIUTATI, di proposito. Distanza e dislivello si potrebbero
+  calcolare comunque, ma la durata no: finirebbero nei totali insieme a un
+  tempo pari a zero e la velocita' media di TUTTO lo storico risulterebbe
+  sbagliata verso l'alto. Il messaggio distingue anche il caso dell'itinerario
+  progettato (<rtept>), che e' l'errore piu' probabile.
+- VINCOLO DELLE 4 REGIONI: si guarda un campione di punti e si chiede che la
+  MAGGIORANZA sia dentro, non il solo punto di partenza come fa la creazione di
+  un'escursione. Un sentiero di crinale entra ed esce dai confini di continuo, e
+  bocciare una traccia per il punto in cui si e' premuto "avvia" sarebbe un
+  rifiuto a caso.
+
+--- COME E' STATO VERIFICATO ---
+
+- 80 controlli sul punto 15, in tre prove separate: 30 sul lettore da solo
+  (senza server ne' database), 29 sulle REGOLE DEL SERVER e 21 nell'interfaccia
+  vera con Puppeteer. Piu' le prove del punto 18 e quelle di non regressione
+  rilanciate: 139 controlli in tutto, tutti passati, database identico a prima.
+- Le regole del server non si possono intercettare dal browser: si e' usato il
+  metodo del blocco 3, cioe' creare dati veri e cancellarli in un finally.
+  Verificato dopo ogni giro: zero importazioni rimaste, 5 sessioni originali.
+- PROVATO CHE UN PERCORSO VERO NON VIENE APPIATTITO. Il primo controllo diceva
+  "400 punti letti, 2 salvati", ed era giusto solo perche' quella traccia di
+  prova era una RETTA (Douglas-Peucker riduce una retta ai due estremi). Se
+  fosse successo anche a un percorso vero, sulla mappa sarebbe comparsa una
+  linea dritta al posto del sentiero. Rifatto usando la geometria di un
+  sentiero OSM vero preso dal database: 288 punti -> 26, lunghezza 2,10 km
+  contro 2,03 (3,3%).
+- DIFETTO TROVATO GUARDANDO LA SCHERMATA, non dai controlli: su telefono il
+  pulsante flottante a scarpone copriva l'angolo dell'ultima scheda dello
+  storico anche scorrendo fino in fondo (misurato: scheda fino a 804px, pulsante
+  da 760). Il padding-bottom di .page-container non bastava; aggiunto su
+  #my-hikes. Dopo: 36px di margine.
+  E' la seconda volta in questa giornata che una cosa sbagliata passa tutti i
+  controlli e si vede solo guardando: vale come metodo, le schermate vanno
+  GUARDATE.
+- FALSI ALLARMI DELLE PROVE, tutti colpa della prova: 1) #total-distance parte
+  gia' con "0" nell'HTML, quindi aspettare che sia "riempito" sblocca subito e
+  si legge il valore di prima - va aspettato che diventi maggiore di zero;
+  2) un controllo sul tetto mensile che contava a mano quante importazioni
+  fossero gia' state fatte si e' rotto appena ne ho aggiunta un'altra sopra:
+  ora carica finche' il server non dice basta.
+- ATTENZIONE PER LE PROSSIME SESSIONI: uno script di prova che fa
+  process.chdir() nella cartella del progetto ci salva dentro anche le
+  schermate. Erano finite due .png nel progetto, tolte subito - controllare
+  sempre "git status" prima di committare.
 
 NOTA IMPORTANTE PER CHI RIPARTE DA QUI - PUNTO 15, LA STIMA DELLO SPAZIO
 (2026-07-27). Chiesta dall'utente prima di decidere se implementare il
@@ -2659,20 +2785,21 @@ telefono - 14 secondi, zero punti GPS - ed e' il riscontro del punto 28. NON
 vanno cancellate.
 
 IL PROSSIMO PASSO NON E' UNA COSA DA PROGRAMMARE, E' UNA RISPOSTA DA AVERE.
-Chiuso il punto 18 non resta piu' NIENTE di libero: i tre punti rimasti sono
-tutti fermi in attesa di una decisione dell'utente o di una valutazione da
-fare con lui. Vedi qui sotto.
+Chiusi il 18 e il 15 non resta piu' NIENTE di libero: i due punti rimasti sono
+fermi in attesa di una decisione dell'utente. Vedi qui sotto.
 
 CHE COSA RESTA IN TUTTO, in mezza riga ciascuno:
- - punto 15             -> caricamento file .gpx. Prima di scrivere codice
-                           serve una stima vera dello spazio su MongoDB: e'
-                           l'unico punto che puo' farlo crescere in fretta.
-                           E' il piu' vicino a essere affrontabile dei tre.
  - punti 7, 22, 21-resto -> BLOCCATI dalla stessa decisione dell'utente
                            (email o SMS), vedi qui sotto.
  - punto 13             -> percorso multi-punto sui sentieri. IN SOSPESO per
                            scelta dell'utente, vuole una sessione dedicata.
-Tutti gli altri punti di cose_da_fare.txt (1-12, 14, 16-20, 23-28) sono FATTI.
+Tutti gli altri punti di cose_da_fare.txt (1-12, 14-20, 23-28) sono FATTI.
+
+DA PROVARE DAL VIVO, non blocca niente ma e' la cosa piu' utile che l'utente
+possa fare adesso: il caricamento .gpx con FILE VERI, in 3-4 persone, come
+aveva proposto lui. Le prove automatiche usano tracce costruite apposta e
+geometrie di sentieri OSM veri, ma non un file uscito davvero da un Garmin,
+da Strava o da Komoot - ognuno scrive il .gpx a modo suo.
 
 DA RICORDARE ALL'UTENTE IN OGNI RIASSUNTO, per sua richiesta esplicita: i
 punti 7 e 13 restano in sospeso. Non vanno riproposti come prossimo passo -

@@ -184,6 +184,7 @@ async function initApp() {
         if (window.initSocialModule) window.initSocialModule();
         if (window.initTrackingModule) window.initTrackingModule();
         if (window.initTrailheadPicker) window.initTrailheadPicker();
+        if (window.initStorico) window.initStorico();
 
         // Forza il render della dashboard iniziale
         renderDashboard();
@@ -342,6 +343,10 @@ function triggerSectionRender(sectionId) {
                 break;
             case "my-hikes":
                 if (window.renderMyHikes) window.renderMyHikes();
+                // Punto 15: lo storico delle uscite registrate/importate vive nella stessa
+                // pagina ma legge da un'altra rotta (le sessioni di tracciamento, non le
+                // escursioni), quindi si aggiorna per conto suo.
+                if (window.renderStorico) window.renderStorico();
                 break;
             case "badges":
                 if (window.renderBadges) window.renderBadges();

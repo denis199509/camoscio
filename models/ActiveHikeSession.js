@@ -39,7 +39,21 @@ const activeHikeSessionSchema = new mongoose.Schema({
     // capire se e' solo rumore GPS momentaneo o un tratto davvero non mappato (vedi
     // snapAndBufferPoints in routes/tracking.js) - vuoto quasi sempre, si riempie solo
     // durante un tratto fuori sentiero e si svuota appena si torna su uno conosciuto.
-    offTrailBuffer: { type: [[Number]], default: [] }
+    offTrailBuffer: { type: [[Number]], default: [] },
+
+    // --- Punto 15: tracce arrivate da un file .gpx invece che dal GPS del telefono ---
+    // default: undefined e NON null/false, stesso criterio di shareable/covers al punto 24:
+    // con un default vero Mongoose scriverebbe il campo su OGNI sessione registrata dal
+    // vivo, che sono la stragrande maggioranza e a cui non aggiunge niente. C'e' il vincolo
+    // hard sullo spazio in cima a cose_da_fare.txt.
+    // Serve a due cose: contare quanti file un utente ha caricato nel mese (il tetto sta in
+    // routes/tracking.js) e dire a schermo quali uscite sono importate invece che
+    // registrate - due cose diverse che e' giusto non far sembrare uguali.
+    importedFrom: { type: String, enum: ['gpx'], default: undefined },
+    // Il nome scritto dentro il file (<name>), quando c'e': senza, in elenco una traccia
+    // importata sarebbe solo una data. NON e' il nome del file caricato, che spesso e'
+    // solo un codice tipo "activity_1234567.gpx".
+    importedName: { type: String, default: undefined }
 });
 
 activeHikeSessionSchema.index(

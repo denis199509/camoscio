@@ -199,12 +199,26 @@ restano IN SOSPESO per scelta esplicita dell'utente, non dimenticati.
 
 --- DASHBOARD ---
 
-15) Caricare file .gpx come escursioni gia' fatte, per costruirsi uno
-storico anche delle uscite fatte prima di usare il sito. DA VALUTARE BENE
-memoria disponibile e fattibilita': ipotesi dell'utente, massimo 5 file
-.gpx al mese per non riempire subito lo spazio.
-   -> STIMA FATTA (2026-07-27, su richiesta dell'utente, nessun codice ancora
-      scritto). ESITO: lo spazio NON e' un ostacolo. Misurato sul database
+15) [FATTO 2026-07-27] Caricare file .gpx come escursioni gia' fatte, per
+costruirsi uno storico anche delle uscite fatte prima di usare il sito. DA
+VALUTARE BENE memoria disponibile e fattibilita': ipotesi dell'utente, massimo
+5 file .gpx al mese per non riempire subito lo spazio.
+   -> FATTO. Si carica dalla pagina "Le mie escursioni", nuovo gruppo "Uscite
+      registrate". Il file viene convertito e semplificato in ingresso e l'XML
+      buttato: MAI salvato com'e' (pesa 11 volte tanto, misurato). Tetto di 5
+      al mese come da tua ipotesi, con messaggio che dice quando riparte.
+      Niente librerie XML, scritto a mano: evita alla radice XXE e "billion
+      laughs" perche' non si risolve nessuna entita' (provati entrambi).
+      SERVITO IN PIU': non esisteva NESSUN elenco delle uscite passate - le
+      sessioni registrate finivano solo dentro i tre totali della Dashboard.
+      Senza un elenco, importare un .gpx non avrebbe costruito nessuno
+      "storico". Ora c'e', e mostra anche le uscite registrate col GPS.
+      TROVATO E CORRETTO un difetto vero del calcolo del dislivello sui file
+      importati: con la regola del tracciamento dal vivo una traccia da
+      orologio con altimetro barometrico dava ZERO metri di dislivello.
+      Vedi leggimi.txt.
+   -> STIMA FATTA PRIMA (2026-07-27, su tua richiesta). ESITO: lo spazio NON
+      e' un ostacolo. Misurato sul database
       vero: 33,45 MB occupati su 512, margine libero 478,55 MB. Un file .gpx
       di una giornata da 5 ore, convertito e semplificato, costa circa 30 KB.
       Con 4 utenti e 5 file al mese fanno 7,2 MB all'anno, cioe' l'1,5% del

@@ -2904,6 +2904,180 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* ==========================================================================
+   STORICO USCITE E CARICAMENTO .GPX — punto 15 di cose_da_fare.txt
+
+   Come per i badge: nessuna @media, la griglia usa auto-fill/minmax e il
+   numero di colonne lo decide lo spazio disponibile.
+   ========================================================================== */
+.gpx-import-card {
+    padding: 18px 20px;
+    margin-bottom: 18px;
+}
+
+.gpx-import-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.gpx-import-head h4 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.gpx-import-head h4 i,
+.gpx-import-head h4 svg {
+    width: 18px;
+    height: 18px;
+    color: var(--accent-orange);
+}
+
+/* Senza min-width il testo non si restringe e il pulsante finisce fuori dal
+   riquadro: e' lo stesso min-width:0 gia' imparato impilando Dashboard e Zaino,
+   scritto qui fuori dalle @media perche' dipende dalla larghezza del
+   CONTENITORE e non dello schermo. */
+.gpx-import-head > div:first-child {
+    flex: 1 1 260px;
+    min-width: 0;
+}
+
+.gpx-import-actions {
+    flex-shrink: 0;
+}
+
+.gpx-import-result {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-top: 14px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    border: 1px solid var(--border-color);
+}
+
+.gpx-import-result > i,
+.gpx-import-result > svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.gpx-import-result > span { min-width: 0; }
+
+.gpx-import-result.ok {
+    background: rgba(76, 122, 68, 0.12);
+    border-color: rgba(76, 122, 68, 0.45);
+}
+.gpx-import-result.ok > i,
+.gpx-import-result.ok > svg { color: var(--accent-green); }
+
+.gpx-import-result.errore {
+    background: rgba(168, 59, 46, 0.12);
+    border-color: rgba(168, 59, 46, 0.45);
+}
+.gpx-import-result.errore > i,
+.gpx-import-result.errore > svg { color: var(--accent-red); }
+
+.gpx-import-result.attesa {
+    background: rgba(76, 126, 144, 0.10);
+    border-color: rgba(76, 126, 144, 0.35);
+}
+.gpx-import-result.attesa > i,
+.gpx-import-result.attesa > svg {
+    color: var(--accent-blue);
+    animation: spin 1.1s linear infinite;
+}
+
+.gpx-import-warn {
+    margin-top: 8px;
+    font-size: 0.78rem;
+    color: var(--accent-tan);
+}
+
+.outings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 14px;
+}
+
+.outing-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    padding: 16px;
+    min-width: 0;
+}
+
+.outing-card-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.outing-card-title {
+    font-weight: 600;
+    color: var(--color-text-primary);
+    overflow-wrap: anywhere;
+}
+
+/* L'etichetta "importata"/"registrata" non deve andare a capo lettera per lettera
+   quando il titolo e' lungo. */
+.outing-tag {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+    font-size: 0.65rem;
+}
+
+.outing-tag i,
+.outing-tag svg { width: 11px; height: 11px; }
+
+.outing-card-sub {
+    display: block;
+    margin-top: 2px;
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+}
+
+.outing-card-stats {
+    display: flex;
+    gap: 14px;
+    margin-top: 14px;
+    flex-wrap: wrap;
+}
+
+.outing-card-stats div {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.outing-card-stats strong {
+    font-size: 1.15rem;
+    color: var(--accent-orange);
+    line-height: 1.2;
+}
+
+.outing-card-stats span {
+    font-size: 0.68rem;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ==========================================================================
    BADGE — punto 18 di cose_da_fare.txt
 
    Nessuna @media qui sotto, di proposito: la griglia usa auto-fill/minmax,
@@ -3366,6 +3540,15 @@ h1, h2, h3, h4, h5, h6 {
     .stamps-grid {
         grid-template-columns: 1fr 1fr;
         gap: 12px;
+    }
+
+    /* Punto 15: lo storico delle uscite e' l'ultima cosa della pagina "Le mie escursioni",
+       e il pulsante flottante a scarpone - fisso in basso a destra - ne copriva l'angolo
+       anche scorrendo fino in fondo. MISURATO: l'ultima scheda arrivava a 804px con il
+       pulsante a partire da 760. Il padding-bottom di .page-container non bastava, quindi
+       lo spazio si aggiunge qui dove serve. */
+    #my-hikes {
+        padding-bottom: 80px;
     }
 
     /* --- Zaino su schermo stretto (punto 23) ---

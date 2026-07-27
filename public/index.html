@@ -712,6 +712,44 @@
                         <p class="small text-muted">Escursioni che hai segnato come completate.</p>
                         <div class="hikes-grid" id="my-hikes-done"></div>
                     </div>
+
+                    <!-- STORICO USCITE + CARICAMENTO .GPX (punto 15 di cose_da_fare.txt) -->
+                    <!-- Le uscite registrate col GPS non si vedevano da nessuna parte: finivano
+                         solo dentro i tre totali della Dashboard. Qui c'è l'elenco, e qui si
+                         caricano i file .gpx delle uscite fatte prima di usare il sito. -->
+                    <div class="my-hikes-group">
+                        <h3 class="my-hikes-group-title">
+                            <i data-lucide="route"></i> Uscite registrate
+                            <span class="badge badge-accent" id="count-outings">0</span>
+                        </h3>
+                        <p class="small text-muted">
+                            I percorsi che hai registrato col GPS, più quelli che carichi da file.
+                        </p>
+
+                        <div class="glass-card gpx-import-card">
+                            <div class="gpx-import-head">
+                                <div>
+                                    <h4><i data-lucide="upload"></i> Carica un file .gpx</h4>
+                                    <p class="small text-muted">
+                                        Hai le tracce di uscite fatte prima di usare Camoscio? Caricale qui
+                                        per averle nello storico e nei totali.
+                                        <span id="gpx-quota-note"></span>
+                                    </p>
+                                </div>
+                                <div class="gpx-import-actions">
+                                    <!-- L'input vero resta nascosto: il file si sceglie dal pulsante,
+                                         che è coerente col resto dei comandi del sito. -->
+                                    <input type="file" id="gpx-file-input" accept=".gpx,application/gpx+xml" hidden>
+                                    <button class="btn btn-primary" id="btn-gpx-choose">
+                                        <i data-lucide="file-up"></i> Scegli il file
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="gpx-import-result" class="gpx-import-result hidden"></div>
+                        </div>
+
+                        <div id="outings-list"></div>
+                    </div>
                 </section>
 
                 <!-- BADGE (punto 18 di cose_da_fare.txt) -->
@@ -1607,6 +1645,7 @@
     <script src="js/carpool.js"></script>
     <script src="js/social.js"></script>
     <script src="js/badges.js"></script>
+    <script src="js/storico.js"></script>
     <!-- Punto 26: permessi di posizione e puntino blu. Prima di map.js, che gli si iscrive
          per disegnare il puntino, e di tracking.js, che gli passa i propri fix GPS. -->
     <script src="js/geolocation.js"></script>

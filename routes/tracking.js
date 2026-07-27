@@ -5,12 +5,42 @@ const Hike = require('../models/Hike');
 const TrailCandidate = require('../models/TrailCandidate');
 const { requireAuth } = require('../middleware/auth');
 const { isFiniteNum, haversineKm, simplifyTrack } = require('../lib/geometry');
+const { regionForPoint } = require('../lib/regions');
+const { parseGpx, statisticheTraccia, ErroreGpx } = require('../lib/gpx');
 const trailIndex = require('../lib/trailIndex');
+const { mongoose } = require('../db/mongo');
 
 const MAX_POINTS_PER_BATCH = 500; // un client onesto ne manda ~60-180 ogni 20-30s, mai a uno a uno
 const MIN_ELEVATION_DELTA_M = 3; // sotto questa soglia il "dislivello" e' rumore del GPS, non salita reale
 const SIMPLIFY_TOLERANCE_M = 8; // stessa scala dell'errore medio OSM (~10m) citato in tutto il progetto
 const MIN_CANDIDATE_POINTS = 5; // sotto questa lunghezza un tratto "fuori sentiero" e' solo rumore GPS, non un percorso da segnalare
+
+// --- Punto 15: caricamento di file .gpx ---
+// Cinque al mese per utente, come proposto dall'utente stesso. La stima dello spazio
+// fatta il 2026-07-27 dice che si potrebbe alzare parecchio (4 utenti x 5 file al mese
+// fanno 7,2 MB all'anno sui 478 liberi, cioe' l'1,5%), ma un tetto serve comunque:
+// senza, un solo caricamento automatico impazzito riempirebbe il database prima che
+// qualcuno se ne accorga. E' una valvola di sicurezza, non un razionamento.
+const MAX_GPX_AL_MESE = 5;
+// Il corpo della richiesta e' gia' limitato a 10 MB da express.json in server.js; qui
+// si ricontrolla sul TESTO del file perche' quel limite vale per l'intera richiesta e
+// perche' un rifiuto con un messaggio comprensibile e' meglio di un 413 muto.
+const MAX_BYTE_GPX = 10 * 1024 * 1024;
+// Quanti punti si guardano per decidere se la traccia sta nelle quattro regioni del
+// progetto: controllarli tutti su una traccia da 30.000 punti sarebbe sprecato, il
+// campione dice la stessa cosa.
+const CAMPIONE_REGIONE = 40;
+// Soglia del dislivello per le tracce IMPORTATE. E' 10 e non 3 come MIN_ELEVATION_DELTA_M
+// perche' i due numeri non misurano la stessa cosa: dal vivo i 3 metri sono il salto fra
+// DUE PUNTI CONSECUTIVI, qui i 10 metri sono quanto bisogna essere SALITI in tutto sopra
+// l'ultimo avvallamento perche' la salita venga contata (vedi statisticheTraccia).
+// Servono due regole diverse perche' i dati sono diversi: dal vivo i punti arrivano a
+// gruppi e il totale si aggiorna man mano, quindi non si puo' guardare tutta la traccia
+// insieme; qui il file c'e' tutto e si puo' fare il conto giusto.
+// Misurato: con la regola del singolo passo un tremolio di +-2 m su un percorso PIATTO
+// produceva 800 m di dislivello inventato; con questa produce zero, e una salita regolare
+// da 598 m ne conta 596.
+const SOGLIA_DISLIVELLO_IMPORT_M = 10;
 
 // Ripulisce un gruppo di punti mandati dal client: scarta tuple malformate o fuori dai
 // range possibili (lat/lng invalide), tollera l'altitudine mancante (frequente sui telefoni
@@ -136,6 +166,141 @@ router.get('/totals', requireAuth, async (req, res) => {
     } catch (e) {
         console.error('Errore nel calcolo dei totali di tracciamento:', e);
         res.status(500).json({ error: 'Impossibile calcolare i totali' });
+    }
+});
+
+// Elenco delle uscite gia' concluse dell'utente: lo storico.
+//
+// SERVIVA AL PUNTO 15 E NON ESISTEVA. Prima di oggi nessuna rotta e nessuna schermata
+// mostrava le sessioni passate: l'unica cosa che le leggeva era /totals, che ne ricava
+// tre numeri. Quindi ogni uscita registrata spariva dentro un totale, e un file .gpx
+// importato avrebbe fatto la stessa fine - l'utente avrebbe visto i chilometri salire
+// senza poter vedere l'uscita. Ma la richiesta e' esattamente "costruirsi uno storico".
+//
+// I punti GPS sono esclusi dalla risposta: sono la cosa piu' pesante del database e in
+// un elenco non servono. Chi vorra' rivedere il percorso sulla mappa lo chiedera' per
+// una traccia sola.
+router.get('/sessions', requireAuth, async (req, res) => {
+    try {
+        const sessioni = await ActiveHikeSession
+            .find({ userId: req.session.userId, status: 'ended' })
+            .select('-points -offTrailBuffer')
+            .sort({ startedAt: -1 })
+            .limit(200); // niente .lean(): durationSeconds e avgSpeedKmh sono virtuali dello schema
+        res.json(sessioni);
+    } catch (e) {
+        console.error('Errore lettura storico uscite:', e);
+        res.status(500).json({ error: 'Impossibile caricare lo storico' });
+    }
+});
+
+// --- PUNTO 15: importazione di una traccia .gpx come escursione gia' fatta ---
+//
+// Sta insieme al tracciamento e non in una rotta a parte perche' il risultato e'
+// esattamente lo stesso oggetto: una ActiveHikeSession conclusa. Cosi' una traccia
+// importata entra da sola nei totali della Dashboard ("Quanto hai camminato", punto 16)
+// senza aggiungere nessun collegamento nuovo - che e' poi il senso della richiesta,
+// "costruirsi uno storico anche delle uscite fatte prima di usare il sito".
+router.post('/import-gpx', requireAuth, async (req, res) => {
+    try {
+        const testo = req.body && req.body.gpx;
+        if (typeof testo !== 'string' || !testo.trim()) {
+            return res.status(400).json({ error: 'Nessun file .gpx ricevuto.' });
+        }
+        if (Buffer.byteLength(testo, 'utf8') > MAX_BYTE_GPX) {
+            return res.status(413).json({ error: 'Il file supera i 10 MB. Un\'escursione registrata normalmente pesa meno di 1 MB.' });
+        }
+
+        // Il tetto si conta sui caricamenti fatti QUESTO MESE, non sulle date delle
+        // escursioni: chi importa dieci uscite del 2019 le sta comunque caricando adesso.
+        // Il momento del caricamento e' gia' dentro l'_id del documento (ObjectId), quindi
+        // non serve un campo in piu' su ogni traccia - c'e' il vincolo hard sullo spazio.
+        const inizioMese = new Date();
+        inizioMese.setDate(1);
+        inizioMese.setHours(0, 0, 0, 0);
+        const sogliaId = mongoose.Types.ObjectId.createFromTime(Math.floor(inizioMese.getTime() / 1000));
+
+        const giaCaricati = await ActiveHikeSession.countDocuments({
+            userId: req.session.userId,
+            importedFrom: 'gpx',
+            _id: { $gte: sogliaId }
+        });
+        if (giaCaricati >= MAX_GPX_AL_MESE) {
+            const prossimo = new Date(inizioMese);
+            prossimo.setMonth(prossimo.getMonth() + 1);
+            return res.status(429).json({
+                error: `Hai gia' caricato ${giaCaricati} file questo mese (il massimo e' ${MAX_GPX_AL_MESE}). Potrai caricarne altri dal ${prossimo.toLocaleDateString('it-IT')}.`
+            });
+        }
+
+        // Lettura del file. Gli errori di parseGpx hanno gia' un messaggio scritto per
+        // l'utente (flag .utente): si rimanda quello invece di un generico "file non valido",
+        // perche' i motivi sono diversi fra loro e alcuni si risolvono (usare l'esportazione
+        // giusta dell'app, non un itinerario progettato).
+        let letto;
+        try {
+            letto = parseGpx(testo);
+        } catch (e) {
+            if (e instanceof ErroreGpx || e.utente) return res.status(400).json({ error: e.message });
+            throw e;
+        }
+
+        // Vincolo geografico del progetto: Marche, Lazio, Abruzzo, Molise. Si guarda un
+        // campione di punti e si chiede che la MAGGIORANZA sia dentro, invece del solo punto
+        // di partenza come fa la creazione di un'escursione: un sentiero di crinale entra ed
+        // esce dai confini di continuo, e bocciare una traccia per il punto in cui si e'
+        // premuto "avvia" sarebbe un rifiuto a caso.
+        const passo = Math.max(1, Math.floor(letto.punti.length / CAMPIONE_REGIONE));
+        let dentro = 0, esaminati = 0;
+        for (let i = 0; i < letto.punti.length; i += passo) {
+            esaminati++;
+            if (regionForPoint(letto.punti[i][0], letto.punti[i][1])) dentro++;
+        }
+        if (dentro * 2 <= esaminati) {
+            return res.status(400).json({
+                error: 'Questa traccia si svolge fuori dalle quattro regioni coperte dal sito (Marche, Lazio, Abruzzo, Molise).'
+            });
+        }
+
+        // Statistiche PRIMA di semplificare, sui dati completi: e' la stessa regola gia'
+        // seguita a fine registrazione in Fase F. Semplificare serve a risparmiare spazio
+        // sul disegno della linea, non a cambiare quanti chilometri hai camminato.
+        const { distanzaKm, dislivelloM } = statisticheTraccia(letto.punti, SOGLIA_DISLIVELLO_IMPORT_M, haversineKm);
+        const puntiSemplificati = simplifyTrack(letto.punti, SIMPLIFY_TOLERANCE_M);
+
+        const sessione = await ActiveHikeSession.create({
+            userId: req.session.userId,
+            hikeId: null,
+            status: 'ended',
+            startedAt: letto.inizio,
+            lastPointAt: letto.fine,
+            endedAt: letto.fine,
+            distanceKm: distanzaKm,
+            elevationGainM: dislivelloM,
+            points: puntiSemplificati,
+            importedFrom: 'gpx',
+            importedName: (letto.nome || '').slice(0, 120) || undefined
+            // openSession NON impostato di proposito: una traccia importata e' gia' conclusa,
+            // e l'indice unico parziale su openSession impedirebbe di caricarne una seconda
+            // mentre una registrazione dal vivo e' in corso.
+        });
+
+        res.json({
+            id: sessione._id,
+            nome: sessione.importedName || null,
+            distanzaKm,
+            dislivelloM,
+            durataSecondi: sessione.durationSeconds,
+            puntiLetti: letto.punti.length,
+            puntiSalvati: puntiSemplificati.length,
+            inizio: letto.inizio,
+            avvisi: letto.avvisi,
+            caricatiQuestoMese: giaCaricati + 1,
+            massimoAlMese: MAX_GPX_AL_MESE
+        });
+    } catch (e) {
+        console.error('Errore importazione .gpx:', e);
+        res.status(500).json({ error: 'Non e\' stato possibile importare il file. Riprova.' });
     }
 });
 
