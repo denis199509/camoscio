@@ -271,6 +271,34 @@ l'abbia chiesto. Oggi riguarda 2 account reali, entrambi con indirizzi validi.
   due difetti estetici (pulsante sottolineato, e un secondo collegamento che diceva la
   stessa cosa del pulsante sopra). Nessun controllo automatico se ne accorge.
 
+--- PROVATO DAL VIVO SUL SITO ONLINE (2026-07-28): FUNZIONA, MA FINISCE NELLO SPAM ---
+
+- L'EMAIL ARRIVA. Servizio scelto: MAILJET (Brevo chiede la partita IVA, vedi sotto).
+  Un account Mailjet nuovo va VALIDATO DA LORO prima di poter spedire: finche' non lo
+  e', ogni invio viene rifiutato. E' quello che ha fatto emergere la gestione a tre
+  stati descritta sopra.
+- PROVATO SENZA VOLERLO ANCHE L'ANNULLAMENTO DEL LINK PRECEDENTE: l'utente ha cliccato
+  il link della prima richiesta, gia' annullato dalla seconda, e la pagina ha risposto
+  come doveva ("questo link non e' piu' valido" piu' il rimando al sito). Cioe' anche
+  quel comportamento e' confermato in produzione, non solo in locale.
+- L'EMAIL FINISCE NELLA POSTA INDESIDERATA, ed e' il problema vero rimasto.
+  LA CAUSA NON E' IL TESTO NE' LA CONFIGURAZIONE: si manda "da: <indirizzo Gmail>"
+  passando dai server di Mailjet. Per Gmail quello e' il profilo tipico di chi si
+  finge un altro, quindi i filtri alzano la guardia. NON si sistema configurando
+  meglio Mailjet: per dimostrare che Mailjet e' autorizzato a scrivere per conto di
+  quell'indirizzo servirebbe mettere mano ai record DNS di gmail.com, che e' di
+  Google.
+  QUANTO COSTA DAVVERO: per i due account attuali e' una seccatura (si sa dove
+  guardare); per chiunque si registri in futuro l'email non la trova, e per lui il
+  recupero password di fatto non esiste.
+  L'UNICA SOLUZIONE VERA e' un DOMINIO PROPRIO (pochi euro all'anno) verificato su
+  Mailjet con SPF e DKIM, cosi' le email partono da un indirizzo autenticato. E' la
+  stessa spesa che toglie anche l'altro limite (poter scrivere a chiunque): non e' un
+  caso, e' sempre lo stesso problema - senza dominio non si puo' dimostrare di essere
+  se stessi. NON E' STATO FATTO: e' una spesa, e la decisione e' dell'utente.
+  MITIGAZIONE GIA' IN PIEDI: il messaggio di conferma dice "Controlla anche la posta
+  indesiderata". Non risolve, ma non lascia nessuno a cercare a vuoto.
+
 --- BREVO NON SI PUO' USARE: CHIEDE LA PARTITA IVA (scoperto il 2026-07-28) ---
 
 L'utente ha provato a iscriversi e si e' fermato: Brevo chiede DATI AZIENDALI, partita
@@ -3560,15 +3588,17 @@ DA DOVE SI RIPARTE — situazione al 2026-07-28
     /reimposta-password risponde 200, home e demo pure). Il CAMBIO PASSWORD DAL
     PROFILO funziona gia' del tutto, senza bisogno di nessuna chiave.
 
->>> IL RECUPERO PASSWORD E' ONLINE MA NON PUO' ANCORA MANDARE EMAIL, e lo dice a
-    schermo invece di prometterle. BREVO E' SALTATO: chiede la partita IVA, che
-    l'utente non ha. Le tre strade rimaste, con il loro costo vero, sono nella
-    sezione "PUNTO 7: COM'E' ANDATA" in cima al file - da leggere PRIMA di iscriversi
-    da qualche parte, perche' il vincolo che conta (scrivere solo al proprio indirizzo
-    senza un dominio) non e' ovvio e taglierebbe fuori il secondo account reale.
-    Quando il servizio sara' scelto: chiave nelle variabili di Render, e poi va
-    chiesta all'utente la conferma dal sito vero che l'email arriva davvero,
-    GUARDANDO ANCHE LA POSTA INDESIDERATA.
+>>> IL RECUPERO PASSWORD FUNZIONA ONLINE: provato dall'utente sul sito vero il
+    2026-07-28, l'email arriva. Servizio: MAILJET (Brevo e' saltato, chiede la partita
+    IVA). Le variabili sono gia' impostate su Render.
+
+>>> RESTA UN PROBLEMA VERO, NON RISOLTO: L'EMAIL FINISCE NELLO SPAM, perche' si manda
+    da un indirizzo Gmail passando dai server di Mailjet e per Gmail e' il profilo di
+    chi si finge un altro. Non si sistema configurando: servirebbe un DOMINIO PROPRIO
+    (pochi euro all'anno) con SPF e DKIM. Per i due account attuali e' una seccatura;
+    per chi si registrasse in futuro vuol dire che il recupero non funziona davvero.
+    E' una spesa, quindi la decisione e' dell'utente. Dettagli e conseguenze nella
+    sezione "PUNTO 7: COM'E' ANDATA" in cima al file.
 
 >>> LA DECISIONE SUL CANALE DI INVIO NON E' PIU' IN SOSPESO. Teneva fermi tre punti
     (7, 22 e la seconda meta' del 21). Il canale ora esiste ed e' scritto

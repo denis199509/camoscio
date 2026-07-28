@@ -137,7 +137,9 @@ Da pianificare e implementare in una sessione futura.
       un'ALTRA persona, quella persona puo' prendersi il suo account. Non e' risolvibile
       senza verificare le email al momento dell'iscrizione. Oggi riguarda 2 account reali,
       entrambi con indirizzi validi.
-      DECISO IL CANALE DI INVIO: Brevo, API HTTP (piano gratuito, 300 email al giorno).
+      DECISO IL CANALE DI INVIO: MAILJET, API HTTP (piano gratuito, 200 email al giorno).
+      Si era scelto Brevo, ma chiede la partita IVA: cambiare fornitore ha voluto dire
+      toccare SOLO lib/mailer.js, che e' il motivo per cui l'invio era stato isolato li'.
       MOTIVO TECNICO: Render gratuito BLOCCA le porte SMTP (25, 465, 587), quindi
       Gmail/Nodemailer non partirebbero una volta online; le chiamate HTTPS passano.
       Sul vincolo hard "tutto open source": il progetto dipende gia' da Render e MongoDB
@@ -148,7 +150,15 @@ Da pianificare e implementare in una sessione futura.
       dimenticata. Ora c'e', nella card "Il Tuo Profilo", e chiede quella vecchia.
       109 controlli in due prove (53 contro il server, 56 nel browser a 1440 e 390 px),
       tutti passati, database identico a prima. Vedi leggimi.txt per i dettagli.
-      ONLINE dal 2026-07-28. Il CAMBIO PASSWORD DAL PROFILO funziona gia' del tutto.
+      ONLINE E PROVATO DAL VIVO dall'utente il 2026-07-28: l'email arriva davvero.
+      Servizio scelto: MAILJET (Brevo chiede la partita IVA). Provato senza volerlo
+      anche l'annullamento del link precedente, e si comporta come deve.
+      RESTA UN PROBLEMA VERO: L'EMAIL FINISCE NELLA POSTA INDESIDERATA, perche' si
+      manda da un indirizzo Gmail passando dai server di Mailjet. Non si sistema
+      configurando: servirebbe un DOMINIO PROPRIO (pochi euro all'anno) con SPF e
+      DKIM. Per i due account di adesso e' una seccatura; per chi si registrasse in
+      futuro vuol dire che il recupero non funziona davvero. Decisione dell'utente.
+      Il CAMBIO PASSWORD DAL PROFILO funziona gia' del tutto.
       RESTA SOLO IL SERVIZIO DI INVIO, e BREVO E' SALTATO: chiede la partita IVA, che
       l'utente non ha. Il codice non va riscritto - l'invio sta tutto in lib/mailer.js.
       Finche' non c'e' una chiave, il sito NON promette email che non partono: dice
