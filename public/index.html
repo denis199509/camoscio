@@ -408,6 +408,24 @@
                 </div>
             </div>
 
+            <!-- Promemoria di conferma dell'indirizzo email. Sta qui, accanto alla fascia
+                 di emergenza, perche' e' il posto delle comunicazioni che devono restare
+                 visibili da qualunque schermata.
+                 NON e' rossa: non e' un allarme, e usare il colore dell'emergenza per un
+                 promemoria toglierebbe forza a quello vero. La mostra app.js solo a chi
+                 non ha ancora confermato e non e' un account demo. -->
+            <div id="email-verify-banner" class="verify-banner hidden">
+                <div class="verify-banner-content">
+                    <i data-lucide="mail"></i>
+                    <span>
+                        <strong>Conferma il tuo indirizzo email.</strong>
+                        Ti abbiamo mandato un link: serve per poterti far recuperare la password
+                        se un giorno la dimentichi. Controlla anche la posta indesiderata.
+                    </span>
+                    <button class="btn btn-sm btn-primary" id="btn-resend-verification">Rimanda l'email</button>
+                </div>
+            </div>
+
             <!-- Area Pagine Dinamiche -->
             <div class="page-container">
                 

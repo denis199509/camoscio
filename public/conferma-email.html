@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Il token sta nell'indirizzo: senza questo, aprendo un collegamento da questa
+         pagina il token finirebbe nell'intestazione Referer verso l'altro sito. -->
+    <meta name="referrer" content="no-referrer">
+    <title>Camoscio - Conferma il tuo indirizzo</title>
+    <link rel="stylesheet" href="vendor/fonts/fonts.css">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="demo-page-body">
+    <div class="demo-page-card reset-card">
+        <h2>🏔️ CAMOSCIO</h2>
+
+        <!-- Stato 1: si sta confermando. Non c'e' niente da compilare, quindi la pagina
+             fa tutto da sola: e' l'unica differenza vera dalla pagina del recupero. -->
+        <div id="stato-verifica">
+            <p class="text-muted" style="margin-top:16px;">Sto confermando il tuo indirizzo…</p>
+        </div>
+
+        <!-- Stato 2: confermato. -->
+        <div id="stato-fatto" class="hidden">
+            <p class="auth-subtitle" style="margin-top:16px;">✅ Indirizzo confermato.</p>
+            <p class="text-muted small">
+                Grazie. Ora, se un giorno dimentichi la password, possiamo mandarti il link
+                per reimpostarla a questo indirizzo.
+            </p>
+            <a href="/" class="btn btn-primary btn-block" style="margin-top:18px;">Vai al sito</a>
+        </div>
+
+        <!-- Stato 3: link scaduto, gia' usato o inventato. -->
+        <div id="stato-scaduto" class="hidden">
+            <p class="auth-subtitle" style="margin-top:16px;">Questo link non è più valido.</p>
+            <p class="text-muted small">
+                I link di conferma valgono <strong>24 ore</strong> e si possono usare
+                <strong>una volta sola</strong>. Se ne hai chiesto un altro dopo questo,
+                vale solo l'ultimo che ti è arrivato.
+            </p>
+            <p class="text-muted small">
+                Può anche darsi che tu abbia <strong>già confermato</strong>: in quel caso è
+                tutto a posto e non devi fare niente.
+            </p>
+            <p class="text-muted small">
+                Se invece devi ancora farlo, entra nel sito: in cima trovi il pulsante per
+                farti rimandare l'email.
+            </p>
+            <a href="/" class="btn btn-primary btn-block" style="margin-top:18px;">Vai al sito</a>
+        </div>
+    </div>
+
+    <script>
+        // Il token arriva dall'indirizzo. Si legge subito e poi si toglie dalla barra
+        // degli indirizzi, cosi' non resta nella cronologia del browser.
+        const token = new URLSearchParams(window.location.search).get('token') || '';
+
+        function mostra(idStato) {
+            ['stato-verifica', 'stato-fatto', 'stato-scaduto'].forEach(id => {
+                document.getElementById(id).classList.toggle('hidden', id !== idStato);
+            });
+        }
+
+        async function conferma() {
+            if (!token) {
+                mostra('stato-scaduto');
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/auth/verify-email', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token })
+                });
+                mostra(res.ok ? 'stato-fatto' : 'stato-scaduto');
+            } catch (e) {
+                // Rete assente: NON si dice "link non valido", che sarebbe falso e farebbe
+                // buttare via un link ancora buono. Si dice cos'e' successo davvero.
+                mostra('stato-scaduto');
+                document.querySelector('#stato-scaduto .auth-subtitle').textContent =
+                    'Non riesco a contattare il server. Controlla la connessione e ricarica la pagina.';
+            }
+        }
+
+        if (token) {
+            history.replaceState(null, '', window.location.pathname);
+        }
+
+        conferma();
+    </script>
+</body>
+</html>

@@ -134,9 +134,10 @@ Da pianificare e implementare in una sessione futura.
       prova di possedere la casella. Chi ha sbagliato a digitare l'indirizzo in
       registrazione semplicemente non riceve niente, e non subisce nessun danno.
       RESIDUO ONESTO: se in registrazione uno ha scritto per sbaglio l'indirizzo di
-      un'ALTRA persona, quella persona puo' prendersi il suo account. Non e' risolvibile
-      senza verificare le email al momento dell'iscrizione. Oggi riguarda 2 account reali,
-      entrambi con indirizzi validi.
+      un'ALTRA persona, quella persona puo' prendersi il suo account.
+      -> AFFRONTATO LO STESSO GIORNO, su tua proposta: vedi il punto 34 qui sotto
+         (verifica dell'indirizzo email in registrazione). Il buco e' RIDOTTO, non
+         eliminato - il motivo e' scritto li'.
       DECISO IL CANALE DI INVIO: MAILJET, API HTTP (piano gratuito, 200 email al giorno).
       Si era scelto Brevo, ma chiede la partita IVA: cambiare fornitore ha voluto dire
       toccare SOLO lib/mailer.js, che e' il motivo per cui l'invio era stato isolato li'.
@@ -816,3 +817,35 @@ diverse, e oggi il progetto mostra solo la lunghezza.
    rumore (era gia' successo con le tracce GPS: un percorso piatto dava 800 m di
    dislivello inventato). Meglio nessun numero che un numero sbagliato, su un dato
    che serve a decidere se un'escursione e' sicura per te.
+
+34) [FATTO 2026-07-28] Verifica dell'indirizzo email in registrazione. NON era in nessuna
+lista: l'hai proposta tu subito dopo il punto 7, ed e' quella che chiude il buco lasciato
+aperto li'.
+   COME FUNZIONA: ti registri ed ENTRI SUBITO, come prima. Ti arriva un'email di conferma
+   con un link che vale 24 ore. Finche' non confermi, in cima al sito c'e' una fascia che
+   te lo ricorda, con un tasto "Rimanda l'email". Confermato, la fascia sparisce.
+   LE TUE TRE SCELTE: entrare subito con avviso (non bloccati); il recupero password
+   richiede la conferma; i due account gia' esistenti devono confermare anche loro.
+   LA REGOLA CHE NE DERIVA, rispettata nel codice: un errore di invio NON PUO' far fallire
+   una registrazione. Entrare nel sito non deve mai dipendere da un servizio esterno - se
+   Mailjet si guasta, iscriversi deve funzionare lo stesso. C'e' una prova apposta.
+   IL PEZZO PIU' DELICATO: chiedendo il recupero password con un indirizzo non ancora
+   confermato, parte l'email di CONFERMA invece di quella di reimpostazione. La risposta a
+   schermo resta IDENTICA a quella di un account confermato e a quella di un indirizzo che
+   non esiste - altrimenti quel modulo direbbe a chiunque chi e' iscritto e in che stato.
+   RESIDUO ONESTO, da sapere: questo RIDUCE il problema, non lo elimina. Se l'indirizzo e'
+   di un'altra persona, quella riceve la conferma e - se la clicca - puo' comunque
+   prendersi l'account. La differenza vera e' che NON SUCCEDE PIU' IN SILENZIO: chi sbaglia
+   a digitare non riceve niente e se ne accorge subito, invece di avere un account
+   apparentemente sano che qualcun altro puo' reclamare mesi dopo.
+   La decisione di Fase C ("email solo salvata, nessuna verifica") NON VALE PIU'.
+   147 controlli in sei prove, tutti passati, database identico a prima.
+   Vedi leggimi.txt per i dettagli.
+
+35) [DA VALUTARE] Difetto preesistente trovato facendo il punto 34, NON corretto perche'
+non c'entra con quel lavoro: refreshState() in public/js/app.js non guarda lo stato delle
+risposte. Con la sessione scaduta, /api/stamps/:id risponde {error:...} invece di un
+elenco, e la mappa va in errore (db.stamps.some non e' una funzione). Nell'app vera si
+vede poco perche' il logout ricarica sempre la pagina, ma capita a chi resta con la pagina
+aperta oltre la scadenza della sessione. La correzione e' piccola: controllare res.ok
+dentro fetchApi prima di usare il risultato.

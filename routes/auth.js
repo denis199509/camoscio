@@ -1,14 +1,15 @@
 const express = require('express');
-const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const validator = require('validator');
 const router = express.Router();
 const User = require('../models/User');
 const PasswordReset = require('../models/PasswordReset');
+const EmailVerification = require('../models/EmailVerification');
 const { mongoose } = require('../db/mongo');
 const { chiudiTutteLeSessioni } = require('../db/sessionStore');
+const { trovaValido, creaToken } = require('../lib/tokens');
 const {
-    inviaEmail, emailRecuperoPassword, indirizzoBase,
+    inviaEmail, emailRecuperoPassword, emailVerificaIndirizzo, indirizzoBase,
     configurato: mailerConfigurato, inviiFunzionanti
 } = require('../lib/mailer');
 const { requireAuth } = require('../middleware/auth');
@@ -97,7 +98,21 @@ router.post('/register', async (req, res) => {
             emergencyContacts,
             geolocationConsent: !!geolocationConsent,
             privacySetting: privacySetting || 'Pubblico',
+            emailVerified: false, // si dimostra cliccando il link mandato qui sotto
             isDemoAccount: false
+        });
+
+        // L'INVIO NON PUO' FAR FALLIRE LA REGISTRAZIONE, ed e' una scelta esplicita
+        // dell'utente (2026-07-28): "chi si registra entra subito". Entrare nel sito non
+        // deve mai dipendere da un servizio esterno - se il servizio email si guasta,
+        // registrarsi deve funzionare lo stesso. E l'account e' gia' creato: un errore
+        // adesso mostrerebbe un messaggio di fallimento per una cosa riuscita, e la
+        // persona riproverebbe trovando "email gia' registrata".
+        // Stesso criterio gia' usato al punto 30 per l'assegnazione dei badge.
+        // Chi non riceve l'email puo' comunque farsela rimandare dalla fascia in cima al
+        // sito, quindi non resta bloccato in nessun caso.
+        await mandaEmailDiVerifica(user).catch((e) => {
+            console.error('Email di verifica non inviata (la registrazione e\' comunque riuscita):', e.message);
         });
 
         req.session.userId = user._id.toString();
@@ -250,27 +265,30 @@ function troppiTentativi(chiave, massimo) {
     return false;
 }
 
-// Del token si salva solo l'impronta: vedi il commento in models/PasswordReset.js.
-function impronta(token) {
-    return crypto.createHash('sha256').update(String(token)).digest('hex');
+// La logica dei token (generazione, impronta, controllo di scadenza, uso singolo) sta
+// in lib/tokens.js: la usano sia il recupero password sia la verifica dell'indirizzo,
+// e una copia per ciascuno vorrebbe dire due controlli di scadenza che possono divergere.
+function trovaTokenRecupero(token) {
+    return trovaValido(PasswordReset, token, PasswordReset.DURATA_LINK_SECONDI);
 }
 
-// Cerca il documento del token e ne verifica la validita'.
-// LA SCADENZA SI RICONTROLLA QUI e non ci si affida solo alla cancellazione automatica di
-// MongoDB: quella passa ogni ~60 secondi, quindi un token scaduto puo' restare sul
-// database fino a un minuto in piu'. Senza questo controllo, per quel minuto varrebbe.
-async function trovaTokenValido(token) {
-    if (typeof token !== 'string' || token.length < 20) return null;
+function trovaTokenVerifica(token) {
+    return trovaValido(EmailVerification, token, EmailVerification.DURATA_LINK_SECONDI);
+}
 
-    const documento = await PasswordReset.findOne({ tokenHash: impronta(token) });
-    if (!documento) return null;
-
-    const eta = Date.now() - new Date(documento.createdAt).getTime();
-    if (eta > PasswordReset.DURATA_LINK_SECONDI * 1000) {
-        await PasswordReset.deleteOne({ _id: documento._id }); // scaduto: si toglie subito
-        return null;
-    }
-    return documento;
+// Crea il link di conferma dell'indirizzo e lo manda. Usata in tre punti: alla
+// registrazione, quando si chiede di rimandarla, e quando si chiede il recupero password
+// di un account non ancora confermato.
+// Ritorna true se l'email e' partita davvero.
+async function mandaEmailDiVerifica(user) {
+    const token = await creaToken(EmailVerification, user._id);
+    const link = `${indirizzoBase()}/conferma-email?token=${token}`;
+    const { oggetto, testo, html } = emailVerificaIndirizzo({
+        nome: user.nome || user.username,
+        link,
+        durataOre: Math.round(EmailVerification.DURATA_LINK_SECONDI / 3600)
+    });
+    return inviaEmail({ a: user.email, oggetto, testo, html });
 }
 
 // Passo 1: si chiede il link.
@@ -331,14 +349,23 @@ router.post('/forgot-password', async (req, res) => {
             return res.json(rispostaGenerica);
         }
 
-        // NE VALE UNO SOLO PER VOLTA: chiedendo un secondo link, il primo smette di
-        // funzionare. Cosi' un link vecchio rimasto in una casella non resta buono.
-        await PasswordReset.deleteMany({ userId: user._id });
+        // INDIRIZZO NON ANCORA CONFERMATO: si manda l'email di CONFERMA invece di quella
+        // di reimpostazione. E' il motivo per cui esiste la verifica: finche' nessuno ha
+        // dimostrato di possedere questa casella, mandarci dentro un link che cambia la
+        // password vorrebbe dire consegnare l'account a chiunque essa sia.
+        // NON si risponde "devi prima confermare": la risposta a schermo resta IDENTICA,
+        // altrimenti si scoprirebbe dall'esterno quali indirizzi sono registrati e in che
+        // stato. E non si tace nemmeno: senza mandare niente, una persona in buona fede
+        // aspetterebbe per sempre un'email che non arriva. L'email di conferma le dice
+        // cosa fare e la riporta esattamente dove voleva andare.
+        if (!user.emailVerified) {
+            await mandaEmailDiVerifica(user);
+            return res.json(rispostaGenerica);
+        }
 
-        // 256 bit dal generatore crittografico di Node: non indovinabile, nessuna libreria
-        // in piu'. base64url perche' finisce dentro un indirizzo web.
-        const token = crypto.randomBytes(32).toString('base64url');
-        await PasswordReset.create({ userId: user._id, tokenHash: impronta(token) });
+        // creaToken annulla i link precedenti: NE VALE UNO SOLO PER VOLTA, cosi' un link
+        // vecchio rimasto in una casella non resta buono.
+        const token = await creaToken(PasswordReset, user._id);
 
         const link = `${indirizzoBase()}/reimposta-password?token=${token}`;
         const { oggetto, testo, html } = emailRecuperoPassword({
@@ -360,7 +387,7 @@ router.post('/forgot-password', async (req, res) => {
 // ha ancora dimostrato niente - lo dimostra usandolo.
 router.get('/reset-password/check', async (req, res) => {
     try {
-        const documento = await trovaTokenValido(req.query.token);
+        const documento = await trovaTokenRecupero(req.query.token);
         res.json({ valid: !!documento });
     } catch (e) {
         console.error('Errore verifica token recupero:', e);
@@ -377,7 +404,7 @@ router.post('/reset-password', async (req, res) => {
             return res.status(400).json({ error: `La password deve avere almeno ${MIN_PASSWORD} caratteri` });
         }
 
-        const documento = await trovaTokenValido(token);
+        const documento = await trovaTokenRecupero(token);
         if (!documento) {
             return res.status(400).json({ error: 'Questo link non è più valido: potrebbe essere scaduto o già usato. Chiedine un altro.' });
         }
@@ -462,6 +489,117 @@ router.post('/change-password', requireAuth, async (req, res) => {
     } catch (e) {
         console.error('Errore cambio password:', e);
         res.status(500).json({ error: 'Errore interno durante il cambio password' });
+    }
+});
+
+// =====================================================================================
+// VERIFICA DELL'INDIRIZZO EMAIL (chiesta dall'utente il 2026-07-28)
+//
+// A COSA SERVE: in Fase C si era deciso "email SOLO SALVATA, nessuna verifica reale",
+// quindi nessuno aveva mai dimostrato di possedere l'indirizzo scritto in registrazione.
+// Col recupero password (punto 7) quel buco e' diventato concreto: chi scrive per sbaglio
+// l'indirizzo di un'ALTRA persona le consegna la possibilita' di prendersi l'account.
+//
+// COSA RISOLVE DAVVERO, detto senza esagerare: RIDUCE il problema, non lo elimina. Se
+// l'indirizzo e' di un altro, quello riceve la conferma e - se la clicca - puo' comunque
+// prendersi l'account. La differenza vera e' che NON SUCCEDE PIU' IN SILENZIO: chi
+// sbaglia a digitare non riceve niente e se ne accorge subito, invece di avere un account
+// apparentemente sano che qualcun altro puo' reclamare mesi dopo.
+//
+// SI ENTRA COMUNQUE SENZA AVER CONFERMATO, per scelta esplicita dell'utente: entrare nel
+// sito non deve mai dipendere da un servizio esterno. Quello che NON si puo' fare senza
+// conferma e' il recupero password - vedi /forgot-password piu' sopra.
+// =====================================================================================
+
+// La pagina chiede "questo link vale ancora?" prima di dire qualunque cosa.
+// Risponde solo si'/no, come la gemella del recupero password.
+router.get('/verify-email/check', async (req, res) => {
+    try {
+        const documento = await trovaTokenVerifica(req.query.token);
+        res.json({ valid: !!documento });
+    } catch (e) {
+        console.error('Errore verifica token email:', e);
+        res.json({ valid: false });
+    }
+});
+
+// Conferma vera e propria.
+// NON RICHIEDE DI ESSERE COLLEGATI: il link puo' arrivare sul telefono mentre ci si era
+// registrati dal computer, e chiedere di entrare prima renderebbe la conferma un giro a
+// vuoto. Il token stesso e' la prova che serve.
+// E NON FA ENTRARE NEL SITO: dimostrare di avere una casella non e' dimostrare di
+// conoscere la password. Chi clicca il link da un dispositivo altrui non deve trovarsi
+// dentro l'account.
+router.post('/verify-email', async (req, res) => {
+    try {
+        const documento = await trovaTokenVerifica(req.body && req.body.token);
+        if (!documento) {
+            return res.status(400).json({ error: 'Questo link non è più valido: potrebbe essere scaduto o già usato. Puoi fartene mandare un altro dal sito.' });
+        }
+
+        const user = await User.findById(documento.userId);
+        if (!user) {
+            await EmailVerification.deleteOne({ _id: documento._id });
+            return res.status(400).json({ error: 'Questo link non è più valido.' });
+        }
+
+        // updateOne e non save(): save() rivaliderebbe tutto il documento, e un campo
+        // rimasto irregolare da una versione precedente del modello farebbe fallire una
+        // conferma che non c'entra niente. Stesso motivo del punto 7.
+        await User.updateOne({ _id: user._id }, { $set: { emailVerified: true } });
+
+        // USA E GETTA, come il link di recupero.
+        await EmailVerification.deleteOne({ _id: documento._id });
+
+        res.json({ success: true });
+    } catch (e) {
+        console.error('Errore conferma indirizzo email:', e);
+        res.status(500).json({ error: 'Errore interno durante la conferma' });
+    }
+});
+
+// "Rimanda l'email": il pulsante della fascia in cima al sito.
+// Qui requireAuth ha senso (a differenza della conferma): chi lo preme e' gia' dentro, e
+// l'indirizzo si prende dalla sessione invece che da quello che manda il client -
+// altrimenti diventerebbe un modo per far arrivare email a chiunque.
+router.post('/resend-verification', requireAuth, async (req, res) => {
+    try {
+        const user = await User.findById(req.session.userId);
+        if (!user) {
+            return res.status(401).json({ error: 'Devi effettuare il login' });
+        }
+        if (user.isDemoAccount || !user.email) {
+            return res.status(400).json({ error: 'Questo account non ha un indirizzo email da confermare.' });
+        }
+        if (user.emailVerified) {
+            return res.json({ success: true, message: 'Il tuo indirizzo è già confermato.' });
+        }
+
+        // Stesso freno del recupero password: senza, il pulsante diventerebbe un modo per
+        // riempire la propria casella e consumare la quota giornaliera del servizio.
+        if (troppiTentativi(`verifica:${user._id}`, MAX_PER_EMAIL)) {
+            return res.status(429).json({ error: "Hai già chiesto l'email poche volte fa. Controlla anche la posta indesiderata, e riprova fra un'ora." });
+        }
+
+        if (!inviiFunzionanti()) {
+            return res.status(503).json({ error: "In questo momento non riusciamo a mandare email. Riprova più tardi: puoi continuare a usare il sito." });
+        }
+
+        // L'ESITO SI CHIEDE A CHI SPEDISCE, non si indovina prima guardando la
+        // configurazione. Un controllo preventivo su mailerConfigurato() qui sembrava
+        // innocuo e invece faceva divergere due strade che mandano LA STESSA email: la
+        // registrazione usava il ripiego sul terminale, questa lo rifiutava. Due
+        // comportamenti diversi per la stessa cosa sono sempre un difetto in agguato in
+        // uno dei due (lezione del punto 18, vedi leggimi.txt).
+        const partita = await mandaEmailDiVerifica(user);
+        if (!partita) {
+            return res.status(503).json({ error: "Non siamo riusciti a mandare l'email. Riprova fra un po'." });
+        }
+
+        res.json({ success: true, message: "Ti abbiamo mandato l'email. Controlla anche la posta indesiderata." });
+    } catch (e) {
+        console.error('Errore invio email di verifica:', e);
+        res.status(500).json({ error: 'Errore interno' });
     }
 });
 

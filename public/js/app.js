@@ -204,6 +204,9 @@ async function initApp() {
         if (window.initStorico) window.initStorico();
         if (window.initRoutePlanner) window.initRoutePlanner(); // punto 13
 
+        // Fascia "conferma il tuo indirizzo email"
+        setupEmailVerifyBanner();
+
         // Forza il render della dashboard iniziale
         renderDashboard();
 
@@ -563,6 +566,50 @@ async function renderTrackingTotals() {
         // letto come "non hai mai camminato", che e' un'informazione sbagliata.
         if (nota) nota.textContent = "Non è stato possibile caricare i totali. Riprova più tardi.";
     }
+}
+
+// Fascia in cima al sito per chi non ha ancora confermato l'indirizzo email.
+// LA REGOLA: si vede solo se l'utente NON ha confermato E non e' un account demo. I 4
+// account demo entrano senza password dalla pagina /demo e non hanno un indirizzo: per
+// loro la fascia sarebbe un invito a fare una cosa impossibile.
+function setupEmailVerifyBanner() {
+    const banner = document.getElementById("email-verify-banner");
+    const bottone = document.getElementById("btn-resend-verification");
+    const usr = window.CamoscioState.currentUser;
+    if (!banner || !usr) return;
+
+    const daConfermare = !usr.isDemoAccount && !usr.emailVerified;
+    banner.classList.toggle("hidden", !daConfermare);
+    if (!daConfermare) return;
+
+    if (bottone && !bottone.dataset.collegato) {
+        // dataset.collegato evita di agganciare due volte lo stesso ascoltatore se questa
+        // funzione venisse richiamata: due invii per un solo clic consumerebbero il freno
+        // anti-abuso al doppio della velocita'.
+        bottone.dataset.collegato = "1";
+        bottone.addEventListener("click", async () => {
+            bottone.disabled = true;
+            const testoIniziale = bottone.textContent;
+            bottone.textContent = "Invio…";
+            try {
+                const res = await fetch('/api/auth/resend-verification', { method: 'POST' });
+                const dati = await res.json();
+                if (res.ok) {
+                    window.showToast(dati.message || "Ti abbiamo mandato l'email.", "success");
+                } else {
+                    window.showToast(dati.error || "Non è stato possibile mandare l'email.", "error");
+                }
+            } catch (e) {
+                console.error("Errore nel rinvio dell'email di conferma:", e);
+                window.showToast("Impossibile contattare il server. Riprova.", "error");
+            } finally {
+                bottone.disabled = false;
+                bottone.textContent = testoIniziale;
+            }
+        });
+    }
+
+    if (window.lucide) lucide.createIcons();
 }
 
 // Aggiorna la card "Il Tuo Profilo" (verifica KYC, esperto locale)

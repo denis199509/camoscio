@@ -14,7 +14,10 @@ const MAX_PHOTO_LENGTH = 2 * 1024 * 1024;
 // perche' esistono solo per identificazione reale (es. contatti di emergenza) e non devono
 // mai essere mostrati al posto dello username (vedi leggimi.txt) - mancavano qui (bug trovato
 // in Fase H), quindi trapelavano a chiunque tramite GET /api/users.
-const ALWAYS_PRIVATE_FIELDS = ['email', 'emergencyContacts', 'birthDate', 'ageRange', 'geolocationConsent', 'termsAcceptedAt', 'nome', 'cognome'];
+// "emailVerified" sta qui in coppia con "email": se un indirizzo non e' visibile agli
+// altri, non deve esserlo nemmeno il suo stato. Sapere chi non ha ancora confermato
+// indicherebbe a un estraneo quali account sono piu' facili da contestare.
+const ALWAYS_PRIVATE_FIELDS = ['email', 'emailVerified', 'emergencyContacts', 'birthDate', 'ageRange', 'geolocationConsent', 'termsAcceptedAt', 'nome', 'cognome'];
 // Campi del "profilo pubblico" (sezione 6/9 della registrazione) governati da privacySetting
 const PRIVACY_GATED_FIELDS = ['bio', 'profilePhoto', 'interests', 'hikingLevel', 'preferredDifficulty', 'geoPreferences'];
 

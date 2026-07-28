@@ -414,6 +414,50 @@ h1, h2, h3, h4, h5, h6 {
     font-size: 0.9rem;
 }
 
+/* Promemoria "conferma il tuo indirizzo email". Stessa forma della fascia di emergenza
+   ma NON rossa: e' un promemoria, non un allarme, e riusare il colore dell'emergenza per
+   una cosa che puo' aspettare toglierebbe forza a quella vera. */
+.verify-banner {
+    background: var(--accent-green-glow);
+    border-bottom: 1px solid var(--accent-green);
+    color: var(--color-text-primary);
+    padding: 10px 24px;
+    flex-shrink: 0;
+    z-index: 97; /* sotto la fascia di emergenza: se ci sono entrambe, conta prima quella */
+}
+
+.verify-banner-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 0.85rem;
+}
+
+/* Il testo si prende lo spazio che avanza, cosi' il pulsante non viene schiacciato. */
+.verify-banner-content span {
+    flex: 1;
+    min-width: 0;
+}
+
+.verify-banner-content .btn {
+    flex-shrink: 0;
+}
+
+/* Su telefono in orizzontale non ci starebbero: testo sopra, pulsante sotto.
+   Senza questa regola il pulsante finisce fuori dallo schermo - e' lo stesso difetto
+   gia' corretto altrove (vedi leggimi.txt, punto 9 e blocco 2). */
+@media (max-width: 700px) {
+    .verify-banner {
+        padding: 10px 16px;
+    }
+
+    .verify-banner-content {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+}
+
 .emergency-banner-content i {
     width: 18px;
     height: 18px;

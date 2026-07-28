@@ -55,6 +55,17 @@ const userSchema = new mongoose.Schema({
     nome: { type: String, required: requiredUnlessDemo },
     cognome: { type: String, required: requiredUnlessDemo },
     email: { type: String, unique: true, sparse: true, lowercase: true, trim: true },
+    // L'indirizzo e' stato DIMOSTRATO, cliccando il link di conferma mandato in
+    // registrazione. In Fase C si era deciso "email solo salvata, nessuna verifica": quella
+    // decisione e' caduta il 2026-07-28, quando il canale di invio ha cominciato a
+    // funzionare davvero (vedi leggimi.txt).
+    // NESSUNA MIGRAZIONE E' SERVITA: sui documenti creati prima il campo non c'e', e un
+    // campo assente vale gia' "non verificato" - che e' proprio quello che si vuole, perche'
+    // di quegli indirizzi nessuno ha mai dimostrato niente.
+    // NON e' fra i campi modificabili dal proprietario (SELF_EDITABLE_FIELDS in
+    // routes/users.js): quella e' una lista bianca, quindi nessuno puo' marcarsi verificato
+    // da solo con una PUT.
+    emailVerified: { type: Boolean, default: false },
     passwordHash: { type: String, select: false },
     birthDate: { type: Date, default: null },
     ageRange: { type: String, enum: ['18-29', '30-39', '40-49', '50-59', '60+', null], default: null },

@@ -72,6 +72,13 @@ app.get('/reimposta-password', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'reimposta-password.html'));
 });
 
+// Pagina di conferma dell'indirizzo email: ci si arriva dal link mandato in
+// registrazione. Non richiede di essere collegati - il link puo' arrivare sul telefono
+// mentre ci si era registrati dal computer.
+app.get('/conferma-email', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'conferma-email.html'));
+});
+
 // Creazione della cartella per le note vocali del diario se non esiste
 const uploadsPath = path.join(__dirname, 'public', 'uploads');
 if (!fs.existsSync(uploadsPath)) {

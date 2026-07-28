@@ -1,8 +1,10 @@
 ===================================================================
 CAMOSCIO — LEGGIMI (stato progetto, aggiornato automaticamente)
-Ultimo aggiornamento: 2026-07-28 — PUNTO 7 (recupero password) FATTO E CHIUSO.
-Era l'ultimo punto rimasto in sospeso da una decisione. Vedi la sezione dedicata
-subito sotto.
+Ultimo aggiornamento: 2026-07-28 — PUNTO 7 (recupero password) FATTO E CHIUSO, e
+poi fatta anche la VERIFICA DELL'INDIRIZZO EMAIL in registrazione, che l'utente ha
+proposto subito dopo e che chiude il buco lasciato aperto dal punto 7. Vedi le due
+sezioni dedicate subito sotto.
+LA DECISIONE DI FASE C "email SOLO SALVATA, nessuna verifica reale" NON VALE PIU'.
 Il 2026-07-27, TERZA sessione della giornata: fatto e chiuso il PUNTO 13 (percorso
 multi-punto sui sentieri).
 Il 2026-07-27, SECONDA sessione: fatti i
@@ -89,6 +91,109 @@ LE LISTE DETTATE DALL'UTENTE, stato aggiornato:
    le verifiche automatiche non potevano fare, ed e' servita: ha trovato un
    difetto vero al primo colpo.
 ===================================================================
+
+===================================================================
+VERIFICA DELL'INDIRIZZO EMAIL IN REGISTRAZIONE (2026-07-28)
+===================================================================
+
+--- DA DOVE NASCE ---
+
+L'ha proposta l'utente subito dopo il punto 7, e chiudeva il buco che il punto 7 aveva
+lasciato aperto e dichiarato: in Fase C si era deciso "email SOLO SALVATA, nessuna
+verifica reale", quindi chi scriveva per sbaglio l'indirizzo di UN'ALTRA PERSONA le
+consegnava la possibilita' di prendersi l'account col recupero password.
+QUELLA DECISIONE DI FASE C NON VALE PIU' per la registrazione. Il canale email adesso
+funziona davvero (Mailjet), quindi la verifica ha una base vera.
+
+--- LE TRE SCELTE DELL'UTENTE ---
+
+ 1. CHI SI REGISTRA ENTRA SUBITO, con una fascia che ricorda di confermare.
+    LA RAGIONE VA RISPETTATA SCRIVENDO IL CODICE: entrare nel sito non deve mai dipendere
+    da un servizio esterno. Se Mailjet si guasta - o l'email finisce nello spam, come
+    succede oggi - registrarsi deve funzionare lo stesso. Quindi UN ERRORE DI INVIO NON
+    PUO' MAI FAR FALLIRE UNA REGISTRAZIONE, e c'e' una prova apposta che lo verifica
+    avviando un secondo server con chiavi finte.
+ 2. IL RECUPERO PASSWORD RICHIEDE LA CONFERMA. E' il motivo per cui la verifica esiste.
+ 3. I DUE ACCOUNT GIA' ESISTENTI DEVONO CONFERMARE ANCHE LORO. Dell'indirizzo dell'utente
+    si sa che e' vero (l'email e' arrivata), dell'altro NO: darlo per buono sarebbe la
+    scorciatoia che questo lavoro serve a togliere.
+    NESSUNA MIGRAZIONE E' SERVITA: sui documenti creati prima il campo non c'e', e un
+    campo assente vale gia' "non verificato".
+
+--- IL PEZZO PIU' DELICATO: IL RECUPERO SU UN ACCOUNT NON CONFERMATO ---
+
+Chiedendo il recupero password con un indirizzo non ancora confermato, parte l'email di
+CONFERMA invece di quella di reimpostazione.
+ - NON si risponde "devi prima confermare": la risposta a schermo resta IDENTICA a quella
+   di un account confermato E a quella di un indirizzo che non esiste. Altrimenti quel
+   modulo direbbe a chiunque quali indirizzi sono registrati e in che stato. Ci sono tre
+   controlli apposta che confrontano le tre risposte fra loro.
+ - E NON SI TACE: senza mandare niente, una persona in buona fede aspetterebbe per sempre
+   un'email che non arriva. L'email di conferma le dice cosa fare e la riporta dove
+   voleva andare.
+
+--- IL RESIDUO, DETTO CHIARO ---
+
+QUESTO LAVORO RIDUCE IL PROBLEMA, NON LO ELIMINA. Se l'indirizzo scritto in registrazione
+e' di un'altra persona, quella riceve la conferma e - se la clicca - puo' comunque
+prendersi l'account.
+LA DIFFERENZA VERA E' CHE NON SUCCEDE PIU' IN SILENZIO: chi sbaglia a digitare non riceve
+niente e se ne accorge subito, invece di avere un account apparentemente sano che
+qualcun altro puo' reclamare mesi dopo.
+E' scritto qui invece di far credere che il buco sia sparito.
+
+--- I PEZZI ---
+
+- lib/tokens.js: generazione, impronta, controllo di scadenza e uso singolo dei token.
+  ESTRATTA da routes/auth.js PRIMA di scriverne una seconda copia, per la lezione del
+  punto 18: quando lo stesso blocco compare due volte, la differenza fra le copie e'
+  quasi sempre un difetto rimasto aperto in una sola. Qui erano il confronto delle
+  impronte e il controllo di scadenza.
+- models/EmailVerification.js: 24 ORE, non un'ora come il recupero. Un recupero lo si
+  chiede davanti allo schermo; una conferma arriva quando arriva, e farla scadere in
+  un'ora vorrebbe dire costringere quasi tutti a chiederne un'altra.
+- public/conferma-email.html: nessun modulo, verifica e mostra l'esito. NON richiede di
+  essere collegati (il link puo' arrivare sul telefono mentre ci si era registrati dal
+  computer) e NON fa entrare nel sito (avere una casella non e' sapere la password).
+- La fascia in cima: NON rossa. Riusa la forma di quella di emergenza ma non il colore -
+  usare il rosso dell'emergenza per un promemoria toglierebbe forza a quello vero.
+  Si vede solo se l'utente non ha confermato E non e' un account demo.
+- emailVerified e' in ALWAYS_PRIVATE_FIELDS e NON in SELF_EDITABLE_FIELDS di
+  routes/users.js. La seconda cosa e' gratis: quella e' una LISTA BIANCA, quindi un campo
+  nuovo e' escluso di default. C'e' comunque un controllo che PROVA DAVVERO a mettersi
+  emailVerified:true con una PUT, invece di darlo per buono.
+
+--- TROVATO STRADA FACENDO ---
+
+- DUE STRADE PER LA STESSA EMAIL SI ERANO GIA' MESSE A DIVERGERE, e le ha scoperte la
+  prova nel browser: "rimanda l'email" controllava la configurazione PRIMA di provare a
+  spedire, mentre la registrazione usava il ripiego che stampa il messaggio sul terminale.
+  Stessa email, due comportamenti. Corretto chiedendo l'esito a chi spedisce invece di
+  indovinarlo prima. E inviaEmail ora, quando le chiavi mancano, risponde "consegnata"
+  SOLO in locale - li' il terminale E' la casella di posta - e mai in produzione.
+- LE PROVE PIU' VECCHIE NON PULIVANO I TOKEN DI CONFERMA, perche' prima non esistevano:
+  hanno lasciato 3 documenti orfani sul database. Trovati perche' i conteggi si
+  ricontrollano SEMPRE a fine sessione. Aggiunta la pulizia a tutte le prove che
+  registrano account.
+- DIFETTO PREESISTENTE TROVATO E NON CORRETTO (non c'entra con questo lavoro):
+  refreshState() in public/js/app.js non guarda lo stato delle risposte, quindi con una
+  sessione scaduta /api/stamps/:id restituisce {error:...} invece di un elenco e
+  map.js:789 va in errore su db.stamps.some. Nell'app vera si vede poco perche' il logout
+  ricarica sempre la pagina, ma capiterebbe a chi resta con la pagina aperta oltre la
+  scadenza della sessione. DA VALUTARE A PARTE: si corregge in fetchApi, controllando
+  res.ok prima di usare il risultato.
+
+--- COME E' STATO VERIFICATO ---
+
+- 147 controlli in sei prove, tutti passati: 34 sulla verifica via API, 38 nel browser a
+  1440 e 390 px, 7 sulla registrazione che sopravvive al guasto dell'invio, piu' i 53 del
+  punto 7 (rifatti dopo l'estrazione di lib/tokens.js), 9 sulla configurazione e 6 sullo
+  stato di guasto.
+- DATABASE IDENTICO A PRIMA, conteggi letti all'inizio e riconfrontati alla fine.
+- UN FALLIMENTO ERA DELLA PROVA, non del sito: usciva dal logout senza ricaricare la
+  pagina, cioe' creava uno stato che usando il sito non esiste (performLogout ricarica
+  sempre). E' cosi' che e' emerso il difetto preesistente qui sopra.
+
 
 ===================================================================
 PUNTO 7: COM'E' ANDATA (2026-07-28) - recupero e cambio password
@@ -2477,8 +2582,12 @@ DECISIONI PRESE CON L'UTENTE (non richiedere di nuovo)
 - Estrazione dati sentieri OpenStreetMap: TUTTO IN NODE.JS, niente Python
   (Python non è nemmeno installato su questo PC, solo lo stub Microsoft
   Store — NON installarlo, non serve)
-- Email in registrazione: SOLO SALVATA, nessuna verifica reale via email.
-  ANCORA VERO PER LA REGISTRAZIONE. La seconda meta' di questa decisione
+- [SUPERATA IL 2026-07-28] Email in registrazione: SOLO SALVATA, nessuna
+  verifica reale via email.
+  NON VALE PIU': ora la registrazione manda un'email di conferma con un link che
+  vale 24 ore, e il recupero password funziona solo per gli indirizzi confermati.
+  Vedi la sezione "VERIFICA DELL'INDIRIZZO EMAIL IN REGISTRAZIONE" in cima al file.
+  La seconda meta' di questa decisione
   ("niente servizio esterno tipo Resend/Brevo") e' stata CAMBIATA
   DALL'UTENTE il 2026-07-28: per il recupero password si usa BREVO con la
   sua API HTTP. Motivo tecnico: Render gratuito blocca le porte SMTP, e
@@ -3583,6 +3692,13 @@ DA DOVE SI RIPARTE — situazione al 2026-07-28
     password dal profilo che prima non esisteva affatto.
     105 controlli (51 via API, 54 nel browser a 1440 e 390 px), tutti passati,
     database identico a prima. Dettagli: sezione "PUNTO 7: COM'E' ANDATA" in cima.
+
+>>> FATTA ANCHE LA VERIFICA DELL'INDIRIZZO EMAIL IN REGISTRAZIONE (2026-07-28),
+    proposta dall'utente subito dopo il punto 7. Chi si registra entra subito ma vede
+    una fascia finche' non conferma, e il recupero password funziona solo per gli
+    indirizzi confermati. I DUE ACCOUNT ESISTENTI risultano NON confermati e vedranno
+    la fascia: e' voluto. 147 controlli in sei prove, tutti passati.
+    Dettagli e residuo onesto: sezione dedicata in cima al file.
 
 >>> GIA' ONLINE dal 2026-07-28 (commit 983e709, deploy Render verificato: la pagina
     /reimposta-password risponde 200, home e demo pure). Il CAMBIO PASSWORD DAL
