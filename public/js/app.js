@@ -216,9 +216,23 @@ async function initApp() {
 }
 
 // Aggiorna lo stato globale richiamando le API
+// Segnala una sola volta che la sessione e' scaduta: refreshState viene richiamato a ogni
+// cambio di sezione, quindi senza questo l'avviso comparirebbe a ripetizione.
+let sessioneScadutaGiaSegnalata = false;
+
 async function refreshState() {
+    // Ogni risposta va controllata PRIMA di usarla (punto 35). Con la sessione scaduta il
+    // server risponde 401 con {error:...} al posto dell'elenco atteso: senza questo controllo
+    // finiva dritto nello stato globale, e i moduli che ci lavorano sopra cadevano
+    // (map.js -> "db.stamps.some non e' una funzione"). Meglio NON aggiornare lo stato che
+    // aggiornarlo con dati che elenchi non sono: quello di prima e' comunque valido.
     const fetchApi = async (url) => {
         const res = await fetch(url);
+        if (!res.ok) {
+            const errore = new Error(`${url} ha risposto ${res.status}`);
+            errore.status = res.status;
+            throw errore;
+        }
         return res.json();
     };
 
@@ -262,6 +276,20 @@ async function refreshState() {
             renderNotificationBell();
         }
     } catch (e) {
+        if (e.status === 401) {
+            // Sessione scaduta con la pagina rimasta aperta. Lo stato NON viene toccato e si
+            // avvisa una volta sola. NON si ricarica la pagina da soli di proposito: se e' in
+            // corso una registrazione GPS, farla sparire senza preavviso sarebbe peggio del
+            // problema. Chi ricarica torna alla schermata di accesso, come dopo il logout.
+            console.warn("Sessione scaduta: lo stato non e' stato aggiornato.", e);
+            if (!sessioneScadutaGiaSegnalata) {
+                sessioneScadutaGiaSegnalata = true;
+                if (window.showToast) {
+                    window.showToast("La sessione e' scaduta. Ricarica la pagina per rientrare.", "error");
+                }
+            }
+            return;
+        }
         console.error("Impossibile contattare le API locali. Assicurarsi che il server node sia attivo.", e);
     }
 }

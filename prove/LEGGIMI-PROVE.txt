@@ -29,6 +29,10 @@ poi, in un'altra finestra:
     node prove/prova-configurazione.js               9 controlli  (non serve il server)
     node prove/prova-registrazione-senza-email.js    7 controlli  (ne avvia uno suo sulla 3100)
 
+La prova del PUNTO 35 vuole anche Puppeteer (vedi sotto), ma non legge il log:
+
+    PUPPETEER_PATH=... node prove/prova-punto35.js  16 controlli
+
 Se il log sta altrove: CAMOSCIO_LOG=percorso/del/file.log node prove/...
 
 
@@ -81,3 +85,23 @@ segnalavano qualcosa di diverso da un difetto del sito:
  - una prova che si aspettava il messaggio ottimista mentre il sito - giustamente - stava
    dicendo che l'invio non era configurato.
 Solo la terza ha trovato qualcosa di vero, e non era quello che stava cercando.
+
+Il 2026-07-28, seconda sessione, e' successo altre due volte:
+ - prova-browser-punto7.js si fermava a 20 controlli su 56. Non era il sito: era il PUNTO
+   34, fatto lo stesso giorno ma DOPO che questa prova era scritta, ad aver cambiato di
+   proposito il comportamento (con un indirizzo non confermato parte l'email di conferma,
+   non quella di reimpostazione). La prova aspettava un link che giustamente non arrivava
+   piu' e moriva su page.goto(undefined), portandosi via anche tutto il giro a 390 px.
+   REGOLA CHE NE DERIVA: quando si cambia il comportamento del sito, le prove scritte
+   PRIMA di quel cambio vanno rilanciate nella stessa sessione. Una prova che fallisce per
+   il motivo sbagliato e' peggio di una che manca, perche' sembra copertura;
+ - la prova nuova del punto 35 fotografava lo stato appena hikes risultava popolato, ma
+   refreshState carica timbri, completamenti e notifiche DOPO: la fotografia prendeva
+   stamps ancora vuoto. Stessa trappola del punto 32 - si aspetta un effetto vero, non un
+   momento plausibile.
+
+E UNA REGOLA NUOVA, dalla prova del punto 35:
+ - UNA PROVA CHE NON FALLISCE MAI NON STA PROVANDO NIENTE. Dopo averla scritta, si rimette
+   per un attimo il codice VECCHIO e si verifica che fallisca davvero. Sulla prova del
+   punto 35: 6 controlli su 16 cadono col codice di prima. Senza questo passaggio non si
+   sa se sta guardando quello che dice di guardare.

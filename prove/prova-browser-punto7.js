@@ -80,6 +80,16 @@ async function aspetta(page, fn, descrizione, timeout = 15000) {
         const utente = await Utenti.findOne({ email: emailProva });
         idDiProva.push(utente._id);
 
+        // L'INDIRIZZO VA SEGNATO COME CONFERMATO, altrimenti questa prova non prova piu'
+        // niente. Dal punto 34 (fatto lo stesso giorno, DOPO che questa prova era scritta)
+        // chiedere il recupero con un indirizzo non confermato manda - giustamente - l'email
+        // di CONFERMA invece di quella di reimpostazione: il link di reimpostazione non
+        // arrivava, e da li' in poi la prova moriva su page.goto(undefined) senza eseguire
+        // nulla del resto, compreso l'intero giro a 390 px.
+        // Si fa sul database come nella prova via API: qui interessa il recupero password,
+        // non il flusso di conferma, che ha gia' la sua prova (prova-verifica-email.js).
+        await Utenti.updateOne({ _id: utente._id }, { $set: { emailVerified: true } });
+
         browser = await puppeteer.launch({ headless: 'new' });
 
         for (const schermo of [{ nome: 'COMPUTER 1440x900', width: 1440, height: 900 },

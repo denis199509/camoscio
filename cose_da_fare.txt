@@ -842,10 +842,28 @@ aperto li'.
    147 controlli in sei prove, tutti passati, database identico a prima.
    Vedi leggimi.txt per i dettagli.
 
-35) [DA VALUTARE] Difetto preesistente trovato facendo il punto 34, NON corretto perche'
-non c'entra con quel lavoro: refreshState() in public/js/app.js non guarda lo stato delle
+35) [FATTO 2026-07-28, seconda sessione] Difetto preesistente trovato facendo il punto 34, NON corretto
+allora perche' non c'entrava con quel lavoro: refreshState() in public/js/app.js non guarda lo stato delle
 risposte. Con la sessione scaduta, /api/stamps/:id risponde {error:...} invece di un
 elenco, e la mappa va in errore (db.stamps.some non e' una funzione). Nell'app vera si
 vede poco perche' il logout ricarica sempre la pagina, ma capita a chi resta con la pagina
 aperta oltre la scadenza della sessione. La correzione e' piccola: controllare res.ok
 dentro fetchApi prima di usare il risultato.
+   -> FATTO, e IL DIFETTO ERA PIU' LARGO di come e' scritto qui sopra. Non riguardava solo
+      i timbri: con la sessione scaduta TUTTE le risposte sono 401 con {error:...}, quindi
+      users, hikes, reports, diaries, squads e bookmarks diventavano ANCH'ESSI oggetti al
+      posto di elenchi, e finivano dritti nello stato globale dell'app. Misurato durante la
+      prova: sei elenchi su nove corrotti in un colpo solo.
+      Ora fetchApi controlla res.ok e si ferma: lo STATO NON VIENE TOCCATO. Meglio tenere i
+      dati di prima, che sono elenchi validi, che sostituirli con oggetti d'errore.
+      FATTO IN PIU', ed era il vero buco: il sito non DICEVA niente. Con la sola correzione
+      tecnica non ci sarebbero piu' stati errori, ma la pagina avrebbe smesso di aggiornarsi
+      in silenzio. Ora compare un avviso "la sessione e' scaduta, ricarica la pagina", UNA
+      VOLTA SOLA (refreshState viene richiamato a ogni cambio sezione).
+      NON SI RICARICA LA PAGINA DA SOLI, ed e' una scelta: se e' in corso una registrazione
+      GPS, farla sparire senza preavviso sarebbe peggio del problema che si sta risolvendo.
+      PROVA NUOVA: prove/prova-punto35.js, 16 controlli. Ricrea lo scenario vero (sessione
+      distrutta lato server con la pagina lasciata aperta) e non scrive niente sul database.
+      CONTROPROVA FATTA: rimettendo il codice vecchio la prova fallisce 6 controlli su 16,
+      quindi sta davvero provando qualcosa.
+      Rilanciate tutte le prove di accessi/password/email: 219 controlli, tutti passati.

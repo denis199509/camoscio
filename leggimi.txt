@@ -1,6 +1,15 @@
 ===================================================================
 CAMOSCIO — LEGGIMI (stato progetto, aggiornato automaticamente)
-Ultimo aggiornamento: 2026-07-28 — PUNTO 7 (recupero password) FATTO E CHIUSO, e
+Ultimo aggiornamento: 2026-07-28, SECONDA sessione della giornata — fatto il PUNTO 35
+(refreshState non guardava lo stato delle risposte) e, soprattutto, L'UTENTE HA FATTO LA
+PROVA ALL'APERTO DA TELEFONO VERO CAMMINANDO: "registra bene". Era l'ultima verifica che
+nessuna prova automatica poteva sostituire, aperta da tre sessioni. Vedi la sezione
+"DA DOVE SI RIPARTE" in fondo.
+SCOPERTO CONTROLLANDO IL DATABASE in questa sessione: l'account di Denis RISULTA ORA
+CONFERMATO (emailVerified: true), quello dell'altro account reale no. Il punto A di "DA DOVE SI
+RIPARTE" vale quindi solo piu' per il secondo.
+-------------------------------------------------------------------
+Aggiornamento precedente: 2026-07-28 — PUNTO 7 (recupero password) FATTO E CHIUSO, e
 poi fatta anche la VERIFICA DELL'INDIRIZZO EMAIL in registrazione, che l'utente ha
 proposto subito dopo e che chiude il buco lasciato aperto dal punto 7. Vedi le due
 sezioni dedicate subito sotto.
@@ -91,6 +100,81 @@ LE LISTE DETTATE DALL'UTENTE, stato aggiornato:
    le verifiche automatiche non potevano fare, ed e' servita: ha trovato un
    difetto vero al primo colpo.
 ===================================================================
+
+===================================================================
+PUNTO 35: COM'E' ANDATA (2026-07-28, seconda sessione)
+la pagina lasciata aperta oltre la scadenza della sessione
+===================================================================
+
+--- IL DIFETTO ERA PIU' LARGO DI COME ERA SCRITTO ---
+
+In cose_da_fare.txt il punto 35 parlava dei soli TIMBRI: "/api/stamps/:id risponde
+{error:...} invece di un elenco". Misurandolo nell'app vera si e' visto che riguardava
+quasi tutto: con la sessione scaduta il server risponde 401 a OGNI rotta, e fetchApi
+faceva res.json() senza guardare lo stato. Risultato, in un solo refreshState:
+
+    users, hikes, reports, diaries, squads, bookmarks  ->  {error:'Devi effettuare il login'}
+
+cioe' SEI elenchi su nove sostituiti da oggetti dentro lo stato globale. Da li' in poi
+cade qualunque modulo che ci lavori sopra (map.js su db.stamps.some era solo il primo a
+farsi sentire).
+CURIOSITA' UTILE PER IL FUTURO: nella prova, stamps a volte restava un elenco valido. Non
+perche' fosse salvo, ma perche' users.find() falliva PRIMA, interrompendo refreshState a
+meta'. Un difetto che si nasconde dietro un altro difetto: se ci si fosse fidati del solo
+controllo sui timbri, la correzione sarebbe sembrata inutile.
+
+--- LA CORREZIONE ---
+
+fetchApi controlla res.ok e lancia un errore con dentro lo stato. Quindi LO STATO NON
+VIENE TOCCATO AFFATTO: restano i dati di prima, che sono elenchi validi. Meglio dati
+vecchi che dati che elenchi non sono.
+
+--- QUELLO CHE MANCAVA DAVVERO: DIRLO ---
+
+Con la sola correzione tecnica non ci sarebbero stati piu' errori, ma la pagina avrebbe
+smesso di aggiornarsi IN SILENZIO - e chi la guarda non ha modo di capire perche'. Ora
+compare un avviso che la sessione e' scaduta e che va ricaricata la pagina.
+UNA VOLTA SOLA: refreshState viene richiamato a ogni cambio di sezione, quindi senza il
+promemoria l'avviso comparirebbe a ripetizione (c'e' un controllo apposta).
+NON SI RICARICA LA PAGINA DA SOLI, ed e' una scelta, non una dimenticanza: se e' in corso
+una registrazione GPS, farla sparire senza preavviso e' peggio del problema che si sta
+risolvendo. Chi ricarica torna alla schermata di accesso, come dopo il logout.
+
+--- COME E' STATO VERIFICATO ---
+
+- prove/prova-punto35.js, 16 controlli. Ricrea lo scenario VERO: si entra con un account
+  demo, si distrugge la sessione lato server chiamando /api/auth/logout a mano (il
+  pulsante ricarica la pagina, e ricaricando lo scenario sparirebbe), e poi si chiama
+  refreshState. NON SCRIVE NIENTE sul database.
+- CONTROPROVA, che e' la parte che conta: rimettendo il codice vecchio la prova fallisce
+  6 controlli su 16. Una prova che non fallisce mai non sta provando niente.
+- Rilanciate tutte le prove di accessi/password/email come prescritto: 219 controlli in
+  otto prove, tutti passati (9 + 53 + 34 + 6 + 7 + 56 + 38 + i 16 nuovi).
+- Database identico a prima: 6 utenti, 6 timbri, 2 escursioni.
+
+--- TROVATO STRADA FACENDO ---
+
+- LA PROVA prova-browser-punto7.js ERA ROTTA, e diceva di esserlo nel modo peggiore: si
+  fermava a 20 controlli su 56 senza che nessuno se ne fosse accorto. Causa: il punto 34,
+  fatto lo stesso giorno ma DOPO di lei, ha cambiato di proposito il comportamento -
+  chiedere il recupero con un indirizzo non confermato manda l'email di CONFERMA invece di
+  quella di reimpostazione. Il link di reimpostazione non arrivava mai, la prova moriva su
+  page.goto(undefined) e con esso spariva anche l'intero giro a 390 px.
+  Corretta segnando l'indirizzo come confermato dopo la registrazione, come gia' faceva la
+  prova via API. Ora torna a 56 su 56.
+  LA LEZIONE, che vale piu' della correzione: quando si cambia il comportamento del sito,
+  le prove scritte PRIMA di quel cambio vanno rilanciate nella stessa sessione. Una prova
+  che fallisce per il motivo sbagliato e' peggio di una che manca, perche' sembra
+  copertura.
+- IL FALLIMENTO DELLA PROVA NUOVA, al primo giro, ERA DELLA PROVA: fotografava lo stato
+  appena hikes risultava popolato, ma refreshState carica timbri, completamenti e notifiche
+  DOPO il primo gruppo di chiamate. La fotografia prendeva stamps ancora vuoto e il
+  confronto falliva da solo. Stessa trappola del punto 32 (aspettare currentUser non
+  basta): si aspetta un effetto vero, non un momento plausibile.
+- TRE DOCUMENTI DI CONFERMA EMAIL ORFANI sul database (userId che non esistono piu',
+  creati alle 16:04-16:06 dalle prove della sessione precedente). NON serve cancellarli a
+  mano: la collezione ha un indice TTL di 24 ore, quindi MongoDB li toglie da solo. Sono
+  gli stessi gia' segnalati nella sessione precedente - non se ne stanno accumulando altri.
 
 ===================================================================
 VERIFICA DELL'INDIRIZZO EMAIL IN REGISTRAZIONE (2026-07-28)
@@ -3690,12 +3774,35 @@ COME RIPRENDERE IL LAVORO IN UNA NUOVA SESSIONE
 
 
 ===================================================================
-DA DOVE SI RIPARTE — situazione al 2026-07-28
+DA DOVE SI RIPARTE — situazione al 2026-07-28, SECONDA sessione
 ===================================================================
 
-TUTTO E' SALVATO E ONLINE. Niente di sospeso a meta', niente script lasciati a girare,
-database pulito (nessun residuo di prova). Il deploy su Render e' stato verificato dopo
-ogni push.
+>>> LA PROVA ALL'APERTO DA TELEFONO VERO, CAMMINANDO, E' STATA FATTA. L'utente:
+    "ho fatto la prova al aperto, registra bene". Era l'ultima verifica che nessuna prova
+    automatica poteva sostituire, ed era aperta da tre sessioni: si puo' togliere da tutti
+    gli elenchi di cose da provare.
+    CHIESTO E CONFERMATO nella stessa sessione: ha usato anche IL TASTO DI REGISTRAZIONE
+    SULLA MAPPA ("Comincia registrazione", punto 14), e funziona. Quindi camminando sono
+    provati dal vivo sia il tracciamento sia il comando che lo avvia.
+    RESTA IL SOLO TASTO SOS mai premuto in montagna. Non e' una dimenticanza da rimediare
+    in fretta: e' il tasto che apre il 112, e provarlo sul serio vuol dire chiamare i
+    soccorsi. Se ne verifica al massimo la finestra con le coordinate, senza confermare la
+    chiamata - ed e' bene dirglielo cosi', invece di chiedergli genericamente di "provare
+    l'SOS".
+
+>>> FATTO IN QUESTA SESSIONE: il PUNTO 35 (refreshState non guardava lo stato delle
+    risposte). Sezione dedicata in cima al file. Con esso, dei 35 punti di
+    cose_da_fare.txt resta aperto SOLO IL 33 (dislivello nei percorsi progettati).
+
+>>> CAMBIATO SUL DATABASE, controllato in questa sessione: DENIS HA CONFERMATO IL SUO
+    INDIRIZZO EMAIL (emailVerified: true). L'ALTRO ACCOUNT REALE no. Quindi il punto A qui sotto vale
+    ormai solo per il secondo account.
+
+TUTTO E' SALVATO. Niente di sospeso a meta', niente script lasciati a girare, database
+identico a prima (6 utenti, 6 timbri, 2 escursioni).
+ATTENZIONE, DA FARE PRIMA DI CONSIDERARE CHIUSO IL PUNTO 35: la correzione e' provata in
+locale ma NON E' ANCORA STATA MANDATA ONLINE (nessun commit, nessun push). Il sito su
+Render ha ancora la versione di prima.
 
 LE PROVE AUTOMATICHE ORA SONO NEL PROGETTO, nella cartella prove/, con il loro
 LEGGIMI-PROVE.txt che spiega come lanciarle. Prima vivevano nella cartella temporanea e
@@ -3719,12 +3826,12 @@ GitHub (sono in .gitignore): si rigenerano da sole.
 
 --- LE TRE COSE DA SAPERE PRIMA DI TOCCARE QUALUNQUE COSA ---
 
- A) I DUE ACCOUNT REALI RISULTANO NON CONFERMATI, ed e' voluto (scelta esplicita
-    dell'utente: dell'indirizzo suo si sa che e' vero perche' l'email e' arrivata, di
-    quello dell'altra persona no). CONSEGUENZA PRATICA: vedono la fascia in cima al
-    sito, e FINCHE' NON CONFERMANO IL RECUPERO PASSWORD NON FUNZIONA PER LORO - al suo
-    posto ricevono l'email di conferma. Basta un clic sul link.
-    Se l'utente segnalasse "il recupero non mi manda niente", e' QUESTO, non un difetto.
+ A) [AGGIORNATO il 2026-07-28, seconda sessione: DENIS HA CONFERMATO. Resta il solo
+    secondo account reale non confermato.]
+    L'account non confermato vede la fascia in cima al sito, e FINCHE' NON CONFERMA IL
+    RECUPERO PASSWORD NON FUNZIONA PER LUI - al suo posto riceve l'email di conferma.
+    Basta un clic sul link.
+    Se l'utente segnalasse "il recupero non manda niente", e' QUESTO, non un difetto.
  B) LE EMAIL FINISCONO NELLA POSTA INDESIDERATA. Non e' configurabile: si manda da un
     indirizzo Gmail passando dai server di Mailjet, e per Gmail e' il profilo di chi si
     finge un altro. Servirebbe un DOMINIO PROPRIO (pochi euro all'anno) con SPF e DKIM.
@@ -3743,12 +3850,7 @@ GitHub (sono in .gitignore): si rigenerano da sole.
    piu' utile dei rimasti. I sentieri OSM non hanno la quota (0 su 15.228), quindi
    serve una fonte di altitudini: le tre strade sono elencate in cose_da_fare.txt al 33
    e NESSUNA e' ancora stata misurata. PRIMA MISURARE, come per il 15 e il 13.
- - PUNTO 35: difetto preesistente trovato facendo il 34 e NON corretto di proposito,
-   perche' non c'entrava con quel lavoro. refreshState() in public/js/app.js non guarda
-   lo stato delle risposte: con la sessione scaduta /api/stamps/:id risponde
-   {error:...} invece di un elenco e map.js:789 va in errore. La correzione e' piccola
-   (controllare res.ok dentro fetchApi). L'utente e' stato informato e non ha ancora
-   detto se farla.
+ - PUNTO 35: FATTO il 2026-07-28 nella seconda sessione. Da mandare online.
  - PUNTI 22 e 21-resto: NON sono piu' bloccati da nessuna decisione, perche' il canale
    di invio adesso esiste. Restano da fare per il loro lavoro proprio: il 21 ha bisogno
    del conto alla rovescia sul SERVER, che e' il pezzo grosso.
@@ -3757,11 +3859,14 @@ GitHub (sono in .gitignore): si rigenerano da sole.
 
 --- DA CHIEDERE ALL'UTENTE, quando gli e' comodo ---
 
- - Che confermi il suo indirizzo cliccando il link (chiude il punto A).
- - LA PROVA ALL'APERTO DA TELEFONO VERO, CAMMINANDO: tracciamento, tasto di
-   registrazione sulla mappa e tasto SOS. E' l'ultima cosa che nessuna prova automatica
-   puo' sostituire, e non blocca niente. Vale la pena ricordare come e' andata le volte
-   scorse: chiedergli di provare coi file veri ha trovato un difetto al primo colpo.
+ - [FATTO il 2026-07-28] La prova all'aperto camminando: "registra bene". Il
+   TRACCIAMENTO e' provato dal vivo.
+ - [CONFERMATO nella stessa sessione] Ha usato camminando anche il TASTO DI REGISTRAZIONE
+   sulla mappa, e funziona.
+ - Resta il solo TASTO SOS, mai premuto in montagna. Provarlo per davvero vuol dire
+   chiamare il 112: al massimo si guarda la finestra con le coordinate senza confermare
+   la chiamata, ed e' bene chiederglielo cosi' invece di dirgli "prova l'SOS".
+ - Che l'altra persona confermi il proprio indirizzo cliccando il link (chiude il punto A).
 
 -------------------------------------------------------------------
 Situazione al 2026-07-27, fine TERZA sessione (resta valida)
@@ -3900,7 +4005,11 @@ CHE COSA RESTA IN TUTTO, in mezza riga ciascuno:
  - punto 13             -> FATTO E CHIUSO il 2026-07-27, terza sessione.
 Tutti gli altri punti di cose_da_fare.txt (1-12, 14-20, 23-32) sono FATTI.
 
-DA CHIEDERE ALL'UTENTE PER PRIMA COSA: la prova all'aperto DA TELEFONO VERO,
+DA CHIEDERE ALL'UTENTE PER PRIMA COSA: [SUPERATO il 2026-07-28, seconda sessione -
+la prova all'aperto camminando E' STATA FATTA, "registra bene". Restano il tasto SOS
+e il tasto di registrazione sulla mappa - e il 2026-07-28, seconda sessione, ha confermato
+anche il secondo. Resta il solo tasto SOS.] Il testo originale:
+la prova all'aperto DA TELEFONO VERO,
 CAMMINANDO - tracciamento del percorso, tasto di registrazione sulla mappa e tasto
 SOS. E' l'ultima cosa che nessuna prova automatica puo' sostituire: Puppeteer
 simula un GPS che cammina, non l'imprecisione reale, i buchi di segnale e la
@@ -4111,12 +4220,15 @@ DEBITO TECNICO NOTO, non urgente ma da non dimenticare:
    (lib/trailIndex.js, ACTIVE_REGIONS = ['Lazio','Abruzzo']): il sito dice
    di coprire quattro regioni ma il puntino si aggancia ai sentieri solo
    in due. Da riattivare quando si e' sicuri che la memoria regga.
- - PROVA ALL'APERTO DA TELEFONO VERO, CAMMINANDO, ancora mai fatta. Quella
-   ferma e' stata fatta e ha dato esito buono (l'utente vede la sua
-   posizione, punti 26 e 28 chiusi), ma resta da provare in movimento il
-   tracciamento del percorso, il tasto di registrazione sulla mappa e il
-   tasto SOS: Puppeteer simula un GPS che cammina, non l'imprecisione
-   reale, i buchi di segnale e la batteria. Non blocca nessun punto.
+ - [AGGIORNATO il 2026-07-28, seconda sessione] PROVA ALL'APERTO DA TELEFONO
+   VERO, CAMMINANDO: FATTA. L'utente ha riferito "registra bene", quindi il
+   TRACCIAMENTO in movimento e' provato dal vivo - il dubbio piu' vecchio del
+   progetto, quello che Puppeteer non poteva sciogliere (simula un GPS che
+   cammina, non l'imprecisione reale, i buchi di segnale, la batteria).
+   Confermato anche il TASTO DI REGISTRAZIONE sulla mappa, usato camminando.
+   Resta non provato il solo TASTO SOS, che per sua natura si prova a meta':
+   la finestra con le coordinate, senza confermare la chiamata al 112.
+   Non blocca nessun punto.
  - IL DEAD MAN'S SWITCH E' ANCORA FINTO, ed e' scritto a schermo. Il conto
    alla rovescia vive nella pagina: se la si chiude non succede piu' niente,
    e alla scadenza non parte nessun messaggio. Nel blocco 2 si e' fatta la
