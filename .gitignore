@@ -15,3 +15,8 @@ Thumbs.db
 
 # Progresso dell'estrazione dei sentieri (punto 13): file di lavoro, si rigenera
 data/estrazione-progresso.json
+
+# Prodotti delle prove automatiche (cartella prove/): si rigenerano ad ogni esecuzione.
+# Gli SCRIPT invece si salvano, sono loro il lavoro.
+prove/*.log
+prove/*.png

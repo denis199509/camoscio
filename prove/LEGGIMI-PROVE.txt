@@ -1,0 +1,83 @@
+PROVE AUTOMATICHE - recupero password (punto 7) e verifica email (punto 34)
+===========================================================================
+
+A COSA SERVONO
+--------------
+Sono gli script scritti il 2026-07-28 per verificare il recupero password e la verifica
+dell'indirizzo email. Vivevano nella cartella temporanea, che prima o poi si svuota: sono
+stati salvati qui perche' RIFARLI DA ZERO costerebbe piu' che rileggerli, e perche'
+alcuni controllano cose che a occhio non si vedono - per esempio che tre risposte diverse
+del server restino IDENTICHE fra loro.
+
+NON sono nel package.json e non girano da soli: si lanciano a mano quando si tocca
+qualcosa che riguarda accessi, password o email.
+
+
+COME SI LANCIANO
+----------------
+Serve il server acceso su localhost:3000, con il suo output SCRITTO SU UN FILE - le prove
+leggono di li' i link che sarebbero finiti nelle email (in locale, senza chiavi Mailjet,
+il contenuto delle email viene stampato sul terminale invece di partire).
+
+    node server.js > prove/server-prove.log 2>&1
+
+poi, in un'altra finestra:
+
+    node prove/prova-punto7.js                      53 controlli
+    node prove/prova-verifica-email.js              34 controlli
+    node prove/prova-guasto-invio.js                 6 controlli
+    node prove/prova-configurazione.js               9 controlli  (non serve il server)
+    node prove/prova-registrazione-senza-email.js    7 controlli  (ne avvia uno suo sulla 3100)
+
+Se il log sta altrove: CAMOSCIO_LOG=percorso/del/file.log node prove/...
+
+
+LE DUE PROVE NEL BROWSER
+------------------------
+Servono PUPPETEER, che per scelta del progetto NON va installato in package.json (vedi
+leggimi.txt): si installa in una cartella temporanea e gli si dice dov'e'.
+
+    npm install puppeteer          (in una cartella qualsiasi fuori dal progetto)
+    npx puppeteer browsers install chrome
+
+    PUPPETEER_PATH=/percorso/della/cartella/node_modules/puppeteer \
+      node prove/prova-browser-punto7.js             56 controlli
+    PUPPETEER_PATH=... node prove/prova-browser-verifica.js   38 controlli
+
+Girano a 1440 e a 390 px e SALVANO LE SCHERMATE qui dentro (o in CAMOSCIO_SCATTI).
+GUARDARLE FA PARTE DELLA PROVA: i difetti di impaginazione non li trova nessun controllo
+automatico - i due del punto 7 sono usciti solo cosi'.
+
+
+REGOLE RISPETTATE DA TUTTE, da non perdere se se ne scrivono altre
+------------------------------------------------------------------
+- I CONTEGGI DEL DATABASE SI LEGGONO ALL'INIZIO E SI RICONFRONTANO ALLA FINE, invece di
+  scriverli a mano: un controllo che dipende da quanti dati ha l'utente non sta provando
+  il codice. E' cosi' che si sono scoperti 3 documenti orfani lasciati in giro.
+- OGNI CANCELLAZIONE PORTA CON SE' L'userId DELL'ACCOUNT DI PROVA, sempre, anche quando
+  "tanto quel valore ce l'ho solo io". Il 2026-07-27 una pulizia non filtrata ha
+  cancellato un timbro VERO dell'utente.
+- I DATI FINTI NON DEVONO SOMIGLIARE A QUELLI VERI: indirizzi @esempio-di-prova.invalid e
+  nomi che dicono "Prova". E' l'unica difesa che funziona anche quando la prima regola
+  viene dimenticata.
+- LA PULIZIA STA IN UN finally, cosi' vale anche se qualcosa va storto a meta'.
+- L'ERRORE SI STAMPA IN UN catch PRIMA del finally: un process.exit dentro il finally
+  ucciderebbe il .catch e la prova morirebbe senza dire niente.
+- SI ASPETTA UNA CONDIZIONE VERA, mai un tempo fisso.
+- CONTESTI ISOLATI nel browser (browser.createBrowserContext), non browser.newPage(): le
+  pagine dello stesso browser condividono i cookie, e la seconda prova risulterebbe gia'
+  collegata dalla prima.
+
+
+QUANDO UNA PROVA FALLISCE, SOSPETTARE PRIMA LA PROVA
+-----------------------------------------------------
+Il 2026-07-28 sono fallite quattro volte, e TUTTE E QUATTRO erano colpa della prova o
+segnalavano qualcosa di diverso da un difetto del sito:
+ - cookie condivisi fra le pagine (vedi sopra);
+ - il freno anti-abuso che funzionava, esaurito da tre giri di prove di fila;
+ - una prova che usciva dal logout senza ricaricare la pagina, cioe' creava uno stato che
+   usando il sito non esiste: cosi' ha rivelato un difetto PREESISTENTE e scollegato
+   (punto 35 di cose_da_fare.txt);
+ - una prova che si aspettava il messaggio ottimista mentre il sito - giustamente - stava
+   dicendo che l'invio non era configurato.
+Solo la terza ha trovato qualcosa di vero, e non era quello che stava cercando.

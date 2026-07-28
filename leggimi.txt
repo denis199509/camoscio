@@ -3671,61 +3671,97 @@ CHECKLIST DI AVANZAMENTO (aggiornare via via che si procede)
 
 COME RIPRENDERE IL LAVORO IN UNA NUOVA SESSIONE
 ----------------------------------------------------
-1. Leggi questo file per intero, e leggi cose_da_fare.txt.
+1. VAI SUBITO ALLA SEZIONE "DA DOVE SI RIPARTE" IN FONDO A QUESTO FILE: dice in
+   mezza pagina cosa e' stato fatto, cosa resta, le tre cose da sapere prima di
+   toccare qualunque cosa, e cosa chiedere all'utente. Poi leggi il resto del file
+   e cose_da_fare.txt.
 2. Guarda la checklist sopra per capire a che punto siamo.
-3. Continua dalla prima voce non completata, seguendo la sezione "ORDINE DI
-   LAVORO CONSIGLIATO" in cima al file.
-4. Aggiorna questo file (checklist + decisioni prese con l'utente) man mano
+3. Aggiorna questo file (checklist + decisioni prese con l'utente) man mano
    che avanzi, e a fine sessione fai un riassunto all'utente.
-5. In OGNI riassunto, ricorda i punti 7 e 13 come in sospeso (richiesta
-   esplicita dell'utente, vedi in cima al file). Non riproporli come
-   "prossimo passo": solo ricordarli.
+4. NON C'E' PIU' NIENTE DA RICORDARE COME "IN SOSPESO" IN OGNI RIASSUNTO. La
+   richiesta esplicita dell'utente riguardava i punti 7 e 13: il 13 e' chiuso dal
+   2026-07-27, il 7 dal 2026-07-28. Se questo elenco tornasse a citarli come in
+   sospeso, direbbe il falso.
+5. PRIMA DI PROMETTERE QUALCOSA A SCHERMO, verifica di poterlo mantenere. E' il filo
+   che tiene insieme tutto il lavoro del 2026-07-28: il sito non dice "ti abbiamo
+   mandato un'email" se le chiavi mancano, se l'invio e' guasto, o se l'indirizzo del
+   sito non e' impostato. Ogni volta che si e' scoperto un modo in cui poteva mentire,
+   e' stato chiuso - e ogni volta l'ha rivelato una prova, non un ragionamento.
 
 
 ===================================================================
 DA DOVE SI RIPARTE — situazione al 2026-07-28
 ===================================================================
 
->>> PUNTO 7 (recupero password): FATTO E CHIUSO. Era l'ULTIMO punto fermo su una
-    decisione. Link temporaneo che vale un'ora e una volta sola, pagina dedicata per
-    scegliere la password nuova, chiusura di tutte le altre sessioni, piu' il cambio
-    password dal profilo che prima non esisteva affatto.
-    105 controlli (51 via API, 54 nel browser a 1440 e 390 px), tutti passati,
-    database identico a prima. Dettagli: sezione "PUNTO 7: COM'E' ANDATA" in cima.
+TUTTO E' SALVATO E ONLINE. Niente di sospeso a meta', niente script lasciati a girare,
+database pulito (nessun residuo di prova). Il deploy su Render e' stato verificato dopo
+ogni push.
 
->>> FATTA ANCHE LA VERIFICA DELL'INDIRIZZO EMAIL IN REGISTRAZIONE (2026-07-28),
-    proposta dall'utente subito dopo il punto 7. Chi si registra entra subito ma vede
-    una fascia finche' non conferma, e il recupero password funziona solo per gli
-    indirizzi confermati. I DUE ACCOUNT ESISTENTI risultano NON confermati e vedranno
-    la fascia: e' voluto. 147 controlli in sei prove, tutti passati.
-    Dettagli e residuo onesto: sezione dedicata in cima al file.
+LE PROVE AUTOMATICHE ORA SONO NEL PROGETTO, nella cartella prove/, con il loro
+LEGGIMI-PROVE.txt che spiega come lanciarle. Prima vivevano nella cartella temporanea e
+sarebbero sparite: sono 203 controlli su accessi, password ed email, e rifarli da zero
+costerebbe piu' che rileggerli. Vanno rilanciate ogni volta che si tocca qualcosa che
+riguarda accessi, password o email. Le schermate e il log che producono NON si salvano su
+GitHub (sono in .gitignore): si rigenerano da sole.
 
->>> GIA' ONLINE dal 2026-07-28 (commit 983e709, deploy Render verificato: la pagina
-    /reimposta-password risponde 200, home e demo pure). Il CAMBIO PASSWORD DAL
-    PROFILO funziona gia' del tutto, senza bisogno di nessuna chiave.
+--- CHE COSA E' STATO FATTO IL 2026-07-28, in due lavori ---
 
->>> IL RECUPERO PASSWORD FUNZIONA ONLINE: provato dall'utente sul sito vero il
-    2026-07-28, l'email arriva. Servizio: MAILJET (Brevo e' saltato, chiede la partita
-    IVA). Le variabili sono gia' impostate su Render.
+ 1. PUNTO 7, RECUPERO PASSWORD. Link temporaneo che vale un'ora e una volta sola, pagina
+    dedicata per scegliere la password nuova, chiusura di tutte le altre sessioni, piu'
+    il CAMBIO PASSWORD DAL PROFILO che prima non esisteva affatto.
+    PROVATO DALL'UTENTE SUL SITO VERO: l'email arriva davvero.
+ 2. VERIFICA DELL'INDIRIZZO EMAIL IN REGISTRAZIONE, proposta dall'utente subito dopo,
+    che chiude il buco lasciato aperto dal punto 7. Chi si registra entra subito ma vede
+    una fascia finche' non conferma; il recupero password funziona solo per gli
+    indirizzi confermati.
+ In tutto 147 controlli in sei prove, tutti passati, database identico a prima.
+ Dettagli e residui onesti: le due sezioni dedicate in cima a questo file.
 
->>> RESTA UN PROBLEMA VERO, NON RISOLTO: L'EMAIL FINISCE NELLO SPAM, perche' si manda
-    da un indirizzo Gmail passando dai server di Mailjet e per Gmail e' il profilo di
-    chi si finge un altro. Non si sistema configurando: servirebbe un DOMINIO PROPRIO
-    (pochi euro all'anno) con SPF e DKIM. Per i due account attuali e' una seccatura;
-    per chi si registrasse in futuro vuol dire che il recupero non funziona davvero.
-    E' una spesa, quindi la decisione e' dell'utente. Dettagli e conseguenze nella
-    sezione "PUNTO 7: COM'E' ANDATA" in cima al file.
+--- LE TRE COSE DA SAPERE PRIMA DI TOCCARE QUALUNQUE COSA ---
 
->>> LA DECISIONE SUL CANALE DI INVIO NON E' PIU' IN SOSPESO. Teneva fermi tre punti
-    (7, 22 e la seconda meta' del 21). Il canale ora esiste ed e' scritto
-    (lib/mailer.js). Il 22 e il 21-resto restano da fare per il loro lavoro proprio -
-    il 21 ha bisogno del conto alla rovescia sul SERVER, che e' il pezzo grosso - non
-    piu' per una decisione mancante.
+ A) I DUE ACCOUNT REALI RISULTANO NON CONFERMATI, ed e' voluto (scelta esplicita
+    dell'utente: dell'indirizzo suo si sa che e' vero perche' l'email e' arrivata, di
+    quello dell'altra persona no). CONSEGUENZA PRATICA: vedono la fascia in cima al
+    sito, e FINCHE' NON CONFERMANO IL RECUPERO PASSWORD NON FUNZIONA PER LORO - al suo
+    posto ricevono l'email di conferma. Basta un clic sul link.
+    Se l'utente segnalasse "il recupero non mi manda niente", e' QUESTO, non un difetto.
+ B) LE EMAIL FINISCONO NELLA POSTA INDESIDERATA. Non e' configurabile: si manda da un
+    indirizzo Gmail passando dai server di Mailjet, e per Gmail e' il profilo di chi si
+    finge un altro. Servirebbe un DOMINIO PROPRIO (pochi euro all'anno) con SPF e DKIM.
+    Per i due account attuali e' una seccatura; per chi si registrasse in futuro vuol
+    dire che il recupero e la conferma di fatto non funzionano.
+    E' UNA SPESA, QUINDI LA DECISIONE E' DELL'UTENTE: gli e' stata spiegata, non ha
+    ancora deciso. NON riproporgliela ad ogni occasione.
+ C) IL SERVIZIO EMAIL E' MAILJET, con le chiavi gia' impostate su Render. Brevo era
+    stato scelto per primo ed e' saltato perche' chiede la PARTITA IVA: non riprovarci.
+    Tutto l'invio sta in lib/mailer.js, un file solo - cambiare fornitore e' costato
+    solo quello.
 
->>> IL PUNTO 33 E' L'UNICO RIMASTO di tutto cose_da_fare.txt: il dislivello nei
-    percorsi progettati. Non e' bloccato da niente. Le tre strade possibili sono
-    elencate in cose_da_fare.txt al 33 e NESSUNA e' ancora stata misurata: prima
-    misurare, come per il 15 e il 13.
+--- CHE COSA RESTA, in ordine di utilita' ---
+
+ - PUNTO 33: il DISLIVELLO nei percorsi progettati. Non e' bloccato da niente ed e' il
+   piu' utile dei rimasti. I sentieri OSM non hanno la quota (0 su 15.228), quindi
+   serve una fonte di altitudini: le tre strade sono elencate in cose_da_fare.txt al 33
+   e NESSUNA e' ancora stata misurata. PRIMA MISURARE, come per il 15 e il 13.
+ - PUNTO 35: difetto preesistente trovato facendo il 34 e NON corretto di proposito,
+   perche' non c'entrava con quel lavoro. refreshState() in public/js/app.js non guarda
+   lo stato delle risposte: con la sessione scaduta /api/stamps/:id risponde
+   {error:...} invece di un elenco e map.js:789 va in errore. La correzione e' piccola
+   (controllare res.ok dentro fetchApi). L'utente e' stato informato e non ha ancora
+   detto se farla.
+ - PUNTI 22 e 21-resto: NON sono piu' bloccati da nessuna decisione, perche' il canale
+   di invio adesso esiste. Restano da fare per il loro lavoro proprio: il 21 ha bisogno
+   del conto alla rovescia sul SERVER, che e' il pezzo grosso.
+ - UN DOMINIO PROPRIO: vedi il punto B qui sopra. Toglierebbe in un colpo lo spam e il
+   limite sul poter scrivere a chiunque.
+
+--- DA CHIEDERE ALL'UTENTE, quando gli e' comodo ---
+
+ - Che confermi il suo indirizzo cliccando il link (chiude il punto A).
+ - LA PROVA ALL'APERTO DA TELEFONO VERO, CAMMINANDO: tracciamento, tasto di
+   registrazione sulla mappa e tasto SOS. E' l'ultima cosa che nessuna prova automatica
+   puo' sostituire, e non blocca niente. Vale la pena ricordare come e' andata le volte
+   scorse: chiedergli di provare coi file veri ha trovato un difetto al primo colpo.
 
 -------------------------------------------------------------------
 Situazione al 2026-07-27, fine TERZA sessione (resta valida)
