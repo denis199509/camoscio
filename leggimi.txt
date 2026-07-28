@@ -102,6 +102,115 @@ LE LISTE DETTATE DALL'UTENTE, stato aggiornato:
 ===================================================================
 
 ===================================================================
+PUNTO 33: COM'E' ANDATA (2026-07-28, seconda sessione)
+il dislivello dei percorsi progettati
+===================================================================
+
+--- IL RISULTATO IN UNA RIGA ---
+
+Un percorso progettato ora dice SALITA, DISCESA e FASCIA DI QUOTA. Era l'ultimo punto
+rimasto della lista.
+
+--- MISURATO PRIMA, E CONTRO DATI VERI ---
+
+Come per il 15 e il 13, prima si e' misurato. Il metro di paragone non erano esempi
+inventati ma LE DUE ESCURSIONI VERE DELL'UTENTE gia' sul database: Corno Grande (1232 m) e
+Monte Gorzano (1312 m). Si prende la loro linea, si buttano le quote dell'altimetro, si
+chiedono le quote alla fonte e si riconfronta col numero vero.
+
+PRECISAZIONE CHE CAMBIA LA LETTURA DI TUTTO: quei 1232 e 1312 m sono stati calcolati sulla
+traccia COMPLETA, ma sul database i punti sono semplificati. Ricalcolando con le quote VERE
+sugli stessi punti semplificati vengono 1173 e 1251 m - cioe' LA SEMPLIFICAZIONE DA SOLA
+COSTA GIA' IL 5%. E' contro questi numeri che va giudicato un modello del terreno.
+
+--- IL DIFETTO CHE SI STAVA PER PUBBLICARE ---
+
+E' la parte da ricordare. Chiedendo una quota ogni 25 m a un dato che ha CELLE DA 90 m, il
+profilo oscilla dentro la stessa cella per il solo modo in cui e' interpolato, e OGNI
+OSCILLAZIONE VIENE CONTATA COME SALITA:
+
+    Corno Grande, percorso vero da 1173 m:
+      senza lisciare, passo  25 m  ->  2204 m   (+79%)
+      senza lisciare, passo 200 m  ->  1152 m   (-2%)
+
+Lo stesso percorso, due numeri che differiscono del doppio a seconda del passo di
+campionamento. Nessun errore a schermo, nessuna eccezione: solo un numero plausibile e
+falso, su un dato che serve a decidere se un'escursione e' sicura. Era ESATTAMENTE la
+trappola scritta al punto 33 in cose_da_fare.txt ("meglio nessun numero che un numero
+gonfiato dal rumore"), e ci si e' cascati al primo tentativo.
+
+LA CURA: lisciare il profilo su 100 m (~la cella del dato) PRIMA di contare la salita.
+      con lisciatura, passo 25 m  ->  1204 m sul Corno Grande, 1287 m sul Gorzano
+                                      cioe' +2,6% e +2,9% sul riferimento
+                                      e -2% sui numeri che il sito mostra per quelle uscite
+Uno scarto piccolo e COSTANTE su due montagne diverse: e' questo che rende il numero
+utilizzabile, piu' del fatto che sia piccolo.
+
+--- PERCHE' OPEN-METEO E NON UN DATO PIU' FINE ---
+
+Provata anche OpenTopoData (EU-DEM, celle da 25 m). Controintuitivo ma i numeri sono chiari:
+ - accuratezza sui 10 badge: equivalenti (30 m contro 33 m di scarto medio, sempre in
+   difetto - un modello a celle rasa le cime: il Corno Grande risulta 2853 invece di 2912);
+ - sul dislivello vero: -10% e -7%, contro il -2% di Open-Meteo;
+ - SPOSTANDO LA LINEA DI 25 METRI di lato, Open-Meteo cambia di 10-11 m, EU-DEM di 67 m sul
+   Corno Grande. Conta molto: i sentieri OSM hanno ~10 m di errore e il progettatore
+   aggancia proprio a quelli. Un numero che balla di 67 m a seconda di dove e' disegnato il
+   sentiero non e' un numero;
+ - velocita': ~1 s contro 3-8 s (OpenTopoData impone una chiamata al secondo);
+ - tetto: 10.000 al giorno contro 1.000;
+ - e Open-Meteo IL SITO LA USA GIA' per il meteo: non e' una dipendenza nuova.
+
+Le altre due strade del punto 33, misurate e scartate CON UN NUMERO:
+ - modello del terreno sul database: starebbe (~10 MB sui 478 liberi) ma conserverebbe GLI
+   STESSI DATI Copernicus che Open-Meteo gia' serve. Ore di estrazione per un secondo;
+ - solo le quote gia' note: una traccia ne tocca 1 o 2 (Corno Grande a 6 m, Rifugio
+   Franchetti a 484 m). Basta per dire "passa dal Corno Grande", non per un dislivello, e la
+   fascia di quota verrebbe sbagliata (direbbe 2912 quando il percorso parte da 2125).
+
+--- TROVATO STRADA FACENDO, e non era previsto ---
+
+IL TETTO DELLA FONTE NON E' SULLE CHIAMATE, E' SUI PUNTI: ~600 al minuto, comunque li si
+raggruppi (cinque chiamate da 100 punti pesano quanto cinquecento da uno). Conseguenza: un
+percorso da 18 km campionato ogni 25 m sono 755 punti, cioe' un percorso che NON AVREBBE
+FUNZIONATO MAI, a nessuna ora. Ora il passo si allarga da solo: 25 m fino a ~12 km, 50 m
+fino a ~25 km, oltre si rinuncia e lo si dice. Mai piu' di 500 punti.
+
+E IL PANNELLO RICALCOLA A OGNI PUNTO AGGIUNTO: progettare una gita da cinque tappe avrebbe
+chiesto fino a 2.500 punti, meta' del tetto orario per un percorso solo - col dislivello che
+sparisce proprio mentre lo si sta usando. Per questo le quote gia' chieste si RICORDANO (in
+memoria, non su MongoDB: non sono dati dell'utente e si possono sempre richiedere).
+Ripianificare lo stesso percorso costa ZERO domande; estenderlo costa solo il tratto nuovo.
+Tetto stretto apposta, 20.000 quote (<2 MB): c'e' il vincolo hard sulla RAM.
+
+--- I PEZZI ---
+
+- lib/elevation.js: UN FILE SOLO parla con la fonte, come lib/mailer.js e' l'unico che parla
+  col servizio email. E' il motivo per cui cambiare fornitore di email costo' un file solo.
+- lib/gpx.js: statisticheTraccia ora torna anche discesa, quota minima e massima. AGGIUNTA
+  PURA, non una seconda funzione: e' la lezione del punto 18, e qui divergere vorrebbe dire
+  che lo stesso percorso progettato o camminato e poi importato da' due numeri diversi.
+  Spostata qui anche SOGLIA_DISLIVELLO_M, che prima stava in routes/tracking.js: ora la
+  usano in due e deve restare un valore solo.
+- lib/trailGraph.js: dislivelloDisponibile non e' piu' fisso a false.
+- public/js/routeplanner.js + il CSS: il riquadro, con la dichiarazione del +-5% e la
+  citazione di Copernicus/Open-Meteo che la licenza CC-BY 4.0 impone.
+- models/RouteDraft.js: salita e discesa con default undefined, MAI 0 - una bozza salvata
+  mentre la fonte taceva direbbe "0 metri di salita" invece di "non si sa".
+
+--- COME E' STATO VERIFICATO ---
+
+- prove/prova-punto33.js, 33 controlli. CONTROPROVA FATTA: togliendo la lisciatura la prova
+  fallisce sui due controlli che sorvegliano proprio quel difetto.
+- Prova del guasto: si rompe fetch davvero e si verifica che il percorso si progetti lo
+  stesso, senza inventare una salita a zero.
+- Schermate guardate a 1440 e 390 px. Evitata di misura la trappola del punto 18: la nota ha
+  display:flex, quindi il testo con dentro <b> e <span> va messo in UN SOLO figlio.
+- Database identico a prima.
+- DA SAPERE PER CHI RILANCIA LE PROVE: i controlli che dipendono dalla fonte possono
+  risultare SALTATI se si e' consumato il tetto gratuito (e' successo, misurando). Saltato
+  non vuol dire passato: si rilancia piu' tardi.
+
+===================================================================
 PUNTO 35: COM'E' ANDATA (2026-07-28, seconda sessione)
 la pagina lasciata aperta oltre la scadenza della sessione
 ===================================================================
@@ -3795,8 +3904,26 @@ DA DOVE SI RIPARTE — situazione al 2026-07-28, SECONDA sessione
     NON RESTA PIU' NIENTE DA PROVARE SUL CAMPO. Era l'elenco piu' vecchio del progetto.
 
 >>> FATTO IN QUESTA SESSIONE: il PUNTO 35 (refreshState non guardava lo stato delle
-    risposte). Sezione dedicata in cima al file. Con esso, dei 35 punti di
-    cose_da_fare.txt resta aperto SOLO IL 33 (dislivello nei percorsi progettati).
+    risposte) e il PUNTO 33 (il dislivello dei percorsi progettati). Sezioni dedicate in
+    cima al file.
+    CON QUESTI, TUTTI E 35 I PUNTI DI cose_da_fare.txt SONO FATTI. Quello che resta non e'
+    piu' una richiesta in sospeso ma lavoro che il progetto si e' dato da solo: la seconda
+    meta' del punto 21 (Dead Man's Switch vero, col conto alla rovescia sul SERVER), il
+    dislivello gonfiato del tracciamento dal vivo (vedi sotto), il responsive delle sezioni
+    mancanti, Marche e Molise nell'indice sentieri, il file LICENSE.
+
+>>> DA FARE PER PRIMO, gia' concordato con l'utente: IL TRACCIAMENTO DAL VIVO CONTA COME
+    SALITA IL TREMOLIO DEL GPS. La sua camminata di prova del 2026-07-28 risulta con 21 m di
+    dislivello mentre la quota andava da 112 a 120 m - otto metri in tutto, con un GPS che
+    dichiarava +-12/+-20 m di precisione. Con la regola dei file importati lo stesso percorso
+    da' 0 m, che e' la risposta giusta per 137 metri in piano.
+    E' lo stesso difetto gia' corretto per i file .gpx (regola del singolo passo contro
+    regola della salita accumulata): la cura e' nota, sta in MIN_ELEVATION_DELTA_M di
+    routes/tracking.js contro SOGLIA_DISLIVELLO_M di lib/gpx.js.
+    ATTENZIONE, e' il motivo per cui le due regole erano diverse: dal vivo i punti arrivano a
+    gruppi e il totale si aggiorna man mano, quindi non si puo' guardare tutta la traccia
+    insieme. La correzione deve tenere conto di questo, non limitarsi a cambiare un numero.
+    L'utente ha scelto di farlo DOPO il punto 33.
 
 >>> CAMBIATO SUL DATABASE, controllato in questa sessione: DENIS HA CONFERMATO IL SUO
     INDIRIZZO EMAIL (emailVerified: true). L'ALTRO ACCOUNT REALE no. Quindi il punto A qui sotto vale
@@ -3850,11 +3977,10 @@ GitHub (sono in .gitignore): si rigenerano da sole.
 
 --- CHE COSA RESTA, in ordine di utilita' ---
 
- - PUNTO 33: il DISLIVELLO nei percorsi progettati. Non e' bloccato da niente ed e' il
-   piu' utile dei rimasti. I sentieri OSM non hanno la quota (0 su 15.228), quindi
-   serve una fonte di altitudini: le tre strade sono elencate in cose_da_fare.txt al 33
-   e NESSUNA e' ancora stata misurata. PRIMA MISURARE, come per il 15 e il 13.
- - PUNTO 35: FATTO il 2026-07-28 nella seconda sessione. Da mandare online.
+ - PUNTO 33: FATTO il 2026-07-28, seconda sessione. Sezione dedicata in cima al file.
+ - PUNTO 35: FATTO il 2026-07-28, seconda sessione.
+ - IL DISLIVELLO DEL TRACCIAMENTO DAL VIVO conta il tremolio del GPS come salita: e' la
+   prossima cosa da fare, gia' concordata. Vedi in cima a questa sezione.
  - PUNTI 22 e 21-resto: NON sono piu' bloccati da nessuna decisione, perche' il canale
    di invio adesso esiste. Restano da fare per il loro lavoro proprio: il 21 ha bisogno
    del conto alla rovescia sul SERVER, che e' il pezzo grosso.

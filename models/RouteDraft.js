@@ -26,7 +26,17 @@ const routeDraftSchema = new mongoose.Schema({
     agganciaAiSentieri: { type: Boolean, default: true },
     // Solo per l'elenco (vedi sopra). Non sono la verita': la verita' si ricalcola.
     metriTotali: { type: Number, default: 0 },
-    metriRetta: { type: Number, default: 0 }
+    metriRetta: { type: Number, default: 0 },
+    // PUNTO 33 - salita e discesa stimate, anche queste solo per l'elenco.
+    // default: undefined e NON 0, per due motivi che vanno insieme. Il primo e' il vincolo
+    // hard sullo spazio: un campo scritto su ogni documento anche quando non aggiunge
+    // informazione e' spazio buttato (stesso criterio di shareable/covers al punto 24).
+    // Il secondo conta di piu': con default 0 una bozza salvata mentre la fonte delle quote
+    // era irraggiungibile risulterebbe "0 metri di salita" invece di "non si sa", e sono due
+    // cose diverse - la prima e' una bugia su un dato che serve a decidere se un'escursione
+    // e' alla propria portata.
+    salitaM: { type: Number, default: undefined },
+    discesaM: { type: Number, default: undefined }
 }, { timestamps: { createdAt: 'creataIl', updatedAt: false } });
 
 module.exports = mongoose.models.RouteDraft || mongoose.model('RouteDraft', routeDraftSchema);

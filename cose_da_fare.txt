@@ -795,8 +795,45 @@ e con quella data e' finito anche il badge.
    un'escursione (avevi detto che e' un passo successivo) e il dislivello dei
    percorsi progettati (servirebbe una fonte di altitudini, va misurata prima).
 
-33) [DA FARE] Trovare il modo di segnare anche il DISLIVELLO nei progetti di
-escursione. E' fondamentale per capire se un percorso e' alla propria portata o no:
+33) [FATTO 2026-07-28, seconda sessione] Trovare il modo di segnare anche il DISLIVELLO nei progetti di
+escursione.
+   -> FATTO. Il progetto di percorso ora dice SALITA, DISCESA e FASCIA DI QUOTA.
+      MISURATO PRIMA, come per il 15 e il 13, e contro le TUE DUE ESCURSIONI VERE (Corno
+      Grande 1232 m e Monte Gorzano 1312 m): si prendono le loro linee, si buttano le quote
+      dell'altimetro, si chiedono le quote alla fonte e si riconfronta col numero vero.
+      SCELTA LA FONTE: Open-Meteo (dati Copernicus DEM), che il sito USA GIA' per il meteo.
+      Licenza CC-BY 4.0, nessuna chiave. Le altre due strade elencate qui sotto sono state
+      misurate e scartate con un numero, non a parole:
+        - un modello del terreno tenuto sul database starebbe (~10 MB sui 478 liberi) ma
+          conserverebbe GLI STESSI DATI Copernicus che Open-Meteo gia' serve: ore di
+          estrazione per risparmiare un secondo;
+        - le quote dei punti gia' noti: una traccia ne tocca 1 o 2. Basta per dire "passa dal
+          Corno Grande", non per un dislivello, e la fascia di quota verrebbe sbagliata.
+      IL DIFETTO CHE SI STAVA PER PUBBLICARE, ed e' la parte che conta: chiedendo una quota
+      ogni 25 m a un dato che ha celle da 90 m, il profilo oscilla dentro la stessa cella e
+      OGNI TREMOLIO VIENE CONTATO COME SALITA. Misurato: 2204 m su un percorso che ne ha
+      1173, cioe' +79%, senza nessun errore a schermo. Era esattamente la trappola scritta
+      qui sotto ("meglio nessun numero che un numero gonfiato dal rumore"), e ci si e'
+      cascati dentro al primo tentativo.
+      LA CURA: lisciare il profilo su 100 m (la cella del dato) prima di contare la salita.
+      Cosi' viene 1204 m sul Corno Grande e 1287 m sul Gorzano, cioe' -2% rispetto ai numeri
+      che il sito mostra per quelle stesse escursioni. E lo scarto e' COSTANTE su due
+      montagne diverse, che e' quello che rende il numero affidabile.
+      A SCHERMO SI DICHIARA CHE E' UNA STIMA e di quanto puo' sbagliare (circa il 5%), piu'
+      la citazione di Copernicus e Open-Meteo, che la licenza impone.
+      SE LA FONTE NON RISPONDE il percorso si progetta lo stesso e si dice che il dislivello
+      non c'e': stessa regola del punto 34, entrare nel sito non dipende da un servizio
+      esterno, e nemmeno progettare un percorso.
+      TROVATO STRADA FACENDO: il tetto della fonte non e' sulle chiamate ma sui PUNTI (~600
+      al minuto). Un percorso da 18 km ne avrebbe chiesti 755, cioe' non avrebbe funzionato
+      MAI. Ora il passo si allarga da solo sui percorsi lunghi (25 m fino a 12 km, 50 m fino
+      a 25 km, oltre si rinuncia e lo si dice). E siccome il pannello ricalcola a ogni punto
+      aggiunto, le quote gia' chieste si ricordano: ripianificare lo stesso percorso non
+      costa nessuna domanda.
+      33 controlli in prove/prova-punto33.js, controprova fatta (togliendo la lisciatura la
+      prova fallisce), schermate guardate a 1440 e 390 px.
+
+   IL TESTO ORIGINALE DELLA RICHIESTA: E' fondamentale per capire se un percorso e' alla propria portata o no:
 dieci chilometri in piano e dieci con mille metri di salita sono due escursioni
 diverse, e oggi il progetto mostra solo la lunghezza.
    PERCHE' OGGI NON C'E': i sentieri estratti da OpenStreetMap hanno solo latitudine

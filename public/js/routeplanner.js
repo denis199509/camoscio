@@ -13,9 +13,11 @@
 // programmerebbe di passare dove non si passa, e in montagna e' un guaio serio.
 // Percio': tratteggio, colore diverso, metri dichiarati e un avviso in chiaro.
 //
-// IL DISLIVELLO NON C'E', e lo si scrive. I sentieri sul database non hanno la quota (0 su
-// 15.228 misurati): per un'escursione da preparare e' forse il dato piu' utile, e tacerlo
-// sarebbe peggio che ammetterlo.
+// IL DISLIVELLO ORA C'E' (punto 33, 2026-07-28), ma e' una STIMA e va detto. I sentieri sul
+// database non hanno la quota (0 su 15.228 misurati), quindi le quote arrivano da un modello
+// del terreno interrogato dal server. E' forse il dato piu' utile per capire se un'escursione
+// e' alla propria portata: proprio per questo va accompagnato da quanto puo' sbagliare,
+// invece di essere presentato come una misura.
 // ==========================================================================
 
 (function () {
@@ -134,9 +136,9 @@
                         <div><strong>${metri(e.metriSentiero)}</strong><span>sui sentieri</span></div>
                         <div><strong>${metri(e.metriRetta)}</strong><span>in linea d'aria</span></div>
                     </div>
+                    ${dislivello(e)}
                     ${avviso}
                     ${esposizioneSolare(e)}
-                    <p class="small text-muted rp-nota-dislivello"><i data-lucide="info"></i> Il dislivello non si puo' calcolare: i sentieri della mappa non hanno la quota salvata.</p>
                     <button class="btn btn-sm btn-primary" id="btn-rp-salva" type="button"><i data-lucide="save"></i> Salva come bozza</button>
                 </div>`;
         }
@@ -170,6 +172,55 @@
 
     let aggancia = true;
 
+    // PUNTO 33 - SALITA, DISCESA E FASCIA DI QUOTA.
+    //
+    // Fino al 2026-07-28 qui c'era scritto che il dislivello non si poteva calcolare, ed era
+    // vero: i sentieri della mappa non hanno la quota (0 su 15.228). Ora le quote arrivano da
+    // un modello del terreno interrogato dal server (lib/elevation.js).
+    //
+    // TRE COSE CHE QUESTO RIQUADRO DEVE DIRE, e non sono decorazione:
+    //  - che e' una STIMA, non una misura fatta sul posto;
+    //  - DI QUANTO puo' sbagliare. Il +-5% e' misurato, non messo li' per prudenza generica:
+    //    ricalcolando due escursioni vere dell'utente (Corno Grande e Monte Gorzano) con
+    //    queste quote sono usciti 1204 e 1287 m contro i 1232 e 1312 registrati sul posto,
+    //    cioe' -2%; spostando la linea di 25 m il numero si muove di altri ~10 m;
+    //  - da dove viene il dato. Open-Meteo e' CC-BY 4.0 su dati Copernicus: citarli non e'
+    //    cortesia, e' la licenza - e questo progetto ha "tutto open source" fra i vincoli hard.
+    function dislivello(e) {
+        if (!e.dislivelloDisponibile) {
+            // Non e' un errore da nascondere: chi progetta un'escursione deve sapere che
+            // proprio il numero piu' importante manca, invece di vedere un riquadro assente
+            // e dedurne che il percorso sia pianeggiante.
+            return `<p class="small text-muted rp-nota-dislivello"><i data-lucide="info"></i><span>Il
+                dislivello non e' disponibile in questo momento: la fonte delle quote non ha risposto.
+                Il percorso qui sopra e' comunque corretto. Riprova fra poco.</span></p>`;
+        }
+
+        // Solo se ce n'e' davvero: su un percorso tutto sui sentieri questa riga non serve.
+        const inRetta = e.salitaInRettaM > 0
+            ? ` Di questi, circa <b>${e.salitaInRettaM} m</b> cadono sui tratti in linea d'aria, dove il percorso e' tirato dritto e non segue nessun sentiero.`
+            : '';
+
+        // ATTENZIONE, trappola gia' pagata al punto 18 e scritta anche nel CSS:
+        // .rp-nota-dislivello e' display:flex, quindi OGNI FIGLIO diventa una colonna. Il
+        // testo qui dentro contiene <b>, <br> e <span>, percio' va tutto dentro UN SOLO
+        // figlio - altrimenti su schermo stretto la nota si sbriciola in colonnine, e nessun
+        // controllo automatico se ne accorge.
+        return `
+            <div class="rp-quote">
+                <div class="rp-totali">
+                    <div><strong>&#9650; ${e.salitaM} m</strong><span>salita</span></div>
+                    <div><strong>&#9660; ${e.discesaM} m</strong><span>discesa</span></div>
+                    <div><strong>${e.quotaMinM}&ndash;${e.quotaMaxM} m</strong><span>quota</span></div>
+                </div>
+                <p class="small text-muted rp-nota-dislivello"><i data-lucide="info"></i><span>Salita e
+                    discesa sono <b>stimate da un modello del terreno</b>, non misurate sul posto:
+                    possono sbagliare di circa il 5% (una cinquantina di metri ogni mille di
+                    salita).${inRetta}
+                    <span class="rp-fonte">Quote: Copernicus DEM via Open-Meteo (CC-BY 4.0).</span></span></p>
+            </div>`;
+    }
+
     // L'ESPOSIZIONE AL SOLE DEL PERCORSO PROGETTATO (chiesta dall'utente il 2026-07-27:
     // "una volta che abbiamo il progetto possiamo proporre l'esposizione solare sul
     // sentiero").
@@ -179,8 +230,9 @@
     // la linea vera del percorso - quindi si guarda l'orientamento di OGNI TRATTO e si
     // dice quanto del cammino guarda a sud e quanto a nord. E' il dato che serve davvero
     // a decidere a che ora partire.
-    // NON si inventa niente sul dislivello o sull'ombra degli avvallamenti: senza le quote
-    // non si puo' sapere, e sotto e' scritto.
+    // NON si inventa niente sull'ombra degli avvallamenti: per quella servirebbe sapere cosa
+    // c'e' INTORNO al percorso, non solo la sua quota, e non lo si sa. Il dislivello invece
+    // c'e' dal punto 33, ed e' nel riquadro qui sopra.
     function esposizioneSolare(e) {
         if (typeof window.calculateBearing !== 'function' || typeof window.bearingToCompassSector !== 'function') return '';
 
@@ -351,7 +403,7 @@
                     <li>
                         <button class="rp-apri" data-rp-apri="${esc(b.id)}">
                             <span class="rp-bozza-nome">${esc(b.nome)}</span>
-                            <span class="rp-bozza-dati">${b.punti.length} tappe · ${metri(b.metriTotali || 0)}${b.metriRetta ? ` · ${metri(b.metriRetta)} in linea d'aria` : ''}</span>
+                            <span class="rp-bozza-dati">${b.punti.length} tappe · ${metri(b.metriTotali || 0)}${typeof b.salitaM === 'number' ? ` · ▲ ${b.salitaM} m` : ''}${b.metriRetta ? ` · ${metri(b.metriRetta)} in linea d'aria` : ''}</span>
                         </button>
                         <button class="rp-del" data-rp-cancella="${esc(b.id)}" title="Cancella questa bozza" aria-label="Cancella ${esc(b.nome)}"><i data-lucide="trash-2"></i></button>
                     </li>`).join('')}</ul>`;
@@ -440,6 +492,14 @@
                 <div class="outing-card-stats">
                     <div><strong>${b.punti.length}</strong><span>tappe</span></div>
                     <div><strong>${metri(b.metriTotali || 0)}</strong><span>lunghezza</span></div>
+                    ${/* Punto 33: si mostra SOLO se la salita e' davvero nota. Il campo manca
+                          sulle bozze salvate prima, e su quelle salvate mentre la fonte delle
+                          quote non rispondeva: scrivere "0 m" in quei casi direbbe "e' tutto
+                          in piano", che e' una bugia proprio sul dato che serve a capire se
+                          l'escursione e' alla tua portata. Riaprendola, il numero si calcola. */''}
+                    ${typeof b.salitaM === 'number'
+                        ? `<div title="Stimata da un modello del terreno, puo' sbagliare di circa il 5%"><strong>▲ ${b.salitaM} m</strong><span>salita</span></div>`
+                        : ''}
                     ${b.metriRetta > 0
                         ? `<div title="Tratti dove non esiste un sentiero conosciuto che colleghi i punti"><strong>${metri(b.metriRetta)}</strong><span>in linea d'aria</span></div>`
                         : `<div><strong>✓</strong><span>tutto su sentieri</span></div>`}

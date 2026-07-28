@@ -7,7 +7,7 @@ const Stamp = require('../models/Stamp'); // timbri assegnati dalle tracce .gpx 
 const { requireAuth } = require('../middleware/auth');
 const { isFiniteNum, haversineKm, simplifyTrack } = require('../lib/geometry');
 const { regionForPoint } = require('../lib/regions');
-const { parseGpx, statisticheTraccia, ErroreGpx } = require('../lib/gpx');
+const { parseGpx, statisticheTraccia, ErroreGpx, SOGLIA_DISLIVELLO_M } = require('../lib/gpx');
 const trailIndex = require('../lib/trailIndex');
 const { mongoose } = require('../db/mongo');
 
@@ -31,17 +31,11 @@ const MAX_BYTE_GPX = 10 * 1024 * 1024;
 // progetto: controllarli tutti su una traccia da 30.000 punti sarebbe sprecato, il
 // campione dice la stessa cosa.
 const CAMPIONE_REGIONE = 40;
-// Soglia del dislivello per le tracce IMPORTATE. E' 10 e non 3 come MIN_ELEVATION_DELTA_M
-// perche' i due numeri non misurano la stessa cosa: dal vivo i 3 metri sono il salto fra
-// DUE PUNTI CONSECUTIVI, qui i 10 metri sono quanto bisogna essere SALITI in tutto sopra
-// l'ultimo avvallamento perche' la salita venga contata (vedi statisticheTraccia).
-// Servono due regole diverse perche' i dati sono diversi: dal vivo i punti arrivano a
-// gruppi e il totale si aggiorna man mano, quindi non si puo' guardare tutta la traccia
-// insieme; qui il file c'e' tutto e si puo' fare il conto giusto.
-// Misurato: con la regola del singolo passo un tremolio di +-2 m su un percorso PIATTO
-// produceva 800 m di dislivello inventato; con questa produce zero, e una salita regolare
-// da 598 m ne conta 596.
-const SOGLIA_DISLIVELLO_IMPORT_M = 10;
+// Soglia del dislivello per le tracce IMPORTATE. LA DEFINIZIONE E IL PERCHE' STANNO ORA IN
+// lib/gpx.js (spostati col punto 33): da quel giorno la usano in due, il caricamento .gpx e
+// il dislivello dei percorsi progettati, e deve restare un valore solo. Il nome locale resta
+// per non toccare i punti in cui e' gia' usata.
+const SOGLIA_DISLIVELLO_IMPORT_M = SOGLIA_DISLIVELLO_M;
 
 // Ripulisce un gruppo di punti mandati dal client: scarta tuple malformate o fuori dai
 // range possibili (lat/lng invalide), tollera l'altitudine mancante (frequente sui telefoni

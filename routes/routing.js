@@ -108,7 +108,11 @@ router.post('/drafts', requireAuth, async (req, res) => {
             punti,
             agganciaAiSentieri: req.body.agganciaAiSentieri !== false,
             metriTotali: esito.metriTotali,
-            metriRetta: esito.metriRetta
+            metriRetta: esito.metriRetta,
+            // Scritti solo se le quote sono davvero arrivate (punto 33): se la fonte non ha
+            // risposto i campi restano assenti, che vuol dire "non si sa" - e riaprendo la
+            // bozza il dislivello si ricalcola comunque da capo, quindi non si perde niente.
+            ...(esito.dislivelloDisponibile ? { salitaM: esito.salitaM, discesaM: esito.discesaM } : {})
         });
         res.json(bozza);
     } catch (e) {

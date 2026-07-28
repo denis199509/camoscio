@@ -4211,6 +4211,25 @@ h1, h2, h3, h4, h5, h6 {
     margin-top: 2px;
 }
 
+/* PUNTO 33 - salita, discesa e fascia di quota del percorso progettato.
+   Riusa .rp-totali dei metri: sono numeri dello stesso tipo e devono somigliarsi,
+   invece di inventare un secondo modo di mostrare tre cifre affiancate. */
+.rp-quote {
+    margin: 10px 0;
+    padding-top: 10px;
+    border-top: 1px dashed var(--border-color);
+}
+
+/* La fonte del dato: c'e' per obbligo di licenza (CC-BY 4.0), quindi deve restare
+   leggibile - piu' piccola del resto, mai nascosta. Va a capo da sola perche' e'
+   un'informazione di servizio, non parte della frase che la precede. */
+.rp-fonte {
+    display: block;
+    margin-top: 4px;
+    font-size: 0.72rem;
+    opacity: 0.85;
+}
+
 .rp-titolo-bozze {
     margin: 14px 0 6px;
     font-size: 0.85rem;
