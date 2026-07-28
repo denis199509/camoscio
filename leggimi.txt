@@ -3987,9 +3987,36 @@ DA DOVE SI RIPARTE — situazione al 2026-07-28, SECONDA sessione
     inventata rimane. Serve una traccia vera lunga e in piano per misurare una cura - se
     l'utente ne registra una, e' quella.
 
+>>> E' ARRIVATA UNA SETTIMA LISTA (punti 37-48 in cose_da_fare.txt), dettata dall'utente
+    dopo aver usato il sito ONLINE creando un'ESCURSIONE VERA, non di prova. Non ha trovato
+    niente di rotto: vale come prova con utente reale sul sito online, ed e' andata bene.
+    OGNI VOCE E' STATA CONTROLLATA NEL CODICE prima di scriverla, e su dodici richieste
+    CINQUE erano gia' fatte in tutto o in parte. In fondo alla lista c'e' l'ordine di lavoro
+    consigliato, che comincia con tre DOMANDE da fare all'utente prima di scrivere codice.
+    LEGGERE QUELLO PRIMA DI COMINCIARE: evita di rifare cose che ci sono gia'.
+
+>>> LA DOMANDA PIU' IMPORTANTE CHE HA FATTO, con la risposta, perche' e' controintuitiva e
+    tornera' fuori: "il tracciamento funziona solo se la pagina e' aperta? allora come per il
+    Dead Man's Switch dobbiamo portarlo sul server".
+    IL TRACCIAMENTO NON SI PUO' PORTARE SUL SERVER, e il Dead Man's Switch si'. Non sono la
+    stessa cosa:
+      - il Dead Man's Switch e' un CONTO ALLA ROVESCIA. La scadenza il server la conosce
+        gia', quindi puo' aspettarla da solo. Si sposta, e si DEVE spostare (punto 37);
+      - il tracciamento ha bisogno della POSIZIONE DEL TELEFONO. Il server non ha nessun
+        modo di chiederla: non esiste, in nessun browser, un permesso che consenta a un sito
+        di leggere il GPS a pagina chiusa. E' un divieto del sistema operativo, messo per
+        privacy, e non si aggira scrivendo codice. Solo un'app installata puo' farlo.
+    QUINDI la pagina deve restare aperta, e quello che si puo' fare davvero (tenere acceso
+    lo schermo con la Screen Wake Lock API, DIRLO a schermo, e il ripiego di registrare con
+    un'app che esporta .gpx e importarlo dopo) e' scritto nel punto 37.
+    NON RIPROPORRE "spostiamo il tracciamento sul server": e' gia' stato valutato ed e'
+    impossibile, non difficile.
+
 >>> DUE COSE VISTE SUL DATABASE, da sapere e da NON toccare:
     - l'escursione "Alba Corno Grande" e' stata creata dall'utente il 2026-07-28 alle 18:52,
-      mentre si lavorava. E' sua, e le escursioni sul database sono passate da 2 a 3;
+      mentre si lavorava. E' UN'ESCURSIONE VERA, che ha davvero in programma: non e' un dato
+      di prova e non va cancellata per nessun motivo. Le escursioni sul database sono passate
+      da 2 a 3 per questo;
     - restano 4 token di conferma email ORFANI (utenti di prova ormai cancellati). Si
       cancellano da soli entro 24 ore per via dell'indice TTL. Quello che li generava e'
       stato chiuso: prova-browser-punto7.js registrava un account e non puliva il token.

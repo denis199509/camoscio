@@ -937,3 +937,218 @@ mentre si misurava il punto 33, e l'hai scelto tu come prossimo lavoro.
       misurarlo, e tarare una cura su dati inventati e' il modo di peggiorare le cose.
       28 controlli in prove/prova-dislivello-vivo.js, di cui uno che parla col SERVER VERO
       mandando i punti a gruppi, non con una copia della regola. Controprova fatta.
+
+=====================================================================
+SETTIMA LISTA (2026-07-28, sera) - dettata dall'utente dopo aver usato il sito
+ONLINE creando un'escursione VERA, non di prova. Nessun difetto trovato durante
+l'uso: vale come prova con utente vero sul sito online, ed e' andata bene.
+OGNI VOCE E' STATA CONTROLLATA NEL CODICE prima di scriverla qui, per non far
+riscoprire alla prossima sessione cose che gia' esistono. Dove qualcosa c'e'
+gia', e' scritto.
+=====================================================================
+
+--- PRIMA DI TUTTO: DUE COSE DA SAPERE ---
+
+A) TRE VOCI DI QUESTA LISTA NON SONO NUOVE, sono la stessa cosa gia' scritta prima.
+   Vanno lavorate insieme a quelle, non come lavori a parte:
+     - il punto 37 (Dead Man's Switch sul server) E' il punto 21, seconda meta';
+     - il punto 42 (collegare un progetto a un'escursione) E' il "DA VALUTARE A
+       PARTE" gia' annotato in fondo al punto 13;
+     - il punto 43 (tempo CAI senza traccia) e il punto 42 sono due meta' dello
+       stesso problema: un'escursione senza percorso vero. Farne uno senza l'altro
+       lascia il sito a meta'.
+
+B) L'UTENTE HA CHIESTO SE IL TRACCIAMENTO SI PUO' PORTARE SUL SERVER come il Dead
+   Man's Switch, per non dover tenere la pagina aperta. LA RISPOSTA E' NO, e va
+   ricordata perche' e' controintuitiva:
+     - il Dead Man's Switch e' un CONTO ALLA ROVESCIA. La scadenza il server la sa
+       gia', quindi puo' farlo da solo. Si sposta, e si deve spostare;
+     - il tracciamento ha bisogno della POSIZIONE DEL TELEFONO. Nessun browser
+       permette a un sito di leggere il GPS a pagina chiusa: e' un divieto del
+       sistema operativo, messo per privacy, e non si aggira scrivendo codice. Solo
+       un'app installata puo' farlo.
+   Quindi il tracciamento resta legato alla pagina aperta. Cosa si puo' fare
+   davvero: vedi il punto 37.
+
+--- SICUREZZA ---
+
+37) [DA FARE - E' IL PUNTO 21, SECONDA META'] Dead Man's Switch sul server, che
+funzioni anche a pagina chiusa. Uno per profilo.
+   GIA' FATTO (2026-07-26): contatti di emergenza veri dal profilo, posizione GPS
+   vera, e nessuna bugia a schermo.
+   MANCA: l'attesa e la scadenza devono vivere sul SERVER, e alla scadenza
+   l'allarme deve partire per davvero. Il canale c'e' gia' (lib/mailer.js, Mailjet)
+   dal 2026-07-28, quindi non e' piu' bloccato da nessuna decisione.
+   DA FARE INSIEME, perche' e' la stessa domanda ("cosa succede a pagina chiusa?")
+   e l'utente l'ha posta nello stesso momento - IL TRACCIAMENTO A PAGINA CHIUSA:
+     - il tracciamento NON si puo' spostare sul server (vedi il punto B qui sopra);
+     - quello che si puo' fare e non e' fatto: usare la Screen Wake Lock API per
+       impedire che lo schermo si spenga mentre si registra. Verificato: oggi non
+       c'e' (nessun wakeLock in public/js/tracking.js). E' la cosa che tiene viva
+       la pagina, costa batteria e va detto;
+     - e SOPRATTUTTO va scritto a schermo che la pagina deve restare aperta. Oggi
+       non lo dice, e per il vincolo hard 7 ("niente promesse che il sito non puo'
+       mantenere") e' proprio il genere di cosa che va dichiarata: chi mette il
+       telefono in tasca credendo di star registrando torna a casa senza traccia.
+     - da valutare, come ripiego onesto: consigliare di registrare con un'app che
+       esporta .gpx e importarla dopo, cosa che il sito sa gia' fare (punto 15).
+
+--- PROGETTAZIONE DEL PERCORSO ---
+
+38) [DA VERIFICARE PRIMA DI FARE] Nella creazione del progetto, poter tornare
+all'inizio.
+   ATTENZIONE, POTREBBE ESSERCI GIA': nel pannello ci sono due pulsanti, "Togli
+   l'ultimo" e "Svuota" (btn-rp-annulla-ultimo e btn-rp-svuota in
+   public/js/routeplanner.js). "Svuota" riporta il progetto a zero.
+   Quindi o l'utente non li ha trovati - e allora il lavoro e' renderli piu'
+   visibili, non riscriverli - oppure intendeva un'altra cosa. CHIEDERGLIELO PRIMA
+   di scrivere codice: e' mezz'ora di chiarimento contro una giornata di lavoro
+   forse inutile.
+
+39) [DA FARE] Migliorare la resa visiva dei sentieri sulla mappa.
+   Detta cosi' e' generica: farsi dire dall'utente cosa non gli piace guardando lo
+   schermo insieme, invece di indovinare.
+
+--- PROFILO ---
+
+40) [DA FARE] L'icona del profilo in alto a destra deve aprire la pagina del
+proprio profilo. Li' dentro: cambio password, cambiare/caricare la foto profilo,
+cambiare la bio.
+   GIA' FATTO IN PARTE: la scheda "Il Tuo Profilo" esiste e il CAMBIO PASSWORD c'e'
+   gia' dentro (fatto col punto 7 il 2026-07-28, id change-password-section).
+   MANCA: che l'icona in alto a destra ci porti, e verificare se foto e bio si
+   possono gia' modificare o solo vedere.
+
+41) [DA FARE - E' UNA RIMOZIONE] Togliere "Profilo verificato" (KYC). Non serve
+piu': l'email e' collegata al profilo e confermata (punto 34).
+   DOVE STA: profile-kyc-section e il pulsante btn-trigger-kyc in
+   public/index.html, piu' il distintivo current-user-kyc accanto al nome.
+   Da togliere anche il campo sul modello utente, se non lo usa nient'altro.
+
+42) [DA FARE] La zona di competenza non deve essere scritta a mano ma CALCOLATA
+dalle tracce: 5 tracce in una zona = salita di livello, 30+ = livello massimo
+("tipo leggenda"). I livelli intermedi sono da definire con l'utente.
+   OGGI E' SCRITTA A MANO: campo di testo "Zona di competenza" (local-expert-area)
+   e casella "Sono un esperto locale", salvati in localExpert.area sul modello
+   User. Quindi oggi chiunque puo' dichiararsi esperto di qualunque posto.
+   DA DECIDERE CON L'UTENTE PRIMA: cos'e' una "zona" (una catena montuosa? un
+   raggio in chilometri? una regione?), e quanti livelli. Senza questo non si
+   scrive codice.
+
+--- ESCURSIONI ---
+
+43) [DA FARE - E' IL "DA VALUTARE A PARTE" DEL PUNTO 13] Nella creazione di
+un'escursione, quota massima, dislivello e distanza si scrivono a mano. Possono
+restare, ma va aggiunta l'alternativa: scegliere un PROGETTO gia' fatto sul sito,
+oppure importare una TRACCIA da seguire. Cosi' dislivello, distanza e quota si
+calcolano da soli.
+   ORA E' POSSIBILE: fino al 2026-07-28 un progetto non aveva il dislivello, quindi
+   collegarlo a un'escursione non avrebbe riempito quei campi. Col punto 33 ce
+   l'ha, e col punto 15 il sito sa gia' leggere un file .gpx.
+
+44) [DA FARE - VA INSIEME AL 43] Su un'escursione organizzata senza traccia il
+sito mostra gia' il tempo CAI a confronto col proprio. Ma la via non e' ancora
+stata scelta: il sistema non puo' sapere quanto ci si mette.
+   VERIFICATO: il tempo si calcola (public/js/social.js) dalla formula CAI su
+   dislivello e distanza SCRITTI A MANO in fase di creazione. Il conto e' giusto,
+   sono i dati di partenza a essere un'ipotesi di chi ha creato l'escursione.
+   SENZA TRACCIA IL TEMPO PREVISTO NON SI PUO' DARE, e va tolto invece che
+   mostrato. E' lo stesso principio del dislivello dei percorsi progettati (punto
+   33): meglio nessun numero che un numero che sembra una misura e non lo e'.
+   Col punto 43 fatto, l'escursione CON un percorso collegato il tempo ce l'ha
+   davvero, e allora si mostra.
+
+--- SEGNALAZIONI SULLO STATO DEI SENTIERI ---
+
+45) [DA FARE] Serve un modo di ricevere e gestire le segnalazioni sullo stato dei
+sentieri, sia quelle degli utenti sia quelle che arrivano da fuori e che
+inseriamo noi.
+   ESISTE GIA' PIU' DI QUANTO SEMBRI, e conviene saperlo prima di ricominciare da
+   zero: c'e' il modello Report (tipo frana / ghiaccio / fontana secca / ostacolo,
+   posizione, descrizione, chi ha segnalato), le rotte per crearle e per chiuderle,
+   i segnaposti sulla mappa e l'elenco nella barra laterale col tasto per
+   risolverle.
+   MANCA DAVVERO:
+     - la FOTO nella segnalazione;
+     - il controllo PRIMA della pubblicazione: oggi una segnalazione compare subito
+       a tutti. L'utente vuole decidere lui cosa pubblicare;
+     - un posto dove le segnalazioni ARRIVINO a lui (la sua idea: un messaggio
+       privato con la descrizione dettagliata di cosa e' successo e dove), e da cui
+       inserirle a mano;
+     - un tasto piu' trovabile, con una finestra breve (200/300 caratteri + foto)
+       che usi la posizione.
+   DA PENSARE CON ATTENZIONE PRIMA DI SCRIVERE CODICE: una segnalazione con foto
+   sono dati che pesano, e c'e' il vincolo hard sullo spazio in cima a questo file.
+   Le foto profilo sono gia' oggi la cosa piu' pesante del database (fino a 1,5 MB
+   l'una, misurato al punto 15). Va deciso un formato e un tetto PRIMA, non dopo.
+
+--- CARPOOLING ---
+
+46) [DA FARE] L'utente ha pubblicato la disponibilita' della propria auto per il
+giorno che gli interessa, ma il suo annuncio non lo trova piu' e non puo'
+modificarlo.
+   VERIFICATO NEL CODICE: gli annunci stanno DENTRO l'escursione
+   (hike.carpool.drivers), quindi si vedono solo aprendo quella singola escursione.
+   Non esiste nessun elenco "i miei annunci", e si puo' solo abbandonare l'auto,
+   non modificarla.
+   E' LO STESSO DIFETTO GIA' RISOLTO DUE VOLTE: col punto 10 per le escursioni ("Le
+   mie escursioni") e nella terza sessione del 2026-07-27 per i progetti, che non
+   si ritrovavano. La strada e' segnata: le cose proprie devono ritrovarsi tutte in
+   un posto solo.
+
+--- ZAINO ---
+
+47) [DA FARE] Dopo aver scelto le cose obbligatorie e aggiunto quelle facoltative,
+se un oggetto non e' in elenco si deve poter aggiungere a mano: uno spazio
+"Aggiungi +" dove si scrive il nome e il peso. Alla fine un tasto "Conferma
+zaino".
+   GIA' FATTO A META': un oggetto si puo' gia' aggiungere a mano, ma SOLO fra
+   quelli CONDIVISI ("Se porti qualcosa che serve a tutti...", btn-add-shared-item,
+   fatto col punto 25).
+   MANCA: poterlo fare per gli oggetti PERSONALI, e il tasto di conferma finale.
+
+--- SQUADRE ---
+
+48) [DA FARE] Una squadra creata non ha una sua pagina. Serve come punto di
+ritrovo: uno spazio della squadra dove condividere le cose in modo rapido.
+   VERIFICATO: le squadre esistono davvero (si creano, si elencano, e servono a
+   invitare tutti in un colpo quando si crea un'escursione), ma non hanno nessuna
+   pagina propria.
+
+--- POI L'ESTETICA ---
+
+L'utente ha detto "poi passiamo all'estetica". Non e' un punto numerato ma una
+FASE, da fare dopo il resto. Ci rientra il debito tecnico gia' noto: Escursioni,
+Carpooling e Tribu' & Squadre non sono ancora adattate al telefono.
+
+=====================================================================
+ORDINE CONSIGLIATO PER LA PROSSIMA SESSIONE
+Criteri, in ordine: prima le DOMANDE (costano minuti e fanno risparmiare
+giornate), poi cio' che oggi DICE IL FALSO, poi cio' che e' gia' mezzo fatto,
+poi le cose nuove.
+=====================================================================
+
+ 0. CHIEDERE ALL'UTENTE, prima di scrivere qualunque riga:
+      - punto 38: cosa intendeva per "tornare all'inizio", visto che il tasto
+        "Svuota" esiste gia';
+      - punto 42: cos'e' una "zona" (una catena montuosa? un raggio in km? una
+        regione?) e quanti livelli vuole;
+      - punto 39: cosa non gli piace nella resa dei sentieri, guardando lo schermo
+        insieme.
+ 1. PUNTO 44 (tempo CAI senza traccia): oggi mostra un numero che sembra una misura
+    e non lo e'. E' il piu' veloce di tutti e toglie una bugia dallo schermo.
+ 2. PUNTO 41 (togliere il "Profilo verificato"): e' una rimozione, si fa in poco.
+ 3. PUNTO 40 (icona profilo -> pagina del profilo): meta' c'e' gia'.
+ 4. PUNTO 46 (i miei annunci di carpooling): stesso difetto gia' risolto due volte,
+    la strada e' segnata.
+ 5. PUNTO 47 (zaino, aggiungere a mano): meta' c'e' gia'.
+ 6. PUNTO 43 (collegare un progetto o una traccia a un'escursione): e' il piu'
+    utile dei lavori grossi, e va fatto SUBITO DOPO il 44 - e' quello che
+    restituisce il tempo previsto quando un percorso vero c'e'.
+ 7. PUNTO 37 (Dead Man's Switch sul server + la pagina aperta nel tracciamento):
+    il pezzo piu' grosso, ed e' sicurezza vera. Da fare con calma e per intero,
+    non a meta'.
+ 8. PUNTO 48 (pagina della squadra) e PUNTO 45 (segnalazioni): funzionalita'
+    nuove, nessuna delle due corregge qualcosa di rotto.
+ 9. PUNTO 42 (zona di competenza calcolata), dopo la risposta alla domanda 0.
+10. ESTETICA e responsive delle sezioni ancora non adattate al telefono.
