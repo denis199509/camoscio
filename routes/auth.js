@@ -7,7 +7,10 @@ const User = require('../models/User');
 const PasswordReset = require('../models/PasswordReset');
 const { mongoose } = require('../db/mongo');
 const { chiudiTutteLeSessioni } = require('../db/sessionStore');
-const { inviaEmail, emailRecuperoPassword, indirizzoBase, configurato: mailerConfigurato } = require('../lib/mailer');
+const {
+    inviaEmail, emailRecuperoPassword, indirizzoBase,
+    configurato: mailerConfigurato, inviiFunzionanti
+} = require('../lib/mailer');
 const { requireAuth } = require('../middleware/auth');
 
 const MAX_PHOTO_LENGTH = 2 * 1024 * 1024; // ~1.5MB decodificati: "piccola immagine", non un file pesante
@@ -284,16 +287,29 @@ router.post('/forgot-password', async (req, res) => {
     // (punto 21: "la finestra NON dice piu' il falso") e al dislivello dei percorsi
     // progettati (punto 13: meglio dire che non si puo' sapere, che inventare un numero).
     // Non svela niente su chi e' iscritto: e' uno stato del sito, uguale per tutti.
-    const inviiAttivi = mailerConfigurato();
-    const rispostaGenerica = inviiAttivi
-        ? {
-            disponibile: true,
-            message: "Se quell'indirizzo è registrato, ti abbiamo mandato un'email con il link per reimpostare la password. Controlla anche la posta indesiderata."
-        }
-        : {
+    // Tre stati, non due. Avere le chiavi non vuol dire riuscire a spedire: il servizio
+    // puo' rifiutare (account non ancora validato, mittente non confermato, quota finita)
+    // o essere irraggiungibile, e allora "ti abbiamo mandato un'email" e' di nuovo falso.
+    // Lo stato di salute e' GLOBALE e non dipende da chi sta chiedendo: vedi il commento
+    // in lib/mailer.js sul perche' l'esito della singola richiesta non si puo' usare senza
+    // trasformare questo modulo in un elenco degli iscritti.
+    let rispostaGenerica;
+    if (!mailerConfigurato()) {
+        rispostaGenerica = {
             disponibile: false,
             message: "Il recupero password non è ancora attivo su questo sito: l'invio delle email non è configurato, quindi nessun link può partire. La tua password di adesso continua a funzionare."
         };
+    } else if (!inviiFunzionanti()) {
+        rispostaGenerica = {
+            disponibile: false,
+            message: "In questo momento non riusciamo a mandare email, quindi il link non può partire. Riprova fra un po'. La tua password di adesso continua a funzionare."
+        };
+    } else {
+        rispostaGenerica = {
+            disponibile: true,
+            message: "Se quell'indirizzo è registrato, ti abbiamo mandato un'email con il link per reimpostare la password. Controlla anche la posta indesiderata."
+        };
+    }
 
     try {
         const email = String(req.body && req.body.email || '').toLowerCase().trim();

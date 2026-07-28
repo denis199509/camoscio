@@ -216,6 +216,22 @@ l'abbia chiesto. Oggi riguarda 2 account reali, entrambi con indirizzi validi.
 - Corretto un difetto di stile preesistente: .btn non aveva text-decoration:none,
   quindi un pulsante fatto con un <a> (come quelli di questa pagina nuova) usciva
   sottolineato. Sui <button> non cambia niente.
+- AVERE LE CHIAVI NON VUOL DIRE RIUSCIRE A SPEDIRE. Trovato dal vivo: messe le
+  variabili su Render, il sito diceva gia' "ti abbiamo mandato un'email" mentre
+  Mailjet RIFIUTAVA tutto, perche' un account nuovo va prima validato da loro.
+  Il controllo di prima guardava solo se le chiavi c'erano.
+  Ora gli stati sono TRE: chiavi mancanti, chiavi presenti ma invio guasto, tutto a
+  posto. Il secondo copre anche la quota giornaliera finita (200 al giorno), il
+  mittente non ancora confermato e il servizio irraggiungibile.
+  LO STATO DI SALUTE E' GLOBALE, NON PER RICHIESTA, ed e' il punto delicato: l'esito
+  del singolo invio esiste SOLO per gli indirizzi registrati, perche' per gli altri
+  non si prova nemmeno a spedire. Rispondere "invio fallito" a chi e' registrato e
+  "fatto" a chi non lo e' trasformerebbe il modulo in un ELENCO DEGLI ISCRITTI, e
+  proprio nel momento peggiore: col servizio guasto ogni tentativo fallisce, quindi
+  la differenza si vedrebbe su ogni richiesta. C'e' un controllo apposta che verifica
+  che le due risposte restino identiche.
+  Il prezzo, accettato: la PRIMA persona che incontra il guasto riceve ancora il
+  messaggio ottimista. Lo stato si azzera a ogni riavvio del server.
 - SENZA LA CHIAVE DI BREVO IL SITO NON PROMETTE UN'EMAIL CHE NON PUO' PARTIRE.
   Emerso quando l'utente ha chiesto di mettere online PRIMA di avere la chiave: cosi'
   com'era, il sito avrebbe risposto "ti abbiamo mandato un'email con il link" e non
