@@ -3781,14 +3781,18 @@ DA DOVE SI RIPARTE — situazione al 2026-07-28, SECONDA sessione
     "ho fatto la prova al aperto, registra bene". Era l'ultima verifica che nessuna prova
     automatica poteva sostituire, ed era aperta da tre sessioni: si puo' togliere da tutti
     gli elenchi di cose da provare.
-    CHIESTO E CONFERMATO nella stessa sessione: ha usato anche IL TASTO DI REGISTRAZIONE
-    SULLA MAPPA ("Comincia registrazione", punto 14), e funziona. Quindi camminando sono
-    provati dal vivo sia il tracciamento sia il comando che lo avvia.
-    RESTA IL SOLO TASTO SOS mai premuto in montagna. Non e' una dimenticanza da rimediare
-    in fretta: e' il tasto che apre il 112, e provarlo sul serio vuol dire chiamare i
-    soccorsi. Se ne verifica al massimo la finestra con le coordinate, senza confermare la
-    chiamata - ed e' bene dirglielo cosi', invece di chiedergli genericamente di "provare
-    l'SOS".
+    CHIESTO E CONFERMATO nella stessa sessione, TUTTO E TRE I COMANDI:
+      - il TRACCIAMENTO: "registra bene";
+      - il TASTO DI REGISTRAZIONE sulla mappa ("Comincia registrazione", punto 14);
+      - il TASTO SOS (punto 20). Parole sue: "e' comparso il messaggio con le coordinate e
+        un messaggio che mi avvisava che devo chiamare io, non lo fa il sito".
+    QUELL'ULTIMA FRASE E' LA VERIFICA PIU' PREZIOSA DELLA GIORNATA, e non riguarda il
+    codice: il punto 20 e il vincolo hard "niente promesse che il sito non puo' mantenere"
+    esistono proprio perche' l'interfaccia dica CHI FA COSA. Un utente che, dopo aver
+    premuto il tasto in montagna, riferisce da solo "devo chiamare io, non lo fa il sito"
+    e' la prova che il messaggio arriva a destinazione. Non toccare quel testo alla
+    leggera.
+    NON RESTA PIU' NIENTE DA PROVARE SUL CAMPO. Era l'elenco piu' vecchio del progetto.
 
 >>> FATTO IN QUESTA SESSIONE: il PUNTO 35 (refreshState non guardava lo stato delle
     risposte). Sezione dedicata in cima al file. Con esso, dei 35 punti di
@@ -3861,11 +3865,10 @@ GitHub (sono in .gitignore): si rigenerano da sole.
 
  - [FATTO il 2026-07-28] La prova all'aperto camminando: "registra bene". Il
    TRACCIAMENTO e' provato dal vivo.
- - [CONFERMATO nella stessa sessione] Ha usato camminando anche il TASTO DI REGISTRAZIONE
-   sulla mappa, e funziona.
- - Resta il solo TASTO SOS, mai premuto in montagna. Provarlo per davvero vuol dire
-   chiamare il 112: al massimo si guarda la finestra con le coordinate senza confermare
-   la chiamata, ed e' bene chiederglielo cosi' invece di dirgli "prova l'SOS".
+ - [CONFERMATO nella stessa sessione] Provati camminando anche il TASTO DI REGISTRAZIONE
+   sulla mappa e il TASTO SOS: la finestra con le coordinate compare, e dice chiaramente
+   che la chiamata la fa la persona, non il sito.
+   NON RESTA NIENTE DA PROVARE SUL CAMPO.
  - Che l'altra persona confermi il proprio indirizzo cliccando il link (chiude il punto A).
 
 -------------------------------------------------------------------
@@ -4225,10 +4228,10 @@ DEBITO TECNICO NOTO, non urgente ma da non dimenticare:
    TRACCIAMENTO in movimento e' provato dal vivo - il dubbio piu' vecchio del
    progetto, quello che Puppeteer non poteva sciogliere (simula un GPS che
    cammina, non l'imprecisione reale, i buchi di segnale, la batteria).
-   Confermato anche il TASTO DI REGISTRAZIONE sulla mappa, usato camminando.
-   Resta non provato il solo TASTO SOS, che per sua natura si prova a meta':
-   la finestra con le coordinate, senza confermare la chiamata al 112.
-   Non blocca nessun punto.
+   Confermati anche il TASTO DI REGISTRAZIONE sulla mappa e il TASTO SOS,
+   provati camminando. Dell'SOS l'utente ha riferito da solo che il sito gli
+   ha detto di dover chiamare lui - cioe' il messaggio del punto 20 fa
+   esattamente il suo mestiere. QUESTA VOCE E' CHIUSA.
  - IL DEAD MAN'S SWITCH E' ANCORA FINTO, ed e' scritto a schermo. Il conto
    alla rovescia vive nella pagina: se la si chiude non succede piu' niente,
    e alla scadenza non parte nessun messaggio. Nel blocco 2 si e' fatta la
