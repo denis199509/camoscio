@@ -904,3 +904,36 @@ dentro fetchApi prima di usare il risultato.
       CONTROPROVA FATTA: rimettendo il codice vecchio la prova fallisce 6 controlli su 16,
       quindi sta davvero provando qualcosa.
       Rilanciate tutte le prove di accessi/password/email: 219 controlli, tutti passati.
+
+36) [FATTO 2026-07-28, seconda sessione] Il dislivello del TRACCIAMENTO DAL VIVO contava come
+salita il tremolio del GPS. NON era in nessuna lista: e' emerso guardando i tuoi dati veri
+mentre si misurava il punto 33, e l'hai scelto tu come prossimo lavoro.
+   COME SI VEDEVA: la tua camminata di prova all'aperto del 2026-07-28 risultava con 21 METRI
+   DI DISLIVELLO, ma la quota andava da 112 a 120 m - otto metri in tutto, su 137 metri
+   percorsi in piano, con un GPS che dichiarava +-12/+-20 m di precisione.
+   CAUSA: dal vivo si sommava ogni salto di quota sopra i 3 metri fra due punti consecutivi.
+   Su un telefono, che sulla quota sbaglia molto piu' di 3 metri, quel tremolio diventava
+   salita vera. Era la stessa cosa gia' corretta per i file .gpx importati, rimasta pero'
+   aperta qui.
+   PERCHE' NON ERA GIA' STATO FATTO: sembrava impossibile. Dal vivo i punti arrivano a gruppi
+   e il totale si aggiorna man mano, quindi non si puo' guardare tutta la traccia insieme -
+   ed e' il motivo per cui erano state scritte due regole diverse.
+   -> FATTO, e si poteva: a quella regola non serve tutta la traccia, le bastano il totale e
+      la quota piu' bassa vista da quando si sta salendo. Tenendo quel secondo numero sulla
+      sessione, il conto fatto gruppo per gruppo e' IDENTICO a quello fatto in una passata
+      sola - verificato con gruppi da 1, 3, 7, 50 e 500 punti sulle tue due tracce vere.
+      Ora la regola del dislivello e' UNA SOLA in tutto il sito.
+      RISULTATO SULLA TUA CAMMINATA: da 21 m a 0 m, che e' la risposta giusta per 137 metri
+      in piano.
+      TROVATO CON LA CONTROPROVA, e non me l'aspettavo: la regola vecchia non solo gonfiava
+      col rumore, ma PERDEVA salita vera. Su una salita dolce e costante (3 m ogni punto)
+      dava 233 m invece di 292, perche' nessun singolo passo superava i suoi 3 metri.
+      Sbagliava in tutte e due le direzioni.
+      RESIDUO ONESTO, scritto e non nascosto: se il GPS oscilla piu' della soglia (10 m), un
+      po' di salita inventata resta. La regola nuova non e' mai peggio della vecchia a nessun
+      livello di rumore (c'e' un controllo apposta che lo verifica), ma per toglierlo del
+      tutto servirebbe pulire la quota PRIMA di contarla, come si fa col modello del terreno
+      al punto 33. Non e' stato fatto: non ci sono tracce vere abbastanza rumorose su cui
+      misurarlo, e tarare una cura su dati inventati e' il modo di peggiorare le cose.
+      28 controlli in prove/prova-dislivello-vivo.js, di cui uno che parla col SERVER VERO
+      mandando i punti a gruppi, non con una copia della regola. Controprova fatta.

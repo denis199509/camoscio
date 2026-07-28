@@ -12,7 +12,10 @@ const trailIndex = require('../lib/trailIndex');
 const { mongoose } = require('../db/mongo');
 
 const MAX_POINTS_PER_BATCH = 500; // un client onesto ne manda ~60-180 ogni 20-30s, mai a uno a uno
-const MIN_ELEVATION_DELTA_M = 3; // sotto questa soglia il "dislivello" e' rumore del GPS, non salita reale
+// LA SOGLIA DEL DISLIVELLO DAL VIVO NON ESISTE PIU' COME NUMERO A PARTE. Fino al 2026-07-28
+// c'era MIN_ELEVATION_DELTA_M = 3, applicata al salto fra due punti consecutivi, ed e' stata
+// tolta: si usa SOGLIA_DISLIVELLO_M di lib/gpx.js, la stessa dei file importati. Il perche'
+// e' scritto per esteso dove si calcola, nella rotta /:id/points.
 const SIMPLIFY_TOLERANCE_M = 8; // stessa scala dell'errore medio OSM (~10m) citato in tutto il progetto
 const MIN_CANDIDATE_POINTS = 5; // sotto questa lunghezza un tratto "fuori sentiero" e' solo rumore GPS, non un percorso da segnalare
 
@@ -567,7 +570,8 @@ router.post('/:id/points', requireAuth, async (req, res) => {
             hikeId: 1,
             status: 1,
             points: { $slice: -1 },
-            offTrailBuffer: 1
+            offTrailBuffer: 1,
+            elevationRefM: 1   // la memoria della regola del dislivello, vedi sotto
         });
 
         if (!session || String(session.userId) !== req.session.userId) {
@@ -602,14 +606,39 @@ router.post('/:id/points', requireAuth, async (req, res) => {
         );
 
         let addedDistanceKm = 0;
-        let addedElevationM = 0;
         for (const p of newPoints) {
-            if (lastPoint) {
-                addedDistanceKm += haversineKm(lastPoint[1], lastPoint[0], p[1], p[0]);
-                const deltaAlt = p[2] - lastPoint[2];
-                if (deltaAlt > MIN_ELEVATION_DELTA_M) addedElevationM += deltaAlt;
-            }
+            if (lastPoint) addedDistanceKm += haversineKm(lastPoint[1], lastPoint[0], p[1], p[0]);
             lastPoint = p;
+        }
+
+        // IL DISLIVELLO, con la STESSA regola dei file .gpx importati (vedi
+        // statisticheTraccia in lib/gpx.js): si conta quanto si e' saliti in tutto sopra
+        // l'ultimo avvallamento, non il salto fra due punti consecutivi.
+        //
+        // PRIMA DI QUESTO si sommava ogni salto sopra i 3 metri, e su un GPS da telefono -
+        // che sulla quota sbaglia molto piu' di 3 metri - quel tremolio diventava salita
+        // vera. Misurato sui dati veri dell'utente: una camminata di 137 metri in piano,
+        // con la quota fra 112 e 120 m e il GPS che dichiarava +-12/+-20 m di precisione,
+        // risultava con 21 METRI DI DISLIVELLO. Con questa regola da' zero, che e' la
+        // risposta giusta.
+        //
+        // SEMBRAVA IMPOSSIBILE FARLO QUI, ed e' il motivo per cui le due regole erano
+        // diverse: dal vivo i punti arrivano a gruppi e il totale si aggiorna man mano,
+        // quindi non si puo' guardare tutta la traccia insieme. Ma alla regola non serve
+        // tutta la traccia: le bastano il totale e la quota piu' bassa vista da quando si
+        // sta salendo. Tenendo quel secondo numero sulla sessione (elevationRefM), il conto
+        // fatto gruppo per gruppo e' IDENTICO a quello fatto in una passata sola.
+        let addedElevationM = 0;
+        let riferimento = isFiniteNum(session.elevationRefM) ? session.elevationRefM : null;
+        for (const p of newPoints) {
+            const quota = p[2];
+            if (riferimento === null) { riferimento = quota; continue; }   // primo punto: da' il via, non conta
+            if (quota > riferimento + SOGLIA_DISLIVELLO_M) {
+                addedElevationM += quota - riferimento;
+                riferimento = quota;
+            } else if (quota < riferimento) {
+                riferimento = quota;
+            }
         }
 
         // Risposta senza l'array "points": il client ha gia' tutti i punti (li ha mandati lui),
@@ -623,7 +652,13 @@ router.post('/:id/points', requireAuth, async (req, res) => {
                     distanceKm: Math.round(addedDistanceKm * 1000) / 1000,
                     elevationGainM: Math.round(addedElevationM)
                 },
-                $set: { lastPointAt: new Date(), status: 'active', offTrailBuffer: newBuffer }
+                // elevationRefM va salvato INSIEME al totale, nella stessa scrittura: se si
+                // salvasse il totale e non il riferimento, il gruppo successivo ripartirebbe
+                // da capo e conterebbe due volte la stessa salita.
+                $set: {
+                    lastPointAt: new Date(), status: 'active', offTrailBuffer: newBuffer,
+                    ...(riferimento !== null ? { elevationRefM: riferimento } : {})
+                }
             },
             { new: true, select: '-points' }
         );

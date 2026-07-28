@@ -51,11 +51,13 @@ async function aspetta(page, fn, descrizione, timeout = 15000) {
     const Utenti = mongoose.connection.collection('users');
     const Reset = mongoose.connection.collection('passwordresets');
     const Sessioni = mongoose.connection.collection('sessions');
+    const Verifiche = mongoose.connection.collection('emailverifications');
 
     const partenza = {
         utenti: await Utenti.countDocuments(),
         reset: await Reset.countDocuments(),
-        sessioni: await Sessioni.countDocuments()
+        sessioni: await Sessioni.countDocuments(),
+        verifiche: await Verifiche.countDocuments()
     };
     console.log('Conteggi di partenza:', partenza, '\n');
 
@@ -319,6 +321,13 @@ async function aspetta(page, fn, descrizione, timeout = 15000) {
 
         for (const id of idDiProva) {
             await Reset.deleteMany({ userId: id });
+            // ANCHE I TOKEN DI CONFERMA, che questa prova non puliva. Registrarsi ne crea
+            // uno (dal punto 34), quindi ogni giro lasciava un documento orfano sul
+            // database - trovato il 2026-07-28 ricontando le collezioni a fine sessione.
+            // Non erano permanenti (c'e' un indice TTL di 24 ore) ma la prova diceva
+            // "database tornato come prima" senza guardare questa collezione, che e' il
+            // modo in cui un residuo passa inosservato.
+            await Verifiche.deleteMany({ userId: id });
             await Utenti.deleteOne({ _id: id });
         }
         const sessioni = await Sessioni.find({}).toArray();
@@ -333,13 +342,16 @@ async function aspetta(page, fn, descrizione, timeout = 15000) {
         const fine = {
             utenti: await Utenti.countDocuments(),
             reset: await Reset.countDocuments(),
-            sessioni: await Sessioni.countDocuments()
+            sessioni: await Sessioni.countDocuments(),
+            verifiche: await Verifiche.countDocuments()
         };
         console.log('\nConteggi finali:  ', fine);
         console.log('Conteggi iniziali:', partenza);
         ok('database tornato come prima (utenti)', fine.utenti === partenza.utenti);
         ok('database tornato come prima (recuperi)', fine.reset === partenza.reset);
         ok('database tornato come prima (sessioni)', fine.sessioni === partenza.sessioni);
+        ok('database tornato come prima (conferme)', fine.verifiche === partenza.verifiche,
+            `${partenza.verifiche} -> ${fine.verifiche}`);
 
         console.log(`\n=========================================`);
         console.log(`  PASSATI: ${passati}   FALLITI: ${falliti}`);

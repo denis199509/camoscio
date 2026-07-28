@@ -19,6 +19,17 @@ const activeHikeSessionSchema = new mongoose.Schema({
     // su un'escursione di piu' ore con migliaia di punti).
     distanceKm: { type: Number, default: 0 },
     elevationGainM: { type: Number, default: 0 },
+    // La quota piu' bassa vista da quando si sta salendo: e' l'UNICO pezzo di memoria che
+    // serve per applicare dal vivo la stessa regola del dislivello usata per i file .gpx.
+    // Quella regola guarda quanto si e' saliti in tutto sopra l'ultimo avvallamento, non il
+    // salto fra due punti consecutivi - e sembrava impossibile da usare qui, perche' dal
+    // vivo i punti arrivano a gruppi e non si puo' guardare tutta la traccia insieme.
+    // Si puo' invece: alla regola basta ricordare due numeri, il totale (elevationGainM) e
+    // questo. Tenendoli sulla sessione, il conto fatto gruppo per gruppo da' ESATTAMENTE lo
+    // stesso risultato di una passata sola su tutta la traccia.
+    // default: undefined perche' il primo gruppo di punti la imposta, e perche' un campo
+    // scritto quando non serve e' spazio buttato (vincolo hard).
+    elevationRefM: { type: Number, default: undefined },
     points: { type: [[Number]], default: [] },
     // Presente (sempre true) solo mentre la sessione e' aperta (active/paused); rimosso
     // alla chiusura (vedi POST /:id/end). Serve per l'indice unico parziale sotto: un

@@ -102,6 +102,74 @@ LE LISTE DETTATE DALL'UTENTE, stato aggiornato:
 ===================================================================
 
 ===================================================================
+IL DISLIVELLO DEL TRACCIAMENTO DAL VIVO (2026-07-28, seconda sessione)
+punto 36 di cose_da_fare.txt
+===================================================================
+
+--- COME SI VEDEVA ---
+
+La camminata di prova all'aperto dell'utente risultava con 21 METRI DI DISLIVELLO su 137
+metri percorsi in piano, con la quota fra 112 e 120 m e un GPS che dichiarava +-12/+-20 m
+di precisione. Non era in nessuna lista: e' emerso guardando i suoi dati veri mentre si
+misurava il punto 33.
+
+--- PERCHE' NON ERA GIA' STATO FATTO ---
+
+Dal vivo si sommava ogni salto di quota sopra i 3 metri fra DUE PUNTI CONSECUTIVI. I file
+.gpx importati usavano gia' la regola giusta (quanto si e' saliti in tutto sopra l'ultimo
+avvallamento), ma qui sembrava impossibile applicarla: i punti arrivano a gruppi e il
+totale si aggiorna man mano, quindi non si puo' guardare tutta la traccia insieme. Era
+scritto nero su bianco nel codice come motivo delle due regole diverse.
+
+--- SI POTEVA ---
+
+A quella regola NON SERVE tutta la traccia: le bastano due numeri, il totale e la quota
+piu' bassa vista da quando si sta salendo. Tenendo il secondo sulla sessione
+(elevationRefM), il conto fatto gruppo per gruppo e' IDENTICO a quello fatto in una
+passata sola. Verificato con gruppi da 1, 3, 7, 50 e 500 punti sulle due tracce vere - ed
+e' un controllo che conta, perche' altrimenti il dislivello di un'escursione dipenderebbe
+da quanto spesso il telefono ha trovato campo: due persone che camminano insieme
+tornerebbero a casa con numeri diversi.
+
+ORA LA REGOLA DEL DISLIVELLO E' UNA SOLA IN TUTTO IL SITO: tracciamento dal vivo, file
+importati e percorsi progettati.
+
+--- IL RISULTATO ---
+
+La camminata dell'utente: da 21 m a 0 m, che e' la risposta giusta per 137 metri in piano.
+
+TROVATO CON LA CONTROPROVA, e non era atteso: LA REGOLA VECCHIA SBAGLIAVA IN TUTTE E DUE
+LE DIREZIONI. Non solo gonfiava col rumore: su una salita dolce e costante (3 m per punto)
+dava 233 m invece di 292, perche' nessun singolo passo superava i suoi 3 metri. E' lo
+stesso difetto gia' documentato per gli orologi con altimetro barometrico, che era stato
+corretto solo per i file importati.
+
+--- RESIDUO ONESTO ---
+
+Se il GPS oscilla PIU' della soglia (10 m), un po' di salita inventata resta. Misurato:
+
+    tremolio   escursione   regola vecchia   regola nuova
+      ± 3 m         9 m           124 m            0 m
+      ± 5 m        16 m           334 m          192 m
+      ± 7 m        22 m           508 m          461 m
+      ±10 m        31 m           752 m          659 m
+
+La regola nuova NON E' MAI PEGGIO della vecchia a nessun livello di rumore, e c'e' un
+controllo apposta che lo verifica. Per toglierlo del tutto servirebbe PULIRE la quota
+prima di contarla, come si fa col modello del terreno al punto 33.
+NON E' STATO FATTO DI PROPOSITO: non ci sono tracce vere abbastanza rumorose su cui
+misurare la cura, e tarare una correzione su dati inventati e' il modo di peggiorare le
+cose credendo di migliorarle. Se un domani l'utente registra una camminata lunga in piano,
+quella e' la traccia che serve.
+
+--- PROVATA ---
+
+prove/prova-dislivello-vivo.js, 28 controlli. Uno di questi parla col SERVER VERO mandando
+i punti a gruppi come farebbe il telefono, invece di provare una copia della regola scritta
+dentro la prova: senza, un giorno il server potrebbe divergere e i controlli passerebbero
+lo stesso. Controprova fatta.
+
+===================================================================
 PUNTO 33: COM'E' ANDATA (2026-07-28, seconda sessione)
 il dislivello dei percorsi progettati
 ===================================================================
@@ -3912,18 +3980,19 @@ DA DOVE SI RIPARTE — situazione al 2026-07-28, SECONDA sessione
     dislivello gonfiato del tracciamento dal vivo (vedi sotto), il responsive delle sezioni
     mancanti, Marche e Molise nell'indice sentieri, il file LICENSE.
 
->>> DA FARE PER PRIMO, gia' concordato con l'utente: IL TRACCIAMENTO DAL VIVO CONTA COME
-    SALITA IL TREMOLIO DEL GPS. La sua camminata di prova del 2026-07-28 risulta con 21 m di
-    dislivello mentre la quota andava da 112 a 120 m - otto metri in tutto, con un GPS che
-    dichiarava +-12/+-20 m di precisione. Con la regola dei file importati lo stesso percorso
-    da' 0 m, che e' la risposta giusta per 137 metri in piano.
-    E' lo stesso difetto gia' corretto per i file .gpx (regola del singolo passo contro
-    regola della salita accumulata): la cura e' nota, sta in MIN_ELEVATION_DELTA_M di
-    routes/tracking.js contro SOGLIA_DISLIVELLO_M di lib/gpx.js.
-    ATTENZIONE, e' il motivo per cui le due regole erano diverse: dal vivo i punti arrivano a
-    gruppi e il totale si aggiorna man mano, quindi non si puo' guardare tutta la traccia
-    insieme. La correzione deve tenere conto di questo, non limitarsi a cambiare un numero.
-    L'utente ha scelto di farlo DOPO il punto 33.
+>>> FATTO ANCHE IL DISLIVELLO DEL TRACCIAMENTO DAL VIVO (punto 36, sezione dedicata in cima
+    al file). La regola del dislivello e' ora UNA SOLA in tutto il sito: tracciamento dal
+    vivo, file importati e percorsi progettati.
+    Resta un residuo dichiarato: con un GPS che oscilla oltre i 10 m un po' di salita
+    inventata rimane. Serve una traccia vera lunga e in piano per misurare una cura - se
+    l'utente ne registra una, e' quella.
+
+>>> DUE COSE VISTE SUL DATABASE, da sapere e da NON toccare:
+    - l'escursione "Alba Corno Grande" e' stata creata dall'utente il 2026-07-28 alle 18:52,
+      mentre si lavorava. E' sua, e le escursioni sul database sono passate da 2 a 3;
+    - restano 4 token di conferma email ORFANI (utenti di prova ormai cancellati). Si
+      cancellano da soli entro 24 ore per via dell'indice TTL. Quello che li generava e'
+      stato chiuso: prova-browser-punto7.js registrava un account e non puliva il token.
 
 >>> CAMBIATO SUL DATABASE, controllato in questa sessione: DENIS HA CONFERMATO IL SUO
     INDIRIZZO EMAIL (emailVerified: true). L'ALTRO ACCOUNT REALE no. Quindi il punto A qui sotto vale

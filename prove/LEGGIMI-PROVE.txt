@@ -38,7 +38,16 @@ Puppeteer, ma INTERROGA UNA FONTE ESTERNA (Open-Meteo):
 
     node prove/prova-punto33.js                     33 controlli
 
-ATTENZIONE, e' l'unica prova che puo' dire SALTATO. Open-Meteo e' gratuito e ha un tetto
+La prova del DISLIVELLO DAL VIVO (punto 36) gira senza server per la maggior parte, ma la
+sua sezione 6 - quella che conta - vuole il server acceso, perche' manda i punti alla rotta
+vera invece di provare una copia della regola:
+
+    node prove/prova-dislivello-vivo.js             28 controlli
+
+Se il server non c'e', la sezione 6 si salta da sola e lo dice. Crea UNA sessione di prova
+su un account demo e la cancella in un finally, filtrata per userId E per id.
+
+ATTENZIONE, prova-punto33 e' l'unica prova che puo' dire SALTATO. Open-Meteo e' gratuito e ha un tetto
 (10.000 chiamate al giorno, 5.000 all'ora, ~600 PUNTI al minuto). Se in quel momento sta
 frenando, i controlli che dipendono da lei non provano niente: farli fallire direbbe "il
 sito e' rotto" quando il sito e' a posto. Quindi si segnano SALTATO, e la prova lo scrive

@@ -52,7 +52,7 @@ function applySessionState(session) {
     trackingState.elevationGainM = session.elevationGainM || 0;
     trackingState.baselineSeconds = session.durationSeconds || 0;
     trackingState.activeResumedAtMs = session.status === 'active' ? Date.now() : null;
-    lastLocalPoint = null;
+    resetLocalStats();
     nearbyTrailSegments = null; // ogni escursione puo' essere in una zona diversa, si riscarica da capo
 }
 
@@ -133,7 +133,12 @@ async function pauseTracking() {
 async function resumeTracking() {
     trackingState.activeResumedAtMs = Date.now();
     trackingState.status = 'active';
-    lastLocalPoint = null; // evita un salto di distanza fasullo tra il punto pre-pausa e il primo dopo
+    // Solo la DISTANZA si azzera qui, non tutta resetLocalStats(): serve a evitare un salto
+    // fasullo fra il punto pre-pausa e il primo dopo. La memoria del dislivello invece NON va
+    // azzerata, perche' il server non azzera elevationRefM su una pausa - azzerarla solo qui
+    // farebbe divergere i due conti, ed e' proprio il genere di differenza che poi si vede a
+    // schermo come un numero che cambia da solo.
+    lastLocalPoint = null;
     beginWatchingPosition();
     startUiTimer();
     startFlushTimer();
@@ -340,17 +345,43 @@ function onPositionError(err) {
     }
 }
 
+// La soglia del dislivello: la STESSA del server (SOGLIA_DISLIVELLO_M in lib/gpx.js) e la
+// stessa dei file .gpx importati. Qui il valore e' scritto perche' il browser non puo'
+// leggere un file del server, ma non e' una seconda regola: e' la stessa, e se un giorno la
+// si cambia va cambiata in tutti e due i posti.
+const SOGLIA_DISLIVELLO_M = 10;
+
+// Quota piu' bassa vista da quando si sta salendo. E' la memoria della regola, la stessa che
+// il server tiene in elevationRefM.
+let quotaRiferimento = null;
+
+function resetLocalStats() { lastLocalPoint = null; quotaRiferimento = null; }
+
+// Il conto istantaneo mentre si cammina, in attesa che il server risponda coi totali veri
+// (flushPendingPoints li riallinea a ogni sincronizzazione).
+//
+// USA LA STESSA REGOLA DEL SERVER, e deve: prima sommava ogni salto sopra i 3 metri, cioe'
+// contava come salita il tremolio della quota GPS - che su un telefono sbaglia molto piu' di
+// 3 metri. Il risultato era un numero che saliva da solo stando fermi, e che poi calava di
+// colpo alla prima sincronizzazione, quando arrivava il totale del server: due numeri diversi
+// sotto gli occhi della stessa persona.
 function accumulateLocalStats(point) {
     if (lastLocalPoint) {
         const distKm = calculateDistance(lastLocalPoint[1], lastLocalPoint[0], point[1], point[0]) / 1000;
         trackingState.distanceKm += distKm;
-
-        if (typeof point[2] === 'number' && typeof lastLocalPoint[2] === 'number') {
-            const delta = point[2] - lastLocalPoint[2];
-            if (delta > 3) trackingState.elevationGainM += delta;
-        }
     }
     lastLocalPoint = point;
+
+    const quota = point[2];
+    if (typeof quota !== 'number' || !isFinite(quota)) return;
+    if (quotaRiferimento === null) { quotaRiferimento = quota; return; }
+
+    if (quota > quotaRiferimento + SOGLIA_DISLIVELLO_M) {
+        trackingState.elevationGainM += quota - quotaRiferimento;
+        quotaRiferimento = quota;
+    } else if (quota < quotaRiferimento) {
+        quotaRiferimento = quota;
+    }
 }
 
 // --- Sincronizzazione con il server (coda IndexedDB -> invio a gruppi) ---
@@ -676,7 +707,7 @@ function resetToIdleUi() {
     trackingState.durationSeconds = 0;
     trackingState.avgSpeedKmh = 0;
     trackingState.lastAccuracy = null;
-    lastLocalPoint = null;
+    resetLocalStats();
     nearbyTrailSegments = null;
     if (window.clearLiveTrackPolyline) window.clearLiveTrackPolyline();
     if (window.endLiveGpsView) window.endLiveGpsView();
