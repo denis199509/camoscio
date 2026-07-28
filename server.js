@@ -6,7 +6,7 @@ const WebSocket = require('ws');
 const path = require('path');
 const fs = require('fs');
 const session = require('express-session');
-const { MongoStore } = require('connect-mongo');
+const { sessionStore } = require('./db/sessionStore');
 const { connectMongo } = require('./db/mongo');
 const { loadTrailIndex } = require('./lib/trailIndex');
 const { requireAuth } = require('./middleware/auth');
@@ -46,7 +46,7 @@ const sessionMiddleware = session({
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
-    store: MongoStore.create({ mongoUrl: process.env.MONGODB_URI }),
+    store: sessionStore, // creato in db/sessionStore.js: lo usa anche routes/auth.js (punto 7)
     cookie: {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production', // richiede HTTPS: vero solo su Render, mai in locale
@@ -62,6 +62,14 @@ app.use(express.static(path.join(__dirname, 'public')));
 // chiaramente separata dagli account veri.
 app.get('/demo', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'demo.html'));
+});
+
+// Pagina di scelta della nuova password (punto 7): ci si arriva SOLO dal link temporaneo
+// mandato per email. Il file esiste sempre, ma la pagina non mostra niente finche' non ha
+// chiesto al server se il token nell'indirizzo e' ancora valido - e' li' che sta la sua
+// "temporaneita'", non nel file.
+app.get('/reimposta-password', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'reimposta-password.html'));
 });
 
 // Creazione della cartella per le note vocali del diario se non esiste

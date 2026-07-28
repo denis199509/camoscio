@@ -585,6 +585,14 @@ function renderProfileCard(usr) {
         expertToggle.checked = !!(usr.localExpert && usr.localExpert.active);
         expertArea.value = (usr.localExpert && usr.localExpert.area) || "";
     }
+
+    // Cambio password (punto 7): nascosto per i 4 account demo, che entrano dalla pagina
+    // /demo senza password e quindi non ne hanno una da cambiare. Mostrargliela vorrebbe
+    // dire offrire un modulo che risponde sempre "password attuale non corretta".
+    const changePasswordSection = document.getElementById("change-password-section");
+    if (changePasswordSection) {
+        changePasswordSection.classList.toggle("hidden", !!usr.isDemoAccount);
+    }
 }
 
 // Disegna il grafico delle prestazioni di ascesa/discesa con Chart.js

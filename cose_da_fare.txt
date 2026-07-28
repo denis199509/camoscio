@@ -121,7 +121,35 @@ dell'utente dopo aver usato il sito vero (online, dopo il push della Fase H).
 Da pianificare e implementare in una sessione futura.
 =====================================================================
 
-7) Recupero password in caso di dimenticanza - manca del tutto, va aggiunto.
+7) [FATTO 2026-07-28] Recupero password in caso di dimenticanza - manca del tutto, va aggiunto.
+   -> FATTO, col LINK TEMPORANEO invece della password generata e spedita. Si clicca
+      "Password dimenticata?", si scrive la propria email, arriva un link che vale UN'ORA
+      e UNA VOLTA SOLA, e su una pagina apposta si sceglie la password nuova. Poi si entra
+      gia' collegati, e tutte le sessioni aperte altrove vengono chiuse.
+      PERCHE' IL LINK E NON LA PASSWORD SPEDITA (erano le due conseguenze scritte qui
+      sotto, decise insieme il 2026-07-28): col link la password vecchia continua a
+      funzionare finche' non se ne sceglie una nuova, quindi chi conosce il tuo indirizzo
+      NON puo' piu' lasciarti fuori; e nessuna password resta scritta in una casella.
+      LA DOMANDA SULLA VERIFICA DELL'EMAIL SI E' SCIOLTA DA SOLA: cliccare il link E' la
+      prova di possedere la casella. Chi ha sbagliato a digitare l'indirizzo in
+      registrazione semplicemente non riceve niente, e non subisce nessun danno.
+      RESIDUO ONESTO: se in registrazione uno ha scritto per sbaglio l'indirizzo di
+      un'ALTRA persona, quella persona puo' prendersi il suo account. Non e' risolvibile
+      senza verificare le email al momento dell'iscrizione. Oggi riguarda 2 account reali,
+      entrambi con indirizzi validi.
+      DECISO IL CANALE DI INVIO: Brevo, API HTTP (piano gratuito, 300 email al giorno).
+      MOTIVO TECNICO: Render gratuito BLOCCA le porte SMTP (25, 465, 587), quindi
+      Gmail/Nodemailer non partirebbero una volta online; le chiamate HTTPS passano.
+      Sul vincolo hard "tutto open source": il progetto dipende gia' da Render e MongoDB
+      Atlas, che open source non sono - non e' un compromesso nuovo. L'invio sta tutto in
+      lib/mailer.js, un file solo, cosi' cambiare servizio un domani costa poco.
+      FATTO IN PIU', ed era un buco vero: NON ESISTEVA NESSUNA SCHERMATA per cambiare la
+      password stando dentro. Chi voleva solo cambiarla doveva fingere di averla
+      dimenticata. Ora c'e', nella card "Il Tuo Profilo", e chiede quella vecchia.
+      109 controlli in due prove (53 contro il server, 56 nel browser a 1440 e 390 px),
+      tutti passati, database identico a prima. Vedi leggimi.txt per i dettagli.
+      RESTA DA FARE, ed e' l'unica cosa che serve all'utente: creare l'account Brevo e
+      incollare la chiave. Senza chiave il sito NON si rompe, ma le email non partono.
    [INFORMAZIONI AGGIUNTE DALL'UTENTE 2026-07-27, seconda sessione. NESSUN CODICE
    SCRITTO: il punto 7 si fa in una sessione futura, per sua richiesta esplicita.]
    OSSERVAZIONE DELL'UTENTE, VERIFICATA E CONFERMATA: "quando fai login chiede
@@ -155,6 +183,10 @@ Da pianificare e implementare in una sessione futura.
    RESTA DA DECIDERE il servizio di invio (il vincolo hard dice tutto open source e
    gratuito): questa e' la stessa decisione che blocca il punto 22 e la seconda
    meta' del 21.
+   -> DECISA IL 2026-07-28: Brevo, API HTTP. Vedi in cima a questo punto. I punti 22 e
+      21-resto NON SONO PIU' BLOCCATI da questa decisione: il canale ora esiste ed e'
+      gia' scritto (lib/mailer.js). Restano da fare per il loro lavoro proprio, non per
+      una decisione mancante.
 
 8) [FATTO 2026-07-26] Scelta del punto di ritrovo di un'escursione dalla mappa invece
 che a coordinate scritte a mano (oggi il form di creazione escursione chiede
@@ -244,8 +276,8 @@ TERZA LISTA (dettata 2026-07-26, a fine sessione) - piccole correzioni e
 richieste per sezione. Pensate PRIMA della sessione di oggi: per questo
 alcune risultano gia' fatte. Ogni voce e' stata verificata nel codice
 prima di scriverla qui.
-PROMEMORIA: i punti 7 (recupero password) e 13 (percorso multi-punto)
-restano IN SOSPESO per scelta esplicita dell'utente, non dimenticati.
+PROMEMORIA STORICO: i punti 7 e 13 restavano IN SOSPESO quando questa lista e'
+stata scritta. Ora sono FATTI ENTRAMBI: il 13 il 2026-07-27, il 7 il 2026-07-28.
 =====================================================================
 
 --- DASHBOARD ---
@@ -518,8 +550,8 @@ numero limitato di persone.
 QUARTA LISTA (2026-07-26) - segnalazioni dell'utente dopo una prova dal
 TELEFONO VERO sul sito online (https://camoscio.onrender.com). Sono i
 primi due difetti trovati usando il sito fuori dal PC.
-PROMEMORIA: i punti 7 (recupero password) e 13 (percorso multi-punto)
-restano IN SOSPESO per scelta esplicita dell'utente, non dimenticati.
+PROMEMORIA STORICO: i punti 7 e 13 restavano IN SOSPESO quando questa lista e'
+stata scritta. Ora sono FATTI ENTRAMBI: il 13 il 2026-07-27, il 7 il 2026-07-28.
 =====================================================================
 
 --- MAPPE ---
@@ -572,8 +604,8 @@ dell'escursione (punto 8).
 QUINTA LISTA (2026-07-26, sera) - seconda prova dell'utente dal TELEFONO
 VERO sul sito online, fatta dopo che i punti 26 e 27 erano gia' stati
 messi online.
-PROMEMORIA: i punti 7 (recupero password) e 13 (percorso multi-punto)
-restano IN SOSPESO per scelta esplicita dell'utente, non dimenticati.
+PROMEMORIA STORICO: i punti 7 e 13 restavano IN SOSPESO quando questa lista e'
+stata scritta. Ora sono FATTI ENTRAMBI: il 13 il 2026-07-27, il 7 il 2026-07-28.
 =====================================================================
 
 --- MAPPE ---
@@ -624,8 +656,8 @@ SESTA LISTA (2026-07-27) - segnalazioni dell'utente dopo aver provato il
 caricamento .gpx con i suoi FILE VERI. Era proprio la prova che le
 verifiche automatiche non potevano fare: ogni programma (Garmin, Strava,
 Komoot, OsmAnd) scrive il .gpx a modo suo.
-PROMEMORIA: i punti 7 (recupero password) e 13 (percorso multi-punto)
-restano IN SOSPESO per scelta esplicita dell'utente, non dimenticati.
+PROMEMORIA STORICO: i punti 7 e 13 restavano IN SOSPESO quando questa lista e'
+stata scritta. Ora sono FATTI ENTRAMBI: il 13 il 2026-07-27, il 7 il 2026-07-28.
 =====================================================================
 
 --- CARICAMENTO .GPX ---

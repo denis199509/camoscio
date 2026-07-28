@@ -472,6 +472,11 @@ h1, h2, h3, h4, h5, h6 {
     gap: 8px;
     transition: all var(--transition-speed);
     outline: none;
+    /* Serve quando un pulsante e' un <a> e non un <button>, come nella pagina
+       /reimposta-password (punto 7): senza, il browser lo sottolinea come un normale
+       collegamento e in mezzo a un pulsante pieno sembra un errore di stile.
+       Sui <button> non cambia niente: non sono mai sottolineati. */
+    text-decoration: none;
 }
 
 .btn-sm {
@@ -2613,6 +2618,25 @@ h1, h2, h3, h4, h5, h6 {
     margin-bottom: 16px;
 }
 
+/* Conferma della richiesta di recupero password (punto 7). Verde e non rossa: e' un
+   esito buono, e usare il riquadro d'errore per dire "fatto" confonde. */
+.auth-forgot-done {
+    background: var(--accent-green-glow);
+    border: 1px solid var(--accent-green);
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 0.85rem;
+    margin-bottom: 16px;
+}
+
+.auth-forgot-done p {
+    margin: 0 0 6px 0;
+}
+
+.auth-forgot-done p:last-child {
+    margin-bottom: 0;
+}
+
 /* Header profilo: foto reale al posto dell'emoji, quando presente */
 .avatar-photo {
     width: 100%;
@@ -2697,6 +2721,24 @@ h1, h2, h3, h4, h5, h6 {
 .demo-account-btn .demo-level {
     color: var(--color-text-secondary);
     font-size: 0.72rem;
+}
+
+/* ==========================================================================
+   PAGINA "REIMPOSTA PASSWORD" (punto 7)
+   Riusa .demo-page-body e .demo-page-card: stessa pagina isolata, stesso
+   riquadro centrato, stessa gestione dell'altezza su telefono (100dvh, la
+   correzione imparata al punto 13). Qui serve solo il poco che cambia.
+   ========================================================================== */
+.reset-card {
+    max-width: 460px; /* e' un modulo di due campi, non una griglia di scelte come la demo */
+}
+
+/* .demo-page-card centra tutto il testo, e va bene per quella pagina. Un modulo no:
+   le etichette sopra i campi vanno allineate a sinistra, altrimenti "galleggiano"
+   staccate dal campo a cui si riferiscono. */
+.reset-card .reset-form,
+.reset-card .auth-error-box {
+    text-align: left;
 }
 
 /* ==========================================================================

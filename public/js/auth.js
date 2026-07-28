@@ -17,17 +17,88 @@ function hideAuthError(elId) {
     if (box) box.classList.add('hidden');
 }
 
-// --- Passaggio tra vista Login e vista Registrazione ---
+// --- Passaggio tra le viste: Login, Registrazione, Password dimenticata ---
+// Una sola funzione invece di tre righe ripetute in ognuna: con tre viste, dimenticarne
+// una da nascondere significa vederne due sovrapposte.
+function showAuthView(idVista) {
+    ['auth-login-view', 'auth-register-view', 'auth-forgot-view'].forEach(id => {
+        const vista = document.getElementById(id);
+        if (vista) vista.classList.toggle('hidden', id !== idVista);
+    });
+}
+
 function showLoginView() {
-    document.getElementById('auth-login-view').classList.remove('hidden');
-    document.getElementById('auth-register-view').classList.add('hidden');
+    showAuthView('auth-login-view');
 }
 
 function showRegisterView() {
-    document.getElementById('auth-login-view').classList.add('hidden');
-    document.getElementById('auth-register-view').classList.remove('hidden');
+    showAuthView('auth-register-view');
     currentWizardStep = 1;
     renderWizardStep();
+}
+
+function showForgotView() {
+    showAuthView('auth-forgot-view');
+    hideAuthError('auth-forgot-error');
+    // Si riparte sempre dal modulo: se uno torna qui dopo aver gia' chiesto un link,
+    // trovare solo il messaggio "fatto" senza il campo email sembrerebbe bloccato.
+    document.getElementById('auth-forgot-done').classList.add('hidden');
+    document.getElementById('auth-forgot-form').classList.remove('hidden');
+    const campo = document.getElementById('forgot-email');
+    // Se aveva gia' scritto l'email nel modulo di accesso, la si riporta qui: e' quasi
+    // sempre quella giusta, e a chi arriva da un accesso fallito evita di riscriverla.
+    const emailAccesso = document.getElementById('login-email').value.trim();
+    if (emailAccesso && !campo.value) campo.value = emailAccesso;
+    campo.focus();
+}
+
+async function submitForgotPassword(e) {
+    e.preventDefault();
+    const email = document.getElementById('forgot-email').value.trim();
+    const bottone = document.getElementById('btn-forgot-submit');
+
+    if (!email || !email.includes('@')) {
+        showAuthError('auth-forgot-error', 'Inserisci un indirizzo email valido.');
+        return;
+    }
+
+    hideAuthError('auth-forgot-error');
+    bottone.disabled = true;
+    bottone.textContent = 'Invio…';
+
+    try {
+        const res = await fetch('/api/auth/forgot-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+        const dati = await res.json();
+
+        // Il server risponde SEMPRE la stessa cosa, anche se quell'email non e'
+        // registrata: e' voluto, vedi il commento in routes/auth.js. Qui non si prova a
+        // interpretare nulla, si mostra quello che dice.
+        //
+        // L'UNICO caso diverso e' quando l'invio delle email non e' ancora configurato sul
+        // server: li' non c'e' NIENTE da aspettare, quindi il messaggio va nel riquadro
+        // degli avvisi e non in quello verde di conferma, e il modulo resta a schermo -
+        // un riquadro verde che dice "fatto" per una cosa che non e' partita e' proprio il
+        // genere di bugia che il resto del sito ha smesso di raccontare.
+        if (dati && dati.disponibile === false) {
+            showAuthError('auth-forgot-error', dati.message);
+            return;
+        }
+
+        document.getElementById('auth-forgot-done-text').textContent =
+            (dati && dati.message) || "Se quell'indirizzo è registrato, ti abbiamo mandato un'email.";
+        document.getElementById('auth-forgot-done').classList.remove('hidden');
+        document.getElementById('auth-forgot-form').classList.add('hidden');
+    } catch (err) {
+        console.error('Errore richiesta recupero password:', err);
+        showAuthError('auth-forgot-error', 'Impossibile contattare il server. Riprova.');
+    } finally {
+        bottone.disabled = false;
+        bottone.textContent = 'Mandami il link';
+    }
 }
 
 // --- Indicatore di avanzamento (6 pallini) ---
@@ -225,6 +296,9 @@ function setupAuthGate() {
     document.getElementById('auth-login-form').addEventListener('submit', submitLogin);
     document.getElementById('link-go-register').addEventListener('click', showRegisterView);
     document.getElementById('link-go-login').addEventListener('click', showLoginView);
+    document.getElementById('link-go-forgot').addEventListener('click', showForgotView);
+    document.getElementById('link-forgot-go-login').addEventListener('click', showLoginView);
+    document.getElementById('auth-forgot-form').addEventListener('submit', submitForgotPassword);
 
     document.getElementById('btn-wizard-next').addEventListener('click', () => {
         const error = validateCurrentStep();
@@ -303,4 +377,5 @@ async function performLogout() {
 
 window.setupAuthGate = setupAuthGate;
 window.showLoginView = showLoginView;
+window.showForgotView = showForgotView;
 window.performLogout = performLogout;

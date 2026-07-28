@@ -13,6 +13,64 @@ function setupProfileCardEvents() {
     if (btnSaveExpert) {
         btnSaveExpert.addEventListener("click", saveLocalExpertStatus);
     }
+
+    const btnChangePassword = document.getElementById("btn-change-password");
+    if (btnChangePassword) {
+        btnChangePassword.addEventListener("click", changePassword);
+    }
+}
+
+// Cambio password per chi e' gia' dentro (punto 7 di cose_da_fare.txt). Prima di oggi non
+// esisteva nessuna schermata per farlo: l'unico modo era fingere di aver dimenticato la
+// password e passare dal link via email.
+async function changePassword() {
+    const campoAttuale = document.getElementById("cp-current");
+    const campoNuova = document.getElementById("cp-new");
+    const campoConferma = document.getElementById("cp-confirm");
+    const bottone = document.getElementById("btn-change-password");
+
+    const currentPassword = campoAttuale.value;
+    const newPassword = campoNuova.value;
+
+    if (!currentPassword) {
+        window.showToast("Scrivi la tua password attuale.", "error");
+        return;
+    }
+    if (newPassword.length < 8) {
+        window.showToast("La nuova password deve avere almeno 8 caratteri.", "error");
+        return;
+    }
+    if (newPassword !== campoConferma.value) {
+        window.showToast("Le due nuove password non coincidono.", "error");
+        return;
+    }
+
+    bottone.disabled = true;
+    try {
+        const response = await fetch('/api/auth/change-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ currentPassword, newPassword })
+        });
+        const dati = await response.json();
+
+        if (!response.ok) {
+            window.showToast(dati.error || "Non è stato possibile cambiare la password.", "error");
+            return;
+        }
+
+        // I campi si svuotano SEMPRE dopo un cambio riuscito: lasciare la password nuova
+        // scritta in chiaro sullo schermo di una pagina che resta aperta non ha senso.
+        campoAttuale.value = "";
+        campoNuova.value = "";
+        campoConferma.value = "";
+        window.showToast("Password cambiata. Resti collegato su questo dispositivo.", "success");
+    } catch (e) {
+        console.error("Errore nel cambio password:", e);
+        window.showToast("Impossibile contattare il server. Riprova.", "error");
+    } finally {
+        bottone.disabled = false;
+    }
 }
 
 // Salva lo stato di "esperto locale" (attivo/non attivo + zona) sul profilo dell'utente corrente

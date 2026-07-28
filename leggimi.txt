@@ -1,6 +1,11 @@
 ===================================================================
 CAMOSCIO — LEGGIMI (stato progetto, aggiornato automaticamente)
-Ultimo aggiornamento: 2026-07-27 (SECONDA sessione della giornata) — fatti i
+Ultimo aggiornamento: 2026-07-28 — PUNTO 7 (recupero password) FATTO E CHIUSO.
+Era l'ultimo punto rimasto in sospeso da una decisione. Vedi la sezione dedicata
+subito sotto.
+Il 2026-07-27, TERZA sessione della giornata: fatto e chiuso il PUNTO 13 (percorso
+multi-punto sui sentieri).
+Il 2026-07-27, SECONDA sessione: fatti i
 PUNTI 29, 30, 31 e 32, nati dalla prova dell'utente col caricamento .gpx dei suoi
 FILE VERI. In breve: i file senza gli orari dei punti non vengono piu' rifiutati
 (ma la loro durata resta ignota e non entra nella velocita' media), importando una
@@ -26,9 +31,10 @@ sul telefono che nessuna prova automatica poteva vedere (100vh contro le barre d
 browser, e un "padding" scorciatoia che azzerava lo spazio per il pulsante flottante
 su ogni telefono in verticale).
 
-PUNTO 7 — l'utente ha aggiunto informazioni il 2026-07-27 (l'email e' gia' usata
-per fare login: verificato e confermato) e ha detto che il punto 7 SI FA IN UNA
-SESSIONE FUTURA. Le informazioni sono registrate in cose_da_fare.txt al punto 7.
+PUNTO 7 — FATTO E CHIUSO IL 2026-07-28. Recupero password con LINK TEMPORANEO che
+vale un'ora e una volta sola. Vedi la sezione dedicata piu' sotto ("PUNTO 7: COM'E'
+ANDATA"). Con questo, la decisione sul canale di invio - quella che teneva fermi
+anche il 22 e la seconda meta' del 21 - e' presa: Brevo, API HTTP.
 
 Prima, nella PRIMA sessione del 2026-07-27: il PUNTO 18 (tasto e pagina "Badge")
 e il PUNTO 15 (caricamento di file .gpx come uscite gia' fatte, piu' l'elenco
@@ -54,32 +60,21 @@ Prima ancora, nella stessa giornata: il BLOCCO 1 (punti 19, 23 prima meta',
     decisione dell'utente e quali trappole sono gia' state pagate. Poi
     torna a leggere il resto.
 
-A CHE PUNTO SIAMO, in breve: dei 32 punti di cose_da_fare.txt ne restano DUE.
+A CHE PUNTO SIAMO, in breve: dei 33 punti di cose_da_fare.txt ne resta UNO SOLO.
+ - PUNTO 33 (dislivello nei percorsi progettati): l'unico rimasto, e non e'
+   bloccato da nessuna decisione. Serve una fonte di altitudini, e nessuna delle
+   tre strade possibili e' ancora stata misurata. Prima misurare.
+ - PUNTO 7 (recupero password): FATTO il 2026-07-28. Con esso e' caduta la
+   decisione che teneva fermi anche il 22 e la seconda meta' del 21: il canale di
+   invio adesso c'e' (Brevo via API HTTP, tutto dentro lib/mailer.js).
  - PUNTO 13 (percorso multi-punto): FATTO il 2026-07-27, terza sessione. Codice
-   scritto, provato (66 controlli) e online. Resta solo da finire l'ESTRAZIONE dei
-   dati del livello i, che gira a parte ed e' RIPARTIBILE: si rilancia
-   "node scripts/fetch-trails-nearby.js" e riprende da dove era.
- - punti 7, 22 e la seconda meta' del 21 aspettano ancora UNA decisione sua:
-   quale canale usare per mandare un messaggio, email o SMS. Sul punto 7 l'utente
-   ha aggiunto informazioni il 2026-07-27 (l'email e' gia' usata per il login:
-   verificato) e ha detto che si fa in una sessione futura.
-Tutto il resto e' fatto e provato. Il 2026-07-27 sono stati chiusi il punto 18
-(pagina Badge), il punto 15 (caricamento .gpx) e poi i punti 29 e 30 (i file
-senza orari e i badge assegnati dalle tracce importate).
+   scritto, provato (66 controlli) e online.
+Tutto il resto e' fatto e provato.
 
-IL PUNTO 7 E' ANCORA IN SOSPESO SU RICHIESTA ESPLICITA DELL'UTENTE
-(2026-07-26): deve decidere se agganciare una vera email o inventare
-un'alternativa.
-IL PUNTO 13 E' STATO RIAPERTO DALL'UTENTE il 2026-07-27: ha voluto un
-riassunto, ha preso le decisioni che mancavano e ha detto che la sessione
-successiva sara' dedicata a quello. Resta pero' NON INIZIATO per sua
-richiesta esplicita ("sono solo indicazioni, non cominciare il lavoro"):
-finche' non e' lui a dare il via, non si scrive codice.
-RICHIESTA ESPLICITA DELL'UTENTE: RICORDARGLI QUESTI DUE PUNTI OGNI VOLTA
-CHE SI FA UN RIASSUNTO - sia quando e' lui a chiederlo, sia alla fine di
-ogni lavoro quando il riassunto lo si scrive di propria iniziativa. Non
-vanno riproposti come "prossimo passo da fare adesso": vanno solo
-ricordati come in sospeso, finche' non e' lui a riaprirli.
+I DUE PUNTI CHE L'UTENTE CHIEDEVA DI RICORDARE IN OGNI RIASSUNTO (il 7 e il 13)
+SONO ORA ENTRAMBI CHIUSI: il 13 il 2026-07-27, il 7 il 2026-07-28. Non vanno piu'
+ricordati come in sospeso. Il 7 va pero' considerato chiuso davvero solo dopo la
+CONFERMA DELL'UTENTE dal sito vero, che richiede la chiave Brevo (vedi sotto).
 
 LE LISTE DETTATE DALL'UTENTE, stato aggiornato:
  - seconda lista (punti 7-14): fatta, tranne il 7 e il 13 (in sospeso);
@@ -94,6 +89,196 @@ LE LISTE DETTATE DALL'UTENTE, stato aggiornato:
    le verifiche automatiche non potevano fare, ed e' servita: ha trovato un
    difetto vero al primo colpo.
 ===================================================================
+
+===================================================================
+PUNTO 7: COM'E' ANDATA (2026-07-28) - recupero e cambio password
+===================================================================
+
+--- IL PROBLEMA E LE DUE COSE CHE LO BLOCCAVANO ---
+
+- Chi dimenticava la password era chiuso fuori PER SEMPRE: non c'era nessun modo di
+  rientrare. E non esisteva NEMMENO UNA SCHERMATA per cambiare la password stando
+  dentro - verificato prima di scrivere, non c'era niente ne' in routes/users.js ne'
+  in public/js/profile.js.
+- BLOCCO 1, tecnico: IL PIANO GRATUITO DI RENDER BLOCCA LE PORTE SMTP (25, 465, 587).
+  Nodemailer verso Gmail o qualunque invio SMTP classico funzionerebbe in locale e non
+  una volta online, che e' il modo peggiore di scoprire un problema. Le normali
+  chiamate HTTPS passano: serviva un servizio email con API HTTP.
+- BLOCCO 2, di merito: in Fase C si era deciso "email SOLO SALVATA, nessuna verifica
+  reale". Nessuno aveva mai dimostrato di possedere l'indirizzo scritto in
+  registrazione.
+
+--- LA SCELTA: LINK TEMPORANEO, NON PASSWORD GENERATA E SPEDITA ---
+
+L'utente il 2026-07-27 aveva descritto la procedura "genera una password nuova e
+mandagliela". Il 2026-07-28 ha scelto il link temporaneo. Le ragioni, che erano gia'
+scritte in cose_da_fare.txt al punto 7:
+ 1) con la password rigenerata subito, chiunque conosca l'indirizzo email di una
+    persona puo' far smettere di funzionare la sua password senza avere accesso alla
+    casella: non entra al posto suo, ma LO LASCIA FUORI. Col link, la password vecchia
+    continua a funzionare finche' non se ne sceglie una nuova, quindi un link ricevuto
+    e ignorato non fa nessun danno;
+ 2) una password mandata per email resta scritta nella casella;
+ 3) IL BLOCCO 2 SI SCIOGLIE DA SOLO: cliccare il link E' la prova di possedere la
+    casella. La domanda lasciata aperta ("va deciso se introdurre una verifica
+    dell'email almeno al primo recupero") non esiste piu'. E chi ha sbagliato a
+    digitare l'indirizzo in registrazione semplicemente non riceve niente e non
+    subisce nessun danno - mentre con la password spedita l'avrebbe ricevuta un altro.
+
+RESIDUO ONESTO, scritto perche' non e' risolvibile e va saputo: se in registrazione
+uno ha scritto per sbaglio l'indirizzo di un'ALTRA persona, quella persona puo'
+prendersi il suo account. Serve una verifica dell'email all'iscrizione, che non e'
+stata fatta perche' cambierebbe il flusso di registrazione senza che nessuno
+l'abbia chiesto. Oggi riguarda 2 account reali, entrambi con indirizzi validi.
+
+--- LE TRE DECISIONI DELL'UTENTE (2026-07-28) ---
+
+ 1. CANALE DI INVIO: Brevo, API HTTP (piano gratuito, 300 email al giorno, nessun
+    dominio necessario - basta verificare un indirizzo come mittente).
+    SUL VINCOLO HARD "TUTTO OPEN SOURCE": il progetto dipende GIA' da Render e
+    MongoDB Atlas, che open source non sono. Non e' un compromesso nuovo, e' lo
+    stesso tipo di dipendenza gia' accettata. Per limitare il danno l'invio sta
+    tutto in UN FILE (lib/mailer.js): cambiare servizio un domani costa quel file.
+ 2. DOPO IL CAMBIO SI CHIUDONO TUTTE LE ALTRE SESSIONI. Se la password era stata
+    rubata, cambiarla senza cacciare chi era gia' dentro non servirebbe a niente.
+ 3. SI AGGIUNGE ANCHE IL CAMBIO PASSWORD DAL PROFILO, per chi e' dentro e la
+    password se la ricorda.
+
+--- COME FUNZIONA ---
+
+ 1. "Password dimenticata?" nella schermata di accesso apre una TERZA VISTA accanto a
+    login e registrazione (non una pagina a parte: stesso riquadro, stessi errori).
+ 2. Il server risponde SEMPRE LA STESSA COSA, anche se l'email non e' registrata.
+    Altrimenti quel modulo diventerebbe uno strumento per scoprire chi e' iscritto al
+    sito provando indirizzi a caso. Vale anche quando l'invio fallisce.
+ 3. Il link porta a /reimposta-password?token=... e vale UN'ORA, UNA VOLTA SOLA.
+ 4. Scelta la password nuova: si entra gia' collegati e le altre sessioni si chiudono.
+
+--- I PEZZI, E PERCHE' SONO FATTI COSI' ---
+
+- models/PasswordReset.js: userId + IMPRONTA SHA-256 del token (MAI il token vero: se
+  il database finisse nelle mani sbagliate, da un'impronta non si torna indietro) +
+  createdAt con expires 3600, cioe' MongoDB cancella il documento da solo dopo un'ora.
+  ATTENZIONE, E' IL DETTAGLIO PIU' FACILE DA SBAGLIARE: il cancellatore automatico di
+  MongoDB passa ogni ~60 secondi, quindi un token scaduto puo' restare sul database
+  fino a un minuto in piu'. LA SCADENZA SI RICONTROLLA NEL CODICE (trovaTokenValido in
+  routes/auth.js): la cancellazione automatica fa le pulizie, non la guardia. C'e' un
+  controllo apposta che inserisce un documento di due ore prima e verifica che venga
+  rifiutato comunque.
+- lib/mailer.js: unico punto da cui parte un'email. SENZA CHIAVE BREVO NON FALLISCE:
+  stampa il messaggio e il link sul terminale. E' cosi' che si sono fatte tutte le
+  prove, comprese quelle nel browser, senza configurare niente e senza mandare email
+  vere. Se quel ramo scattasse in produzione, la riga nel log e' anche il modo per
+  accorgersene.
+- db/sessionStore.js: lo store connect-mongo, estratto da server.js perche' ora serve
+  in due posti (server.js e routes/auth.js), e routes/auth.js non puo' importare
+  server.js - si girerebbero in tondo.
+- L'INDIRIZZO DEL LINK VIENE DA APP_BASE_URL, MAI dall'intestazione "Host" della
+  richiesta: quella la sceglie chi chiama, e permetterebbe di far arrivare a un utente
+  vero un link che punta al server di qualcun altro, cioe' di regalargli il token.
+- La pagina /reimposta-password non mostra il modulo finche' non ha chiesto al server
+  se il token vale: mostrarlo e poi toglierlo farebbe scrivere una password a chi non
+  puo' comunque cambiarla. Ha meta name="referrer" no-referrer e toglie il token dalla
+  barra degli indirizzi con history.replaceState, cosi' non resta nella cronologia.
+- Un tentativo RIFIUTATO (password troppo corta) NON consuma il link: c'e' un
+  controllo apposta. Consumarlo vorrebbe dire costringere a ricominciare da capo per
+  un errore di battitura.
+- Il cambio password dal PROFILO non chiude le altre sessioni, a differenza del
+  recupero: chi lo fa sapendo la password vecchia sta facendo manutenzione, non
+  cacciando un intruso. Ed e' nascosto per i 4 account demo, che entrano senza
+  password: mostrarglielo vorrebbe dire offrire un modulo che risponde sempre
+  "password attuale non corretta".
+
+--- TROVATO STRADA FACENDO ---
+
+- store.all() DI CONNECT-MONGO NON SERVE A CHIUDERE LE SESSIONI: restituisce solo il
+  CONTENUTO delle sessioni, SENZA il loro identificativo. Verificato leggendo il
+  codice della libreria (dist/index.cjs), non dato per scontato - la prima versione
+  della funzione era scritta su quel presupposto e non avrebbe cancellato niente.
+  Si legge percio' la collezione "sessions", che espone anche l'_id (che nella
+  configurazione in uso E' il sid).
+- SUL DATABASE CI SONO 273 SESSIONI ATTIVE. La prima versione della funzione le
+  caricava TUTTE in memoria per scartarne quasi tutte: su Render ci sono 512 MB in
+  tutto, ed e' gia' bastato a far cadere il sito una volta (Fase G). Ora il filtro lo
+  fa MongoDB, con un $or che copre entrambi i formati possibili del campo "session"
+  (stringa JSON, che e' quello in uso, oppure oggetto). Il contenuto si rilegge
+  comunque prima di cancellare: la ricerca per testo trova la riga giusta, ma solo
+  leggendo davvero il campo si e' sicuri di non cancellare la sessione di un altro.
+- IL FRENO ANTI-ABUSO PER IP ERA TROPPO STRETTO, e l'hanno detto le prove: con 10
+  richieste all'ora bastavano TRE giri di verifica dallo stesso computer per
+  esaurirlo. Dietro un solo indirizzo IP ci puo' essere un'intera rete (casa,
+  ufficio, wi-fi di un rifugio), quindi un tetto stretto blocca persone che non
+  c'entrano niente fra loro. Alzato a 30. Il tetto che conta davvero e' quello per
+  INDIRIZZO EMAIL (3 all'ora): e' quello che difende la casella di una persona.
+  LIMITE NOTO E ACCETTATO: il freno vive nella memoria del server, quindi un riavvio
+  di Render lo azzera. Per quello che deve fermare va bene, ed e' scritto invece che
+  nascosto.
+- Corretto un difetto di stile preesistente: .btn non aveva text-decoration:none,
+  quindi un pulsante fatto con un <a> (come quelli di questa pagina nuova) usciva
+  sottolineato. Sui <button> non cambia niente.
+- SENZA LA CHIAVE DI BREVO IL SITO NON PROMETTE UN'EMAIL CHE NON PUO' PARTIRE.
+  Emerso quando l'utente ha chiesto di mettere online PRIMA di avere la chiave: cosi'
+  com'era, il sito avrebbe risposto "ti abbiamo mandato un'email con il link" e non
+  sarebbe arrivato niente, lasciando una persona a controllare la casella per sempre.
+  Ora, quando l'invio non e' configurato, la risposta lo dice ("il recupero password
+  non e' ancora attivo su questo sito") e aggiunge che la password di adesso continua
+  a funzionare; a schermo finisce nel riquadro degli AVVISI e non in quello verde di
+  conferma, e il modulo resta aperto perche' non c'e' niente da aspettare.
+  Non svela niente su chi e' iscritto: e' uno stato del sito, uguale per tutti.
+  E' lo stesso criterio gia' applicato al Dead Man's Switch (punto 21, "la finestra
+  NON dice piu' il falso") e al dislivello dei percorsi progettati (punto 13).
+  Il token viene comunque creato e il link stampato nel log del server: e' cosi' che
+  si fanno le prove in locale.
+  APPENA LA CHIAVE C'E', il messaggio torna quello normale da solo, senza toccare
+  niente. Le prove coprono tutti e due i casi, scegliendo in base alle variabili
+  d'ambiente.
+
+--- COME E' STATO VERIFICATO ---
+
+- 109 controlli in due prove, tutti passati:
+  53 contro il server locale vero (risposta identica per email vera e inventata, link
+  usa e getta, token scaduto/inventato/vuoto/assente, password corta, account demo,
+  freno anti-abuso, due sessioni chiuse davvero) e 56 nel browser con Puppeteer a
+  1440 E 390 px.
+- NESSUN DATO DI PROVA RIMASTO. Conteggi letti all'inizio e riconfrontati alla fine:
+  6 utenti, 0 recuperi, 273 sessioni - identici prima e dopo. Le due regole del punto
+  32 rispettate: ogni cancellazione filtrata per l'userId dell'account di prova, e
+  dati finti riconoscibili (email @esempio-di-prova.invalid, nomi "Prova").
+- DUE FALLIMENTI, ED ERANO ENTRAMBI DELLA PROVA, NON DEL SITO - vale come metodo:
+  * browser.newPage() CONDIVIDE I COOKIE con le altre pagine dello stesso browser.
+    Al secondo giro (telefono) la pagina era gia' collegata dal giro precedente e la
+    schermata di accesso - giustamente - non compariva: la prova accusava il sito di
+    un difetto tutto suo. Si usa browser.createBrowserContext() per ogni schermo;
+  * il secondo fallimento era il freno anti-abuso che funzionava (vedi sopra). Un
+    controllo che fallisce va sempre sospettato PRIMA del codice.
+- GUARDATE LE SCHERMATE, non solo i controlli automatici: e' cosi' che sono usciti i
+  due difetti estetici (pulsante sottolineato, e un secondo collegamento che diceva la
+  stessa cosa del pulsante sopra). Nessun controllo automatico se ne accorge.
+
+--- COSA RESTA DA FARE ALL'UTENTE (2 minuti, una volta sola) ---
+
+ 1. creare l'account gratuito su Brevo e far verificare il proprio indirizzo come
+    mittente;
+ 2. copiare la chiave API;
+ 3. incollarla nel file .env in locale e fra le variabili d'ambiente di Render.
+Le variabili sono BREVO_API_KEY, BREVO_SENDER_EMAIL, BREVO_SENDER_NAME e
+APP_BASE_URL (vedi .env.example, dove sono spiegate).
+SENZA LA CHIAVE IL SITO NON SI ROMPE: le email semplicemente non partono e il loro
+contenuto finisce nel log del server.
+LA CHIAVE E L'INDIRIZZO MITTENTE NON VANNO SCRITTI NE' QUI NE' IN cose_da_fare.txt:
+questi due file finiscono su GitHub, che e' pubblico. Il file .env e' gia' escluso
+in .gitignore.
+DA CHIEDERGLI DOPO: la conferma dal sito vero che l'email arriva davvero, GUARDANDO
+ANCHE LA POSTA INDESIDERATA - un mittente Gmail senza un dominio proprio ci finisce
+facilmente. Finche' non c'e' quella conferma, il punto 7 e' fatto ma non confermato.
+
+--- UNA COSA NOTATA E NON TOCCATA, DI PROPOSITO ---
+
+Il pulsante flottante a scarpone (tracciamento) si vede anche sulla schermata di
+accesso, prima di essere collegati. E' preesistente - nessuna logica lo nasconde a
+utente non collegato - e non c'entra col punto 7: lasciato com'e' per non cambiare
+cose non chieste. Da sistemare se un giorno si tocca quel pulsante.
+
 
 NOTA IMPORTANTE PER CHI RIPARTE DA QUI - PUNTI 29, 30, 31 E 32 FATTI (2026-07-27,
 seconda sessione della giornata). Nati dalla prova dell'utente col caricamento
@@ -2119,17 +2304,20 @@ riga possono essere leggermente cambiati da allora, ricontrollare):
   vedi liveTrackPolyline in map.js) - non richiede nuove API server,
   solo interfaccia.
 
-Punto NON tecnico da chiarire con l'utente prima di implementare il
-punto 7 (recupero password): in Fase C si era deciso esplicitamente
-"Email in registrazione: SOLO SALVATA, nessuna verifica reale via
-email, niente servizio esterno tipo Resend/Brevo" (vedi decisione piu'
-sotto) - un vero recupero password ha quasi sempre bisogno di un canale
-per dimostrare che sei tu (di solito l'email) senza il quale non si
-può implementare in modo standard/sicuro. Da decidere insieme
-all'utente come procedere (riconsiderare un servizio email gratuito,
-oppure un meccanismo alternativo) PRIMA di iniziare quel punto
-specifico - non bloccante per gli altri 7 punti della lista, che sono
-indipendenti tra loro.
+[RISOLTO IL 2026-07-28] Punto NON tecnico da chiarire con l'utente prima
+di implementare il punto 7 (recupero password): in Fase C si era deciso
+esplicitamente "Email in registrazione: SOLO SALVATA, nessuna verifica
+reale via email, niente servizio esterno tipo Resend/Brevo" (vedi
+decisione piu' sotto) - un vero recupero password ha quasi sempre
+bisogno di un canale per dimostrare che sei tu (di solito l'email)
+senza il quale non si può implementare in modo standard/sicuro.
+ -> L'UTENTE HA DECISO il 2026-07-28: si usa Brevo (API HTTP, non SMTP:
+    Render gratuito blocca le porte SMTP). La decisione di Fase C resta
+    valida per la REGISTRAZIONE - l'email non viene ancora verificata
+    all'iscrizione - e cade solo per il recupero password. Col link
+    temporaneo la verifica non serve piu': cliccare il link E' la prova
+    di possedere la casella. Vedi la sezione "PUNTO 7: COM'E' ANDATA"
+    in cima al file.
 
 NOTA IMPORTANTE PER CHI RIPARTE DA QUI - INCIDENTE E CORREZIONE FASE G
 (2026-07-25): il primo tentativo di mettere online la Fase G con TUTTE
@@ -2220,8 +2408,13 @@ DECISIONI PRESE CON L'UTENTE (non richiedere di nuovo)
 - Estrazione dati sentieri OpenStreetMap: TUTTO IN NODE.JS, niente Python
   (Python non è nemmeno installato su questo PC, solo lo stub Microsoft
   Store — NON installarlo, non serve)
-- Email in registrazione: SOLO SALVATA, nessuna verifica reale via email
-  (niente servizio esterno tipo Resend/Brevo)
+- Email in registrazione: SOLO SALVATA, nessuna verifica reale via email.
+  ANCORA VERO PER LA REGISTRAZIONE. La seconda meta' di questa decisione
+  ("niente servizio esterno tipo Resend/Brevo") e' stata CAMBIATA
+  DALL'UTENTE il 2026-07-28: per il recupero password si usa BREVO con la
+  sua API HTTP. Motivo tecnico: Render gratuito blocca le porte SMTP, e
+  senza un canale non esiste nessun recupero password sensato. Tutto
+  l'invio sta in lib/mailer.js.
 - Nome file per questo promemoria: leggimi.txt (richiesto esplicitamente
   dall'utente, in italiano, dentro la cartella del progetto)
 - Libreria "osmtogeojson" (prevista in origine per la Fase G) NON installata:
@@ -3312,8 +3505,36 @@ COME RIPRENDERE IL LAVORO IN UNA NUOVA SESSIONE
 
 
 ===================================================================
-DA DOVE SI RIPARTE — situazione al 2026-07-27, fine SECONDA sessione
+DA DOVE SI RIPARTE — situazione al 2026-07-28
 ===================================================================
+
+>>> PUNTO 7 (recupero password): FATTO E CHIUSO. Era l'ULTIMO punto fermo su una
+    decisione. Link temporaneo che vale un'ora e una volta sola, pagina dedicata per
+    scegliere la password nuova, chiusura di tutte le altre sessioni, piu' il cambio
+    password dal profilo che prima non esisteva affatto.
+    105 controlli (51 via API, 54 nel browser a 1440 e 390 px), tutti passati,
+    database identico a prima. Dettagli: sezione "PUNTO 7: COM'E' ANDATA" in cima.
+
+>>> L'UNICA COSA CHE ASPETTA L'UTENTE: la chiave di Brevo. Account gratuito, verifica
+    del proprio indirizzo come mittente, chiave incollata in .env e fra le variabili
+    d'ambiente di Render. SENZA, il sito funziona lo stesso ma le email non partono
+    (il loro contenuto finisce nel log del server). Poi va chiesta la conferma dal
+    sito vero che l'email arriva, GUARDANDO ANCHE LA POSTA INDESIDERATA.
+
+>>> LA DECISIONE SUL CANALE DI INVIO NON E' PIU' IN SOSPESO. Teneva fermi tre punti
+    (7, 22 e la seconda meta' del 21). Il canale ora esiste ed e' scritto
+    (lib/mailer.js). Il 22 e il 21-resto restano da fare per il loro lavoro proprio -
+    il 21 ha bisogno del conto alla rovescia sul SERVER, che e' il pezzo grosso - non
+    piu' per una decisione mancante.
+
+>>> IL PUNTO 33 E' L'UNICO RIMASTO di tutto cose_da_fare.txt: il dislivello nei
+    percorsi progettati. Non e' bloccato da niente. Le tre strade possibili sono
+    elencate in cose_da_fare.txt al 33 e NESSUNA e' ancora stata misurata: prima
+    misurare, come per il 15 e il 13.
+
+-------------------------------------------------------------------
+Situazione al 2026-07-27, fine TERZA sessione (resta valida)
+-------------------------------------------------------------------
 
 >>> PUNTO 13: FATTO E CHIUSO. Codice scritto, dati estratti, tutto verificato e
     online. Progettare un percorso su piu' punti funziona: si tocca la mappa, il
@@ -3432,41 +3653,51 @@ punto 28) e LA TRACCIA .GPX IMPORTATA DALL'UTENTE il 27 (Corno Grande dell'11
 agosto 2024, 13,787 km, 1232 m). NON vanno cancellate: sono dati suoi.
 
 CHE COSA RESTA IN TUTTO, in mezza riga ciascuno:
- - punto 13             -> percorso multi-punto sui sentieri. E' IL LAVORO
-                           DELLA PROSSIMA SESSIONE, deciso dall'utente.
-                           Accordo e primo passo nella sezione dedicata in
-                           cima al file.
- - punti 7, 22, 21-resto -> BLOCCATI dalla stessa decisione dell'utente
-                           (email o SMS), vedi qui sotto.
+ - punto 33             -> il DISLIVELLO nei percorsi progettati. E' L'UNICO PUNTO
+                           RIMASTO, e non e' bloccato da nessuna decisione.
+                           I sentieri OSM non hanno la quota (0 su 15.228),
+                           quindi serve una fonte di altitudini: le tre strade
+                           possibili sono elencate in cose_da_fare.txt al 33 e
+                           NESSUNA e' ancora stata misurata. Prima misurare.
+ - punti 22 e 21-resto  -> non piu' bloccati da nessuna decisione: il canale di
+                           invio esiste dal 2026-07-28 (lib/mailer.js, Brevo).
+                           Restano da fare per il loro lavoro proprio - il 21 ha
+                           bisogno del conto alla rovescia sul SERVER, che e' il
+                           pezzo grosso.
+ - punto 7              -> FATTO E CHIUSO il 2026-07-28. Manca solo la chiave
+                           Brevo dall'utente e la sua conferma dal sito vero.
+ - punto 13             -> FATTO E CHIUSO il 2026-07-27, terza sessione.
 Tutti gli altri punti di cose_da_fare.txt (1-12, 14-20, 23-32) sono FATTI.
 
-DA CHIEDERE ALL'UTENTE PER PRIMA COSA: la controprova delle due correzioni della
-seconda sessione del 27 - il file .gpx che dava errore ora si carica? e il badge
-del Corno Grande risulta conquistato? Puo' farla solo lui, perche' il file e' suo.
-Vale la pena ricordare come e' andata la volta scorsa: chiedergli di provare coi
+DA CHIEDERE ALL'UTENTE PER PRIMA COSA: la prova all'aperto DA TELEFONO VERO,
+CAMMINANDO - tracciamento del percorso, tasto di registrazione sulla mappa e tasto
+SOS. E' l'ultima cosa che nessuna prova automatica puo' sostituire: Puppeteer
+simula un GPS che cammina, non l'imprecisione reale, i buchi di segnale e la
+batteria. Non blocca nessun punto, si fa quando gli e' comodo.
+Vale la pena ricordare come e' andata le volte scorse: chiedergli di provare coi
 file veri ha trovato un difetto al primo colpo, che nessuna prova automatica
-aveva visto in 80 controlli. Le tracce costruite apposta non sostituiscono un
-file uscito davvero da un Garmin, da Strava o da Komoot.
+aveva visto in 80 controlli; e i due difetti del fondo pagina sul telefono (100vh
+e il padding azzerato) erano invisibili a Puppeteer per costruzione.
 
-DA RICORDARE ALL'UTENTE IN OGNI RIASSUNTO, per sua richiesta esplicita: i
-punti 7 e 13 restano in sospeso. Non vanno riproposti come prossimo passo -
-solo ricordati, finche' non e' lui a riaprirli.
+NIENTE PIU' DA RICORDARE IN OGNI RIASSUNTO. La richiesta esplicita dell'utente
+riguardava i punti 7 e 13: il 13 e' chiuso dal 2026-07-27, il 7 dal 2026-07-28.
+Nessuno dei due va piu' ricordato come in sospeso. Del punto 7 resta solo da
+chiedergli la CONFERMA dal sito vero, una volta messa la chiave Brevo.
 
-AGGIORNAMENTO PUNTO 7 (2026-07-27): l'utente ha osservato che il login chiede
-gia' email e password, quindi l'email e' gia' l'identificativo di accesso.
-VERIFICATO E CONFERMATO: POST /api/auth/login cerca l'utente PER EMAIL, il campo e'
-unique nel modello, ed entrambi gli account reali ne hanno una valida. La base per il
-recupero via email c'e' gia'. Ha descritto anche la procedura che vuole (password
-nuova generata sul momento e mandata via email) e ha detto che IL PUNTO 7 SI FA IN UNA
-SESSIONE FUTURA: per ora andava solo registrata l'informazione. Tutto scritto in
-cose_da_fare.txt al punto 7, comprese due conseguenze di quella procedura da valutare
-con lui prima di scrivere codice.
+STORICO PUNTO 7 (2026-07-27), tenuto perche' spiega da dove nasce la soluzione:
+l'utente aveva osservato che il login chiede gia' email e password, quindi l'email e'
+gia' l'identificativo di accesso. VERIFICATO E CONFERMATO: POST /api/auth/login cerca
+l'utente PER EMAIL, il campo e' unique nel modello, ed entrambi gli account reali ne
+hanno una valida - la base per il recupero via email c'era gia' e non e' stata
+costruita. Aveva anche descritto la procedura "password nuova generata sul momento e
+mandata via email"; il 2026-07-28, viste le due conseguenze scritte in
+cose_da_fare.txt, ha scelto il LINK TEMPORANEO.
 
-DECISIONE ANCORA IN ATTESA, che da sola sblocca tre punti (7, 21-resto e
-22): quale canale usare per mandare un messaggio, email o SMS. Finche' non
-la prende l'utente non si scrive codice per quei tre. L'utente e' gia'
-stato informato che sono la stessa decisione; NON riproporgliela ad ogni
-occasione, ma se la riapre lui, affrontarli insieme.
+DECISIONE PRESA IL 2026-07-28, non piu' in attesa: il canale di invio e' EMAIL, con
+l'API HTTP di Brevo (SMTP e' escluso, Render gratuito blocca le sue porte). Teneva
+fermi tre punti (7, 21-resto e 22). Il 7 e' fatto; per il 22 e il 21-resto il canale
+adesso c'e' gia' scritto in lib/mailer.js, quindi restano da fare solo per il loro
+lavoro proprio.
 
 COSE DA SAPERE SULL'AMBIENTE, per non perderci tempo:
  - Per le prove nel browser si usa PUPPETEER installato nella CARTELLA
@@ -3662,13 +3893,13 @@ DEBITO TECNICO NOTO, non urgente ma da non dimenticare:
    chiaramente che nessun messaggio parte). Il resto e' nel BLOCCO 5.
  - Nessun file LICENSE: il repository e' pubblico ma non e' open source
    (vedi la nota sulla privacy in cima al file).
- - NON SI PUO' CANCELLARE UN'USCITA IMPORTATA PER ERRORE. Da quando si
-   accettano anche i file senza orari e gli itinerari progettati (punto 29) e'
-   piu' facile importare il file sbagliato, e quello resta nei totali per sempre
-   consumando uno dei 5 caricamenti del mese. Non e' stato aggiunto perche' e'
-   una funzionalita' nuova che l'utente non ha chiesto: va PROPOSTA. Lavoro
-   piccolo: una rotta DELETE su una sessione propria (verificando che sia sua) e
-   un pulsante nella scheda dello storico.
+ - [RISOLTO col punto 31, il 2026-07-27] Cancellare un'uscita importata per
+   errore ORA SI PUO': rotta DELETE /api/tracking/sessions/:id piu' il cestino
+   sulla scheda dello storico. Questa voce resta scritta solo perche' per un
+   giorno ha detto il falso in questo stesso file: era gia' fatta mentre qui
+   c'era scritto "va PROPOSTA". Vale come promemoria di metodo - quando si chiude
+   un punto, il debito tecnico che quel punto risolve va tolto nella stessa
+   passata, altrimenti una sessione futura rifa' un lavoro gia' fatto.
  - Le coordinate delle vette dentro i documenti Hike sul database restano quelle
    vecchie e imprecise: per i badge non conta, perche' il catalogo di
    public/js/badge-points.js vince sempre sulle vette delle escursioni (sia in

@@ -43,10 +43,54 @@
             </form>
 
             <div class="auth-switch-row">
+                <a id="link-go-forgot">Password dimenticata?</a>
+            </div>
+            <div class="auth-switch-row">
                 Non hai un account? <a id="link-go-register">Registrati</a>
             </div>
             <div class="auth-demo-hint">
                 <a href="/demo" class="auth-link">Vuoi solo provare il sito? Entra con un account demo →</a>
+            </div>
+        </div>
+
+        <!-- Vista "Password dimenticata" (punto 7 di cose_da_fare.txt).
+             E' una terza vista accanto a login e registrazione, non una pagina a parte:
+             cosi' riusa lo stesso riquadro e lo stesso modo di mostrare gli errori, e non
+             c'e' un secondo indirizzo da tenere allineato.
+             La PAGINA a se' (/reimposta-password) e' solo quella dove si sceglie la
+             password nuova, perche' li' ci si arriva dal link dell'email, non da qui. -->
+        <div id="auth-forgot-view" class="auth-card hidden">
+            <div class="auth-brand">
+                <span class="logo-icon">🏔️</span>
+                <h1>CAMOSCIO</h1>
+            </div>
+            <p class="auth-subtitle">
+                Scrivi l'email con cui ti sei registrato: ti mandiamo un link per scegliere
+                una nuova password.
+            </p>
+
+            <div id="auth-forgot-error" class="auth-error-box hidden"></div>
+
+            <!-- Messaggio di conferma. E' lo STESSO qualunque cosa succeda, anche se
+                 quell'email non risulta registrata: vedi il commento in routes/auth.js. -->
+            <div id="auth-forgot-done" class="auth-forgot-done hidden">
+                <p><strong>Fatto.</strong> <span id="auth-forgot-done-text"></span></p>
+                <p class="small text-muted">
+                    Il link vale <strong>un'ora</strong> e si può usare <strong>una volta sola</strong>.
+                    Finché non scegli la password nuova, quella di adesso continua a funzionare.
+                </p>
+            </div>
+
+            <form id="auth-forgot-form">
+                <div class="form-group">
+                    <label for="forgot-email">Email:</label>
+                    <input type="email" id="forgot-email" required autocomplete="email">
+                </div>
+                <button type="submit" class="btn btn-primary btn-block" id="btn-forgot-submit">Mandami il link</button>
+            </form>
+
+            <div class="auth-switch-row">
+                Ti è tornata in mente? <a id="link-forgot-go-login">Torna all'accesso</a>
             </div>
         </div>
 
@@ -446,6 +490,28 @@
                                             <button class="btn btn-sm btn-primary" id="btn-save-local-expert">Salva</button>
                                         </div>
                                     </div>
+                                </div>
+
+                                <!-- Punto 7 di cose_da_fare.txt: prima di oggi NON esisteva nessuna
+                                     schermata per cambiare la password. Chi voleva solo cambiarla
+                                     doveva fingere di averla dimenticata e passare dall'email.
+                                     Nascosta per gli account demo (entrano senza password, non ne
+                                     hanno una da cambiare): la mostra profile.js. -->
+                                <div class="profile-section change-password-section hidden" id="change-password-section">
+                                    <p class="small text-muted">Cambia la password del tuo account. Serve quella attuale.</p>
+                                    <div class="form-group">
+                                        <label for="cp-current">Password attuale:</label>
+                                        <input type="password" id="cp-current" autocomplete="current-password">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="cp-new">Nuova password (minimo 8 caratteri):</label>
+                                        <input type="password" id="cp-new" minlength="8" autocomplete="new-password">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="cp-confirm">Conferma nuova password:</label>
+                                        <input type="password" id="cp-confirm" minlength="8" autocomplete="new-password">
+                                    </div>
+                                    <button class="btn btn-sm btn-primary" id="btn-change-password">Cambia password</button>
                                 </div>
                             </div>
                         </div>
