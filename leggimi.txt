@@ -255,16 +255,41 @@ l'abbia chiesto. Oggi riguarda 2 account reali, entrambi con indirizzi validi.
   due difetti estetici (pulsante sottolineato, e un secondo collegamento che diceva la
   stessa cosa del pulsante sopra). Nessun controllo automatico se ne accorge.
 
---- COSA RESTA DA FARE ALL'UTENTE (2 minuti, una volta sola) ---
+--- BREVO NON SI PUO' USARE: CHIEDE LA PARTITA IVA (scoperto il 2026-07-28) ---
 
- 1. creare l'account gratuito su Brevo e far verificare il proprio indirizzo come
-    mittente;
- 2. copiare la chiave API;
- 3. incollarla nel file .env in locale e fra le variabili d'ambiente di Render.
-Le variabili sono BREVO_API_KEY, BREVO_SENDER_EMAIL, BREVO_SENDER_NAME e
-APP_BASE_URL (vedi .env.example, dove sono spiegate).
-SENZA LA CHIAVE IL SITO NON SI ROMPE: le email semplicemente non partono e il loro
-contenuto finisce nel log del server.
+L'utente ha provato a iscriversi e si e' fermato: Brevo chiede DATI AZIENDALI, partita
+IVA compresa, che lui non ha. Non e' aggirabile.
+IL CODICE NON VA RISCRITTO PER QUESTO: tutto l'invio sta in lib/mailer.js e cambia solo
+il pezzo che parla col servizio. Il resto (token, link, pagina, sessioni) e' indipendente
+dal fornitore.
+
+IL VINCOLO VERO, che vale per TUTTI i servizi gratuiti e va capito prima di sceglierne
+uno: senza un DOMINIO PROPRIO quasi tutti permettono di scrivere SOLO al proprio
+indirizzo. Per scrivere a chiunque servono o un dominio verificato, oppure un servizio
+che accetti la verifica di un SINGOLO INDIRIZZO come mittente - e quelli (Brevo,
+Mailjet) sono proprio i piu' orientati alle aziende.
+CHE COSA CAMBIA IN PRATICA, misurato sul database vero: gli account reali sono DUE, il
+suo (denis1995.09@...) e quello di un'altra persona. Con un servizio che scrive solo al
+proprietario dell'account, LUI potrebbe recuperare la password e L'ALTRA PERSONA NO.
+
+LE STRADE, con il loro costo vero:
+ - MAILJET: gratis, 200 email al giorno, permette di verificare un singolo indirizzo
+   come mittente e quindi di scrivere a chiunque. DA PROVARE per primo, ma potrebbe
+   chiedere gli stessi dati aziendali di Brevo: e' una verifica di cinque minuti;
+ - RESEND: iscrizione con Google o GitHub, NESSUN dato aziendale, gratis 3.000 al mese.
+   Ma senza dominio proprio scrive SOLO all'indirizzo dell'account;
+ - UN DOMINIO PROPRIO (pochi euro all'anno) piu' uno qualunque dei due: risolve tutto e
+   per sempre, ma non e' gratis e va contro il vincolo hard.
+NESSUNA E' ANCORA STATA SCELTA.
+
+--- COSA SERVE, QUANDO IL SERVIZIO SARA' SCELTO ---
+
+Tre variabili d'ambiente, in .env in locale e fra le variabili di Render per il sito
+online: BREVO_API_KEY, BREVO_SENDER_EMAIL, BREVO_SENDER_NAME, piu' APP_BASE_URL (che
+online DEVE valere https://camoscio.onrender.com). Vedi .env.example, dove sono spiegate.
+SENZA LA CHIAVE IL SITO NON SI ROMPE: le email semplicemente non partono, il loro
+contenuto finisce nel log del server, e a schermo si legge che il recupero non e' ancora
+attivo. E' lo stato in cui il sito e' ONLINE dal 2026-07-28.
 LA CHIAVE E L'INDIRIZZO MITTENTE NON VANNO SCRITTI NE' QUI NE' IN cose_da_fare.txt:
 questi due file finiscono su GitHub, che e' pubblico. Il file .env e' gia' escluso
 in .gitignore.
@@ -3515,11 +3540,19 @@ DA DOVE SI RIPARTE — situazione al 2026-07-28
     105 controlli (51 via API, 54 nel browser a 1440 e 390 px), tutti passati,
     database identico a prima. Dettagli: sezione "PUNTO 7: COM'E' ANDATA" in cima.
 
->>> L'UNICA COSA CHE ASPETTA L'UTENTE: la chiave di Brevo. Account gratuito, verifica
-    del proprio indirizzo come mittente, chiave incollata in .env e fra le variabili
-    d'ambiente di Render. SENZA, il sito funziona lo stesso ma le email non partono
-    (il loro contenuto finisce nel log del server). Poi va chiesta la conferma dal
-    sito vero che l'email arriva, GUARDANDO ANCHE LA POSTA INDESIDERATA.
+>>> GIA' ONLINE dal 2026-07-28 (commit 983e709, deploy Render verificato: la pagina
+    /reimposta-password risponde 200, home e demo pure). Il CAMBIO PASSWORD DAL
+    PROFILO funziona gia' del tutto, senza bisogno di nessuna chiave.
+
+>>> IL RECUPERO PASSWORD E' ONLINE MA NON PUO' ANCORA MANDARE EMAIL, e lo dice a
+    schermo invece di prometterle. BREVO E' SALTATO: chiede la partita IVA, che
+    l'utente non ha. Le tre strade rimaste, con il loro costo vero, sono nella
+    sezione "PUNTO 7: COM'E' ANDATA" in cima al file - da leggere PRIMA di iscriversi
+    da qualche parte, perche' il vincolo che conta (scrivere solo al proprio indirizzo
+    senza un dominio) non e' ovvio e taglierebbe fuori il secondo account reale.
+    Quando il servizio sara' scelto: chiave nelle variabili di Render, e poi va
+    chiesta all'utente la conferma dal sito vero che l'email arriva davvero,
+    GUARDANDO ANCHE LA POSTA INDESIDERATA.
 
 >>> LA DECISIONE SUL CANALE DI INVIO NON E' PIU' IN SOSPESO. Teneva fermi tre punti
     (7, 22 e la seconda meta' del 21). Il canale ora esiste ed e' scritto

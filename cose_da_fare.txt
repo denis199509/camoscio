@@ -148,8 +148,16 @@ Da pianificare e implementare in una sessione futura.
       dimenticata. Ora c'e', nella card "Il Tuo Profilo", e chiede quella vecchia.
       109 controlli in due prove (53 contro il server, 56 nel browser a 1440 e 390 px),
       tutti passati, database identico a prima. Vedi leggimi.txt per i dettagli.
-      RESTA DA FARE, ed e' l'unica cosa che serve all'utente: creare l'account Brevo e
-      incollare la chiave. Senza chiave il sito NON si rompe, ma le email non partono.
+      ONLINE dal 2026-07-28. Il CAMBIO PASSWORD DAL PROFILO funziona gia' del tutto.
+      RESTA SOLO IL SERVIZIO DI INVIO, e BREVO E' SALTATO: chiede la partita IVA, che
+      l'utente non ha. Il codice non va riscritto - l'invio sta tutto in lib/mailer.js.
+      Finche' non c'e' una chiave, il sito NON promette email che non partono: dice
+      chiaramente che il recupero non e' ancora attivo e che la password di adesso
+      continua a funzionare.
+      IL VINCOLO DA CAPIRE PRIMA DI SCEGLIERE: senza un dominio proprio quasi tutti i
+      servizi gratuiti scrivono SOLO al proprio indirizzo. Gli account reali sono due,
+      di due persone diverse: cosi' uno dei due resterebbe senza recupero. Le tre
+      strade (Mailjet, Resend, un dominio da pochi euro) sono in leggimi.txt.
    [INFORMAZIONI AGGIUNTE DALL'UTENTE 2026-07-27, seconda sessione. NESSUN CODICE
    SCRITTO: il punto 7 si fa in una sessione futura, per sua richiesta esplicita.]
    OSSERVAZIONE DELL'UTENTE, VERIFICATA E CONFERMATA: "quando fai login chiede
