@@ -24,6 +24,14 @@ const routeDraftSchema = new mongoose.Schema({
     // modalita' che aveva chiesto per le zone senza sentieri mappati. Riaprendo la bozza
     // deve tornare come l'aveva lasciata, altrimenti il percorso ricalcolato sarebbe un altro.
     agganciaAiSentieri: { type: Boolean, default: true },
+    // PUNTO 38 - il percorso torna al punto 1 (dove si e' lasciata la macchina).
+    // NON si salva il ritorno come punto in piu' dentro "punti": si salva l'intenzione. Cosi'
+    // riaprendo la bozza i segnaposti restano quelli toccati davvero, il ritorno si puo'
+    // ancora togliere, e una tappa aggiunta dopo finisce PRIMA del rientro invece che dopo.
+    // default: undefined e non false, per il vincolo hard sullo spazio - la sola andata e' il
+    // caso comune, e un campo scritto su ogni documento per dire "no" e' spazio buttato
+    // (stesso criterio di salitaM qui sotto e di shareable/covers al punto 24).
+    anello: { type: Boolean, default: undefined },
     // Solo per l'elenco (vedi sopra). Non sono la verita': la verita' si ricalcola.
     metriTotali: { type: Number, default: 0 },
     metriRetta: { type: Number, default: 0 },

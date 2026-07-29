@@ -27,12 +27,45 @@
     // Rosso mattone (--accent-red): e' il colore che nel resto del sito vuol dire "attenzione".
     const COLORE_RETTA = '#A83B2E';
 
+    // Lo stesso tetto di routes/routing.js. Qui serve per FERMARE il punto di troppo con una
+    // spiegazione, invece di lasciar arrivare un 400 che sull'interfaccia sembra un guasto.
+    const MAX_PUNTI = 25;
+
     let attivo = false;
     let punti = [];              // [[lng,lat], ...] scelti dall'utente
+    let anello = false;          // il percorso torna al punto 1 (punto 38)
     let ultimoEsito = null;      // la risposta del server, per il salvataggio
     let segnaposti = [];         // marker Leaflet dei punti scelti
     let linee = [];              // polyline Leaflet del percorso disegnato
     let inCalcolo = false;
+
+    // PUNTO 38 - "TORNA ALL'INIZIO", cioe' CHIUDERE L'ANELLO.
+    //
+    // Richiesta di Denis (2026-07-29), con le sue parole: "serve un tasto che ti riporta al
+    // primo punto, che in teoria corrisponde all'inizio del sentiero, quindi dove
+    // probabilmente lascero' la macchina".
+    //
+    // PERCHE' CONTA PIU' DI UN TASTO IN PIU': fino a qui un progetto Campo Imperatore ->
+    // Corno Grande mostrava i chilometri e il dislivello della SOLA ANDATA, ma quella strada
+    // si fa in tutti e due i versi. Era un numero che sembrava la misura dell'escursione ed
+    // era la sua meta' - lo stesso difetto di forma gia' corretto per il dislivello dei
+    // percorsi progettati (punto 33) e per il tempo CAI (punto 44).
+    //
+    // L'ANELLO E' UN INTERRUTTORE, NON UN PUNTO IN PIU' DENTRO "punti", ed e' la decisione
+    // che tiene in piedi tutto il resto del file. Aggiungere in coda una copia del punto 1
+    // sarebbe stata la strada ovvia, ma: il segnaposto numerato sarebbe finito ESATTAMENTE
+    // sopra quello del punto 1, l'elenco avrebbe mostrato due righe con le stesse coordinate,
+    // e soprattutto UNA TAPPA AGGIUNTA DOPO AVER CHIUSO L'ANELLO SAREBBE FINITA DOPO IL
+    // RITORNO. Con un booleano invece "punti" resta "le tappe che ho scelto": elenco,
+    // segnaposti, "Togli l'ultimo", "Svuota" e i cestini continuano a funzionare senza essere
+    // toccati, e una tappa nuova si infila da sola PRIMA del ritorno.
+    //
+    // Il ritorno si chiude qui, in un posto solo, perche' lo usano sia il calcolo sia il
+    // salvataggio: due copie della stessa regola divergono sempre, ed e' una trappola gia'
+    // pagata su questo progetto (due copie dello stesso blocco, escapeHtml mancante in una).
+    function puntiDaPercorrere() {
+        return anello && punti.length >= 2 ? [...punti, punti[0]] : punti;
+    }
 
     const esc = s => (window.escapeHtml ? window.escapeHtml(s) : String(s == null ? '' : s));
     const metri = m => m >= 1000 ? `${(m / 1000).toFixed(1).replace('.', ',')} km` : `${Math.round(m)} m`;
@@ -55,16 +88,23 @@
         pulisciSegnaposti();
         const mappa = window.mapInstance;
         if (!mappa || !window.L) return;
+        // Ad anello chiuso l'arrivo NON e' l'ultima tappa scelta: e' il punto 1. Un segnaposto
+        // in piu' sopra quello di partenza non si vedrebbe nemmeno (stesse coordinate), quindi
+        // il ritorno si dice sul segnaposto che c'e' gia'.
+        const chiuso = anello && punti.length >= 2;
         punti.forEach((p, i) => {
             const numero = i + 1;
+            const partenza = numero === 1;
             const icona = window.L.divIcon({
-                className: 'route-point-marker',
+                className: `route-point-marker${chiuso && partenza ? ' route-point-anello' : ''}`,
                 html: `<span>${numero}</span>`,
                 iconSize: [26, 26],
                 iconAnchor: [13, 13]
             });
             const m = window.L.marker([p[1], p[0]], { icon: icona }).addTo(mappa);
-            m.bindTooltip(numero === 1 ? 'Partenza' : (numero === punti.length ? 'Arrivo' : `Tappa ${numero}`));
+            m.bindTooltip(partenza
+                ? (chiuso ? 'Partenza e arrivo' : 'Partenza')
+                : (!chiuso && numero === punti.length ? 'Arrivo' : `Tappa ${numero}`));
             segnaposti.push(m);
         });
     }
@@ -116,6 +156,17 @@
                 <button class="rp-del" data-rp-togli="${i}" title="Togli questo punto" aria-label="Togli il punto ${i + 1}"><i data-lucide="x"></i></button>
             </li>`).join('');
 
+        // Il ritorno NON ha un numero e NON ha coordinate proprie: non e' una tappa che si e'
+        // scelta, e' il rientro al punto 1. Scriverci sopra le stesse coordinate della riga 1
+        // farebbe sembrare che si sia toccato due volte lo stesso posto.
+        const chiuso = anello && punti.length >= 2;
+        const rigaRitorno = chiuso ? `
+            <li class="rp-ritorno">
+                <span class="rp-num rp-num-ritorno" aria-hidden="true">&#8629;</span>
+                <span class="rp-coord">Ritorno alla partenza</span>
+                <button class="rp-del" data-rp-riapri title="Togli il ritorno" aria-label="Togli il ritorno alla partenza"><i data-lucide="x"></i></button>
+            </li>` : '';
+
         let riepilogo = '';
         if (inCalcolo) {
             riepilogo = `<div class="rp-esito attesa"><i data-lucide="loader"></i> Sto cercando il percorso…</div>`;
@@ -131,6 +182,7 @@
                 : `<div class="rp-tutto-bene"><i data-lucide="circle-check-big"></i> Tutto il percorso segue sentieri conosciuti.</div>`;
             riepilogo = `
                 <div class="rp-esito">
+                    ${tipoPercorso(chiuso)}
                     <div class="rp-totali">
                         <div><strong>${metri(e.metriTotali)}</strong><span>totali</span></div>
                         <div><strong>${metri(e.metriSentiero)}</strong><span>sui sentieri</span></div>
@@ -150,8 +202,13 @@
                 <span>Segui i sentieri conosciuti</span>
             </label>
             <p class="small text-muted rp-spiega-switch">Spegnendolo i punti si collegano sempre in linea retta, utile dove non c'e' niente di mappato.</p>
-            ${punti.length ? `<ol class="rp-punti">${righe}</ol>` : '<p class="small text-muted">Nessun punto scelto.</p>'}
+            ${punti.length ? `<ol class="rp-punti">${righe}${rigaRitorno}</ol>` : '<p class="small text-muted">Nessun punto scelto.</p>'}
+            ${chiuso ? `<p class="small text-muted rp-spiega-anello">Il percorso torna al punto 1, dove hai lasciato la macchina. Il ritorno segue i sentieri come le altre tappe, e i numeri qui sotto comprendono anche lui.</p>` : ''}
             <div class="rp-comandi">
+                <button class="btn btn-sm ${chiuso ? 'btn-secondary' : 'btn-primary'}" id="btn-rp-anello" type="button" ${punti.length >= 2 ? '' : 'disabled'}
+                        title="${chiuso ? 'Il percorso torna al punto 1: premi per toglierlo' : 'Aggiungi il ritorno al punto 1, dove hai lasciato la macchina'}">
+                    <i data-lucide="${chiuso ? 'undo-dot' : 'rotate-ccw'}"></i> ${chiuso ? 'Togli il ritorno' : "Torna all'inizio"}
+                </button>
                 <button class="btn btn-sm btn-secondary" id="btn-rp-annulla-ultimo" type="button" ${punti.length ? '' : 'disabled'}><i data-lucide="undo-2"></i> Togli l'ultimo</button>
                 <button class="btn btn-sm btn-secondary" id="btn-rp-svuota" type="button" ${punti.length ? '' : 'disabled'}><i data-lucide="eraser"></i> Svuota</button>
                 <button class="btn btn-sm btn-secondary" id="btn-rp-chiudi" type="button"><i data-lucide="x"></i> Chiudi</button>
@@ -159,11 +216,18 @@
             ${riepilogo}`;
 
         document.getElementById('rp-aggancia').addEventListener('change', ev => { aggancia = ev.target.checked; calcola(); });
+        document.getElementById('btn-rp-anello').addEventListener('click', () => { anello = !anello; dopoModifica(); });
         document.getElementById('btn-rp-annulla-ultimo').addEventListener('click', () => { punti.pop(); dopoModifica(); });
-        document.getElementById('btn-rp-svuota').addEventListener('click', () => { punti = []; dopoModifica(); });
+        // "Svuota" vuol dire ricominciare da capo, quindi spegne anche l'anello: altrimenti il
+        // progetto successivo si richiuderebbe da solo alla seconda tappa senza che nessuno
+        // l'abbia chiesto. "Togli l'ultimo" invece lo lascia acceso - e' un passo indietro,
+        // non un ripensamento.
+        document.getElementById('btn-rp-svuota').addEventListener('click', () => { punti = []; anello = false; dopoModifica(); });
         document.getElementById('btn-rp-chiudi').addEventListener('click', chiudi);
         box.querySelectorAll('[data-rp-togli]').forEach(b =>
             b.addEventListener('click', () => { punti.splice(Number(b.getAttribute('data-rp-togli')), 1); dopoModifica(); }));
+        const riapri = box.querySelector('[data-rp-riapri]');
+        if (riapri) riapri.addEventListener('click', () => { anello = false; dopoModifica(); });
         const salva = document.getElementById('btn-rp-salva');
         if (salva) salva.addEventListener('click', salvaBozza);
 
@@ -171,6 +235,35 @@
     }
 
     let aggancia = true;
+
+    // PUNTO 38 - DIRE SE I NUMERI COMPRENDONO IL RITORNO.
+    //
+    // Sono due righe di testo e valgono quanto il tasto. Prima del punto 38 il riquadro
+    // scriveva "8,4 km totali" senza dire di cosa: chi legge presume che sia la giornata,
+    // mentre erano i chilometri dell'andata. Nessuna delle due frasi qui sotto va oltre cio'
+    // che il sito sa davvero - non si dichiara "allora ne farai il doppio", perche' un
+    // percorso di sola andata puo' benissimo essere una traversata con il rientro in
+    // macchina, e non e' il sito a saperlo.
+    function tipoPercorso(chiuso) {
+        return chiuso
+            ? `<p class="small rp-tipo rp-tipo-anello"><i data-lucide="rotate-ccw"></i><span><b>Anello</b> — i
+                   numeri qui sotto comprendono il ritorno al punto&nbsp;1.</span></p>`
+            : `<p class="small rp-tipo"><i data-lucide="move-right"></i><span><b>Sola andata</b> — i numeri
+                   qui sotto NON comprendono il ritorno al punto&nbsp;1. Se torni da dove sei partito, usa
+                   "Torna all'inizio".</span></p>`;
+    }
+
+    // Il consiglio "togli il ritorno" si da' SOLO se serve davvero, cioe' se la sola andata
+    // sta sotto il limite. Su un percorso che e' gia' lungo per conto suo togliere l'anello
+    // non cambierebbe niente, e mandare qualcuno a smontare il proprio progetto per un numero
+    // che comunque non arriva e' peggio che tacere.
+    // L'andata si ricava esatta, non a meta': l'ultima tappa E' il ritorno.
+    const LIMITE_QUOTE_M = 25000;   // 500 punti al passo massimo di 50 m, vedi lib/elevation.js
+    function suggerisciTogliereIlRitorno(e) {
+        if (!anello || !Array.isArray(e.tappe) || e.tappe.length < 2) return false;
+        const ritorno = e.tappe[e.tappe.length - 1];
+        return (e.metriTotali - (ritorno.metri || 0)) <= LIMITE_QUOTE_M;
+    }
 
     // PUNTO 33 - SALITA, DISCESA E FASCIA DI QUOTA.
     //
@@ -191,9 +284,22 @@
             // Non e' un errore da nascondere: chi progetta un'escursione deve sapere che
             // proprio il numero piu' importante manca, invece di vedere un riquadro assente
             // e dedurne che il percorso sia pianeggiante.
-            return `<p class="small text-muted rp-nota-dislivello"><i data-lucide="info"></i><span>Il
-                dislivello non e' disponibile in questo momento: la fonte delle quote non ha risposto.
-                Il percorso qui sopra e' comunque corretto. Riprova fra poco.</span></p>`;
+            //
+            // PUNTO 38 - E DEVE SAPERE PERCHE'. Fino a qui c'era un messaggio solo, "la fonte
+            // non ha risposto... riprova fra poco", che su un percorso oltre i 25 km era
+            // falso due volte: la fonte aveva risposto benissimo, e riprovare non serviva a
+            // niente perche' il limite e' la lunghezza. Chiudere l'anello raddoppia i
+            // chilometri, quindi e' un caso che ora si incontra sul serio.
+            return e.motivoDislivello === 'troppo lungo'
+                ? `<p class="small text-muted rp-nota-dislivello"><i data-lucide="info"></i><span>Questo
+                    percorso supera i <b>25 km</b>: su una distanza simile le quote non si possono
+                    stimare con abbastanza precisione, quindi il dislivello non viene dato invece di
+                    darlo sbagliato. Distanza e tracciato qui sopra sono comunque corretti.${suggerisciTogliereIlRitorno(e)
+                        ? ' Se ti serve il numero, togli il ritorno: la sola andata sta nel limite.'
+                        : ''}</span></p>`
+                : `<p class="small text-muted rp-nota-dislivello"><i data-lucide="info"></i><span>Il
+                    dislivello non e' disponibile in questo momento: la fonte delle quote non ha risposto.
+                    Il percorso qui sopra e' comunque corretto. Riprova fra poco.</span></p>`;
         }
 
         // Solo se ce n'e' davvero: su un percorso tutto sui sentieri questa riga non serve.
@@ -298,17 +404,42 @@
 
     // --- calcolo ---
 
+    // UNA RISPOSTA VECCHIA NON DEVE POTER SOVRASCRIVERE QUELLA NUOVA.
+    //
+    // TROVATO GUARDANDO UNA SCHERMATA, non da un controllo automatico: a 390 px il riquadro
+    // diceva "Anello" e sotto mostrava 6,6 km con salita 932 m e discesa 221 m, cioe' i numeri
+    // della SOLA ANDATA. Su un anello salita e discesa si pareggiano per forza (nella stessa
+    // prova, a 1440 px, erano 1491 e 1495).
+    //
+    // LA CAUSA: premendo "Torna all'inizio" mentre il calcolo precedente e' ancora in volo
+    // partono due richieste. Se la prima risponde per SECONDA, il suo esito - quello della
+    // sola andata - finisce in ultimoEsito e ci resta, mentre l'etichetta viene disegnata
+    // dall'interruttore, che intanto dice "anello". Il riquadro dichiara una cosa e conta
+    // l'altra: e' esattamente la bugia che il punto 38 e' venuto a togliere, ricomparsa da
+    // un'altra porta.
+    //
+    // LA CORSA C'ERA GIA' PRIMA (aggiungendo tappe in fretta, o toccando l'interruttore dei
+    // sentieri), ma finora produceva solo numeri di un attimo prima. Con l'anello produce una
+    // CONTRADDIZIONE, ed e' peggio.
+    // Il biglietto numerato costa tre righe: chi torna e non ha piu' il numero buono si tace.
+    let giroCalcolo = 0;
+
     async function calcola() {
-        if (punti.length < 2) { aggiornaPannello(); return; }
+        if (punti.length < 2) { giroCalcolo++; aggiornaPannello(); return; }
+        const mioGiro = ++giroCalcolo;
         inCalcolo = true;
         aggiornaPannello();
         try {
             const res = await fetch('/api/routing/plan', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ punti, agganciaAiSentieri: aggancia })
+                body: JSON.stringify({ punti: puntiDaPercorrere(), agganciaAiSentieri: aggancia })
             });
             const dati = await res.json();
+            // Ne e' partito un altro nel frattempo: questa risposta descrive un percorso che
+            // non e' piu' quello a schermo. Si butta in silenzio - non e' un errore, e chi e'
+            // arrivato dopo di lei sta gia' aggiornando il riquadro.
+            if (mioGiro !== giroCalcolo) return;
             inCalcolo = false;
             if (!res.ok) {
                 ultimoEsito = null;
@@ -321,6 +452,9 @@
             disegnaPercorso(dati);
             aggiornaPannello();
         } catch (e) {
+            // Anche l'errore vale solo per il giro corrente: un guasto di rete su una
+            // richiesta ormai superata non deve cancellare un percorso valido a schermo.
+            if (mioGiro !== giroCalcolo) return;
             inCalcolo = false;
             ultimoEsito = null;
             aggiornaPannello();
@@ -334,6 +468,7 @@
     function avvia() {
         attivo = true;
         punti = [];
+        anello = false;
         ultimoEsito = null;
         pulisciDisegno();
         pulisciSegnaposti();
@@ -346,6 +481,7 @@
     function chiudi() {
         attivo = false;
         punti = [];
+        anello = false;
         ultimoEsito = null;
         pulisciDisegno();
         pulisciSegnaposti();
@@ -358,6 +494,19 @@
     // cosi' la mappa non apre anche il modulo delle segnalazioni.
     function gestisciClickMappa(e) {
         if (!attivo) return false;
+        // Il tetto si conta sulle tappe DA PERCORRERE, quindi ad anello chiuso il ritorno ne
+        // occupa una. Fermarsi qui con una spiegazione e' meglio che lasciar partire la
+        // richiesta: dal server tornerebbe un 400 e sull'interfaccia sembrerebbe un guasto.
+        if (punti.length + (anello ? 1 : 0) >= MAX_PUNTI) {
+            if (window.showToast) window.showToast(
+                anello
+                    ? `Un percorso puo' avere al massimo ${MAX_PUNTI - 1} tappe piu' il ritorno alla partenza.`
+                    : `Un percorso puo' avere al massimo ${MAX_PUNTI} tappe.`,
+                'error');
+            return true;
+        }
+        // Ad anello chiuso la tappa nuova si infila PRIMA del ritorno da sola, senza bisogno
+        // di codice: il ritorno non sta dentro "punti", lo aggiunge puntiDaPercorrere().
         punti.push([e.latlng.lng, e.latlng.lat]);
         dopoModifica();
         return true;
@@ -375,7 +524,10 @@
             const res = await fetch('/api/routing/drafts', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nome, punti, agganciaAiSentieri: aggancia })
+                // Si salvano le tappe SCELTE piu' l'interruttore, non il ritorno gia' aggiunto:
+                // cosi' riaprendo la bozza si puo' ancora togliere l'anello, e i segnaposti
+                // restano quelli che l'utente aveva toccato.
+                body: JSON.stringify({ nome, punti, anello, agganciaAiSentieri: aggancia })
             });
             const dati = await res.json();
             if (!res.ok) {
@@ -403,7 +555,7 @@
                     <li>
                         <button class="rp-apri" data-rp-apri="${esc(b.id)}">
                             <span class="rp-bozza-nome">${esc(b.nome)}</span>
-                            <span class="rp-bozza-dati">${b.punti.length} tappe · ${metri(b.metriTotali || 0)}${typeof b.salitaM === 'number' ? ` · ▲ ${b.salitaM} m` : ''}${b.metriRetta ? ` · ${metri(b.metriRetta)} in linea d'aria` : ''}</span>
+                            <span class="rp-bozza-dati">${b.punti.length} tappe${b.anello ? ' · anello' : ''} · ${metri(b.metriTotali || 0)}${typeof b.salitaM === 'number' ? ` · ▲ ${b.salitaM} m` : ''}${b.metriRetta ? ` · ${metri(b.metriRetta)} in linea d'aria` : ''}</span>
                         </button>
                         <button class="rp-del" data-rp-cancella="${esc(b.id)}" title="Cancella questa bozza" aria-label="Cancella ${esc(b.nome)}"><i data-lucide="trash-2"></i></button>
                     </li>`).join('')}</ul>`;
@@ -420,6 +572,9 @@
         attivo = true;
         punti = bozza.punti.map(p => [p[0], p[1]]);
         aggancia = bozza.agganciaAiSentieri !== false;
+        // Le bozze salvate prima del punto 38 non hanno il campo: sono di sola andata, ed e'
+        // giusto che restino tali. Il confronto e' con true e non con "diverso da false".
+        anello = bozza.anello === true;
         const mappa = document.getElementById('map');
         if (mappa) mappa.classList.add('modalita-progetto');
         disegnaSegnaposti();
@@ -487,6 +642,11 @@
                 <div class="outing-card-head">
                     <span class="outing-card-title">${esc(b.nome)}</span>
                     <span class="badge badge-accent outing-tag" title="Percorso progettato da te, non ancora fatto"><i data-lucide="route"></i> progetto</span>
+                    ${/* Punto 38: senza questo, un anello e una sola andata hanno la stessa scheda,
+                          e la lunghezza qui accanto vuol dire due cose diverse. */''}
+                    ${b.anello
+                        ? `<span class="badge badge-green outing-tag" title="Il percorso torna al punto di partenza: la lunghezza comprende il ritorno"><i data-lucide="rotate-ccw"></i> anello</span>`
+                        : `<span class="badge outing-tag" title="Il percorso non torna al punto di partenza: la lunghezza NON comprende il ritorno">sola andata</span>`}
                     <button class="outing-card-del" data-prog-del="${esc(b.id)}" title="Cancella questo progetto" aria-label="Cancella ${esc(b.nome)}"><i data-lucide="trash-2"></i></button>
                 </div>
                 <div class="outing-card-stats">

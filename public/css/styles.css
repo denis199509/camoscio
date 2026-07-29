@@ -4034,6 +4034,13 @@ h1, h2, h3, h4, h5, h6 {
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
 }
 
+/* PUNTO 38 - il segnaposto 1 quando il percorso e' un anello: li' si parte E si torna.
+   Un anellino attorno, non un colore diverso: il numero 1 deve restare il numero 1, e sulla
+   mappa un secondo colore in piu' si confonderebbe con le linee del percorso. */
+.route-point-anello span {
+    box-shadow: 0 0 0 3px var(--accent-green), 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+
 /* Mentre si progetta, il cursore dice che la mappa e' in ascolto. */
 #map.modalita-progetto {
     cursor: crosshair;
@@ -4114,11 +4121,52 @@ h1, h2, h3, h4, h5, h6 {
     height: 15px;
 }
 
+/* PUNTO 38 - la riga del ritorno alla partenza.
+   Non e' una tappa scelta, quindi non ha il numero pieno delle altre: cerchio vuoto col
+   simbolo del rientro, cosi' si distingue senza doverlo leggere. */
+.rp-ritorno .rp-coord {
+    font-style: italic;
+}
+
+.rp-num-ritorno {
+    background: none;
+    border: 1.5px dashed var(--accent-green);
+    color: var(--accent-green);
+    font-size: 0.85rem;
+}
+
+.rp-spiega-anello {
+    margin: 6px 0 0;
+}
+
 .rp-comandi {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
     margin-top: 8px;
+}
+
+/* PUNTO 38 - "anello" oppure "sola andata", sopra i totali.
+   Stessa forma di .rp-nota-dislivello, e per lo stesso motivo: display:flex spezzerebbe il
+   paragrafo in colonne se il testo non stesse tutto in UN figlio (trappola del punto 18). */
+.rp-tipo {
+    display: flex;
+    gap: 6px;
+    align-items: flex-start;
+    margin: 0 0 10px;
+    color: var(--color-text-secondary);
+}
+
+.rp-tipo-anello {
+    color: var(--accent-green);
+}
+
+.rp-tipo i,
+.rp-tipo svg {
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
+    margin-top: 2px;
 }
 
 .rp-esito {

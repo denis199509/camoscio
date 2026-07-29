@@ -84,9 +84,18 @@ router.post('/drafts', requireAuth, async (req, res) => {
     try {
         const nome = String((req.body && req.body.nome) || '').trim().slice(0, 80);
         const punti = req.body && req.body.punti;
+        // PUNTO 38 - si riceve l'INTENZIONE ("torna al punto 1"), non il ritorno gia' scritto
+        // come punto in piu': i punti salvati devono restare quelli che l'utente ha toccato.
+        const anello = !!(req.body && req.body.anello === true);
         if (!nome) return res.status(400).json({ error: 'Dai un nome al percorso.' });
-        if (!Array.isArray(punti) || punti.length < 2 || punti.length > MAX_PUNTI) {
-            return res.status(400).json({ error: 'Il percorso deve avere fra due e ' + MAX_PUNTI + ' punti.' });
+        // Il tetto vale sulle tappe DA PERCORRERE, quindi con l'anello il ritorno ne occupa
+        // una: e' lo stesso conto che fa /plan, dove l'array arriva gia' chiuso.
+        if (!Array.isArray(punti) || punti.length < 2 || punti.length + (anello ? 1 : 0) > MAX_PUNTI) {
+            return res.status(400).json({
+                error: anello
+                    ? `Con il ritorno alla partenza il percorso puo' avere al massimo ${MAX_PUNTI - 1} tappe.`
+                    : 'Il percorso deve avere fra due e ' + MAX_PUNTI + ' punti.'
+            });
         }
         for (const p of punti) {
             if (!Array.isArray(p) || !isFiniteNum(p[0]) || !isFiniteNum(p[1]) || !regionForPoint(p[0], p[1])) {
@@ -100,12 +109,20 @@ router.post('/drafts', requireAuth, async (req, res) => {
         // I totali si calcolano QUI e non si prendono dal client: un numero mandato dal
         // browser non e' un dato, e' un'affermazione. Stesso criterio gia' usato per
         // distanza e dislivello del tracciamento (Fase F).
-        const esito = await progettaPercorso(punti, { agganciaAiSentieri: req.body.agganciaAiSentieri !== false });
+        // I totali si calcolano sul percorso CHIUSO quando e' un anello, altrimenti l'elenco
+        // dei progetti mostrerebbe la meta' dei chilometri veri - cioe' proprio la bugia che
+        // il punto 38 e' venuto a togliere.
+        const esito = await progettaPercorso(
+            anello ? [...punti, punti[0]] : punti,
+            { agganciaAiSentieri: req.body.agganciaAiSentieri !== false }
+        );
 
         const bozza = await RouteDraft.create({
             userId: req.session.userId,
             nome,
             punti,
+            // Scritto solo quando e' vero: e' un campo con default undefined (vincolo spazio).
+            ...(anello ? { anello: true } : {}),
             agganciaAiSentieri: req.body.agganciaAiSentieri !== false,
             metriTotali: esito.metriTotali,
             metriRetta: esito.metriRetta,

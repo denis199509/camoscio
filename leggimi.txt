@@ -1,6 +1,12 @@
 ===================================================================
 CAMOSCIO — LEGGIMI (stato progetto, aggiornato automaticamente)
-Ultimo aggiornamento: 2026-07-28, SECONDA sessione della giornata — fatto il PUNTO 35
+Ultimo aggiornamento: 2026-07-29 — fatto il PUNTO 38 ("Torna all'inizio", cioe' CHIUDERE
+L'ANELLO). Prima voce lavorata della settima lista, ed e' anche la prova che le tre domande
+in cima all'ordine di lavoro servono: l'ipotesi scritta nel punto 38 ("i tasti ci sono gia',
+non li ha trovati") ERA SBAGLIATA. Denis intendeva tornare al punto 1, dove lascia la
+macchina. Vedi la sezione dedicata subito sotto e "DA DOVE SI RIPARTE" in fondo.
+-------------------------------------------------------------------
+Aggiornamento precedente: 2026-07-28, SECONDA sessione della giornata — fatto il PUNTO 35
 (refreshState non guardava lo stato delle risposte) e, soprattutto, L'UTENTE HA FATTO LA
 PROVA ALL'APERTO DA TELEFONO VERO CAMMINANDO: "registra bene". Era l'ultima verifica che
 nessuna prova automatica poteva sostituire, aperta da tre sessioni. Vedi la sezione
@@ -100,6 +106,120 @@ LE LISTE DETTATE DALL'UTENTE, stato aggiornato:
    le verifiche automatiche non potevano fare, ed e' servita: ha trovato un
    difetto vero al primo colpo.
 ===================================================================
+
+===================================================================
+PUNTO 38 — "TORNA ALL'INIZIO", CIOE' CHIUDERE L'ANELLO (2026-07-29)
+===================================================================
+
+--- L'IPOTESI SCRITTA NEL PIANO ERA SBAGLIATA, ED E' LA COSA PIU' UTILE DELLA GIORNATA ---
+
+In cose_da_fare.txt il punto 38 era annotato "POTREBBE ESSERCI GIA'": si supponeva che
+Denis non avesse trovato "Togli l'ultimo" e "Svuota", e che il lavoro fosse renderli piu'
+visibili. Accanto c'era scritto di CHIEDERGLIELO PRIMA, "mezz'ora di chiarimento contro
+una giornata di lavoro forse inutile".
+Gli e' stato chiesto, e non era ne' l'una ne' l'altra delle due ipotesi previste. Parole
+sue: "una volta scelto un tot di punti sulla mappa serve un tasto che ti riporta al primo
+punto, che in teoria corrisponde all'inizio del sentiero, quindi dove probabilmente
+lascero' la macchina".
+Non e' un "annulla": e' CHIUDERE L'ANELLO. Senza quella domanda si sarebbe speso un
+pomeriggio a spostare due pulsanti che gia' funzionavano.
+
+--- PERCHE' VALE PIU' DI UN TASTO IN PIU' ---
+
+Fino a qui un progetto Campo Imperatore -> Corno Grande mostrava i chilometri e il
+dislivello della SOLA ANDATA, ma quella strada si fa in tutti e due i versi. Era un numero
+che sembrava la misura dell'escursione ed era la sua meta': lo stesso difetto di forma gia'
+corretto per il dislivello dei percorsi progettati (punto 33) e per il tempo CAI (punto 44).
+Ora il riquadro dichiara sempre di cosa sta parlando: "Anello — i numeri comprendono il
+ritorno al punto 1", oppure "Sola andata — i numeri NON lo comprendono".
+Non si dichiara nient'altro: NON si scrive "allora ne farai il doppio", perche' una sola
+andata puo' benissimo essere una traversata col rientro in macchina, e non e' il sito a
+saperlo.
+
+--- LA SCELTA DI STRUTTURA, E PERCHE' ---
+
+L'anello e' un INTERRUTTORE, non un punto in piu' dentro l'elenco dei punti.
+La strada ovvia sarebbe stata aggiungere in coda una copia del punto 1. E' stata scartata
+per tre motivi, e il terzo e' quello che conta:
+ - il segnaposto numerato sarebbe finito ESATTAMENTE sopra quello del punto 1;
+ - l'elenco avrebbe mostrato due righe con le stesse coordinate;
+ - UNA TAPPA AGGIUNTA DOPO AVER CHIUSO L'ANELLO SAREBBE FINITA DOPO IL RITORNO, cioe' il
+   percorso sarebbe passato dalla macchina a meta' gita. E nessun numero se ne sarebbe
+   accorto: i chilometri sarebbero stati anche giusti.
+Con un booleano, "punti" resta "le tappe che ho scelto": elenco, segnaposti, "Togli
+l'ultimo", "Svuota" e i cestini continuano a funzionare senza essere toccati.
+La rotta /api/routing/plan NON e' cambiata di una riga: riceve un percorso che finisce dove
+comincia, e per lei e' un percorso qualunque. Il ritorno si costruisce in un posto solo
+(puntiDaPercorrere in public/js/routeplanner.js), perche' due copie della stessa regola
+divergono sempre - trappola gia' pagata su questo progetto.
+
+--- IL DIFETTO CHE HA TROVATO UNA SCHERMATA, E NESSUN CONTROLLO AUTOMATICO ---
+
+Nella schermata a 390 px il riquadro diceva "Anello" e sotto mostrava 6,6 km con salita
+932 m e discesa 221 m. Su un anello si torna dove si e' partiti, quindi si scende quanto si
+e' saliti: nella stessa prova, a 1440 px, erano 1491 e 1495. Quei numeri erano la SOLA
+ANDATA sotto l'etichetta "anello".
+CAUSA: premendo il tasto mentre il calcolo precedente e' ancora in volo partono due
+richieste. Se la prima risponde per SECONDA, il suo esito finisce a schermo mentre
+l'etichetta viene disegnata dall'interruttore, che intanto dice "anello". Il riquadro
+dichiarava una cosa e contava l'altra - cioe' proprio la bugia che il punto 38 e' venuto a
+togliere, rientrata da un'altra porta.
+LA CORSA C'ERA GIA' PRIMA del punto 38 (aggiungendo tappe in fretta, o toccando
+l'interruttore dei sentieri), ma produceva solo numeri di un attimo prima. Con l'anello
+produce una CONTRADDIZIONE, ed e' peggio.
+CURA: un biglietto numerato. Ogni calcolo prende un numero; chi torna e non ha piu' il
+numero buono si tace. Tre righe.
+
+--- IL SECONDO DIFETTO, PREESISTENTE: LE QUOTE OLTRE I 25 KM ---
+
+Le quote si possono stimare fino a ~25 km (500 punti al passo massimo di 50 m, vedi
+passoPerLinea in lib/elevation.js). Oltre, la funzione rinuncia e torna null - ESATTAMENTE
+COME quando la fonte non risponde. Il pannello scriveva "la fonte delle quote non ha
+risposto... riprova fra poco", che su un percorso lungo e' falso due volte: la fonte aveva
+risposto benissimo, e riprovare non serve a niente perche' il limite e' la lunghezza.
+Il difetto c'era gia', ma chiudere l'anello RADDOPPIA i chilometri: un giro da 13 km
+diventa 26 e ci finisce dentro. Ora progettaPercorso dichiara anche il motivo
+(motivoDislivello: 'fonte' oppure 'troppo lungo') e il pannello dice quello giusto,
+suggerendo di togliere il ritorno SOLO quando la sola andata starebbe davvero nel limite.
+
+--- COME E' STATO VERIFICATO ---
+
+50 controlli in due prove nuove, entrambe con controprova:
+ - prove/prova-punto38.js (25 controlli, serve il server acceso). Sorveglia i NUMERI: che
+   l'ultimo punto del percorso SIA il punto di partenza (scarto misurato < 1 m), che la
+   distanza raddoppi, che salita e discesa si pareggino, che la bozza salvata conservi i
+   chilometri dell'anello e non dell'andata, e che il tetto delle tappe conti anche il
+   ritorno.
+   CONTROPROVA: rimettendo il codice vecchio cadono 4 controlli su 25, e uno stampa
+   "salvati 6565 m, anello 13130 m" - cioe' il dimezzamento in chiaro.
+ - prove/prova-browser-punto38.js (25 controlli, Puppeteer). Sorveglia l'INTERFACCIA, che
+   e' dove vive quasi tutto il punto 38. Il controllo che conta e' che una tappa aggiunta
+   dopo la chiusura finisca PRIMA del ritorno; poi c'e' la corsa fra due calcoli,
+   RIPRODOTTA APPOSTA ritardando di 2,5 s la prima risposta.
+   CONTROPROVA: senza il biglietto numerato la prova stampa "6600 m, salita 932 m, discesa
+   221 m", cioe' esattamente i numeri visti nella schermata.
+ - prove/prova-punto33.js rilanciata (41 controlli): nessuna regressione su quote e
+   dislivello, che sono i file toccati.
+Database identico a prima. Le bozze di prova si cancellano in un blocco finally filtrato
+per userId dell'account demo, e hanno tutte un nome che comincia con "PROVA38".
+
+--- UNA TRAPPOLA NUOVA, PAGATA DUE VOLTE IN UN'ORA ---
+
+1) La prova del server falliva su "l'esempio di Denis resta sui sentieri". Non era il sito:
+   erano le coordinate della Sella di Monte Aquila, scritte a occhio (42.4520 invece di
+   42.46930, quasi due chilometri piu' in la'), che cadevano fuori dalla rete. Le
+   coordinate verificate erano gia' in prova-punto33.js. Confermata la regola: quando una
+   prova fallisce su un confronto, sospettare prima la prova.
+2) La prova del browser PASSAVA anche col difetto rimesso, cioe' non stava provando niente.
+   Aspettava l'evento "response" di Puppeteer, che scatta quando il corpo arriva a NODE -
+   prima che la pagina abbia fatto res.json() e assegnato il risultato. Leggeva lo schermo
+   un istante troppo presto. E' la trappola del "misurare a tempo fisso" in veste nuova:
+   qui non c'era nessun setTimeout, sembrava un'attesa su una condizione vera.
+   La cura: aspettare performance.getEntriesByType('resource'), che registra quando LA
+   PAGINA ha finito di scaricare, piu' due frame di rendering.
+   SENZA LA CONTROPROVA questo non si sarebbe mai saputo, e in leggimi.txt ci sarebbe
+   scritto "provato" accanto a una prova che non provava niente.
+
 
 ===================================================================
 IL DISLIVELLO DEL TRACCIAMENTO DAL VIVO (2026-07-28, seconda sessione)
@@ -3951,8 +4071,31 @@ COME RIPRENDERE IL LAVORO IN UNA NUOVA SESSIONE
 
 
 ===================================================================
-DA DOVE SI RIPARTE — situazione al 2026-07-28, SECONDA sessione
+DA DOVE SI RIPARTE — situazione al 2026-07-29
 ===================================================================
+
+>>> FATTO IL PUNTO 38 ("Torna all'inizio", cioe' chiudere l'anello): sezione dedicata in
+    cima al file. E' la prima voce lavorata della settima lista.
+    LA COSA DA PORTARSI VIA, piu' del codice: l'ipotesi scritta nel piano era SBAGLIATA.
+    Il punto 38 diceva "probabilmente i tasti ci sono gia' e non li ha trovati"; Denis
+    intendeva tornare al punto 1, dove lascia la macchina. Le altre due domande in cima
+    all'ordine di lavoro (punti 39 e 42) NON SONO ANCORA STATE FATTE: valgono ancora, e
+    questa e' la prova che vanno fatte prima di scrivere codice.
+
+>>> DUE DIFETTI VERI TROVATI FACENDOLO, nessuno dei due era in una lista:
+    - la CORSA fra due calcoli del progettatore (una risposta vecchia poteva sovrascrivere
+      quella nuova). Trovata guardando una schermata, non da un controllo. Corretta;
+    - le QUOTE OLTRE I 25 KM: il pannello dava la colpa alla fonte quando la fonte stava
+      benissimo. Corretto: ora dice che il percorso e' troppo lungo.
+
+>>> DA DOVE SI CONTINUA, e non e' cambiato: l'ordine consigliato in fondo a
+    cose_da_fare.txt. Il prossimo e' il PUNTO 44 (togliere il tempo CAI dalle escursioni
+    senza traccia), poi il 41, il 40, il 46, il 47 e il 43. Il 43 e il 44 vanno fatti
+    vicini: sono due meta' dello stesso problema.
+
+-------------------------------------------------------------------
+Situazione al 2026-07-28, SECONDA sessione (resta valida)
+-------------------------------------------------------------------
 
 >>> LA PROVA ALL'APERTO DA TELEFONO VERO, CAMMINANDO, E' STATA FATTA. L'utente:
     "ho fatto la prova al aperto, registra bene". Era l'ultima verifica che nessuna prova
@@ -4027,9 +4170,11 @@ DA DOVE SI RIPARTE — situazione al 2026-07-28, SECONDA sessione
 
 TUTTO E' SALVATO. Niente di sospeso a meta', niente script lasciati a girare, database
 identico a prima (6 utenti, 6 timbri, 2 escursioni).
-ATTENZIONE, DA FARE PRIMA DI CONSIDERARE CHIUSO IL PUNTO 35: la correzione e' provata in
-locale ma NON E' ANCORA STATA MANDATA ONLINE (nessun commit, nessun push). Il sito su
-Render ha ancora la versione di prima.
+[CORRETTO il 2026-07-29] Qui c'era scritto che il punto 35 non era ancora stato mandato
+online. NON ERA PIU' VERO: il commit c7958ea esiste ed e' su origin/master. La riga e'
+rimasta indietro di una sessione, e per un giorno questo file ha detto il falso su se
+stesso. Vale come promemoria di metodo, uguale a quello gia' scritto per il punto 31: una
+nota di stato non aggiornata e' indistinguibile da una nota vera, e costa a chi riparte.
 
 LE PROVE AUTOMATICHE ORA SONO NEL PROGETTO, nella cartella prove/, con il loro
 LEGGIMI-PROVE.txt che spiega come lanciarle. Prima vivevano nella cartella temporanea e

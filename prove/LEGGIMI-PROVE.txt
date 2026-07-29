@@ -44,6 +44,21 @@ vera invece di provare una copia della regola:
 
     node prove/prova-dislivello-vivo.js             28 controlli
 
+Le due prove del PUNTO 38 (il tasto "Torna all'inizio", cioe' chiudere l'anello). Vanno
+lanciate INSIEME: si dividono il lavoro, e nessuna delle due da sola basta.
+
+    node prove/prova-punto38.js                     25 controlli  (serve il server)
+    PUPPETEER_PATH=... node prove/prova-browser-punto38.js  25 controlli  (serve il server)
+
+    La prima sorveglia i NUMERI: che il percorso torni DAVVERO sul punto di partenza, che
+    la distanza raddoppi, che salita e discesa si pareggino, che la bozza salvata conservi
+    i chilometri dell'anello. La seconda sorveglia l'INTERFACCIA, dove vive quasi tutto il
+    punto 38 - e la controprova lo ha dimostrato: i primi controlli della prova del server
+    passano anche col codice vecchio, perche' provano il motore e non il tasto.
+    La prova del browser salva due schermate (p38-anello-1440.png e p38-anello-390.png):
+    e' li' che si e' visto il difetto piu' serio della giornata, che nessun controllo
+    automatico stava guardando.
+
 Se il server non c'e', la sezione 6 si salta da sola e lo dice. Crea UNA sessione di prova
 su un account demo e la cancella in un finally, filtrata per userId E per id.
 

@@ -995,15 +995,50 @@ funzioni anche a pagina chiusa. Uno per profilo.
 
 --- PROGETTAZIONE DEL PERCORSO ---
 
-38) [DA VERIFICARE PRIMA DI FARE] Nella creazione del progetto, poter tornare
-all'inizio.
-   ATTENZIONE, POTREBBE ESSERCI GIA': nel pannello ci sono due pulsanti, "Togli
-   l'ultimo" e "Svuota" (btn-rp-annulla-ultimo e btn-rp-svuota in
-   public/js/routeplanner.js). "Svuota" riporta il progetto a zero.
-   Quindi o l'utente non li ha trovati - e allora il lavoro e' renderli piu'
-   visibili, non riscriverli - oppure intendeva un'altra cosa. CHIEDERGLIELO PRIMA
-   di scrivere codice: e' mezz'ora di chiarimento contro una giornata di lavoro
-   forse inutile.
+38) [FATTO 2026-07-29] Nella creazione del progetto, poter tornare all'inizio.
+   L'IPOTESI SCRITTA QUI SOTTO ERA SBAGLIATA, e chiederglielo e' servito esattamente a
+   questo. Non c'entrava niente con "Togli l'ultimo" e "Svuota": intendeva CHIUDERE
+   L'ANELLO, cioe' tornare alla macchina. Parole sue: "serve un tasto che ti riporta al
+   primo punto, che in teoria corrisponde all'inizio del sentiero, quindi dove
+   probabilmente lascero' la macchina. Esempio: punto 1 Campo Imperatore, punto 2 Sella
+   di Monte Aquila, punto 3 la direttissima, punto 4 il Corno Grande, punto 5 scendo per
+   la via delle creste, punto 6 (il tasto) mi riporta al punto 1".
+   -> FATTO. Tasto "Torna all'inizio" nel pannello del progettatore; premuto diventa
+      "Togli il ritorno", cosi' si riapre.
+      PERCHE' CONTA PIU' DI UN TASTO: fino a ieri un progetto Campo Imperatore -> Corno
+      Grande mostrava i chilometri e il dislivello della SOLA ANDATA, ma quella strada si
+      fa in tutti e due i versi. Era un numero che sembrava la misura dell'escursione ed
+      era la sua meta' - lo stesso difetto di forma del punto 33 e del 44. Ora il riquadro
+      dichiara sempre "Anello" oppure "Sola andata", cosi' "13,1 km" non vuol piu' dire
+      due cose diverse.
+      SCELTA DI STRUTTURA: l'anello e' un INTERRUTTORE, non un punto in piu' nell'elenco.
+      Aggiungere in coda una copia del punto 1 sarebbe stata la strada ovvia, ma il
+      segnaposto sarebbe finito sopra quello di partenza e - soprattutto - UNA TAPPA
+      AGGIUNTA DOPO AVER CHIUSO L'ANELLO SAREBBE FINITA DOPO IL RITORNO, cioe' il percorso
+      sarebbe passato dalla macchina a meta' gita. Cosi' invece si infila da sola prima
+      del rientro. La rotta /api/routing/plan non e' stata toccata: riceve un percorso
+      che finisce dove comincia, e per lei e' un percorso qualunque.
+      FATTO IN PIU', ed era un difetto vero gia' esistente: oltre i 25 km le quote non si
+      possono stimare, e il pannello diceva "la fonte delle quote non ha risposto, riprova
+      fra poco" - falso due volte, perche' la fonte stava benissimo e riprovare non serve
+      a niente. Ora dice che il percorso e' troppo lungo. Chiudere l'anello raddoppia i
+      chilometri, quindi era un caso che si sarebbe incontrato sul serio.
+      TROVATO GUARDANDO UNA SCHERMATA, non da un controllo automatico: premendo il tasto
+      mentre il calcolo precedente era ancora in volo, la risposta vecchia arrivava per
+      seconda e restava a schermo. Il riquadro diceva "Anello" e sotto mostrava 6,6 km con
+      salita 932 m e discesa 221 m, cioe' i numeri della sola andata (su un anello si
+      scende quanto si e' saliti: 1170 e 1126). La corsa c'era gia' prima del punto 38, ma
+      produceva solo numeri di un attimo prima; con l'anello produceva una CONTRADDIZIONE.
+      Corretta con un biglietto numerato sulle richieste.
+      50 controlli in due prove nuove (prove/prova-punto38.js e prova-browser-punto38.js),
+      controprova fatta su entrambe, prova del punto 33 rilanciata senza regressioni,
+      database identico a prima. Schermate a 1440 e 390 px.
+   IL TESTO ORIGINALE DELL'ANNOTAZIONE, tenuto perche' spiega perche' si chiede prima:
+   "ATTENZIONE, POTREBBE ESSERCI GIA': nel pannello ci sono due pulsanti, Togli l'ultimo
+   e Svuota. Quindi o l'utente non li ha trovati - e allora il lavoro e' renderli piu'
+   visibili - oppure intendeva un'altra cosa. CHIEDERGLIELO PRIMA di scrivere codice: e'
+   mezz'ora di chiarimento contro una giornata di lavoro forse inutile."
+   Era la terza ipotesi, quella non scritta, a essere giusta. Mezz'ora ben spesa.
 
 39) [DA FARE] Migliorare la resa visiva dei sentieri sulla mappa.
    Detta cosi' e' generica: farsi dire dall'utente cosa non gli piace guardando lo
@@ -1129,8 +1164,11 @@ poi le cose nuove.
 =====================================================================
 
  0. CHIEDERE ALL'UTENTE, prima di scrivere qualunque riga:
-      - punto 38: cosa intendeva per "tornare all'inizio", visto che il tasto
-        "Svuota" esiste gia';
+      - [CHIESTO E FATTO il 2026-07-29] punto 38: intendeva CHIUDERE L'ANELLO, tornare
+        al punto 1 dove ha lasciato la macchina. Non c'entrava con "Svuota". Vale come
+        prova che quella mezz'ora di domande e' la parte piu' redditizia del lavoro:
+        l'ipotesi scritta nel punto 38 era sbagliata, e senza chiedere si sarebbe speso
+        un pomeriggio a rendere piu' visibili due tasti che gia' funzionavano;
       - punto 42: cos'e' una "zona" (una catena montuosa? un raggio in km? una
         regione?) e quanti livelli vuole;
       - punto 39: cosa non gli piace nella resa dei sentieri, guardando lo schermo
