@@ -1040,9 +1040,35 @@ funzioni anche a pagina chiusa. Uno per profilo.
    mezz'ora di chiarimento contro una giornata di lavoro forse inutile."
    Era la terza ipotesi, quella non scritta, a essere giusta. Mezz'ora ben spesa.
 
-39) [DA FARE] Migliorare la resa visiva dei sentieri sulla mappa.
-   Detta cosi' e' generica: farsi dire dall'utente cosa non gli piace guardando lo
-   schermo insieme, invece di indovinare.
+39) [DA FARE - RISPOSTA AVUTA 2026-07-29, non e' piu' generica] Migliorare la resa
+visiva dei sentieri sulla mappa.
+   RISPOSTA DI DENIS: "come hai gia' detto i sentieri sono quasi invisibili, serve un
+   disegno di mappa molto piu' visibile con i sentieri". Quindi non e' un ritocco alle
+   linee che disegna il sito: e' CAMBIARE LA MAPPA DI BASE.
+   IL FATTO CHE HA CAMBIATO LA DOMANDA: il sito NON DISEGNA I SENTIERI. I 15.228 sentieri
+   sul database servono solo ad agganciare il GPS (tracking.js) e a costruire i percorsi
+   (trailGraph.js): sulla mappa non ne compare nemmeno uno. Quello che si vede sotto e' la
+   mappa STANDARD di OpenStreetMap, quella generica, dove i sentieri sono trattini marroni
+   sottili.
+   MISURATO IL 2026-07-29 sulla stessa tile di Campo Imperatore (15/17618/12109):
+     - OSM standard: 13,8 KB. Domina la strada SR17bis in giallo, sentieri quasi invisibili
+       sul verde, nessuna quota;
+     - OpenTopoMap: 32,0 KB. Curve di livello con le quote scritte, rilievo ombreggiato,
+       sentieri in verde tratteggiato che si staccano dal fondo. E' una mappa da montagna.
+       Licenza CC-BY-SA, nessuna chiave.
+   DUE COSE DA SISTEMARE INSIEME, altrimenti cambiare mappa PEGGIORA una cosa che oggi
+   funziona (la mappa offline, che serve dove non c'e' campo):
+     1) LA CHIAVE DELLA CACHE OFFLINE NON CONTIENE LO STILE. tileKey(z,x,y) in
+        public/js/offline-map.js restituisce "z/x/y" e basta: con due mappe attive, al posto
+        di una tile topografica verrebbe servita quella vecchia di OSM gia' in memoria. Va
+        aggiunto lo stile alla chiave;
+     2) LA STIMA DEL PESO DEL DOWNLOAD DIVENTA FALSA. estimateOfflineDownloadSize usa 20 KB
+        a tile; con la topografica sono 32 KB misurati, cioe' la stima direbbe meno della
+        meta' del vero - ed e' il numero su cui uno decide prima di partire.
+   DA SAPERE, conseguenza per l'utente: le tile gia' scaricate sono della mappa vecchia,
+   quindi le escursioni gia' preparate andrebbero riscaricate.
+   DA VALUTARE: un interruttore per tornare alla mappa semplice, visto che la topografica
+   e' piu' pesante e i suoi server sono piu' lenti (progetto di volontari, uso leale).
 
 --- PROFILO ---
 
@@ -1069,6 +1095,37 @@ dalle tracce: 5 tracce in una zona = salita di livello, 30+ = livello massimo
    DA DECIDERE CON L'UTENTE PRIMA: cos'e' una "zona" (una catena montuosa? un
    raggio in chilometri? una regione?), e quanti livelli. Senza questo non si
    scrive codice.
+   -> CHIESTO IL 2026-07-29. RISPOSTA PARZIALE, e va letta bene perche' contiene
+      un'idea che il punto 42 non aveva: "ci devo pensare bene, tipo fai 5 escursioni
+      che parti da Campo Imperatore, guadagni una sorta di badge, piu' escursioni fai
+      nella zona (cerchero' di capire un raggio per migliorare l'algoritmo), magari
+      parti da punti diversi ma arrivi sempre in cima al Corno Grande, tipo un amico
+      mio che l'avra' fatto circa 70 volte, lui puo' tranquillamente avere badge Corno
+      Grande leggenda".
+      SONO DUE COSE DIVERSE, e separarle e' la parte utile:
+        a) COMPETENZA DI ZONA - "5 escursioni che partono da Campo Imperatore". Ha
+           bisogno del RAGGIO, e a quello Denis ci sta ancora pensando. RESTA FERMO;
+        b) COMPETENZA DI UNA VETTA - "70 volte in cima al Corno Grande, anche partendo
+           da punti diversi". NON HA BISOGNO DI NESSUN RAGGIO: la vetta e' gia' una
+           coordinata precisa nel catalogo dei badge (public/js/badge-points.js).
+           QUESTA META' NON E' PIU' BLOCCATA da nessuna decisione.
+      L'OSTACOLO VERO DELLA META' (b), verificato nel codice il 2026-07-29: il modello
+      Stamp ha un indice UNICO su { userId, stampId }. Il sito registra CHE sei stato
+      sul Corno Grande, mai QUANTE VOLTE: dalla seconda salita in poi il dato viene
+      scartato. Il numero che serve al badge "leggenda" oggi non esiste.
+      DOVE PRENDERLO SENZA CAMBIARE Stamp: dalle uscite. Ogni sessione registrata o
+      importata ha la sua traccia, e il geofencing sa gia' dire se una traccia tocca un
+      punto del catalogo (SOGLIA_TIMBRO_M = 150 m in routes/tracking.js). Contare le
+      uscite che toccano la vetta usa la STESSA soglia e lo STESSO catalogo con cui il
+      badge si conquista - che e' la regola presa al punto 30 per non avere due conti
+      diversi della stessa cosa.
+      IL LIMITE ONESTO, da dire a Denis prima che scelga i livelli: IL SITO PUO'
+      CONTARE SOLO QUELLO CHE HA VISTO. Le 70 salite dell'amico sono avvenute prima che
+      Camoscio esistesse, quindi sul database valgono zero, e resterebbero zero finche'
+      non importa 70 file .gpx. Una scala che arriva a 30 o a 70 sarebbe irraggiungibile
+      per anni da chiunque. E' la stessa questione gia' incontrata al punto 15 ("costruirsi
+      uno storico"): il caricamento .gpx e' l'unico modo che ha una persona di portare
+      dentro il proprio passato.
 
 --- ESCURSIONI ---
 
