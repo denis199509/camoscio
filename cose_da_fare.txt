@@ -1119,6 +1119,29 @@ dalle tracce: 5 tracce in una zona = salita di livello, 30+ = livello massimo
       uscite che toccano la vetta usa la STESSA soglia e lo STESSO catalogo con cui il
       badge si conquista - che e' la regola presa al punto 30 per non avere due conti
       diversi della stessa cosa.
+      DECISO DA DENIS IL 2026-07-29, dopo aver visto i numeri (70 tracce importate
+      pesano ~2,1 MB e col tetto di 5 al mese servirebbero 14 mesi):
+        1) IL NUMERO DI PARTENZA LO METTE LUI A MANO, sulla base di quello che sa
+           della persona. "Invece di partire da zero parte da 70";
+        2) LE USCITE REGISTRATE SI SOMMANO A QUEL NUMERO: 71, 72 e cosi' via. Quindi
+           il valore scritto a mano e' un PAVIMENTO, non un totale - non va piu'
+           ritoccato quando la persona cammina;
+        3) LA "COSA DELL'ACCETTAZIONE" (un account che approva, con la sua coda) e'
+           RIMANDATA. Per ora le modifiche si fanno direttamente, senza interfaccia.
+      CONSEGUENZE DA RISPETTARE QUANDO SI SCRIVE IL CODICE:
+        - il campo va scritto SOLO quando esiste davvero (default: undefined, vincolo
+          hard sullo spazio), ed e' per vetta: { stampId, prima } o equivalente;
+        - IL BADGE DEVE DIRE DA DOVE VIENE IL NUMERO. "73" da solo, fra sei mesi, non
+          se lo spiega piu' nessuno, nemmeno Denis. Va scritto "70 riconosciute + 3
+          registrate dal sito". E' lo stesso principio del punto 44 e del 33: un
+          numero che sembra una misura e non lo e' del tutto va dichiarato per quello
+          che e'. Qui la parte dichiarata non e' una stima, e' la parola di una
+          persona che conosce l'altra - e va detto, non nascosto;
+        - ATTENZIONE PRIVACY: la persona di cui si parla NON HA UN ACCOUNT sul sito
+          (gli account reali sono due). Il numero si potra' scrivere solo quando ne
+          avra' uno. E il suo nome NON VA SCRITTO IN QUESTO FILE ne' in leggimi.txt:
+          e' il dato di una terza persona e il repository e' pubblico - stessa regola
+          gia' applicata al numero del contatto di emergenza.
       IL LIMITE ONESTO, da dire a Denis prima che scelga i livelli: IL SITO PUO'
       CONTARE SOLO QUELLO CHE HA VISTO. Le 70 salite dell'amico sono avvenute prima che
       Camoscio esistesse, quindi sul database valgono zero, e resterebbero zero finche'
