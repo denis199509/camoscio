@@ -4,27 +4,37 @@ App web di escursionismo sociale. Node.js + Express + MongoDB Atlas, frontend va
 
 ## Memoria di progetto — LEGGERE PRIMA DI INIZIARE
 
-Il contesto del progetto (vincoli, decisioni già prese, cosa resta da fare, trappole tecniche già pagate) sta in un vault Obsidian nella cartella **sorella** `../camoscio memoria`, non in questo repository.
+**Il vault è la fonte principale** (deciso da Denis il 29/07/2026). Sta in un vault Obsidian nella cartella **sorella** `../camoscio memoria`, non in questo repository — quindi non è pubblico.
 
 All'inizio di ogni sessione, leggere in quest'ordine:
 
 1. `../camoscio memoria/00-Indice.md` — mappa delle note
 2. `../camoscio memoria/02-Vincoli-Hard.md` — vincoli non negoziabili (spazio MongoDB, RAM Render, open source)
 3. `../camoscio memoria/04-Da-Fare.md` — cosa è aperto davvero
+4. `leggimi.txt` — mezza pagina: a che punto siamo e da dove si ricomincia
 
 Poi, secondo il tipo di lavoro:
 
 - decisioni tecniche → `../camoscio memoria/03-Decisioni-Architetturali.md` (prima di riproporre una scelta, controllare se è già stata presa e perché)
 - debug, test, script → `../camoscio memoria/07-Trappole-Tecniche.md` (errori già pagati, non ripagarli)
 
-A fine sessione, aggiornare le note toccate dal lavoro fatto: `04-Da-Fare.md` sempre, `06-Cronologia-Sessioni.md` con una riga nuova, e `03`/`07` solo se è emerso qualcosa che vale la pena ricordare.
+**Non leggere `cronologia.txt` per capire a che punto siamo**: è lungo e serve ad altro (vedi sotto).
 
-## Fonti di dettaglio nel repo
+## I tre file nel repo, e a cosa servono davvero
 
-- `cose_da_fare.txt` — il piano: richieste originali, liste di bug per sessione, decisioni con motivazione
-- `leggimi.txt` — lo stato attuale, verboso: checklist di avanzamento e sezione "DA DOVE SI RIPARTE" in fondo (la parte più aggiornata)
+- `leggimi.txt` — **solo** «da dove si riparte». Corto per scelta: un file lungo non lo si rilegge quando lo si aggiorna, quindi invecchia senza che nessuno se ne accorga. Se supera un paio di pagine, dentro c'è finito qualcosa che appartiene altrove.
+- `cose_da_fare.txt` — le richieste di Denis **con le sue parole**, e il ragionamento di ogni punto chiuso. È l'archivio: cresce, e va bene così.
+- `cronologia.txt` — l'ex `leggimi.txt`. Il racconto disteso di ogni lavoro, con le misure. Ci si va per il **dettaglio di qualcosa di già fatto**, non per orientarsi.
 
-Il vault distilla questi due file. Se si contraddicono, vince la sezione finale di `leggimi.txt`, che è la più recente.
+**Se due fonti si contraddicono, vince il vault.** Prima del 29/07/2026 vinceva la sezione finale di `leggimi.txt`; quel file era anche l'unico che avesse detto il falso, due volte in una giornata, ed è il motivo per cui è stato diviso.
+
+## Fine sessione
+
+- **sempre**: il vault (`04-Da-Fare.md`, più una riga in `06-Cronologia-Sessioni.md`; `03` e `07` solo se è emerso qualcosa da ricordare) e `leggimi.txt`
+- `cronologia.txt` solo se c'è un lavoro nuovo da raccontare
+- `cose_da_fare.txt` quando un punto si chiude o ne arriva uno nuovo
+
+Il vault **non è sotto git** (sta solo su disco, dentro OneDrive): a differenza del repo non ha storia delle versioni, quindi va aggiornato con la stessa attenzione con cui si scrive un commit.
 
 ## Regole di lavoro
 

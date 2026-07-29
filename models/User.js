@@ -58,7 +58,7 @@ const userSchema = new mongoose.Schema({
     // L'indirizzo e' stato DIMOSTRATO, cliccando il link di conferma mandato in
     // registrazione. In Fase C si era deciso "email solo salvata, nessuna verifica": quella
     // decisione e' caduta il 2026-07-28, quando il canale di invio ha cominciato a
-    // funzionare davvero (vedi leggimi.txt).
+    // funzionare davvero (vedi cronologia.txt).
     // NESSUNA MIGRAZIONE E' SERVITA: sui documenti creati prima il campo non c'e', e un
     // campo assente vale gia' "non verificato" - che e' proprio quello che si vuole, perche'
     // di quegli indirizzi nessuno ha mai dimostrato niente.

@@ -77,7 +77,7 @@ Se il log sta altrove: CAMOSCIO_LOG=percorso/del/file.log node prove/...
 LE DUE PROVE NEL BROWSER
 ------------------------
 Servono PUPPETEER, che per scelta del progetto NON va installato in package.json (vedi
-leggimi.txt): si installa in una cartella temporanea e gli si dice dov'e'.
+cronologia.txt): si installa in una cartella temporanea e gli si dice dov'e'.
 
     npm install puppeteer          (in una cartella qualsiasi fuori dal progetto)
     npx puppeteer browsers install chrome

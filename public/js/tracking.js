@@ -1,6 +1,6 @@
 // Fase F - Tracciamento GPS live durante l'escursione.
 //
-// Principi seguiti (vedi cose_da_fare.txt / leggimi.txt):
+// Principi seguiti (vedi cose_da_fare.txt / cronologia.txt):
 // - watchPosition continuo, mai un singolo getCurrentPosition.
 // - I punti GPS si mettono SEMPRE in coda in IndexedDB per primi (sopravvivono a un
 //   crash/chiusura del tab) e si inviano al server a GRUPPI ogni ~25s o al ritorno del

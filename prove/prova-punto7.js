@@ -1,6 +1,6 @@
 // Prova del PUNTO 7 (recupero e cambio password) contro il server locale vero.
 //
-// REGOLE SEGUITE (imparate il 2026-07-27, vedi leggimi.txt):
+// REGOLE SEGUITE (imparate il 2026-07-27, vedi cronologia.txt):
 //  - i dati di prova NON somigliano ai dati veri dell'utente: email @esempio-di-prova.invalid,
 //    nomi che dicono "prova", cosi' anche se una pulizia sbagliasse filtro si vede subito;
 //  - ogni cancellazione porta con se' l'userId dell'account di prova, sempre;

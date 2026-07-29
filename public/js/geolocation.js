@@ -408,7 +408,7 @@ window.CamoscioGeo = {
     // l'ordine di partenza dei moduli cambierebbe il risultato: initMapModule aspetta il
     // caricamento dei confini regionali prima di iscriversi, e un fix arrivato in quel
     // frattempo andava perso: il puntino non compariva fino al fix successivo. Misurato dal
-    // vivo, e' la stessa classe di problema gia' documentata in leggimi.txt (non collegare
+    // vivo, e' la stessa classe di problema gia' documentata in cronologia.txt (non collegare
     // mai gli ascoltatori dopo un await che carica dati).
     onPosizione: cb => {
         ascoltatoriPosizione.push(cb);

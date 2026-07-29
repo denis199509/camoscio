@@ -590,7 +590,7 @@ router.post('/resend-verification', requireAuth, async (req, res) => {
         // innocuo e invece faceva divergere due strade che mandano LA STESSA email: la
         // registrazione usava il ripiego sul terminale, questa lo rifiutava. Due
         // comportamenti diversi per la stessa cosa sono sempre un difetto in agguato in
-        // uno dei due (lezione del punto 18, vedi leggimi.txt).
+        // uno dei due (lezione del punto 18, vedi cronologia.txt).
         const partita = await mandaEmailDiVerifica(user);
         if (!partita) {
             return res.status(503).json({ error: "Non siamo riusciti a mandare l'email. Riprova fra un po'." });

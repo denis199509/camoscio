@@ -185,7 +185,7 @@ async function initMapModule() {
 
         // Se la sezione Mappa e' GIA' aperta quando initMapModule finisce, il puntino va
         // acceso adesso: nessuno passera' piu' da navigateTo. E' la stessa finestra temporale
-        // del bug gia' documentato in leggimi.txt (interfaccia visibile ma moduli non ancora
+        // del bug gia' documentato in cronologia.txt (interfaccia visibile ma moduli non ancora
         // pronti), che su Render - dove il servizio gratuito si risveglia con calma - dura
         // abbastanza da incontrarla davvero.
         const sezione = document.getElementById('map-section');

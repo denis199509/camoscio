@@ -12,7 +12,7 @@ const MAX_PHOTO_LENGTH = 2 * 1024 * 1024;
 
 // Campi mai visibili a nessuno tranne il proprietario del profilo. Nome/cognome inclusi
 // perche' esistono solo per identificazione reale (es. contatti di emergenza) e non devono
-// mai essere mostrati al posto dello username (vedi leggimi.txt) - mancavano qui (bug trovato
+// mai essere mostrati al posto dello username (vedi cronologia.txt) - mancavano qui (bug trovato
 // in Fase H), quindi trapelavano a chiunque tramite GET /api/users.
 // "emailVerified" sta qui in coppia con "email": se un indirizzo non e' visibile agli
 // altri, non deve esserlo nemmeno il suo stato. Sapere chi non ha ancora confermato

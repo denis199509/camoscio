@@ -150,7 +150,7 @@ Da pianificare e implementare in una sessione futura.
       password stando dentro. Chi voleva solo cambiarla doveva fingere di averla
       dimenticata. Ora c'e', nella card "Il Tuo Profilo", e chiede quella vecchia.
       109 controlli in due prove (53 contro il server, 56 nel browser a 1440 e 390 px),
-      tutti passati, database identico a prima. Vedi leggimi.txt per i dettagli.
+      tutti passati, database identico a prima. Vedi cronologia.txt per i dettagli.
       ONLINE E PROVATO DAL VIVO dall'utente il 2026-07-28: l'email arriva davvero.
       Servizio scelto: MAILJET (Brevo chiede la partita IVA). Provato senza volerlo
       anche l'annullamento del link precedente, e si comporta come deve.
@@ -168,7 +168,7 @@ Da pianificare e implementare in una sessione futura.
       IL VINCOLO DA CAPIRE PRIMA DI SCEGLIERE: senza un dominio proprio quasi tutti i
       servizi gratuiti scrivono SOLO al proprio indirizzo. Gli account reali sono due,
       di due persone diverse: cosi' uno dei due resterebbe senza recupero. Le tre
-      strade (Mailjet, Resend, un dominio da pochi euro) sono in leggimi.txt.
+      strade (Mailjet, Resend, un dominio da pochi euro) sono in cronologia.txt.
    [INFORMAZIONI AGGIUNTE DALL'UTENTE 2026-07-27, seconda sessione. NESSUN CODICE
    SCRITTO: il punto 7 si fa in una sessione futura, per sua richiesta esplicita.]
    OSSERVAZIONE DELL'UTENTE, VERIFICATA E CONFERMATA: "quando fai login chiede
@@ -225,14 +225,14 @@ normale). Vorrei:
       endpoint server /api/geocoding (proxy verso Nominatim, mai chiamato dal
       browser) + ricerca dei punti di riferimento di montagna via Overpass. Provato
       dal vivo: cliccando sull'altopiano il sistema risponde "Campo Imperatore (a 3
-      m)", proprio l'esempio della richiesta. Vedi leggimi.txt per i dettagli.
+      m)", proprio l'esempio della richiesta. Vedi cronologia.txt per i dettagli.
 
 9) [FATTO 2026-07-26] La mappa sul telefono e' inutilizzabile, tutto troppo piccolo
 (provato sia da telefono che da PC creando un'escursione di prova).
    -> Misurato: il contenitore della mappa era largo ZERO pixel su schermo da 390px
       (barra di navigazione 260px fissi + sidebar mappa 380px fissi). Aggiunte le prime
       @media query del progetto: barra a sole icone, mappa impilata sopra le schede.
-      Ora la mappa e' larga 306px su telefono. Vedi leggimi.txt per i dettagli.
+      Ora la mappa e' larga 306px su telefono. Vedi cronologia.txt per i dettagli.
 
 10) [FATTO 2026-07-26] Manca una pagina "Le mie escursioni": le escursioni che ho
 creato, quelle a cui partecipo e quelle gia' fatte non si trovano facilmente sul
@@ -250,7 +250,7 @@ il tracciamento.
       posizione e distanza corrette, nessun errore). Il problema era lo ZOOM: la mappa
       restava a zoom 9 (tutta l'Italia centrale), dove 1 pixel vale ~227 metri, quindi
       700 metri camminati spostavano il segnaposto di 3 pixel. Ora all'avvio la mappa
-      va a zoom 16 sulla posizione vera e la insegue. Vedi leggimi.txt.
+      va a zoom 16 sulla posizione vera e la insegue. Vedi cronologia.txt.
 
 12) [FATTO 2026-07-26] Nella pagina "Mappa & Waze": togliere il nome "Waze" (non deve
 piu' comparire). -> Ora si chiama "Mappa & Sentieri".
@@ -279,7 +279,7 @@ punti si collegano in linea d'aria (retta), senza seguire nessun sentiero.
       L'esempio qui sopra (Campo Imperatore -> Sella di Monte Aquila) funziona:
       verificato, sono nella stessa rete.
       Da sapere: i sentieri non hanno la quota salvata, quindi di un percorso
-      progettato non si puo' dare il dislivello. Vedi leggimi.txt per tutto.
+      progettato non si puo' dare il dislivello. Vedi cronologia.txt per tutto.
 
 14) [FATTO 2026-07-26] Semplificare il tracciamento live: una volta aperta la mappa,
 un tasto semplice "Comincia registrazione" che segue il GPS reale sulla mappa e
@@ -318,7 +318,7 @@ VALUTARE BENE memoria disponibile e fattibilita': ipotesi dell'utente, massimo
       TROVATO E CORRETTO un difetto vero del calcolo del dislivello sui file
       importati: con la regola del tracciamento dal vivo una traccia da
       orologio con altimetro barometrico dava ZERO metri di dislivello.
-      Vedi leggimi.txt.
+      Vedi cronologia.txt.
    -> STIMA FATTA PRIMA (2026-07-27, su tua richiesta). ESITO: lo spazio NON
       e' un ostacolo. Misurato sul database
       vero: 33,45 MB occupati su 512, margine libero 478,55 MB. Un file .gpx
@@ -329,7 +329,7 @@ VALUTARE BENE memoria disponibile e fattibilita': ipotesi dell'utente, massimo
       Scoperto misurando: il vero consumo di spazio di questo progetto NON
       sono le tracce ma le FOTO PROFILO (base64 nel documento utente, fino a
       1,5 MB l'una). Una sola foto al limite pesa quanto quattro anni di .gpx
-      di un utente. Vedi leggimi.txt.
+      di un utente. Vedi cronologia.txt.
    Nota tecnica: un .gpx e' XML e occupa molto piu' spazio del formato
    compatto gia' in uso (tuple [lng,lat,alt,secondi,precisione], Fase F).
    Va convertito e semplificato in ingresso (Douglas-Peucker, gia'
@@ -389,7 +389,7 @@ qualcuno di prova (qualche cima e qualche rifugio).
       le vette elencate dentro le escursioni, quindi i badge nuovi sarebbero
       stati impossibili da conquistare. Ora i punti timbrabili arrivano dal
       catalogo dei badge, cosi' tutto quello che la pagina mostra si puo'
-      davvero andare a prendere. Vedi leggimi.txt per i dettagli.
+      davvero andare a prendere. Vedi cronologia.txt per i dettagli.
 
 19) [FATTO 2026-07-26] BUG - un utente appena registrato ha gia' delle sfide in corso; non
 deve essere cosi'. Le sfide vanno o create o accettate.
@@ -636,7 +636,7 @@ Autorizzazioni > Posizione risulta ATTIVA; premendo il lucchetto accanto
 all'indirizzo la posizione risulta consentita, ma accanto ha un punto
 esclamativo dentro un triangolo blu.
    Verificato nel codice: il puntino blu e tutta la catena che lo disegna
-   FUNZIONANO (provati tre scenari nell'app vera, vedi leggimi.txt). Il
+   FUNZIONANO (provati tre scenari nell'app vera, vedi cronologia.txt). Il
    difetto era nella SPIEGAZIONE, ed era concreto: la guida allo sblocco
    elencava DUE livelli di permesso - il sito e l'app Chrome, cioe'
    esattamente i due che l'utente aveva gia' controllato e trovato a
@@ -701,7 +701,7 @@ anche se il file caricato e' una traccia vera dell'utente.
       motivo del divieto e' stato rispettato, non il divieto.
       La DATA si recupera dall'intestazione del file (<metadata><time>), che
       quasi tutti scrivono anche quando non mettono l'orario sui punti.
-      Vedi leggimi.txt per il dettaglio e per i numeri misurati.
+      Vedi cronologia.txt per il dettaglio e per i numeri misurati.
 
 30) [FATTO 2026-07-27] Importata la traccia del Corno Grande, il badge e'
 rimasto "da conquistare". Importando la traccia si dimostra di essere stati sul
@@ -790,7 +790,7 @@ e con quella data e' finito anche il badge.
      -> Sella di Monte Aquila) trova un percorso sui sentieri.
    RESTA: l'estrazione dei dati del livello i, che gira a parte ed e' ripartibile.
    Finche' non finisce il sito usa i dati vecchi, quindi i tratti in rosso sono
-   piu' di quanti saranno. Vedi leggimi.txt.
+   piu' di quanti saranno. Vedi cronologia.txt.
    DA VALUTARE A PARTE, non fatto di proposito: collegare una bozza a
    un'escursione (avevi detto che e' un passo successivo) e il dislivello dei
    percorsi progettati (servirebbe una fonte di altitudini, va misurata prima).
@@ -877,7 +877,7 @@ aperto li'.
    apparentemente sano che qualcun altro puo' reclamare mesi dopo.
    La decisione di Fase C ("email solo salvata, nessuna verifica") NON VALE PIU'.
    147 controlli in sei prove, tutti passati, database identico a prima.
-   Vedi leggimi.txt per i dettagli.
+   Vedi cronologia.txt per i dettagli.
 
 35) [FATTO 2026-07-28, seconda sessione] Difetto preesistente trovato facendo il punto 34, NON corretto
 allora perche' non c'entrava con quel lavoro: refreshState() in public/js/app.js non guarda lo stato delle
@@ -1139,7 +1139,7 @@ dalle tracce: 5 tracce in una zona = salita di livello, 30+ = livello massimo
           persona che conosce l'altra - e va detto, non nascosto;
         - ATTENZIONE PRIVACY: la persona di cui si parla NON HA UN ACCOUNT sul sito
           (gli account reali sono due). Il numero si potra' scrivere solo quando ne
-          avra' uno. E il suo nome NON VA SCRITTO IN QUESTO FILE ne' in leggimi.txt:
+          avra' uno. E il suo nome NON VA SCRITTO IN QUESTO FILE ne' in cronologia.txt:
           e' il dato di una terza persona e il repository e' pubblico - stessa regola
           gia' applicata al numero del contatto di emergenza.
       IL LIMITE ONESTO, da dire a Denis prima che scelga i livelli: IL SITO PUO'

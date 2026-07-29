@@ -445,7 +445,7 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Su telefono in orizzontale non ci starebbero: testo sopra, pulsante sotto.
    Senza questa regola il pulsante finisce fuori dallo schermo - e' lo stesso difetto
-   gia' corretto altrove (vedi leggimi.txt, punto 9 e blocco 2). */
+   gia' corretto altrove (vedi cronologia.txt, punto 9 e blocco 2). */
 @media (max-width: 700px) {
     .verify-banner {
         padding: 10px 16px;
@@ -681,7 +681,7 @@ h1, h2, h3, h4, h5, h6 {
    non gli si dice min-width:0, e la larghezza minima di un input e' la sua dimensione
    predefinita - circa 180px. Due affiancati in una colonna da 380px non ci stanno, e il
    secondo usciva dal riquadro.
-   E' lo stesso min-width:0 gia' imparato impilando Dashboard e Zaino (vedi leggimi.txt).
+   E' lo stesso min-width:0 gia' imparato impilando Dashboard e Zaino (vedi cronologia.txt).
    Scritto qui e non dentro una @media perche' il difetto non dipende dalla larghezza
    dello schermo ma da quella del contenitore: la barra laterale della mappa e' larga
    380px anche su un monitor da 1440. Non puo' rompere niente che oggi ci stia gia':
@@ -3881,7 +3881,7 @@ h1, h2, h3, h4, h5, h6 {
     }
 
     /* --- Sezione Sicurezza & Mesh: due colonne fisse -> una sola ---
-       Era rimasta nell'elenco delle sezioni non responsive (vedi leggimi.txt): su 390px
+       Era rimasta nell'elenco delle sezioni non responsive (vedi cronologia.txt): su 390px
        la colonna del mesh finiva fuori schermo. Sistemata ora perche' e' qui che il
        punto 17 lascia il rimando al timer, e un rimando irraggiungibile non serve.
        min-width:0 sugli elementi della griglia: senza, una traccia 1fr non scende mai

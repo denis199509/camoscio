@@ -1,7 +1,7 @@
 // Fase G - Scarica UNA TANTUM (poi si rilancia solo per aggiornare la mappa dei sentieri,
 // non ad ogni avvio del server) i sentieri di montagna REALI delle 4 regioni da
 // OpenStreetMap tramite Overpass API, un servizio pubblico e gratuito. Nessun Python,
-// nessuna libreria XML (vedi leggimi.txt sul motivo per cui "osmtogeojson" non e' stata
+// nessuna libreria XML (vedi cronologia.txt sul motivo per cui "osmtogeojson" non e' stata
 // installata): si chiede direttamente a Overpass l'output nativo in JSON ("out geom;",
 // che include gia' le coordinate di ogni nodo del sentiero, non solo i loro ID) e lo si
 // trasforma a mano nel formato compatto usato dal modello Trail.
@@ -84,7 +84,7 @@ async function runOverpassQuery(query) {
 // "out geom" restituisce per ogni way un array way.geometry di {lat, lon} gia' nell'ordine
 // del sentiero: e' l'equivalente nativo JSON di quello che altrimenti richiederebbe
 // osmtogeojson (scartata per una vulnerabilita' di sicurezza nella sua dipendenza XML,
-// vedi leggimi.txt), senza bisogno di risolvere gli ID dei nodi in un secondo passaggio.
+// vedi cronologia.txt), senza bisogno di risolvere gli ID dei nodi in un secondo passaggio.
 function wayToTrailDoc(way, region) {
     if (!Array.isArray(way.geometry)) return null;
 

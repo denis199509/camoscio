@@ -8,7 +8,7 @@
 // l'importazione la fa il SERVER, che di questo elenco non sapeva niente.
 //
 // La strada facile sarebbe stata copiarne una versione in lib/. Non si e' fatto per la
-// lezione pagata al punto 18 e scritta in leggimi.txt: "quando lo stesso blocco compare
+// lezione pagata al punto 18 e scritta in cronologia.txt: "quando lo stesso blocco compare
 // due volte, la differenza fra le due copie e' quasi sempre un difetto rimasto aperto in
 // una sola" - li' era un escapeHtml mancante, cioe' un buco XSS sopravvissuto alla Fase H
 // proprio perche' era una copia. Qui divergere vorrebbe dire una cosa precisa e brutta:
