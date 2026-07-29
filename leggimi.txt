@@ -33,6 +33,18 @@ o ne arriva uno nuovo.
 
 
 
+>>> PRIMA COSA DA FARE ALLA PROSSIMA SESSIONE, decisa da Denis il 2026-07-29:
+    METTERE IL VAULT SU GITHUB, in un repository PRIVATO e separato. "Privato" e' gia'
+    stato scelto da lui: non e' una domanda da rifargli.
+    Perche': il vault e' la fonte principale del progetto ma sta solo su disco dentro
+    OneDrive, ed e' l'unica cosa senza storia delle versioni - un errore di scrittura li'
+    non si annulla con un commit.
+    Perche' NON dentro camoscio: questo repository e' pubblico, e una cartella dentro un
+    repo pubblico e' pubblica. Il controllo del contenuto e' gia' stato fatto (nessuna
+    credenziale, nessun numero, nessuna email; ci sono pero' il nome del secondo account
+    reale e i nomi di cluster e utente del database). I dettagli stanno in
+    ../camoscio memoria/04-Da-Fare.md.
+
 >>> FATTO IL PUNTO 38 ("Torna all'inizio", cioe' chiudere l'anello): sezione dedicata in
     cima al file. E' la prima voce lavorata della settima lista.
     LA COSA DA PORTARSI VIA, piu' del codice: l'ipotesi scritta nel piano era SBAGLIATA.
