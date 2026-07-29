@@ -1,10 +1,14 @@
 ===================================================================
 CAMOSCIO — LEGGIMI (stato progetto, aggiornato automaticamente)
 Ultimo aggiornamento: 2026-07-29 — fatto il PUNTO 38 ("Torna all'inizio", cioe' CHIUDERE
-L'ANELLO). Prima voce lavorata della settima lista, ed e' anche la prova che le tre domande
-in cima all'ordine di lavoro servono: l'ipotesi scritta nel punto 38 ("i tasti ci sono gia',
-non li ha trovati") ERA SBAGLIATA. Denis intendeva tornare al punto 1, dove lascia la
-macchina. Vedi la sezione dedicata subito sotto e "DA DOVE SI RIPARTE" in fondo.
+L'ANELLO), e fatte TUTTE E TRE le domande della tappa 0. Prima voce lavorata della settima
+lista, ed e' anche la prova che quelle domande servono: l'ipotesi scritta nel punto 38 ("i
+tasti ci sono gia', non li ha trovati") ERA SBAGLIATA. Denis intendeva tornare al punto 1,
+dove lascia la macchina.
+LE RISPOSTE HANNO SBLOCCATO ALTRI DUE LAVORI: il PUNTO 39 (non era estetica, e' cambiare la
+mappa di base) e la meta' "vetta" del PUNTO 42 (che non ha bisogno del raggio a cui Denis
+sta ancora pensando). Nessuna delle tre domande va rifatta.
+Vedi la sezione dedicata subito sotto e "DA DOVE SI RIPARTE" in fondo.
 -------------------------------------------------------------------
 Aggiornamento precedente: 2026-07-28, SECONDA sessione della giornata — fatto il PUNTO 35
 (refreshState non guardava lo stato delle risposte) e, soprattutto, L'UTENTE HA FATTO LA
@@ -4078,9 +4082,56 @@ DA DOVE SI RIPARTE — situazione al 2026-07-29
     cima al file. E' la prima voce lavorata della settima lista.
     LA COSA DA PORTARSI VIA, piu' del codice: l'ipotesi scritta nel piano era SBAGLIATA.
     Il punto 38 diceva "probabilmente i tasti ci sono gia' e non li ha trovati"; Denis
-    intendeva tornare al punto 1, dove lascia la macchina. Le altre due domande in cima
-    all'ordine di lavoro (punti 39 e 42) NON SONO ANCORA STATE FATTE: valgono ancora, e
-    questa e' la prova che vanno fatte prima di scrivere codice.
+    intendeva tornare al punto 1, dove lascia la macchina.
+
+>>> LE TRE DOMANDE DELLA TAPPA 0 SONO STATE FATTE TUTTE, e hanno reso due punti
+    lavorabili. Non vanno piu' richieste:
+      - PUNTO 38: risposto e FATTO (vedi sopra);
+      - PUNTO 39: RISPOSTO. "I sentieri sono quasi invisibili, serve un disegno di mappa
+        molto piu' visibile con i sentieri". NON e' un ritocco alle linee: e' cambiare la
+        MAPPA DI BASE. E' pronto da fare, con due correzioni obbligatorie alla mappa
+        offline - vedi il riquadro qui sotto;
+      - PUNTO 42: RISPOSTO A META', e la risposta ha SPACCATO IL PUNTO IN DUE. Vedi il
+        riquadro qui sotto.
+
+>>> PUNTO 39, PRONTO DA FARE, e non e' solo estetica. Misurato il 2026-07-29 sulla stessa
+    tile di Campo Imperatore (15/17618/12109):
+      - OSM standard (quella di adesso): 13,8 KB, domina la strada in giallo, sentieri
+        quasi invisibili sul verde, nessuna quota;
+      - OpenTopoMap: 32,0 KB, curve di livello con le quote scritte, rilievo ombreggiato,
+        sentieri in verde tratteggiato. Licenza CC-BY-SA, nessuna chiave.
+    DA SAPERE PRIMA DI COMINCIARE: il sito NON DISEGNA i propri sentieri. I 15.228 sul
+    database servono solo ad agganciare il GPS e a costruire i percorsi.
+    DUE COSE VANNO SISTEMATE INSIEME, altrimenti cambiare mappa PEGGIORA la mappa offline,
+    che oggi funziona ed e' quella che serve dove non c'e' campo:
+      1) tileKey(z,x,y) in public/js/offline-map.js NON contiene lo stile: con due mappe
+         verrebbe servita la tile vecchia al posto di quella nuova;
+      2) estimateOfflineDownloadSize usa 20 KB a tile: con la topografica sono 32 KB
+         misurati, quindi la stima direbbe meno della meta' del vero - ed e' il numero su
+         cui uno decide prima di partire.
+    E le tile gia' scaricate sono della mappa vecchia: le escursioni gia' preparate
+    andrebbero riscaricate.
+
+>>> PUNTO 42, ORA SONO DUE LAVORI DIVERSI e uno dei due non e' piu' bloccato:
+      (a) COMPETENZA DI ZONA ("5 escursioni che partono da Campo Imperatore") - ha bisogno
+          del RAGGIO, e Denis ci sta ancora pensando. RESTA FERMO, non insistere;
+      (b) COMPETENZA DI UNA VETTA ("70 volte sul Corno Grande, anche da partenze diverse")
+          - NON serve nessun raggio: la vetta e' gia' una coordinata nel catalogo dei
+          badge. NON E' PIU' BLOCCATO.
+    L'OSTACOLO DI (b), verificato: Stamp ha un indice UNICO su { userId, stampId }, quindi
+    il sito sa CHE ci sei stato, mai QUANTE VOLTE. Il conto va ricavato dalle uscite, con
+    la stessa soglia e lo stesso catalogo del geofencing (150 m) - regola del punto 30.
+    DECISO DA DENIS: il numero di partenza lo scrive lui a mano per una persona di cui
+    conosce lo storico, e le uscite registrate SI SOMMANO sopra (70, 71, 72...). Quindi e'
+    un PAVIMENTO, non un totale, e non va piu' ritoccato.
+    L'ACCOUNT CHE APPROVA E' RIMANDATO. Quando si fara', va costruito INSIEME AL PUNTO 45
+    (segnalazioni da approvare prima della pubblicazione): e' la stessa impalcatura, e oggi
+    nel sito non esiste nessun concetto di ruolo - l'unico controllo e' requireAuth.
+    DUE COSE DA RISPETTARE: il badge dovra' DICHIARARE da dove viene il numero ("70
+    riconosciute + 3 registrate"), altrimenti fra sei mesi un "73" non se lo spiega piu'
+    nessuno; e la persona in questione NON HA UN ACCOUNT sul sito, quindi il numero si
+    potra' scrivere solo quando ne avra' uno. IL SUO NOME NON VA SCRITTO IN QUESTO FILE:
+    e' il dato di una terza persona e il repository e' pubblico.
 
 >>> DUE DIFETTI VERI TROVATI FACENDOLO, nessuno dei due era in una lista:
     - la CORSA fra due calcoli del progettatore (una risposta vecchia poteva sovrascrivere
@@ -4088,10 +4139,31 @@ DA DOVE SI RIPARTE — situazione al 2026-07-29
     - le QUOTE OLTRE I 25 KM: il pannello dava la colpa alla fonte quando la fonte stava
       benissimo. Corretto: ora dice che il percorso e' troppo lungo.
 
->>> DA DOVE SI CONTINUA, e non e' cambiato: l'ordine consigliato in fondo a
-    cose_da_fare.txt. Il prossimo e' il PUNTO 44 (togliere il tempo CAI dalle escursioni
-    senza traccia), poi il 41, il 40, il 46, il 47 e il 43. Il 43 e il 44 vanno fatti
-    vicini: sono due meta' dello stesso problema.
+>>> DA DOVE SI CONTINUA. L'ordine consigliato in fondo a cose_da_fare.txt vale ancora:
+    PUNTO 44 (togliere il tempo CAI dalle escursioni senza traccia), poi 41, 40, 46, 47 e
+    43. Il 43 e il 44 vanno fatti vicini: sono due meta' dello stesso problema.
+    ORA PERO' CI SONO ANCHE il PUNTO 39 (mappa topografica) e il PUNTO 42b (conteggio
+    delle salite a una vetta), che prima erano fermi in attesa di una risposta e adesso
+    non lo sono piu'. Denis non ha ancora scelto da quale ripartire: GLIELO SI CHIEDE,
+    non si decide per lui.
+
+>>> STATO VERIFICATO A FINE SESSIONE (2026-07-29 mattina), controllo generale fatto:
+      - albero di lavoro pulito, master allineato a origin/master, ultimo commit 78aede8;
+      - sito online: home 200, e il routeplanner.js SERVITO DA RENDER contiene il tasto
+        nuovo e la correzione della corsa, quindi il deploy e' andato davvero;
+      - database: 6 utenti, 3 escursioni, 6 timbri, 7 sessioni, 1 bozza (quella vera del
+        27/07), 2 segnalazioni. NESSUN residuo di prova: zero bozze col nome "PROVA*";
+      - indice sentieri in RAM: 15.228 sentieri, 594.359 segmenti - il numero che questo
+        file dice di controllare. Nessuna regressione di memoria;
+      - tutti i file .js tracciati passano il controllo di sintassi;
+      - nessun numero di telefono e nessuna credenziale nei due file pubblici; .env non
+        e' tracciato da git;
+      - nessun server locale acceso, nessun processo node rimasto, niente script a girare;
+      - prove rilanciate sullo stato committato: 25 + 25 controlli, tutti passati.
+    CONTROLLATO E RISULTATO A POSTO, cosi' non lo si ricontrolla: i 4 token di conferma
+    email orfani ci sono ancora, ma NON e' un difetto. L'indice TTL esiste ed e' giusto
+    (expireAfterSeconds 86400); i documenti sono del 28/07 fra le 16:04 e le 18:57 UTC,
+    quindi le 24 ore scadono nel pomeriggio del 29. Spariscono da soli.
 
 -------------------------------------------------------------------
 Situazione al 2026-07-28, SECONDA sessione (resta valida)
