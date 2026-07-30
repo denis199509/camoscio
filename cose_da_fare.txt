@@ -1237,6 +1237,82 @@ FASE, da fare dopo il resto. Ci rientra il debito tecnico gia' noto: Escursioni,
 Carpooling e Tribu' & Squadre non sono ancora adattate al telefono.
 
 =====================================================================
+OTTAVA LISTA (2026-07-30) - segnalazione arrivata all'utente da una SECONDA
+PERSONA che usa il sito, non da lui direttamente. E' la prima volta che succede,
+ed e' anche il motivo per cui e' stata difficile da capire: chi riferisce non e'
+chi ha visto lo schermo.
+IL NOME DELLA PERSONA NON VA SCRITTO QUI: questo repository e' pubblico, e il
+dato di una terza persona non ci va (stessa regola dei contatti di emergenza).
+Nel vault, che e' privato, sta per esteso.
+=====================================================================
+
+49) [CHIUSO 2026-07-30 - NON ERA UN DIFETTO DEL TASTO] La persona del secondo
+account reale riferisce che il tasto della conferma email non funziona.
+   PAROLE DELL'UTENTE, primo messaggio: "il tasto verifica mail non funziona.
+   Cliccando sopra non succede nulla, ha controllato pure lo spam, non e'
+   arrivato niente".
+   Secondo messaggio: "il tasto verde 'conferma il tuo indirizzo email' non
+   funziona, probabilmente era attivo solo per 24 ore? attiva di nuovo il tasto
+   per 24 h".
+
+   L'IPOTESI DELL'UTENTE ERA SBAGLIATA, e va scritto perche' e' un'idea che
+   tornera': IL TASTO NON SCADE. La fascia verde resta finche' l'indirizzo non e'
+   confermato, e il tasto funziona sempre. Le 24 ore sono la durata del LINK
+   DENTRO L'EMAIL (EmailVerification.DURATA_LINK_SECONDI), non del tasto. Non
+   c'era niente da "riattivare".
+
+   COSA E' RISULTATO, controllando invece di indovinare:
+     - il tasto funziona. 182 controlli automatici rilanciati (38 nel browser a
+       1440 e 390 px, 34 sull'API, 53 sul recupero password, 57 nel browser sul
+       punto 7), tutti passati;
+     - il file app.js SERVITO DA RENDER e' identico a quello locale, quindi la
+       persona gira il codice giusto;
+     - l'invio email in produzione risulta configurato e sano;
+     - e c'e' una prova diretta che funzionava: un TERZO account reale si e'
+       registrato il 29/07 alle 17:47 e ha confermato l'indirizzo pochi minuti
+       dopo.
+
+   LA PROVA CHE HA CHIUSO LA QUESTIONE, ed e' un metodo da riusare: ogni pressione
+   del tasto CREA UN TOKEN sul database, che dura 24 ore. Sul database non c'era
+   nessun token, e la sessione di quella persona era aperta da 11 ore - cioe'
+   dentro la finestra. Se avesse premuto quel tasto, il token ci sarebbe. Quindi
+   la richiesta al server non e' mai partita: non era il tasto a essere rotto.
+
+   PERCHE' NON AVEVA RICEVUTO NIENTE PRIMA, e questo invece e' normale: quel
+   secondo account e' stato creato il 24/07, e la verifica dell'indirizzo e' stata
+   costruita il 28/07. Alla registrazione l'email non poteva partire perche' la
+   funzionalita' non esisteva ancora. Il suo documento utente e' infatti l'unico
+   dei tre reali a non avere nemmeno il campo emailVerified.
+
+   COSA E' STATO FATTO, col via libera esplicito dell'utente: l'email di conferma
+   e' stata fatta partire da produzione il 2026-07-30 alle 07:04 ora italiana,
+   SENZA passare dalla fascia. Si e' usata una strada che esisteva gia': chiedere
+   "password dimenticata" con un indirizzo non ancora confermato fa mandare
+   l'email di CONFERMA invece di quella di reimpostazione (routes/auth.js). Token
+   creato sul database, e la spia di salute dell'invio non e' scattata.
+   HA CONFERMATO, entro un'ora dall'invio: emailVerified true sul database e token
+   CONSUMATO (usa-e-getta), non scaduto. L'email e' arrivata, l'ha trovata e ha
+   cliccato. TUTTI E TRE GLI ACCOUNT REALI SONO ORA CONFERMATI, quindi tutti possono
+   usare il recupero password. QUESTO PUNTO E' CHIUSO, non va riaperto.
+
+   DUE COSE DA NON DIMENTICARE, se si rimanda l'email:
+     - ogni nuova richiesta ANNULLA il link precedente (creaToken fa deleteMany).
+       Se la persona apre l'email vecchia dopo che ne e' partita una nuova, trova
+       "link non piu' valido" e sembra di nuovo tutto rotto per colpa nostra;
+     - il freno anti-abuso e' 3 richieste all'ora per indirizzo. Superate quelle,
+       il sito risponde lo STESSO IDENTICO messaggio ottimista ma non manda
+       niente. Da fuori e' indistinguibile da un guasto.
+
+   UN DIFETTO VERO TROVATO STRADA FACENDO, e non era in nessuna lista: la fascia
+   verde si collegava SOLO in fondo a initApp(), cioe' compariva a caricamento
+   finito. Misurato lo scarto fra "sito visibile" e "fascia comparsa": 1232 ms in
+   media in locale, e su Render gratuito che si sveglia da fermo e' molto di piu'.
+   Per tutto quel tempo in cima alla pagina non c'e' nessun tasto da premere.
+   E' esattamente il difetto gia' corretto il 2026-07-26 per i tasti del menu, a
+   cui la fascia non era stata aggiunta. Ora si collega subito dopo il controllo
+   della sessione: scarto misurato 0 ms, con controprova sul codice vecchio.
+
+=====================================================================
 ORDINE CONSIGLIATO PER LA PROSSIMA SESSIONE
 Criteri, in ordine: prima le DOMANDE (costano minuti e fanno risparmiare
 giornate), poi cio' che oggi DICE IL FALSO, poi cio' che e' gia' mezzo fatto,

@@ -20,7 +20,19 @@ LE SEZIONI QUI SOTTO NON SI RISCRIVONO: sono il racconto di com'e' andata quel g
 e vanno lette come tali. Se una contraddice il vault, vince il vault.
 
 -------------------------------------------------------------------
-Ultimo lavoro raccontato: 2026-07-29 — PUNTO 38 ("Torna all'inizio", cioe' CHIUDERE
+Ultimo lavoro raccontato: 2026-07-30 — PUNTO 49, la segnalazione "il tasto della conferma
+email non funziona" arrivata da una SECONDA PERSONA che usa il sito. IL TASTO NON ERA
+ROTTO, e la cosa da portarsi via e' il METODO: ogni pressione crea un token sul database
+che dura 24 ore, e non ce n'era nessuno mentre la sua sessione era aperta da 11 ore -
+quindi la richiesta al server non era mai partita. Il database sa rispondere a "questo
+tasto e' stato premuto davvero?".
+NON AVEVA MAI RICEVUTO L'EMAIL perche' il suo account e' del 24/07 e la verifica
+dell'indirizzo e' stata costruita il 28/07: alla sua registrazione non poteva partire.
+TROVATO STRADA FACENDO UN DIFETTO VERO, non in nessuna lista: la fascia verde si
+collegava solo in fondo a initApp(). Corretto, misurato (1232 ms -> 0 ms) e PUBBLICATO
+ONLINE su richiesta di Denis, con deploy verificato sul file servito da Render.
+-------------------------------------------------------------------
+Aggiornamento precedente: 2026-07-29 — PUNTO 38 ("Torna all'inizio", cioe' CHIUDERE
 L'ANELLO), e fatte TUTTE E TRE le domande della tappa 0. Prima voce lavorata della settima
 lista, ed e' anche la prova che quelle domande servono: l'ipotesi scritta nel punto 38 ("i
 tasti ci sono gia', non li ha trovati") ERA SBAGLIATA. Denis intendeva tornare al punto 1,
@@ -131,6 +143,159 @@ LE LISTE DETTATE DALL'UTENTE, stato aggiornato:
    le verifiche automatiche non potevano fare, ed e' servita: ha trovato un
    difetto vero al primo colpo.
 ===================================================================
+
+===================================================================
+PUNTO 49 — "IL TASTO DELLA CONFERMA EMAIL NON FUNZIONA" (2026-07-30)
+===================================================================
+
+--- LA NOVITA' DI QUESTA SEGNALAZIONE: NON L'HA VISTA DENIS ---
+
+E' la prima volta che arriva un difetto riferito da una TERZA PERSONA. Denis ha
+riportato le parole di chi usa il sito, non quello che ha visto lui. E' proprio
+questo che l'ha resa difficile: fra chi guarda lo schermo e chi scrive il messaggio
+c'e' un passaggio in piu', e in quel passaggio si perdono i dettagli che servono.
+Prima versione: "il tasto verifica mail non funziona. Cliccando sopra non succede
+nulla, ha controllato pure lo spam, non e' arrivato niente".
+Nel sito ci sono DUE tasti con dentro la parola "verifica", e solo uno c'entra con
+l'email: "Rimanda l'email" nella fascia verde, e "Verifica il tuo profilo (KYC
+Light)" nella scheda del profilo, che chiede un numero di telefono e non manda
+niente. Chiedere quale dei due fosse e' costato un messaggio ed era necessario.
+
+--- L'IPOTESI DI DENIS ERA SBAGLIATA, E TORNERA' FUORI ---
+
+Seconda versione: "probabilmente era attivo solo per 24 ore? attiva di nuovo il tasto
+per 24 h".
+IL TASTO NON SCADE. La fascia verde resta finche' l'indirizzo non e' confermato, e il
+tasto funziona sempre. Le 24 ore sono la durata del LINK DENTRO L'EMAIL
+(EmailVerification.DURATA_LINK_SECONDI), non del tasto. Non c'era niente da
+riattivare, e dirglielo era piu' utile che accontentarlo.
+
+--- COSA E' STATO CONTROLLATO, IN ORDINE ---
+
+ 1) Il codice: le prove del 28/07 rilanciate. 34 controlli sull'API e 38 nel browser
+    vero a 1440 e 390 px, tutti passati, compresi "premendo Rimanda compare un
+    messaggio" e "parte davvero una nuova email".
+ 2) Il deploy: scaricato public/js/app.js DA RENDER e confrontato con quello locale.
+    Identici. Quindi la persona gira il codice giusto - non era un deploy vecchio.
+ 3) L'invio email in produzione: chiesto al sito stesso senza mandare niente.
+    /api/auth/forgot-password dichiara di proposito tre stati diversi, e rispondeva
+    "disponibile: true", cioe' chiavi a posto e nessun invio fallito.
+ 4) Le date sul database, ed e' qui che si e' capito tutto (vedi sotto).
+ 5) Riprodotto lo scenario con un account di prova il cui documento e' una COPIA
+    ESATTA del suo (stessi campi, stessi campi mancanti), con indirizzo e nome finti.
+
+--- L'ERRORE CHE HO FATTO IO, E CHE VALE PIU' DEL RESTO ---
+
+Al punto 5 ho annunciato di aver RIPRODOTTO IL GUASTO: con la copia del suo documento
+la fascia risultava nascosta e il tasto scollegato. Era falso. Leggevo lo stato della
+pagina UNA VOLTA SOLA e troppo presto, prima che initApp() avesse finito. Rifatta la
+misura aspettando davvero, la fascia compariva dopo 2,3 secondi col tasto collegato.
+LA REGOLA GIA' SCRITTA IN prove/LEGGIMI-PROVE.txt ("si aspetta una condizione vera,
+mai un tempo fisso") VALE ANCHE QUANDO SI INDAGA A MANO, non solo quando si scrive una
+prova. Una diagnosi sbagliata annunciata con sicurezza e' peggio di nessuna diagnosi:
+manda a correggere codice che non ha niente che non va.
+
+--- LA PROVA CHE HA CHIUSO LA QUESTIONE ---
+
+Ogni pressione del tasto chiama creaToken(), che SCRIVE UN TOKEN sul database, e quel
+token dura 24 ore (indice TTL). Quindi il database sa rispondere alla domanda "questo
+tasto e' stato premuto davvero?".
+Sul database: NESSUN token. E la sessione di quella persona era stata aperta il 29/07
+alle 17:45 UTC, cioe' 11 ore prima - dentro la finestra delle 24 ore. Se avesse premuto
+quel tasto, il token ci sarebbe.
+Conclusione: la richiesta al server non e' mai partita.
+DA RIUSARE: prima di leggere codice per mezz'ora, chiedersi se da qualche parte resta
+una TRACCIA del gesto che si sta indagando. Qui c'era, e valeva piu' di ogni ipotesi.
+
+--- PERCHE' NON AVEVA RICEVUTO NIENTE, E NON ERA UN GUASTO ---
+
+Quel secondo account e' stato creato il 24/07 alle 08:22. La verifica dell'indirizzo
+e' stata costruita il 28/07. Alla sua registrazione l'email di conferma non poteva
+partire: la funzionalita' non esisteva ancora. Il suo documento utente e' infatti
+l'unico dei tre reali a non avere nemmeno il campo emailVerified - e' piu' vecchio del
+campo.
+Controprova che il sistema funzionava: un TERZO account reale si e' registrato il
+29/07 alle 17:47 e ha confermato l'indirizzo pochi minuti dopo, due minuti dopo che la
+seconda persona aveva fatto l'accesso.
+
+--- COME L'EMAIL GLI E' STATA FATTA ARRIVARE, SENZA TOCCARE IL CODICE ---
+
+Col via libera esplicito di Denis (e' un'email vera verso una persona vera). Non
+serviva che lui premesse niente: chiedere "password dimenticata" con un indirizzo NON
+ANCORA CONFERMATO fa mandare l'email di CONFERMA invece di quella di reimpostazione.
+E' scritto in routes/auth.js dal 28/07 ed era una strada mai usata prima.
+Fatto partire da produzione il 2026-07-30 alle 05:04 UTC (07:04 ora italiana).
+VERIFICATO SUL DATABASE, perche' la risposta a schermo e' identica in ogni caso e non
+prova niente: token di conferma creato per il suo userId, e tabella dei reset password
+rimasta VUOTA - cioe' il server ha scelto davvero la strada della conferma. Richiesto
+subito dopo lo stato di salute dell'invio: ancora sano, quindi Mailjet non ha
+rifiutato il messaggio.
+HA CONFERMATO, entro un'ora dall'invio. Controllato sul database prima di chiudere la
+sessione: emailVerified true, e il token NON c'e' piu' perche' e' stato CONSUMATO (e'
+usa-e-getta), non perche' sia scaduto - mancavano ancora 23 ore. Quindi l'email e'
+arrivata davvero, l'ha trovata e ha cliccato il link.
+TUTTI E TRE GLI ACCOUNT REALI SONO ORA CONFERMATI, cioe' tutti possono usare il
+recupero password: era l'unico motivo per cui la conferma dell'indirizzo esiste.
+
+DUE AVVERTENZE, se si rimanda l'email:
+ - ogni nuova richiesta ANNULLA la precedente (creaToken fa deleteMany prima di
+   creare). Se la persona apre l'email vecchia dopo che ne e' partita una nuova, trova
+   "link non piu' valido": sembra di nuovo tutto rotto, e stavolta per colpa nostra;
+ - il freno anti-abuso e' 3 richieste all'ora per indirizzo. Superate quelle, il sito
+   risponde lo STESSO IDENTICO messaggio ottimista ma non manda niente. Da fuori e'
+   indistinguibile da un guasto - ed e' esattamente il genere di cosa che ha reso
+   difficile questa diagnosi.
+
+--- IL DIFETTO VERO TROVATO STRADA FACENDO ---
+
+Non era in nessuna lista, e non e' quello segnalato.
+La fascia verde si collegava SOLO in fondo a initApp(), dopo refreshState() e undici
+inizializzazioni di moduli. Ma il sito viene MOSTRATO prima, da checkAuthAndShowGate:
+nel mezzo restava una finestra in cui la pagina sembrava pronta e in cima non c'era
+nessun tasto da premere.
+E' ESATTAMENTE IL DIFETTO GIA' CORRETTO IL 2026-07-26 per i tasti del menu - il
+commento che lo racconta e' cinque righe sopra, in app.js. Alla fascia, aggiunta il
+28/07, quel trattamento non era stato dato.
+Correzione: setupEmailVerifyBanner() si chiama subito dopo il controllo della sessione.
+Li' i dati ci sono gia' tutti - /api/auth/me restituisce sia emailVerified sia
+isDemoAccount, le uniche due cose che servono per decidere. LA CHIAMATA IN FONDO A
+initApp() RESTA e serve: refreshState() rimpiazza currentUser con la versione presa da
+/api/users, quindi la seconda chiamata riallinea la fascia. Chiamarla due volte e'
+sicuro perche' l'ascoltatore e' protetto da dataset.collegato.
+
+LA MISURA, e la prima era sbagliata. Cronometrare "quanto ci mette la fascia a
+comparire" dava numeri rumorosi (2337 ms prima, 2132 ms dopo): dentro c'era anche il
+caricamento della pagina, che domina e varia a ogni giro. Il numero giusto e' lo
+SCARTO fra "sito visibile" e "fascia comparsa", misurato con una spia piantata prima
+che parta qualunque script:
+   codice vecchio: 1359, 962, 1375 ms  ->  media 1232 ms
+   codice nuovo:      0,   0,    0 ms  ->  media 0 ms
+Controprova fatta con git stash, come vuole la regola del progetto: col codice vecchio
+la misura peggiora davvero, quindi sta misurando quello che dice di misurare.
+E in locale, con server caldo, sono 1,2 secondi. Su Render gratuito che si sveglia da
+fermo initApp() dura molto di piu'.
+
+--- PROVE RILANCIATE DOPO LA MODIFICA ---
+
+182 controlli, tutti passati:
+   prova-browser-verifica.js    38  (1440 e 390 px)
+   prova-verifica-email.js      34
+   prova-punto7.js              53
+   prova-browser-punto7.js      57
+Il server locale e' stato riavviato prima dell'ultima per azzerare il freno anti-abuso
+in memoria: e' la trappola gia' scritta in LEGGIMI-PROVE.txt (una prova che fallisce
+perche' il freno funziona sembra un difetto del sito).
+Database identico a prima in tutte e quattro. L'unico token di conferma rimasto e'
+quello VERO mandato alla seconda persona: non e' un residuo e non va cancellato.
+
+--- PUBBLICAZIONE ---
+
+Denis ha chiesto di mandarla online ("manda online") dopo che gli era stato detto che
+la modifica era ferma sul disco. Commessa e pushata su master, deploy automatico su
+Render. VERIFICATO SUL FILE DAVVERO SERVITO da Render, non solo sulla home a 200:
+public/js/app.js scaricato dal sito online contiene la chiamata anticipata. E' la
+stessa verifica gia' usata il 29/07 - una home a 200 non dice niente su quale versione
+del codice sia effettivamente in giro.
 
 ===================================================================
 PUNTO 38 — "TORNA ALL'INIZIO", CIOE' CHIUDERE L'ANELLO (2026-07-29)

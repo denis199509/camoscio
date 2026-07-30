@@ -148,6 +148,21 @@ document.addEventListener("DOMContentLoaded", async () => {
     const btnLogout = document.getElementById("btn-logout");
     if (btnLogout) btnLogout.addEventListener("click", () => { if (window.performLogout) window.performLogout(); });
 
+    // E STESSO MOTIVO ANCORA per la fascia "conferma il tuo indirizzo email", spostata qui
+    // il 2026-07-30. Prima si collegava SOLO in fondo a initApp(): la fascia compariva a
+    // caricamento finito - misurati 2,3 secondi in locale, e su Render gratuito che si
+    // sveglia da fermo sono molti di piu'. Per tutto quel tempo in cima alla pagina non
+    // c'era nessun tasto da premere, quindi chi apriva il sito per confermare l'indirizzo
+    // poteva non trovarlo affatto e concludere che non funzionasse.
+    // Qui i dati ci sono gia' tutti: checkAuthAndShowGate ha appena messo currentUser con
+    // la risposta di /api/auth/me, che contiene sia emailVerified sia isDemoAccount - cioe'
+    // le uniche due cose che servono per decidere se mostrarla. Non dipende da initApp.
+    // LA CHIAMATA IN FONDO A initApp() RESTA, e serve: refreshState() rimpiazza currentUser
+    // con la versione presa da /api/users, quindi la seconda chiamata riallinea la fascia se
+    // nel frattempo l'indirizzo e' stato confermato altrove. Chiamarla due volte e' sicuro:
+    // l'ascoltatore del tasto e' protetto da dataset.collegato e non si aggancia due volte.
+    setupEmailVerifyBanner();
+
     // Inizializza i moduli principali (lento: dati + nove moduli)
     await initApp();
 });
