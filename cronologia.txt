@@ -291,11 +291,17 @@ quello VERO mandato alla seconda persona: non e' un residuo e non va cancellato.
 --- PUBBLICAZIONE ---
 
 Denis ha chiesto di mandarla online ("manda online") dopo che gli era stato detto che
-la modifica era ferma sul disco. Commessa e pushata su master, deploy automatico su
-Render. VERIFICATO SUL FILE DAVVERO SERVITO da Render, non solo sulla home a 200:
-public/js/app.js scaricato dal sito online contiene la chiamata anticipata. E' la
-stessa verifica gia' usata il 29/07 - una home a 200 non dice niente su quale versione
-del codice sia effettivamente in giro.
+la modifica era ferma sul disco. Commit 31df68d, pushato su master, deploy automatico
+su Render arrivato in circa 45 secondi.
+VERIFICATO SUL FILE DAVVERO SERVITO da Render, non solo sulla home a 200: scaricato
+public/js/app.js dal sito online e confrontato con quello locale - identico a parte i
+fine riga (CRLF/LF, normale su Windows), con la chiamata anticipata alla riga 164 e
+"await initApp()" alla 167. E' la stessa verifica gia' usata il 29/07: una home a 200
+non dice niente su quale versione del codice sia effettivamente in giro.
+NOTA sul metodo di attesa: si e' aspettata una CONDIZIONE VERA (il file servito che
+contiene la riga nuova), non un tempo fisso - ai primi due tentativi Render serviva
+ancora la versione vecchia. Dichiarare il deploy fatto subito dopo il push avrebbe
+detto il falso per quasi un minuto.
 
 ===================================================================
 PUNTO 38 — "TORNA ALL'INIZIO", CIOE' CHIUDERE L'ANELLO (2026-07-29)

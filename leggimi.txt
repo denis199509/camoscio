@@ -83,10 +83,11 @@ o ne arriva uno nuovo.
     non si decide per lui.
 
 >>> STATO VERIFICATO A FINE SESSIONE (2026-07-30):
-      - albero di lavoro pulito, master allineato a origin/master; la correzione della
-        fascia e' stata COMMESSA E PUBBLICATA su richiesta di Denis ("manda online"),
-        e il deploy su Render e' stato verificato sul file davvero servito, non solo
-        sulla home;
+      - albero di lavoro pulito, master allineato a origin/master. La correzione della
+        fascia e' il commit 31df68d, PUBBLICATO su richiesta di Denis ("manda online").
+        Deploy verificato sul file DAVVERO SERVITO da Render (arrivato in ~45 secondi):
+        identico al locale a parte i fine riga, e la chiamata anticipata sta alla riga
+        164, prima di "await initApp()" alla 167. Una home a 200 non l'avrebbe provato;
       - sito online: home 200, e l'invio email risulta configurato e sano;
       - database: 7 utenti (4 demo + 3 reali), TUTTI E TRE I REALI CONFERMATI, nessun
         residuo di prova, nessun token in giro;
