@@ -15,6 +15,13 @@ function setupBackpackEvents() {
     // Punto 25 - dichiarare un oggetto che porti tu per il gruppo, con la sua portata.
     const btnAdd = document.getElementById("btn-add-shared-item");
     if (btnAdd) btnAdd.addEventListener("click", aggiungiOggettoCondiviso);
+
+    // Punto 47 - stessa cosa ma per gli oggetti PERSONALI, e il tasto di conferma finale.
+    const btnAddPersonal = document.getElementById("btn-add-personal-item");
+    if (btnAddPersonal) btnAddPersonal.addEventListener("click", aggiungiOggettoPersonale);
+
+    const btnConfirm = document.getElementById("btn-confirm-backpack");
+    if (btnConfirm) btnConfirm.addEventListener("click", confermaZaino);
 }
 
 // Punto 23 di cose_da_fare.txt (prima meta') - lo zaino deve partire da una escursione MIA.
@@ -298,6 +305,110 @@ function generateChecklistFromInputs() {
     applyBackpackRules(season, altitude, duration, rainExpected, null);
 }
 
+// =====================================================================
+// PUNTO 47: oggetti PERSONALI aggiunti a mano + conferma finale
+// =====================================================================
+//
+// Gli oggetti personali non sono MAI stati un elenco salvato da qualche parte, a
+// differenza di quelli condivisi (hike.backpackTemplate sul server): escono da una
+// REGOLA (stagione/quota/durata/pioggia in applyBackpackRules) ricalcolata a ogni
+// apertura della pagina. Un oggetto aggiunto a mano non e' una regola - si salva in
+// locale, stessa idea gia' in uso per lo stato spuntato di ogni oggetto (localStorage,
+// per escursione e per utente). Vale anche per lo zaino "personale" senza
+// nessun'escursione (hikeId 'generic'): la chiave funziona uguale in entrambi i casi.
+
+function chiaveUtenteZaino() {
+    const db = window.CamoscioState;
+    return db.currentUser ? db.currentUser.id : 'anon';
+}
+
+// Stessa chiave usata per lo stato spuntato in renderChecklistUI: estratta qui perche'
+// serve anche a confermaZaino, per non ricalcolarla in due posti in due modi leggermente
+// diversi (e' il tipo di doppione che nasconde un difetto in una sola copia).
+function chiaveSpuntato(hikeId, userId, nomeOggetto) {
+    return `backpack_item_${hikeId || 'generic'}_${userId}_${nomeOggetto.replace(/\s+/g, '_')}`;
+}
+
+function leggiOggettiPersonali(hikeId) {
+    try {
+        const grezzo = localStorage.getItem(`backpack_personal_extra_${hikeId || 'generic'}_${chiaveUtenteZaino()}`);
+        const elenco = grezzo ? JSON.parse(grezzo) : [];
+        return Array.isArray(elenco) ? elenco : [];
+    } catch (e) {
+        return [];
+    }
+}
+
+function salvaOggettiPersonali(hikeId, elenco) {
+    localStorage.setItem(`backpack_personal_extra_${hikeId || 'generic'}_${chiaveUtenteZaino()}`, JSON.stringify(elenco));
+}
+
+// Aggiunge un oggetto alla PROPRIA lista (non al gruppo). Gemella di
+// aggiungiOggettoCondiviso, ma piu' semplice: niente portata, niente server - si
+// rigenera da sola a ogni renderBackpackModule() perche' applyBackpackRules la rilegge.
+async function aggiungiOggettoPersonale() {
+    const nome = document.getElementById("personal-item-name").value.trim();
+    const peso = parseInt(document.getElementById("personal-item-weight").value, 10);
+
+    if (!nome) {
+        window.showToast("Scrivi che cosa porti.", "error");
+        return;
+    }
+    if (!Number.isFinite(peso) || peso <= 0) {
+        window.showToast("Metti un peso in grammi.", "error");
+        return;
+    }
+
+    const hike = escursioneDiRiferimento();
+    const hikeId = (hike && hike.id) || 'generic';
+
+    const elenco = leggiOggettiPersonali(hikeId);
+    elenco.push({ name: nome, weight: peso });
+    salvaOggettiPersonali(hikeId, elenco);
+
+    document.getElementById("personal-item-name").value = "";
+    document.getElementById("personal-item-weight").value = "";
+
+    renderBackpackModule();
+    window.showToast("Aggiunto alla tua lista.", "success");
+}
+
+// Ultimo elenco disegnato + per quale escursione: serve a confermaZaino per sapere QUALI
+// oggetti sono obbligatori adesso, senza ricostruire la lista una seconda volta con una
+// logica che potrebbe scostarsi da quella vera (lo stesso principio del punto 38: due
+// calcoli della stessa cosa in punti diversi finiscono per dire cose diverse).
+let ultimoRenderZaino = { items: [], hikeId: 'generic' };
+
+// Tasto finale (punto 47): non e' un applauso, controlla davvero che tutto quello che le
+// regole hanno reso OBBLIGATORIO sia gia' spuntato prima di dire che lo zaino e' pronto.
+function confermaZaino() {
+    const { items, hikeId } = ultimoRenderZaino;
+    const userId = chiaveUtenteZaino();
+
+    const mancanti = items.filter(item => item.mandatory &&
+        localStorage.getItem(chiaveSpuntato(hikeId, userId, item.name)) !== 'true');
+
+    if (mancanti.length > 0) {
+        const elenco = mancanti.map(i => i.name).join(', ');
+        window.showToast(`Manca ancora da spuntare l'obbligatorio: ${elenco}.`, "error");
+        return;
+    }
+
+    localStorage.setItem(`backpack_confirmed_${hikeId || 'generic'}_${userId}`, 'true');
+    mostraZainoConfermato(hikeId);
+    window.showToast("Zaino confermato: hai tutto l'obbligatorio!", "success");
+}
+
+// Mostra il banner se questo zaino (per QUESTA escursione, o quello generico) e' gia'
+// stato confermato in precedenza - altrimenti ricaricando la pagina la conferma data
+// prima sparirebbe senza motivo.
+function mostraZainoConfermato(hikeId) {
+    const banner = document.getElementById("backpack-confirmed-banner");
+    if (!banner) return;
+    const confermato = localStorage.getItem(`backpack_confirmed_${hikeId || 'generic'}_${chiaveUtenteZaino()}`) === 'true';
+    banner.classList.toggle("hidden", !confermato);
+}
+
 // Core Algoritmo: Applica i vincoli ambientali e meteo per generare gli articoli dello zaino.
 //
 // L'ultimo parametro era "customTemplate + hikeId", cioe' due pezzi della stessa escursione
@@ -438,6 +549,12 @@ function applyBackpackRules(season, altitude, duration, rainExpected, hike) {
         }
     }
 
+    // Punto 47 - le proprie aggiunte a mano, sopra a quelle dettate dalle regole.
+    // Non obbligatorie: sono una scelta personale, non un vincolo del posto o del meteo.
+    leggiOggettiPersonali(hikeId).forEach(extra => {
+        items.push({ name: extra.name, category: "Aggiunte da te", mandatory: false, weight: extra.weight, isShared: false });
+    });
+
     renderChecklistUI(items, hikeId);
     if (window.lucide) window.lucide.createIcons();
 }
@@ -446,6 +563,11 @@ function applyBackpackRules(season, altitude, duration, rainExpected, hike) {
 function renderChecklistUI(items, hikeId) {
     const container = document.getElementById("backpack-categories-container");
     if (!container) return;
+
+    // Punto 47: memorizzata per confermaZaino, e il banner si aggiorna qui perche' e' il
+    // punto in cui si sa gia' se e' cambiata l'escursione di riferimento.
+    ultimoRenderZaino = { items, hikeId };
+    mostraZainoConfermato(hikeId);
 
     container.innerHTML = "";
 
@@ -478,9 +600,7 @@ function renderChecklistUI(items, hikeId) {
             itemRow.className = "backpack-item-row";
 
             // Stato spuntato salvato in local storage, isolato per escursione e per utente
-            const db = window.CamoscioState;
-            const userId = db.currentUser ? db.currentUser.id : 'anon';
-            const storageKey = `backpack_item_${hikeId || 'generic'}_${userId}_${item.name.replace(/\s+/g, '_')}`;
+            const storageKey = chiaveSpuntato(hikeId, chiaveUtenteZaino(), item.name);
             const isChecked = localStorage.getItem(storageKey) === 'true';
 
             // Stringa per oggetti condivisi.

@@ -1317,7 +1317,7 @@ modificarlo.
 
 --- ZAINO ---
 
-47) [DA FARE] Dopo aver scelto le cose obbligatorie e aggiunto quelle facoltative,
+47) [FATTO 2026-08-01] Dopo aver scelto le cose obbligatorie e aggiunto quelle facoltative,
 se un oggetto non e' in elenco si deve poter aggiungere a mano: uno spazio
 "Aggiungi +" dove si scrive il nome e il peso. Alla fine un tasto "Conferma
 zaino".
@@ -1325,6 +1325,36 @@ zaino".
    quelli CONDIVISI ("Se porti qualcosa che serve a tutti...", btn-add-shared-item,
    fatto col punto 25).
    MANCA: poterlo fare per gli oggetti PERSONALI, e il tasto di conferma finale.
+   -> FATTO. Nuovo modulo "Aggiungi una tua cosa" (gemello di quello condiviso, ma
+      piu' semplice: niente "per quante persone", e' solo tua) sotto la checklist.
+      DIVERSO DA QUELLO CONDIVISO NEL DOVE SI SALVA, e il motivo conta: gli oggetti
+      condivisi vivono in hike.backpackTemplate sul server (li vede tutto il
+      gruppo), ma quelli PERSONALI non sono mai stati un elenco salvato da nessuna
+      parte - escono da una REGOLA (stagione/quota/durata/pioggia,
+      applyBackpackRules) ricalcolata a ogni apertura della pagina. Un oggetto
+      aggiunto a mano non e' una regola: si salva in locale (localStorage), stessa
+      idea gia' in uso per lo stato spuntato di ogni oggetto. Vale anche per lo
+      zaino "personale" senza nessuna escursione: stessa chiave, stesso
+      funzionamento.
+      Gli oggetti aggiunti compaiono in una categoria nuova, "Aggiunte da te", e
+      NON sono obbligatori: sono una scelta personale, non un vincolo del posto o
+      del meteo.
+      TASTO "CONFERMA ZAINO": non e' un applauso. Controlla che tutto quello che
+      le regole hanno reso OBBLIGATORIO sia gia' spuntato (stesso stato salvato in
+      localStorage) - se manca qualcosa lo dice per nome, invece di confermare uno
+      zaino a meta'. Confermato, resta un banner verde visibile anche dopo aver
+      ricaricato la pagina.
+      REFACTOR PICCOLO, per evitare un doppione: la chiave dello stato spuntato
+      (localStorage) era costruita inline dentro renderChecklistUI. Estratta in
+      chiaveSpuntato(), usata anche da confermaZaino() - due copie della stessa
+      chiave scritte in due punti sono il tipo di doppione che nasconde un difetto
+      in una sola (lezione gia' scritta al punto 18).
+      PROVATO DAL VIVO (account demo Marco Alpinista, escursione di gruppo vera):
+      "Conferma zaino" senza aver spuntato niente ha elencato per nome tutti gli
+      11 oggetti obbligatori mancanti; aggiunto "Bastoncini da trekking" (comparso
+      sotto "Aggiunte da te", non obbligatorio); spuntati tutti gli obbligatori e
+      confermato: banner verde comparso. Ricaricata la pagina: oggetto personale,
+      spunte e banner di conferma ANCORA LI'. Nessun errore in console.
 
 --- SQUADRE ---
 
@@ -1443,7 +1473,7 @@ poi le cose nuove.
     registrazione (confermato da Denis in sessione).
  4. [FATTO 2026-08-01] PUNTO 46 (i miei annunci di carpooling): stesso difetto gia'
     risolto due volte, risolto anche qui.
- 5. PUNTO 47 (zaino, aggiungere a mano): meta' c'e' gia'.
+ 5. [FATTO 2026-08-01] PUNTO 47 (zaino, aggiungere a mano + conferma finale).
  6. PUNTO 43 (collegare un progetto o una traccia a un'escursione): e' il piu'
     utile dei lavori grossi, e va fatto SUBITO DOPO il 44 - e' quello che
     restituisce il tempo previsto quando un percorso vero c'e'.

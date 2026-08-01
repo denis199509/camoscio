@@ -31,50 +31,31 @@ o ne arriva uno nuovo.
 
 
 
->>> CHIUSO IL 2026-08-01, NON VA RIAPERTO: il vault e' su GitHub in un repository
-    PRIVATO separato (github.com/denis199509/Camoscio-memoria). Privacy verificata
-    con una chiamata anonima all'API (risponde 404). Dettagli in
-    ../camoscio memoria/04-Da-Fare.md.
+>>> SESSIONE DEL 2026-08-01, RIASSUNTA (dettaglio completo in cose_da_fare.txt e nel
+    vault, punto per punto - qui solo cosa e' cambiato):
+      - Vault su GitHub, repository PRIVATO separato (github.com/denis199509/
+        Camoscio-memoria), verificato non raggiungibile senza autenticazione;
+      - PUNTO 44: tolto il tempo CAI finto sulle escursioni senza traccia;
+      - PUNTO 41: tolto "Profilo verificato" (KYC), non serviva piu';
+      - PUNTO 40: l'icona profilo porta alla card giusta; aggiunto editor per foto
+        e bio (Denis ha chiesto di costruirlo, non era nel punto originale);
+      - PUNTO 50 (idea nuova, non dettata prima): badge personali per i 4 profili
+        reali + pagina profilo di un altro utente, apribile da nome/avatar ovunque;
+      - PUNTO 46: nuova scheda "I Tuoi Annunci Auto" nel carpooling (si cerca in
+        tutte le escursioni, non solo quella attiva; si puo' modificare e cancellare);
+      - PUNTO 47: si puo' aggiungere un oggetto PERSONALE a mano (non solo
+        condiviso), e tasto "Conferma zaino" che controlla l'obbligatorio.
+    NESSUNA ROTTA SERVER NUOVA in tutta la sessione: ogni volta il permesso o il
+    dato c'era gia', mancava solo l'interfaccia - verificato nel codice ogni volta
+    prima di scrivere.
+    ACCOUNT REALI: SONO 4, NON PIU' 3 (Manu er 5 lingue e Matteo Bi si sono
+    aggiunti da soli). Non scrivere piu' un numero fisso da nessuna parte.
 
->>> ACCOUNT REALI: SONO 4, NON PIU' 3 (controllato il 01/08/2026 su richiesta di
-    Denis). Non scrivere piu' un numero fisso da nessuna parte: cresce a ogni
-    registrazione. Tutti e quattro risultano emailVerified true.
-
->>> PUNTO 44 FATTO IL 2026-08-01: tolto il tempo CAI finto sulle escursioni senza
-    traccia. NON riprodotta la prova a 390px per un limite del tool di automazione
-    in questa sessione (vedi ../camoscio memoria/07-Trappole-Tecniche.md).
-
->>> PUNTO 41 FATTO IL 2026-08-01 (era una rimozione): via "Profilo verificato"
-    (KYC) da card profilo, intestazione e modello User. Usava il campo anche il
-    pallino blu sull'avatar partecipante e il rombo accanto all'organizzatore
-    (social.js) - tolti anche quelli, stesso motivo del 44: meglio niente che un
-    distintivo congelato che nessun utente vero potrebbe piu' guadagnare.
-
->>> PUNTO 40 FATTO IL 2026-08-01: il riquadro utente in alto a destra ora porta alla
-    Dashboard e scorre fino a "Il Tuo Profilo". VERIFICATO che foto e bio si
-    potessero impostare solo in registrazione - Denis ha chiesto di costruire
-    l'editor in sessione: fatto, nuova sezione nella card con foto, bio e tasto
-    Salva. Backend gia' pronto da prima (SELF_EDITABLE_FIELDS), nessun campo nuovo.
-
->>> PUNTO 50 FATTO IL 2026-08-01 (idea nuova di Denis, non dettata prima - nona
-    lista): badge personali (assegnati a mano, MAI guadagnati) per Denis, DaniWoll,
-    Manu er 5 lingue, Matteo Bi, mostrati accanto al nome. Insieme: pagina profilo
-    di un altro utente, apribile cliccando nome/avatar ovunque - anche senza aver
-    fatto un'escursione insieme. Nessuna rotta nuova sul server (leggevano gia'
-    dati/timbri di un altro utente). Dettagli in ../camoscio memoria/03-Decisioni-Architetturali.md.
-
->>> PUNTO 46 FATTO IL 2026-08-01: nuova scheda "I Tuoi Annunci Auto" nella pagina
-    Carpooling - cerca in TUTTE le escursioni, non solo quella attiva. "Modifica"
-    precompila il modulo esistente, "Cancella annuncio" lo toglie (avvisa prima se
-    ci sono gia' passeggeri a bordo). Nessuna rotta nuova: il permesso di
-    modificare/cancellare la PROPRIA voce in carpool.drivers c'era gia' sul
-    server, mancava solo l'interfaccia.
-
->>> DA DOVE SI CONTINUA COL LAVORO VERO. Fatti 44, 41, 40, 50, 46. L'ordine
-    consigliato in fondo a cose_da_fare.txt (settima lista) continua con PUNTO 47,
-    poi 43 (43 e 44 vanno fatti vicini, quindi resta un candidato forte).
+>>> DA DOVE SI CONTINUA COL LAVORO VERO. Fatti 44, 41, 40, 50, 46, 47. Delle sette
+    liste resta solo il PUNTO 43 (collegare un progetto o una traccia vera a
+    un'escursione - va vicino al 44, quindi e' un candidato forte), poi il PUNTO 37
+    (Dead Man's Switch sul server, il pezzo grosso di sicurezza).
     CI SONO ANCHE il PUNTO 39 (mappa topografica: e' un cambio di MAPPA DI BASE, non
-    un ritocco, e vuole due correzioni obbligatorie alla mappa offline) e il PUNTO 42b
-    (quante volte su una vetta: non serve piu' nessun raggio), che dal 29/07 non sono
-    piu' bloccati. Denis non ha ancora scelto se deviare dall'ordine: GLIELO SI CHIEDE,
-    non si decide per lui.
+    un ritocco) e il PUNTO 42b (quante volte su una vetta: non serve piu' nessun
+    raggio), sbloccati dal 29/07. Denis non ha ancora scelto se deviare dall'ordine:
+    GLIELO SI CHIEDE, non si decide per lui.

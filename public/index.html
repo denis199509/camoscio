@@ -1374,6 +1374,33 @@
                                 <div class="backpack-items-categories" id="backpack-categories-container">
                                     <!-- Renderizzato da JS in categorie: Abbigliamento, Attrezzatura, Alimentazione, Sicurezza/Emergenza -->
                                 </div>
+
+                                <!-- Punto 47 di cose_da_fare.txt: aggiungere un oggetto PERSONALE a
+                                     mano, non solo condiviso (gia' fatto al punto 25). Piu' semplice
+                                     del modulo condiviso: niente "per quante persone", e' solo tuo. -->
+                                <div class="backpack-add-personal">
+                                    <h5><i data-lucide="plus-circle"></i> Aggiungi una tua cosa</h5>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="personal-item-name">Che cosa:</label>
+                                            <input type="text" id="personal-item-name" maxlength="60" placeholder="Es. Bastoncini da trekking">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="personal-item-weight">Peso (grammi):</label>
+                                            <input type="number" id="personal-item-weight" min="1" max="30000" placeholder="Es. 400">
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn btn-secondary btn-sm btn-block" id="btn-add-personal-item">Aggiungi alla mia lista</button>
+                                </div>
+
+                                <!-- Punto 47: tasto finale. Non e' solo un applauso: controlla che
+                                     tutto cio' che le regole hanno reso OBBLIGATORIO sia gia' spuntato
+                                     prima di dire che lo zaino e' pronto. -->
+                                <div class="backpack-confirmed-banner hidden" id="backpack-confirmed-banner">
+                                    <i data-lucide="check-circle"></i>
+                                    <span>Zaino confermato: hai tutto l'obbligatorio.</span>
+                                </div>
+                                <button type="button" class="btn btn-success btn-block" id="btn-confirm-backpack">Conferma zaino</button>
                             </div>
                         </div>
                     </div>

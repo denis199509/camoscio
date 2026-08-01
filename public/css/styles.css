@@ -1767,6 +1767,54 @@ h1, h2, h3, h4, h5, h6 {
     flex-shrink: 0;
 }
 
+/* Punto 47 di cose_da_fare.txt: stessa forma di .backpack-add-shared, per il modulo
+   "aggiungi una tua cosa" e per il tasto/banner di conferma finale. */
+.backpack-add-personal {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-color);
+}
+
+.backpack-add-personal h5 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    margin-bottom: 12px;
+}
+
+.backpack-add-personal h5 i,
+.backpack-add-personal h5 svg {
+    width: 16px;
+    height: 16px;
+    color: var(--accent-green);
+    flex-shrink: 0;
+}
+
+#btn-confirm-backpack {
+    margin-top: 16px;
+}
+
+.backpack-confirmed-banner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 16px;
+    padding: 10px 14px;
+    background: rgba(76, 122, 68, 0.12);
+    border: 1px solid var(--accent-green);
+    border-radius: 10px;
+    color: var(--accent-green);
+    font-size: 0.85rem;
+}
+
+.backpack-confirmed-banner i,
+.backpack-confirmed-banner svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
 .weight-dist-list {
     display: flex;
     flex-direction: column;
