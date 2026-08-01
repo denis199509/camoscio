@@ -214,6 +214,7 @@ async function initApp() {
         if (window.initCarpoolModule) window.initCarpoolModule();
         if (window.initSafetyModule) window.initSafetyModule();
         if (window.initSocialModule) window.initSocialModule();
+        if (window.initPeopleSearchModule) window.initPeopleSearchModule();
         if (window.initTrackingModule) window.initTrackingModule();
         if (window.initTrailheadPicker) window.initTrailheadPicker();
         if (window.initStorico) window.initStorico();
@@ -345,6 +346,7 @@ function setupNavigation() {
                 "backpack": "Zaino Intelligente Checklist",
                 "safety": "Sicurezza & Mesh Simulator",
                 "social": "Tribù, Recensioni & Squadre",
+                "people-search": "Cerca Persone",
                 "user-profile": "Profilo"
             };
             sectionTitle.textContent = prettyNames[targetId] || "Camoscio";
@@ -449,6 +451,9 @@ function triggerSectionRender(sectionId) {
                 break;
             case "social":
                 if (window.renderSocialModule) window.renderSocialModule();
+                break;
+            case "people-search":
+                if (window.renderPeopleSearchModule) window.renderPeopleSearchModule();
                 break;
         }
     });

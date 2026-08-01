@@ -44,7 +44,13 @@ o ne arriva uno nuovo.
       - PUNTO 46: nuova scheda "I Tuoi Annunci Auto" nel carpooling (si cerca in
         tutte le escursioni, non solo quella attiva; si puo' modificare e cancellare);
       - PUNTO 47: si puo' aggiungere un oggetto PERSONALE a mano (non solo
-        condiviso), e tasto "Conferma zaino" che controlla l'obbligatorio.
+        condiviso), e tasto "Conferma zaino" che controlla l'obbligatorio;
+      - PUNTO 51 (idea nuova, non dettata prima - fatta con Plan Mode): voce
+        "Cerca Persone" in barra laterale, sotto Tribu' & Squadre. La ricerca
+        parte dopo 4 lettere scritte (confermato con Denis prima di scrivere
+        codice, la frase originale era ambigua). Completa il punto 50: prima
+        si vedeva il profilo di un altro utente solo trovandolo per caso, ora
+        si puo' cercare per nome.
     NESSUNA ROTTA SERVER NUOVA in tutta la sessione: ogni volta il permesso o il
     dato c'era gia', mancava solo l'interfaccia - verificato nel codice ogni volta
     prima di scrivere.

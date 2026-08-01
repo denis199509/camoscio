@@ -346,6 +346,10 @@
                     <i data-lucide="users"></i>
                     <span>Tribù & Squadre</span>
                 </button>
+                <button class="nav-btn" data-target="people-search" id="btn-nav-people-search">
+                    <i data-lucide="search"></i>
+                    <span>Cerca Persone</span>
+                </button>
             </nav>
 
             <div class="sidebar-footer">
@@ -1621,6 +1625,25 @@
                     </div>
                 </section>
 
+                <!-- Ricerca persone - chiesta da Denis in sessione (01/08/2026), non in
+                     cose_da_fare.txt. Filtro client-side su window.CamoscioState.users (gia'
+                     l'elenco completo, nessuna rotta nuova): vedi public/js/peoplesearch.js.
+                     La ricerca parte al quarto carattere scritto (confermato con Denis,
+                     esempio "Dani" -> "DaniWoll"). -->
+                <section id="people-search" class="page-section">
+                    <div class="glass-card">
+                        <h4><i data-lucide="search"></i> Cerca Persone</h4>
+                        <p class="small text-muted">Scrivi il nome utente di una persona (es. DaniWoll).</p>
+                        <div class="trailhead-search-row">
+                            <div class="trailhead-search-field">
+                                <i data-lucide="search"></i>
+                                <input type="text" id="people-search-input" autocomplete="off" maxlength="60" placeholder="Es. DaniWoll">
+                            </div>
+                        </div>
+                        <div id="people-search-results" class="hike-carpools-list"></div>
+                    </div>
+                </section>
+
                 <!-- Pagina profilo di UN ALTRO utente - non richiesta in cose_da_fare.txt,
                      chiesta da Denis in sessione (01/08/2026). Non ha una voce nella barra
                      laterale: si apre cliccando un nome/avatar altrove nel sito (vedi
@@ -1834,6 +1857,7 @@
     <script src="js/badges.js"></script>
     <script src="js/personal-badges.js"></script>
     <script src="js/userprofile.js"></script>
+    <script src="js/peoplesearch.js"></script>
     <script src="js/storico.js"></script>
     <!-- Punto 26: permessi di posizione e puntino blu. Prima di map.js, che gli si iscrive
          per disegnare il puntino, e di tracking.js, che gli passa i propri fix GPS. -->

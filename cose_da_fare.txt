@@ -1552,3 +1552,45 @@ e un avviso che la pagina e' in aggiornamento - il resto lo decide lui in seguit
       "Nessun badge conquistato per ora" perche' non ne ha. Tornato alla pagina
       Badge normale dopo: nessuna regressione, stessi conteggi di prima. Nessun
       errore in console durante tutta la prova.
+
+--- CERCA PERSONE ---
+
+51) [FATTO 2026-08-01] Un tasto "Cerca" (per persone), sotto Tribu' & Squadre in
+barra laterale, icona a lente di ingrandimento. Cliccandolo si apre una pagina con
+una barra di ricerca: scrivendo il nome della persona compare sotto, e la ricerca
+parte gia' dopo 4 lettere scritte. Esempio dato: "Dani" fa gia' comparire "DaniWoll".
+   E' il completamento naturale del punto 50 (pagina profilo): prima si poteva
+   *vedere* il profilo di un altro utente solo cliccando il suo nome dove compariva
+   gia' (scheda escursione); mancava un modo di *trovarlo* a partire dal solo nome.
+   -> FATTO. Nuova voce "Cerca Persone" in barra laterale, nuova sezione con una
+      barra di ricerca (stesso componente gia' usato per la scelta del punto di
+      partenza e per il meteo) e un elenco di risultati sotto.
+      NESSUNA ROTTA NUOVA SUL SERVER: window.CamoscioState.users e' gia' l'elenco
+      COMPLETO di tutti gli utenti (GET /api/users, nessun filtro lato server),
+      ricaricato ad ogni cambio di sezione. E' un filtro sui dati gia' in memoria,
+      stessa idea del filtro "Obiettivo di Allenamento" gia' esistente nella pagina
+      Escursioni (nessun ritardo artificiale: qui non c'e' nessuna rete di mezzo).
+      LA SOGLIA DI 4 LETTERE e' stata chiesta esplicitamente a Denis prima di
+      scrivere codice, perche' la frase originale era ambigua (poteva voler dire
+      "aspetta 4 caratteri" o "aspetta 4 risultati trovati") - confermato: 4
+      caratteri scritti, come nell'esempio "Dani".
+      SI CERCA SOLO SU USERNAME: nome e cognome veri sono campi sempre privati
+      (ALWAYS_PRIVATE_FIELDS in routes/users.js) e non arrivano mai al browser per
+      un utente diverso da se stessi - non c'e' un'alternativa su cui cercare.
+      Corrispondenza parziale ovunque nel nome (non solo all'inizio): gli username
+      reali sono spesso due parole ("Luca TrailRunner"), e limitarsi all'inizio
+      avrebbe reso introvabile la parte piu' riconoscibile.
+      SE STESSI ESCLUSI dai risultati (stesso identico principio gia' usato per
+      l'elenco di chi si puo' invitare in una squadra): cercare se stessi non
+      serve, "Il Tuo Profilo" esiste gia'.
+      ACCOUNT DEMO INCLUSI nella ricerca: non risultava nessun punto del sito che
+      li escluda dagli elenchi di persone, quindi nessun motivo per farlo qui.
+      Ogni risultato e' cliccabile (avatar e nome) e porta alla pagina profilo
+      del punto 50 - la stessa identica funzione, nessun codice duplicato.
+      PROVATO DAL VIVO (account demo Marco Alpinista, server locale): "Dan" (3
+      lettere) mostra l'invito a scrivere di piu'; "Dani" (4) mostra "DaniWoll";
+      "Alpi" non mostra "Marco Alpinista" (si esclude da solo); "Runner" (non
+      l'inizio del nome) mostra "Luca TrailRunner", confermando sia la
+      corrispondenza parziale sia che gli account demo compaiono; cliccato un
+      risultato -> aperta la sua pagina profilo correttamente. Nessun errore in
+      console.
