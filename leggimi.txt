@@ -1,6 +1,6 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-07-30
+Aggiornato: 2026-08-01
 ===================================================================
 
 QUESTO FILE DICE SOLO UNA COSA: a che punto siamo adesso e da dove si ricomincia.
@@ -37,17 +37,11 @@ o ne arriva uno nuovo.
     ORA TUTTI E TRE GLI ACCOUNT REALI SONO CONFERMATI, quindi tutti possono usare il
     recupero password - che era l'unico motivo per cui la conferma esiste.
 
->>> PRIMA COSA DA FARE, decisa da Denis il 2026-07-29 e ANCORA DA FARE:
-    METTERE IL VAULT SU GITHUB, in un repository PRIVATO e separato. "Privato" e' gia'
-    stato scelto da lui: non e' una domanda da rifargli.
-    Perche': il vault e' la fonte principale del progetto ma sta solo su disco dentro
-    OneDrive, ed e' l'unica cosa senza storia delle versioni - un errore di scrittura li'
-    non si annulla con un commit.
-    Perche' NON dentro camoscio: questo repository e' pubblico, e una cartella dentro un
-    repo pubblico e' pubblica. Il controllo del contenuto e' gia' stato fatto (nessuna
-    credenziale, nessun numero, nessuna email; ci sono pero' il nome del secondo account
-    reale e i nomi di cluster e utente del database). I dettagli stanno in
-    ../camoscio memoria/04-Da-Fare.md.
+>>> CHIUSO IL 2026-08-01, NON VA RIAPERTO: il vault e' su GitHub in un repository
+    PRIVATO separato (github.com/denis199509/Camoscio-memoria). Privacy verificata
+    con una chiamata anonima all'API (risponde 404). Push fatto senza frizioni
+    (Git Credential Manager di Windows ha riusato la sessione gia' autorizzata per
+    camoscio). Dettagli in ../camoscio memoria/04-Da-Fare.md.
 
 >>> COSA E' SUCCESSO IL 30/07, in breve (per esteso: punto 49 di cose_da_fare.txt).
     Segnalazione arrivata da una SECONDA PERSONA che usa il sito: "il tasto della
