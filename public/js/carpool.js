@@ -40,6 +40,9 @@ async function renderCarpoolModule() {
     // Popola select escursioni nel form offerta passaggi
     populateHikeSelects();
 
+    // Punto 46: i propri annunci, su TUTTE le escursioni - non solo quella attiva.
+    renderMyCarpoolOffers();
+
     if (!currentHike) return;
 
     // Rileva e disegna gli abbinamenti di carpooling e la privacy
@@ -48,6 +51,98 @@ async function renderCarpoolModule() {
     // Disegna la lista dei conducenti attivi per l'escursione corrente
     renderDriversList(currentHike);
 }
+
+// Punto 46 di cose_da_fare.txt: "il mio annuncio non lo trovo piu' e non posso
+// modificarlo". Cerca in TUTTE le escursioni (non solo quella attiva) dove l'utente
+// e' conducente, cosi' i suoi annunci si ritrovano in un posto solo invece che
+// aprendo escursione per escursione a caso.
+function renderMyCarpoolOffers() {
+    const box = document.getElementById("my-carpool-offers-list");
+    if (!box) return;
+
+    const db = window.CamoscioState;
+    const mieOfferte = db.hikes
+        .filter(h => h.carpool && h.carpool.drivers)
+        .map(h => ({ hike: h, driver: h.carpool.drivers.find(d => d.userId === db.currentUser.id) }))
+        .filter(o => o.driver);
+
+    box.innerHTML = "";
+    if (mieOfferte.length === 0) {
+        box.innerHTML = `<div class="text-muted small italic text-center py-3">Non hai ancora offerto nessun passaggio. Usa il modulo qui sotto.</div>`;
+        return;
+    }
+
+    mieOfferte.forEach(({ hike, driver }) => {
+        const numPasseggeri = (driver.passengers || []).length;
+        const item = document.createElement("div");
+        item.className = "carpool-group-item";
+        item.innerHTML = `
+            <div class="carpool-group-header">
+                <strong>${escapeHtml(hike.title)}</strong>
+                <span>${numPasseggeri}/${driver.seats} posti occupati</span>
+            </div>
+            <div class="text-muted small">Partenza da: <b>${escapeHtml(driver.departureCity)}</b></div>
+            <div style="display:flex; justify-content: flex-end; gap:8px; margin-top:8px;">
+                <button class="btn btn-sm btn-secondary" onclick="editMyCarpoolOffer('${hike.id}')">Modifica</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteMyCarpoolOffer('${hike.id}')">Cancella annuncio</button>
+            </div>
+        `;
+        box.appendChild(item);
+    });
+}
+
+// Precompila il modulo "Offri un Passaggio" coi dati gia' pubblicati per
+// quell'escursione, cosi' modificarli vuol dire cambiare un numero e ripremere
+// invio - non riscrivere tutto daccapo. submitCarpoolOffer() sostituisce gia' da
+// solo l'annuncio precedente dello stesso utente sulla stessa escursione.
+window.editMyCarpoolOffer = function(hikeId) {
+    const db = window.CamoscioState;
+    const hike = db.hikes.find(h => h.id === hikeId);
+    if (!hike || !hike.carpool || !hike.carpool.drivers) return;
+    const driver = hike.carpool.drivers.find(d => d.userId === db.currentUser.id);
+    if (!driver) return;
+
+    document.getElementById("offer-hike-select").value = hikeId;
+    document.getElementById("offer-city").value = driver.departureCity;
+    document.getElementById("offer-seats").value = driver.seats;
+    document.getElementById("offer-distance").value = driver.distanceKm || 120;
+
+    document.getElementById("offer-carpool-form").scrollIntoView({ behavior: "smooth", block: "center" });
+};
+
+// Cancella il proprio annuncio. Se ha gia' dei passeggeri a bordo, avvisa prima:
+// sparirebbe il passaggio a chi ci contava, senza nessun preavviso a loro.
+window.deleteMyCarpoolOffer = async function(hikeId) {
+    const db = window.CamoscioState;
+    const hike = db.hikes.find(h => h.id === hikeId);
+    if (!hike || !hike.carpool || !hike.carpool.drivers) return;
+    const driver = hike.carpool.drivers.find(d => d.userId === db.currentUser.id);
+    if (!driver) return;
+
+    const numPasseggeri = (driver.passengers || []).length;
+    const messaggio = numPasseggeri > 0
+        ? `Hai ${numPasseggeri} passeggero${numPasseggeri > 1 ? 'i' : ''} a bordo: cancellando l'annuncio resterebbero senza passaggio, senza nessun avviso. Cancellare comunque?`
+        : "Cancellare questo annuncio?";
+    const conferma = await window.showConfirmModal(messaggio);
+    if (!conferma) return;
+
+    hike.carpool.drivers = hike.carpool.drivers.filter(d => d.userId !== db.currentUser.id);
+
+    try {
+        await fetch(`/api/hikes/${hikeId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ carpool: hike.carpool })
+        });
+
+        await refreshState();
+        renderCarpoolModule();
+        window.showToast("Annuncio cancellato.", "success");
+    } catch (e) {
+        console.error("Errore nel cancellare l'annuncio:", e);
+        window.showToast("Impossibile contattare il server. Riprova.", "error");
+    }
+};
 
 // Popola la select delle escursioni disponibili per cui offrire/cercare passaggi
 function populateHikeSelects() {

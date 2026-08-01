@@ -63,9 +63,16 @@ o ne arriva uno nuovo.
     fatto un'escursione insieme. Nessuna rotta nuova sul server (leggevano gia'
     dati/timbri di un altro utente). Dettagli in ../camoscio memoria/03-Decisioni-Architetturali.md.
 
->>> DA DOVE SI CONTINUA COL LAVORO VERO. Fatti 44, 41, 40, 50. L'ordine consigliato
-    in fondo a cose_da_fare.txt (settima lista) continua con PUNTO 46, poi 47 e 43
-    (43 e 44 vanno fatti vicini, quindi resta un candidato forte).
+>>> PUNTO 46 FATTO IL 2026-08-01: nuova scheda "I Tuoi Annunci Auto" nella pagina
+    Carpooling - cerca in TUTTE le escursioni, non solo quella attiva. "Modifica"
+    precompila il modulo esistente, "Cancella annuncio" lo toglie (avvisa prima se
+    ci sono gia' passeggeri a bordo). Nessuna rotta nuova: il permesso di
+    modificare/cancellare la PROPRIA voce in carpool.drivers c'era gia' sul
+    server, mancava solo l'interfaccia.
+
+>>> DA DOVE SI CONTINUA COL LAVORO VERO. Fatti 44, 41, 40, 50, 46. L'ordine
+    consigliato in fondo a cose_da_fare.txt (settima lista) continua con PUNTO 47,
+    poi 43 (43 e 44 vanno fatti vicini, quindi resta un candidato forte).
     CI SONO ANCHE il PUNTO 39 (mappa topografica: e' un cambio di MAPPA DI BASE, non
     un ritocco, e vuole due correzioni obbligatorie alla mappa offline) e il PUNTO 42b
     (quante volte su una vetta: non serve piu' nessun raggio), che dal 29/07 non sono

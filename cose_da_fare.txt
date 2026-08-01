@@ -1279,7 +1279,7 @@ inseriamo noi.
 
 --- CARPOOLING ---
 
-46) [DA FARE] L'utente ha pubblicato la disponibilita' della propria auto per il
+46) [FATTO 2026-08-01] L'utente ha pubblicato la disponibilita' della propria auto per il
 giorno che gli interessa, ma il suo annuncio non lo trova piu' e non puo'
 modificarlo.
    VERIFICATO NEL CODICE: gli annunci stanno DENTRO l'escursione
@@ -1290,6 +1290,30 @@ modificarlo.
    mie escursioni") e nella terza sessione del 2026-07-27 per i progetti, che non
    si ritrovavano. La strada e' segnata: le cose proprie devono ritrovarsi tutte in
    un posto solo.
+   -> FATTO. Nuova scheda "I Tuoi Annunci Auto" nella pagina Carpooling, sopra il
+      modulo per offrire un passaggio: cerca in TUTTE le escursioni (non solo
+      quella attiva) dove l'utente e' conducente, mostrando titolo, posti
+      occupati e citta' di partenza per ognuna, con due tasti.
+      "Modifica" precompila il modulo "Offri un Passaggio" gia' esistente coi
+      dati dell'annuncio (escursione, citta', posti, distanza): modificarlo vuol
+      dire cambiare un numero e ripremere invio, non riscrivere tutto daccapo.
+      submitCarpoolOffer() gia' sostituiva da sola l'annuncio precedente dello
+      stesso utente sulla stessa escursione - non e' servita nessuna funzione
+      nuova di salvataggio, solo la precompilazione.
+      "Cancella annuncio" toglie l'offerta. Se ci sono gia' passeggeri a bordo
+      avvisa PRIMA che sparirebbero senza preavviso, invece di cancellare muto:
+      la stessa attenzione gia' avuta al punto 31 per lo storico delle uscite.
+      NESSUNA ROTTA NUOVA: PUT /api/hikes/:id gia' permetteva a un non-creatore
+      di modificare/cancellare la PROPRIA voce in hike.carpool.drivers
+      (canNonCreatorEditCarpool in routes/hikes.js, verificato leggendo il
+      codice prima di scrivere) - il permesso c'era gia', mancava solo
+      l'interfaccia per usarlo.
+      PROVATO DAL VIVO (account demo Marco Alpinista, server locale, su un
+      annuncio gia' esistente nei dati demo): comparso nella nuova scheda;
+      "Modifica" ha precompilato tutto correttamente; cambiati i posti da 3 a 2
+      e ripubblicato, il numero si e' aggiornato nella scheda; "Cancella
+      annuncio" con conferma ha tolto l'annuncio, verificato ANCORA ASSENTE dopo
+      una ricarica completa della pagina. Nessun errore in console.
 
 --- ZAINO ---
 
@@ -1417,8 +1441,8 @@ poi le cose nuove.
  3. [FATTO 2026-08-01] PUNTO 40 (icona profilo -> pagina del profilo): l'icona porta
     alla card giusta, e foto/bio ora si possono modificare anche dopo la
     registrazione (confermato da Denis in sessione).
- 4. PUNTO 46 (i miei annunci di carpooling): stesso difetto gia' risolto due volte,
-    la strada e' segnata.
+ 4. [FATTO 2026-08-01] PUNTO 46 (i miei annunci di carpooling): stesso difetto gia'
+    risolto due volte, risolto anche qui.
  5. PUNTO 47 (zaino, aggiungere a mano): meta' c'e' gia'.
  6. PUNTO 43 (collegare un progetto o una traccia a un'escursione): e' il piu'
     utile dei lavori grossi, e va fatto SUBITO DOPO il 44 - e' quello che
