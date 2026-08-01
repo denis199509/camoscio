@@ -1466,7 +1466,13 @@ poi le cose nuove.
       - punto 42: cos'e' una "zona" (una catena montuosa? un raggio in km? una
         regione?) e quanti livelli vuole;
       - punto 39: cosa non gli piace nella resa dei sentieri, guardando lo schermo
-        insieme.
+        insieme;
+      - punto 53: se "trovare facilmente le escursioni proposte da altri" e' gia'
+        risolto (la pagina Escursioni mostra gia' tutte le escursioni di tutti, con
+        un badge di idoneita' per ognuna - vedi DECIMA LISTA) o se intende qualcosa
+        di diverso, come dei segnaposto su una mappa vera;
+      - punto 56: cos'e' davvero la "terza possibilita'" del car-split, che sembra
+        sovrapporsi a quanto gia' fatto oggi al punto 46 (vedi DECIMA LISTA).
  1. [FATTO 2026-08-01] PUNTO 44 (tempo CAI senza traccia): oggi mostra un numero che
     sembra una misura e non lo e'. E' il piu' veloce di tutti e toglie una bugia
     dallo schermo.
@@ -1488,6 +1494,21 @@ poi le cose nuove.
     nuove, nessuna delle due corregge qualcosa di rotto.
  9. PUNTO 42 (zona di competenza calcolata), dopo la risposta alla domanda 0.
 10. ESTETICA e responsive delle sezioni ancora non adattate al telefono.
+11. PUNTO 52 (bug del tasto indietro nella registrazione, vedi DECIMA LISTA): e' un
+    difetto che blocca un utente NUOVO al primissimo contatto col sito, prima
+    ancora che possa provare qualunque altra cosa - viene prima di ogni rifinitura.
+12. PUNTO 54 (modificare un'escursione gia' creata, vedi DECIMA LISTA): il lato
+    server e' gia' pronto (PUT /api/hikes/:id accetta gia' i campi giusti), resta
+    solo l'interfaccia - poco lavoro per un buco reale.
+13. PUNTO 57 (badge personale in cima alla pagina Badge, vedi DECIMA LISTA):
+    nessuna ambiguita', riusa quasi tutto cio' che esiste gia' dal punto 50.
+14. PUNTO 53 e PUNTO 56 (vedi DECIMA LISTA): PRIMA la risposta alla domanda 0 -
+    entrambi potrebbero essere gia' in gran parte risolti da oggi (rispettivamente
+    dalla pagina Escursioni e dal punto 46), e stimare il lavoro prima di sapere
+    cosa manca davvero sarebbe uno spreco.
+15. PUNTO 55 (pagina escursione + chat di gruppo, vedi DECIMA LISTA): il piu'
+    grande dei sei punti nuovi, una pagina per escursione PIU' una messaggistica
+    mai esistita prima - va per ultimo tra questi, e fatto con calma.
 
 =====================================================================
 NONA LISTA (2026-08-01) - idea nuova di Denis in sessione, non dettata prima.
@@ -1594,3 +1615,106 @@ parte gia' dopo 4 lettere scritte. Esempio dato: "Dani" fa gia' comparire "DaniW
       corrispondenza parziale sia che gli account demo compaiono; cliccato un
       risultato -> aperta la sua pagina profilo correttamente. Nessun errore in
       console.
+
+=====================================================================
+DECIMA LISTA (2026-08-01) - sei punti dettati da Denis in chiusura di sessione,
+per una sessione futura. NESSUNO IMPLEMENTATO ORA: richiesta esplicita di Denis
+("per adesso aggiorna solo i file... non implementare"). Ogni punto qui sotto ha
+solo la verifica di sola lettura fatta oggi, zero righe di codice cambiate.
+=====================================================================
+
+--- REGISTRAZIONE: BUG DEL TASTO INDIETRO ---
+
+52) [DA FARE] Durante la registrazione, un amico di Denis ha scelto una foto che
+superava il limite di peso; cliccando il tasto indietro per sceglierne un'altra,
+il sistema e' tornato completamente alla pagina iniziale, dovendo rifare
+l'iscrizione da capo.
+   VERIFICATO NEL CODICE: Denis ha detto "fase 6", ma grep su data-step in
+   public/index.html conferma che il campo foto e' sulla FASE 4 ("4. Profilo
+   pubblico"), non la 6 - discrepanza da segnalare e riprodurre guardando la fase
+   giusta, non quella riportata.
+   L'handler del tasto indietro (public/js/auth.js: currentWizardStep =
+   Math.max(1, currentWizardStep - 1)) da solo sposta solo lo step corrente, non
+   tocca lo stato di autenticazione: non basta a spiegare un reset completo alla
+   pagina di login. LA CAUSA VERA NON E' STATA TROVATA in questa sessione - va
+   riprodotta dal vivo (foto sopra 1,5 MB, poi tasto indietro, sulla fase 4) prima
+   di correggere alla cieca.
+
+--- TROVARE LE ESCURSIONI DEGLI ALTRI ---
+
+53) [DA FARE] Denis: "Per una qualsiasi utente quanto e' facile trovare
+l'escursione che ho proposto io? [...] Un utente qualsiasi apre mappa Escursioni
+e li dentro vede tutte le escursioni programmate [...] Daniwoll entra nella
+mappa Escursioni e trova la mia escursione proposta (sempre perche' rientra nei
+parametri dell'escursione e della sua preparazione). Cosi' viene piu' facile
+trovare escursioni compatibili."
+   VERIFICATO NEL CODICE: non esiste una sezione chiamata "Mappa Escursioni". La
+   sezione "Escursioni" (public/js/social.js: filteredHikes = db.hikes.filter(...),
+   filtro solo per difficolta'/tribu'/testo, MAI per creatore) mostra GIA' a
+   tutti gli utenti TUTTE le escursioni create da chiunque, ognuna col suo badge
+   di idoneita' per chi guarda (getEligibilityBadge) - gia', a conti fatti, il
+   comportamento descritto. La sezione "Mappa" che esiste davvero e' tutt'altro:
+   tracciamento GPS dal vivo (registrazione, SOS), non un elenco di escursioni.
+   DOMANDA APERTA PER DENIS (vedi domanda 0 in ORDINE CONSIGLIATO): il punto e'
+   gia' risolto - forse non aveva notato che "Escursioni" mostra anche quelle
+   proposte dagli altri, non solo le proprie - oppure vuole qualcosa di diverso,
+   dei segnaposto sulla mappa vera invece che una lista. Non si decide al posto
+   suo: va chiesto con un esempio pratico davanti.
+
+--- MODIFICARE UN'ESCURSIONE GIA' CREATA ---
+
+54) [DA FARE] Denis: "L'escursione una volta creata non c'e' modo di modificarla.
+Classico modo dei tre punti in alto a destra con scritta modifica. Permette di
+modificare l'escursione (schermata iniziale)."
+   VERIFICATO NEL CODICE: grep su editHike/hike-options/hike-menu/dropdown-menu/
+   kebab in social.js non trova nulla - l'interfaccia non esiste da nessuna
+   parte. Il lato server invece e' GIA' pronto: routes/hikes.js, PUT
+   /api/hikes/:id, distingue gia' con CREATOR_ONLY_FIELDS quali campi puo'
+   cambiare solo il creatore. Manca solo il tasto e il modulo, non la rotta.
+
+--- PAGINA ESCURSIONE E CHAT DI GRUPPO ---
+
+55) [DA FARE] Denis: "Una volta organizzato l'escursione quando qualcuno
+partecipa si deve aprire una pagina dell'escursione. Li abbiamo bisogno di una
+chat comune tra i partecipanti per organizzare le cose."
+   VERIFICATO NEL CODICE: nessuno schema di chat/messaggi esiste in models/.
+   server.js usa gia' "ws" (WebSocket) come dipendenza per il Mesh Network
+   Simulator - precedente utile per capire come collegare i messaggi in tempo
+   reale, ma per ora e' solo un punto di partenza, non un pezzo gia' pronto.
+   E' IL PIU' GRANDE dei sei punti di questa lista: una pagina nuova per
+   escursione PIU' un sistema di messaggistica mai esistito prima. Da fare con
+   calma e per intero, non a meta'.
+
+--- CARPOOLING: LA "TERZA POSSIBILITA'" ---
+
+56) [DA FARE] Denis: "Spesso succede che magari nella stessa escursione
+partecipiamo in piu' persone da varie parti d'Italia. Serve un tasto macchina
+disponibile. Se in un'escursione partecipiamo in 7 [...] basta uno che mette la
+macchina a disposizione [...]. Gli altri possono scegliere se usare la macchina
+disponibile oppure [...] venire con la sua [...] Quindi possibilita' di mettere
+la macchina a disposizione, possibilita' di usare la macchina a disposizione,
+possibilita' di usare la propria mettendola a disposizione."
+   VERIFICATO NEL CODICE: il punto 46 di questa stessa sessione ha gia'
+   costruito "metti la tua auto a disposizione" (hike.carpool.drivers) e la
+   scheda "I Tuoi Annunci Auto" per modificarla/cancellarla da qualunque
+   escursione. Le prime due possibilita' descritte da Denis sembrano gia'
+   coperte da li'.
+   DOMANDA APERTA PER DENIS (vedi domanda 0 in ORDINE CONSIGLIATO): cos'e'
+   esattamente la terza possibilita' ("usare la propria mettendola a
+   disposizione") che non sia gia' "mettere la macchina a disposizione"? Sembra
+   la stessa cosa vista da un'altra angolazione, ma non si tira a indovinare: va
+   chiesto con un esempio concreto davanti (magari proprio il caso dei 7
+   partecipanti, 3 da Roma e 4 da Pescara, che ha usato per spiegarlo).
+
+--- BADGE PERSONALE SULLA PAGINA BADGE ---
+
+57) [DA FARE] Denis: "Il badge personale deve essere visibile pure sulla pagina
+i miei badge. Deve comparire in alto, il primo badge riconosciuto."
+   VERIFICATO NEL CODICE: in public/index.html la sezione #badges comincia col
+   div #badges-summary (i contatori), prima di qualunque gruppo Cime/Rifugi -
+   "in alto" vuol dire prima di quel div o subito dopo, comunque prima dei
+   gruppi. Il catalogo (public/js/personal-badges.js) e il modo di mostrarlo
+   (public/js/userprofile.js, gia' costruiti oggi al punto 50) esistono gia':
+   qui serve solo richiamarli anche per l'utente collegato dentro badges.js,
+   non costruire nulla da zero. NESSUNA AMBIGUITA' REALE: pronto per essere
+   implementato appena si riprende il lavoro.

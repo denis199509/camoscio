@@ -65,6 +65,12 @@ o ne arriva uno nuovo.
     un ritocco) e il PUNTO 42b (quante volte su una vetta: non serve piu' nessun
     raggio), sbloccati dal 29/07. Denis non ha ancora scelto se deviare dall'ordine:
     GLIELO SI CHIEDE, non si decide per lui.
+    NUOVA LISTA IN ATTESA (decima, punti 52-57 in cose_da_fare.txt), dettata da Denis
+    a fine sessione il 01/08, SOLO REGISTRATA, NIENTE IMPLEMENTATO per sua richiesta
+    esplicita. PRIMA DI STIMARE LAVORO servono due risposte sue (vedi domanda 0 in
+    cose_da_fare.txt): se il punto 53 (trovare le escursioni altrui) non sia gia'
+    risolto dalla pagina Escursioni, e cos'e' davvero la "terza possibilita'" del
+    punto 56 (car-split) oltre a quanto gia' fatto oggi al punto 46.
 
 >>> STATO VERIFICATO A FINE SESSIONE (2026-08-01):
       - camoscio: albero di lavoro pulito, master allineato a origin/master (ultimo
