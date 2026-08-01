@@ -57,7 +57,7 @@ o ne arriva uno nuovo.
     ACCOUNT REALI: SONO 4, NON PIU' 3 (Manu er 5 lingue e Matteo Bi si sono
     aggiunti da soli). Non scrivere piu' un numero fisso da nessuna parte.
 
->>> DA DOVE SI CONTINUA COL LAVORO VERO. Fatti 44, 41, 40, 50, 46, 47. Delle sette
+>>> DA DOVE SI CONTINUA COL LAVORO VERO. Fatti 44, 41, 40, 50, 46, 47, 51. Delle sette
     liste resta solo il PUNTO 43 (collegare un progetto o una traccia vera a
     un'escursione - va vicino al 44, quindi e' un candidato forte), poi il PUNTO 37
     (Dead Man's Switch sul server, il pezzo grosso di sicurezza).
@@ -68,8 +68,8 @@ o ne arriva uno nuovo.
 
 >>> STATO VERIFICATO A FINE SESSIONE (2026-08-01):
       - camoscio: albero di lavoro pulito, master allineato a origin/master (ultimo
-        commit 99de061). Ogni punto chiuso oggi e' stato verificato sul file
-        DAVVERO SERVITO da Render dopo il push, non solo sulla home a 200;
+        commit a5fd21b, punto 51). Ogni punto chiuso oggi e' stato verificato sul
+        file DAVVERO SERVITO da Render dopo il push, non solo sulla home a 200;
       - camoscio memoria (vault): albero pulito, allineato al remoto privato
         github.com/denis199509/Camoscio-memoria;
       - database: 8 utenti (4 demo + 4 reali, tutti confermati), nessun token di
