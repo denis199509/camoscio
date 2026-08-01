@@ -1314,6 +1314,10 @@ modificarlo.
       e ripubblicato, il numero si e' aggiornato nella scheda; "Cancella
       annuncio" con conferma ha tolto l'annuncio, verificato ANCORA ASSENTE dopo
       una ricarica completa della pagina. Nessun errore in console.
+      RIPRISTINATO A FINE SESSIONE: la prova aveva cancellato per davvero
+      l'annuncio demo di Marco su "Ascesa al Corno Grande" - rimesso identico
+      a come si trovava (Roma, 3 posti, 260 km), per non lasciare la demo
+      diversa da come l'ho trovata.
 
 --- ZAINO ---
 

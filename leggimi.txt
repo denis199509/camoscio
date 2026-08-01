@@ -59,3 +59,22 @@ o ne arriva uno nuovo.
     un ritocco) e il PUNTO 42b (quante volte su una vetta: non serve piu' nessun
     raggio), sbloccati dal 29/07. Denis non ha ancora scelto se deviare dall'ordine:
     GLIELO SI CHIEDE, non si decide per lui.
+
+>>> STATO VERIFICATO A FINE SESSIONE (2026-08-01):
+      - camoscio: albero di lavoro pulito, master allineato a origin/master (ultimo
+        commit 99de061). Ogni punto chiuso oggi e' stato verificato sul file
+        DAVVERO SERVITO da Render dopo il push, non solo sulla home a 200;
+      - camoscio memoria (vault): albero pulito, allineato al remoto privato
+        github.com/denis199509/Camoscio-memoria;
+      - database: 8 utenti (4 demo + 4 reali, tutti confermati), nessun token di
+        reset/verifica in giro, 3 escursioni, 3 segnalazioni;
+      - RIPRISTINATO un dato demo: la prova del punto 46 (verificare che "Cancella
+        annuncio" funzioni sul serio) aveva cancellato per davvero l'annuncio auto
+        di Marco Alpinista su "Ascesa al Corno Grande". Rimesso identico a prima
+        (Roma, 3 posti, 260 km) per non lasciare la demo diversa da come l'ho
+        trovata;
+      - PROVE AUTOMATICHE (prove/*.js) NON rilanciate: nessun punto di oggi
+        toccava accessi, password o email (unica regola che le richiede), quindi
+        non serviva. Ogni punto e' stato verificato a mano nel browser, descritto
+        punto per punto in cose_da_fare.txt;
+      - nessun server locale acceso, nessun processo node rimasto.
