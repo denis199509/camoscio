@@ -393,6 +393,17 @@ function setupNavigation() {
             navigateTo(target);
         }
     });
+
+    // Punto 40 di cose_da_fare.txt: l'icona del profilo in alto a destra porta alla
+    // card "Il Tuo Profilo", che vive dentro la Dashboard (non e' una sezione a se').
+    const profileWidget = document.getElementById("btn-goto-profile");
+    if (profileWidget) {
+        profileWidget.addEventListener("click", () => {
+            navigateTo("dashboard");
+            const profileCard = document.querySelector(".profile-card");
+            if (profileCard) profileCard.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+    }
 }
 
 // Innesca il render corretto della sezione aperta

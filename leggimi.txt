@@ -31,22 +31,14 @@ o ne arriva uno nuovo.
 
 
 
->>> CHIUSO IL 2026-07-30, NON VA RIAPERTO: la persona del secondo account reale HA
-    CONFERMATO il suo indirizzo, entro un'ora dall'invio. Sul database risulta
-    emailVerified true e il token e' stato CONSUMATO, non e' scaduto.
-    ORA TUTTI E TRE GLI ACCOUNT REALI SONO CONFERMATI, quindi tutti possono usare il
-    recupero password - che era l'unico motivo per cui la conferma esiste.
-
 >>> CHIUSO IL 2026-08-01, NON VA RIAPERTO: il vault e' su GitHub in un repository
     PRIVATO separato (github.com/denis199509/Camoscio-memoria). Privacy verificata
-    con una chiamata anonima all'API (risponde 404). Push fatto senza frizioni
-    (Git Credential Manager di Windows ha riusato la sessione gia' autorizzata per
-    camoscio). Dettagli in ../camoscio memoria/04-Da-Fare.md.
+    con una chiamata anonima all'API (risponde 404). Dettagli in
+    ../camoscio memoria/04-Da-Fare.md.
 
->>> PUNTO 49 (30/07) E LE SUE LEZIONI: spostati da qui perche' ormai solo dettaglio
-    di cose gia' fatte, non piu' "da dove si riparte". Per esteso: punto 49 di
-    cose_da_fare.txt (racconto), ../camoscio memoria/07-Trappole-Tecniche.md
-    (le lezioni sul diagnosticare un guasto riferito da altri).
+>>> ACCOUNT REALI: SONO 4, NON PIU' 3 (controllato il 01/08/2026 su richiesta di
+    Denis). Non scrivere piu' un numero fisso da nessuna parte: cresce a ogni
+    registrazione. Tutti e quattro risultano emailVerified true.
 
 >>> PUNTO 44 FATTO IL 2026-08-01: tolto il tempo CAI finto sulle escursioni senza
     traccia. NON riprodotta la prova a 390px per un limite del tool di automazione
@@ -58,24 +50,18 @@ o ne arriva uno nuovo.
     (social.js) - tolti anche quelli, stesso motivo del 44: meglio niente che un
     distintivo congelato che nessun utente vero potrebbe piu' guadagnare.
 
->>> DA DOVE SI CONTINUA COL LAVORO VERO. Fatti 44 e 41. L'ordine consigliato in
-    fondo a cose_da_fare.txt continua con PUNTO 40, poi 46, 47 e 43 (43 e 44 vanno
-    fatti vicini, quindi il 43 resta un candidato forte quando ci si arriva).
+>>> PUNTO 40 PARZIALE IL 2026-08-01: il riquadro utente in alto a destra ora porta
+    alla Dashboard e scorre fino a "Il Tuo Profilo". RESTA APERTO: foto e bio si
+    possono impostare SOLO in registrazione, dopo non c'e' nessuna schermata per
+    cambiarle (il backend le accetta gia', manca solo l'interfaccia). DA CHIEDERE
+    A DENIS se la vuole prima di costruirla: la foto profilo e' gia' la voce piu'
+    pesante del database.
+
+>>> DA DOVE SI CONTINUA COL LAVORO VERO. Fatti 44, 41, 40 (quest'ultimo a meta').
+    L'ordine consigliato in fondo a cose_da_fare.txt continua con PUNTO 46, poi 47
+    e 43 (43 e 44 vanno fatti vicini, quindi resta un candidato forte).
     CI SONO ANCHE il PUNTO 39 (mappa topografica: e' un cambio di MAPPA DI BASE, non
     un ritocco, e vuole due correzioni obbligatorie alla mappa offline) e il PUNTO 42b
     (quante volte su una vetta: non serve piu' nessun raggio), che dal 29/07 non sono
     piu' bloccati. Denis non ha ancora scelto se deviare dall'ordine: GLIELO SI CHIEDE,
     non si decide per lui.
-
->>> STATO VERIFICATO A FINE SESSIONE (2026-07-30):
-      - albero di lavoro pulito, master allineato a origin/master. La correzione della
-        fascia e' il commit 31df68d, PUBBLICATO su richiesta di Denis ("manda online").
-        Deploy verificato sul file DAVVERO SERVITO da Render (arrivato in ~45 secondi):
-        identico al locale a parte i fine riga, e la chiamata anticipata sta alla riga
-        164, prima di "await initApp()" alla 167. Una home a 200 non l'avrebbe provato;
-      - sito online: home 200, e l'invio email risulta configurato e sano;
-      - database: 7 utenti (4 demo + 3 reali), TUTTI E TRE I REALI CONFERMATI, nessun
-        residuo di prova, nessun token in giro;
-      - 182 controlli automatici rilanciati dopo la modifica, tutti passati:
-        38 (browser verifica) + 34 (API verifica) + 53 (punto 7) + 57 (browser punto 7);
-      - nessun server locale acceso, nessun processo node rimasto.

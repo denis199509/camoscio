@@ -1072,13 +1072,30 @@ visiva dei sentieri sulla mappa.
 
 --- PROFILO ---
 
-40) [DA FARE] L'icona del profilo in alto a destra deve aprire la pagina del
+40) [PARZIALE 2026-08-01] L'icona del profilo in alto a destra deve aprire la pagina del
 proprio profilo. Li' dentro: cambio password, cambiare/caricare la foto profilo,
 cambiare la bio.
    GIA' FATTO IN PARTE: la scheda "Il Tuo Profilo" esiste e il CAMBIO PASSWORD c'e'
    gia' dentro (fatto col punto 7 il 2026-07-28, id change-password-section).
    MANCA: che l'icona in alto a destra ci porti, e verificare se foto e bio si
    possono gia' modificare o solo vedere.
+   -> FATTO: il riquadro utente in alto a destra (avatar+nome+reputazione,
+      #btn-goto-profile) ora porta alla Dashboard e scorre fino alla card "Il Tuo
+      Profilo" (public/js/app.js, dentro setupNavigation - riusa la stessa
+      navigateTo() gia' usata dalla barra laterale, nessuna funzione nuova).
+      Non esiste una "pagina profilo" separata nel menu: la card e' gia' dentro la
+      Dashboard, quindi "portare al profilo" vuol dire portare li' e mostrarla,
+      non creare una sezione nuova.
+      VERIFICATO IL SECONDO PUNTO, e la risposta e' un buco vero: foto profilo e bio
+      si possono impostare SOLO in registrazione (public/js/auth.js, campi reg-bio e
+      la foto del wizard). DOPO la registrazione non esiste NESSUNA schermata per
+      cambiarle - non e' "difficile da trovare", proprio non c'e'. Chi sbaglia a
+      caricare una foto o vuole aggiornare la bio non puo' farlo da solo.
+      QUESTO PUNTO RESTA APERTO PER LA PARTE FOTO/BIO: costruire l'editing non era
+      la richiesta di oggi (il testo diceva "verificare", non "aggiungere"), e la
+      foto profilo e' gia' la voce piu' pesante del database (fino a 1,5 MB l'una,
+      misurato al punto 15) - vale la pena chiedere a Denis se vuole quella
+      schermata prima di scriverla, non deciderlo da soli.
 
 41) [FATTO 2026-08-01 - ERA UNA RIMOZIONE] Togliere "Profilo verificato" (KYC). Non serve
 piu': l'email e' collegata al profilo e confermata (punto 34).
@@ -1375,7 +1392,9 @@ poi le cose nuove.
     dallo schermo.
  2. [FATTO 2026-08-01] PUNTO 41 (togliere il "Profilo verificato"): era una rimozione,
     fatta in poco.
- 3. PUNTO 40 (icona profilo -> pagina del profilo): meta' c'e' gia'.
+ 3. [PARZIALE 2026-08-01] PUNTO 40 (icona profilo -> pagina del profilo): l'icona ora
+    porta alla card giusta. Resta aperta la parte foto/bio, mai modificabili dopo
+    la registrazione - decisione da chiedere a Denis prima di costruirla.
  4. PUNTO 46 (i miei annunci di carpooling): stesso difetto gia' risolto due volte,
     la strada e' segnata.
  5. PUNTO 47 (zaino, aggiungere a mano): meta' c'e' gia'.
