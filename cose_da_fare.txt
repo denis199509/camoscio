@@ -1080,11 +1080,32 @@ cambiare la bio.
    MANCA: che l'icona in alto a destra ci porti, e verificare se foto e bio si
    possono gia' modificare o solo vedere.
 
-41) [DA FARE - E' UNA RIMOZIONE] Togliere "Profilo verificato" (KYC). Non serve
+41) [FATTO 2026-08-01 - ERA UNA RIMOZIONE] Togliere "Profilo verificato" (KYC). Non serve
 piu': l'email e' collegata al profilo e confermata (punto 34).
    DOVE STA: profile-kyc-section e il pulsante btn-trigger-kyc in
    public/index.html, piu' il distintivo current-user-kyc accanto al nome.
    Da togliere anche il campo sul modello utente, se non lo usa nient'altro.
+   -> FATTO. Tolti: la sezione con bottone e badge nella card "Il Tuo Profilo"
+      (public/index.html), il distintivo blu accanto al nome nell'intestazione, la
+      funzione triggerKycVerification (public/js/profile.js - l'OTP via SMS finto,
+      punto 41 storico), il campo kycVerified sul modello User e dalla whitelist
+      SELF_EDITABLE_FIELDS di routes/users.js.
+      "SE NON LO USA NIENT'ALTRO" - lo usava: il pallino blu sull'avatar di un
+      partecipante nella scheda escursione e il rombo 🔹 accanto al nome
+      dell'organizzatore (entrambi in public/js/social.js) leggevano lo stesso campo.
+      Tolti anche quelli: senza piu' un modo di diventare verificati, sarebbero
+      rimasti a mostrare per sempre lo stato congelato dei soli account demo, un
+      distintivo che nessun utente vero avrebbe mai potuto guadagnare ne' perdere -
+      lo stesso principio "meglio niente che qualcosa senza significato" del 44.
+      L'esperto locale (badge verde, stessa fila) NON e' stato toccato: e' un campo
+      diverso (localExpert), condivide solo il contenitore CSS .p-avatar.
+      Il modello utente NON ha richiesto nessuna migrazione: i documenti gia' salvati
+      con kycVerified continuano a esistere su MongoDB, Mongoose smette solo di
+      leggerlo (stesso principio gia' visto ai punti 18 e 24).
+      Verificato dal vivo nel browser (account demo Marco Alpinista, kycVerified:true
+      nei dati seed - quindi prima della modifica avrebbe mostrato sia il distintivo
+      sia il rombo): dopo la modifica nessuno dei due compare piu', l'esperto locale
+      resta visibile, nessun errore in console su un caricamento completo da zero.
 
 42) [DA FARE] La zona di competenza non deve essere scritta a mano ma CALCOLATA
 dalle tracce: 5 tracce in una zona = salita di livello, 30+ = livello massimo
@@ -1352,7 +1373,8 @@ poi le cose nuove.
  1. [FATTO 2026-08-01] PUNTO 44 (tempo CAI senza traccia): oggi mostra un numero che
     sembra una misura e non lo e'. E' il piu' veloce di tutti e toglie una bugia
     dallo schermo.
- 2. PUNTO 41 (togliere il "Profilo verificato"): e' una rimozione, si fa in poco.
+ 2. [FATTO 2026-08-01] PUNTO 41 (togliere il "Profilo verificato"): era una rimozione,
+    fatta in poco.
  3. PUNTO 40 (icona profilo -> pagina del profilo): meta' c'e' gia'.
  4. PUNTO 46 (i miei annunci di carpooling): stesso difetto gia' risolto due volte,
     la strada e' segnata.

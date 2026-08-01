@@ -31,7 +31,7 @@ const PRIVACY_GATED_FIELDS = ['bio', 'profilePhoto', 'interests', 'hikingLevel',
 // dover rincorrere ogni punto dell'interfaccia dove un avatar altrui viene mostrato.
 const SELF_EDITABLE_FIELDS = [
     'nome', 'cognome', 'username', 'trainingGoal', 'localExpert', 'homeCity',
-    'kycVerified', 'hikingLevel', 'interests', 'preferredDifficulty', 'geoPreferences',
+    'hikingLevel', 'interests', 'preferredDifficulty', 'geoPreferences',
     'profilePhoto', 'bio', 'emergencyContacts', 'geolocationConsent', 'privacySetting',
     'birthDate', 'ageRange'
 ];
@@ -88,7 +88,7 @@ router.get('/users/:id', requireAuth, async (req, res) => {
     }
 });
 
-// Aggiorna profilo utente (es. KYC, goal, localExpert, bio, interessi...) - SOLO il proprio profilo
+// Aggiorna profilo utente (es. goal, localExpert, bio, interessi...) - SOLO il proprio profilo
 router.put('/users/:id', requireAuth, async (req, res) => {
     if (req.params.id !== req.session.userId) {
         return res.status(403).json({ error: 'Puoi modificare solo il tuo profilo' });

@@ -294,7 +294,7 @@ function buildHikeCard(hike) {
         const isLocalExpert = pUser.localExpert && pUser.localExpert.active;
         const expertTitlePart = isLocalExpert ? ` — Esperto locale: ${escapeHtml(pUser.localExpert.area)}` : "";
         return `
-            <div class="p-avatar ${pUser.kycVerified ? 'verified' : ''} ${isLocalExpert ? 'local-expert' : ''}" title="${escapeHtml(pUser.username)} (Rep: ${pUser.reputation}%)${expertTitlePart}">
+            <div class="p-avatar ${isLocalExpert ? 'local-expert' : ''}" title="${escapeHtml(pUser.username)} (Rep: ${pUser.reputation}%)${expertTitlePart}">
                 ${pUser.avatar}
             </div>
         `;
@@ -353,7 +353,7 @@ function buildHikeCard(hike) {
     card.innerHTML = `
         <span class="badge badge-primary hike-difficulty-badge">${hike.difficulty}</span>
         <h4 style="color:#FFF; margin-bottom: 4px;">${escapeHtml(hike.title)}</h4>
-        <p class="small text-muted" style="margin-bottom: 8px;">Organizzato da: <b>${escapeHtml(creatorName)}</b> ${creator && creator.kycVerified ? '🔹' : ''}</p>
+        <p class="small text-muted" style="margin-bottom: 8px;">Organizzato da: <b>${escapeHtml(creatorName)}</b></p>
 
         <p class="small text-secondary" style="line-height:1.4; height: 60px; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(hike.description)}</p>
         

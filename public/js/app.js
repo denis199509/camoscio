@@ -450,13 +450,6 @@ function updateHeaderUserWidget() {
     document.getElementById("current-user-name").textContent = usr.username;
     document.getElementById("current-user-reputation").textContent = usr.reputation;
     document.getElementById("current-user-exp").textContent = `Livello: ${usr.experienceLevel}`;
-    
-    const kycBadge = document.getElementById("current-user-kyc");
-    if (usr.kycVerified) {
-        kycBadge.classList.remove("hidden");
-    } else {
-        kycBadge.classList.add("hidden");
-    }
 }
 
 // Aggiorna il contatore e la lista del centro notifiche
@@ -555,7 +548,7 @@ function renderDashboard() {
         window.updateDashboardSafetyCard();
     }
 
-    // Card Profilo: verifica KYC + Layer Esperto Locale
+    // Card Profilo: Layer Esperto Locale + cambio password
     renderProfileCard(usr);
 }
 
@@ -655,20 +648,8 @@ function setupEmailVerifyBanner() {
     if (window.lucide) lucide.createIcons();
 }
 
-// Aggiorna la card "Il Tuo Profilo" (verifica KYC, esperto locale)
+// Aggiorna la card "Il Tuo Profilo" (esperto locale, cambio password)
 function renderProfileCard(usr) {
-    const btnKyc = document.getElementById("btn-trigger-kyc");
-    const kycVerifiedBadge = document.getElementById("profile-kyc-verified-badge");
-    if (btnKyc && kycVerifiedBadge) {
-        if (usr.kycVerified) {
-            btnKyc.classList.add("hidden");
-            kycVerifiedBadge.classList.remove("hidden");
-        } else {
-            btnKyc.classList.remove("hidden");
-            kycVerifiedBadge.classList.add("hidden");
-        }
-    }
-
     const expertToggle = document.getElementById("local-expert-toggle");
     const expertArea = document.getElementById("local-expert-area");
     if (expertToggle && expertArea) {

@@ -43,44 +43,28 @@ o ne arriva uno nuovo.
     (Git Credential Manager di Windows ha riusato la sessione gia' autorizzata per
     camoscio). Dettagli in ../camoscio memoria/04-Da-Fare.md.
 
->>> COSA E' SUCCESSO IL 30/07, in breve (per esteso: punto 49 di cose_da_fare.txt).
-    Segnalazione arrivata da una SECONDA PERSONA che usa il sito: "il tasto della
-    conferma email non funziona, non arriva niente". IL TASTO NON ERA ROTTO.
-    LE DUE COSE DA PORTARSI VIA:
-      - il tasto NON SCADE. Le 24 ore sono la durata del link dentro l'email. E' un
-        equivoco che tornera' fuori: non c'e' niente da "riattivare";
-      - IL MODO PER SAPERLO SENZA INDOVINARE: ogni pressione crea un token sul
-        database, che dura 24 ore. Non ce n'era nessuno, e la sua sessione era aperta
-        da 11 ore. Quindi la richiesta al server non era mai partita. Il database sa
-        rispondere a "questo tasto e' stato premuto davvero?" - conviene chiederglielo
-        prima di leggere codice per mezz'ora.
-    L'email gli e' stata poi fatta partire da produzione, col via libera di Denis,
-    senza passare dalla fascia: "password dimenticata" su un indirizzo non confermato
-    manda l'email di CONFERMA. Strada che esisteva gia' e non era mai stata usata.
-
->>> DUE COSE DA NON RIPETERE, imparate il 30/07:
-    - AVEVO DETTO DI AVER RIPRODOTTO IL GUASTO, e non era vero: leggevo lo stato della
-      pagina troppo presto, quando la fascia non era ancora comparsa. La regola delle
-      prove ("si aspetta una condizione vera, mai un tempo fisso") vale anche quando si
-      indaga a mano, non solo quando si scrive una prova;
-    - la prima misura del miglioramento era rumorosa perche' cronometrava anche il
-      caricamento della pagina. Il numero giusto era lo SCARTO fra "sito visibile" e
-      "fascia comparsa": 1232 ms col codice vecchio, 0 ms con quello nuovo.
+>>> PUNTO 49 (30/07) E LE SUE LEZIONI: spostati da qui perche' ormai solo dettaglio
+    di cose gia' fatte, non piu' "da dove si riparte". Per esteso: punto 49 di
+    cose_da_fare.txt (racconto), ../camoscio memoria/07-Trappole-Tecniche.md
+    (le lezioni sul diagnosticare un guasto riferito da altri).
 
 >>> PUNTO 44 FATTO IL 2026-08-01: tolto il tempo CAI finto sulle escursioni senza
-    traccia (vedi cose_da_fare.txt per il dettaglio). Verificato dal vivo nel
-    browser, nessun errore in console; NON riprodotta la prova a 390px per un
-    limite del tool di automazione in questa sessione (vedi
-    ../camoscio memoria/07-Trappole-Tecniche.md).
+    traccia. NON riprodotta la prova a 390px per un limite del tool di automazione
+    in questa sessione (vedi ../camoscio memoria/07-Trappole-Tecniche.md).
 
->>> DA DOVE SI CONTINUA COL LAVORO VERO. L'ordine consigliato in fondo a
-    cose_da_fare.txt vale ancora: dopo il 44, PUNTO 41, poi 40, 46, 47 e 43. Il 43 e
-    il 44 vanno fatti vicini: sono due meta' dello stesso problema, quindi il 43 e'
-    un candidato forte per il prossimo, ma NON scelto al posto di Denis.
+>>> PUNTO 41 FATTO IL 2026-08-01 (era una rimozione): via "Profilo verificato"
+    (KYC) da card profilo, intestazione e modello User. Usava il campo anche il
+    pallino blu sull'avatar partecipante e il rombo accanto all'organizzatore
+    (social.js) - tolti anche quelli, stesso motivo del 44: meglio niente che un
+    distintivo congelato che nessun utente vero potrebbe piu' guadagnare.
+
+>>> DA DOVE SI CONTINUA COL LAVORO VERO. Fatti 44 e 41. L'ordine consigliato in
+    fondo a cose_da_fare.txt continua con PUNTO 40, poi 46, 47 e 43 (43 e 44 vanno
+    fatti vicini, quindi il 43 resta un candidato forte quando ci si arriva).
     CI SONO ANCHE il PUNTO 39 (mappa topografica: e' un cambio di MAPPA DI BASE, non
     un ritocco, e vuole due correzioni obbligatorie alla mappa offline) e il PUNTO 42b
     (quante volte su una vetta: non serve piu' nessun raggio), che dal 29/07 non sono
-    piu' bloccati. Denis non ha ancora scelto da quale ripartire: GLIELO SI CHIEDE,
+    piu' bloccati. Denis non ha ancora scelto se deviare dall'ordine: GLIELO SI CHIEDE,
     non si decide per lui.
 
 >>> STATO VERIFICATO A FINE SESSIONE (2026-07-30):

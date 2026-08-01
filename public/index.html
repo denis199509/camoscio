@@ -385,9 +385,6 @@
                         <div class="user-details">
                             <div class="user-name-row">
                                 <span id="current-user-name" class="font-bold">Caricamento...</span>
-                                <span id="current-user-kyc" class="kyc-badge" title="Profilo Verificato">
-                                    <i data-lucide="badge-check"></i>
-                                </span>
                             </div>
                             <div class="user-sub-details">
                                 <span class="reputation-text">Reputazione: <strong id="current-user-reputation">--</strong>%</span>
@@ -486,15 +483,9 @@
                                      Il conteggio vero dei timbri resta qui sopra e in "Timbri Vette". -->
                             </div>
 
-                            <!-- Card Profilo: verifica KYC + Layer Esperto Locale -->
+                            <!-- Card Profilo: Layer Esperto Locale + cambio password (punto 41: KYC tolta, non serve più). -->
                             <div class="glass-card profile-card">
                                 <h4><i data-lucide="user-check"></i> Il Tuo Profilo</h4>
-
-                                <div id="profile-kyc-section" class="profile-section">
-                                    <p class="small text-muted">Un profilo verificato aumenta la fiducia del gruppo, specialmente per le escursioni ad approvazione manuale.</p>
-                                    <button class="btn btn-sm btn-primary" id="btn-trigger-kyc">Verifica il tuo profilo (KYC Light)</button>
-                                    <span class="badge badge-green hidden" id="profile-kyc-verified-badge"><i data-lucide="badge-check"></i> Profilo Verificato</span>
-                                </div>
 
                                 <div class="profile-section local-expert-section">
                                     <p class="small text-muted">Se conosci bene una zona, proponiti come esperto locale informale per aiutare chi è meno pratico del posto.</p>

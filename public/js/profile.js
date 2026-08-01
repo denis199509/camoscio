@@ -2,13 +2,8 @@ function initProfileModule() {
     setupProfileCardEvents();
 }
 
-// Collega i pulsanti della card "Il Tuo Profilo" (verifica KYC, esperto locale)
+// Collega i pulsanti della card "Il Tuo Profilo" (esperto locale, cambio password)
 function setupProfileCardEvents() {
-    const btnKyc = document.getElementById("btn-trigger-kyc");
-    if (btnKyc) {
-        btnKyc.addEventListener("click", () => window.triggerKycVerification());
-    }
-
     const btnSaveExpert = document.getElementById("btn-save-local-expert");
     if (btnSaveExpert) {
         btnSaveExpert.addEventListener("click", saveLocalExpertStatus);
@@ -144,61 +139,6 @@ function formatHoursToMin(decimalHours) {
     const minutes = Math.round((decimalHours - hours) * 60);
     return `${hours}h ${minutes}m`;
 }
-
-// Procedura di Verifica KYC Light (Simulazione SMS)
-window.triggerKycVerification = async function() {
-    const usr = window.CamoscioState.currentUser;
-    if (!usr) return;
-
-    if (usr.kycVerified) {
-        window.showToast("Il tuo profilo è già verificato!", "info");
-        return;
-    }
-
-    const phoneNumber = await window.showPromptModal("Inserisci il tuo numero di cellulare per ricevere il codice di sicurezza (KYC Light):", "333-1234567");
-    if (!phoneNumber) return;
-
-    // Genera un codice OTP simulato a 4 cifre
-    const otpCode = Math.floor(1000 + Math.random() * 9000);
-
-    // Mostra il codice a schermo per simulare la ricezione dell'SMS sul telefono
-    await window.showAlertModal(`💬 [SMS Ricevuto al numero ${phoneNumber}]:\nIl tuo codice di verifica Camoscio è: ${otpCode}`, "Continua");
-
-    const userOtp = await window.showPromptModal("Digita il codice di verifica a 4 cifre ricevuto via SMS:");
-
-    if (userOtp === otpCode.toString()) {
-        try {
-            // Aggiorna sul server
-            const response = await fetch(`/api/users/${usr.id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ kycVerified: true })
-            });
-
-            if (response.ok) {
-                // Aggiorna lo stato locale
-                usr.kycVerified = true;
-
-                window.showToast("Congratulazioni! Il tuo profilo è stato verificato con successo. La spunta blu è ora attiva!", "success");
-
-                // Aggiorna widget superiore e dashboard
-                await refreshState();
-                updateHeaderUserWidget();
-
-                const activeSec = document.querySelector(".page-section.active");
-                if (activeSec && activeSec.id === "dashboard") {
-                    renderDashboard();
-                } else if (activeSec && activeSec.id === "hikes") {
-                    window.renderHikesList();
-                }
-            }
-        } catch(e) {
-            console.error("Errore durante il KYC:", e);
-        }
-    } else {
-        window.showToast("Codice errato. Verifica fallita.", "error");
-    }
-};
 
 // Calcola il badge idoneità escursione in base allo storico
 // Se l'utente ha affrontato dislivelli entro il 20% di tolleranza rispetto a quello dell'escursione, ha il badge d'idoneità

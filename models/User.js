@@ -24,7 +24,6 @@ const emergencyContactSchema = new mongoose.Schema({
 const userSchema = new mongoose.Schema({
     username: { type: String, required: true, unique: true, trim: true },
     reputation: { type: Number, default: 50 },
-    kycVerified: { type: Boolean, default: false },
     completedHikes: { type: Number, default: 0 },
     averagePaceUp: { type: Number, default: 350 },
     averagePaceDown: { type: Number, default: 500 },

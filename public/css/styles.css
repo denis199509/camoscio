@@ -375,17 +375,6 @@ h1, h2, h3, h4, h5, h6 {
     font-size: 0.9rem;
 }
 
-.kyc-badge {
-    color: var(--accent-blue);
-    display: inline-flex;
-}
-
-.kyc-badge i {
-    width: 14px;
-    height: 14px;
-    fill: var(--accent-blue-glow);
-}
-
 .user-sub-details {
     display: flex;
     gap: 8px;
@@ -1026,7 +1015,7 @@ h1, h2, h3, h4, h5, h6 {
     position: relative;
 }
 
-/* Card Profilo (KYC + Esperto Locale) */
+/* Card Profilo (Esperto Locale + cambio password) */
 .profile-section {
     padding-top: 14px;
     margin-top: 14px;
@@ -1193,19 +1182,7 @@ h1, h2, h3, h4, h5, h6 {
     cursor: pointer;
 }
 
-.p-avatar.verified::after {
-    content: '';
-    position: absolute;
-    bottom: -2px;
-    right: -2px;
-    width: 10px;
-    height: 10px;
-    background: var(--accent-blue);
-    border-radius: 50%;
-    border: 2px solid var(--bg-dark);
-}
-
-/* Badge esperto locale: angolo opposto al segno di verifica KYC, così i due possono coesistere */
+/* Badge esperto locale */
 .p-avatar.local-expert::before {
     content: '★';
     position: absolute;
