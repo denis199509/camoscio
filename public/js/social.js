@@ -264,9 +264,6 @@ function buildHikeCard(hike) {
     const creatorName = creator ? creator.username : "Escursionista";
     const isCreatorMe = hike.creatorId === currentUser.id;
 
-    // Calcola tempi (standard CAI vs Personalizzati)
-    const times = window.calculateHikeTimes(hike, currentUser);
-    
     // Verifica idoneità fisica
     const eligibility = window.getEligibilityBadge(hike, currentUser);
 
@@ -375,16 +372,8 @@ function buildHikeCard(hike) {
             </div>
         </div>
 
-        <div style="background: rgba(0,0,0,0.15); padding: 8px; border-radius: 8px; border: 1px solid var(--border-color); font-size: 0.8rem;">
-            <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
-                <span>Tempo CAI Standard:</span>
-                <strong>${times.standardText}</strong>
-            </div>
-            <div style="display:flex; justify-content:space-between; color:var(--accent-blue)">
-                <span>Il tuo Tempo Personalizzato:</span>
-                <strong>${times.customText}</strong>
-            </div>
-        </div>
+        <!-- PUNTO 44: nessun percorso reale collegato oggi (punto 43) => niente tempo finto. -->
+        <p class="small text-muted rp-nota-dislivello"><i data-lucide="info"></i><span>Tempo previsto non disponibile: per questa escursione non è ancora stato scelto un percorso reale, quindi non si può sapere quanto ci vorrà davvero. Dislivello e distanza qui sopra sono quelli indicati da chi l'ha organizzata.</span></p>
 
         <div class="tag-list">
             ${hike.tribeTags.map(t => `<span class="tag">${t}</span>`).join("")}

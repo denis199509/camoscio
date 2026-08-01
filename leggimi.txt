@@ -67,9 +67,16 @@ o ne arriva uno nuovo.
       caricamento della pagina. Il numero giusto era lo SCARTO fra "sito visibile" e
       "fascia comparsa": 1232 ms col codice vecchio, 0 ms con quello nuovo.
 
+>>> PUNTO 44 FATTO IL 2026-08-01: tolto il tempo CAI finto sulle escursioni senza
+    traccia (vedi cose_da_fare.txt per il dettaglio). Verificato dal vivo nel
+    browser, nessun errore in console; NON riprodotta la prova a 390px per un
+    limite del tool di automazione in questa sessione (vedi
+    ../camoscio memoria/07-Trappole-Tecniche.md).
+
 >>> DA DOVE SI CONTINUA COL LAVORO VERO. L'ordine consigliato in fondo a
-    cose_da_fare.txt vale ancora: PUNTO 44, poi 41, 40, 46, 47 e 43. Il 43 e il 44
-    vanno fatti vicini: sono due meta' dello stesso problema.
+    cose_da_fare.txt vale ancora: dopo il 44, PUNTO 41, poi 40, 46, 47 e 43. Il 43 e
+    il 44 vanno fatti vicini: sono due meta' dello stesso problema, quindi il 43 e'
+    un candidato forte per il prossimo, ma NON scelto al posto di Denis.
     CI SONO ANCHE il PUNTO 39 (mappa topografica: e' un cambio di MAPPA DI BASE, non
     un ritocco, e vuole due correzioni obbligatorie alla mappa offline) e il PUNTO 42b
     (quante volte su una vetta: non serve piu' nessun raggio), che dal 29/07 non sono

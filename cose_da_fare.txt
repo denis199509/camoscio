@@ -1161,7 +1161,7 @@ calcolano da soli.
    collegarlo a un'escursione non avrebbe riempito quei campi. Col punto 33 ce
    l'ha, e col punto 15 il sito sa gia' leggere un file .gpx.
 
-44) [DA FARE - VA INSIEME AL 43] Su un'escursione organizzata senza traccia il
+44) [FATTO 2026-08-01 - VA INSIEME AL 43] Su un'escursione organizzata senza traccia il
 sito mostra gia' il tempo CAI a confronto col proprio. Ma la via non e' ancora
 stata scelta: il sistema non puo' sapere quanto ci si mette.
    VERIFICATO: il tempo si calcola (public/js/social.js) dalla formula CAI su
@@ -1172,6 +1172,26 @@ stata scelta: il sistema non puo' sapere quanto ci si mette.
    33): meglio nessun numero che un numero che sembra una misura e non lo e'.
    Col punto 43 fatto, l'escursione CON un percorso collegato il tempo ce l'ha
    davvero, e allora si mostra.
+   -> FATTO. Tolto il confronto "Tempo CAI Standard / Il tuo Tempo Personalizzato"
+      dalla scheda escursione (public/js/social.js, buildHikeCard - unico punto in
+      cui si costruisce, condiviso da Escursioni e Le mie escursioni: la correzione
+      vale per entrambe da sola). Al suo posto una riga che dice perche' il numero
+      manca, stessa forma gia' usata al punto 33 per il dislivello oltre i 25 km
+      (classe CSS rp-nota-dislivello riusata cosi' com'e', per evitare lo stesso
+      trabocchetto del punto 18: display:flex su un paragrafo con dentro icona e
+      testo lo spezzerebbe in colonne su schermo stretto).
+      calculateHikeTimes() in public/js/profile.js NON e' stata toccata ne' tolta:
+      la formula resta giusta, serve di nuovo tale e quale appena il punto 43 da'
+      un dislivello/distanza VERI da un percorso collegato - e' il lavoro giusto
+      dopo, non da rifare.
+      Verificato dal vivo nel browser (account demo Marco Alpinista, server locale):
+      Escursioni e Le mie escursioni mostrano la nuova riga al posto dei due tempi
+      finti, dislivello/quota/distanza restano quelli dichiarati da chi organizza,
+      nessun errore in console.
+      NON riprodotta la controprova a 390px per un limite del tool di automazione
+      browser in questa sessione (il resize della finestra non veniva applicato,
+      verificato con window.innerWidth): il codice pero' riusa la classe CSS gia'
+      verificata a quella larghezza al punto 33, non ne introduce una nuova.
 
 --- SEGNALAZIONI SULLO STATO DEI SENTIERI ---
 
@@ -1329,8 +1349,9 @@ poi le cose nuove.
         regione?) e quanti livelli vuole;
       - punto 39: cosa non gli piace nella resa dei sentieri, guardando lo schermo
         insieme.
- 1. PUNTO 44 (tempo CAI senza traccia): oggi mostra un numero che sembra una misura
-    e non lo e'. E' il piu' veloce di tutti e toglie una bugia dallo schermo.
+ 1. [FATTO 2026-08-01] PUNTO 44 (tempo CAI senza traccia): oggi mostra un numero che
+    sembra una misura e non lo e'. E' il piu' veloce di tutti e toglie una bugia
+    dallo schermo.
  2. PUNTO 41 (togliere il "Profilo verificato"): e' una rimozione, si fa in poco.
  3. PUNTO 40 (icona profilo -> pagina del profilo): meta' c'e' gia'.
  4. PUNTO 46 (i miei annunci di carpooling): stesso difetto gia' risolto due volte,
