@@ -50,16 +50,15 @@ o ne arriva uno nuovo.
     (social.js) - tolti anche quelli, stesso motivo del 44: meglio niente che un
     distintivo congelato che nessun utente vero potrebbe piu' guadagnare.
 
->>> PUNTO 40 PARZIALE IL 2026-08-01: il riquadro utente in alto a destra ora porta
-    alla Dashboard e scorre fino a "Il Tuo Profilo". RESTA APERTO: foto e bio si
-    possono impostare SOLO in registrazione, dopo non c'e' nessuna schermata per
-    cambiarle (il backend le accetta gia', manca solo l'interfaccia). DA CHIEDERE
-    A DENIS se la vuole prima di costruirla: la foto profilo e' gia' la voce piu'
-    pesante del database.
+>>> PUNTO 40 FATTO IL 2026-08-01: il riquadro utente in alto a destra ora porta alla
+    Dashboard e scorre fino a "Il Tuo Profilo". VERIFICATO che foto e bio si
+    potessero impostare solo in registrazione - Denis ha chiesto di costruire
+    l'editor in sessione: fatto, nuova sezione nella card con foto, bio e tasto
+    Salva. Backend gia' pronto da prima (SELF_EDITABLE_FIELDS), nessun campo nuovo.
 
->>> DA DOVE SI CONTINUA COL LAVORO VERO. Fatti 44, 41, 40 (quest'ultimo a meta').
-    L'ordine consigliato in fondo a cose_da_fare.txt continua con PUNTO 46, poi 47
-    e 43 (43 e 44 vanno fatti vicini, quindi resta un candidato forte).
+>>> DA DOVE SI CONTINUA COL LAVORO VERO. Fatti 44, 41, 40. L'ordine consigliato in
+    fondo a cose_da_fare.txt continua con PUNTO 46, poi 47 e 43 (43 e 44 vanno
+    fatti vicini, quindi resta un candidato forte).
     CI SONO ANCHE il PUNTO 39 (mappa topografica: e' un cambio di MAPPA DI BASE, non
     un ritocco, e vuole due correzioni obbligatorie alla mappa offline) e il PUNTO 42b
     (quante volte su una vetta: non serve piu' nessun raggio), che dal 29/07 non sono

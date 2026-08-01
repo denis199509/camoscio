@@ -659,8 +659,22 @@ function setupEmailVerifyBanner() {
     if (window.lucide) lucide.createIcons();
 }
 
-// Aggiorna la card "Il Tuo Profilo" (esperto locale, cambio password)
+// Aggiorna la card "Il Tuo Profilo" (foto, bio, esperto locale, cambio password)
 function renderProfileCard(usr) {
+    // Punto 40: mostra la foto vera se c'e', altrimenti la stessa emoji del widget in alto.
+    const photoPreview = document.getElementById("profile-photo-preview");
+    if (photoPreview) {
+        photoPreview.innerHTML = usr.profilePhoto
+            ? `<img src="${escapeHtml(usr.profilePhoto)}" alt="Foto profilo">`
+            : usr.avatar;
+    }
+    const bioField = document.getElementById("profile-bio");
+    const bioCounter = document.getElementById("profile-bio-counter");
+    if (bioField) {
+        bioField.value = usr.bio || "";
+        if (bioCounter) bioCounter.textContent = bioField.value.length;
+    }
+
     const expertToggle = document.getElementById("local-expert-toggle");
     const expertArea = document.getElementById("local-expert-area");
     if (expertToggle && expertArea) {

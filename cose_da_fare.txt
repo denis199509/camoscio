@@ -1072,7 +1072,7 @@ visiva dei sentieri sulla mappa.
 
 --- PROFILO ---
 
-40) [PARZIALE 2026-08-01] L'icona del profilo in alto a destra deve aprire la pagina del
+40) [FATTO 2026-08-01] L'icona del profilo in alto a destra deve aprire la pagina del
 proprio profilo. Li' dentro: cambio password, cambiare/caricare la foto profilo,
 cambiare la bio.
    GIA' FATTO IN PARTE: la scheda "Il Tuo Profilo" esiste e il CAMBIO PASSWORD c'e'
@@ -1096,6 +1096,28 @@ cambiare la bio.
       foto profilo e' gia' la voce piu' pesante del database (fino a 1,5 MB l'una,
       misurato al punto 15) - vale la pena chiedere a Denis se vuole quella
       schermata prima di scriverla, non deciderlo da soli.
+   [AGGIORNAMENTO STESSA SESSIONE] Denis ha risposto: SI', costruiscila.
+   -> FATTO. Nuova sezione in cima alla card "Il Tuo Profilo": cerchio con la foto
+      attuale (o l'emoji di sempre se non c'e' ancora), input per sceglierne una
+      nuova, casella bio con contatore, tasto "Salva foto e bio".
+      NIENTE DI NUOVO SUL SERVER: profilePhoto e bio erano gia' in
+      SELF_EDITABLE_FIELDS (routes/users.js) da prima che esistesse un modo di
+      usarli - la validazione della dimensione (MAX_PHOTO_LENGTH, la stessa della
+      registrazione) era gia' pronta e non e' stata toccata. Mancava solo
+      l'interfaccia, quindi il lavoro e' stato tutto in public/index.html,
+      public/js/app.js e public/js/profile.js.
+      STESSO FORMATO E STESSO LIMITE della foto in registrazione (public/js/auth.js):
+      data URL via FileReader, controllo lato client a 1,5 MB prima ancora di
+      provare a mandarla. Non e' stato inventato un limite nuovo.
+      ATTENZIONE SE SI RITOCCA QUESTO CODICE: la foto va mandata al server SOLO se
+      ne e' stata scelta una nuova (altrimenti "salva solo la bio" cancellerebbe la
+      foto esistente mandando un campo vuoto).
+      PROVATO DAL VIVO (account demo Sofia FotoPasso, server locale): bio scritta e
+      foto vera caricata (upload di prova che scatta l'evento "change" - non tutti
+      gli strumenti di automazione lo fanno, vedi 07-Trappole-Tecniche.md nel
+      vault), salvate, e ANCORA LI' dopo una ricarica completa della pagina, sia
+      nella scheda sia nel riquadro in alto a destra. Nessun errore in console
+      riconducibile a questo codice.
 
 41) [FATTO 2026-08-01 - ERA UNA RIMOZIONE] Togliere "Profilo verificato" (KYC). Non serve
 piu': l'email e' collegata al profilo e confermata (punto 34).
@@ -1392,9 +1414,9 @@ poi le cose nuove.
     dallo schermo.
  2. [FATTO 2026-08-01] PUNTO 41 (togliere il "Profilo verificato"): era una rimozione,
     fatta in poco.
- 3. [PARZIALE 2026-08-01] PUNTO 40 (icona profilo -> pagina del profilo): l'icona ora
-    porta alla card giusta. Resta aperta la parte foto/bio, mai modificabili dopo
-    la registrazione - decisione da chiedere a Denis prima di costruirla.
+ 3. [FATTO 2026-08-01] PUNTO 40 (icona profilo -> pagina del profilo): l'icona porta
+    alla card giusta, e foto/bio ora si possono modificare anche dopo la
+    registrazione (confermato da Denis in sessione).
  4. PUNTO 46 (i miei annunci di carpooling): stesso difetto gia' risolto due volte,
     la strada e' segnata.
  5. PUNTO 47 (zaino, aggiungere a mano): meta' c'e' gia'.

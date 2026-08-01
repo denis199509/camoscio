@@ -2,7 +2,10 @@ function initProfileModule() {
     setupProfileCardEvents();
 }
 
-// Collega i pulsanti della card "Il Tuo Profilo" (esperto locale, cambio password)
+// Foto scelta ma non ancora salvata (punto 40): come registerPhotoDataUrl in auth.js.
+let newProfilePhotoDataUrl = null;
+
+// Collega i pulsanti della card "Il Tuo Profilo" (foto, bio, esperto locale, cambio password)
 function setupProfileCardEvents() {
     const btnSaveExpert = document.getElementById("btn-save-local-expert");
     if (btnSaveExpert) {
@@ -12,6 +15,75 @@ function setupProfileCardEvents() {
     const btnChangePassword = document.getElementById("btn-change-password");
     if (btnChangePassword) {
         btnChangePassword.addEventListener("click", changePassword);
+    }
+
+    const bioField = document.getElementById("profile-bio");
+    if (bioField) {
+        bioField.addEventListener("input", () => {
+            document.getElementById("profile-bio-counter").textContent = bioField.value.length;
+        });
+    }
+
+    // Stesso limite e stesso formato (data URL) della foto in registrazione: nessun
+    // campo nuovo sul modello, la validazione lato server (MAX_PHOTO_LENGTH) e' gia'
+    // pronta da quando "profilePhoto" e' entrato in SELF_EDITABLE_FIELDS.
+    const photoInput = document.getElementById("profile-photo-input");
+    if (photoInput) {
+        photoInput.addEventListener("change", (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            if (file.size > 1.5 * 1024 * 1024) {
+                window.showToast("Foto troppo grande, scegline una più piccola (max ~1.5MB).", "error");
+                e.target.value = "";
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = () => {
+                newProfilePhotoDataUrl = reader.result;
+                document.getElementById("profile-photo-preview").innerHTML = `<img src="${reader.result}" alt="Anteprima">`;
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    const btnSaveProfileInfo = document.getElementById("btn-save-profile-info");
+    if (btnSaveProfileInfo) {
+        btnSaveProfileInfo.addEventListener("click", saveProfilePhotoAndBio);
+    }
+}
+
+// Salva foto e bio (punto 40 di cose_da_fare.txt): prima si potevano scrivere solo in
+// registrazione, senza nessun modo di tornarci sopra dopo.
+async function saveProfilePhotoAndBio() {
+    const usr = window.CamoscioState.currentUser;
+    if (!usr) return;
+
+    const payload = { bio: document.getElementById("profile-bio").value.trim() };
+    // Manda la foto SOLO se ne e' stata scelta una nuova: il PUT ignora i campi assenti
+    // dal corpo (vedi SELF_EDITABLE_FIELDS in routes/users.js), quindi senza questo "if"
+    // non salvare una foto nuova cancellerebbe comunque quella vecchia con "undefined".
+    if (newProfilePhotoDataUrl) payload.profilePhoto = newProfilePhotoDataUrl;
+
+    try {
+        const response = await fetch(`/api/users/${usr.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+            newProfilePhotoDataUrl = null;
+            window.showToast("Profilo aggiornato.", "success");
+            await refreshState();
+            updateHeaderUserWidget();
+            renderDashboard();
+        } else {
+            const dati = await response.json();
+            window.showToast(dati.error || "Non è stato possibile salvare le modifiche.", "error");
+        }
+    } catch (e) {
+        console.error("Errore nel salvataggio di foto/bio:", e);
+        window.showToast("Impossibile contattare il server. Riprova.", "error");
     }
 }
 
