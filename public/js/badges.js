@@ -82,11 +82,13 @@
             .map(b => ({ name: b.nome, lat: b.lat, lng: b.lng, altitude: b.quota, stampId: b.stampId }));
     }
 
-    // Catalogo + "questo l'ho preso, e quando". L'unica fonte e' db.stamps, cioe' i
-    // timbri veri dell'utente collegato: nessun badge puo' risultare preso per
-    // qualcuno che non l'ha preso davvero.
-    function statoBadge() {
-        const timbri = (window.CamoscioState && window.CamoscioState.stamps) || [];
+    // Catalogo + "questo l'ho preso, e quando", per un elenco di timbri qualunque.
+    // Parametrizzata (non legge direttamente lo stato globale) per poter mostrare
+    // anche i badge di un ALTRO utente nella sua pagina profilo: i timbri sono
+    // "achievement pubblici tra utenti loggati" (vedi routes/stamps.js), quindi non
+    // c'e' niente da nascondere, ma la logica di incrocio col catalogo va scritta
+    // una volta sola.
+    function statoBadgePer(timbri) {
         return catalogo().map(b => {
             const timbro = timbri.find(t => t.stampId === b.stampId);
             return Object.assign({}, b, {
@@ -94,6 +96,13 @@
                 data: timbro ? timbro.dateUnlocked : null
             });
         });
+    }
+
+    // Stato badge dell'utente collegato: l'unica fonte e' db.stamps, cioe' i timbri
+    // veri gia' caricati per lui. Nessun badge puo' risultare preso per qualcuno che
+    // non l'ha preso davvero.
+    function statoBadge() {
+        return statoBadgePer((window.CamoscioState && window.CamoscioState.stamps) || []);
     }
 
     // Per la scheda del Passaporto in Dashboard, che ha spazio per pochi riquadri:
@@ -210,6 +219,6 @@
         if (window.lucide) window.lucide.createIcons();
     }
 
-    window.CamoscioBadges = { catalogo, puntiTimbrabili, statoBadge, anteprima, dataItaliana, render: renderBadges };
+    window.CamoscioBadges = { catalogo, puntiTimbrabili, statoBadge, statoBadgePer, schedaBadge, anteprima, dataItaliana, render: renderBadges };
     window.renderBadges = renderBadges;
 })();

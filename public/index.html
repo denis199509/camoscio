@@ -385,6 +385,7 @@
                         <div class="user-details">
                             <div class="user-name-row">
                                 <span id="current-user-name" class="font-bold">Caricamento...</span>
+                                <img id="current-user-personal-badge" class="personal-badge-icon hidden" src="" alt="">
                             </div>
                             <div class="user-sub-details">
                                 <span class="reputation-text">Reputazione: <strong id="current-user-reputation">--</strong>%</span>
@@ -1582,6 +1583,34 @@
                     </div>
                 </section>
 
+                <!-- Pagina profilo di UN ALTRO utente - non richiesta in cose_da_fare.txt,
+                     chiesta da Denis in sessione (01/08/2026). Non ha una voce nella barra
+                     laterale: si apre cliccando un nome/avatar altrove nel sito (vedi
+                     public/js/userprofile.js, window.showUserProfile(userId)). Per ora mostra
+                     solo il badge personale (se c'e'), i badge guadagnati e un avviso che la
+                     pagina e' in aggiornamento - il resto lo decide Denis in seguito. -->
+                <section id="user-profile" class="page-section">
+                    <div class="glass-card user-profile-header-card" id="user-profile-header">
+                        <!-- Riempito da JS: avatar/foto, nome, livello -->
+                    </div>
+
+                    <div id="user-profile-personal-badge">
+                        <!-- Riempito da JS SOLO se questo profilo ha un badge personale -->
+                    </div>
+
+                    <p class="small text-muted rp-nota-dislivello">
+                        <i data-lucide="info"></i>
+                        <span>Questa pagina è ancora in aggiornamento: presto ci saranno altre informazioni sul profilo.</span>
+                    </p>
+
+                    <div class="badges-group">
+                        <h3 class="badges-group-title">
+                            <i data-lucide="award"></i> Badge guadagnati
+                        </h3>
+                        <div class="badges-grid" id="user-profile-badges"></div>
+                    </div>
+                </section>
+
             </div>
         </main>
     </div>
@@ -1765,6 +1794,8 @@
          si importa una traccia .gpx). -->
     <script src="js/badge-points.js"></script>
     <script src="js/badges.js"></script>
+    <script src="js/personal-badges.js"></script>
+    <script src="js/userprofile.js"></script>
     <script src="js/storico.js"></script>
     <!-- Punto 26: permessi di posizione e puntino blu. Prima di map.js, che gli si iscrive
          per disegnare il puntino, e di tracking.js, che gli passa i propri fix GPS. -->

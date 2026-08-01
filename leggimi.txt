@@ -56,9 +56,16 @@ o ne arriva uno nuovo.
     l'editor in sessione: fatto, nuova sezione nella card con foto, bio e tasto
     Salva. Backend gia' pronto da prima (SELF_EDITABLE_FIELDS), nessun campo nuovo.
 
->>> DA DOVE SI CONTINUA COL LAVORO VERO. Fatti 44, 41, 40. L'ordine consigliato in
-    fondo a cose_da_fare.txt continua con PUNTO 46, poi 47 e 43 (43 e 44 vanno
-    fatti vicini, quindi resta un candidato forte).
+>>> PUNTO 50 FATTO IL 2026-08-01 (idea nuova di Denis, non dettata prima - nona
+    lista): badge personali (assegnati a mano, MAI guadagnati) per Denis, DaniWoll,
+    Manu er 5 lingue, Matteo Bi, mostrati accanto al nome. Insieme: pagina profilo
+    di un altro utente, apribile cliccando nome/avatar ovunque - anche senza aver
+    fatto un'escursione insieme. Nessuna rotta nuova sul server (leggevano gia'
+    dati/timbri di un altro utente). Dettagli in ../camoscio memoria/03-Decisioni-Architetturali.md.
+
+>>> DA DOVE SI CONTINUA COL LAVORO VERO. Fatti 44, 41, 40, 50. L'ordine consigliato
+    in fondo a cose_da_fare.txt (settima lista) continua con PUNTO 46, poi 47 e 43
+    (43 e 44 vanno fatti vicini, quindi resta un candidato forte).
     CI SONO ANCHE il PUNTO 39 (mappa topografica: e' un cambio di MAPPA DI BASE, non
     un ritocco, e vuole due correzioni obbligatorie alla mappa offline) e il PUNTO 42b
     (quante volte su una vetta: non serve piu' nessun raggio), che dal 29/07 non sono

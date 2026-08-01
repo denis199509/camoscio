@@ -344,7 +344,8 @@ function setupNavigation() {
                 "carpool": "Carpooling & Spese Viaggio",
                 "backpack": "Zaino Intelligente Checklist",
                 "safety": "Sicurezza & Mesh Simulator",
-                "social": "Tribù, Recensioni & Squadre"
+                "social": "Tribù, Recensioni & Squadre",
+                "user-profile": "Profilo"
             };
             sectionTitle.textContent = prettyNames[targetId] || "Camoscio";
         }
@@ -404,6 +405,12 @@ function setupNavigation() {
             if (profileCard) profileCard.scrollIntoView({ behavior: "smooth", block: "start" });
         });
     }
+
+    // Esposta per la pagina profilo di un altro utente (public/js/userprofile.js):
+    // "user-profile" non ha una voce nella barra laterale (cambia contenuto in base
+    // a CHI si e' cliccato), ma deve comunque passare da qui per nascondere le altre
+    // sezioni, spegnere il GPS se si stava guardando la Mappa, ecc.
+    window.navigateTo = navigateTo;
 }
 
 // Innesca il render corretto della sezione aperta
@@ -461,6 +468,20 @@ function updateHeaderUserWidget() {
     document.getElementById("current-user-name").textContent = usr.username;
     document.getElementById("current-user-reputation").textContent = usr.reputation;
     document.getElementById("current-user-exp").textContent = `Livello: ${usr.experienceLevel}`;
+
+    // Badge personale (chiesto da Denis in sessione il 01/08/2026): assegnato a
+    // mano, non guadagnato - vedi personal-badges.js.
+    const personalBadgeEl = document.getElementById("current-user-personal-badge");
+    if (personalBadgeEl) {
+        const personale = window.CamoscioPersonalBadges ? window.CamoscioPersonalBadges.get(usr.id) : null;
+        if (personale) {
+            personalBadgeEl.src = `img/badge-personali/${personale.icon}`;
+            personalBadgeEl.title = `${personale.titolo}: ${personale.descrizione}`;
+            personalBadgeEl.classList.remove("hidden");
+        } else {
+            personalBadgeEl.classList.add("hidden");
+        }
+    }
 }
 
 // Aggiorna il contatore e la lista del centro notifiche

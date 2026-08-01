@@ -1430,3 +1430,67 @@ poi le cose nuove.
     nuove, nessuna delle due corregge qualcosa di rotto.
  9. PUNTO 42 (zona di competenza calcolata), dopo la risposta alla domanda 0.
 10. ESTETICA e responsive delle sezioni ancora non adattate al telefono.
+
+=====================================================================
+NONA LISTA (2026-08-01) - idea nuova di Denis in sessione, non dettata prima.
+Fatta per intero nella stessa sessione in cui e' stata chiesta.
+=====================================================================
+
+--- BADGE PERSONALI E PAGINA PROFILO ---
+
+50) [FATTO 2026-08-01] Badge personali: un'onorificenza scelta a mano da Denis, che
+NON si guadagna in nessun modo - "un piccolo differenziamento da parte mia sui primi
+profili". Voleva anche poter vedere il profilo di un altro utente cliccando il suo
+nome, anche senza aver fatto un'escursione insieme prima. Per ora la pagina profilo
+deve mostrare solo: il badge personale (se c'e'), i badge guadagnati (se ce ne sono),
+e un avviso che la pagina e' in aggiornamento - il resto lo decide lui in seguito.
+   QUATTRO BADGE CONSEGNATI IN SESSIONE, con l'immagine e il testo di Denis:
+     - Denis: "Errore 404: Ruolo non trovato" - "Il sistema non è riuscito a
+       identificare il suo contributo. Ma continua a partecipare con successo."
+     - DaniWoll: "Merenderos in Vetta" - "Le calorie si recuperano sempre. Il
+       dislivello, purtroppo, va fatto prima."
+     - Manu er 5 lingue: "Nostalgia del Mare" - "Sale in montagna solo per
+       controllare se il mare è ancora lì."
+     - Matteo Bi: "Paleontologo... Più o Meno" - "Alla ricerca del fossile
+       perfetto. Il gruppo, nel frattempo, lo aspetta qualche curva più avanti."
+   -> FATTO. Le icone (illustrazioni disegnate da Denis) sono file statici in
+      public/img/badge-personali/, MAI su MongoDB: un catalogo fisso in
+      public/js/personal-badges.js collega userId -> {icona, titolo, descrizione},
+      stessa logica dei badge delle vette (badges.js) e stesso motivo (vincolo hard
+      sullo spazio). Per aggiungerne uno nuovo: un file + una riga, zero migrazioni.
+      Chiave: userId di MongoDB, non username - lo username si puo' cambiare da soli
+      (SELF_EDITABLE_FIELDS) e romperebbe il collegamento.
+      MOSTRATO accanto al nome ovunque compaia gia' un nome cliccabile: intestazione
+      (il proprio), nome dell'organizzatore nella scheda escursione. Al passaggio del
+      mouse si legge titolo e descrizione per intero.
+      DICHIARATO A SCHERMO che non e' un premio guadagnato: sotto ogni badge
+      personale c'e' scritto "Distintivo assegnato a mano dal team di Camoscio: non
+      si guadagna, è un riconoscimento personale" - lo stesso principio del vincolo
+      hard 7 (niente promesse che il sito non puo' mantenere), applicato al
+      contrario: niente lasciato intendere come conquistato quando non lo e'.
+      PAGINA PROFILO: nuova sezione (non nella barra laterale, cambia contenuto in
+      base a chi si e' cliccato) in public/js/userprofile.js. Cliccando il nome
+      dell'organizzatore o l'avatar di un partecipante in una scheda escursione si
+      apre il suo profilo, ANCHE senza aver fatto un'escursione insieme - Denis
+      l'aveva chiesto esplicitamente, l'esempio dell'escursione insieme era solo
+      un caso d'uso, non un limite.
+      NESSUNA ROTTA NUOVA SUL SERVER: /api/users/:id e /api/stamps/:userId
+      permettevano gia' di leggere il profilo e i timbri DI UN ALTRO utente
+      (verificato nel codice prima di scrivere - i timbri sono "achievement
+      pubblici tra utenti loggati" per commento gia' scritto in routes/stamps.js).
+      Rispetta gia' da solo la privacy: se l'altro utente ha il profilo privato o
+      solo-amici, la foto (o altri campi) spariscono dalla risposta esattamente
+      come succede gia' per qualunque altra richiesta a quella rotta.
+      REFACTOR PICCOLO in badges.js: la logica che incrocia catalogo e timbri
+      (statoBadge) leggeva sempre e solo i timbri dell'utente collegato. Ora e' in
+      due funzioni: statoBadgePer(timbri) fa il lavoro vero, statoBadge() la
+      richiama con i timbri dell'utente collegato - la pagina Badge esistente non
+      cambia comportamento, la pagina profilo riusa la stessa funzione coi timbri
+      di qualcun altro. Stessa idea gia' vista al punto 44 con calculateHikeTimes().
+      PROVATO DAL VIVO (account demo Marco Alpinista come chi guarda, server
+      locale): cliccato "Denis" sull'escursione vera "Alba Corno Grande" -> profilo
+      di Denis con il suo badge e i suoi due badge guadagnati veri (Corno Grande,
+      Monte Gorzano); cliccato l'avatar di "Manu er 5 lingue" -> suo badge, e
+      "Nessun badge conquistato per ora" perche' non ne ha. Tornato alla pagina
+      Badge normale dopo: nessuna regressione, stessi conteggi di prima. Nessun
+      errore in console durante tutta la prova.

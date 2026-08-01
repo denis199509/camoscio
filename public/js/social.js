@@ -262,6 +262,13 @@ function buildHikeCard(hike) {
 
     const creator = db.users.find(u => u.id === hike.creatorId);
     const creatorName = creator ? creator.username : "Escursionista";
+
+    // Badge personale (chiesto da Denis in sessione il 01/08/2026, non in
+    // cose_da_fare.txt): assegnato a mano, non guadagnato - vedi personal-badges.js.
+    const creatorPersonalBadge = window.CamoscioPersonalBadges ? window.CamoscioPersonalBadges.get(hike.creatorId) : null;
+    const creatorBadgeHtml = creatorPersonalBadge
+        ? ` <img class="personal-badge-icon" src="img/badge-personali/${escapeHtml(creatorPersonalBadge.icon)}" alt="" title="${escapeHtml(creatorPersonalBadge.titolo)}: ${escapeHtml(creatorPersonalBadge.descrizione)}">`
+        : "";
     const isCreatorMe = hike.creatorId === currentUser.id;
 
     // Verifica idoneità fisica
@@ -287,14 +294,15 @@ function buildHikeCard(hike) {
     const card = document.createElement("div");
     card.className = "glass-card hike-card";
 
-    // Costruzione partecipanti
+    // Costruzione partecipanti. Cliccabile: apre la pagina profilo di quella persona
+    // (funzionalita' chiesta da Denis in sessione il 01/08/2026, non in cose_da_fare.txt).
     const participantsHtml = hike.participants.map(pId => {
         const pUser = db.users.find(u => u.id === pId);
         if (!pUser) return "";
         const isLocalExpert = pUser.localExpert && pUser.localExpert.active;
         const expertTitlePart = isLocalExpert ? ` — Esperto locale: ${escapeHtml(pUser.localExpert.area)}` : "";
         return `
-            <div class="p-avatar ${isLocalExpert ? 'local-expert' : ''}" title="${escapeHtml(pUser.username)} (Rep: ${pUser.reputation}%)${expertTitlePart}">
+            <div class="p-avatar ${isLocalExpert ? 'local-expert' : ''}" title="${escapeHtml(pUser.username)} (Rep: ${pUser.reputation}%)${expertTitlePart}" onclick="showUserProfile('${pId}')">
                 ${pUser.avatar}
             </div>
         `;
@@ -353,7 +361,7 @@ function buildHikeCard(hike) {
     card.innerHTML = `
         <span class="badge badge-primary hike-difficulty-badge">${hike.difficulty}</span>
         <h4 style="color:#FFF; margin-bottom: 4px;">${escapeHtml(hike.title)}</h4>
-        <p class="small text-muted" style="margin-bottom: 8px;">Organizzato da: <b>${escapeHtml(creatorName)}</b></p>
+        <p class="small text-muted" style="margin-bottom: 8px;">Organizzato da: <b class="user-link" onclick="showUserProfile('${hike.creatorId}')">${escapeHtml(creatorName)}</b>${creatorBadgeHtml}</p>
 
         <p class="small text-secondary" style="line-height:1.4; height: 60px; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(hike.description)}</p>
         
