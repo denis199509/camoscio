@@ -1886,61 +1886,134 @@ perche' ci devo pensare."
 
 --- COMPLETAMENTO DI GRUPPO DAL CREATORE ---
 
-64) [DA RISPIEGARE - Denis dice di essersi spiegato male, 2026-08-03]
-Denis: "quando l'escursione e' finita chi ha creato l'escursione ha
-la possibilita' di completare l'escursione dal tasto. prima di
-completare l'escursione dobbiamo chiedere chi ha partecipato
-all'escursione. Quindi cliccando sul tasto 'Completa escursione' si
-apre una pagina per confermare i partecipanti. In automatico ti
-chiede di spuntare tra i partecipanti (magari qualcuno non si e'
-presentato per un suo motivo), si sceglie tra chi ha chiesto di
-partecipare. vicino un tasto aggiungi. cliccando si apre una
-finestra di ricerca dove posso cercare un altro utente. magari
+64) [CONFERMATO DA DENIS, PIANO APPROVATO, NON IMPLEMENTATO -
+aggiornato 2026-08-03] Denis: "quando l'escursione e' finita chi ha
+creato l'escursione ha la possibilita' di completare l'escursione dal
+tasto. prima di completare l'escursione dobbiamo chiedere chi ha
+partecipato all'escursione. Quindi cliccando sul tasto 'Completa
+escursione' si apre una pagina per confermare i partecipanti. In
+automatico ti chiede di spuntare tra i partecipanti (magari qualcuno
+non si e' presentato per un suo motivo), si sceglie tra chi ha
+chiesto di partecipare. vicino un tasto aggiungi. cliccando si apre
+una finestra di ricerca dove posso cercare un altro utente. magari
 contattato fuori dal sito ma pure lui presente. Una volta scelti i
 partecipanti si conferma. L'escursione poi risulta completata e
 visibile sul profilo sia di chi l'ha creata sia da chi e' stato
 presente, confermato da chi ha creato l'escursione."
-   DENIS HA DETTO SUBITO DOPO, PRIMA DI QUALUNQUE STIMA O PROGETTO:
-   "mi sono spiegato male". QUESTA DESCRIZIONE NON E' DEFINITIVA - va
-   ridettata da lui con un esempio pratico prima di disegnare
-   qualunque cosa. Non tirare a indovinare quale parte fosse sbagliata
-   e non scrivere codice su questa base.
-   RICERCA GIA' FATTA IL 2026-08-03 (materiale utile per quando si
-   riprende, NON SONO DECISIONI PRESE - restano da confermare con lui
-   dopo che ha rispiegato):
-     - Oggi il completamento e' SOLO auto-dichiarato: ogni
-       partecipante clicca da solo "Segna come completata"
-       (routes/hikes.js, POST /:id/complete, righe 245-313), mai per
-       conto di altri (tolto apposta come fix di un bug in Fase H -
-       vedi il commento alle righe 243-244).
-     - hike.pendingApproval e' gente in attesa, NON ancora
-       partecipazione vera (puo' essere rifiutata) - diverso da
-       hike.participants.
-     - Molte parti del codice presumono che "aver condiviso
-       un'escursione" equivalga a essere in hike.participants: il
-       gate recensioni appena costruito (punto 58), gli avatar sulla
-       scheda escursione, il gruppo dello zaino condiviso
-       (backpack.js, gruppoDi). MA "Le mie escursioni fatte"
-       (classificaMieEscursioni in social.js) si basa SOLO su
-       db.completions, non ricontrolla participants. Se un futuro
-       completamento di gruppo creasse un Completion senza aggiungere
-       anche a participants, romperebbe silenziosamente il punto 58
-       appena fatto e le altre viste.
-     - Stamp/badge (vette) sono un sistema COMPLETAMENTE indipendente
-       dai Completion: arrivano solo da GPS reale durante il
-       tracciamento o da import .gpx, mai da una conferma manuale di
-       presenza. Qualunque soluzione futura non deve promettere di
-       sbloccare badge per chi viene confermato qui.
-     - Esiste gia' il pattern "isCreatorMe" (social.js riga 272) per
-       mostrare sezioni solo al creatore (usato oggi per il pannello
-       Veto sulle richieste in sospeso), e un pattern di ricerca
-       utenti gia' pronto e riusabile (public/js/peoplesearch.js,
-       punto 51) per un eventuale tasto "Aggiungi".
-     - Il completamento individuale oggi chiede anche un tempo
-       impiegato (actualTimeHours, facoltativo) che aggiorna il passo
-       personale - Denis non ne ha parlato in questa richiesta. Da
-       chiarire quando rispiega: se un completamento di gruppo deve
-       toccare anche questo o restare solo su "chi c'era".
-   NON IMPLEMENTATO, NON PROGETTATO NEL DETTAGLIO. Si riprende
-   chiedendogli prima di rispiegare il punto con un esempio pratico
-   davanti, poi si decide come procedere.
+   CONFERMATO: dopo che gli e' stata riletta questa descrizione punto
+   per punto (7 passaggi), Denis ha risposto "tutto va benissimo" -
+   la descrizione sopra E' quella giusta, non e' piu' in sospeso.
+   AGGIUNTA COLLEGATA, stesse parole di Denis: "il giorno dopo
+   l'escursione deve comparire una notifica che ricorda di completare
+   l'escursione di ieri."
+   PIANO DI IMPLEMENTAZIONE APPROVATO (Plan Mode, 2026-08-03) - NIENTE
+   CODICE SCRITTO per esplicita richiesta di Denis ("niente codice
+   per adesso... prepara tutto per riprendere il lavoro in una
+   sessione futura"). Copia completa del piano in
+   C:\Users\lenovo\.claude\plans\melodic-greeting-walrus.md, ma il
+   riassunto qui sotto basta da solo per implementare, non serve
+   trovare quel file:
+
+   CAMPI NUOVI:
+     - models/Hike.js: groupCompletedAt (Date, default: undefined).
+       Risponde a "il creatore ha gia' fatto la conferma di gruppo?" -
+       diverso da "esiste un Completion", che puo' essere vero anche
+       senza che il creatore abbia mai usato il nuovo tasto. Serve sia
+       per nascondere il tasto dopo l'uso sia per fermare il
+       promemoria.
+     - models/Notification.js: relatedHikeId (ObjectId ref Hike,
+       default: undefined). Oggi NESSUNA notifica ha un modo di
+       collegarsi a un'altra entita' e non esiste nessun controllo
+       anti-doppione da nessuna parte nel codice (verificato con grep
+       su tutto il repo) - serve per non ricreare lo stesso promemoria
+       ad ogni caricamento pagina.
+
+   NUOVA ROTTA: POST /api/hikes/:id/complete-group, requireAuth.
+   Payload: { confirmedUserIds: [...] }.
+     - Validazioni: hike esiste (404); hike.creatorId.equals(session)
+       (403 altrimenti, stesso controllo gia' in PUT /:id riga 195);
+       hike.groupCompletedAt non deve gia' esistere (409); lista non
+       vuota; ogni ID deve essere uno User esistente.
+     - Logica: hike.participants = confirmedUserIds (OBBLIGATORIO,
+       non opzionale - il gate recensioni del punto 58 e altre viste,
+       tipo avatar sulla scheda e gruppo zaino, presumono gia' che
+       "condiviso l'escursione" = essere in participants, altrimenti
+       si rompe silenziosamente tutto quello); per ciascun ID, crea
+       un Completion SE NON ESISTE gia' (stesso controllo di
+       POST /:id/complete, per rispettare l'indice unico
+       userId+hikeId) e aggiorna le statistiche utente; infine
+       hike.groupCompletedAt = new Date().
+     - actualTimeHours resta sempre null in questo flusso: Denis non
+       ha mai parlato di tempo/durata per il completamento di gruppo,
+       riguarda solo "chi c'era".
+     - RIUSO, non duplicazione: la logica statistiche (media passo,
+       soglie esperienza) gia' scritta in POST /:id/complete
+       (righe 245-313) va estratta in una funzione condivisa, es.
+       applyHikeCompletionStats(user, hike, actualTimeHours) in un
+       nuovo file lib/hikeStats.js, richiamata da entrambe le rotte.
+     - Stamp/badge (vette) restano un sistema TOTALMENTE indipendente
+       (arrivano solo da GPS reale o import .gpx) - questa rotta non
+       li tocca in nessun modo, l'interfaccia non deve promettere che
+       confermare qualcuno sblocchi badge.
+
+   PROMEMORIA "GIORNO DOPO": agganciato dentro GET /api/notifications/
+   :userId (routes/notifications.js righe 7-17), PRIMA della query
+   esistente - non dentro GET /api/hikes (e' la rotta piu' chiamata in
+   assoluto, ci scriverebbe sopra ad ogni giro per ogni utente, anche
+   chi non ha mai creato nulla, con piu' rischio di corse concorrenti).
+   GET /:userId ha gia' verificato che userId = req.session.userId,
+   quindi il confine di autorizzazione e' gia' pronto. Non esistendo
+   ne' scheduler ne' push in questo progetto (verificato: nessuna
+   libreria di scheduling in package.json, nessun setInterval/
+   setTimeout a livello modulo in server.js), "la notifica compare"
+   puo' solo voler dire "esiste quando l'utente controlla le
+   notifiche" - questo aggancio lo garantisce.
+     - Funzione nuova ensureCompletionReminders(userId), stesso file
+       lib/hikeStats.js: calcola todayStr con getFullYear()/getMonth()
+       +1/getDate() zero-paddati (MAI new Date().toISOString(), che
+       converte in UTC) e cerca
+       Hike.find({creatorId:userId, groupCompletedAt:{$exists:false},
+       date:{$lt: todayStr}}) - confronto tra STRINGHE "YYYY-MM-DD"
+       (l'ordine lessicografico coincide con quello cronologico), $lt
+       STRETTO (mai $lte): e' esattamente "il giorno dopo", non la
+       ripetizione dell'errore gia' corretto nel punto 58
+       (new Date(data) < new Date() marca "passato" dalla mezzanotte
+       del giorno stesso).
+     - Per ciascun hike trovato: se non esiste gia' una Notification
+       con quel relatedHikeId per quell'utente (senza filtrare per
+       read, altrimenti si ricreerebbe dopo che l'ha letta), creane
+       una: text: `Non hai ancora completato l'escursione
+       "${hike.title}": conferma chi ha partecipato!`, read:false,
+       relatedHikeId: hike._id.
+     - Una volta completato il gruppo, groupCompletedAt esclude
+       l'hike dalla query - nessun nuovo promemoria, ma quello gia'
+       creato resta nello storico (letto o no) come tutte le altre
+       notifiche.
+
+   INTERFACCIA: nuovo modale (stessa convenzione di create-hike-modal,
+   public/index.html righe 653+, classList.add/remove('hidden')).
+   Checklist: adattare populateSquadMembersCheckboxes (social.js righe
+   753-771, oggi SENZA pre-spunta) aggiungendo checked per ogni id
+   gia' in hike.participants. Ricerca "Aggiungi": riusa 1:1
+   public/js/peoplesearch.js (input .trailhead-search-row/
+   .trailhead-search-field, risultati .hike-carpools-list/
+   .carpool-group-item), solo l'onclick cambia (aggiunge alla lista
+   invece di aprire il profilo). Nuovo bottone in buildHikeCard
+   (social.js righe 259-413): variabile completeHikeGroupBtnHtml,
+   condizionata isCreatorMe (riga 272, stesso pattern di
+   vetoSectionHtml) + data passata (confronto per STRINGA di
+   calendario, non new Date() - stessa cautela di sopra) +
+   !hike.groupCompletedAt (altrimenti badge "Completata").
+
+   FILE DA TOCCARE: models/Hike.js, models/Notification.js,
+   lib/hikeStats.js (nuovo), routes/hikes.js, routes/notifications.js,
+   public/index.html, public/js/social.js.
+
+   VERIFICA PROPOSTA: account demo, "Ascesa al Corno Grande" (data
+   passata) per il flusso completo (pre-spunta, togli uno, aggiungi
+   Luca via ricerca, conferma, verifica participants/Completion/
+   badge), controllo del promemoria (compare, poi sparisce dopo il
+   completamento), "Monte Vettore - Sibillini" (data futura,
+   2026-08-10) per verificare che NE' il tasto NE' il promemoria
+   compaiano prima del tempo. Pulizia dati demo dopo, stesso rigore
+   gia' usato per il punto 58.

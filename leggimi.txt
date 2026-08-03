@@ -51,22 +51,32 @@ o ne arriva uno nuovo.
       - PUNTO 64 (nuovo, non nella lista): Denis ha descritto un tasto
         "Completa escursione" per il creatore (conferma di gruppo di chi ha
         partecipato davvero), poi ha detto SUBITO "mi sono spiegato male" prima
-        di qualunque stima o progetto. NON PROGETTATO: solo una ricognizione
-        preliminare nel codice, salvata come materiale di sfondo (vedi
-        cose_da_fare.txt punto 64 e 04-Da-Fare.md nel vault) - non decisioni
-        prese. Si riprende chiedendogli di ridettare il punto con un esempio.
-    NESSUN PUSH DEL CODICE fatto oggi: restano due commit locali non pushati
-    (06d76c9 punto 58, 58c3262 chiusura sessione) - DECISIONE RIMANDATA A DENIS,
-    non ha ancora risposto se vuole anche il push (e quindi il deploy su
-    Render). Il vault invece E' STATO PUSHATO (e' privato, prassi gia' in uso).
+        di qualunque stima o progetto - poi, RIPRESA LA SESSIONE LO STESSO
+        GIORNO, gli ho riletto la mia comprensione punto per punto (7 passaggi)
+        e ha risposto "tutto va benissimo": CONFERMATO, non e' piu' in sospeso.
+        Ha aggiunto una richiesta collegata: notifica di promemoria il giorno
+        dopo l'escursione se non ancora completata in gruppo. PROGETTATO CON
+        PLAN MODE un piano completo per le due cose insieme (si servono a
+        vicenda) - APPROVATO DA DENIS, MA NESSUN CODICE SCRITTO: ha chiesto
+        esplicitamente di rimandare l'implementazione a una sessione futura.
+        Dettaglio tecnico completo (basta da solo per implementare) in
+        cose_da_fare.txt punto 64 e nel vault (04-Da-Fare.md,
+        03-Decisioni-Architetturali.md).
+    NESSUN PUSH DEL CODICE fatto oggi: restano i commit locali non pushati di
+    prima (punto 58) piu' uno nuovo per la registrazione del piano del punto 64
+    (solo testo, zero codice applicativo) - DECISIONE RIMANDATA A DENIS, non ha
+    ancora risposto se vuole anche il push (e quindi il deploy su Render). Il
+    vault invece E' STATO PUSHATO di nuovo (e' privato, prassi gia' in uso).
 
->>> DA DOVE SI CONTINUA COL LAVORO VERO. Fatto il punto 58. L'ordine concordato
+>>> DA DOVE SI CONTINUA COL LAVORO VERO. Fatto il punto 58. Per il punto 64 il
+    piano e' pronto e approvato: si puo' implementare direttamente seguendo
+    cose_da_fare.txt punto 64, senza rifare il ragionamento. L'ordine concordato
     con Denis per l'undicesima lista (58-63) era: 58, poi 61 (notifica su
     richiesta di partecipazione), poi 52 (bug wizard, da riprodurre), poi i
     punti "pronti" (54, 57, 63a, 59, 42b, 39), poi i lavori grossi (43, 37, 48,
-    45, 55). IL PUNTO 64 E' ARRIVATO FUORI SEQUENZA e resta da ridettare -
-    CHIEDERE A DENIS se si riprende da li' o si torna all'ordine concordato
-    (punto 61). GLIELO SI CHIEDE, non si decide per lui.
+    45, 55). IL PUNTO 64 E' ARRIVATO FUORI SEQUENZA - CHIEDERE A DENIS se si
+    implementa quello per primo (visto che il piano e' gia' pronto) o si torna
+    all'ordine concordato (punto 61). GLIELO SI CHIEDE, non si decide per lui.
     Restano ferme, per esplicita richiesta di Denis ("ci devo pensare"): il
     punto 42a (raggio zona di competenza) e il punto 63b (nome/livelli) - non
     riproporli finche' non torna lui sull'argomento.

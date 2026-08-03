@@ -4884,3 +4884,61 @@ dato "successo" ma netstat mostrava ancora un processo in ascolto sulla
 porta 3000 - chiuso con taskkill //F //PID, porta verificata libera dopo
 (lezione gia' nota, vedi le trappole Windows piu' sopra: non fidarsi del
 solo "fermato con successo").
+
+RIPRESA LA SESSIONE LO STESSO GIORNO - PUNTO 64 CONFERMATO E PROGETTATO
+(nessun codice scritto). Ho riletto a Denis la mia comprensione del punto
+64 in 7 passaggi separati (quando, chi puo' agire, cosa succede al click,
+perche' le spunte si tolgono, il tasto Aggiungi, la conferma finale, il
+risultato sul profilo) e ha risposto "tutto va benissimo" - confermato,
+non e' piu' in sospeso. Ha aggiunto una richiesta collegata: "il giorno
+dopo l'escursione deve comparire una notifica che ricorda di completare
+l'escursione di ieri".
+
+Passato a Plan Mode per progettare le due cose insieme (il promemoria ha
+bisogno di sapere "il creatore ha gia' completato in gruppo?", domanda a
+cui il modello dati oggi non sa rispondere). Due nuovi agenti Explore in
+parallelo: uno ha confermato che non esiste NESSUNO scheduler nel
+progetto (niente node-cron/node-schedule/agenda in package.json, niente
+setInterval/setTimeout a livello modulo in server.js) e che il sistema di
+notifiche non ha MAI avuto bisogno di un controllo anti-duplicazione
+(ogni notifica finora nasce da un evento che capita una volta sola);
+l'altro (in una sessione precedente, prima dell'interruzione) aveva gia'
+verificato il meccanismo di completamento individuale, la differenza tra
+participants e pendingApproval, l'indipendenza totale di Stamp/badge dai
+Completion, e i pattern UI riusabili (modali, checkbox pre-spuntate,
+ricerca utenti di peoplesearch.js). Un agente Plan ha iniziato a
+disegnare l'implementazione ma si e' troncato a meta' per lunghezza
+della risposta (mancava l'inizio E la fine) - completato a mano il resto
+usando tutta la ricerca gia' raccolta, dato che le decisioni chiave erano
+gia' chiare.
+
+PIANO APPROVATO (Plan Mode, file di piano salvato dallo strumento in
+C:\Users\lenovo\.claude\plans\melodic-greeting-walrus.md, ma il
+riassunto tecnico completo e' anche in cose_da_fare.txt punto 64 - non
+serve trovare quel file per riprendere il lavoro):
+ - Due campi nuovi: Hike.groupCompletedAt (Date, opzionale - "il
+   creatore ha gia' confermato il gruppo?", diverso da "esiste un
+   Completion", che puo' essere vero anche senza che il creatore abbia
+   mai usato il nuovo tasto) e Notification.relatedHikeId (ObjectId
+   opzionale - la chiave che manca per non ricreare lo stesso
+   promemoria ad ogni caricamento).
+ - Nuova rotta POST /:id/complete-group: solo il creatore, aggiorna
+   hike.participants con la lista finale confermata (obbligatorio,
+   altrimenti si rompe silenziosamente il gate recensioni del punto 58
+   e le altre viste che presumono participants come fonte di verita'),
+   crea un Completion per ciascun confermato (rispettando l'indice
+   unico), riusa la logica statistiche gia' scritta per il
+   completamento individuale invece di duplicarla.
+ - Promemoria agganciato dentro GET /api/notifications/:userId (non
+   dentro GET /api/hikes, che e' la rotta piu' chiamata in assoluto e
+   avrebbe significato una scrittura in piu' ad ogni giro per ogni
+   utente, con piu' rischio di corse concorrenti) - confronto per
+   STRINGHE di calendario ("YYYY-MM-DD"), MAI new Date(), per non
+   ripetere l'esatto errore gia' corretto nel punto 58 poco sopra in
+   questo stesso file.
+
+Denis ha chiesto esplicitamente, dopo l'approvazione del piano, di NON
+scrivere codice ("niente codice per adesso... prepara tutto per
+riprendere il lavoro in una sessione futura"). Rispettato: zero righe di
+codice applicativo toccate in questa parte della sessione, solo
+documentazione (cose_da_fare.txt, vault, questo file, leggimi.txt).
