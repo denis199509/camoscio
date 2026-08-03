@@ -55,8 +55,8 @@ o ne arriva uno nuovo.
         preliminare nel codice, salvata come materiale di sfondo (vedi
         cose_da_fare.txt punto 64 e 04-Da-Fare.md nel vault) - non decisioni
         prese. Si riprende chiedendogli di ridettare il punto con un esempio.
-    NESSUN PUSH DEL CODICE fatto oggi: il commit del punto 58 (06d76c9) resta
-    solo locale, un commit avanti a origin/master - DECISIONE RIMANDATA A DENIS,
+    NESSUN PUSH DEL CODICE fatto oggi: restano due commit locali non pushati
+    (06d76c9 punto 58, 58c3262 chiusura sessione) - DECISIONE RIMANDATA A DENIS,
     non ha ancora risposto se vuole anche il push (e quindi il deploy su
     Render). Il vault invece E' STATO PUSHATO (e' privato, prassi gia' in uso).
 
@@ -76,9 +76,9 @@ o ne arriva uno nuovo.
     esatti, magari uno screenshot suo).
 
 >>> STATO VERIFICATO A FINE SESSIONE (2026-08-03):
-      - camoscio: albero di lavoro pulito, MA NON allineato a origin/master - un
-        commit locale avanti (06d76c9, punto 58), non pushato di proposito in
-        attesa della risposta di Denis;
+      - camoscio: albero di lavoro pulito, MA NON allineato a origin/master -
+        due commit locali avanti (06d76c9 punto 58, 58c3262 chiusura sessione),
+        non pushati di proposito in attesa della risposta di Denis;
       - camoscio memoria (vault): albero pulito, allineato al remoto privato
         github.com/denis199509/Camoscio-memoria (ultimo commit cbca7d2,
         pushato);
