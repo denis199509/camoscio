@@ -4795,3 +4795,92 @@ DEBITO TECNICO NOTO, non urgente ma da non dimenticare:
    public/js/badge-points.js vince sempre sulle vette delle escursioni (sia in
    catalogo() nel browser sia in puntiTimbrabili() sul server). Se un giorno
    servisse allineare anche il database, il posto e' il campo peaks di Hike.
+
+=====================================================================
+3 AGOSTO 2026 - cartella vault sistemata, PUNTO 58 (recensione anticipata)
+=====================================================================
+
+CARTELLA DEL VAULT: era finita annidata dentro camoscio (camoscio/camoscio
+memoria) invece che a fianco come dice CLAUDE.md - risultava "untracked" in
+git status ma NON era nel .gitignore, quindi a un solo "git add -A" di
+distanza dal finire nel repository pubblico. Denis l'ha spostata a mano
+prima di iniziare a lavorare. Verificato dopo lo spostamento: la vecchia
+posizione non esiste piu', camoscio risulta pulito (nessun untracked), il
+repository del vault nella nuova posizione ha storia e remoto intatti
+(stesso ultimo commit 28e35cd, stesso remoto privato).
+
+REGISTRATI I PUNTI 58-63 (undicesima lista di cose_da_fare.txt), dettati da
+Denis a inizio sessione, con verifica nel codice per ciascuno prima di
+scriverli. Il PUNTO 63 e' stato corretto in sessione: annotato per errore
+anche nei risultati di "Cerca Persone", Denis ha chiarito che riguarda SOLO
+la pagina profilo (posizione esatta data con un esempio: sotto il badge
+personale, prima dei badge conquistabili).
+
+PUNTO 58 CHIUSO - "sono riuscito a mandare una recensione a Manu prima di
+fare un'escursione insieme": bug confermato e doppio, non uno solo.
+ - LATO SERVER (routes/reviews.js, POST /): il controllo verificava solo che
+   le due persone fossero entrambe in hike.participants della stessa
+   escursione, MAI un completamento vero. Corretto: ora richiede un
+   documento Completion per ENTRAMBI gli utenti su quell'hikeId (stesso
+   segnale gia' usato per lo storico personale, POST /:id/complete - non un
+   concetto nuovo).
+ - LATO CLIENT (public/js/social.js, populateReviewTargets): la causa
+   VERA del caso segnalato da Denis. Il filtro era new Date(hike.date) <
+   new Date() - una data senza ora confrontata con l'istante preciso segna
+   "gia' passata" dalla MEZZANOTTE del suo giorno, ore prima che
+   l'escursione inizi davvero. Corretto per leggere db.completions (i
+   completamenti del solo utente collegato - il server resta comunque
+   l'arbitro finale).
+PROVATO DAL VIVO, non solo per lettura di codice:
+ - Ispezionato il database (script temporaneo, letto/cancellato dopo):
+   trovata l'escursione demo "Ascesa al Corno Grande" con Sofia FotoPasso
+   completata, Marco Alpinista e Giulia Escursionista no - caso perfetto
+   per riprodurre il bug vecchio.
+ - Login demo via /api/auth/demo-login + chiamate dirette a POST
+   /api/reviews: Marco -> Giulia (nessuno dei due completato) bloccato
+   403 col nuovo messaggio; Marco -> Sofia (asimmetrico, solo lei
+   completata) bloccato lo stesso.
+ - Aggiunto un Completion DI PROVA per Giulia sulla stessa escursione:
+   Giulia -> Sofia e' passato (200, success:true), a conferma che il
+   caso legittimo funziona ancora. Ripulito tutto subito dopo: cancellata
+   la recensione di prova, il suo ReviewLock (hash ricalcolato), il
+   Completion di prova, e la reputazione di Sofia rimessa a 95 (era
+   salita a 99 per il ricalcolo della recensione di prova). Riconteggiati
+   Review (6) e ReviewLock (2): identici al punto di partenza.
+ - VERIFICA NEL BROWSER VERO (Chrome collegato a meta' sessione): login
+   Marco -> il menu recensioni mostra "Nessuna escursione passata
+   condivisa da recensire" (prima del fix avrebbe mostrato Sofia e
+   Giulia). Login Sofia -> il menu mostra "Marco Alpinista" (perche' lato
+   client si vede solo il PROPRIO completamento), ma inviando la
+   recensione compare a schermo il toast rosso "Potrete recensirvi solo
+   dopo aver segnato entrambi l'escursione come completata" - nessuna
+   recensione creata, nessuna pulizia necessaria. Nessun errore in
+   console durante tutta la prova.
+Commit locale 06d76c9 ("Punto 58: blocca recensione prima del completamento
+vero; registra punti 59-63"). NESSUN PUSH fatto: decisione rimandata a
+Denis, che non ha ancora risposto sulla domanda.
+
+PUNTO 64 (nuovo, arrivato fuori sequenza, NON PROGETTATO): Denis ha
+descritto un tasto "Completa escursione" per il creatore dell'escursione,
+che aprirebbe una conferma di chi ha partecipato davvero (checklist +
+possibilita' di aggiungere qualcuno non tra i partecipanti originali).
+Subito dopo ha detto "mi sono spiegato male", PRIMA che si arrivasse a
+disegnare o stimare qualunque cosa. Fatta comunque una ricognizione nel
+codice (due agenti di ricerca in parallelo, verificato tutto con
+file/riga): il completamento oggi e' solo auto-dichiarato e mai per conto
+di altri (tolto apposta come fix di un bug in Fase H); molte parti del
+sito - incluso il gate recensioni appena fatto - richiedono
+hike.participants per considerare condivisa un'escursione, quindi un
+completamento di gruppo dovrebbe aggiungere li' chi viene confermato, non
+solo creare Completion; gli Stamp/badge restano un sistema indipendente,
+mai toccato da una conferma manuale di presenza. QUESTO E' SOLO MATERIALE
+DI SFONDO, non decisioni prese: si riprende chiedendo a Denis di ridettare
+il punto con un esempio pratico, non progettando sulla prima descrizione.
+Dettaglio completo (parole di Denis, ricerca) in cose_da_fare.txt punto 64
+e nel vault, 04-Da-Fare.md.
+
+FINE SESSIONE: server locale fermato. Lo stop del task in background ha
+dato "successo" ma netstat mostrava ancora un processo in ascolto sulla
+porta 3000 - chiuso con taskkill //F //PID, porta verificata libera dopo
+(lezione gia' nota, vedi le trappole Windows piu' sopra: non fidarsi del
+solo "fermato con successo").

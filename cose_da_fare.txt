@@ -1883,3 +1883,64 @@ perche' ci devo pensare."
          territorio") e i "vari livelli" gia' annotati nel punto 42
          del vault (la domanda sul raggio, mai risposta) - NON
          toccare finche' non decide lui, e' lui stesso a chiederlo.
+
+--- COMPLETAMENTO DI GRUPPO DAL CREATORE ---
+
+64) [DA RISPIEGARE - Denis dice di essersi spiegato male, 2026-08-03]
+Denis: "quando l'escursione e' finita chi ha creato l'escursione ha
+la possibilita' di completare l'escursione dal tasto. prima di
+completare l'escursione dobbiamo chiedere chi ha partecipato
+all'escursione. Quindi cliccando sul tasto 'Completa escursione' si
+apre una pagina per confermare i partecipanti. In automatico ti
+chiede di spuntare tra i partecipanti (magari qualcuno non si e'
+presentato per un suo motivo), si sceglie tra chi ha chiesto di
+partecipare. vicino un tasto aggiungi. cliccando si apre una
+finestra di ricerca dove posso cercare un altro utente. magari
+contattato fuori dal sito ma pure lui presente. Una volta scelti i
+partecipanti si conferma. L'escursione poi risulta completata e
+visibile sul profilo sia di chi l'ha creata sia da chi e' stato
+presente, confermato da chi ha creato l'escursione."
+   DENIS HA DETTO SUBITO DOPO, PRIMA DI QUALUNQUE STIMA O PROGETTO:
+   "mi sono spiegato male". QUESTA DESCRIZIONE NON E' DEFINITIVA - va
+   ridettata da lui con un esempio pratico prima di disegnare
+   qualunque cosa. Non tirare a indovinare quale parte fosse sbagliata
+   e non scrivere codice su questa base.
+   RICERCA GIA' FATTA IL 2026-08-03 (materiale utile per quando si
+   riprende, NON SONO DECISIONI PRESE - restano da confermare con lui
+   dopo che ha rispiegato):
+     - Oggi il completamento e' SOLO auto-dichiarato: ogni
+       partecipante clicca da solo "Segna come completata"
+       (routes/hikes.js, POST /:id/complete, righe 245-313), mai per
+       conto di altri (tolto apposta come fix di un bug in Fase H -
+       vedi il commento alle righe 243-244).
+     - hike.pendingApproval e' gente in attesa, NON ancora
+       partecipazione vera (puo' essere rifiutata) - diverso da
+       hike.participants.
+     - Molte parti del codice presumono che "aver condiviso
+       un'escursione" equivalga a essere in hike.participants: il
+       gate recensioni appena costruito (punto 58), gli avatar sulla
+       scheda escursione, il gruppo dello zaino condiviso
+       (backpack.js, gruppoDi). MA "Le mie escursioni fatte"
+       (classificaMieEscursioni in social.js) si basa SOLO su
+       db.completions, non ricontrolla participants. Se un futuro
+       completamento di gruppo creasse un Completion senza aggiungere
+       anche a participants, romperebbe silenziosamente il punto 58
+       appena fatto e le altre viste.
+     - Stamp/badge (vette) sono un sistema COMPLETAMENTE indipendente
+       dai Completion: arrivano solo da GPS reale durante il
+       tracciamento o da import .gpx, mai da una conferma manuale di
+       presenza. Qualunque soluzione futura non deve promettere di
+       sbloccare badge per chi viene confermato qui.
+     - Esiste gia' il pattern "isCreatorMe" (social.js riga 272) per
+       mostrare sezioni solo al creatore (usato oggi per il pannello
+       Veto sulle richieste in sospeso), e un pattern di ricerca
+       utenti gia' pronto e riusabile (public/js/peoplesearch.js,
+       punto 51) per un eventuale tasto "Aggiungi".
+     - Il completamento individuale oggi chiede anche un tempo
+       impiegato (actualTimeHours, facoltativo) che aggiorna il passo
+       personale - Denis non ne ha parlato in questa richiesta. Da
+       chiarire quando rispiega: se un completamento di gruppo deve
+       toccare anche questo o restare solo su "chi c'era".
+   NON IMPLEMENTATO, NON PROGETTATO NEL DETTAGLIO. Si riprende
+   chiedendogli prima di rispiegare il punto con un esempio pratico
+   davanti, poi si decide come procedere.

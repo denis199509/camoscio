@@ -1,6 +1,6 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-01
+Aggiornato: 2026-08-03
 ===================================================================
 
 QUESTO FILE DICE SOLO UNA COSA: a che punto siamo adesso e da dove si ricomincia.
@@ -31,62 +31,66 @@ o ne arriva uno nuovo.
 
 
 
->>> SESSIONE DEL 2026-08-01, RIASSUNTA (dettaglio completo in cose_da_fare.txt e nel
+>>> SESSIONE DEL 2026-08-03, RIASSUNTA (dettaglio completo in cose_da_fare.txt e nel
     vault, punto per punto - qui solo cosa e' cambiato):
-      - Vault su GitHub, repository PRIVATO separato (github.com/denis199509/
-        Camoscio-memoria), verificato non raggiungibile senza autenticazione;
-      - PUNTO 44: tolto il tempo CAI finto sulle escursioni senza traccia;
-      - PUNTO 41: tolto "Profilo verificato" (KYC), non serviva piu';
-      - PUNTO 40: l'icona profilo porta alla card giusta; aggiunto editor per foto
-        e bio (Denis ha chiesto di costruirlo, non era nel punto originale);
-      - PUNTO 50 (idea nuova, non dettata prima): badge personali per i 4 profili
-        reali + pagina profilo di un altro utente, apribile da nome/avatar ovunque;
-      - PUNTO 46: nuova scheda "I Tuoi Annunci Auto" nel carpooling (si cerca in
-        tutte le escursioni, non solo quella attiva; si puo' modificare e cancellare);
-      - PUNTO 47: si puo' aggiungere un oggetto PERSONALE a mano (non solo
-        condiviso), e tasto "Conferma zaino" che controlla l'obbligatorio;
-      - PUNTO 51 (idea nuova, non dettata prima - fatta con Plan Mode): voce
-        "Cerca Persone" in barra laterale, sotto Tribu' & Squadre. La ricerca
-        parte dopo 4 lettere scritte (confermato con Denis prima di scrivere
-        codice, la frase originale era ambigua). Completa il punto 50: prima
-        si vedeva il profilo di un altro utente solo trovandolo per caso, ora
-        si puo' cercare per nome.
-    NESSUNA ROTTA SERVER NUOVA in tutta la sessione: ogni volta il permesso o il
-    dato c'era gia', mancava solo l'interfaccia - verificato nel codice ogni volta
-    prima di scrivere.
-    ACCOUNT REALI: SONO 4, NON PIU' 3 (Manu er 5 lingue e Matteo Bi si sono
-    aggiunti da soli). Non scrivere piu' un numero fisso da nessuna parte.
+      - Cartella del vault RIMESSA A FIANCO di camoscio da Denis (era finita
+        annidata dentro il repo pubblico, untracked ma non nel .gitignore - a un
+        solo "git add -A" dal finire nel repo pubblico). Verificato dopo: vecchia
+        posizione sparita, camoscio pulito, vault con storia e remoto intatti;
+      - Registrati i PUNTI 58-63 (undicesima lista di cose_da_fare.txt), col
+        punto 63 corretto in sessione (non riguarda Cerca Persone, solo la
+        pagina profilo, posizione esatta data da Denis);
+      - PUNTO 58 CHIUSO: una recensione risultava disponibile prima che
+        l'escursione insieme fosse conclusa. Bug doppio: lato server mancava il
+        controllo di completamento vero (solo co-iscrizione), lato client la
+        data dell'escursione veniva confrontata con l'istante attuale (marcava
+        "passata" dalla mezzanotte del suo giorno, ore prima di iniziare
+        davvero). Provato dal vivo con account demo (bloccato, asimmetrico,
+        caso positivo con completamento di prova poi ripulito) e nel browser
+        vero (Chrome), database ricontrollato identico a prima;
+      - PUNTO 64 (nuovo, non nella lista): Denis ha descritto un tasto
+        "Completa escursione" per il creatore (conferma di gruppo di chi ha
+        partecipato davvero), poi ha detto SUBITO "mi sono spiegato male" prima
+        di qualunque stima o progetto. NON PROGETTATO: solo una ricognizione
+        preliminare nel codice, salvata come materiale di sfondo (vedi
+        cose_da_fare.txt punto 64 e 04-Da-Fare.md nel vault) - non decisioni
+        prese. Si riprende chiedendogli di ridettare il punto con un esempio.
+    NESSUN PUSH DEL CODICE fatto oggi: il commit del punto 58 (06d76c9) resta
+    solo locale, un commit avanti a origin/master - DECISIONE RIMANDATA A DENIS,
+    non ha ancora risposto se vuole anche il push (e quindi il deploy su
+    Render). Il vault invece E' STATO PUSHATO (e' privato, prassi gia' in uso).
 
->>> DA DOVE SI CONTINUA COL LAVORO VERO. Fatti 44, 41, 40, 50, 46, 47, 51. Delle sette
-    liste resta solo il PUNTO 43 (collegare un progetto o una traccia vera a
-    un'escursione - va vicino al 44, quindi e' un candidato forte), poi il PUNTO 37
-    (Dead Man's Switch sul server, il pezzo grosso di sicurezza).
-    CI SONO ANCHE il PUNTO 39 (mappa topografica: e' un cambio di MAPPA DI BASE, non
-    un ritocco) e il PUNTO 42b (quante volte su una vetta: non serve piu' nessun
-    raggio), sbloccati dal 29/07. Denis non ha ancora scelto se deviare dall'ordine:
-    GLIELO SI CHIEDE, non si decide per lui.
-    NUOVA LISTA IN ATTESA (decima, punti 52-57 in cose_da_fare.txt), dettata da Denis
-    a fine sessione il 01/08, SOLO REGISTRATA, NIENTE IMPLEMENTATO per sua richiesta
-    esplicita. PRIMA DI STIMARE LAVORO servono due risposte sue (vedi domanda 0 in
-    cose_da_fare.txt): se il punto 53 (trovare le escursioni altrui) non sia gia'
-    risolto dalla pagina Escursioni, e cos'e' davvero la "terza possibilita'" del
-    punto 56 (car-split) oltre a quanto gia' fatto oggi al punto 46.
+>>> DA DOVE SI CONTINUA COL LAVORO VERO. Fatto il punto 58. L'ordine concordato
+    con Denis per l'undicesima lista (58-63) era: 58, poi 61 (notifica su
+    richiesta di partecipazione), poi 52 (bug wizard, da riprodurre), poi i
+    punti "pronti" (54, 57, 63a, 59, 42b, 39), poi i lavori grossi (43, 37, 48,
+    45, 55). IL PUNTO 64 E' ARRIVATO FUORI SEQUENZA e resta da ridettare -
+    CHIEDERE A DENIS se si riprende da li' o si torna all'ordine concordato
+    (punto 61). GLIELO SI CHIEDE, non si decide per lui.
+    Restano ferme, per esplicita richiesta di Denis ("ci devo pensare"): il
+    punto 42a (raggio zona di competenza) e il punto 63b (nome/livelli) - non
+    riproporli finche' non torna lui sull'argomento.
+    Domande gia' note, mai ancora fatte a Denis: punto 53 (forse gia' risolto
+    dalla pagina Escursioni), punto 56 (terza possibilita' del car-split),
+    punto 62 (Daniel/iPhone, nessun tasto risponde - serve prima tasto/pagina
+    esatti, magari uno screenshot suo).
 
->>> STATO VERIFICATO A FINE SESSIONE (2026-08-01):
-      - camoscio: albero di lavoro pulito, master allineato a origin/master (ultimo
-        commit a5fd21b, punto 51). Ogni punto chiuso oggi e' stato verificato sul
-        file DAVVERO SERVITO da Render dopo il push, non solo sulla home a 200;
+>>> STATO VERIFICATO A FINE SESSIONE (2026-08-03):
+      - camoscio: albero di lavoro pulito, MA NON allineato a origin/master - un
+        commit locale avanti (06d76c9, punto 58), non pushato di proposito in
+        attesa della risposta di Denis;
       - camoscio memoria (vault): albero pulito, allineato al remoto privato
-        github.com/denis199509/Camoscio-memoria;
-      - database: 8 utenti (4 demo + 4 reali, tutti confermati), nessun token di
-        reset/verifica in giro, 3 escursioni, 3 segnalazioni;
-      - RIPRISTINATO un dato demo: la prova del punto 46 (verificare che "Cancella
-        annuncio" funzioni sul serio) aveva cancellato per davvero l'annuncio auto
-        di Marco Alpinista su "Ascesa al Corno Grande". Rimesso identico a prima
-        (Roma, 3 posti, 260 km) per non lasciare la demo diversa da come l'ho
-        trovata;
-      - PROVE AUTOMATICHE (prove/*.js) NON rilanciate: nessun punto di oggi
-        toccava accessi, password o email (unica regola che le richiede), quindi
-        non serviva. Ogni punto e' stato verificato a mano nel browser, descritto
-        punto per punto in cose_da_fare.txt;
-      - nessun server locale acceso, nessun processo node rimasto.
+        github.com/denis199509/Camoscio-memoria (ultimo commit cbca7d2,
+        pushato);
+      - database: NESSUNA modifica ai dati reali. Le uniche scritture di prova
+        (un Completion temporaneo per Giulia Escursionista su "Ascesa al Corno
+        Grande", una recensione di prova, un blocco anti-doppione) sono state
+        cancellate e la reputazione di Sofia FotoPasso rimessa a 95 (era salita
+        a 99) - Review (6) e ReviewLock (2) ricontrollati uguali al punto di
+        partenza;
+      - PROVE AUTOMATICHE (prove/*.js) NON rilanciate: il punto 58 non tocca
+        accessi, password o email (unica regola che le richiede) - verificato a
+        mano con chiamate dirette all'API e nel browser vero;
+      - nessun server locale acceso: un processo era rimasto in ascolto sulla
+        porta 3000 nonostante lo stop del task in background - chiuso con
+        taskkill, porta verificata libera dopo.
