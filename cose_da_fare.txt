@@ -1718,3 +1718,168 @@ i miei badge. Deve comparire in alto, il primo badge riconosciuto."
    qui serve solo richiamarli anche per l'utente collegato dentro badges.js,
    non costruire nulla da zero. NESSUNA AMBIGUITA' REALE: pronto per essere
    implementato appena si riprende il lavoro.
+
+=====================================================================
+UNDICESIMA LISTA (2026-08-03) - sei punti dettati da Denis a inizio
+sessione. Ordine di lavoro non ancora deciso: si registra tutto con la
+verifica fatta oggi nel codice, poi si decide insieme come procedere.
+=====================================================================
+
+--- RECENSIONE PRIMA DEL TEMPO (BUG) ---
+
+58) [DA FARE] Denis: "Sono riuscito a mandare una recensione a Manu
+prima di fare un'escursione insieme. Ci siamo iscritti solo per fare
+la stessa escursione. Ma la recensione sono riuscito a metterla
+prima. La recensione deve essere disponibile solo una volta finita
+l'escursione insieme."
+   VERIFICATO NEL CODICE, e Denis ha ragione: routes/reviews.js, POST
+   /, controlla solo che le due persone siano ENTRAMBE dentro
+   hike.participants della stessa escursione (righe 38-44) - nessun
+   controllo sulla data dell'escursione ne' su un completamento vero.
+   Il modello Completion (userId+hikeId, indice unico, gia' usato da
+   "Solo i partecipanti dell'escursione possono segnarla come
+   completata" in routes/hikes.js riga 258) e' il segnale giusto da
+   usare al posto della sola co-iscrizione: la recensione dovrebbe
+   richiedere un Completion per ENTRAMBI gli utenti su quell'hikeId,
+   non solo la presenza nella lista partecipanti.
+
+--- PROFILO PROPRIO: FUORI DALLA DASHBOARD ---
+
+59) [DA FARE] Denis: "Il mio profilo non deve stare sulla Dashboard,
+diventa una pagina separata. Le informazioni del mio profilo le tolgo
+dalla Dashboard."
+   VERIFICATO NEL CODICE: oggi "Il Tuo Profilo" (foto, bio, esperto
+   locale) e' una sezione dentro la Dashboard (public/js/profile.js),
+   raggiunta scorrendo dopo il click sull'icona in alto a destra
+   (punto 40, fatto 01/08). Esiste gia' l'infrastruttura per una
+   pagina profilo separata, senza voce in barra laterale: quella di
+   UN ALTRO utente (public/js/userprofile.js, sezione #user-profile,
+   punto 50). Va costruita la versione "propria" sullo stesso
+   principio, ma con i campi modificabili che oggi esistono solo li'
+   dentro la Dashboard (foto, bio, esperto locale). Nessuna modifica
+   al server: e' spostamento di interfaccia, i dati sono gia' tutti
+   li'.
+
+--- DOMANDA: TRACCIA DA UN LINK WIKILOC INVECE DEL FILE GPX ---
+
+60) [RICERCA FATTA IL 2026-08-03] Denis: "Non ho il file .gpx
+disponibile, ma posso copiare e incollare un link tipo Wikiloc dove
+altri hanno caricato le tracce. Wikiloc mi fa scaricare le tracce
+solo se ho pagato l'abbonamento. Ci possiamo agganciare al link
+Wikiloc o simile per avere la traccia gpx? Per saltare il passaggio
+di scaricare sul telefono il gpx per poi ricaricarlo sul sito?"
+   RICERCATO (documentazione pubblica di Wikiloc, non un test diretto
+   con un account): scaricare la traccia di un ALTRO utente richiede
+   Wikiloc Premium (19,99 euro/anno) - combacia con quello che Denis
+   sperimenta di persona, non e' un caso isolato.
+   Wikiloc offre anche "Incorpora mappa" (Embed): genera un <iframe>
+   pensato per la resa VISIVA di una mappa dentro un'altra pagina web,
+   non regala i dati grezzi della traccia in un formato leggibile dal
+   nostro parser - dentro l'iframe gira codice loro, non un file.
+   Estrarre le coordinate scavalcando il download a pagamento sarebbe
+   scraping non autorizzato: quasi certamente contro i loro termini
+   di servizio, oltre che fragile (si rompe alla prima modifica della
+   loro pagina). SCONSIGLIATO agganciarsi cosi'.
+   UNA STRADA DA PROVARE DAVVERO PRIMA DI ESCLUDERLA: la
+   documentazione Wikiloc parla anche di un download "Semplificato"
+   (fino a 500 punti), distinto da quello "Originale" - non e' chiaro
+   dalle fonti se sia gratuito anche per tracce di altri utenti (le
+   fonti si contraddicono, e Denis riporta di chiedergli comunque
+   l'abbonamento). Vale un tentativo pratico con un account Wikiloc
+   gratuito, perche' il nostro parser semplifica comunque ogni GPX in
+   ingresso (Douglas-Peucker): 500 punti sarebbero quasi certamente
+   piu' che sufficienti anche per un percorso lungo.
+   SE NESSUNA VIA GRATUITA FUNZIONA: resta il percorso attuale
+   (scarica sul telefono, ricarica sul sito), ma conviene chiedere la
+   traccia a chi l'ha REGISTRATA DAVVERO (non necessariamente su
+   Wikiloc) e farsela esportare dalla sua app/dispositivo originale -
+   il parser scritto a mano legge gia' 20 dialetti GPX reali (Garmin,
+   Strava, Komoot, OsmAnd, ecc.), quindi nella maggior parte dei casi
+   la traccia originale e' gia' compatibile senza passare da Wikiloc.
+
+--- AVVISO QUANDO QUALCUNO CHIEDE DI PARTECIPARE ---
+
+61) [DA FARE] Denis: "Quando qualcuno mi chiede di partecipare ad una
+mia escursione lo vedo soltanto se vado a controllare la mia
+escursione se ha qualche nuovo invito. Vorrei un messaggio tipo
+pop-up che mi informi che c'e' una determinata persona che ha chiesto
+di partecipare alla mia escursione. Non devo essere io ad andare a
+controllare, ma il sistema me lo dovrebbe ricordare prima."
+   VERIFICATO NEL CODICE, e il buco e' anche piu' netto di come lo
+   descrive Denis: quando qualcuno si aggiunge a hike.pendingApproval
+   (richiesta di iscrizione in attesa, public/js/social.js righe
+   428-429), NON viene creata nessuna Notification lato server - non
+   e' poco visibile, proprio non esiste. Il sistema di notifiche
+   c'e' gia' e funziona per un altro evento (nuova escursione di
+   squadra, routes/hikes.js riga 167; campanella con contatore non
+   letti in public/js/app.js). routes/hikes.js ha gia' una funzione,
+   diffIdLists(), che calcola esattamente quali ID sono stati
+   aggiunti a pendingApproval in un salvataggio: e' il punto giusto
+   per generare la notifica mancante al creatore.
+   DA CHIARIRE QUANDO SI IMPLEMENTA (non ora): la campanella esistente
+   e' passiva (un numero che sale, va notato e aperto da soli) - se
+   basta questo per "il sistema me lo deve ricordare" o se serve
+   qualcosa di piu' invadente (un avviso a schermo, non solo la
+   campanella), va chiesto a Denis con un esempio pratico davanti.
+
+--- PROBLEMA DANIEL: NESSUN TASTO RISPONDE ---
+
+62) [DA INDAGARE - CAUSA NON TROVATA] Denis: "Abbiamo gia' avuto un
+problema con l'account di Daniel. Non funzionava il tasto conferma
+mail. Abbiamo provato ed infatti Daniel non riesce a cliccare su
+nessun tasto, tutti non rispondono. Daniel ha iPhone, non so se puo'
+influenzare."
+   "Daniel" e' DaniWoll, il secondo account reale - stesso utente del
+   punto 49 (30/07/2026), dove pero' si era scoperto che il tasto
+   NON era rotto (il problema era la scadenza del token, non il
+   pulsante: vedi 07-Trappole-Tecniche nel vault). Questa
+   segnalazione e' diversa e piu' seria: TUTTI i tasti, non uno solo.
+   NON SI INDAGA ALLA CIECA: senza sapere quale pagina, quale tasto
+   esatto, quale versione di iOS/Safari, e soprattutto senza un
+   errore letto dalla Console del suo browser, si tirerebbe a
+   indovinare - stessa lezione gia' scritta nel vault dal punto 49
+   ("cercare prima la traccia del gesto", "chi riferisce non e' chi
+   ha visto lo schermo"). SERVE PRIMA, da Denis o direttamente da
+   Daniel: la pagina/tasto esatto, e se possibile un errore dalla
+   Console (su iPhone: Impostazioni -> Safari -> Avanzate -> Ispettore
+   Web, collegato a un Mac; oppure anche solo uno screenshot di cosa
+   succede quando preme).
+
+--- ZONA DI COMPETENZA: SUL PROFILO, NOME DA CAMBIARE ---
+
+63) [DA FARE IN PARTE, IN PARTE IN SOSPESO] Denis: "Ho inserito i
+Monti Lucretili come zona di competenza, ma questa informazione non
+compare da nessuna parte. Spostiamo questa informazione sul profilo.
+Quando cerco una persona, devo vedere pure la zona di competenza (che
+poi non mi piace 'competenza', non e' che la zona e' di competenza,
+e' solo conoscenza migliore del territorio). Devo pure vedere i vari
+livelli di cui parlavo, quindi questo lo lasciamo sempre in sospeso
+perche' ci devo pensare."
+   E' la continuazione del punto 42(a) nel vault (04-Da-Fare.md), non
+   un punto scollegato. VERIFICATO NEL CODICE: la "zona di competenza"
+   e' il campo gia' esistente "esperto locale" (models/User.js:
+   localExpert {area, active}) - Denis l'ha attivato scrivendo "Monti
+   Lucretili" come area (public/js/profile.js,
+   saveLocalExpertStatus()). OGGI COMPARE SOLO come tooltip al
+   passaggio del mouse sull'avatar di un partecipante dentro una
+   scheda escursione (public/js/social.js righe 300-305) - ne' sulla
+   pagina profilo (propria o altrui) ne' nei risultati di Cerca
+   Persone: "esperto"/"expert" non compare in userprofile.js ne' in
+   peoplesearch.js, confermato cercando nel codice.
+   DUE RICHIESTE DENTRO QUESTO PUNTO, DA TENERE SEPARATE:
+     (a) [DA FARE] CORRETTO IL 2026-08-03 - prima annotato per errore
+         anche nei risultati di Cerca Persone: Denis ha chiarito che
+         non c'entra nulla, riguarda SOLO la pagina profilo (propria
+         e altrui, punto 59 sopra e punto 50). Posizione precisa data
+         da Denis con un esempio: "sotto il badge personale e prima
+         dei badge conquistabili" - in userprofile.js va tra il
+         blocco badgeBox (badge personale) e il blocco badgesGrid
+         (badge conquistati), stessa cosa da costruire nella pagina
+         profilo propria del punto 59. Il campo esiste gia', manca
+         solo mostrarlo li';
+     (b) [IN SOSPESO PER RICHIESTA ESPLICITA DI DENIS: "ci devo
+         pensare"] rinominare "competenza" (parole sue: "non e' che
+         la zona e' di competenza, e' solo conoscenza migliore del
+         territorio") e i "vari livelli" gia' annotati nel punto 42
+         del vault (la domanda sul raggio, mai risposta) - NON
+         toccare finche' non decide lui, e' lui stesso a chiederlo.

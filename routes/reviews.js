@@ -5,6 +5,7 @@ const Review = require('../models/Review');
 const ReviewLock = require('../models/ReviewLock');
 const User = require('../models/User');
 const Hike = require('../models/Hike');
+const Completion = require('../models/Completion');
 const { requireAuth } = require('../middleware/auth');
 
 // Ottieni recensioni aggregate per un utente
@@ -41,6 +42,18 @@ router.post('/', requireAuth, async (req, res) => {
         });
         if (!sharedHike) {
             return res.status(403).json({ error: 'Puoi recensire solo chi ha condiviso con te questa escursione' });
+        }
+
+        // Essere entrambi iscritti non basta (bug segnalato da Denis 03/08/2026): l'iscrizione
+        // esiste anche prima che l'escursione si sia svolta. Il segnale che e' finita davvero e'
+        // lo stesso gia' usato per lo storico, un Completion per utente (POST /:id/complete):
+        // richiederne uno per ciascuna delle due persone equivale a "l'abbiamo fatta insieme".
+        const [reviewerCompletion, targetCompletion] = await Promise.all([
+            Completion.findOne({ hikeId, userId: reviewerId }),
+            Completion.findOne({ hikeId, userId: targetUserId })
+        ]);
+        if (!reviewerCompletion || !targetCompletion) {
+            return res.status(403).json({ error: "Potrete recensirvi solo dopo aver segnato entrambi l'escursione come completata" });
         }
 
         // Anti-spam: un hash one-way (mai reviewerId in chiaro) impedisce a chi ha già recensito

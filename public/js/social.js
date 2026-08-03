@@ -835,6 +835,11 @@ window.inviteSquadToHike = async function(squadId) {
 // Popola gli utenti recensibili: solo co-partecipanti di escursioni condivise e già concluse
 // (non più "chiunque nel sistema") - le opzioni sono coppie escursione+utente perché la stessa
 // persona può essere stata compagna di più uscite passate.
+// "Già conclusa" si misura da un Completion vero (bug segnalato da Denis 03/08/2026: la data
+// dell'escursione confrontata con adesso segnava già "passata" dalla mezzanotte del giorno
+// stesso, prima ancora che l'escursione iniziasse). Qui si può controllare solo il PROPRIO
+// completamento (db.completions ha solo quelli dell'utente corrente): il server verifica anche
+// quello dell'altra persona al momento dell'invio, vedi routes/reviews.js.
 function populateReviewTargets() {
     const select = document.getElementById("review-target");
     if (!select) return;
@@ -842,8 +847,9 @@ function populateReviewTargets() {
     const db = window.CamoscioState;
     select.innerHTML = "";
 
+    const completedHikeIds = new Set(db.completions.map(c => c.hikeId));
     const pastSharedHikes = db.hikes.filter(h =>
-        new Date(h.date) < new Date() && h.participants.includes(db.currentUser.id)
+        completedHikeIds.has(h.id) && h.participants.includes(db.currentUser.id)
     );
 
     const options = [];
