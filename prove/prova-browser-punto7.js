@@ -272,6 +272,17 @@ async function aspetta(page, fn, descrizione, timeout = 15000) {
             ok('tornando al sito si e\' gia\' dentro, senza rifare l\'accesso', dentroDavvero);
 
             // --- 9. Cambio password dal profilo ---
+            // Punto 59 (06/08/2026): il profilo non e' piu' dentro la Dashboard, e' una
+            // pagina a se' - ci si arriva cliccando il riquadro utente in alto a destra
+            // (#btn-goto-profile). Prima bastava un page.goto(BASE) perche' la card veniva
+            // popolata comunque da renderDashboard(); ora si popola solo navigando li'
+            // davvero (renderMyProfilePage()), stessa lezione gia' scritta per il punto 34:
+            // quando cambia il flusso, la prova va aggiornata, non il sito.
+            await aspetta(page, () => {
+                const w = document.getElementById('btn-goto-profile');
+                return w && w.offsetParent !== null;
+            }, 'riquadro utente in alto a destra pronto al click');
+            await page.click('#btn-goto-profile');
             const sezioneVisibile = await aspetta(page, () => {
                 const s = document.getElementById('change-password-section');
                 return s && !s.classList.contains('hidden');
