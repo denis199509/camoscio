@@ -1826,7 +1826,7 @@ l'escursione insieme."
 
 --- PROFILO PROPRIO: FUORI DALLA DASHBOARD ---
 
-59) [DA FARE] Denis: "Il mio profilo non deve stare sulla Dashboard,
+59) [FATTO 2026-08-06] Denis: "Il mio profilo non deve stare sulla Dashboard,
 diventa una pagina separata. Le informazioni del mio profilo le tolgo
 dalla Dashboard."
    VERIFICATO NEL CODICE: oggi "Il Tuo Profilo" (foto, bio, esperto
@@ -1840,6 +1840,34 @@ dalla Dashboard."
    dentro la Dashboard (foto, bio, esperto locale). Nessuna modifica
    al server: e' spostamento di interfaccia, i dati sono gia' tutti
    li'.
+   -> FATTO: nuova sezione #my-profile in index.html, senza voce in
+      barra laterale, stesso principio di #user-profile - #btn-goto-profile
+      (il riquadro utente in alto a destra) ora porta li' invece che a
+      scorrere nella Dashboard. La card "Il Tuo Profilo" (foto, bio,
+      esperto locale, cambio password) e' stata SPOSTATA, non copiata:
+      tolta dalla colonna sinistra della Dashboard, che ora ha solo
+      Benvenuto e Passaporto Vette.
+      REFACTOR fatto insieme (stessa lezione gia' applicata a
+      statoBadge()/statoBadgePer() in badges.js): intestazione (avatar/
+      nome/livello), badge personale e griglia badge guadagnati erano
+      logica identica a quella gia' scritta per userprofile.js - estratta
+      in una funzione condivisa (renderProfileIdentity, esposta come
+      window.CamoscioProfileIdentity.render), richiamata sia da li' sia
+      dalla nuova pagina propria invece di essere riscritta due volte.
+      Le funzioni di salvataggio (foto/bio, esperto locale) ora
+      richiamano renderMyProfilePage() invece di renderDashboard() -
+      tolto anche un controllo diventato morto (il ricalcolo della
+      lista Escursioni al salvataggio dell'esperto locale "se si era
+      sulla pagina Escursioni": non puo' piu' succedere, si salva solo
+      da questa pagina).
+      PROVATO DAL VIVO (Marco Alpinista, demo): click sul riquadro in
+      alto a destra porta a "Il Tuo Profilo" con intestazione, dati
+      precompilati (incluso "esperto locale: Gran Sasso d'Italia" gia'
+      attivo nei dati demo) e i due badge veri di Marco in fondo; salvata
+      una bio di prova, toast "Profilo aggiornato", testo persistito
+      dopo il re-render, poi svuotata di nuovo. Dashboard ricontrollata
+      pulita (nessun residuo della vecchia card). Nessun errore in
+      console in nessun passaggio.
 
 --- DOMANDA: TRACCIA DA UN LINK WIKILOC INVECE DEL FILE GPX ---
 

@@ -487,61 +487,6 @@
                                      esistono e' meglio non mostrarne nessuna che mostrarne una finta.
                                      Il conteggio vero dei timbri resta qui sopra e in "Timbri Vette". -->
                             </div>
-
-                            <!-- Card Profilo: Layer Esperto Locale + cambio password (punto 41: KYC tolta, non serve più). -->
-                            <div class="glass-card profile-card">
-                                <h4><i data-lucide="user-check"></i> Il Tuo Profilo</h4>
-
-                                <!-- Punto 40 di cose_da_fare.txt: foto e bio, impostabili finora solo in registrazione. -->
-                                <div class="profile-section photo-bio-section">
-                                    <div class="photo-upload-row">
-                                        <div class="photo-preview-circle" id="profile-photo-preview">🏔️</div>
-                                        <input type="file" id="profile-photo-input" accept="image/*">
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="profile-bio">Bio (massimo 250 caratteri):</label>
-                                        <textarea id="profile-bio" maxlength="250" placeholder="Raccontaci qualcosa di te..."></textarea>
-                                        <div class="char-counter"><span id="profile-bio-counter">0</span>/250</div>
-                                    </div>
-                                    <button class="btn btn-sm btn-primary" id="btn-save-profile-info">Salva foto e bio</button>
-                                </div>
-
-                                <div class="profile-section local-expert-section">
-                                    <p class="small text-muted">Se conosci bene una zona, proponiti come esperto locale informale per aiutare chi è meno pratico del posto.</p>
-                                    <div class="form-group">
-                                        <label><input type="checkbox" id="local-expert-toggle"> Sono un esperto locale</label>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="local-expert-area">Zona di competenza:</label>
-                                        <div class="input-with-btn">
-                                            <input type="text" id="local-expert-area" placeholder="Es. Gran Sasso d'Italia, Monti Sibillini...">
-                                            <button class="btn btn-sm btn-primary" id="btn-save-local-expert">Salva</button>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Punto 7 di cose_da_fare.txt: prima di oggi NON esisteva nessuna
-                                     schermata per cambiare la password. Chi voleva solo cambiarla
-                                     doveva fingere di averla dimenticata e passare dall'email.
-                                     Nascosta per gli account demo (entrano senza password, non ne
-                                     hanno una da cambiare): la mostra profile.js. -->
-                                <div class="profile-section change-password-section hidden" id="change-password-section">
-                                    <p class="small text-muted">Cambia la password del tuo account. Serve quella attuale.</p>
-                                    <div class="form-group">
-                                        <label for="cp-current">Password attuale:</label>
-                                        <input type="password" id="cp-current" autocomplete="current-password">
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="cp-new">Nuova password (minimo 8 caratteri):</label>
-                                        <input type="password" id="cp-new" minlength="8" autocomplete="new-password">
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="cp-confirm">Conferma nuova password:</label>
-                                        <input type="password" id="cp-confirm" minlength="8" autocomplete="new-password">
-                                    </div>
-                                    <button class="btn btn-sm btn-primary" id="btn-change-password">Cambia password</button>
-                                </div>
-                            </div>
                         </div>
 
                         <!-- Colonna Destra -->
@@ -1682,6 +1627,84 @@
                             <i data-lucide="award"></i> Badge guadagnati
                         </h3>
                         <div class="badges-grid" id="user-profile-badges"></div>
+                    </div>
+                </section>
+
+                <!-- PROPRIO PROFILO (punto 59): stesso principio di #user-profile qui sopra -
+                     nessuna voce in barra laterale, raggiunta cliccando il riquadro utente in
+                     alto a destra (vedi #btn-goto-profile in app.js). I campi modificabili
+                     (foto, bio, esperto locale, cambio password) sono quelli che prima
+                     stavano nella Dashboard: SPOSTATI qui, non duplicati - Denis ha chiesto
+                     esplicitamente di toglierli dalla Dashboard. -->
+                <section id="my-profile" class="page-section">
+                    <div class="glass-card user-profile-header-card" id="my-profile-header">
+                        <!-- Riempito da JS: avatar/foto, nome, livello -->
+                    </div>
+
+                    <div id="my-profile-personal-badge">
+                        <!-- Riempito da JS SOLO se ho un badge personale -->
+                    </div>
+
+                    <!-- Card Profilo: foto/bio, esperto locale, cambio password - stesso markup
+                         che prima stava nella Dashboard (punto 40, punto 41: KYC tolta). -->
+                    <div class="glass-card profile-card">
+                        <h4><i data-lucide="user-check"></i> Il Tuo Profilo</h4>
+
+                        <div class="profile-section photo-bio-section">
+                            <div class="photo-upload-row">
+                                <div class="photo-preview-circle" id="profile-photo-preview">🏔️</div>
+                                <input type="file" id="profile-photo-input" accept="image/*">
+                            </div>
+                            <div class="form-group">
+                                <label for="profile-bio">Bio (massimo 250 caratteri):</label>
+                                <textarea id="profile-bio" maxlength="250" placeholder="Raccontaci qualcosa di te..."></textarea>
+                                <div class="char-counter"><span id="profile-bio-counter">0</span>/250</div>
+                            </div>
+                            <button class="btn btn-sm btn-primary" id="btn-save-profile-info">Salva foto e bio</button>
+                        </div>
+
+                        <div class="profile-section local-expert-section">
+                            <p class="small text-muted">Se conosci bene una zona, proponiti come esperto locale informale per aiutare chi è meno pratico del posto.</p>
+                            <div class="form-group">
+                                <label><input type="checkbox" id="local-expert-toggle"> Sono un esperto locale</label>
+                            </div>
+                            <div class="form-group">
+                                <label for="local-expert-area">Zona di competenza:</label>
+                                <div class="input-with-btn">
+                                    <input type="text" id="local-expert-area" placeholder="Es. Gran Sasso d'Italia, Monti Sibillini...">
+                                    <button class="btn btn-sm btn-primary" id="btn-save-local-expert">Salva</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Punto 7 di cose_da_fare.txt: prima di oggi NON esisteva nessuna
+                             schermata per cambiare la password. Chi voleva solo cambiarla
+                             doveva fingere di averla dimenticata e passare dall'email.
+                             Nascosta per gli account demo (entrano senza password, non ne
+                             hanno una da cambiare): la mostra profile.js. -->
+                        <div class="profile-section change-password-section hidden" id="change-password-section">
+                            <p class="small text-muted">Cambia la password del tuo account. Serve quella attuale.</p>
+                            <div class="form-group">
+                                <label for="cp-current">Password attuale:</label>
+                                <input type="password" id="cp-current" autocomplete="current-password">
+                            </div>
+                            <div class="form-group">
+                                <label for="cp-new">Nuova password (minimo 8 caratteri):</label>
+                                <input type="password" id="cp-new" minlength="8" autocomplete="new-password">
+                            </div>
+                            <div class="form-group">
+                                <label for="cp-confirm">Conferma nuova password:</label>
+                                <input type="password" id="cp-confirm" minlength="8" autocomplete="new-password">
+                            </div>
+                            <button class="btn btn-sm btn-primary" id="btn-change-password">Cambia password</button>
+                        </div>
+                    </div>
+
+                    <div class="badges-group">
+                        <h3 class="badges-group-title">
+                            <i data-lucide="award"></i> Badge guadagnati
+                        </h3>
+                        <div class="badges-grid" id="my-profile-badges"></div>
                     </div>
                 </section>
 

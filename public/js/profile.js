@@ -2,6 +2,30 @@ function initProfileModule() {
     setupProfileCardEvents();
 }
 
+// Punto 59: pagina profilo propria, separata dalla Dashboard - stesso principio della
+// pagina profilo di un altro utente (public/js/userprofile.js), stessa funzione
+// condivisa per intestazione/badge personale/badge guadagnati (CamoscioProfileIdentity).
+// A differenza di quella, qui non c'e' nessun fetch: i dati dell'utente collegato e i
+// suoi timbri sono gia' tutti in window.CamoscioState da refreshState().
+function renderMyProfilePage() {
+    const usr = window.CamoscioState.currentUser;
+    if (!usr) return;
+
+    const sectionTitle = document.getElementById("section-title");
+    if (sectionTitle) sectionTitle.textContent = "Il Tuo Profilo";
+
+    if (window.CamoscioProfileIdentity) {
+        window.CamoscioProfileIdentity.render(usr, window.CamoscioState.stamps, {
+            header: document.getElementById("my-profile-header"),
+            badgeBox: document.getElementById("my-profile-personal-badge"),
+            badgesGrid: document.getElementById("my-profile-badges")
+        });
+    }
+
+    renderProfileCard(usr);
+}
+window.renderMyProfilePage = renderMyProfilePage;
+
 // Foto scelta ma non ancora salvata (punto 40): come registerPhotoDataUrl in auth.js.
 let newProfilePhotoDataUrl = null;
 
@@ -76,7 +100,7 @@ async function saveProfilePhotoAndBio() {
             window.showToast("Profilo aggiornato.", "success");
             await refreshState();
             updateHeaderUserWidget();
-            renderDashboard();
+            renderMyProfilePage();
         } else {
             const dati = await response.json();
             window.showToast(dati.error || "Non è stato possibile salvare le modifiche.", "error");
@@ -164,12 +188,7 @@ async function saveLocalExpertStatus() {
             window.showToast(active ? "Sei ora un esperto locale per questa zona!" : "Layer esperto locale disattivato.", "success");
 
             await refreshState();
-            renderDashboard();
-
-            const activeSec = document.querySelector(".page-section.active");
-            if (activeSec && activeSec.id === "hikes") {
-                window.renderHikesList();
-            }
+            renderMyProfilePage();
         }
     } catch (e) {
         console.error("Errore nel salvataggio dello stato esperto locale:", e);

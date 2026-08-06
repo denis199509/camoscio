@@ -397,14 +397,14 @@ function setupNavigation() {
         }
     });
 
-    // Punto 40 di cose_da_fare.txt: l'icona del profilo in alto a destra porta alla
-    // card "Il Tuo Profilo", che vive dentro la Dashboard (non e' una sezione a se').
+    // Punto 59 di cose_da_fare.txt: l'icona del profilo in alto a destra porta alla
+    // pagina "Il Tuo Profilo", separata dalla Dashboard (prima ci si scorreva dentro,
+    // punto 40 - Denis ha chiesto di toglierla da li' e farne una pagina a se').
     const profileWidget = document.getElementById("btn-goto-profile");
     if (profileWidget) {
         profileWidget.addEventListener("click", () => {
-            navigateTo("dashboard");
-            const profileCard = document.querySelector(".profile-card");
-            if (profileCard) profileCard.scrollIntoView({ behavior: "smooth", block: "start" });
+            navigateTo("my-profile");
+            if (window.renderMyProfilePage) window.renderMyProfilePage();
         });
     }
 
@@ -584,9 +584,6 @@ function renderDashboard() {
     if (window.updateDashboardSafetyCard) {
         window.updateDashboardSafetyCard();
     }
-
-    // Card Profilo: Layer Esperto Locale + cambio password
-    renderProfileCard(usr);
 }
 
 // Punto 16 di cose_da_fare.txt - totali reali di cammino in Dashboard.

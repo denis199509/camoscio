@@ -15,6 +15,57 @@ async function showUserProfile(userId) {
     await renderUserProfile(userId);
 }
 
+// Intestazione (avatar/nome/livello), badge personale e griglia dei badge guadagnati:
+// stessa identica presentazione sia per il profilo di un altro utente sia per il
+// proprio (public/js/profile.js, punto 59) - cambiano solo i dati (utente/timbri) e
+// dove scrivere (els). Non duplicarla e' la stessa lezione gia' applicata a
+// statoBadge()/statoBadgePer() in badges.js.
+function renderProfileIdentity(utente, timbri, els) {
+    const esc = window.escapeHtml;
+
+    if (els.header) {
+        const avatarHtml = utente.profilePhoto
+            ? `<img src="${esc(utente.profilePhoto)}" alt="Foto profilo" class="avatar-photo">`
+            : esc(utente.avatar);
+        els.header.innerHTML = `
+            <span class="user-profile-avatar">${avatarHtml}</span>
+            <div class="user-details">
+                <h3 class="font-bold">${esc(utente.username)}</h3>
+                <p class="small text-muted">Livello: ${esc(utente.experienceLevel)} · Reputazione: ${utente.reputation}%</p>
+            </div>
+        `;
+    }
+
+    if (els.badgeBox) {
+        const personale = window.CamoscioPersonalBadges ? window.CamoscioPersonalBadges.get(utente.id) : null;
+        els.badgeBox.innerHTML = personale ? `
+            <div class="glass-card personal-badge-showcase">
+                <img src="img/badge-personali/${esc(personale.icon)}" alt="${esc(personale.titolo)}" class="personal-badge-illustration">
+                <div>
+                    <h4>${esc(personale.titolo)}</h4>
+                    <p>${esc(personale.descrizione)}</p>
+                    <p class="small text-muted">Distintivo assegnato a mano dal team di Camoscio: non si guadagna, è un riconoscimento personale.</p>
+                </div>
+            </div>
+        ` : "";
+    }
+
+    if (els.badgesGrid && window.CamoscioBadges) {
+        els.badgesGrid.innerHTML = "";
+        const stato = window.CamoscioBadges.statoBadgePer(timbri || []);
+        const presi = stato.filter(b => b.sbloccato)
+            .sort((a, b) => String(b.data || '').localeCompare(String(a.data || '')));
+        if (presi.length === 0) {
+            els.badgesGrid.innerHTML = `<div class="glass-card text-center py-4 text-muted">Nessun badge conquistato per ora.</div>`;
+        } else {
+            presi.forEach(b => els.badgesGrid.appendChild(window.CamoscioBadges.schedaBadge(b)));
+        }
+    }
+
+    if (window.lucide) window.lucide.createIcons();
+}
+window.CamoscioProfileIdentity = { render: renderProfileIdentity };
+
 async function renderUserProfile(userId) {
     const header = document.getElementById("user-profile-header");
     const badgeBox = document.getElementById("user-profile-personal-badge");
@@ -47,21 +98,13 @@ async function renderUserProfile(userId) {
     if (sectionTitle) sectionTitle.textContent = utente.username;
 
     const esc = window.escapeHtml;
-    const avatarHtml = utente.profilePhoto
-        ? `<img src="${esc(utente.profilePhoto)}" alt="Foto profilo" class="avatar-photo">`
-        : esc(utente.avatar);
-
-    header.innerHTML = `
-        <span class="user-profile-avatar">${avatarHtml}</span>
-        <div class="user-details">
-            <h3 class="font-bold">${esc(utente.username)}</h3>
-            <p class="small text-muted">Livello: ${esc(utente.experienceLevel)} · Reputazione: ${utente.reputation}%</p>
-        </div>
-    `;
 
     // Punto 63(a): campo gia' esistente (localExpert), oggi visibile solo come tooltip
     // sull'avatar in una scheda escursione (social.js). Stesso testo usato li',
     // "Esperto locale: <zona>" - il nome non cambia finche' Denis non decide (punto 63b).
+    // Solo per il profilo di un ALTRO: sul proprio la stessa informazione si vede e si
+    // cambia direttamente nel modulo "esperto locale" qui sotto, una riga in piu' sarebbe
+    // ridondante.
     const localExpertBox = document.getElementById("user-profile-local-expert");
     if (localExpertBox) {
         localExpertBox.innerHTML = (utente.localExpert && utente.localExpert.active)
@@ -69,32 +112,7 @@ async function renderUserProfile(userId) {
             : "";
     }
 
-    const personale = window.CamoscioPersonalBadges ? window.CamoscioPersonalBadges.get(userId) : null;
-    if (personale) {
-        badgeBox.innerHTML = `
-            <div class="glass-card personal-badge-showcase">
-                <img src="img/badge-personali/${esc(personale.icon)}" alt="${esc(personale.titolo)}" class="personal-badge-illustration">
-                <div>
-                    <h4>${esc(personale.titolo)}</h4>
-                    <p>${esc(personale.descrizione)}</p>
-                    <p class="small text-muted">Distintivo assegnato a mano dal team di Camoscio: non si guadagna, è un riconoscimento personale.</p>
-                </div>
-            </div>
-        `;
-    }
-
-    if (window.CamoscioBadges) {
-        const stato = window.CamoscioBadges.statoBadgePer(timbri || []);
-        const presi = stato.filter(b => b.sbloccato)
-            .sort((a, b) => String(b.data || '').localeCompare(String(a.data || '')));
-        if (presi.length === 0) {
-            badgesGrid.innerHTML = `<div class="glass-card text-center py-4 text-muted">Nessun badge conquistato per ora.</div>`;
-        } else {
-            presi.forEach(b => badgesGrid.appendChild(window.CamoscioBadges.schedaBadge(b)));
-        }
-    }
-
-    if (window.lucide) window.lucide.createIcons();
+    renderProfileIdentity(utente, timbri, { header, badgeBox, badgesGrid });
 }
 
 window.showUserProfile = showUserProfile;
