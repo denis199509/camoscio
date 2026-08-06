@@ -206,6 +206,31 @@ Da pianificare e implementare in una sessione futura.
       21-resto NON SONO PIU' BLOCCATI da questa decisione: il canale ora esiste ed e'
       gia' scritto (lib/mailer.js). Restano da fare per il loro lavoro proprio, non per
       una decisione mancante.
+   [AGGIORNAMENTO 2026-08-06] Nel controllo finale dopo il punto 59 (profilo diventato
+   pagina a se'), prova-browser-punto7.js aveva trovato un problema nuovo: il cambio
+   password DAL PROFILO non si completava nella prova del browser (campi mai svuotati,
+   nessun errore), mentre lo stesso identico controllo via API passava sempre. Sessione
+   interrotta li' su richiesta, ripresa dopo un riavvio del PC.
+   CAUSA TROVATA aggiungendo diagnostica (risposta vera del server, poi un listener nativo
+   di prova sul bottone): la richiesta verso /api/auth/change-password non partiva mai. Il
+   click arrivava al bottone, ma initProfileModule() - che aggancia "Cambia password" e gli
+   altri pulsanti della card profilo - si collegava da dentro initApp(), DOPO
+   "await refreshState()". Il profilo pero' si apre e si popola SUBITO al click su
+   #btn-goto-profile (navigateTo + renderMyProfilePage), senza aspettare initApp(). Restava
+   una finestra in cui la sezione "Cambia password" era gia' visibile ma il bottone non
+   aveva ancora nessun listener: click perso, in silenzio.
+   E' LO STESSO IDENTICO BUG gia' trovato e corretto il 2026-07-26 per la barra di
+   navigazione (public/js/app.js, commento vicino a setupNavigation) - allora limitato a
+   "il menu non risponde per un istante", mai applicato al modulo profilo perche' al tempo
+   la card viveva ancora dentro la Dashboard. Stesso rimedio: initProfileModule() si collega
+   subito dopo il gate di login, non dentro initApp() - non dipende dai dati, li legge solo
+   dentro i gestori, al momento del click.
+   IN LOCALE LA FINESTRA E' STRETTA (si nota solo con un click automatico, immediato); SU
+   RENDER GRATUITO, CHE SI SVEGLIA CON CALMA, E' LO STESSO CASO GIA' DOCUMENTATO PER LA
+   NAVIGAZIONE - abbastanza larga da incontrarla anche cliccando a mano.
+   VERIFICATO: prova-browser-punto7.js torna verde (57/57, prima falliva su 2 controlli su
+   entrambi gli schermi), prova-punto7.js invariata (53/53). Commit locale, non pushato.
+   QUESTO PUNTO E' CHIUSO DAVVERO ORA, non va riaperto per questo motivo.
 
 8) [FATTO 2026-07-26] Scelta del punto di ritrovo di un'escursione dalla mappa invece
 che a coordinate scritte a mano (oggi il form di creazione escursione chiede
