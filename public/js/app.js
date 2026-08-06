@@ -292,6 +292,13 @@ async function refreshState() {
             const stamps = await fetchApi(`/api/stamps/${window.CamoscioState.currentUser.id}`);
             window.CamoscioState.stamps = stamps;
 
+            // Punto 42b: quante volte una vetta gia' conquistata e' stata raggiunta -
+            // trasformato in oggetto {stampId: {...}} qui una volta sola, cosi' badges.js
+            // lo legge con una ricerca diretta invece di scorrere un array ad ogni scheda.
+            const ascese = await fetchApi(`/api/tracking/peak-ascents/${window.CamoscioState.currentUser.id}`);
+            window.CamoscioState.peakAscents = {};
+            ascese.forEach(a => { window.CamoscioState.peakAscents[a.stampId] = a; });
+
             // Carica le escursioni già segnate come completate dall'utente corrente
             const completions = await fetchApi(`/api/completions/${window.CamoscioState.currentUser.id}`);
             window.CamoscioState.completions = completions;

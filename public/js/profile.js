@@ -19,7 +19,7 @@ function renderMyProfilePage() {
             header: document.getElementById("my-profile-header"),
             badgeBox: document.getElementById("my-profile-personal-badge"),
             badgesGrid: document.getElementById("my-profile-badges")
-        });
+        }, window.CamoscioState.peakAscents);
     }
 
     renderProfileCard(usr);

@@ -3493,6 +3493,14 @@ h1, h2, h3, h4, h5, h6 {
     flex-shrink: 0;
 }
 
+/* Punto 42b: quante volte, sotto lo stato "Conquistato il...". Stesso peso visivo di
+   badge-card-context (non è un secondo "stato", è un dettaglio in più). */
+.badge-card-count {
+    font-size: 0.68rem;
+    color: var(--color-text-muted);
+    font-style: italic;
+}
+
 /* Riga "3 badge su 10 | Vedi tutti i badge" in fondo alla scheda del Passaporto */
 .passport-more {
     display: flex;

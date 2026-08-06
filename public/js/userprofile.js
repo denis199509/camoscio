@@ -20,7 +20,7 @@ async function showUserProfile(userId) {
 // proprio (public/js/profile.js, punto 59) - cambiano solo i dati (utente/timbri) e
 // dove scrivere (els). Non duplicarla e' la stessa lezione gia' applicata a
 // statoBadge()/statoBadgePer() in badges.js.
-function renderProfileIdentity(utente, timbri, els) {
+function renderProfileIdentity(utente, timbri, els, ascese) {
     const esc = window.escapeHtml;
 
     if (els.header) {
@@ -52,7 +52,7 @@ function renderProfileIdentity(utente, timbri, els) {
 
     if (els.badgesGrid && window.CamoscioBadges) {
         els.badgesGrid.innerHTML = "";
-        const stato = window.CamoscioBadges.statoBadgePer(timbri || []);
+        const stato = window.CamoscioBadges.statoBadgePer(timbri || [], ascese || {});
         const presi = stato.filter(b => b.sbloccato)
             .sort((a, b) => String(b.data || '').localeCompare(String(a.data || '')));
         if (presi.length === 0) {
@@ -78,11 +78,17 @@ async function renderUserProfile(userId) {
 
     let utente = null;
     let timbri = [];
+    let ascese = {};
     try {
-        [utente, timbri] = await Promise.all([
+        let asceseArray;
+        [utente, timbri, asceseArray] = await Promise.all([
             fetch(`/api/users/${userId}`).then(r => r.ok ? r.json() : null),
-            fetch(`/api/stamps/${userId}`).then(r => r.ok ? r.json() : [])
+            fetch(`/api/stamps/${userId}`).then(r => r.ok ? r.json() : []),
+            // Punto 42b: quante volte, non solo "se" - stessa rotta usata per il proprio
+            // profilo (app.js), qui per un altro utente. Stessa trasformazione in oggetto.
+            fetch(`/api/tracking/peak-ascents/${userId}`).then(r => r.ok ? r.json() : [])
         ]);
+        asceseArray.forEach(a => { ascese[a.stampId] = a; });
     } catch (e) {
         console.error("Errore nel caricamento del profilo:", e);
         header.innerHTML = `<p class="text-muted">Non è stato possibile caricare questo profilo. Riprova più tardi.</p>`;
@@ -112,7 +118,7 @@ async function renderUserProfile(userId) {
             : "";
     }
 
-    renderProfileIdentity(utente, timbri, { header, badgeBox, badgesGrid });
+    renderProfileIdentity(utente, timbri, { header, badgeBox, badgesGrid }, ascese);
 }
 
 window.showUserProfile = showUserProfile;

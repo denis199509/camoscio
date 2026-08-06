@@ -88,12 +88,21 @@
     // "achievement pubblici tra utenti loggati" (vedi routes/stamps.js), quindi non
     // c'e' niente da nascondere, ma la logica di incrocio col catalogo va scritta
     // una volta sola.
-    function statoBadgePer(timbri) {
+    // "ascesePerVetta" e' facoltativo: {stampId: {recognizedCount, siteCount, total}},
+    // punto 42b. Assente (pagine che non lo caricano) = badge senza il conteggio estra,
+    // esattamente come si vedevano prima che il punto 42b esistesse.
+    function statoBadgePer(timbri, ascesePerVetta) {
+        const ascese = ascesePerVetta || {};
         return catalogo().map(b => {
             const timbro = timbri.find(t => t.stampId === b.stampId);
+            const conteggio = ascese[b.stampId];
             return Object.assign({}, b, {
                 sbloccato: !!timbro,
-                data: timbro ? timbro.dateUnlocked : null
+                data: timbro ? timbro.dateUnlocked : null,
+                // Solo quando dice qualcosa in piu' di "una volta", che e' il caso quasi
+                // sempre vero: un numero che ripete "1 volta" su ogni singolo badge del
+                // sito sarebbe rumore, non informazione.
+                ascesa: (timbro && conteggio && conteggio.total > 1) ? conteggio : null
             });
         });
     }
@@ -102,7 +111,10 @@
     // veri gia' caricati per lui. Nessun badge puo' risultare preso per qualcuno che
     // non l'ha preso davvero.
     function statoBadge() {
-        return statoBadgePer((window.CamoscioState && window.CamoscioState.stamps) || []);
+        return statoBadgePer(
+            (window.CamoscioState && window.CamoscioState.stamps) || [],
+            (window.CamoscioState && window.CamoscioState.peakAscents) || {}
+        );
     }
 
     // Per la scheda del Passaporto in Dashboard, che ha spazio per pochi riquadri:
@@ -133,6 +145,21 @@
 
     // --- DISEGNO DELLA PAGINA ---
 
+    // Punto 42b: il numero deve sempre dire da dove viene (deciso il 29/07/2026, vedi
+    // 03-Decisioni-Architetturali.md del vault) - un "73" da solo, fra sei mesi, non se lo
+    // spiega piu' nessuno, nemmeno Denis. "Riconosciute" e' la parola scritta a mano da chi
+    // conosce la persona, non una misura del sito: le due cose non vanno confuse in una
+    // somma muta.
+    function testoAscesa(a) {
+        if (a.recognizedCount > 0 && a.siteCount > 0) {
+            return `${a.recognizedCount} riconosciut${a.recognizedCount === 1 ? 'a' : 'e'} + ${a.siteCount} registrat${a.siteCount === 1 ? 'a' : 'e'}`;
+        }
+        if (a.recognizedCount > 0) {
+            return `${a.recognizedCount} riconosciut${a.recognizedCount === 1 ? 'a' : 'e'}`;
+        }
+        return `${a.siteCount} volte registrate dal sito`;
+    }
+
     function schedaBadge(b) {
         const esc = window.escapeHtml;
         const el = document.createElement('div');
@@ -151,11 +178,16 @@
             ? `<span class="badge-card-state won"><i data-lucide="award"></i> Conquistato il ${esc(dataItaliana(b.data) || '—')}</span>`
             : `<span class="badge-card-state"><i data-lucide="lock"></i> Non ancora conquistato</span>`;
 
+        const ascesa = b.ascesa
+            ? `<span class="badge-card-count">${esc(testoAscesa(b.ascesa))}</span>`
+            : '';
+
         el.innerHTML = `
             <span class="badge-card-icon">${esc(b.emoji)}</span>
             <span class="badge-card-name">${esc(b.nome)}</span>
             <span class="badge-card-context">${contesto}</span>
             ${stato}
+            ${ascesa}
         `;
         return el;
     }

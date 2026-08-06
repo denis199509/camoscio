@@ -21,6 +21,14 @@ const emergencyContactSchema = new mongoose.Schema({
     relationship: { type: String, required: true }
 }, { _id: false });
 
+// Punto 42b: _id:false come sopra - un ObjectId per voce non aggiungerebbe niente, sono
+// pochissime righe per pochissimi utenti ma il principio (non scrivere spazio che non
+// serve) resta lo stesso a prescindere dalla quantita'.
+const recognizedAscentSchema = new mongoose.Schema({
+    stampId: { type: String, required: true },
+    count: { type: Number, required: true, min: 1 }
+}, { _id: false });
+
 const userSchema = new mongoose.Schema({
     username: { type: String, required: true, unique: true, trim: true },
     reputation: { type: Number, default: 50 },
@@ -112,7 +120,18 @@ const userSchema = new mongoose.Schema({
         type: String,
         enum: ['Pubblico', 'SoloAmici', 'Privato'],
         default: 'Pubblico'
-    }
+    },
+
+    // --- 10. Salite riconosciute a una vetta, prima che il sito esistesse (punto 42b) ---
+    // Il sito sa contare le uscite che toccano una vetta (routes/tracking.js), ma non puo'
+    // sapere di quelle avvenute PRIMA che Camoscio esistesse. Questo campo e' quel numero,
+    // scritto a mano da Denis per una persona di cui conosce lo storico - un PAVIMENTO su
+    // cui le uscite registrate dal sito si sommano, non un totale: non va mai ritoccato
+    // quando la persona cammina. Nessuna interfaccia per scriverlo (deciso il 29/07/2026,
+    // vedi 03-Decisioni-Architetturali.md del vault): per ora si scrive direttamente.
+    // default: undefined come coordinates in Hike.js - quasi nessun utente avra' mai una
+    // voce qui, e il vincolo hard sullo spazio dice di non scrivere il campo quando non serve.
+    recognizedAscents: { type: [recognizedAscentSchema], default: undefined }
 });
 
 const User = mongoose.models.User || mongoose.model('User', userSchema);

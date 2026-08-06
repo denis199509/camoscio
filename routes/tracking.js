@@ -4,6 +4,7 @@ const ActiveHikeSession = require('../models/ActiveHikeSession');
 const Hike = require('../models/Hike');
 const TrailCandidate = require('../models/TrailCandidate');
 const Stamp = require('../models/Stamp'); // timbri assegnati dalle tracce .gpx importate
+const User = require('../models/User'); // punto 42b: recognizedAscents
 const { requireAuth } = require('../middleware/auth');
 const { isFiniteNum, haversineKm, simplifyTrack } = require('../lib/geometry');
 const { regionForPoint } = require('../lib/regions');
@@ -357,6 +358,65 @@ async function assegnaTimbriDallaTraccia(userId, punti, dataUscita) {
         return [];
     }
 }
+
+// --- PUNTO 42b: quante volte, non solo "se" ---
+//
+// Il sito registra CHE una vetta e' stata raggiunta (collezione Stamp, indice unico
+// userId+stampId), mai QUANTE VOLTE: dalla seconda salita in poi il timbro esiste gia' e
+// non viene creato di nuovo. Il numero "quante volte" non va su Stamp, si ricava dalle
+// USCITE gia' salvate (ActiveHikeSession), con la STESSA soglia e lo STESSO catalogo del
+// geofencing (150 m, vedi assegnaTimbriDallaTraccia qui sopra) - la regola gia' presa al
+// punto 30 per non avere due conti diversi della stessa cosa.
+//
+// Il numero "riconosciuto" (User.recognizedAscents) e' facoltativo e si somma sopra: un
+// PAVIMENTO scritto a mano da Denis per una persona di cui conosce lo storico precedente
+// al sito, non un totale. Decisione completa in 03-Decisioni-Architetturali.md del vault
+// (punto 42, meta' "vetta").
+//
+// Calcolato solo per le vette GIA' CONQUISTATE (chi ha un timbro): un numero fluttuante su
+// una vetta mai raggiunta sul sito sarebbe uno stato che non deve poter esistere a schermo.
+router.get('/peak-ascents/:userId', requireAuth, async (req, res) => {
+    try {
+        const userId = req.params.userId;
+
+        const [timbri, utente, sessioni, candidatiTutti] = await Promise.all([
+            Stamp.find({ userId }).select('stampId').lean(),
+            User.findById(userId).select('recognizedAscents').lean(),
+            ActiveHikeSession.find({ userId, status: 'ended' }).select('points').lean(),
+            puntiTimbrabili()
+        ]);
+        if (!timbri.length) return res.json([]);
+
+        const stampIdConquistati = new Set(timbri.map(t => t.stampId));
+        const candidati = candidatiTutti.filter(p => stampIdConquistati.has(p.stampId));
+        if (!candidati.length) return res.json([]);
+
+        const pavimenti = new Map(
+            ((utente && utente.recognizedAscents) || []).map(r => [r.stampId, r.count])
+        );
+
+        const gradiLat = SOGLIA_TIMBRO_M / 111320;
+        const risultato = candidati.map(c => {
+            const gradiLng = SOGLIA_TIMBRO_M / (111320 * Math.max(0.1, Math.cos(c.lat * Math.PI / 180)));
+            let siteCount = 0;
+            for (const s of sessioni) {
+                const toccata = (s.points || []).some(p =>
+                    Math.abs(p[1] - c.lat) <= gradiLat &&
+                    Math.abs(p[0] - c.lng) <= gradiLng &&
+                    haversineKm(p[1], p[0], c.lat, c.lng) * 1000 <= SOGLIA_TIMBRO_M
+                );
+                if (toccata) siteCount++;
+            }
+            const recognizedCount = pavimenti.get(c.stampId) || 0;
+            return { stampId: c.stampId, recognizedCount, siteCount, total: recognizedCount + siteCount };
+        });
+
+        res.json(risultato);
+    } catch (e) {
+        console.error('Errore nel calcolo delle salite riconosciute:', e);
+        res.json([]);
+    }
+});
 
 // --- PUNTO 15: importazione di una traccia .gpx come escursione gia' fatta ---
 //
