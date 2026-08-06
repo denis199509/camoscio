@@ -196,6 +196,27 @@
         riempiGruppo('badges-rifugi', 'count-badges-rifugi', rifugi,
             'Nessun rifugio in elenco.');
 
+        // Punto 57: stesso riquadro gia' costruito per la pagina profilo (punto 50),
+        // qui per l'utente collegato invece che per un altro - CamoscioPersonalBadges
+        // e' lo stesso catalogo unico, non ce n'e' una seconda copia da tenere allineata.
+        const boxPersonale = document.getElementById('badges-personal-badge');
+        if (boxPersonale) {
+            const esc = window.escapeHtml;
+            const personale = window.CamoscioPersonalBadges
+                ? window.CamoscioPersonalBadges.get(window.CamoscioState.currentUser.id)
+                : null;
+            boxPersonale.innerHTML = personale ? `
+                <div class="glass-card personal-badge-showcase">
+                    <img src="img/badge-personali/${esc(personale.icon)}" alt="${esc(personale.titolo)}" class="personal-badge-illustration">
+                    <div>
+                        <h4>${esc(personale.titolo)}</h4>
+                        <p>${esc(personale.descrizione)}</p>
+                        <p class="small text-muted">Distintivo assegnato a mano dal team di Camoscio: non si guadagna, è un riconoscimento personale.</p>
+                    </div>
+                </div>
+            ` : "";
+        }
+
         const presi = tutti.filter(b => b.sbloccato).length;
         const totale = tutti.length;
         const percentuale = totale > 0 ? Math.round((presi / totale) * 100) : 0;

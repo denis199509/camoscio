@@ -1772,7 +1772,7 @@ possibilita' di usare la propria mettendola a disposizione."
 
 --- BADGE PERSONALE SULLA PAGINA BADGE ---
 
-57) [DA FARE] Denis: "Il badge personale deve essere visibile pure sulla pagina
+57) [FATTO 2026-08-06] Denis: "Il badge personale deve essere visibile pure sulla pagina
 i miei badge. Deve comparire in alto, il primo badge riconosciuto."
    VERIFICATO NEL CODICE: in public/index.html la sezione #badges comincia col
    div #badges-summary (i contatori), prima di qualunque gruppo Cime/Rifugi -
@@ -1782,6 +1782,23 @@ i miei badge. Deve comparire in alto, il primo badge riconosciuto."
    qui serve solo richiamarli anche per l'utente collegato dentro badges.js,
    non costruire nulla da zero. NESSUNA AMBIGUITA' REALE: pronto per essere
    implementato appena si riprende il lavoro.
+   -> FATTO: nuovo div #badges-personal-badge in index.html, subito dopo i
+      contatori e prima della spiegazione/gruppi. renderBadges() (badges.js)
+      lo riempie con la STESSA scheda gia' scritta per la pagina profilo
+      (personal-badge-showcase), leggendo window.CamoscioPersonalBadges.get()
+      per currentUser.id - nessun catalogo duplicato, nessuna logica nuova,
+      solo lo stesso pezzo di interfaccia richiamato in un secondo posto.
+      Vuoto (nessuna scheda) per chi non ha un badge personale, senza buchi
+      nel layout.
+      PROVATO DAL VIVO: con Marco Alpinista (demo, senza badge personale) il
+      riquadro resta vuoto, nessun errore in console. Il caso "con badge" non
+      si puo' provare con un account demo (il catalogo e' per i 4 account
+      reali, non per i demo) - verificato invece nel browser sovrascrivendo
+      per un istante solo lato client currentUser.id con quello di Denis e
+      richiamando CamoscioBadges.render(): badge "Errore 404: Ruolo non
+      trovato" comparso correttamente in alto, prima dei gruppi Cime/Rifugi,
+      stessa scheda della pagina profilo. Nessuna scrittura sul server o sul
+      database: pagina ricaricata subito dopo, nulla da ripristinare.
 
 =====================================================================
 UNDICESIMA LISTA (2026-08-03) - sei punti dettati da Denis a inizio
