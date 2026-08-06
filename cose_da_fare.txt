@@ -1799,28 +1799,44 @@ di scaricare sul telefono il gpx per poi ricaricarlo sul sito?"
 
 --- AVVISO QUANDO QUALCUNO CHIEDE DI PARTECIPARE ---
 
-61) [DA FARE] Denis: "Quando qualcuno mi chiede di partecipare ad una
+61) [FATTO IN PARTE 2026-08-06] Denis: "Quando qualcuno mi chiede di partecipare ad una
 mia escursione lo vedo soltanto se vado a controllare la mia
 escursione se ha qualche nuovo invito. Vorrei un messaggio tipo
 pop-up che mi informi che c'e' una determinata persona che ha chiesto
 di partecipare alla mia escursione. Non devo essere io ad andare a
 controllare, ma il sistema me lo dovrebbe ricordare prima."
-   VERIFICATO NEL CODICE, e il buco e' anche piu' netto di come lo
-   descrive Denis: quando qualcuno si aggiunge a hike.pendingApproval
+   VERIFICATO NEL CODICE, e il buco era anche piu' netto di come lo
+   descrive Denis: quando qualcuno si aggiungeva a hike.pendingApproval
    (richiesta di iscrizione in attesa, public/js/social.js righe
-   428-429), NON viene creata nessuna Notification lato server - non
-   e' poco visibile, proprio non esiste. Il sistema di notifiche
-   c'e' gia' e funziona per un altro evento (nuova escursione di
+   428-429), NON veniva creata nessuna Notification lato server - non
+   era poco visibile, proprio non esisteva. Il sistema di notifiche
+   c'era gia' e funzionava per un altro evento (nuova escursione di
    squadra, routes/hikes.js riga 167; campanella con contatore non
-   letti in public/js/app.js). routes/hikes.js ha gia' una funzione,
-   diffIdLists(), che calcola esattamente quali ID sono stati
-   aggiunti a pendingApproval in un salvataggio: e' il punto giusto
-   per generare la notifica mancante al creatore.
-   DA CHIARIRE QUANDO SI IMPLEMENTA (non ora): la campanella esistente
-   e' passiva (un numero che sale, va notato e aperto da soli) - se
-   basta questo per "il sistema me lo deve ricordare" o se serve
-   qualcosa di piu' invadente (un avviso a schermo, non solo la
-   campanella), va chiesto a Denis con un esempio pratico davanti.
+   letti in public/js/app.js).
+   -> FATTO IL NUCLEO: routes/hikes.js, dentro PUT /:id, calcola ora
+      (con diffIdLists() gia' esistente) quali ID sono stati aggiunti
+      a pendingApproval in quel salvataggio e crea una Notification per
+      hike.creatorId per ciascuno ("<username> ha chiesto di partecipare
+      alla tua escursione \"<titolo>\""). E' server-side, quindi vale
+      per qualunque cliente chiami quella rotta, non solo dal tasto di
+      oggi (joinHikeRequest in social.js). PROVATO DAL VIVO in locale:
+      login demo come Luca TrailRunner, richiesta di iscrizione vera a
+      "Ascesa al Corno Grande" (creata da Marco Alpinista) via
+      PUT /api/hikes/:id, poi login demo come Marco e verificato con
+      GET /api/notifications/:userId che la notifica esiste col testo
+      atteso e read:false. Ripristinati dopo la prova: pendingApproval
+      dell'escursione rimesso vuoto, la Notification di prova cancellata
+      a mano dal database (non esiste una rotta DELETE), ricontato che
+      le notifiche di Marco sono tornate al numero di prima.
+   ANCORA APERTO, PAROLE DI DENIS ("un messaggio tipo pop-up"): oggi
+   questa notifica si vede SOLO aprendo la campanella (contatore non
+   letti in alto), che e' passiva - va notata e aperta da soli. Denis
+   aveva chiesto esplicitamente un pop-up, non solo questo. Prima di
+   costruire un avviso piu' invadente (un banner o una finestra che
+   compare da sola, es. al prossimo caricamento della pagina) va chiesto
+   a lui con un esempio pratico davanti se la campanella (che ora
+   FUNZIONA DAVVERO, prima non succedeva nulla) gli basta o se vuole
+   ancora qualcosa che si veda senza dover aprire nulla.
 
 --- PROBLEMA DANIEL: NESSUN TASTO RISPONDE ---
 

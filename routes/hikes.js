@@ -209,12 +209,21 @@ router.put('/:id', requireAuth, async (req, res) => {
             }
         }
 
+        // Punto 61: chi chiede di partecipare finisce in pendingApproval, ma finora nessuno
+        // avvisava il creatore - doveva andare a controllare da solo. Il diff va calcolato qui
+        // (diffIdLists esiste gia' per l'autorizzazione sopra) cosi' la notifica parte per
+        // qualunque richiesta nuova, non solo dal tasto di oggi (joinHikeRequest in social.js).
+        let newPendingRequesterIds = [];
         if (body.participants !== undefined || body.pendingApproval !== undefined) {
             if (!isCreator && !canNonCreatorEditParticipation(hike, userId, body)) {
                 return res.status(403).json({ error: 'Non puoi modificare così la lista partecipanti' });
             }
             if (body.participants !== undefined) update.participants = body.participants;
-            if (body.pendingApproval !== undefined) update.pendingApproval = body.pendingApproval;
+            if (body.pendingApproval !== undefined) {
+                update.pendingApproval = body.pendingApproval;
+                newPendingRequesterIds = diffIdLists(hike.pendingApproval, body.pendingApproval).added
+                    .filter(id => id !== String(hike.creatorId));
+            }
         }
 
         if (body.carpool !== undefined) {
@@ -232,6 +241,16 @@ router.put('/:id', requireAuth, async (req, res) => {
         }
 
         const updated = await Hike.findByIdAndUpdate(req.params.id, update, { new: true, runValidators: true });
+
+        for (const requesterId of newPendingRequesterIds) {
+            const requester = await User.findById(requesterId);
+            await Notification.create({
+                userId: hike.creatorId,
+                text: `${requester ? requester.username : 'Un utente'} ha chiesto di partecipare alla tua escursione "${hike.title}"`,
+                read: false
+            });
+        }
+
         res.json(updated);
     } catch (e) {
         console.error('Errore aggiornamento escursione:', e);
