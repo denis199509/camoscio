@@ -1961,16 +1961,34 @@ perche' ci devo pensare."
    Persone: "esperto"/"expert" non compare in userprofile.js ne' in
    peoplesearch.js, confermato cercando nel codice.
    DUE RICHIESTE DENTRO QUESTO PUNTO, DA TENERE SEPARATE:
-     (a) [DA FARE] CORRETTO IL 2026-08-03 - prima annotato per errore
-         anche nei risultati di Cerca Persone: Denis ha chiarito che
-         non c'entra nulla, riguarda SOLO la pagina profilo (propria
+     (a) [FATTO IN PARTE 2026-08-06] CORRETTO IL 2026-08-03 - prima annotato
+         per errore anche nei risultati di Cerca Persone: Denis ha chiarito
+         che non c'entra nulla, riguarda SOLO la pagina profilo (propria
          e altrui, punto 59 sopra e punto 50). Posizione precisa data
          da Denis con un esempio: "sotto il badge personale e prima
          dei badge conquistabili" - in userprofile.js va tra il
          blocco badgeBox (badge personale) e il blocco badgesGrid
          (badge conquistati), stessa cosa da costruire nella pagina
          profilo propria del punto 59. Il campo esiste gia', manca
-         solo mostrarlo li';
+         solo mostrarlo li'.
+         -> FATTO SOLO IL LATO "PROFILO DI UN ALTRO UTENTE"
+         (userprofile.js): nuovo div #user-profile-local-expert tra
+         badgeBox e badgesGrid, riga "★ Esperto locale: <zona>" (stesso
+         testo gia' usato nel tooltip di social.js, il nome non cambia
+         finche' non si risponde al punto (b) qui sotto), vuota per chi
+         non ha attivato l'esperto locale. NON ANCORA FATTO il lato
+         "profilo proprio": oggi il proprio profilo vive ancora dentro
+         la Dashboard (public/js/profile.js), non nella stessa struttura
+         badgeBox/badgesGrid - questo pezzo si aggiungera' naturalmente
+         quando si fa il punto 59 (pagina profilo propria separata), che
+         riusera' la stessa struttura di userprofile.js. Aggiungerlo ora
+         dentro la Dashboard avrebbe significato scriverlo due volte e
+         disfarlo subito dopo.
+         PROVATO DAL VIVO: profilo vero di Denis (Monti Lucretili)
+         guardato da Marco Alpinista (demo) - riga comparsa nel punto
+         giusto, badge veri di Denis ancora visibili sotto, nessun
+         errore. Profilo di Luca TrailRunner (nessun esperto locale
+         attivo): riquadro vuoto, nessun buco nel layout.
      (b) [IN SOSPESO PER RICHIESTA ESPLICITA DI DENIS: "ci devo
          pensare"] rinominare "competenza" (parole sue: "non e' che
          la zona e' di competenza, e' solo conoscenza migliore del

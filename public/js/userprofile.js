@@ -59,6 +59,16 @@ async function renderUserProfile(userId) {
         </div>
     `;
 
+    // Punto 63(a): campo gia' esistente (localExpert), oggi visibile solo come tooltip
+    // sull'avatar in una scheda escursione (social.js). Stesso testo usato li',
+    // "Esperto locale: <zona>" - il nome non cambia finche' Denis non decide (punto 63b).
+    const localExpertBox = document.getElementById("user-profile-local-expert");
+    if (localExpertBox) {
+        localExpertBox.innerHTML = (utente.localExpert && utente.localExpert.active)
+            ? `<p class="local-expert-line"><i data-lucide="star"></i> Esperto locale: <b>${esc(utente.localExpert.area)}</b></p>`
+            : "";
+    }
+
     const personale = window.CamoscioPersonalBadges ? window.CamoscioPersonalBadges.get(userId) : null;
     if (personale) {
         badgeBox.innerHTML = `

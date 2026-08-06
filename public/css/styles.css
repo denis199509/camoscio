@@ -3569,6 +3569,22 @@ h1, h2, h3, h4, h5, h6 {
     margin: 0 0 4px;
 }
 
+/* Punto 63(a): riga informativa, non una scheda - e' un attributo dichiarato
+   dall'utente, non un riconoscimento come i badge qui sopra. */
+.local-expert-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 20px;
+    color: var(--color-text-secondary);
+}
+
+.local-expert-line i {
+    color: var(--accent-green);
+    width: 18px;
+    height: 18px;
+}
+
 /* ==========================================================================
    SCELTA DEL PUNTO DI RITROVO — punto 8 di cose_da_fare.txt
    ========================================================================== */
