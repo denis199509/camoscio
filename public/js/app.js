@@ -163,7 +163,18 @@ document.addEventListener("DOMContentLoaded", async () => {
     // l'ascoltatore del tasto e' protetto da dataset.collegato e non si aggancia due volte.
     setupEmailVerifyBanner();
 
-    // Inizializza i moduli principali (lento: dati + nove moduli)
+    // STESSO BUG DEL 26/07/2026 QUI SOPRA, trovato di nuovo il 06/08/2026 mentre si
+    // indagava il punto 7 (cambio password dal profilo): initProfileModule() collegava i
+    // pulsanti della card profilo (cambio password, salva bio/foto, esperto locale) da
+    // dentro initApp(), DOPO await refreshState(). Il profilo pero' si apre e si popola
+    // subito (navigateTo + renderMyProfilePage, vedi il click su #btn-goto-profile qui
+    // sopra), senza aspettare initApp(): restava la stessa finestra di qualche istante in
+    // cui il pulsante "Cambia password" si vedeva ma non faceva niente al click, senza
+    // nessun errore. Stesso rimedio: si collega SUBITO, non dipende dai dati (li legge
+    // solo dentro i gestori, al momento del click, non qui).
+    if (window.initProfileModule) window.initProfileModule();
+
+    // Inizializza i moduli principali (lento: dati + moduli rimasti)
     await initApp();
 });
 
@@ -206,8 +217,7 @@ async function initApp() {
         // Aggiorna l'interfaccia utente superiore
         updateHeaderUserWidget();
 
-        // Inizializza i sottomoduli in ordine
-        if (window.initProfileModule) window.initProfileModule();
+        // Inizializza i sottomoduli in ordine (initProfileModule si collega prima, vedi sopra)
         if (window.initMapModule) window.initMapModule();
         if (window.initWeatherModule) window.initWeatherModule();
         if (window.initBackpackModule) window.initBackpackModule();
