@@ -1670,9 +1670,14 @@ pagina iniziale, dovendo rifare l'iscrizione da capo.
    IPOTESI ORA PIU' FORTE: il tasto/gesto indietro DEL TELEFONO (il sito non
    gestisce mai history/pushState, quindi un "indietro" del sistema puo'
    uscire dalla pagina o forzarne un ricaricamento pieno, perdendo tutto lo
-   stato del wizard in memoria). ANCORA DA CONFERMARE CON DENIS: era su
-   telefono? Ha usato il gesto/tasto fisico del telefono invece del tasto
-   scritto "Indietro" dentro la pagina camoscio?
+   stato del wizard in memoria).
+   [BLOCCATO IL 2026-08-06, IN ATTESA DI DENIS]: chiesto se fosse il tasto
+   della pagina o quello del telefono - Denis non lo sa con certezza (non
+   era lui a tenere il telefono). Fara' lui stesso la prova sul proprio
+   telefono, provando sia il tasto "Indietro" della pagina sia quello/gesto
+   del telefono, e riferira' l'esito. NON riproporre la domanda: aspettare
+   che torni lui sull'argomento, ma RICORDARGLIELO a inizio sessione finche'
+   non lo fa (richiesta esplicita sua).
 
 --- TROVARE LE ESCURSIONI DEGLI ALTRI ---
 
