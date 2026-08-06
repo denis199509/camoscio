@@ -1625,20 +1625,42 @@ solo la verifica di sola lettura fatta oggi, zero righe di codice cambiate.
 
 --- REGISTRAZIONE: BUG DEL TASTO INDIETRO ---
 
-52) [DA FARE] Durante la registrazione, un amico di Denis ha scelto una foto che
-superava il limite di peso; cliccando il tasto indietro per sceglierne un'altra,
-il sistema e' tornato completamente alla pagina iniziale, dovendo rifare
-l'iscrizione da capo.
+52) [RIPRODOTTO IL 2026-08-06, CAUSA ANCORA NON CONFERMATA] Durante la registrazione,
+un amico di Denis ha scelto una foto che superava il limite di peso; cliccando il
+tasto indietro per sceglierne un'altra, il sistema e' tornato completamente alla
+pagina iniziale, dovendo rifare l'iscrizione da capo.
    VERIFICATO NEL CODICE: Denis ha detto "fase 6", ma grep su data-step in
    public/index.html conferma che il campo foto e' sulla FASE 4 ("4. Profilo
    pubblico"), non la 6 - discrepanza da segnalare e riprodurre guardando la fase
    giusta, non quella riportata.
-   L'handler del tasto indietro (public/js/auth.js: currentWizardStep =
-   Math.max(1, currentWizardStep - 1)) da solo sposta solo lo step corrente, non
-   tocca lo stato di autenticazione: non basta a spiegare un reset completo alla
-   pagina di login. LA CAUSA VERA NON E' STATA TROVATA in questa sessione - va
-   riprodotta dal vivo (foto sopra 1,5 MB, poi tasto indietro, sulla fase 4) prima
-   di correggere alla cieca.
+   RIPRODOTTO DAL VIVO nel browser vero (estensione Chrome, server locale):
+   compilata la fase 1, avanti fino alla fase 4, caricata una foto finta da 2 MB
+   sul campo #reg-photo-input. Confermato quello che diceva il codice: appare
+   l'avviso "Foto troppo grande...", il campo file si svuota, si resta sulla
+   fase 4 - nessun salto, nessun errore in console. Premuto UNA volta "Indietro":
+   passa alla fase 3, normale. Premuto ancora due volte di fila, fino alla fase
+   1: TUTTI i campi compilati prima (nome, cognome, email, password, data di
+   nascita, casella termini) erano ANCORA LI', intatti - nessun reset, nessuna
+   vista di login mostrata (siamo rimasti dentro auth-register-view per tutta
+   la prova). Il tasto "Indietro" in pagina fa esattamente quello che dice il
+   codice: un passo indietro alla volta, mai piu' in la' della fase 1, senza
+   toccare i dati ne' la sessione.
+   IPOTESI PIU' PROBABILE ORA: "tornato alla pagina iniziale" potrebbe
+   descrivere l'aver premuto "Indietro" piu' volte di fila (magari confuso
+   dall'avviso della foto) fino alla FASE 1 del wizard ("1. Dati base" - da qui
+   il nome "pagina iniziale"), non fino al login vero. In tal caso non e' un
+   guasto: i dati restano tutti compilati, bastava premere "Avanti" di nuovo -
+   ma se l'amico non se n'e' accorto subito puo' aver percepito di dover
+   "rifare tutto da capo" senza che fosse vero.
+   NON CONFERMATO: se invece l'amico intendeva il tasto INDIETRO DEL TELEFONO
+   (gesture/hardware, non quello nella pagina), qui non e' stato provabile da
+   desktop - quello si', potenzialmente, fa uscire dalla pagina o ricaricarla
+   (nessuna gestione di history/pushState nel codice del wizard). DA CHIEDERE A
+   DENIS, con l'amico se possibile: era il tasto scritto "Indietro" dentro la
+   pagina, o il tasto/gesto indietro del telefono stesso? E dopo essere
+   "tornato all'inizio", si vedeva il modulo di ACCESSO (email/password) o la
+   FASE 1 della registrazione (nome/cognome/email/password/data di nascita)?
+   Sono due schermate diverse, chi le ha viste sa distinguerle se richiesto.
 
 --- TROVARE LE ESCURSIONI DEGLI ALTRI ---
 
