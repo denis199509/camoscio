@@ -1234,10 +1234,25 @@ dalle tracce: 5 tracce in una zona = salita di livello, 30+ = livello massimo
       per anni da chiunque. E' la stessa questione gia' incontrata al punto 15 ("costruirsi
       uno storico"): il caricamento .gpx e' l'unico modo che ha una persona di portare
       dentro il proprio passato.
+   -> META' (b) FATTA IL 06/08/2026 (recupero dopo lo spegnimento imprevisto del PC).
+      User.recognizedAscents (facoltativo): il pavimento scritto a mano, per vetta. Nuova
+      rotta GET /api/tracking/peak-ascents/:userId conta le uscite (ActiveHikeSession
+      concluse) entro 150 m dalla vetta - stessa soglia e stesso catalogo del geofencing -
+      solo per le vette gia' conquistate (chi non ha timbro non compare). Mostrato sotto
+      "Conquistato il..." su badges.js/profile.js/userprofile.js (stessa funzione
+      condivisa statoBadgePer) SOLO quando il totale supera 1, per non aggiungere rumore
+      alla stragrande maggioranza dei badge: "70 riconosciute + 3 registrate" quando c'e'
+      un pavimento, altrimenti solo "3 volte registrate dal sito". NIENTE LIVELLI/leggenda:
+      la decisione presa (vedi 03-Decisioni-Architetturali.md del vault) si e' fermata al
+      numero onesto con la sua provenienza dichiarata, senza inventare una scala.
+      Verificato con login demo vero via HTTP (pavimento + uscite vere, somma corretta,
+      vetta mai raggiunta assente dall'elenco) e dal vivo nel browser sui tre punti che
+      mostrano badge. Dati di prova rimossi.
+      LA META' (a), zona di competenza, RESTA FERMA: Denis deve ancora decidere il raggio.
 
 --- ESCURSIONI ---
 
-43) [DA FARE - E' IL "DA VALUTARE A PARTE" DEL PUNTO 13] Nella creazione di
+43) [FATTO 2026-08-06] Nella creazione di
 un'escursione, quota massima, dislivello e distanza si scrivono a mano. Possono
 restare, ma va aggiunta l'alternativa: scegliere un PROGETTO gia' fatto sul sito,
 oppure importare una TRACCIA da seguire. Cosi' dislivello, distanza e quota si
@@ -1245,6 +1260,38 @@ calcolano da soli.
    ORA E' POSSIBILE: fino al 2026-07-28 un progetto non aveva il dislivello, quindi
    collegarlo a un'escursione non avrebbe riempito quei campi. Col punto 33 ce
    l'ha, e col punto 15 il sito sa gia' leggere un file .gpx.
+   -> FATTO (recupero dopo lo spegnimento imprevisto del PC, stessa sessione del punto
+      42b sopra). Nel modulo di creazione/modifica escursione, un nuovo selettore
+      "Quota, dislivello e distanza": "Li scrivo io" (di default, invariato), "Li calcolo
+      da un progetto gia' fatto" (menu a tendina delle proprie bozze) oppure "Li calcolo
+      importando una traccia (.gpx)". Scegliendo uno dei due, i tre campi manuali si
+      nascondono e i numeri li calcola SEMPRE il server, mai il client: per un progetto si
+      ricalcola con lo stesso motore che gira riaprendo una bozza (nessun percorso salvato
+      due volte); per un file .gpx si riusano parseGpx/statisticheTraccia e lo stesso
+      controllo "maggioranza dei punti nelle 4 regioni" gia' scritti per le tracce
+      importate come uscite (routes/tracking.js) - stessa regola, non due conti diversi
+      della stessa cosa.
+      Hike.routeSource (facoltativo: {kind, nome}) e' la prova che i tre numeri sono
+      calcolati, non dichiarati - non un riferimento vivo alla bozza (che resta libera di
+      essere cancellata senza toccare l'escursione gia' creata). RIAPRE ANCHE IL PUNTO 44:
+      calculateHikeTimes() (mai toccata da allora) torna visibile quando routeSource e'
+      presente, quindi un'escursione con un percorso vero collegato mostra finalmente il
+      tempo previsto CAI, invece di "non disponibile".
+      DIFESA aggiunta in PUT /:id: numeri manuali mandati SENZA dire da quale percorso
+      vengono, dopo che l'escursione aveva gia' un routeSource, tolgono l'etichetta invece
+      di lasciarla a mentire su numeri che non le corrispondono piu'.
+      TROVATO E CORRETTO IN CORSA, non era lo scopo del punto ma serviva a farlo bene:
+      create-hike-modal viveva dentro la .page-section "Escursioni" dal punto 54, quindi
+      "Modifica" dalle card di "Le mie escursioni" apriva un modale che restava invisibile
+      (display:none per via della sezione madre non attiva) - si vedeva solo per puro caso
+      di posizione nel DOM, aprendolo dalla pagina Escursioni. Spostato fuori da
+      .page-container, come gia' fa generic-modal.
+      Verificato dal vivo nel browser: creata un'escursione collegata a un progetto vero
+      (numeri corretti, tempo previsto comparso col nome del progetto) e una collegata a
+      un file .gpx caricato per davvero (267 m di dislivello, esattamente la somma delle
+      salite vere nel file). Verificato anche via HTTP il giro PUT: collegare un progetto,
+      tornare manuale con routeSource:null, e la difesa che pulisce l'etichetta da sola.
+      Dati e progetti di prova rimossi.
 
 44) [FATTO 2026-08-01 - VA INSIEME AL 43] Su un'escursione organizzata senza traccia il
 sito mostra gia' il tempo CAI a confronto col proprio. Ma la via non e' ancora
@@ -1277,6 +1324,12 @@ stata scelta: il sistema non puo' sapere quanto ci si mette.
       browser in questa sessione (il resize della finestra non veniva applicato,
       verificato con window.innerWidth): il codice pero' riusa la classe CSS gia'
       verificata a quella larghezza al punto 33, non ne introduce una nuova.
+   -> RIAPERTO E CHIUSO DAVVERO IL 06/08/2026, col punto 43: da quando un'escursione
+      puo' avere un percorso vero collegato (routeSource), calculateHikeTimes() torna
+      richiamabile cosi' com'e' - non e' stata toccata nemmeno oggi. Verificato dal vivo:
+      un'escursione con un progetto collegato mostra "Tempo previsto: Xh Ym (CAI
+      standard) · Xh Ym sul tuo passo. Percorso: <nome>", quelle senza percorso vero
+      continuano a mostrare "non disponibile" come da questo punto.
 
 --- SEGNALAZIONI SULLO STATO DEI SENTIERI ---
 
@@ -2051,8 +2104,7 @@ perche' ci devo pensare."
 
 --- COMPLETAMENTO DI GRUPPO DAL CREATORE ---
 
-64) [CONFERMATO DA DENIS, PIANO APPROVATO, NON IMPLEMENTATO -
-aggiornato 2026-08-03] Denis: "quando l'escursione e' finita chi ha
+64) [FATTO 2026-08-06] Denis: "quando l'escursione e' finita chi ha
 creato l'escursione ha la possibilita' di completare l'escursione dal
 tasto. prima di completare l'escursione dobbiamo chiedere chi ha
 partecipato all'escursione. Quindi cliccando sul tasto 'Completa
@@ -2182,3 +2234,37 @@ presente, confermato da chi ha creato l'escursione."
    2026-08-10) per verificare che NE' il tasto NE' il promemoria
    compaiano prima del tempo. Pulizia dati demo dopo, stesso rigore
    gia' usato per il punto 58.
+   -> FATTO IL 06/08/2026 (recupero dopo lo spegnimento imprevisto del PC), seguendo il
+      piano riga per riga. POST /api/hikes/:id/complete-group: sovrascrive
+      hike.participants con la lista finale confermata (obbligatorio, non facoltativo - il
+      gate recensioni del punto 58 e altre viste presumono gia' che "condiviso
+      l'escursione" equivalga a stare li' dentro), crea i Completion mancanti riusando la
+      stessa matematica di POST /:id/complete - estratta in lib/hikeStats.js
+      (applyHikeCompletionStats) invece di duplicata fra le due rotte, chi ha gia' un
+      Completion proprio (auto-completato in passato) semplicemente non ne riceve un
+      secondo. Hike.groupCompletedAt nasconde il tasto dopo l'uso e ferma il promemoria.
+      Notification.relatedHikeId (il primo collegamento fra una notifica e un'altra
+      entita' in tutto il progetto) evita di ricreare lo stesso promemoria ad ogni
+      caricamento - agganciato a GET /api/notifications/:userId, non a GET /api/hikes
+      (molto piu' chiamata, avrebbe scritto sul database anche per chi non ha mai creato
+      niente). Confronto per stringa di calendario, mai new Date(): stessa cautela del
+      punto 58.
+      TROVATO E CORRETTO IN CORSA, un bug vero della prova: aggiungere qualcuno via
+      ricerca ricostruiva l'intera checklist da capo con ogni casella di nuovo spuntata,
+      cancellando in silenzio la spunta appena tolta a mano a qualcun altro. Ora si accoda
+      una riga sola.
+      TROVATO E CORRETTO ANCHE UN BUG PREESISTENTE DEL PUNTO 54 (non di oggi):
+      create-hike-modal viveva dentro la .page-section "Escursioni", quindi "Modifica"
+      dalle card di "Le mie escursioni" apriva un modale che restava invisibile - si vedeva
+      solo per puro caso di posizione nel DOM, aprendolo dalla pagina Escursioni. Spostato
+      fuori da .page-container, insieme al nuovo modale gemello.
+      VERIFICATO DAL VIVO esattamente come da piano: Sofia e Giulia pre-spuntate, tolta la
+      spunta a Giulia, aggiunto Luca TrailRunner via ricerca, confermato - participants
+      riflette la lista finale, Completion creati per Marco e Luca, quello preesistente di
+      Sofia (con un tempo reale gia' registrato) lasciato intatto invece di duplicato,
+      "Organizzate da me" si e' svuotata e l'escursione e' comparsa in "Gia' fatte" (la
+      classificazione esistente vince gia' cosi', punto 10 - comportamento corretto, non
+      un difetto). Promemoria comparso PRIMA della conferma, sparito e non ricreato DOPO.
+      "Modifica" da "Le mie escursioni" riprovato anche per create-hike-modal, ora visibile.
+      Dati demo e statistiche utente (completedHikes di Marco e Luca) ripristinati
+      identici a come sono stati trovati.

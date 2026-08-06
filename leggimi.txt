@@ -1,6 +1,6 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-06
+Aggiornato: 2026-08-07
 ===================================================================
 
 QUESTO FILE DICE SOLO UNA COSA: a che punto siamo adesso e da dove si ricomincia.
@@ -26,23 +26,19 @@ o ne arriva uno nuovo.
 
 
 
->>> PUNTO 7 CHIUSO DAVVERO IL 06/08/2026 (dopo un riavvio imprevisto del PC a sessione
-    interrotta - nessun lavoro perso, tutto quello che segue e' della ripresa): il cambio
-    password dal profilo, che nella prova del browser non si completava mai (campi mai
-    svuotati, nessun errore JS) pur passando identico lato API, aveva una causa reale, non
-    di prova. initProfileModule() (il pulsante "Cambia password" e gli altri della card
-    profilo) si agganciava da dentro initApp(), DOPO await refreshState() - ma il profilo
-    si apre e si popola SUBITO al click sul riquadro utente, senza aspettare initApp():
-    restava una finestra in cui il bottone si vedeva ma non aveva ancora nessun listener,
-    click perso in silenzio. E' lo STESSO bug gia' corretto il 26/07/2026 per la barra di
-    navigazione (public/js/app.js), mai applicato al modulo profilo. Stesso rimedio
-    applicato. Verificato: prova-browser-punto7.js 57/57 (prima falliva su 2 controlli),
-    prova-punto7.js 53/53 invariata. Commit locale f021bc5, NON PUSHATO. Dettaglio completo
-    in cose_da_fare.txt punto 7 e in ../camoscio memoria/04-Da-Fare.md.
+>>> DIECI PUNTI CHIUSI IN QUESTA SESSIONE (iniziata il 06/08, proseguita dopo un
+    riavvio imprevisto del PC fino al 07/08 - nessun lavoro perso, ogni volta):
+    58 (deploy rimasto indietro), 61, 54, 57, 63a, 59, 7, 42b, 43, 64. Il punto 43 ha
+    anche riattivato il 44 (tempo previsto CAI), gia' chiuso a inizio agosto e mai
+    toccato di nuovo. TUTTO PUSHATO E VERIFICATO LIVE SU RENDER. Dettaglio di ogni
+    punto in cose_da_fare.txt e in ../camoscio memoria/06-Cronologia-Sessioni.md.
 
->>> PROSSIMO, quando Denis da' il via libera (nell'ordine gia' concordato): punto 42b
-    (conteggio salite a una vetta) - decisione gia' presa, pronto da implementare, vedi
-    ../camoscio memoria/04-Da-Fare.md.
+>>> PROSSIMO, quando Denis da' il via libera (ordine gia' concordato): punto 39
+    (mappa di base piu' leggibile, OpenTopoMap) - richiede due correzioni alla cache
+    offline insieme (chiave che non contiene lo stile, stima del peso fissa a 20
+    KB/tile), vedi ../camoscio memoria/04-Da-Fare.md. Dopo: i lavori grandi, 37
+    (Dead Man's Switch seconda meta' + tracciamento a pagina chiusa), 48 (ancora
+    vago, serve un esempio da Denis prima di progettare), 45, 55.
 
 >>> RICORDARE A DENIS A INIZIO SESSIONE, FINCHE' NON RIFERISCE L'ESITO (sua richiesta
     esplicita, 06/08/2026): deve provare lui stesso dal telefono se il punto 52 (tasto
@@ -51,70 +47,36 @@ o ne arriva uno nuovo.
     dal vivo il 06/08, il tasto in pagina non puo' farlo. Dettaglio in
     ../camoscio memoria/04-Da-Fare.md.
 
+>>> DUE COSE DA SAPERE PRIMA DI TOCCARE public/index.html (trovate in questa sessione,
+    non ovvie a prima vista):
+      - create-hike-modal e complete-group-modal vivono FUORI da .page-container
+        (vicino a generic-modal), non dentro una .page-section: un modale raggiungibile
+        da piu' di una pagina (es. sia "Escursioni" sia "Le mie escursioni") deve stare
+        li' con loro, altrimenti resta invisibile aprendolo dalla sezione "sbagliata" -
+        bug vero trovato su create-hike-modal, in piedi dal punto 54 senza che nessuno
+        se ne accorgesse;
+      - un modulo che si collega SOLO da dentro initApp() (dopo await refreshState())
+        rischia la stessa finestra "pulsante visibile ma senza listener" gia' trovata
+        due volte (navigazione il 26/07, profilo il 06/08) - se un pulsante sembra
+        rotto senza nessun errore in console, controllare prima QUANDO si e' agganciato
+        il suo ascoltatore, non se il codice del gestore e' giusto.
 
 
->>> SESSIONE DEL 2026-08-06, RIASSUNTA (dettaglio completo in cose_da_fare.txt e nel
-    vault, punto per punto - qui solo cosa e' cambiato):
-      - Trovati e PUSHATI i commit rimasti dalla sessione precedente (punto 58, la
-        correzione vera del bug recensioni, non era mai arrivata online). Deploy
-        verificato su Render prima di continuare;
-      - PUNTO 61 CHIUSO: il creatore ora riceve davvero una notifica quando qualcuno
-        chiede di partecipare (prima non ne veniva creata nessuna). Denis ha confermato
-        che la sola campanella gli basta, fara' delle prove sul sito vero;
-      - PUNTO 52 RIPRODOTTO, NON UN BUG DEL CODICE: il tasto "Indietro" della pagina di
-        registrazione non puo' mostrare il login, per come e' scritto. Denis ha
-        confermato di persona che invece ci si arriva davvero: sospetto principale ora
-        e' il tasto/gesto del telefono. Denis fara' la prova lui stesso - vedi
-        promemoria qui sopra;
-      - PUNTO 54 CHIUSO: si puo' modificare un'escursione gia' creata (tre puntini sulla
-        card, solo per il creatore) - riusa il modulo di creazione gia' esistente.
-        Chiuso anche un buco che prima era solo teorico: il ritrovo modificato ora
-        rivalida la regione lato server, come gia' faceva la creazione;
-      - PUNTO 57 CHIUSO: il badge personale compare anche nella pagina Badge, in alto;
-      - PUNTO 63(a) CHIUSO: "esperto locale" visibile sul profilo di un altro utente.
-        Resta in sospeso solo il nome ("competenza") e i livelli, punto 63b, perche'
-        Denis ci deve ancora pensare;
-      - PUNTO 59 CHIUSO: il profilo esce dalla Dashboard, diventa una pagina propria
-        (si arriva cliccando il riquadro utente in alto a destra). La card
-        foto/bio/esperto locale/cambio password e' stata SPOSTATA, non duplicata.
-        Chiude anche, di fatto, la parte "profilo proprio" lasciata aperta dal
-        punto 63a: il modulo di modifica mostra gia' lo stato, non serve altro.
-      Ogni punto e' stato provato dal vivo (account demo, server locale e/o Render)
-      prima di essere segnato come fatto, e ogni push e' stato fatto solo dopo che
-      Denis lo ha chiesto esplicitamente - mai dato per scontato.
-    TUTTO PUSHATO A QUEL PUNTO DELLA SESSIONE (vedi pero' sotto: il lavoro e'
-    ripreso lo stesso giorno dopo un riavvio imprevisto del PC, e quello che segue
-    NON e' ancora pushato). Il vault e' stato riletto e riscritto per intero
-    (04-Da-Fare.md), con due decisioni tecniche nuove in 03 e due lezioni operative
-    in 07 - poi committato e pushato anche lui (repository privato).
-      - RIPRESA STESSO GIORNO dopo lo spegnimento imprevisto del PC: PUNTO 7
-        CHIUSO DAVVERO (vedi il blocco in cima a questo file per il dettaglio) -
-        stesso bug del 26/07 sul collegamento dei pulsanti, mai applicato al
-        modulo profilo. Commit locale f021bc5, non pushato.
 
->>> DA DOVE SI CONTINUA COL LAVORO VERO. L'ordine concordato con Denis, dopo i sei
-    punti chiusi oggi, e': **42b** (conteggio salite a una vetta - nessuna ambiguita'
-    residua, decisione gia' presa in 03-Decisioni-Architetturali.md del vault), poi
-    **39** (mappa di base piu' leggibile, OpenTopoMap - richiede due correzioni alla
-    cache offline insieme, vedi 04-Da-Fare.md), poi i lavori grandi: 43, 37 (Dead Man's
-    Switch seconda meta' + tracciamento a pagina chiusa), 48, 45, 55.
-    Il PUNTO 64 (completamento di gruppo + promemoria) ha un piano completo gia'
-    approvato da Denis, pronto per essere implementato in qualunque momento si decida
-    di anticiparlo - non e' stato toccato oggi, si e' seguito l'ordine concordato.
-    Restano ferme, per esplicita richiesta di Denis ("ci devo pensare"): il punto 42a
-    (raggio zona di competenza) e il punto 63b (nome/livelli) - non riproporli finche'
-    non torna lui sull'argomento.
-
->>> STATO VERIFICATO A FINE SESSIONE (2026-08-06):
+>>> STATO VERIFICATO A FINE SESSIONE (2026-08-07):
       - camoscio: albero di lavoro pulito, allineato a origin/master, tutto pushato
-        e verificato online (social.js, hikes.js, profile.js, userprofile.js,
-        badges.js, index.html);
-      - camoscio memoria (vault): 04-Da-Fare.md riscritto per intero, 03 e 07
-        aggiornati, 06 con la voce di oggi - da committare e pushare insieme a
-        questo giro (repository privato, github.com/denis199509/Camoscio-memoria);
-      - database: nessun dato di prova lasciato in giro. Ogni prova dal vivo
-        (notifiche, modifica escursione, bio di prova) e' stata ripulita subito
-        dopo e ricontrollata uguale al punto di partenza;
-      - nessun server locale acceso, porta 3000 verificata libera ogni volta
-        (compreso il caso noto: lo stop del task non basta da solo su Windows,
-        serve taskkill sul PID preso da netstat).
+        e verificato online (app.js, hikes.js, tracking.js, notifications.js,
+        social.js, badges.js, profile.js, userprofile.js, index.html e altri);
+      - camoscio memoria (vault): 04-Da-Fare.md riscritto per intero, 06 con le
+        voci di oggi - committato e pushato (repository privato,
+        github.com/denis199509/Camoscio-memoria);
+      - controllo finale con le prove automatiche esistenti (non solo quelle nuove
+        provate dal vivo): prova-configurazione.js 9/9, prova-punto7.js 53/53,
+        prova-dislivello-vivo.js 28/28, prova-punto38.js 25/25 - 115/115, nessuna
+        regressione sul codice toccato oggi (routes/tracking.js, motore di
+        instradamento);
+      - database: nessun dato di prova lasciato in giro. Ogni prova dal vivo (badge,
+        escursioni di prova, progetti, completamento di gruppo, statistiche utente)
+        e' stata ripulita subito dopo e ricontrollata uguale al punto di partenza;
+      - nessun server locale acceso, porta 3000 verificata libera (stop del task piu'
+        taskkill sul PID preso da netstat, non basta lo stop da solo su Windows).
