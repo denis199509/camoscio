@@ -1702,7 +1702,7 @@ trovare escursioni compatibili."
 
 --- MODIFICARE UN'ESCURSIONE GIA' CREATA ---
 
-54) [DA FARE] Denis: "L'escursione una volta creata non c'e' modo di modificarla.
+54) [FATTO 2026-08-06] Denis: "L'escursione una volta creata non c'e' modo di modificarla.
 Classico modo dei tre punti in alto a destra con scritta modifica. Permette di
 modificare l'escursione (schermata iniziale)."
    VERIFICATO NEL CODICE: grep su editHike/hike-options/hike-menu/dropdown-menu/
@@ -1710,6 +1710,31 @@ modificare l'escursione (schermata iniziale)."
    parte. Il lato server invece e' GIA' pronto: routes/hikes.js, PUT
    /api/hikes/:id, distingue gia' con CREATOR_ONLY_FIELDS quali campi puo'
    cambiare solo il creatore. Manca solo il tasto e il modulo, non la rotta.
+   -> FATTO: tasto "tre puntini" in alto a destra sulla card (accanto al badge
+      di difficolta', stesso angolo), visibile SOLO al creatore - dentro si
+      apre "Modifica". Riusa 1:1 il modulo gia' esistente di creazione
+      (create-hike-modal): stesso form, titolo e testo del tasto cambiano
+      ("Modifica Escursione" / "Salva Modifiche"), i campi si precompilano coi
+      dati dell'escursione (incluso il punto di ritrovo, con la stessa
+      funzione del picker usata alla creazione, ora esposta anche per questo).
+      L'invio manda PUT invece di POST. Corretta anche una cosa che prima
+      poteva solo essere teorica (nessuno modificava mai il ritrovo dopo la
+      creazione): PUT /api/hikes/:id ora rivalida la regione (Marche/Lazio/
+      Abruzzo/Molise) quando cambia il trailhead, esattamente come gia' fa
+      POST /, e tiene "location" sempre derivata da "trailhead" invece di
+      lasciare che un client possa mandarli scollegati.
+      PROVATO DAL VIVO nel browser (account demo Marco Alpinista,
+      "Ascesa al Corno Grande"): tasto assente sulle escursioni altrui
+      (provato su quella di Luca TrailRunner), modulo aperto in modifica con
+      tutti i campi corretti (titolo, descrizione, difficolta', data, quote,
+      ritrovo con coordinate, tag, modalita' iscrizione), modifica al titolo
+      salvata e visibile sulla card, poi ripristinato il titolo originale -
+      database ricontrollato uguale al punto di partenza su tutti i campi.
+      Provato anche via API il rifiuto di un ritrovo fuori regione (Milano):
+      risposta 400, nessuna scrittura avvenuta. Nessun errore in console.
+      Tasto "Crea Nuova Escursione" verificato ancora pulito dopo un giro di
+      modifica (titolo, campi e testo del tasto tornano quelli della
+      creazione, non restano agganciati all'ultima modifica).
 
 --- PAGINA ESCURSIONE E CHAT DI GRUPPO ---
 

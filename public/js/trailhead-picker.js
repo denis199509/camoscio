@@ -357,3 +357,5 @@ function initTrailheadPicker() {
 window.initTrailheadPicker = initTrailheadPicker;
 window.resetTrailheadPicker = resetTrailhead;
 window.getChosenTrailhead = () => pickerPoint;
+// Punto 54: serve per precompilare il ritrovo quando si apre il modulo in modifica.
+window.setChosenTrailhead = setTrailhead;

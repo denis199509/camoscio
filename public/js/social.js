@@ -1,3 +1,57 @@
+// Punto 54: create-hike-modal e' riusato anche per modificare un'escursione gia'
+// esistente - questo tiene traccia di QUALE, se non null siamo in modalita' modifica.
+let editingHikeId = null;
+
+function setHikeModalMode(mode, hike) {
+    const titolo = document.querySelector('#create-hike-modal .modal-header h4');
+    const submitBtn = document.querySelector('#create-hike-form button[type="submit"]');
+    if (mode === 'edit') {
+        editingHikeId = hike.id;
+        if (titolo) titolo.textContent = 'Modifica Escursione';
+        if (submitBtn) submitBtn.textContent = 'Salva Modifiche';
+    } else {
+        editingHikeId = null;
+        if (titolo) titolo.textContent = 'Crea Nuova Escursione';
+        if (submitBtn) submitBtn.textContent = 'Pubblica Escursione';
+    }
+}
+
+// Precompila il modulo di creazione coi dati di un'escursione esistente e lo apre in
+// modalita' modifica. Solo il creatore puo' arrivarci (il tasto compare solo a lui,
+// e comunque routes/hikes.js rifiuta un salvataggio da chiunque altro).
+window.openEditHikeModal = function(hikeId) {
+    const db = window.CamoscioState;
+    const hike = db.hikes.find(h => h.id === hikeId);
+    if (!hike) return;
+
+    document.querySelectorAll('.hike-card-menu-dropdown').forEach(d => d.classList.add('hidden'));
+    setHikeModalMode('edit', hike);
+
+    document.getElementById('hike-title').value = hike.title;
+    document.getElementById('hike-desc').value = hike.description;
+    document.getElementById('hike-diff').value = hike.difficulty;
+    // Niente "min" qui: un'escursione gia' esistente puo' avere una data di oggi o
+    // passata, e non deve bloccare il salvataggio se non e' quella data a cambiare.
+    document.getElementById('hike-date').removeAttribute('min');
+    document.getElementById('hike-date').value = hike.date;
+    document.getElementById('hike-alt').value = hike.maxAltitude;
+    document.getElementById('hike-elev').value = hike.elevationGain;
+    document.getElementById('hike-dist').value = hike.distanceKm;
+    document.getElementById('hike-approval').value = hike.manualApproval ? 'true' : 'false';
+
+    document.querySelectorAll("input[name='hike-tags']").forEach(cb => {
+        cb.checked = hike.tribeTags.includes(cb.value);
+    });
+
+    if (window.setChosenTrailhead) {
+        window.setChosenTrailhead(hike.trailhead.lat, hike.trailhead.lng, hike.trailhead.name, '');
+    }
+    document.getElementById('hike-trailhead-search').value = hike.trailhead.name || '';
+
+    document.getElementById('create-hike-modal').classList.remove('hidden');
+    if (window.lucide) window.lucide.createIcons();
+};
+
 function initSocialModule() {
     setupSocialEvents();
     setupDiaryForm();
@@ -24,6 +78,9 @@ function setupSocialEvents() {
 
     if (btnOpenModal && modal) {
         btnOpenModal.addEventListener("click", () => {
+            // Punto 54: questo tasto crea sempre una NUOVA escursione, anche se il modulo
+            // era rimasto in modalita' modifica da un'apertura precedente mai inviata.
+            setHikeModalMode('create');
             modal.classList.remove("hidden");
             // Imposta la data minima a oggi
             document.getElementById("hike-date").min = new Date().toISOString().split("T")[0];
@@ -36,8 +93,27 @@ function setupSocialEvents() {
     if (btnCloseModal && modal) {
         btnCloseModal.addEventListener("click", () => {
             modal.classList.add("hidden");
+            editingHikeId = null;
         });
     }
+
+    // Punto 54: menu "tre puntini" -> Modifica sulle card escursione. Delegato su un
+    // solo ascoltatore (le card si ricreano ad ogni renderHikesList, uno per card
+    // perderebbe il conteggio o si aggancerebbe piu' volte).
+    document.addEventListener("click", (e) => {
+        const kebabBtn = e.target.closest(".hike-card-menu-btn");
+        if (kebabBtn) {
+            e.stopPropagation();
+            const dropdown = kebabBtn.nextElementSibling;
+            const eraAperto = dropdown && !dropdown.classList.contains("hidden");
+            document.querySelectorAll(".hike-card-menu-dropdown").forEach(d => d.classList.add("hidden"));
+            if (dropdown && !eraAperto) dropdown.classList.remove("hidden");
+            return;
+        }
+        if (!e.target.closest(".hike-card-menu-dropdown")) {
+            document.querySelectorAll(".hike-card-menu-dropdown").forEach(d => d.classList.add("hidden"));
+        }
+    });
 
     // Form creazione escursione
     const formHike = document.getElementById("create-hike-form");
@@ -358,8 +434,26 @@ function buildHikeCard(hike) {
         `;
     }
 
+    // Punto 54: solo il creatore vede il tasto "tre puntini" -> Modifica. Riusa il
+    // create-hike-modal gia' esistente (openEditHikeModal lo precompila).
+    const editMenuHtml = isCreatorMe ? `
+        <div class="hike-card-menu">
+            <button type="button" class="hike-card-menu-btn" title="Opzioni escursione" aria-label="Opzioni escursione">
+                <i data-lucide="more-vertical"></i>
+            </button>
+            <div class="hike-card-menu-dropdown hidden">
+                <button type="button" class="hike-card-menu-item" onclick="openEditHikeModal('${hike.id}')">
+                    <i data-lucide="pencil"></i> Modifica
+                </button>
+            </div>
+        </div>
+    ` : "";
+
     card.innerHTML = `
-        <span class="badge badge-primary hike-difficulty-badge">${hike.difficulty}</span>
+        <div class="hike-card-topright">
+            <span class="badge badge-primary hike-difficulty-badge">${hike.difficulty}</span>
+            ${editMenuHtml}
+        </div>
         <h4 style="color:#FFF; margin-bottom: 4px;">${escapeHtml(hike.title)}</h4>
         <p class="small text-muted" style="margin-bottom: 8px;">Organizzato da: <b class="user-link" onclick="showUserProfile('${hike.creatorId}')">${escapeHtml(creatorName)}</b>${creatorBadgeHtml}</p>
 
@@ -602,13 +696,17 @@ async function submitCreateHike() {
         distanceKm,
         trailhead: { lat, lng, name },
         tribeTags: tags,
-        manualApproval,
-        creatorId: db.currentUser.id
+        manualApproval
     };
+    // Punto 54: creatorId ha senso solo alla creazione - in modifica lo decide la
+    // sessione lato server (hike.creatorId non cambia mai), non un campo del payload.
+    if (!editingHikeId) payload.creatorId = db.currentUser.id;
+
+    const inModifica = !!editingHikeId;
 
     try {
-        const response = await fetch('/api/hikes', {
-            method: 'POST',
+        const response = await fetch(inModifica ? `/api/hikes/${editingHikeId}` : '/api/hikes', {
+            method: inModifica ? 'PUT' : 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
@@ -617,21 +715,25 @@ async function submitCreateHike() {
             document.getElementById("create-hike-modal").classList.add("hidden");
             document.getElementById("create-hike-form").reset();
             if (window.resetTrailheadPicker) window.resetTrailheadPicker();
+            setHikeModalMode('create'); // torna sempre alla modalita' di default dopo l'invio
 
             await refreshState();
             renderHikesList(); // ridisegna anche "Le mie escursioni", vedi commento li'
             if (window.populateHikeSelects) window.populateHikeSelects();
-            window.showToast("Escursione pubblicata!", "success");
+            window.showToast(inModifica ? "Escursione aggiornata!" : "Escursione pubblicata!", "success");
         } else {
             // Prima non si diceva NIENTE quando il server rifiutava: la finestra restava
             // aperta senza spiegazioni e sembrava che il pulsante non funzionasse. Il caso
             // piu' probabile e' proprio il rifiuto per ritrovo fuori dalle 4 regioni.
             const body = await response.json().catch(() => ({}));
-            window.showToast(body.error || "Non è stato possibile pubblicare l'escursione. Controlla i dati inseriti.", "error");
+            const messaggioDefault = inModifica
+                ? "Non è stato possibile salvare le modifiche. Controlla i dati inseriti."
+                : "Non è stato possibile pubblicare l'escursione. Controlla i dati inseriti.";
+            window.showToast(body.error || messaggioDefault, "error");
         }
     } catch(e) {
         console.error("Errore creazione escursione:", e);
-        window.showToast("Errore di rete: l'escursione non è stata pubblicata.", "error");
+        window.showToast(inModifica ? "Errore di rete: le modifiche non sono state salvate." : "Errore di rete: l'escursione non è stata pubblicata.", "error");
     }
 }
 

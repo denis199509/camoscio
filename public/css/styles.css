@@ -1117,10 +1117,69 @@ h1, h2, h3, h4, h5, h6 {
     overflow: hidden;
 }
 
-.hike-difficulty-badge {
+.hike-card-topright {
     position: absolute;
     top: 16px;
     right: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Punto 54: tasto "tre puntini" -> Modifica, solo per il creatore. Menu di un solo
+   elemento oggi, ma nella stessa forma del notification-dropdown gia' in uso, cosi'
+   resta coerente se in futuro si aggiungono altre voci (es. elimina). */
+.hike-card-menu {
+    position: relative;
+}
+
+.hike-card-menu-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+}
+
+.hike-card-menu-btn:hover {
+    color: var(--color-text-primary);
+    background: rgba(0, 0, 0, 0.45);
+}
+
+.hike-card-menu-dropdown {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    min-width: 150px;
+    background: #1A2436;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    z-index: 20;
+    overflow: hidden;
+}
+
+.hike-card-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 14px;
+    background: none;
+    border: none;
+    color: var(--color-text-primary);
+    font-size: 0.85rem;
+    text-align: left;
+    cursor: pointer;
+}
+
+.hike-card-menu-item:hover {
+    background: rgba(255, 255, 255, 0.06);
 }
 
 .hike-meta-row {
@@ -4020,7 +4079,7 @@ h1, h2, h3, h4, h5, h6 {
         gap: 16px;
     }
 
-    .hike-difficulty-badge {
+    .hike-card-topright {
         position: static;
         align-self: flex-start;
         margin-bottom: -6px;

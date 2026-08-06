@@ -198,7 +198,7 @@ router.put('/:id', requireAuth, async (req, res) => {
 
         const CREATOR_ONLY_FIELDS = [
             'title', 'description', 'difficulty', 'maxAltitude', 'distanceKm', 'elevationGain',
-            'date', 'tribeTags', 'manualApproval', 'trailhead', 'location', 'peaks'
+            'date', 'tribeTags', 'manualApproval', 'peaks'
         ];
         for (const field of CREATOR_ONLY_FIELDS) {
             if (body[field] !== undefined) {
@@ -207,6 +207,22 @@ router.put('/:id', requireAuth, async (req, res) => {
                 }
                 update[field] = body[field];
             }
+        }
+
+        // Punto 54 (modifica escursione): trailhead e location vanno gestiti insieme, non nel
+        // ciclo generico sopra - altrimenti un client potrebbe mandare l'uno senza l'altro e i
+        // due finirebbero scollegati. Stessa validazione della regione gia' fatta in POST /
+        // (Fase G), qui mancava perche' prima nessuno modificava mai il ritrovo dopo la creazione.
+        if (body.trailhead !== undefined) {
+            if (!isCreator) {
+                return res.status(403).json({ error: "Solo chi ha creato l'escursione può modificare questo campo" });
+            }
+            const trailhead = body.trailhead;
+            if (!trailhead || !regionForPoint(trailhead.lng, trailhead.lat)) {
+                return res.status(400).json({ error: "Il punto di ritrovo deve trovarsi in Marche, Lazio, Abruzzo o Molise" });
+            }
+            update.trailhead = trailhead;
+            update.location = { type: 'Point', coordinates: [trailhead.lng, trailhead.lat] };
         }
 
         // Punto 61: chi chiede di partecipare finisce in pendingApproval, ma finora nessuno
