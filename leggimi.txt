@@ -26,6 +26,18 @@ o ne arriva uno nuovo.
 
 
 
+>>> DA RIPRENDERE PER PRIMA COSA (sessione interrotta qui il 06/08/2026 su richiesta di
+    Denis, "segna tutto quanto, continuiamo la prossima volta"): nel controllo finale di
+    oggi, rilanciando prove/prova-browser-punto7.js dopo il punto 59, il cambio password
+    dal profilo NON si completa nella prova del browser (i campi non si svuotano mai,
+    nessun errore JS) - ma la STESSA IDENTICA cosa lato API (prova-punto7.js) passa senza
+    problemi. Non e' stato ancora capito il perche'. Dettaglio completo, ipotesi gia'
+    scartate e il prossimo passo suggerito (leggere la risposta vera del server invece di
+    dedurla dal timeout) in ../camoscio memoria/04-Da-Fare.md, sezione in cima.
+    Gia' fatto e committato (non pushato, commit 32350d5): corretta la parte della stessa
+    prova che invece si capiva - controllava "Cambia password" senza passare dalla nuova
+    pagina profilo, ora ci passa con un'attesa vera prima del click.
+
 >>> RICORDARE A DENIS A INIZIO SESSIONE, FINCHE' NON RIFERISCE L'ESITO (sua richiesta
     esplicita, 06/08/2026): deve provare lui stesso dal telefono se il punto 52 (tasto
     indietro nella registrazione che porta al login) succede col tasto scritto nella
