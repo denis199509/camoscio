@@ -16,6 +16,48 @@ function setHikeModalMode(mode, hike) {
     }
 }
 
+// Punto 43: riporta il selettore "quota/dislivello/distanza" a "Li scrivo io", che e' anche
+// lo stato con cui si apre SEMPRE il modulo di modifica (punto 54) - anche su un'escursione
+// che ha gia' un percorso collegato. Riproporre un progetto o una traccia ogni volta che si
+// tocca un'altra cosa del modulo sarebbe una seccatura; chi vuole ricollegarne uno lo sceglie
+// di nuovo apposta, chi non tocca questa parte si ritrova gli stessi numeri di prima.
+function resetHikeRouteSourcePicker() {
+    const sel = document.getElementById('hike-route-source');
+    if (sel) sel.value = 'manuale';
+    const draftPicker = document.getElementById('hike-route-draft-picker');
+    const gpxPicker = document.getElementById('hike-route-gpx-picker');
+    const manualRow = document.getElementById('hike-route-manual-row');
+    const nota = document.getElementById('hike-route-calcolato-nota');
+    if (draftPicker) draftPicker.classList.add('hidden');
+    if (gpxPicker) gpxPicker.classList.add('hidden');
+    if (manualRow) manualRow.classList.remove('hidden');
+    if (nota) nota.classList.add('hidden');
+    const gpxInput = document.getElementById('hike-route-gpx-file');
+    if (gpxInput) gpxInput.value = '';
+    document.querySelectorAll('#hike-alt, #hike-elev, #hike-dist').forEach(el => el.required = true);
+}
+
+// Riempie il menu a tendina dei progetti con le bozze dell'utente (GET /api/routing/drafts,
+// gia' esistente dal punto 13 - nessuna rotta nuova). Solo nome e id: i numeri si calcolano
+// davvero al salvataggio, non qui, altrimenti due fonti potrebbero dire cose diverse.
+async function popolaBozzePerHike() {
+    const sel = document.getElementById('hike-route-draft-select');
+    if (!sel) return;
+    sel.innerHTML = '<option>Caricamento...</option>';
+    try {
+        const res = await fetch('/api/routing/drafts');
+        const bozze = res.ok ? await res.json() : [];
+        if (!bozze.length) {
+            sel.innerHTML = '<option value="">Non hai ancora nessun progetto salvato</option>';
+            return;
+        }
+        sel.innerHTML = bozze.map(b => `<option value="${b.id}">${window.escapeHtml(b.nome)}</option>`).join('');
+    } catch (e) {
+        console.error('Errore nel caricamento dei progetti:', e);
+        sel.innerHTML = '<option value="">Non è stato possibile caricare i progetti</option>';
+    }
+}
+
 // Precompila il modulo di creazione coi dati di un'escursione esistente e lo apre in
 // modalita' modifica. Solo il creatore puo' arrivarci (il tasto compare solo a lui,
 // e comunque routes/hikes.js rifiuta un salvataggio da chiunque altro).
@@ -34,6 +76,7 @@ window.openEditHikeModal = function(hikeId) {
     // passata, e non deve bloccare il salvataggio se non e' quella data a cambiare.
     document.getElementById('hike-date').removeAttribute('min');
     document.getElementById('hike-date').value = hike.date;
+    resetHikeRouteSourcePicker();
     document.getElementById('hike-alt').value = hike.maxAltitude;
     document.getElementById('hike-elev').value = hike.elevationGain;
     document.getElementById('hike-dist').value = hike.distanceKm;
@@ -87,6 +130,7 @@ function setupSocialEvents() {
             // Punto 8: form.reset() non basta a ripulire il punto di ritrovo scelto,
             // perche' nome/coordinate/avvisi stanno anche fuori dai campi del modulo.
             if (window.resetTrailheadPicker) window.resetTrailheadPicker();
+            resetHikeRouteSourcePicker();
         });
     }
 
@@ -94,6 +138,27 @@ function setupSocialEvents() {
         btnCloseModal.addEventListener("click", () => {
             modal.classList.add("hidden");
             editingHikeId = null;
+        });
+    }
+
+    // Punto 43: quota/dislivello/distanza a mano, oppure calcolati da un progetto o da una
+    // traccia importata. Cambiare selettore mostra il pannello giusto e nasconde gli altri -
+    // i tre campi manuali restano "required" solo quando servono davvero.
+    const selRouteSource = document.getElementById('hike-route-source');
+    if (selRouteSource) {
+        selRouteSource.addEventListener('change', () => {
+            const draftPicker = document.getElementById('hike-route-draft-picker');
+            const gpxPicker = document.getElementById('hike-route-gpx-picker');
+            const manualRow = document.getElementById('hike-route-manual-row');
+            const manuale = selRouteSource.value === 'manuale';
+
+            if (manualRow) manualRow.classList.toggle('hidden', !manuale);
+            document.querySelectorAll('#hike-alt, #hike-elev, #hike-dist').forEach(el => el.required = manuale);
+
+            if (draftPicker) draftPicker.classList.toggle('hidden', selRouteSource.value !== 'draft');
+            if (selRouteSource.value === 'draft') popolaBozzePerHike();
+
+            if (gpxPicker) gpxPicker.classList.toggle('hidden', selRouteSource.value !== 'gpx');
         });
     }
 
@@ -347,6 +412,19 @@ function buildHikeCard(hike) {
         : "";
     const isCreatorMe = hike.creatorId === currentUser.id;
 
+    // Punto 44, ripreso ora che il punto 43 puo' collegare un percorso VERO: senza
+    // hike.routeSource dislivello/distanza restano quelli dichiarati da chi organizza, e
+    // un tempo calcolato su un'ipotesi sarebbe un numero che sembra una misura e non lo e'
+    // (lo stesso principio gia' scritto per il dislivello dei progetti al punto 33).
+    // Con un percorso collegato i numeri sono VERI, quindi calculateHikeTimes() (mai
+    // toccata, punto 33/44) torna a essere richiamabile cosi' com'e'.
+    const tempoHtml = hike.routeSource
+        ? (() => {
+            const tempi = calculateHikeTimes(hike, currentUser);
+            return `<p class="small text-muted rp-nota-dislivello"><i data-lucide="clock"></i><span>Tempo previsto: <b>${tempi.standardText}</b> (CAI standard) · <b>${tempi.customText}</b> sul tuo passo. Percorso: ${escapeHtml(hike.routeSource.nome)}.</span></p>`;
+        })()
+        : `<p class="small text-muted rp-nota-dislivello"><i data-lucide="info"></i><span>Tempo previsto non disponibile: per questa escursione non è ancora stato scelto un percorso reale, quindi non si può sapere quanto ci vorrà davvero. Dislivello e distanza qui sopra sono quelli indicati da chi l'ha organizzata.</span></p>`;
+
     // Verifica idoneità fisica
     const eligibility = window.getEligibilityBadge(hike, currentUser);
 
@@ -474,8 +552,7 @@ function buildHikeCard(hike) {
             </div>
         </div>
 
-        <!-- PUNTO 44: nessun percorso reale collegato oggi (punto 43) => niente tempo finto. -->
-        <p class="small text-muted rp-nota-dislivello"><i data-lucide="info"></i><span>Tempo previsto non disponibile: per questa escursione non è ancora stato scelto un percorso reale, quindi non si può sapere quanto ci vorrà davvero. Dislivello e distanza qui sopra sono quelli indicati da chi l'ha organizzata.</span></p>
+        ${tempoHtml}
 
         <div class="tag-list">
             ${hike.tribeTags.map(t => `<span class="tag">${t}</span>`).join("")}
@@ -653,9 +730,38 @@ async function submitCreateHike() {
     const description = document.getElementById("hike-desc").value;
     const difficulty = document.getElementById("hike-diff").value;
     const date = document.getElementById("hike-date").value;
-    const maxAltitude = parseInt(document.getElementById("hike-alt").value);
-    const elevationGain = parseInt(document.getElementById("hike-elev").value);
-    const distanceKm = parseFloat(document.getElementById("hike-dist").value);
+
+    // Punto 43: quota/dislivello/distanza a mano (come sempre), oppure calcolate dal
+    // server da un progetto o da una traccia - in quei due casi i numeri qui sotto non
+    // servono piu' e non si mandano: routeSource dice al server cosa calcolare.
+    const fonte = document.getElementById("hike-route-source").value;
+    let maxAltitude, elevationGain, distanceKm, routeSource;
+    if (fonte === 'draft') {
+        const draftId = document.getElementById("hike-route-draft-select").value;
+        if (!draftId) {
+            window.showToast("Scegli un progetto dall'elenco.", "error");
+            return;
+        }
+        routeSource = { kind: 'draft', draftId };
+    } else if (fonte === 'gpx') {
+        const file = document.getElementById("hike-route-gpx-file").files[0];
+        if (!file) {
+            window.showToast("Scegli un file .gpx da importare.", "error");
+            return;
+        }
+        try {
+            routeSource = { kind: 'gpx', gpxText: await file.text() };
+        } catch (e) {
+            window.showToast("Non è stato possibile leggere il file.", "error");
+            return;
+        }
+    } else {
+        routeSource = null;
+        maxAltitude = parseInt(document.getElementById("hike-alt").value);
+        elevationGain = parseInt(document.getElementById("hike-elev").value);
+        distanceKm = parseFloat(document.getElementById("hike-dist").value);
+    }
+
     const lat = parseFloat(document.getElementById("hike-trailhead-lat").value);
     const lng = parseFloat(document.getElementById("hike-trailhead-lng").value);
     const name = document.getElementById("hike-trailhead-name").value;
@@ -691,13 +797,19 @@ async function submitCreateHike() {
         description,
         difficulty,
         date,
-        maxAltitude,
-        elevationGain,
-        distanceKm,
+        routeSource,
         trailhead: { lat, lng, name },
         tribeTags: tags,
         manualApproval
     };
+    // Mandati SOLO in modalita' manuale: con un progetto o una traccia li calcola il
+    // server, e mandare qui dei numeri vecchi (magari ancora quelli di un percorso
+    // collegato in precedenza) sarebbe fuorviante piu' che utile.
+    if (fonte === 'manuale') {
+        payload.maxAltitude = maxAltitude;
+        payload.elevationGain = elevationGain;
+        payload.distanceKm = distanceKm;
+    }
     // Punto 54: creatorId ha senso solo alla creazione - in modifica lo decide la
     // sessione lato server (hike.creatorId non cambia mai), non un campo del payload.
     if (!editingHikeId) payload.creatorId = db.currentUser.id;
@@ -715,6 +827,7 @@ async function submitCreateHike() {
             document.getElementById("create-hike-modal").classList.add("hidden");
             document.getElementById("create-hike-form").reset();
             if (window.resetTrailheadPicker) window.resetTrailheadPicker();
+            resetHikeRouteSourcePicker();
             setHikeModalMode('create'); // torna sempre alla modalita' di default dopo l'invio
 
             await refreshState();

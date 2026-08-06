@@ -71,6 +71,22 @@ const hikeSchema = new mongoose.Schema({
         coordinates: { type: [Number], default: undefined } // [lng, lat]
     },
     peaks: [peakSchema],
+    // --- Punto 43: percorso reale al posto di quota/dislivello/distanza scritti a mano ---
+    // Assente = tutto scritto a mano dal creatore, comportamento di sempre (l'inserimento
+    // manuale resta, per richiesta esplicita). Presente, e' la PROVA che i tre numeri qui
+    // sopra sono stati CALCOLATI da un progetto o da una traccia importata, non dichiarati -
+    // stessa distinzione gia' fatta per importedFrom/importedName su ActiveHikeSession.
+    // Non e' un riferimento vivo (niente draftId salvato): solo un'etichetta, presa una
+    // volta al momento del calcolo - se la bozza viene poi cancellata i tre numeri restano
+    // comunque validi. Serve anche al punto 44: senza un percorso reale il tempo previsto
+    // resta "non disponibile".
+    routeSource: {
+        type: new mongoose.Schema({
+            kind: { type: String, enum: ['draft', 'gpx'], required: true },
+            nome: { type: String, required: true }
+        }, { _id: false }),
+        default: undefined
+    },
     carpool: {
         fuelPrice: Number,
         fuelConsumption: Number,

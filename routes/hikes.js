@@ -5,8 +5,13 @@ const User = require('../models/User');
 const Squad = require('../models/Squad');
 const Notification = require('../models/Notification');
 const Completion = require('../models/Completion');
+const RouteDraft = require('../models/RouteDraft'); // punto 43: percorso da un progetto gia' fatto
 const { requireAuth } = require('../middleware/auth');
 const { regionForPoint } = require('../lib/regions');
+const { mongoose } = require('../db/mongo');
+const { haversineKm } = require('../lib/geometry');
+const { parseGpx, statisticheTraccia, ErroreGpx, SOGLIA_DISLIVELLO_M } = require('../lib/gpx');
+const { progettaPercorso } = require('../lib/trailGraph');
 
 // --- Autorizzazione fine-grained per PUT /:id (vedi sotto) ---
 // Bug trovato in Fase H (caccia ai bug generale): questa rotta accettava QUALUNQUE modifica da
@@ -122,6 +127,87 @@ function canNonCreatorEditBackpack(hike, newTemplate, userIdStr) {
     );
 }
 
+// --- PUNTO 43: quota massima, dislivello e distanza calcolati da un percorso vero ---
+//
+// "routeSource" e' facoltativo: assente, tutto resta scritto a mano come sempre. Presente,
+// i tre numeri si CALCOLANO invece di fidarsi di un valore mandato dal client - un numero
+// mandato dal client non e' un dato, e' un'affermazione (stesso principio gia' applicato ai
+// progetti in routes/routing.js). Solleva un Error col messaggio gia' pronto per l'utente.
+const MAX_BYTE_GPX_HIKE = 10 * 1024 * 1024; // stesso tetto di routes/tracking.js
+const CAMPIONE_REGIONE_HIKE = 40; // stesso campione di routes/tracking.js
+async function calcolaDaPercorso(routeSource, userId) {
+    if (!routeSource || typeof routeSource !== 'object') {
+        throw new Error('Percorso non valido.');
+    }
+
+    if (routeSource.kind === 'draft') {
+        if (typeof routeSource.draftId !== 'string' || !mongoose.isValidObjectId(routeSource.draftId)) {
+            throw new Error('Percorso non valido.');
+        }
+        // SOLO le PROPRIE bozze, stessa regola di ogni altra rotta su RouteDraft.
+        const bozza = await RouteDraft.findOne({ _id: routeSource.draftId, userId });
+        if (!bozza) throw new Error('Questo progetto non esiste o non è tuo.');
+
+        // Stesso calcolo di quando si riapre la bozza (punto 13): non si salva mai il
+        // percorso, si ricalcola - se un domani i sentieri migliorano, l'escursione
+        // collegata trova i numeri nuovi la prossima volta che viene ricollegata.
+        const punti = bozza.anello ? [...bozza.punti, bozza.punti[0]] : bozza.punti;
+        const esito = await progettaPercorso(punti, { agganciaAiSentieri: bozza.agganciaAiSentieri });
+        if (!esito.dislivelloDisponibile) {
+            throw new Error('La fonte delle quote non ha risposto per questo progetto: riprova fra poco.');
+        }
+        return {
+            maxAltitude: Math.round(esito.quotaMaxM),
+            elevationGain: Math.round(esito.salitaM),
+            distanceKm: Math.round(esito.metriTotali / 100) / 10,
+            routeSource: { kind: 'draft', nome: bozza.nome }
+        };
+    }
+
+    if (routeSource.kind === 'gpx') {
+        const testo = routeSource.gpxText;
+        if (typeof testo !== 'string' || !testo.trim()) {
+            throw new Error('Nessun file .gpx ricevuto.');
+        }
+        if (Buffer.byteLength(testo, 'utf8') > MAX_BYTE_GPX_HIKE) {
+            throw new Error('Il file supera i 10 MB. Una traccia normalmente pesa molto meno.');
+        }
+
+        let letto;
+        try {
+            letto = parseGpx(testo);
+        } catch (e) {
+            throw new Error((e instanceof ErroreGpx || e.utente) ? e.message : 'File .gpx non leggibile.');
+        }
+
+        // Stesso controllo "la maggioranza dei punti dentro le 4 regioni" gia' usato per le
+        // tracce importate come uscite (routes/tracking.js): un sentiero di crinale entra ed
+        // esce dai confini di continuo, bocciarlo per un punto solo sarebbe un rifiuto a caso.
+        const passo = Math.max(1, Math.floor(letto.punti.length / CAMPIONE_REGIONE_HIKE));
+        let dentro = 0, esaminati = 0;
+        for (let i = 0; i < letto.punti.length; i += passo) {
+            esaminati++;
+            if (regionForPoint(letto.punti[i][0], letto.punti[i][1])) dentro++;
+        }
+        if (dentro * 2 <= esaminati) {
+            throw new Error('Questa traccia si svolge fuori dalle quattro regioni coperte dal sito (Marche, Lazio, Abruzzo, Molise).');
+        }
+
+        const stats = statisticheTraccia(letto.punti, SOGLIA_DISLIVELLO_M, haversineKm);
+        if (stats.quotaMaxM === null) {
+            throw new Error('Questo file .gpx non contiene le quote: non è possibile calcolare il dislivello.');
+        }
+        return {
+            maxAltitude: stats.quotaMaxM,
+            elevationGain: stats.dislivelloM,
+            distanceKm: stats.distanzaKm,
+            routeSource: { kind: 'gpx', nome: (letto.nome || 'Traccia importata').slice(0, 80) }
+        };
+    }
+
+    throw new Error('Percorso non valido.');
+}
+
 // Ottieni escursioni
 router.get('/', requireAuth, async (req, res) => {
     const hikes = await Hike.find();
@@ -140,9 +226,22 @@ router.post('/', requireAuth, async (req, res) => {
             return res.status(400).json({ error: "Il punto di ritrovo deve trovarsi in Marche, Lazio, Abruzzo o Molise" });
         }
 
+        // Punto 43: se e' stato scelto un progetto o una traccia, i tre numeri si calcolano
+        // qui e sovrascrivono quelli eventualmente scritti a mano nel form (che il client, in
+        // quella modalita', non manda nemmeno piu').
+        let datiPercorso = {};
+        if (req.body.routeSource) {
+            try {
+                datiPercorso = await calcolaDaPercorso(req.body.routeSource, req.session.userId);
+            } catch (e) {
+                return res.status(400).json({ error: e.message });
+            }
+        }
+
         const creatorId = req.session.userId;
         const hike = await Hike.create({
             ...req.body,
+            ...datiPercorso,
             creatorId,
             participants: [creatorId],
             pendingApproval: [],
@@ -223,6 +322,34 @@ router.put('/:id', requireAuth, async (req, res) => {
             }
             update.trailhead = trailhead;
             update.location = { type: 'Point', coordinates: [trailhead.lng, trailhead.lat] };
+        }
+
+        // Punto 43: come in POST /, ricalcola i tre numeri da un progetto o da una traccia
+        // e sovrascrive quelli scritti a mano nel ciclo CREATOR_ONLY_FIELDS sopra.
+        // routeSource:null e' la scelta esplicita di tornare all'inserimento manuale.
+        if (body.routeSource !== undefined) {
+            if (!isCreator) {
+                return res.status(403).json({ error: "Solo chi ha creato l'escursione può modificare questo campo" });
+            }
+            if (body.routeSource === null) {
+                update.routeSource = null;
+            } else {
+                try {
+                    const calcolato = await calcolaDaPercorso(body.routeSource, userId);
+                    update.maxAltitude = calcolato.maxAltitude;
+                    update.elevationGain = calcolato.elevationGain;
+                    update.distanceKm = calcolato.distanceKm;
+                    update.routeSource = calcolato.routeSource;
+                } catch (e) {
+                    return res.status(400).json({ error: e.message });
+                }
+            }
+        } else if (isCreator && hike.routeSource &&
+            (body.maxAltitude !== undefined || body.elevationGain !== undefined || body.distanceKm !== undefined)) {
+            // Numeri scritti a mano SENZA dire da quale percorso vengono: l'etichetta
+            // "percorso collegato" non varrebbe piu' niente se questi numeri divergono da
+            // quelli del percorso originale, quindi si toglie invece di lasciarla a mentire.
+            update.routeSource = null;
         }
 
         // Punto 61: chi chiede di partecipare finisce in pendingApproval, ma finora nessuno

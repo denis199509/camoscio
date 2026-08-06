@@ -625,7 +625,28 @@
                                         <input type="date" id="hike-date" required>
                                     </div>
                                 </div>
-                                <div class="form-row">
+                                <!-- Punto 43: quota/dislivello/distanza restano scrivibili a mano (l'utente
+                                     l'ha chiesto esplicitamente), ma si puo' anche scegliere un progetto
+                                     gia' fatto sul sito o importare una traccia - in quel caso i tre numeri
+                                     si calcolano da soli e i campi sotto diventano di sola lettura. -->
+                                <div class="form-group">
+                                    <label for="hike-route-source">Quota, dislivello e distanza:</label>
+                                    <select id="hike-route-source">
+                                        <option value="manuale">Li scrivo io</option>
+                                        <option value="draft">Li calcolo da un progetto già fatto</option>
+                                        <option value="gpx">Li calcolo importando una traccia (.gpx)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group hidden" id="hike-route-draft-picker">
+                                    <label for="hike-route-draft-select">Quale progetto:</label>
+                                    <select id="hike-route-draft-select"></select>
+                                </div>
+                                <div class="form-group hidden" id="hike-route-gpx-picker">
+                                    <label for="hike-route-gpx-file">File .gpx:</label>
+                                    <input type="file" id="hike-route-gpx-file" accept=".gpx">
+                                </div>
+                                <p class="small text-muted hidden" id="hike-route-calcolato-nota"></p>
+                                <div class="form-row" id="hike-route-manual-row">
                                     <div class="form-group">
                                         <label for="hike-alt">Quota Massima (metri):</label>
                                         <input type="number" id="hike-alt" required value="1500">
