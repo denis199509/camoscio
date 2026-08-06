@@ -34,7 +34,7 @@ Poi, secondo il tipo di lavoro:
 - `cronologia.txt` solo se c'è un lavoro nuovo da raccontare
 - `cose_da_fare.txt` quando un punto si chiude o ne arriva uno nuovo
 
-Il vault **non è sotto git** (sta solo su disco, dentro OneDrive): a differenza del repo non ha storia delle versioni, quindi va aggiornato con la stessa attenzione con cui si scrive un commit.
+Il vault **è sotto git dal 30/07/2026**, con un repository remoto privato dal 01/08/2026 (`github.com/denis199509/Camoscio-memoria`) — separato da questo repo, che è pubblico. Aggiornare le note non basta: **si committa e si pusha anche il vault**, altrimenti resta senza rete lo stesso.
 
 ## Regole di lavoro
 

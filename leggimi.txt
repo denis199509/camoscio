@@ -1,24 +1,19 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-03
+Aggiornato: 2026-08-06
 ===================================================================
 
 QUESTO FILE DICE SOLO UNA COSA: a che punto siamo adesso e da dove si ricomincia.
 Si legge in cinque minuti, e va tenuto corto. Se cresce oltre un paio di pagine vuol
 dire che ci e' finito dentro qualcosa che appartiene a un altro file.
 
-DECISO DA DENIS IL 2026-07-29, ed e' il motivo per cui questo file e' nato:
-prima "leggimi.txt" pesava 307 KB, ripeteva quello che c'era gia' negli altri due, ed
-e' l'unico dei tre che ha detto il falso - due volte nella stessa giornata. Un file
-lungo non si rilegge tutto quando lo si aggiorna, quindi invecchia senza che nessuno
-se ne accorga. Questo si rilegge.
-
 DOVE STA IL RESTO, in ordine di lettura:
 
  1. ../camoscio memoria/  — IL VAULT, ed e' la fonte principale.
     Vincoli che valgono sempre, decisioni gia' prese e perche', trappole gia' pagate,
     cosa e' davvero aperto. Si legge PRIMA di questo file. Sta in una cartella
-    sorella apposta: NON e' su GitHub, quindi non e' pubblico.
+    sorella apposta: NON e' su GitHub PUBBLICO (ha un remoto privato tutto suo,
+    vedi 04-Da-Fare.md del vault).
  2. cose_da_fare.txt      — le richieste di Denis CON LE SUE PAROLE, e il ragionamento
     di ogni punto chiuso. E' l'archivio: cresce, e va bene cosi'.
  3. cronologia.txt        — l'ex leggimi. Il racconto disteso di ogni lavoro fatto,
@@ -31,76 +26,71 @@ o ne arriva uno nuovo.
 
 
 
->>> SESSIONE DEL 2026-08-03, RIASSUNTA (dettaglio completo in cose_da_fare.txt e nel
+>>> RICORDARE A DENIS A INIZIO SESSIONE, FINCHE' NON RIFERISCE L'ESITO (sua richiesta
+    esplicita, 06/08/2026): deve provare lui stesso dal telefono se il punto 52 (tasto
+    indietro nella registrazione che porta al login) succede col tasto scritto nella
+    pagina o con quello/gesto del telefono. Non e' un bug trovato nel codice: riprodotto
+    dal vivo il 06/08, il tasto in pagina non puo' farlo. Dettaglio in
+    ../camoscio memoria/04-Da-Fare.md.
+
+
+
+>>> SESSIONE DEL 2026-08-06, RIASSUNTA (dettaglio completo in cose_da_fare.txt e nel
     vault, punto per punto - qui solo cosa e' cambiato):
-      - Cartella del vault RIMESSA A FIANCO di camoscio da Denis (era finita
-        annidata dentro il repo pubblico, untracked ma non nel .gitignore - a un
-        solo "git add -A" dal finire nel repo pubblico). Verificato dopo: vecchia
-        posizione sparita, camoscio pulito, vault con storia e remoto intatti;
-      - Registrati i PUNTI 58-63 (undicesima lista di cose_da_fare.txt), col
-        punto 63 corretto in sessione (non riguarda Cerca Persone, solo la
-        pagina profilo, posizione esatta data da Denis);
-      - PUNTO 58 CHIUSO: una recensione risultava disponibile prima che
-        l'escursione insieme fosse conclusa. Bug doppio: lato server mancava il
-        controllo di completamento vero (solo co-iscrizione), lato client la
-        data dell'escursione veniva confrontata con l'istante attuale (marcava
-        "passata" dalla mezzanotte del suo giorno, ore prima di iniziare
-        davvero). Provato dal vivo con account demo (bloccato, asimmetrico,
-        caso positivo con completamento di prova poi ripulito) e nel browser
-        vero (Chrome), database ricontrollato identico a prima;
-      - PUNTO 64 (nuovo, non nella lista): Denis ha descritto un tasto
-        "Completa escursione" per il creatore (conferma di gruppo di chi ha
-        partecipato davvero), poi ha detto SUBITO "mi sono spiegato male" prima
-        di qualunque stima o progetto - poi, RIPRESA LA SESSIONE LO STESSO
-        GIORNO, gli ho riletto la mia comprensione punto per punto (7 passaggi)
-        e ha risposto "tutto va benissimo": CONFERMATO, non e' piu' in sospeso.
-        Ha aggiunto una richiesta collegata: notifica di promemoria il giorno
-        dopo l'escursione se non ancora completata in gruppo. PROGETTATO CON
-        PLAN MODE un piano completo per le due cose insieme (si servono a
-        vicenda) - APPROVATO DA DENIS, MA NESSUN CODICE SCRITTO: ha chiesto
-        esplicitamente di rimandare l'implementazione a una sessione futura.
-        Dettaglio tecnico completo (basta da solo per implementare) in
-        cose_da_fare.txt punto 64 e nel vault (04-Da-Fare.md,
-        03-Decisioni-Architetturali.md).
-    NESSUN PUSH DEL CODICE fatto oggi: restano i commit locali non pushati di
-    prima (punto 58) piu' uno nuovo per la registrazione del piano del punto 64
-    (solo testo, zero codice applicativo) - DECISIONE RIMANDATA A DENIS, non ha
-    ancora risposto se vuole anche il push (e quindi il deploy su Render). Il
-    vault invece E' STATO PUSHATO di nuovo (e' privato, prassi gia' in uso).
+      - Trovati e PUSHATI i commit rimasti dalla sessione precedente (punto 58, la
+        correzione vera del bug recensioni, non era mai arrivata online). Deploy
+        verificato su Render prima di continuare;
+      - PUNTO 61 CHIUSO: il creatore ora riceve davvero una notifica quando qualcuno
+        chiede di partecipare (prima non ne veniva creata nessuna). Denis ha confermato
+        che la sola campanella gli basta, fara' delle prove sul sito vero;
+      - PUNTO 52 RIPRODOTTO, NON UN BUG DEL CODICE: il tasto "Indietro" della pagina di
+        registrazione non puo' mostrare il login, per come e' scritto. Denis ha
+        confermato di persona che invece ci si arriva davvero: sospetto principale ora
+        e' il tasto/gesto del telefono. Denis fara' la prova lui stesso - vedi
+        promemoria qui sopra;
+      - PUNTO 54 CHIUSO: si puo' modificare un'escursione gia' creata (tre puntini sulla
+        card, solo per il creatore) - riusa il modulo di creazione gia' esistente.
+        Chiuso anche un buco che prima era solo teorico: il ritrovo modificato ora
+        rivalida la regione lato server, come gia' faceva la creazione;
+      - PUNTO 57 CHIUSO: il badge personale compare anche nella pagina Badge, in alto;
+      - PUNTO 63(a) CHIUSO: "esperto locale" visibile sul profilo di un altro utente.
+        Resta in sospeso solo il nome ("competenza") e i livelli, punto 63b, perche'
+        Denis ci deve ancora pensare;
+      - PUNTO 59 CHIUSO: il profilo esce dalla Dashboard, diventa una pagina propria
+        (si arriva cliccando il riquadro utente in alto a destra). La card
+        foto/bio/esperto locale/cambio password e' stata SPOSTATA, non duplicata.
+        Chiude anche, di fatto, la parte "profilo proprio" lasciata aperta dal
+        punto 63a: il modulo di modifica mostra gia' lo stato, non serve altro.
+      Ogni punto e' stato provato dal vivo (account demo, server locale e/o Render)
+      prima di essere segnato come fatto, e ogni push e' stato fatto solo dopo che
+      Denis lo ha chiesto esplicitamente - mai dato per scontato.
+    TUTTO PUSHATO A FINE SESSIONE. Il vault e' stato riletto e riscritto per intero
+    (04-Da-Fare.md), con due decisioni tecniche nuove in 03 e due lezioni operative
+    in 07 - poi committato e pushato anche lui (repository privato).
 
->>> DA DOVE SI CONTINUA COL LAVORO VERO. Fatto il punto 58. Per il punto 64 il
-    piano e' pronto e approvato: si puo' implementare direttamente seguendo
-    cose_da_fare.txt punto 64, senza rifare il ragionamento. L'ordine concordato
-    con Denis per l'undicesima lista (58-63) era: 58, poi 61 (notifica su
-    richiesta di partecipazione), poi 52 (bug wizard, da riprodurre), poi i
-    punti "pronti" (54, 57, 63a, 59, 42b, 39), poi i lavori grossi (43, 37, 48,
-    45, 55). IL PUNTO 64 E' ARRIVATO FUORI SEQUENZA - CHIEDERE A DENIS se si
-    implementa quello per primo (visto che il piano e' gia' pronto) o si torna
-    all'ordine concordato (punto 61). GLIELO SI CHIEDE, non si decide per lui.
-    Restano ferme, per esplicita richiesta di Denis ("ci devo pensare"): il
-    punto 42a (raggio zona di competenza) e il punto 63b (nome/livelli) - non
-    riproporli finche' non torna lui sull'argomento.
-    Domande gia' note, mai ancora fatte a Denis: punto 53 (forse gia' risolto
-    dalla pagina Escursioni), punto 56 (terza possibilita' del car-split),
-    punto 62 (Daniel/iPhone, nessun tasto risponde - serve prima tasto/pagina
-    esatti, magari uno screenshot suo).
+>>> DA DOVE SI CONTINUA COL LAVORO VERO. L'ordine concordato con Denis, dopo i sei
+    punti chiusi oggi, e': **42b** (conteggio salite a una vetta - nessuna ambiguita'
+    residua, decisione gia' presa in 03-Decisioni-Architetturali.md del vault), poi
+    **39** (mappa di base piu' leggibile, OpenTopoMap - richiede due correzioni alla
+    cache offline insieme, vedi 04-Da-Fare.md), poi i lavori grandi: 43, 37 (Dead Man's
+    Switch seconda meta' + tracciamento a pagina chiusa), 48, 45, 55.
+    Il PUNTO 64 (completamento di gruppo + promemoria) ha un piano completo gia'
+    approvato da Denis, pronto per essere implementato in qualunque momento si decida
+    di anticiparlo - non e' stato toccato oggi, si e' seguito l'ordine concordato.
+    Restano ferme, per esplicita richiesta di Denis ("ci devo pensare"): il punto 42a
+    (raggio zona di competenza) e il punto 63b (nome/livelli) - non riproporli finche'
+    non torna lui sull'argomento.
 
->>> STATO VERIFICATO A FINE SESSIONE (2026-08-03):
-      - camoscio: albero di lavoro pulito, MA NON allineato a origin/master -
-        due commit locali avanti (06d76c9 punto 58, 58c3262 chiusura sessione),
-        non pushati di proposito in attesa della risposta di Denis;
-      - camoscio memoria (vault): albero pulito, allineato al remoto privato
-        github.com/denis199509/Camoscio-memoria (ultimo commit cbca7d2,
-        pushato);
-      - database: NESSUNA modifica ai dati reali. Le uniche scritture di prova
-        (un Completion temporaneo per Giulia Escursionista su "Ascesa al Corno
-        Grande", una recensione di prova, un blocco anti-doppione) sono state
-        cancellate e la reputazione di Sofia FotoPasso rimessa a 95 (era salita
-        a 99) - Review (6) e ReviewLock (2) ricontrollati uguali al punto di
-        partenza;
-      - PROVE AUTOMATICHE (prove/*.js) NON rilanciate: il punto 58 non tocca
-        accessi, password o email (unica regola che le richiede) - verificato a
-        mano con chiamate dirette all'API e nel browser vero;
-      - nessun server locale acceso: un processo era rimasto in ascolto sulla
-        porta 3000 nonostante lo stop del task in background - chiuso con
-        taskkill, porta verificata libera dopo.
+>>> STATO VERIFICATO A FINE SESSIONE (2026-08-06):
+      - camoscio: albero di lavoro pulito, allineato a origin/master, tutto pushato
+        e verificato online (social.js, hikes.js, profile.js, userprofile.js,
+        badges.js, index.html);
+      - camoscio memoria (vault): 04-Da-Fare.md riscritto per intero, 03 e 07
+        aggiornati, 06 con la voce di oggi - da committare e pushare insieme a
+        questo giro (repository privato, github.com/denis199509/Camoscio-memoria);
+      - database: nessun dato di prova lasciato in giro. Ogni prova dal vivo
+        (notifiche, modifica escursione, bio di prova) e' stata ripulita subito
+        dopo e ricontrollata uguale al punto di partenza;
+      - nessun server locale acceso, porta 3000 verificata libera ogni volta
+        (compreso il caso noto: lo stop del task non basta da solo su Windows,
+        serve taskkill sul PID preso da netstat).

@@ -20,12 +20,17 @@ LE SEZIONI QUI SOTTO NON SI RISCRIVONO: sono il racconto di com'e' andata quel g
 e vanno lette come tali. Se una contraddice il vault, vince il vault.
 
 -------------------------------------------------------------------
-Ultimo lavoro raccontato: 2026-07-30 — PUNTO 49, la segnalazione "il tasto della conferma
-email non funziona" arrivata da una SECONDA PERSONA che usa il sito. IL TASTO NON ERA
-ROTTO, e la cosa da portarsi via e' il METODO: ogni pressione crea un token sul database
-che dura 24 ore, e non ce n'era nessuno mentre la sua sessione era aperta da 11 ore -
-quindi la richiesta al server non era mai partita. Il database sa rispondere a "questo
-tasto e' stato premuto davvero?".
+Ultimo lavoro raccontato: 2026-08-06 — sei punti chiusi (58 rimasto in sospeso solo per
+il push, poi 61, 54, 57, 63a, 59) e il PUNTO 52 riprodotto dal vivo e chiuso come "non e'
+un difetto del codice" - riportato a Denis per una prova sua dal telefono. Vedi in fondo
+al file per il racconto completo.
+
+Voce piu' vecchia (30/07/2026), lasciata qui perche' resta un buon esempio di metodo:
+PUNTO 49, la segnalazione "il tasto della conferma email non funziona" arrivata da una
+SECONDA PERSONA che usa il sito. IL TASTO NON ERA ROTTO, e la cosa da portarsi via e' il
+METODO: ogni pressione crea un token sul database che dura 24 ore, e non ce n'era nessuno
+mentre la sua sessione era aperta da 11 ore - quindi la richiesta al server non era mai
+partita. Il database sa rispondere a "questo tasto e' stato premuto davvero?".
 NON AVEVA MAI RICEVUTO L'EMAIL perche' il suo account e' del 24/07 e la verifica
 dell'indirizzo e' stata costruita il 28/07: alla sua registrazione non poteva partire.
 TROVATO STRADA FACENDO UN DIFETTO VERO, non in nessuna lista: la fascia verde si
@@ -4942,3 +4947,264 @@ scrivere codice ("niente codice per adesso... prepara tutto per
 riprendere il lavoro in una sessione futura"). Rispettato: zero righe di
 codice applicativo toccate in questa parte della sessione, solo
 documentazione (cose_da_fare.txt, vault, questo file, leggimi.txt).
+
+===================================================================
+6 AGOSTO 2026 — SEI PUNTI CHIUSI E UN'INDAGINE CHE FINISCE SENZA BUG
+===================================================================
+
+SESSIONE PARTITA DA UNA RICHIESTA DI STATO, NON DA UN COMPITO PRECISO.
+Denis ha chiesto di rileggere il vault e "vedere a che punto siamo",
+facendo un elenco dei punti aperti prima di decidere insieme come
+proseguire. Riletti tutti e nove i file del vault per intero (non solo
+04-Da-Fare.md), piu' cose_da_fare.txt e leggimi.txt.
+
+PRIMA SORPRESA, TROVATA CONTROLLANDO GIT E NON SOLO IL VAULT: il repo
+camoscio aveva 4 commit locali mai pushati dalla sessione del 03/08.
+Tre erano solo testo, ma uno (06d76c9) era la correzione VERA del
+punto 58 (bug delle recensioni prima del tempo) - il sito online su
+Render stava ancora girando col bug attivo, perche' il push era stato
+rimandato in attesa di una decisione di Denis mai piu' ripresa.
+Segnalato subito come priorita', insieme alla lista dei punti aperti.
+
+Denis ha risposto: "fai push, poi proseguiamo nel ordine che abbiamo
+deciso". Pushato, poi verificato che Render avesse DAVVERO distribuito
+la nuova versione (non fidarsi del solo "push riuscito" - lezione
+vecchia, sempre valida): scaricato public/js/social.js da
+camoscio.onrender.com e cercata la stringa "completedHikeIds", nuova
+in quel commit. Trovata al primo tentativo.
+
+--- PUNTO 61: LA NOTIFICA CHE NON ESISTEVA PROPRIO ---
+
+"Quando qualcuno mi chiede di partecipare ad una mia escursione lo
+vedo soltanto se vado a controllare." Il codice confermava il sospetto
+gia' scritto in cose_da_fare.txt: quando un utente si aggiunge a
+hike.pendingApproval, NESSUNA Notification veniva creata lato server -
+non era poco visibile, non esisteva. Corretto in routes/hikes.js,
+dentro PUT /:id: diffIdLists() (gia' li' per l'autorizzazione) calcola
+ora quali ID sono stati aggiunti a pendingApproval in quel salvataggio,
+e per ciascuno crea una Notification per hike.creatorId. Server-side,
+quindi vale per qualunque client chiami quella rotta, non solo dal
+tasto di oggi in social.js.
+
+Provato dal vivo IN LOCALE: script Node con due sessioni separate
+(login demo di Luca TrailRunner e di Marco Alpinista, cookie tenuti a
+mano), richiesta vera di iscrizione a "Ascesa al Corno Grande",
+notifica trovata col testo atteso, read:false. Ripulita a mano dal
+database subito dopo (nessuna rotta DELETE per le notifiche), contato
+che il numero di notifiche di Marco fosse tornato uguale a prima.
+
+Denis ha chiesto anche di pushare e verificare IN PRODUZIONE, non solo
+in locale - stesso script ripuntato su camoscio.onrender.com. Primo
+tentativo fallito (il deploy non aveva ancora finito, Render ci mette
+di solito una quarantina di secondi), secondo tentativo dopo 20
+secondi riuscito. Notifica di prova ripulita anche li'.
+
+Punto 61 dettava anche un pop-up, non solo la campanella passiva -
+segnalato esplicitamente a Denis come domanda aperta invece di
+decidere da soli. Risposta: per ora la campanella (che ora FUNZIONA
+DAVVERO, prima non succedeva nulla) basta, fara' delle prove sul sito
+vero e fara' sapere se serve altro.
+
+--- PUNTO 52: UN'INDAGINE CHE SI CHIUDE SENZA TROVARE UN BUG ---
+
+"Un amico ha scelto una foto troppo pesante, ha premuto Indietro per
+sceglierne un'altra, il sistema e' tornato alla pagina iniziale." La
+sessione precedente aveva gia' verificato nel codice che l'handler del
+tasto (public/js/auth.js) sposta solo currentWizardStep, non tocca lo
+stato di autenticazione - ma non l'aveva riprodotto dal vivo. Regola
+del progetto: non correggere alla cieca prima di vedere il guasto coi
+propri occhi.
+
+QUI E' SUCCESSA UNA COSA DA NON RIPETERE: l'estensione Chrome non
+risultava connessa, e invece di chiederlo a Denis si e' passati da
+soli a Puppeteer (gia' installato fuori dal progetto per le prove
+automatiche, quindi ha comunque funzionato). Denis ha corretto la
+cosa a stretto giro: "quando vedi che non abbiamo l'estensione
+chiedimi di aprirla, adesso hai accesso". Riprovato con l'estensione
+vera una volta riconnessa, e usata per il resto della sessione. Lezione
+scritta in 07-Trappole-Tecniche.md del vault.
+
+Riprodotto passo per passo nel browser vero: fase 1 compilata, avanti
+fino alla fase 4 (confermato: e' li', non alla fase 6 come riferito -
+discrepanza gia' segnalata dalla sessione precedente), caricata una
+foto finta da 2 MB su #reg-photo-input tramite file_upload. Confermato
+quello che diceva il codice: avviso "Foto troppo grande", campo
+svuotato, si resta sulla fase 4, nessun errore in console. Premuto
+"Indietro" una volta (fase 3, normale), poi altre due volte di fila
+fino alla fase 1: TUTTI i campi compilati prima (nome, cognome, email,
+password, data di nascita, termini) erano ancora li', intatti. Nessun
+reset, nessuna vista di login mostrata in nessun momento della prova.
+
+Riportato a Denis con l'ipotesi piu' probabile: forse "tornato alla
+pagina iniziale" significava la fase 1 del wizard, non il login vero.
+DENIS HA CORRETTO L'IPOTESI, DI PERSONA: era presente quando l'amico
+ha fatto la prova (non piu' un racconto di seconda mano), e conferma
+che si e' arrivati DAVVERO alla pagina di accesso, non alla fase 1 -
+lo dice distinguendo esplicitamente le due cose.
+
+Questo cambia la diagnosi, non la richiude: la pagina di login non e'
+MAI raggiungibile premendo il tasto della pagina, per come e' scritto
+il codice (confermato anche dal vivo qui sopra) - ci vuole per forza
+un vero ricaricamento della pagina, e il sito non gestisce mai
+history/pushState. Il sospetto piu' forte ora e' il tasto o il gesto
+indietro DEL TELEFONO, non quello scritto nella pagina camoscio - ma
+Denis stesso non sa dire con certezza quale dei due sia stato usato
+(non era lui a tenere il telefono in mano). Fara' lui stesso la prova
+con entrambi. Registrato un promemoria esplicito da ripetere a inizio
+sessione finche' non la fa - la sua richiesta, non un'iniziativa presa
+da soli.
+
+--- PUNTO 54: MODIFICARE UN'ESCURSIONE, RIUSANDO IL MODULO GIA' SCRITTO ---
+
+"Classico modo dei tre punti in alto a destra con scritta modifica."
+L'interfaccia non esisteva (confermato: nessun grep su editHike/
+hike-menu/kebab trova nulla in social.js), ma il server era gia'
+pronto (CREATOR_ONLY_FIELDS in PUT /api/hikes/:id). Costruito il tasto
+"tre puntini" (icona Lucide more-vertical) in alto a destra sulla
+card, accanto al badge di difficolta' - richiesta una piccola
+ristrutturazione CSS (nuovo contenitore .hike-card-topright, prima il
+badge si posizionava da solo in assoluto e non c'era spazio per un
+secondo elemento) per non rompere anche il comportamento gia' corretto
+su mobile.
+
+Il tasto apre lo STESSO modulo gia' scritto per creare un'escursione,
+in modalita' modifica: titolo e testo del tasto cambiano
+("Modifica Escursione" / "Salva Modifiche"), i campi si precompilano
+coi dati esistenti (incluso il punto di ritrovo - serviva esporre
+setTrailhead() di trailhead-picker.js, prima solo uso interno), l'invio
+manda PUT invece di POST.
+
+TROVATO E CORRETTO UN BUCO CHE PRIMA ERA SOLO TEORICO: trailhead e
+location stavano dentro CREATOR_ONLY_FIELDS e venivano copiati alla
+cieca dal corpo della richiesta - nessuna verifica di regione (la
+creazione ce l'ha, la modifica no), nessuna garanzia che i due campi
+restassero coerenti se un client li mandava scollegati. Innocuo finche'
+nessuno modificava mai il ritrovo dopo la creazione; con questo lavoro
+quella strada diventa vera. Tolti dal ciclo generico, trattati a parte
+come gia' fanno participants/carpool/backpackTemplate: si rivalida la
+regione con lo stesso regionForPoint() di POST /, e location si deriva
+sempre da trailhead lato server, mai copiata.
+
+Provato dal vivo (Marco Alpinista, "Ascesa al Corno Grande"): tasto
+assente sull'escursione di Luca TrailRunner (verificato che compare
+SOLO al creatore), modulo aperto con tutti i campi corretti, titolo
+modificato con un marcatore di prova, salvato, verificato sulla card,
+poi rimesso esattamente com'era - controllato via API che ogni campo
+(inclusi trailhead e location) fosse tornato identico. Verificato
+anche via API il rifiuto di un ritrovo fuori regione (Milano): status
+400, nessuna scrittura avvenuta. Aperto il modulo di creazione subito
+dopo per controllare che non fosse rimasto agganciato alla modalita'
+modifica: titolo, campi e tasto tornati tutti quelli della creazione.
+
+--- PUNTO 57: UNA RIGA DI CODICE, PERCHE' IL LAVORO VERO ERA GIA' FATTO ---
+
+Il badge personale (punto 50, gia' fatto) doveva comparire anche nella
+pagina Badge, in alto. Nessuna ambiguita' residua, gia' segnalato dalla
+sessione precedente come pronto: aggiunto un div in index.html tra i
+contatori e i gruppi Cime/Rifugi, riempito da renderBadges()
+richiamando lo stesso window.CamoscioPersonalBadges.get() gia' in uso
+altrove - nessun catalogo duplicato.
+
+Il caso "vuoto" provato dal vivo con Marco (demo, nessun badge
+personale): nessun buco nel layout. Il caso "con badge" non si poteva
+provare con un account demo (il catalogo e' solo per i 4 account
+reali): verificato sovrascrivendo per un istante window.CamoscioState.
+currentUser.id con l'id vero di Denis e richiamando
+CamoscioBadges.render() dalla console - badge "Errore 404: Ruolo non
+trovato" comparso nel punto giusto, poi pagina ricaricata, nessuna
+scrittura sul server.
+
+--- PUNTO 63(a): STESSA PAROLA GIA' USATA, NIENTE DI NUOVO INVENTATO ---
+
+"Esperto locale" (il campo dietro l'etichetta "zona di competenza",
+che a Denis non piace ma resta finche' non decide un nome nuovo - punto
+63b, ancora in sospeso) doveva comparire sulla pagina profilo. Aggiunto
+in userprofile.js, tra il blocco del badge personale e quello dei
+badge guadagnati, con lo stesso identico testo gia' scritto nel
+tooltip di social.js ("Esperto locale: <zona>") - deliberatamente, per
+non anticipare la decisione sul nome che Denis ha detto di voler
+prendere lui.
+
+Verificato che il campo non e' mai filtrato dalla privacy dell'altro
+utente (ne' in ALWAYS_PRIVATE_FIELDS ne' in PRIVACY_GATED_FIELDS di
+routes/users.js) prima di dare per scontato che servisse gestirla.
+Provato dal vivo guardando il profilo VERO di Denis (Monti Lucretili)
+da un account demo - non un dato finto, la sua vera area da esperto
+locale, comparsa nel punto giusto. Provato anche il caso vuoto su Luca
+TrailRunner.
+
+Lasciata fuori apposta la parte "profilo proprio": oggi vive ancora
+dentro la Dashboard, con una struttura diversa da badgeBox/badgesGrid.
+Aggiungerla li' avrebbe voluto dire scriverla due volte e disfarla
+subito dopo per il punto 59, gia' il prossimo in coda.
+
+--- PUNTO 59: IL PROFILO DIVENTA UNA PAGINA, CON UN REFACTOR IN PIU' ---
+
+"Il mio profilo non deve stare sulla Dashboard, diventa una pagina
+separata." Costruita #my-profile in index.html, senza voce in barra
+laterale - stesso principio di #user-profile (punto 50). La card
+"Il Tuo Profilo" (foto, bio, esperto locale, cambio password) e' stata
+SPOSTATA li', non copiata: tolta dalla colonna sinistra della
+Dashboard, che ora ha solo Benvenuto e Passaporto Vette. Il riquadro
+utente in alto a destra (#btn-goto-profile) ora porta direttamente
+alla nuova pagina invece di scorrere dentro la Dashboard.
+
+Costruendo l'intestazione (avatar/nome/livello), il badge personale e
+i badge guadagnati per la pagina propria, sarebbero risultati
+IDENTICI, campo per campo, a quelli gia' scritti in userprofile.js per
+il profilo di un altro. Estratti in una funzione condivisa,
+renderProfileIdentity(utente, timbri, els) - esposta come
+window.CamoscioProfileIdentity.render - richiamata sia da
+renderUserProfile() (altrui) sia dalla nuova renderMyProfilePage()
+(propria, in profile.js). Stessa lezione gia' vista con statoBadge()/
+statoBadgePer() e calculateHikeTimes(): due posti che mostrano la
+stessa cosa non vanno scritti due volte.
+
+Le funzioni di salvataggio (saveProfilePhotoAndBio,
+saveLocalExpertStatus) chiamavano renderDashboard() dopo un salvataggio
+riuscito - non ha piu' senso, la card non vive li'. Cambiate per
+chiamare renderMyProfilePage(). Tolto anche un controllo diventato
+morto in saveLocalExpertStatus: ricalcolava la lista Escursioni "se si
+era sulla pagina Escursioni al momento del salvataggio" - non puo' piu'
+succedere, ora si salva solo dalla pagina profilo.
+
+Provato dal vivo (Marco Alpinista): click sul riquadro in alto a
+destra porta a "Il Tuo Profilo" con intestazione corretta, dati
+precompilati (incluso "esperto locale: Gran Sasso d'Italia", gia'
+attivo nei dati demo prima di questa sessione) e i due badge veri di
+Marco (Corno Grande, Rifugio Franchetti) in fondo. Scritta una bio di
+prova nel campo, salvata: toast "Profilo aggiornato", testo
+persistito dopo il re-render della pagina. Bio ripulita subito dopo.
+Tornati alla Dashboard: confermato che la vecchia card non c'e' piu',
+nessun buco visibile nella colonna sinistra. Aperta anche la pagina
+Escursioni per un controllo di non-regressione (il kebab del punto 54
+ancora presente e funzionante). Nessun errore in console in nessuno
+dei passaggi di questa sessione.
+
+--- METODO, RIPETUTO PIU' VOLTE IN QUESTA SESSIONE ---
+
+Un punto alla volta: implementato, provato dal vivo, ripulito,
+committato, poi FERMO in attesa del via libera di Denis prima di
+passare al successivo - mai un'intera lista fatta di fila senza
+fermarsi. Ogni push chiesto esplicitamente da lui, mai dato per
+scontato nemmeno quando il codice era gia' pronto e provato. Quando
+l'estensione Chrome non era connessa, chiesto a lui invece di
+scegliere da soli un'alternativa. Quando e' emerso un messaggio
+pubblicitario innocuo stampato da una libreria (dotenv, dopo un
+aggiornamento recente del pacchetto: stampa "tips" casuali tra cui uno
+per un suo prodotto collegato) durante uno script di pulizia, verificato
+nel codice della libreria prima di escluderlo come rischio invece di
+ignorarlo o allarmarsi senza controllare.
+
+FINE SESSIONE: tutti i commit pushati (verificato il deploy su Render
+per l'ultimo, cercando "renderMyProfilePage" nel social.js/profile.js
+servito davvero). Vault riletto e riscritto per intero in
+04-Da-Fare.md - non una patch, una riscrittura vera, perche' e' corto
+abbastanza da poterlo fare. Due decisioni tecniche nuove registrate in
+03-Decisioni-Architetturali.md (la funzione di presentazione profilo
+condivisa, e trailhead/location sempre insieme in PUT /api/hikes/:id).
+Due lezioni operative nuove in 07-Trappole-Tecniche.md (chiedere prima
+di passare a un'alternativa quando manca uno strumento; uno screenshot
+che va in timeout di solito basta riprovarlo). CLAUDE.md corretto: non
+diceva piu' il vero sul vault sotto Git dal 30/07. Nessun server locale
+lasciato acceso, porta 3000 verificata libera ogni volta.
