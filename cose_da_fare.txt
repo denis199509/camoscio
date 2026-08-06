@@ -1652,15 +1652,27 @@ pagina iniziale, dovendo rifare l'iscrizione da capo.
    guasto: i dati restano tutti compilati, bastava premere "Avanti" di nuovo -
    ma se l'amico non se n'e' accorto subito puo' aver percepito di dover
    "rifare tutto da capo" senza che fosse vero.
-   NON CONFERMATO: se invece l'amico intendeva il tasto INDIETRO DEL TELEFONO
-   (gesture/hardware, non quello nella pagina), qui non e' stato provabile da
-   desktop - quello si', potenzialmente, fa uscire dalla pagina o ricaricarla
-   (nessuna gestione di history/pushState nel codice del wizard). DA CHIEDERE A
-   DENIS, con l'amico se possibile: era il tasto scritto "Indietro" dentro la
-   pagina, o il tasto/gesto indietro del telefono stesso? E dopo essere
-   "tornato all'inizio", si vedeva il modulo di ACCESSO (email/password) o la
-   FASE 1 della registrazione (nome/cognome/email/password/data di nascita)?
-   Sono due schermate diverse, chi le ha viste sa distinguerle se richiesto.
+   RISPOSTA DI DENIS IL 2026-08-06 (era presente, l'ha visto coi suoi occhi,
+   non piu' un racconto di seconda mano): l'amico aveva GIA' scelto una foto
+   (non necessariamente respinta per il peso - a Denis non piaceva e basta,
+   quindi ha provato a cambiarla) e cliccando "indietro" e' arrivato per
+   davvero sulla PAGINA DI ACCESSO (login), non solo alla fase 1 della
+   registrazione - Denis lo dice esplicitamente, distinguendo le due cose.
+   QUESTO CAMBIA LA DIAGNOSI: la pagina di login (auth-login-view) non e'
+   MAI raggiungibile premendo il tasto "Indietro" della pagina, per come
+   e' scritto il codice (sposta solo currentWizardStep, tocca solo
+   auth-register-view) - confermato anche dal vivo qui sopra, ripetendo il
+   click fino alla fase 1 senza mai vedere il login. L'UNICO modo per
+   mostrare auth-login-view e' un vero ricaricamento della pagina
+   (checkAuthAndShowGate() riparte da capo, e senza sessione valida durante
+   la registrazione il login e' la vista di default) - quindi qualcosa ha
+   ricaricato o rinavigato la pagina per davvero, non il tasto in pagina.
+   IPOTESI ORA PIU' FORTE: il tasto/gesto indietro DEL TELEFONO (il sito non
+   gestisce mai history/pushState, quindi un "indietro" del sistema puo'
+   uscire dalla pagina o forzarne un ricaricamento pieno, perdendo tutto lo
+   stato del wizard in memoria). ANCORA DA CONFERMARE CON DENIS: era su
+   telefono? Ha usato il gesto/tasto fisico del telefono invece del tasto
+   scritto "Indietro" dentro la pagina camoscio?
 
 --- TROVARE LE ESCURSIONI DEGLI ALTRI ---
 
