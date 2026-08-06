@@ -6,6 +6,7 @@ const Squad = require('../models/Squad');
 const Notification = require('../models/Notification');
 const Completion = require('../models/Completion');
 const RouteDraft = require('../models/RouteDraft'); // punto 43: percorso da un progetto gia' fatto
+const { applyHikeCompletionStats } = require('../lib/hikeStats'); // punto 64: condivisa con /:id/complete-group
 const { requireAuth } = require('../middleware/auth');
 const { regionForPoint } = require('../lib/regions');
 const { mongoose } = require('../db/mongo');
@@ -420,56 +421,72 @@ router.post('/:id/complete', requireAuth, async (req, res) => {
             return res.status(403).json({ error: "Solo i partecipanti dell'escursione possono segnarla come completata" });
         }
 
-        const alreadyCompleted = await Completion.findOne({ userId: user._id, hikeId: hike._id });
-        if (alreadyCompleted) {
+        // Punto 64: la matematica (Completion, passo personale, livello esperienza) e'
+        // stata estratta in lib/hikeStats.js perche' ora serve anche al completamento di
+        // gruppo qui sotto. Il 409 resta specifico di QUESTA rotta (l'auto-dichiarazione
+        // individuale non puo' ripetersi): nel completamento di gruppo lo stesso caso non
+        // e' un errore, e' il normale "questa persona si era gia' completata da sola".
+        const applicato = await applyHikeCompletionStats(user, hike, actualTimeHours);
+        if (!applicato) {
             return res.status(409).json({ error: 'Escursione già segnata come completata', user });
-        }
-
-        // Quante escursioni PRECEDENTI hanno gia' un tempo reale misurato - non e' detto coincida
-        // con completedHikes (si puo' segnare un'escursione come completata senza indicare un
-        // tempo). Bug trovato in Fase H: usare completedHikes al posto di questo (sotto, nella
-        // media del passo) trattava anche le escursioni senza tempo come se avessero gia'
-        // contribuito, diluendo il valore di default con "campioni" che in realta' non esistono.
-        const priorTimedCompletions = await Completion.countDocuments({ userId: user._id, actualTimeHours: { $ne: null } });
-
-        await Completion.create({
-            userId: user._id,
-            hikeId: hike._id,
-            dateCompleted: new Date(),
-            actualTimeHours: actualTimeHours ? Number(actualTimeHours) : null
-        });
-
-        // Aggiorna il passo personale (media incrementale) solo se è stato dichiarato un tempo reale
-        if (actualTimeHours && Number(actualTimeHours) > 0) {
-            const observedPaceUp = hike.elevationGain / Number(actualTimeHours);
-
-            const newPaceUp = ((user.averagePaceUp * priorTimedCompletions) + observedPaceUp) / (priorTimedCompletions + 1);
-            const paceRatio = newPaceUp / user.averagePaceUp;
-
-            user.averagePaceUp = Math.round(newPaceUp);
-            user.averagePaceDown = Math.round(user.averagePaceDown * paceRatio);
-        }
-
-        user.completedHikes = (user.completedHikes || 0) + 1;
-
-        // Ricalcola il livello di esperienza dalla cronologia reale, mai autodichiarato. Il passo
-        // (averagePaceUp) conta solo se esiste almeno un tempo reale misurato (prima o adesso):
-        // senza questo controllo il valore di default (350, uguale alla soglia "Intermedio" sotto)
-        // promuoveva chiunque gia' alla primissima escursione segnata come completata, pure senza
-        // aver mai dichiarato un tempo reale (bug trovato in Fase H).
-        const hasRealPaceData = priorTimedCompletions > 0 || (actualTimeHours && Number(actualTimeHours) > 0);
-        if (user.completedHikes >= 10 || (hasRealPaceData && user.averagePaceUp >= 500)) {
-            user.experienceLevel = 'Esperto';
-        } else if (user.completedHikes >= 4 || (hasRealPaceData && user.averagePaceUp >= 350)) {
-            user.experienceLevel = 'Intermedio';
-        } else {
-            user.experienceLevel = 'Principiante';
         }
 
         await user.save();
         res.json(user);
     } catch (e) {
         console.error('Errore completamento escursione:', e);
+        res.status(400).json({ error: 'Impossibile completare la richiesta' });
+    }
+});
+
+// Punto 64: il creatore conferma IN BLOCCO chi ha partecipato davvero, invece che aspettare
+// l'auto-dichiarazione di ognuno. "confirmedUserIds" e' la lista FINALE: sovrascrive
+// hike.participants (chi viene tolto dalla spunta esce, chi viene aggiunto via ricerca
+// entra) - e' obbligatorio, non facoltativo, perche' il gate recensioni (punto 58) e altre
+// viste (avatar sulla scheda, zaino di gruppo) presumono gia' che "condiviso l'escursione"
+// equivalga a stare in participants: un Completion senza participants aggiornato
+// romperebbe silenziosamente quelle funzionalita'.
+router.post('/:id/complete-group', requireAuth, async (req, res) => {
+    try {
+        const hike = await Hike.findById(req.params.id);
+        if (!hike) {
+            return res.status(404).json({ error: 'Escursione non trovata' });
+        }
+        if (!hike.creatorId.equals(req.session.userId)) {
+            return res.status(403).json({ error: "Solo chi ha creato l'escursione può confermare il completamento di gruppo" });
+        }
+        if (hike.groupCompletedAt) {
+            return res.status(409).json({ error: 'Questa escursione è già stata completata in gruppo' });
+        }
+
+        const confirmedUserIds = req.body && req.body.confirmedUserIds;
+        if (!Array.isArray(confirmedUserIds) || confirmedUserIds.length === 0) {
+            return res.status(400).json({ error: 'Conferma almeno una persona presente.' });
+        }
+
+        // Ogni ID deve corrispondere a un utente vero: evita di infilare in participants ID
+        // inventati mandati a mano (la lista qui non passa da nessun'altra convalida).
+        const utentiConfermati = await User.find({ _id: { $in: confirmedUserIds } }).select('_id');
+        if (utentiConfermati.length !== confirmedUserIds.length) {
+            return res.status(400).json({ error: 'Uno degli utenti confermati non esiste.' });
+        }
+
+        // Il tempo reale non c'entra in questo flusso: Denis non ne ha mai parlato per il
+        // completamento di gruppo, riguarda solo "chi c'era". actualTimeHours resta null.
+        for (const u of utentiConfermati) {
+            const persona = await User.findById(u._id);
+            if (!persona) continue; // sparito fra la query sopra e questa, caso limite innocuo
+            const cambiato = await applyHikeCompletionStats(persona, hike, null);
+            if (cambiato) await persona.save();
+        }
+
+        hike.participants = confirmedUserIds;
+        hike.groupCompletedAt = new Date();
+        await hike.save();
+
+        res.json(hike);
+    } catch (e) {
+        console.error('Errore completamento di gruppo:', e);
         res.status(400).json({ error: 'Impossibile completare la richiesta' });
     }
 });

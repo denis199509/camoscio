@@ -189,6 +189,20 @@ function setupSocialEvents() {
         });
     }
 
+    // Punto 64: modale di completamento di gruppo
+    const btnCloseCompleteGroup = document.getElementById("btn-close-complete-group-modal");
+    if (btnCloseCompleteGroup) {
+        btnCloseCompleteGroup.addEventListener("click", closeCompleteGroupModal);
+    }
+    const btnConfirmCompleteGroup = document.getElementById("btn-confirm-complete-group");
+    if (btnConfirmCompleteGroup) {
+        btnConfirmCompleteGroup.addEventListener("click", submitCompleteGroup);
+    }
+    const inputCompleteGroupSearch = document.getElementById("complete-group-search-input");
+    if (inputCompleteGroupSearch) {
+        inputCompleteGroupSearch.addEventListener("input", renderCompleteGroupSearch);
+    }
+
     // Form creazione squadra ricorrente
     const btnOpenSquadForm = document.getElementById("btn-open-create-squad");
     const btnCloseSquadForm = document.getElementById("btn-close-squad-form");
@@ -512,6 +526,24 @@ function buildHikeCard(hike) {
         `;
     }
 
+    // Punto 64: il creatore conferma IN BLOCCO chi ha partecipato, invece di aspettare che
+    // ognuno si auto-dichiari. Confronto per STRINGA di calendario (hike.date e' gia'
+    // "YYYY-MM-DD"), non new Date(): stessa cautela gia' presa nel promemoria server-side
+    // (lib/hikeStats.js) e nel punto 58, per non segnare un'escursione "passata" dalla
+    // mezzanotte del suo stesso giorno, ore prima che cominci davvero. Disponibile dal
+    // giorno dell'escursione (non dal giorno dopo: quello e' quando comincia solo il
+    // promemoria, per lasciare un margine prima di ricordarlo).
+    let completeGroupBtnHtml = "";
+    if (isCreatorMe) {
+        const oggi = new Date();
+        const oggiStr = `${oggi.getFullYear()}-${String(oggi.getMonth() + 1).padStart(2, '0')}-${String(oggi.getDate()).padStart(2, '0')}`;
+        if (hike.groupCompletedAt) {
+            completeGroupBtnHtml = `<span class="badge badge-green">Completata in gruppo ✓</span>`;
+        } else if (hike.date <= oggiStr) {
+            completeGroupBtnHtml = `<button class="btn btn-sm btn-success" onclick="openCompleteGroupModal('${hike.id}')">Completa escursione</button>`;
+        }
+    }
+
     // Punto 54: solo il creatore vede il tasto "tre puntini" -> Modifica. Riusa il
     // create-hike-modal gia' esistente (openEditHikeModal lo precompila).
     const editMenuHtml = isCreatorMe ? `
@@ -576,6 +608,7 @@ function buildHikeCard(hike) {
         ${vetoSectionHtml}
 
         <div style="display:flex; justify-content: flex-end; gap: 8px; margin-top: auto; padding-top: 12px;">
+            ${completeGroupBtnHtml}
             ${completionBtnHtml}
             ${actionBtnHtml}
         </div>
@@ -847,6 +880,168 @@ async function submitCreateHike() {
     } catch(e) {
         console.error("Errore creazione escursione:", e);
         window.showToast(inModifica ? "Errore di rete: le modifiche non sono state salvate." : "Errore di rete: l'escursione non è stata pubblicata.", "error");
+    }
+}
+
+// --- PUNTO 64: COMPLETAMENTO DI GRUPPO DAL CREATORE ---
+//
+// Il tasto "Completa escursione" (buildHikeCard) apre questo modale: una checklist dei
+// partecipanti gia' iscritti (pre-spuntati, si toglie la spunta a chi non si e' presentato)
+// piu' una ricerca per aggiungere chi era presente ma non era fra gli iscritti originali
+// (es. contattato fuori dal sito). Confermando, POST /api/hikes/:id/complete-group
+// sovrascrive hike.participants con la lista finale e crea i Completion mancanti.
+
+let completeGroupHikeId = null;
+// Persone aggiunte via ricerca in QUESTA apertura del modale, non ancora fra
+// hike.participants: tenute separate per sapere chi escludere dai risultati di ricerca
+// (non ha senso ritrovare fra i risultati chi si e' appena aggiunto) e per ricostruire la
+// checklist dopo ogni aggiunta senza perdere le spunte tolte a mano.
+let completeGroupExtraIds = [];
+
+// Stessa soglia di public/js/peoplesearch.js (4 lettere, "Dani" -> "DaniWoll", confermata
+// con Denis) - ripetuta qui invece di letta da la' perche' questo modale non dipende
+// dall'ordine di caricamento degli script: e' lo stesso numero per lo stesso motivo, non
+// un valore condiviso da tenere sincronizzato.
+const SOGLIA_RICERCA_COMPLETAMENTO = 4;
+
+function renderCompleteGroupChecklist() {
+    const db = window.CamoscioState;
+    const hike = db.hikes.find(h => h.id === completeGroupHikeId);
+    const container = document.getElementById("complete-group-checklist");
+    if (!hike || !container) return;
+
+    const idsDaMostrare = [...new Set([...(hike.participants || []), ...completeGroupExtraIds])];
+    container.innerHTML = idsDaMostrare.map(id => {
+        const u = db.users.find(u => u.id === id);
+        if (!u) return "";
+        return `
+            <label>
+                <input type="checkbox" name="complete-group-member" value="${id}" checked>
+                <span>${u.avatar} ${escapeHtml(u.username)}</span>
+            </label>
+        `;
+    }).join("");
+}
+
+function renderCompleteGroupSearch() {
+    const input = document.getElementById("complete-group-search-input");
+    const results = document.getElementById("complete-group-search-results");
+    const db = window.CamoscioState;
+    if (!input || !results) return;
+
+    const query = input.value.trim().toLowerCase();
+    results.innerHTML = "";
+    if (query.length < SOGLIA_RICERCA_COMPLETAMENTO) return;
+
+    const hike = db.hikes.find(h => h.id === completeGroupHikeId);
+    if (!hike) return;
+    const giaPresenti = new Set([...(hike.participants || []), ...completeGroupExtraIds]);
+
+    // Solo su username, stesso motivo di peoplesearch.js: nome/cognome veri non arrivano
+    // mai al browser per un altro utente.
+    const trovati = db.users.filter(u =>
+        !giaPresenti.has(u.id) && (u.username || "").toLowerCase().includes(query)
+    );
+
+    if (!trovati.length) {
+        results.innerHTML = `<p class="small text-muted">Nessuna persona trovata.</p>`;
+        return;
+    }
+
+    trovati.forEach(u => {
+        const row = document.createElement("div");
+        row.className = "carpool-group-item";
+        row.innerHTML = `
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div class="p-avatar">${u.avatar}</div>
+                <b>${escapeHtml(u.username)}</b>
+            </div>
+            <button type="button" class="btn btn-sm btn-secondary" onclick="addToCompleteGroup('${u.id}')">Aggiungi</button>
+        `;
+        results.appendChild(row);
+    });
+}
+
+// Aggiunta via ricerca, non ancora salvata: entra nella checklist gia' spuntata, come chi
+// era gia' iscritto. Il salvataggio vero avviene solo al tasto "Conferma completamento".
+// SI ACCODA UNA RIGA SOLA, non si richiama renderCompleteGroupChecklist(): quella
+// ricostruisce l'intera lista da capo con ogni casella di nuovo spuntata, e cancellerebbe
+// silenziosamente la spunta appena tolta a mano a qualcun altro (trovato provando dal vivo).
+window.addToCompleteGroup = function(userId) {
+    if (completeGroupExtraIds.includes(userId)) return;
+    completeGroupExtraIds.push(userId);
+
+    const db = window.CamoscioState;
+    const u = db.users.find(u => u.id === userId);
+    const container = document.getElementById("complete-group-checklist");
+    if (u && container) {
+        const label = document.createElement("label");
+        label.innerHTML = `
+            <input type="checkbox" name="complete-group-member" value="${userId}" checked>
+            <span>${u.avatar} ${escapeHtml(u.username)}</span>
+        `;
+        container.appendChild(label);
+    }
+
+    document.getElementById("complete-group-search-input").value = "";
+    document.getElementById("complete-group-search-results").innerHTML = "";
+    if (window.lucide) window.lucide.createIcons();
+};
+
+window.openCompleteGroupModal = function(hikeId) {
+    const db = window.CamoscioState;
+    const hike = db.hikes.find(h => h.id === hikeId);
+    if (!hike) return;
+
+    completeGroupHikeId = hikeId;
+    completeGroupExtraIds = [];
+
+    document.getElementById("complete-group-hike-title").textContent = hike.title;
+    document.getElementById("complete-group-search-input").value = "";
+    document.getElementById("complete-group-search-results").innerHTML = "";
+    renderCompleteGroupChecklist();
+
+    document.getElementById("complete-group-modal").classList.remove("hidden");
+    if (window.lucide) window.lucide.createIcons();
+};
+
+function closeCompleteGroupModal() {
+    document.getElementById("complete-group-modal").classList.add("hidden");
+    completeGroupHikeId = null;
+    completeGroupExtraIds = [];
+}
+
+async function submitCompleteGroup() {
+    if (!completeGroupHikeId) return;
+
+    const confirmedUserIds = Array.from(
+        document.querySelectorAll('#complete-group-checklist input[name="complete-group-member"]:checked')
+    ).map(cb => cb.value);
+
+    if (!confirmedUserIds.length) {
+        window.showToast("Conferma almeno una persona presente.", "error");
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/hikes/${completeGroupHikeId}/complete-group`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ confirmedUserIds })
+        });
+
+        if (response.ok) {
+            closeCompleteGroupModal();
+            await refreshState();
+            renderHikesList(); // ridisegna anche "Le mie escursioni", vedi commento su renderHikesList
+            window.showToast("Escursione completata per il gruppo!", "success");
+        } else {
+            const body = await response.json().catch(() => ({}));
+            window.showToast(body.error || "Non è stato possibile completare il gruppo.", "error");
+        }
+    } catch (e) {
+        console.error("Errore completamento di gruppo:", e);
+        window.showToast("Errore di rete: il completamento non è stato salvato.", "error");
     }
 }
 

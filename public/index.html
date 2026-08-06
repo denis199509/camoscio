@@ -594,146 +594,6 @@
                     <div class="hikes-grid" id="hikes-list-container">
                         <!-- Renderizzato da JS -->
                     </div>
-
-                    <!-- Modal Creazione Escursione -->
-                    <div id="create-hike-modal" class="modal hidden">
-                        <div class="modal-content glass-card">
-                            <div class="modal-header">
-                                <h4>Crea Nuova Escursione</h4>
-                                <button class="close-modal-btn" id="btn-close-hike-modal">&times;</button>
-                            </div>
-                            <form id="create-hike-form">
-                                <div class="form-group">
-                                    <label for="hike-title">Titolo Escursione:</label>
-                                    <input type="text" id="hike-title" required placeholder="Es. Giro delle Tre Cime">
-                                </div>
-                                <div class="form-group">
-                                    <label for="hike-desc">Descrizione percorso e ritrovo:</label>
-                                    <textarea id="hike-desc" required placeholder="Fornisci dettagli sul sentiero..."></textarea>
-                                </div>
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label for="hike-diff">Difficoltà Tecnica:</label>
-                                        <select id="hike-diff">
-                                            <option value="Principiante">Principiante (Dislivello ridotto, sentiero largo)</option>
-                                            <option value="Intermedio">Intermedio (D+ fino a 1000m, tratti ripidi)</option>
-                                            <option value="Esperto">Esperto (D+ > 1000m, fondo tecnico/esposto)</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="hike-date">Data Uscita:</label>
-                                        <input type="date" id="hike-date" required>
-                                    </div>
-                                </div>
-                                <!-- Punto 43: quota/dislivello/distanza restano scrivibili a mano (l'utente
-                                     l'ha chiesto esplicitamente), ma si puo' anche scegliere un progetto
-                                     gia' fatto sul sito o importare una traccia - in quel caso i tre numeri
-                                     si calcolano da soli e i campi sotto diventano di sola lettura. -->
-                                <div class="form-group">
-                                    <label for="hike-route-source">Quota, dislivello e distanza:</label>
-                                    <select id="hike-route-source">
-                                        <option value="manuale">Li scrivo io</option>
-                                        <option value="draft">Li calcolo da un progetto già fatto</option>
-                                        <option value="gpx">Li calcolo importando una traccia (.gpx)</option>
-                                    </select>
-                                </div>
-                                <div class="form-group hidden" id="hike-route-draft-picker">
-                                    <label for="hike-route-draft-select">Quale progetto:</label>
-                                    <select id="hike-route-draft-select"></select>
-                                </div>
-                                <div class="form-group hidden" id="hike-route-gpx-picker">
-                                    <label for="hike-route-gpx-file">File .gpx:</label>
-                                    <input type="file" id="hike-route-gpx-file" accept=".gpx">
-                                </div>
-                                <p class="small text-muted hidden" id="hike-route-calcolato-nota"></p>
-                                <div class="form-row" id="hike-route-manual-row">
-                                    <div class="form-group">
-                                        <label for="hike-alt">Quota Massima (metri):</label>
-                                        <input type="number" id="hike-alt" required value="1500">
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="hike-elev">Dislivello Positivo (D+ metri):</label>
-                                        <input type="number" id="hike-elev" required value="600">
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="hike-dist">Distanza Totale (km):</label>
-                                        <input type="number" id="hike-dist" step="0.1" required value="10">
-                                    </div>
-                                </div>
-                                <!-- Punto di ritrovo (punto 8 di cose_da_fare.txt): prima erano tre
-                                     caselle, due delle quali chiedevano latitudine e longitudine come
-                                     numeri - impossibili da trovare per una persona normale. Ora si
-                                     cerca il luogo per nome, oppure lo si sceglie direttamente sulla
-                                     mappa. Le coordinate restano (servono al sistema) ma sono un
-                                     risultato, non piu' qualcosa da procurarsi da soli. -->
-                                <div class="form-group trailhead-picker">
-                                    <label for="hike-trailhead-search">Punto di ritrovo:</label>
-                                    <div class="trailhead-search-row">
-                                        <div class="trailhead-search-field">
-                                            <i data-lucide="search"></i>
-                                            <input type="text" id="hike-trailhead-search" autocomplete="off"
-                                                placeholder="Cerca un luogo, es. Campo Imperatore">
-                                        </div>
-                                        <button type="button" class="btn btn-secondary" id="btn-open-map-picker"
-                                            title="Scegli il punto direttamente sulla mappa">
-                                            <i data-lucide="map-pin"></i> Scegli sulla mappa
-                                        </button>
-                                    </div>
-                                    <div id="trailhead-search-results" class="trailhead-results hidden"></div>
-
-                                    <!-- Riepilogo del punto scelto -->
-                                    <div id="trailhead-chosen" class="trailhead-chosen hidden">
-                                        <div class="trailhead-chosen-main">
-                                            <i data-lucide="map-pin"></i>
-                                            <div>
-                                                <strong id="trailhead-chosen-name">—</strong>
-                                                <div class="small text-muted" id="trailhead-chosen-context"></div>
-                                            </div>
-                                        </div>
-                                        <div class="trailhead-chosen-coords">
-                                            <span id="trailhead-chosen-coords-text">—</span>
-                                            <button type="button" class="btn btn-sm btn-secondary" id="btn-copy-coords"
-                                                title="Copia le coordinate (es. per incollarle su Google Maps)">
-                                                <i data-lucide="copy"></i> Copia
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div id="trailhead-warning" class="trailhead-warning hidden"></div>
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="hike-trailhead-name">Come chiamare il ritrovo (modificabile):</label>
-                                    <input type="text" id="hike-trailhead-name" required placeholder="Es. Rifugio Franchetti">
-                                </div>
-
-                                <!-- Le coordinate non si scrivono piu' a mano: le riempie la ricerca
-                                     o la scelta sulla mappa. Restano nel form perche' tutto il resto
-                                     del codice (submitCreateHike, validazione regione) le legge da qui. -->
-                                <input type="hidden" id="hike-trailhead-lat" value="">
-                                <input type="hidden" id="hike-trailhead-lng" value="">
-                                <div class="form-group">
-                                    <label>Seleziona i Tag Tribù (stile di vita):</label>
-                                    <div class="checkbox-group">
-                                        <label><input type="checkbox" name="hike-tags" value="Passo Fotografico"> Passo Fotografico</label>
-                                        <label><input type="checkbox" name="hike-tags" value="Trail Runners"> Trail Runners</label>
-                                        <label><input type="checkbox" name="hike-tags" value="Passo Svelto"> Passo Svelto</label>
-                                        <label><input type="checkbox" name="hike-tags" value="Dog Friendly"> Dog Friendly</label>
-                                        <label><input type="checkbox" name="hike-tags" value="Generazione Alpha"> Generazione Alpha</label>
-                                        <label><input type="checkbox" name="hike-tags" value="Generazione Z"> Generazione Z</label>
-                                        <label><input type="checkbox" name="hike-tags" value="Millennials"> Millennials</label>
-                                    </div>
-                                </div>
-                                <div class="form-group">
-                                    <label for="hike-approval">Modalità di Iscrizione:</label>
-                                    <select id="hike-approval">
-                                        <option value="true">Manuale (Veto del Capogruppo - Approvo io i membri)</option>
-                                        <option value="false">Automatica (Chiunque può iscriversi liberamente)</option>
-                                    </select>
-                                </div>
-                                <button type="submit" class="btn btn-primary btn-block">Pubblica Escursione</button>
-                            </form>
-                        </div>
-                    </div>
                 </section>
 
                 <!-- LE MIE ESCURSIONI (punto 10 di cose_da_fare.txt) -->
@@ -1735,6 +1595,179 @@
 
     <!-- Contenitore notifiche toast (non bloccanti) -->
     <div id="toast-container" class="toast-container"></div>
+
+    <!-- Modal Creazione Escursione. Punto 64: SPOSTATO qui da dentro #hikes (dove viveva dal
+         punto 54) - "Modifica" e' richiamabile anche dalle card di "Le mie escursioni"
+         (#my-hikes), e un modale annidato in un'ALTRA .page-section (display:none quando
+         non e' quella attiva) restava invisibile pur avendo tolto la propria classe
+         "hidden": si vedeva solo aprendolo dalla pagina Escursioni, per puro caso di
+         posizione nel DOM. Trovato lavorando al modale gemello di completamento di gruppo
+         qui sotto, che avrebbe avuto lo stesso difetto. Nessun'altra modifica: stesso id,
+         stessi campi, stesso JS in social.js. -->
+    <div id="create-hike-modal" class="modal hidden">
+        <div class="modal-content glass-card">
+            <div class="modal-header">
+                <h4>Crea Nuova Escursione</h4>
+                <button class="close-modal-btn" id="btn-close-hike-modal">&times;</button>
+            </div>
+            <form id="create-hike-form">
+                <div class="form-group">
+                    <label for="hike-title">Titolo Escursione:</label>
+                    <input type="text" id="hike-title" required placeholder="Es. Giro delle Tre Cime">
+                </div>
+                <div class="form-group">
+                    <label for="hike-desc">Descrizione percorso e ritrovo:</label>
+                    <textarea id="hike-desc" required placeholder="Fornisci dettagli sul sentiero..."></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="hike-diff">Difficoltà Tecnica:</label>
+                        <select id="hike-diff">
+                            <option value="Principiante">Principiante (Dislivello ridotto, sentiero largo)</option>
+                            <option value="Intermedio">Intermedio (D+ fino a 1000m, tratti ripidi)</option>
+                            <option value="Esperto">Esperto (D+ > 1000m, fondo tecnico/esposto)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="hike-date">Data Uscita:</label>
+                        <input type="date" id="hike-date" required>
+                    </div>
+                </div>
+                <!-- Punto 43: quota/dislivello/distanza restano scrivibili a mano (l'utente
+                     l'ha chiesto esplicitamente), ma si puo' anche scegliere un progetto
+                     gia' fatto sul sito o importare una traccia - in quel caso i tre numeri
+                     si calcolano da soli e i campi sotto diventano di sola lettura. -->
+                <div class="form-group">
+                    <label for="hike-route-source">Quota, dislivello e distanza:</label>
+                    <select id="hike-route-source">
+                        <option value="manuale">Li scrivo io</option>
+                        <option value="draft">Li calcolo da un progetto già fatto</option>
+                        <option value="gpx">Li calcolo importando una traccia (.gpx)</option>
+                    </select>
+                </div>
+                <div class="form-group hidden" id="hike-route-draft-picker">
+                    <label for="hike-route-draft-select">Quale progetto:</label>
+                    <select id="hike-route-draft-select"></select>
+                </div>
+                <div class="form-group hidden" id="hike-route-gpx-picker">
+                    <label for="hike-route-gpx-file">File .gpx:</label>
+                    <input type="file" id="hike-route-gpx-file" accept=".gpx">
+                </div>
+                <p class="small text-muted hidden" id="hike-route-calcolato-nota"></p>
+                <div class="form-row" id="hike-route-manual-row">
+                    <div class="form-group">
+                        <label for="hike-alt">Quota Massima (metri):</label>
+                        <input type="number" id="hike-alt" required value="1500">
+                    </div>
+                    <div class="form-group">
+                        <label for="hike-elev">Dislivello Positivo (D+ metri):</label>
+                        <input type="number" id="hike-elev" required value="600">
+                    </div>
+                    <div class="form-group">
+                        <label for="hike-dist">Distanza Totale (km):</label>
+                        <input type="number" id="hike-dist" step="0.1" required value="10">
+                    </div>
+                </div>
+                <!-- Punto di ritrovo (punto 8 di cose_da_fare.txt): prima erano tre
+                     caselle, due delle quali chiedevano latitudine e longitudine come
+                     numeri - impossibili da trovare per una persona normale. Ora si
+                     cerca il luogo per nome, oppure lo si sceglie direttamente sulla
+                     mappa. Le coordinate restano (servono al sistema) ma sono un
+                     risultato, non piu' qualcosa da procurarsi da soli. -->
+                <div class="form-group trailhead-picker">
+                    <label for="hike-trailhead-search">Punto di ritrovo:</label>
+                    <div class="trailhead-search-row">
+                        <div class="trailhead-search-field">
+                            <i data-lucide="search"></i>
+                            <input type="text" id="hike-trailhead-search" autocomplete="off"
+                                placeholder="Cerca un luogo, es. Campo Imperatore">
+                        </div>
+                        <button type="button" class="btn btn-secondary" id="btn-open-map-picker"
+                            title="Scegli il punto direttamente sulla mappa">
+                            <i data-lucide="map-pin"></i> Scegli sulla mappa
+                        </button>
+                    </div>
+                    <div id="trailhead-search-results" class="trailhead-results hidden"></div>
+
+                    <!-- Riepilogo del punto scelto -->
+                    <div id="trailhead-chosen" class="trailhead-chosen hidden">
+                        <div class="trailhead-chosen-main">
+                            <i data-lucide="map-pin"></i>
+                            <div>
+                                <strong id="trailhead-chosen-name">—</strong>
+                                <div class="small text-muted" id="trailhead-chosen-context"></div>
+                            </div>
+                        </div>
+                        <div class="trailhead-chosen-coords">
+                            <span id="trailhead-chosen-coords-text">—</span>
+                            <button type="button" class="btn btn-sm btn-secondary" id="btn-copy-coords"
+                                title="Copia le coordinate (es. per incollarle su Google Maps)">
+                                <i data-lucide="copy"></i> Copia
+                            </button>
+                        </div>
+                    </div>
+                    <div id="trailhead-warning" class="trailhead-warning hidden"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="hike-trailhead-name">Come chiamare il ritrovo (modificabile):</label>
+                    <input type="text" id="hike-trailhead-name" required placeholder="Es. Rifugio Franchetti">
+                </div>
+
+                <!-- Le coordinate non si scrivono piu' a mano: le riempie la ricerca
+                     o la scelta sulla mappa. Restano nel form perche' tutto il resto
+                     del codice (submitCreateHike, validazione regione) le legge da qui. -->
+                <input type="hidden" id="hike-trailhead-lat" value="">
+                <input type="hidden" id="hike-trailhead-lng" value="">
+                <div class="form-group">
+                    <label>Seleziona i Tag Tribù (stile di vita):</label>
+                    <div class="checkbox-group">
+                        <label><input type="checkbox" name="hike-tags" value="Passo Fotografico"> Passo Fotografico</label>
+                        <label><input type="checkbox" name="hike-tags" value="Trail Runners"> Trail Runners</label>
+                        <label><input type="checkbox" name="hike-tags" value="Passo Svelto"> Passo Svelto</label>
+                        <label><input type="checkbox" name="hike-tags" value="Dog Friendly"> Dog Friendly</label>
+                        <label><input type="checkbox" name="hike-tags" value="Generazione Alpha"> Generazione Alpha</label>
+                        <label><input type="checkbox" name="hike-tags" value="Generazione Z"> Generazione Z</label>
+                        <label><input type="checkbox" name="hike-tags" value="Millennials"> Millennials</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="hike-approval">Modalità di Iscrizione:</label>
+                    <select id="hike-approval">
+                        <option value="true">Manuale (Veto del Capogruppo - Approvo io i membri)</option>
+                        <option value="false">Automatica (Chiunque può iscriversi liberamente)</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Pubblica Escursione</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Punto 64: completamento di gruppo dal creatore. Qui e non dentro una .page-section,
+         per lo stesso motivo appena spiegato sopra per create-hike-modal. -->
+    <div id="complete-group-modal" class="modal hidden">
+        <div class="modal-content glass-card">
+            <div class="modal-header">
+                <h4>Completa: <span id="complete-group-hike-title"></span></h4>
+                <button class="close-modal-btn" id="btn-close-complete-group-modal">&times;</button>
+            </div>
+            <p class="small text-muted">Conferma chi ha partecipato davvero. Chi resta spuntato risulta presente sul suo profilo e sul tuo.</p>
+            <div id="complete-group-checklist" class="checkbox-group"></div>
+
+            <div class="form-group" style="margin-top: 16px;">
+                <label for="complete-group-search-input">Aggiungi chi non era tra gli iscritti:</label>
+                <div class="trailhead-search-row">
+                    <div class="trailhead-search-field">
+                        <i data-lucide="search"></i>
+                        <input type="text" id="complete-group-search-input" autocomplete="off" maxlength="60" placeholder="Cerca per nome utente...">
+                    </div>
+                </div>
+                <div id="complete-group-search-results" class="hike-carpools-list"></div>
+            </div>
+
+            <button type="button" class="btn btn-primary btn-block" id="btn-confirm-complete-group" style="margin-top: 16px;">Conferma completamento</button>
+        </div>
+    </div>
 
     <!-- Modal generico per conferme e richieste testuali (sostituisce confirm()/prompt() nativi) -->
     <div id="generic-modal" class="modal hidden">

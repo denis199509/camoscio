@@ -93,7 +93,13 @@ const hikeSchema = new mongoose.Schema({
         tollCost: Number,
         drivers: [driverSchema]
     },
-    backpackTemplate: [backpackItemSchema]
+    backpackTemplate: [backpackItemSchema],
+    // Punto 64: valorizzato quando il CREATORE conferma il completamento di gruppo (tasto
+    // "Completa escursione", POST /:id/complete-group) - risponde a "il creatore ha gia'
+    // fatto la conferma di gruppo?", cosa diversa da "esiste un Completion" (che puo' essere
+    // vero anche senza che il creatore abbia mai usato quel tasto, per auto-dichiarazione).
+    // Serve sia a nascondere il tasto dopo l'uso sia a fermare il promemoria del giorno dopo.
+    groupCompletedAt: { type: Date, default: undefined }
 });
 
 hikeSchema.index({ location: '2dsphere' });

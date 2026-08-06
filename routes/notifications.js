@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Notification = require('../models/Notification');
 const { requireAuth } = require('../middleware/auth');
+const { ensureCompletionReminders } = require('../lib/hikeStats'); // punto 64
 
 // Ottieni le notifiche di un utente (più recenti prima) - SOLO le proprie, mai quelle di un altro
 router.get('/:userId', requireAuth, async (req, res) => {
@@ -9,6 +10,13 @@ router.get('/:userId', requireAuth, async (req, res) => {
         return res.status(403).json({ error: 'Puoi vedere solo le tue notifiche' });
     }
     try {
+        // Punto 64: qui e non in GET /api/hikes (molto piu' chiamata) - il confine
+        // "userId === req.session.userId" gia' verificato sopra basta a delimitare la
+        // query senza introdurne uno nuovo, e non scrive sul database per chi non ha mai
+        // creato un'escursione. Non esistendo scheduler ne' push in questo progetto, e'
+        // anche l'unico momento in cui "il promemoria compare" puo' succedere davvero.
+        await ensureCompletionReminders(req.params.userId);
+
         const userNotifications = await Notification.find({ userId: req.params.userId }).sort({ createdAt: -1 });
         res.json(userNotifications);
     } catch (e) {
