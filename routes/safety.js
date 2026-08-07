@@ -135,7 +135,10 @@ function segretoCronValido(req) {
 // sessione utente, quindi NON usa requireAuth ma il segreto condiviso sopra. Idempotente per
 // design: chiamarla piu' volte di fila, o piu' volte sullo stesso utente scaduto, non manda
 // email doppie - il primo giro che trova un utente scaduto lo disattiva subito.
-router.post('/controlla-scadenze', async (req, res) => {
+// Risponde sia a GET sia a POST: non tutti i servizi di ping gratuiti (cron-job.org e simili)
+// permettono di scegliere il metodo, e qui non c'e' nessun corpo da leggere - l'azione la fa
+// scattare la chiamata stessa, non cosa contiene.
+async function controllaScadenzeHandler(req, res) {
     if (!segretoCronValido(req)) {
         return res.status(403).json({ error: 'Non autorizzato' });
     }
@@ -153,6 +156,8 @@ router.post('/controlla-scadenze', async (req, res) => {
         console.error("Errore controllo scadenze Dead Man's Switch:", e);
         res.status(500).json({ error: 'Errore nel controllo delle scadenze' });
     }
-});
+}
+router.get('/controlla-scadenze', controllaScadenzeHandler);
+router.post('/controlla-scadenze', controllaScadenzeHandler);
 
 module.exports = router;
