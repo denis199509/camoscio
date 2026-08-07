@@ -65,7 +65,7 @@ o ne arriva uno nuovo.
     ../camoscio memoria/03-Decisioni-Architetturali.md e
     ../camoscio memoria/06-Cronologia-Sessioni.md.
 
->>> PUNTO 65 (NUOVO) - CHIUSO IL 07/08/2026: Denis, dopo aver visto la mappa nuova,
+>>> PUNTO 65 - CHIUSO IL 07/08/2026: Denis, dopo aver visto la mappa nuova,
     ha segnalato che le notifiche del campanello "non sono bene leggibili perche' una
     parte a destra viene coperta" (vista dal telefono). RIPRODOTTO NEL BROWSER senza
     bisogno del telefono: non e' un problema di schermo, e' di CONTENUTO. Una notifica
@@ -79,9 +79,49 @@ o ne arriva uno nuovo.
     notifiche. Provato dal vivo (testo-parola-sola finto e caso realistico con
     username lungo): entrambi vanno a capo dentro il riquadro dopo la correzione,
     nessuna barra di scorrimento, nessun testo tagliato; la notifica vera di Marco
-    resta invariata. NON ANCORA COMMITTATO, in attesa che Denis lo chieda. Dettaglio
-    completo in cose_da_fare.txt punto 65 e in
-    ../camoscio memoria/06-Cronologia-Sessioni.md.
+    resta invariata. COMMITTATO E PUSHATO (ec36887 camoscio, bc91141 vault),
+    verificato live su Render. NON BASTAVA DA SOLO: vedi punto 66 subito sotto,
+    stessa notifica, difetto diverso. Dettaglio completo in cose_da_fare.txt
+    punto 65 e in ../camoscio memoria/06-Cronologia-Sessioni.md.
+
+>>> SESSIONE INTERROTTA QUI per cause sconosciute (non un PC spento: i due
+    repository risultavano gia' entrambi puliti e pushati riaprendo dopo). Le
+    NOTE pero' erano rimaste ferme a un istante prima del push del 65 - dicevano
+    ancora "sessione aperta" e "non committato". LEZIONE: dopo un'interruzione,
+    controllare SEMPRE `git log origin/master..HEAD` in ogni repository PRIMA di
+    fidarsi dell'ultima riga scritta - una nota puo' invecchiare anche dentro la
+    stessa sessione, non solo da una sessione all'altra. Vedi
+    ../camoscio memoria/07-Trappole-Tecniche.md.
+
+>>> PUNTO 66 (NUOVO) - CHIUSO IL 07/08/2026, sessione di ripresa: Denis ha
+    riaperto il sito e segnalato via screenshot dal telefono che il problema
+    delle notifiche sembrava lo stesso di prima - ma stavolta il testo mancava
+    dall'INIZIO di ogni riga ("ncora completato" invece di "Non hai ancora
+    completato"), non dalla fine: difetto diverso, non risolvibile dal punto 65
+    (gia' verificato live, vedi sopra). CAUSA VERA: non il testo, il RIQUADRO
+    stesso. .notification-dropdown e' position:absolute, right:0 sotto al
+    campanello, largo 320px fissi; su schermo stretto la sidebar si riduce a
+    62px di sole icone e il campanello finisce vicino al bordo sinistro - il
+    riquadro sfonda oltre il bordo di .main-content (overflow:hidden sulla
+    propria colonna, styles.css riga 201), che taglia via la parte in eccesso,
+    testo compreso. Misurato dal vivo (estensione Chrome, iframe della stessa
+    origine ridimensionato a mano - resize_window non affidabile, confermato di
+    nuovo): 17-79px tagliati a seconda della larghezza. Tentativo intermedio
+    scartato: solo position:fixed non bastava, perche' .top-header ha
+    backdrop-filter e in Chrome questo diventa blocco di contenimento anche per
+    i discendenti fixed - il riquadro restava comunque intrappolato nella
+    stessa colonna. CORRETTO spostando #notification-dropdown a figlio diretto
+    di <body> (public/js/app.js, setupNotificationBell()), fuori da entrambi
+    gli antenati: la posizione si ricalcola dal campanello vero a ogni
+    apertura, stessa dimensione di sempre (richiesta esplicita di Denis: "la
+    grandezza va bene, si deve solo vedere sopra tutto"), con un margine minimo
+    di 8px dal bordo invece di uscire dallo schermo nei casi piu' stretti.
+    Provato dal vivo con server locale, misurato con getBoundingClientRect()
+    reale a 320/360/390/430/700/1536px: nessun taglio in nessun caso, posizione
+    su schermo largo identica a prima; confermato anche visivamente con uno
+    screenshot a 386px. COMMITTATO E PUSHATO (0dbfac7 camoscio), verificato
+    live scaricando app.js vero da camoscio.onrender.com. Dettaglio completo in
+    cose_da_fare.txt punto 66.
 
 >>> DUE COSE DA SAPERE PRIMA DI TOCCARE public/index.html (trovate in questa sessione,
     non ovvie a prima vista):
@@ -99,25 +139,25 @@ o ne arriva uno nuovo.
 
 
 
->>> STATO A META' SESSIONE (2026-08-07, dopo la chiusura dei punti 52, 39 e 65 -
-    sessione ANCORA APERTA, non e' il controllo di fine sessione):
-      - camoscio: punti 52 (fd5c4cf) e 39 (65053cf) committati e pushati. Punto 65
-        ANCORA SOLO LOCALE - public/css/styles.css (la correzione), cose_da_fare.txt
-        e questo file. Nessun commit per il 65: in attesa che Denis lo chieda;
-      - camoscio memoria (vault): punti 52 (27c220b) e 39 (d6eb99e) committati e
-        pushati. 06-Cronologia-Sessioni.md per il punto 65 ancora locale, stessa
-        attesa;
-      - controllo con le prove automatiche esistenti: prova-configurazione.js 9/9,
-        prova-punto7.js 53/53 (per il punto 52) - nessuno dei tre punti di questa
-        sessione tocca una rotta server o un modello, solo file statici lato client
-        (auth.js, map.js/offline-map.js/trailhead-picker.js, styles.css);
-      - nessun account/dato di prova lasciato nel database: il punto 52 e' solo
-        front-end (mai inviata una registrazione), il punto 65 idem (solo DOM
-        temporaneo nel browser); il punto 39 ha lasciato per sbaglio una sessione di
-        tracciamento GPS vuota (36s, 0 km) - cancellata subito con DELETE
-        /api/tracking/sessions/:id, le altre sessioni demo di Marco ricontrollate
-        intatte;
+>>> STATO A FINE SESSIONE (2026-08-07, dopo la ripresa dall'interruzione e la
+    chiusura del punto 66 - controllo di fine sessione fatto):
+      - camoscio: punti 52 (fd5c4cf), 39 (65053cf), 65 (ec36887) e 66 (0dbfac7)
+        TUTTI committati e pushati, tutti verificati live su Render (file veri
+        scaricati da camoscio.onrender.com, non solo home a 200);
+      - camoscio memoria (vault): punti 52 (27c220b), 39 (d6eb99e) e 65 (bc91141)
+        committati e pushati. Il punto 66 va ancora scritto qui nel vault (04 e 06)
+        e committato - e' l'ultima cosa rimasta di questa sessione;
+      - controllo con le prove automatiche esistenti: prova-configurazione.js 9/9
+        rilanciata dopo la ripresa - nessuno dei quattro punti di questa sessione
+        tocca una rotta server o un modello, solo file statici lato client (auth.js,
+        map.js/offline-map.js/trailhead-picker.js, styles.css, app.js);
+      - nessun account/dato di prova lasciato nel database: punti 52/65/66 sono solo
+        front-end (mai inviata una registrazione, solo DOM temporaneo nel browser -
+        per il 66 anche su server locale, mai sul sito vero); il punto 39 ha lasciato
+        per sbaglio una sessione di tracciamento GPS vuota (36s, 0 km) - cancellata
+        subito con DELETE /api/tracking/sessions/:id, le altre sessioni demo di Marco
+        ricontrollate intatte;
       - nessun server locale acceso, porta 3000 verificata libera (stop del task piu'
         taskkill sul PID preso da netstat, non basta lo stop da solo su Windows) -
-        avviato e fermato piu' volte in questa parte di sessione, stessa procedura
-        ogni volta.
+        avviato e fermato piu' volte in questa sessione (anche nella parte ripresa
+        dopo l'interruzione, per il punto 66), stessa procedura ogni volta.

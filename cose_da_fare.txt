@@ -2423,4 +2423,58 @@ avevo specificato prima" - vista sul telefono, non sul sito visto al computer.
    e il rimedio sono identici su computer e telefono - solo piu' facile da
    incontrare sul telefono perche' li' capita di leggere le notifiche piu' spesso.
    Server locale fermato con taskkill sul PID di netstat, porta 3000 riverificata
-   libera. Nessun commit ancora: in attesa che Denis lo chieda.
+   libera. COMMITTATO E PUSHATO (ec36887 camoscio, bc91141 vault) - trovato
+   gia' fatto riaprendo la sessione dopo un'interruzione per cause sconosciute,
+   verificato live scaricando styles.css vero da camoscio.onrender.com
+   (overflow-wrap: anywhere presente su .notification-item). ATTENZIONE: questa
+   correzione NON basta da sola per le notifiche su schermo stretto - vedi
+   punto 66, un difetto diverso trovato nella stessa identica notifica.
+
+--- NOTIFICHE DAL CAMPANELLO: RIQUADRO TAGLIATO A SINISTRA (schermo stretto) ---
+
+66) [FATTO 2026-08-07] Denis, riaprendo il sito dopo la sessione del punto 65,
+ha segnalato via screenshot dal telefono (cartella "Logo per Camoscio",
+file screen.jpeg) che il problema sembrava lo stesso di prima: notifica
+promemoria "Non hai ancora completato l'escursione "Alba Corno Grande":
+conferma chi ha partecipato!" con l'inizio del testo mancante ("ncora
+completato..." invece di "Non hai ancora completato...", "ande":" invece
+di "Grande":"). A DIFFERENZA del punto 65 pero' il testo mancava
+dall'INIZIO di ogni riga, non dalla fine - quindi non poteva essere lo
+stesso difetto (quello era gia' corretto e verificato live, vedi sopra).
+   CAUSA VERA, diversa da quella del 65: non il TESTO ma il RIQUADRO stesso.
+   .notification-dropdown e' position:absolute, ancorato con right:0 al
+   campanello (.notification-bell-wrapper), larghezza fissa 320px. Su
+   schermo stretto la sidebar si riduce a 62px di sole icone (regola gia'
+   esistente) e il campanello finisce vicino al bordo sinistro: il riquadro,
+   sempre largo 320px, sfonda a sinistra oltre il bordo di .main-content
+   (public/css/styles.css riga 201: overflow:hidden sulla propria colonna),
+   che taglia via la parte in eccesso - testo compreso. Misurato dal vivo con
+   l'estensione Chrome (iframe della stessa origine ridimensionato a mano,
+   il resize_window del browser non affidabile - vedi punto sotto): a 386px
+   di larghezza il riquadro finiva a sinistra di 17-79px oltre il bordo
+   vero, tagliato via esattamente li'.
+   TENTATIVO INTERMEDIO SCARTATO: cambiare a position:fixed da solo NON
+   bastava. .top-header ha backdrop-filter (l'effetto vetro smerigliato
+   dell'intestazione) e in Chrome un backdrop-filter sull'antenato diventa
+   blocco di contenimento anche per i discendenti position:fixed - il
+   riquadro restava comunque "intrappolato" dentro .top-header/.main-content
+   e si tagliava lo stesso, misurato con uno scarto costante di 62px
+   (esattamente la larghezza della sidebar) rispetto alla posizione attesa.
+   CORRETTO spostando #notification-dropdown a figlio diretto di <body> una
+   sola volta, in setupNotificationBell() (public/js/app.js): fuori da
+   .main-content E da .top-header, position:fixed torna a essere relativo
+   al viewport per davvero. La posizione si ricalcola dal campanello vero
+   a ogni apertura (stesso punto di sempre, stessa dimensione - su
+   richiesta esplicita di Denis: "la grandezza va bene, si deve solo
+   vedere sopra tutto"), con un margine minimo (8px) dal bordo sinistro
+   vero dello schermo invece di uscire dallo schermo, per i soli casi in
+   cui il campanello e' troppo vicino al bordo.
+   PROVATO DAL VIVO con server locale + estensione Chrome, misurato con
+   getBoundingClientRect() reale (non un calcolo a mano) a 320/360/390/
+   430/700/1536px di larghezza: nessun taglio in nessun caso, posizione
+   su schermo largo identica a prima. Confermato anche visivamente con
+   uno screenshot a 386px: testo della notifica completo e leggibile,
+   nessuna barra di scorrimento, riquadro sopra al resto della pagina.
+   Nessun dato di prova scritto sul server: solo DOM e file statici.
+   COMMITTATO E PUSHATO su richiesta esplicita di Denis (0dbfac7 camoscio),
+   verificato live scaricando app.js vero da camoscio.onrender.com.
