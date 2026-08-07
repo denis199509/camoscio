@@ -1018,6 +1018,96 @@ funzioni anche a pagina chiusa. Uno per profilo.
      - da valutare, come ripiego onesto: consigliare di registrare con un'app che
        esporta .gpx e importarla dopo, cosa che il sito sa gia' fare (punto 15).
 
+   -> PREPARATO IL 07/08/2026, NON IMPLEMENTATO (su richiesta esplicita di Denis:
+      "prepara tutto per riprendere il lavoro" - stesso schema gia' usato per il
+      punto 64 il 03/08). Codice attuale riletto per intero, per non dover
+      ripartire da zero la prossima volta:
+
+      STATO ATTUALE (tutto lato client, public/js/safety.js):
+        - activateDeadManSwitch() (riga 283): calcola targetTimeMs da durata o
+          orario esatto, salva in localStorage (deadman_active, deadman_timestamp,
+          deadman_contact_index - MAI il numero di telefono per intero, solo la
+          posizione nell'elenco, vedi punto 21);
+        - startSafetyCountdown() (riga 376): setInterval di 1s, SOLO visivo (il
+          numero a schermo), niente altro;
+        - triggerEmergencyAlarm() (riga 403): oggi mostra un modale che DICE
+          ESPLICITAMENTE "NESSUN MESSAGGIO E' STATO INVIATO" (vincolo hard 7) - e'
+          la funzione che deve mandare l'email vera;
+        - restoreDeadManState() (riga 351): se il timer risultava scaduto mentre la
+          pagina era chiusa, lo scopre SOLO se e quando la pagina si riapre - ed e'
+          esattamente il buco che il punto 37 deve chiudere.
+
+      DUE DECISIONI BLOCCANTI TROVATE RILEGGENDO IL CODICE, DA FARE CON DENIS
+      PRIMA DI SCRIVERE UNA RIGA (stessa lezione del punto 38: chiedere, non
+      indovinare):
+
+      (A) I CONTATTI DI EMERGENZA NON HANNO UN'EMAIL. models/User.js riga 18-22,
+          emergencyContactSchema: solo name, phone, relationship. Il canale
+          scelto per l'allarme e' l'email (lib/mailer.js, Mailjet - niente SMS,
+          costerebbe e non e' open source, stesso motivo per cui WhatsApp
+          Business e' gia' stato scartato per gli alert, vedi sopra). SENZA UN
+          INDIRIZZO EMAIL PER CONTATTO NON C'E' A CHI MANDARLA.
+          Serve chiedere a Denis: si aggiunge un campo email (facoltativo o
+          obbligatorio?) al modulo di registrazione E alla scheda di modifica
+          contatti in Sicurezza & Mesh (public/js/safety.js, la sezione che
+          scrive su PUT /api/users/:id)? Contatti gia' salvati da account veri
+          (Denis, DaniWoll, Manu, Matteo) non avrebbero l'email finche' non
+          vengono aggiornati - vanno ricordati di aggiornarli.
+
+      (B) NON ESISTE NESSUNO SCHEDULER IN QUESTO PROGETTO. Verificato in
+          package.json (nessun node-cron/node-schedule) e confermato da un
+          commento gia' scritto in routes/notifications.js riga 17: "Non
+          esistendo scheduler ne' push in questo progetto" - il promemoria del
+          punto 64 infatti NON e' un timer vero, e' un controllo pigro che
+          scatta solo quando qualcuno chiama GET /api/notifications/:userId.
+          Per un promemoria del giorno dopo va bene (prima o poi qualcuno apre
+          il sito). PER UN ALLARME DI SICUREZZA NON VA BENE: se nessuno tocca
+          il sito dopo la scadenza, un controllo pigro non scatterebbe MAI, ed
+          e' l'esatto contrario dello scopo del punto 37.
+          Complicazione in piu', specifica di Render gratuito: il servizio si
+          addormenta dopo ~15 minuti senza richieste HTTP in arrivo, e un
+          setInterval dentro al processo Node smetterebbe di girare insieme a
+          lui - un allarme impostato per fra 3 ore potrebbe non scattare mai se
+          nel frattempo il sito si addormenta.
+          OPZIONI DA PROPORRE A DENIS (nessuna scelta ancora fatta):
+            1. Un servizio esterno gratuito (es. cron-job.org, UptimeRobot) che
+               chiama una rotta dedicata (es. POST /api/safety/check-scadenze)
+               ogni N minuti - la rotta controlla chi e' scaduto e manda le
+               email. Lo stesso ping, se abbastanza frequente, terrebbe anche
+               il sito sveglio (effetto collaterale utile, non lo scopo).
+               Servizio esterno non open source, come Render/MongoDB Atlas gia'
+               accettati (vincolo hard 2) - da valutare se il compromesso vale.
+            2. Un setInterval nel processo Node esistente, accettando il limite
+               che non scatta se il sito e' addormentato - onesto solo se
+               dichiarato chiaramente a schermo (stesso principio del vincolo 7),
+               e probabilmente insufficiente per uno scopo di sicurezza vera.
+            3. Chiedere a Denis se un ritardo di qualche minuto (il tempo che il
+               sito impieghi a risvegliarsi al prossimo giro di ping) sia
+               accettabile per questo caso d'uso, prima di scartare l'opzione 2.
+
+      PEZZI GIA' PRONTI DA RIUSARE (non vanno riscritti da capo):
+        - lib/mailer.js: inviaEmail({a, oggetto, testo, html}) e' generica,
+          serve solo una nuova funzione-modello (es. emailAllarmeDeadMan())
+          nello stesso file, stessa forma di emailRecuperoPassword() ed
+          emailVerificaIndirizzo() - vedi come sono fatte quelle due;
+        - User.emergencyContacts / contattiUtente() (safety.js riga 156): la
+          lettura del contatto scelto e' gia' li', va solo estesa con l'email
+          (decisione A) e letta anche lato server (oggi la legge solo il
+          client);
+        - triggerEmergencyAlarm() (client) mostra gia' il testo giusto per
+          l'allarme (posizione, orario) - la versione server puo' copiare lo
+          stesso contenuto invece di inventarne uno nuovo;
+        - il conto alla rovescia (targetTimeMs) puo' vivere come 2-3 campi
+          opzionali su User (deadManActive, deadManExpiresAt,
+          deadManContactIndex) invece di un modello nuovo - stessa idea gia'
+          usata per recognizedAscents, coerente col vincolo spazio (default:
+          undefined, non default:false).
+
+      LA PARTE TRACCIAMENTO-A-PAGINA-CHIUSA (sopra) NON ha blocchi di
+      progettazione: Screen Wake Lock API e l'avviso a schermo si possono
+      scrivere subito, appena si riprende. Il ripiego GPX resta "da valutare",
+      non deciso.
+
 --- PROGETTAZIONE DEL PERCORSO ---
 
 38) [FATTO 2026-07-29] Nella creazione del progetto, poter tornare all'inizio.

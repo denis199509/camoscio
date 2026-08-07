@@ -33,10 +33,14 @@ o ne arriva uno nuovo.
     toccato di nuovo. TUTTO PUSHATO E VERIFICATO LIVE SU RENDER. Dettaglio di ogni
     punto in cose_da_fare.txt e in ../camoscio memoria/06-Cronologia-Sessioni.md.
 
->>> PROSSIMO, quando Denis da' il via libera (ordine gia' concordato): i lavori
-    grandi, in ordine - 37 (Dead Man's Switch seconda meta' + tracciamento a pagina
-    chiusa), 48 (ancora vago, serve un esempio da Denis prima di progettare), 45, 55.
-    Vedi ../camoscio memoria/04-Da-Fare.md.
+>>> PROSSIMA SESSIONE: SI RIPARTE DIRETTAMENTE COL PUNTO 37 (richiesta esplicita di
+    Denis). GIA' PREPARATO il 07/08/2026, non ancora scritto codice: PRIMA DI TOCCARE
+    NIENTE, fare a Denis le due domande scritte in cose_da_fare.txt punto 37 (e in
+    ../camoscio memoria/04-Da-Fare.md) - (1) i contatti di emergenza non hanno un
+    campo email, il canale scelto per l'allarme e' l'email; (2) questo progetto non
+    ha nessuno scheduler, quindi va deciso insieme come far scattare un controllo
+    anche a sito addormentato (Render gratuito). Dopo il 37, ordine gia' concordato:
+    48 (ancora vago, serve un esempio da Denis prima di progettare), 45, 55.
 
 >>> PUNTO 52 - CHIUSO IL 07/08/2026, in una sessione successiva a quella dei dieci punti
     sopra: Denis ha fatto la prova dal telefono (tasto di pagina perfetto, tasto/gesto
