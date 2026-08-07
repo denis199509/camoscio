@@ -1,6 +1,6 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-07
+Aggiornato: 2026-08-08
 ===================================================================
 
 QUESTO FILE DICE SOLO UNA COSA: a che punto siamo adesso e da dove si ricomincia.
@@ -33,101 +33,39 @@ o ne arriva uno nuovo.
     toccato di nuovo. TUTTO PUSHATO E VERIFICATO LIVE SU RENDER. Dettaglio di ogni
     punto in cose_da_fare.txt e in ../camoscio memoria/06-Cronologia-Sessioni.md.
 
->>> PROSSIMA SESSIONE: SI RIPARTE DIRETTAMENTE COL PUNTO 37 (richiesta esplicita di
-    Denis). GIA' PREPARATO il 07/08/2026, non ancora scritto codice: PRIMA DI TOCCARE
-    NIENTE, fare a Denis le due domande scritte in cose_da_fare.txt punto 37 (e in
-    ../camoscio memoria/04-Da-Fare.md) - (1) i contatti di emergenza non hanno un
-    campo email, il canale scelto per l'allarme e' l'email; (2) questo progetto non
-    ha nessuno scheduler, quindi va deciso insieme come far scattare un controllo
-    anche a sito addormentato (Render gratuito). Dopo il 37, ordine gia' concordato:
-    48 (ancora vago, serve un esempio da Denis prima di progettare), 45, 55.
+>>> PUNTO 37, PRIMA META' FATTA IL 08/08/2026 (commit dcf02a7, live su Render):
+    Dead Man's Switch spostato sul server (routes/safety.js nuovo: activate/
+    deactivate/controlla-scadenze), email vera al contatto scelto (lib/mailer.js),
+    email ora richiesta per ogni contatto di emergenza (nei form, non nello schema -
+    i contatti reali gia' salvati non ne hanno una). 27+195 controlli automatici,
+    verificato anche dal vivo nel browser. Dettaglio completo in cose_da_fare.txt
+    punto 37 e in ../camoscio memoria/06-Cronologia-Sessioni.md.
+    RESTA DA FARE, solo Denis puo' farlo (account di terzi): (1) su Render, aggiungere
+    la variabile SAFETY_CRON_SECRET (valore gia' generato, in cose_da_fare.txt punto
+    37); (2) su cron-job.org (account gratuito, scelto da Denis l'08/08 - "temporaneo,
+    in futuro quando avremo un nostro server e dominio cambieremo"), creare il job che
+    chiama /api/safety/controlla-scadenze ogni 5 minuti con quella chiave. SOLO DOPO
+    aver verificato che arriva per davvero si aggiorna la nota a schermo che oggi dice
+    ancora, correttamente, "l'invio vero non c'e' ancora" (vincolo hard 7).
+    La parte tracciamento-a-pagina-chiusa (Screen Wake Lock) e' stata rimandata da
+    Denis a quando si penserà a un'app - non e' piu' nell'ordine immediato.
+    Dopo il 37: 48 (ancora vago, serve un esempio da Denis prima di progettare), 45, 55.
 
->>> PUNTO 52 - CHIUSO IL 07/08/2026, in una sessione successiva a quella dei dieci punti
-    sopra: Denis ha fatto la prova dal telefono (tasto di pagina perfetto, tasto/gesto
-    DEL TELEFONO usciva dal sito) e ha chiesto di farlo comportare come quello di pagina.
-    CORRETTO in public/js/auth.js: prima volta che il sito usa davvero la History API
-    (entry-sentinella che intercetta l'indietro vero e sposta la fase, si riarma da
-    sola). Provato dal vivo con l'estensione Chrome (dati mai persi, anche mischiando
-    tasto di pagina e indietro del telefono), piu' prova-configurazione.js (9/9) e
-    prova-punto7.js (53/53) di controllo, nessuna regressione. COMMITTATO E PUSHATO
-    (fd5c4cf camoscio, 27c220b vault), verificato live su Render. Dettaglio completo in
-    ../camoscio memoria/03-Decisioni-Architetturali.md e
-    ../camoscio memoria/06-Cronologia-Sessioni.md.
+>>> PUNTI 52, 39, 65 E 66 - TUTTI CHIUSI IL 07/08/2026 (indietro del telefono nel
+    wizard con la History API, mappa OpenTopoMap, due difetti diversi sulla stessa
+    notifica del campanello - testo coperto a destra e poi riquadro tagliato a
+    sinistra su schermo stretto). Tutti committati, pushati e verificati live su
+    Render (fd5c4cf/27c220b, 65053cf/d6eb99e, ec36887/bc91141, 0dbfac7). Dettaglio
+    completo in cose_da_fare.txt e in ../camoscio memoria/06-Cronologia-Sessioni.md
+    e 03-Decisioni-Architetturali.md.
 
->>> PUNTO 39 - CHIUSO IL 07/08/2026, stessa sessione del punto 52: mappa base cambiata
-    da OSM standard a OpenTopoMap in public/js/map.js (curve di livello, rilievo
-    ombreggiato, sentieri con nome e grado CAI - prima quasi invisibili), URL
-    condivisa con public/js/trailhead-picker.js invece di ricopiata
-    (CAMOSCIO_TILE_URL/OPTIONS). Le due correzioni alla cache offline previste dal
-    29/07 fatte insieme, in public/js/offline-map.js: tileKey() ora include lo stile
-    (niente piu' collisione tra mappe diverse), estimateOfflineDownloadSize usa 32
-    KB/tile invece di 20 (il peso vero misurato). Provato dal vivo con l'estensione
-    Chrome su Corno Grande a piu' zoom (incluso il massimo, 17, nessuna tile rotta),
-    sulla mini-mappa del ritrovo, e controllando IndexedDB a mano (tile vecchie e
-    nuove non si mescolano). COMMITTATO E PUSHATO (65053cf camoscio, d6eb99e vault),
-    verificato live su Render. Dettaglio completo in
-    ../camoscio memoria/03-Decisioni-Architetturali.md e
-    ../camoscio memoria/06-Cronologia-Sessioni.md.
-
->>> PUNTO 65 - CHIUSO IL 07/08/2026: Denis, dopo aver visto la mappa nuova,
-    ha segnalato che le notifiche del campanello "non sono bene leggibili perche' una
-    parte a destra viene coperta" (vista dal telefono). RIPRODOTTO NEL BROWSER senza
-    bisogno del telefono: non e' un problema di schermo, e' di CONTENUTO. Una notifica
-    con una parola sola senza spazi (tipico di uno username, scelto apposta senza
-    spazi in registrazione) non andava mai a capo, usciva dal riquadro di 320px e
-    veniva tagliata a destra (overflow:hidden del contenitore) - il trigger piu'
-    probabile e' "USERNAME ha chiesto di partecipare alla tua escursione TITOLO"
-    (routes/hikes.js). CORRETTO in public/css/styles.css: overflow-wrap: anywhere su
-    .notification-item - stessa proprieta' gia' in uso altrove nel foglio di stile
-    (es. .outing-card-title) per lo stesso identico problema, solo mai applicata alle
-    notifiche. Provato dal vivo (testo-parola-sola finto e caso realistico con
-    username lungo): entrambi vanno a capo dentro il riquadro dopo la correzione,
-    nessuna barra di scorrimento, nessun testo tagliato; la notifica vera di Marco
-    resta invariata. COMMITTATO E PUSHATO (ec36887 camoscio, bc91141 vault),
-    verificato live su Render. NON BASTAVA DA SOLO: vedi punto 66 subito sotto,
-    stessa notifica, difetto diverso. Dettaglio completo in cose_da_fare.txt
-    punto 65 e in ../camoscio memoria/06-Cronologia-Sessioni.md.
-
->>> SESSIONE INTERROTTA QUI per cause sconosciute (non un PC spento: i due
-    repository risultavano gia' entrambi puliti e pushati riaprendo dopo). Le
-    NOTE pero' erano rimaste ferme a un istante prima del push del 65 - dicevano
-    ancora "sessione aperta" e "non committato". LEZIONE: dopo un'interruzione,
-    controllare SEMPRE `git log origin/master..HEAD` in ogni repository PRIMA di
-    fidarsi dell'ultima riga scritta - una nota puo' invecchiare anche dentro la
-    stessa sessione, non solo da una sessione all'altra. Vedi
+>>> LEZIONE (07/08/2026): dopo un'interruzione di sessione per cause sconosciute, le
+    note (questo file compreso) erano rimaste ferme a un istante prima di un push gia'
+    avvenuto. Dopo un'interruzione, controllare SEMPRE `git log origin/master..HEAD`
+    in ogni repository PRIMA di fidarsi dell'ultima riga scritta qui. Vedi
     ../camoscio memoria/07-Trappole-Tecniche.md.
 
->>> PUNTO 66 (NUOVO) - CHIUSO IL 07/08/2026, sessione di ripresa: Denis ha
-    riaperto il sito e segnalato via screenshot dal telefono che il problema
-    delle notifiche sembrava lo stesso di prima - ma stavolta il testo mancava
-    dall'INIZIO di ogni riga ("ncora completato" invece di "Non hai ancora
-    completato"), non dalla fine: difetto diverso, non risolvibile dal punto 65
-    (gia' verificato live, vedi sopra). CAUSA VERA: non il testo, il RIQUADRO
-    stesso. .notification-dropdown e' position:absolute, right:0 sotto al
-    campanello, largo 320px fissi; su schermo stretto la sidebar si riduce a
-    62px di sole icone e il campanello finisce vicino al bordo sinistro - il
-    riquadro sfonda oltre il bordo di .main-content (overflow:hidden sulla
-    propria colonna, styles.css riga 201), che taglia via la parte in eccesso,
-    testo compreso. Misurato dal vivo (estensione Chrome, iframe della stessa
-    origine ridimensionato a mano - resize_window non affidabile, confermato di
-    nuovo): 17-79px tagliati a seconda della larghezza. Tentativo intermedio
-    scartato: solo position:fixed non bastava, perche' .top-header ha
-    backdrop-filter e in Chrome questo diventa blocco di contenimento anche per
-    i discendenti fixed - il riquadro restava comunque intrappolato nella
-    stessa colonna. CORRETTO spostando #notification-dropdown a figlio diretto
-    di <body> (public/js/app.js, setupNotificationBell()), fuori da entrambi
-    gli antenati: la posizione si ricalcola dal campanello vero a ogni
-    apertura, stessa dimensione di sempre (richiesta esplicita di Denis: "la
-    grandezza va bene, si deve solo vedere sopra tutto"), con un margine minimo
-    di 8px dal bordo invece di uscire dallo schermo nei casi piu' stretti.
-    Provato dal vivo con server locale, misurato con getBoundingClientRect()
-    reale a 320/360/390/430/700/1536px: nessun taglio in nessun caso, posizione
-    su schermo largo identica a prima; confermato anche visivamente con uno
-    screenshot a 386px. COMMITTATO E PUSHATO (0dbfac7 camoscio), verificato
-    live scaricando app.js vero da camoscio.onrender.com. Dettaglio completo in
-    cose_da_fare.txt punto 66.
-
->>> DUE COSE DA SAPERE PRIMA DI TOCCARE public/index.html (trovate in questa sessione,
+>>> DUE COSE DA SAPERE PRIMA DI TOCCARE public/index.html (trovate il 07/08/2026,
     non ovvie a prima vista):
       - create-hike-modal e complete-group-modal vivono FUORI da .page-container
         (vicino a generic-modal), non dentro una .page-section: un modale raggiungibile
@@ -143,25 +81,16 @@ o ne arriva uno nuovo.
 
 
 
->>> STATO A FINE SESSIONE (2026-08-07, dopo la ripresa dall'interruzione e la
-    chiusura del punto 66 - controllo di fine sessione fatto):
-      - camoscio: punti 52 (fd5c4cf), 39 (65053cf), 65 (ec36887) e 66 (0dbfac7)
-        TUTTI committati e pushati, tutti verificati live su Render (file veri
-        scaricati da camoscio.onrender.com, non solo home a 200);
-      - camoscio memoria (vault): punti 52 (27c220b), 39 (d6eb99e) e 65 (bc91141)
-        committati e pushati. Il punto 66 va ancora scritto qui nel vault (04 e 06)
-        e committato - e' l'ultima cosa rimasta di questa sessione;
-      - controllo con le prove automatiche esistenti: prova-configurazione.js 9/9
-        rilanciata dopo la ripresa - nessuno dei quattro punti di questa sessione
-        tocca una rotta server o un modello, solo file statici lato client (auth.js,
-        map.js/offline-map.js/trailhead-picker.js, styles.css, app.js);
-      - nessun account/dato di prova lasciato nel database: punti 52/65/66 sono solo
-        front-end (mai inviata una registrazione, solo DOM temporaneo nel browser -
-        per il 66 anche su server locale, mai sul sito vero); il punto 39 ha lasciato
-        per sbaglio una sessione di tracciamento GPS vuota (36s, 0 km) - cancellata
-        subito con DELETE /api/tracking/sessions/:id, le altre sessioni demo di Marco
-        ricontrollate intatte;
-      - nessun server locale acceso, porta 3000 verificata libera (stop del task piu'
-        taskkill sul PID preso da netstat, non basta lo stop da solo su Windows) -
-        avviato e fermato piu' volte in questa sessione (anche nella parte ripresa
-        dopo l'interruzione, per il punto 66), stessa procedura ogni volta.
+>>> STATO A FINE SESSIONE (2026-08-08, punto 37 prima meta'):
+      - camoscio: commit dcf02a7 pushato e verificato live su Render (routes/safety.js
+        risponde davvero: 403 senza segreto su controlla-scadenze, 401 senza sessione
+        su activate; nota di onesta' a schermo confermata invariata; i due nuovi campi
+        email confermati presenti nell'HTML/JS serviti);
+      - camoscio memoria (vault): da aggiornare in questo stesso giro (04, 06, 03, 07);
+      - prove: prova-punto37.js (27/27) piu' le 6 prove esistenti toccate dal nuovo
+        campo email obbligatorio, tutte rilanciate (195 controlli, nessuna regressione);
+      - verificato anche dal vivo nel browser (estensione Chrome, account demo Marco
+        Alpinista): aggiunto e poi rimosso un contatto di prova, contatti demo
+        ripristinati identici a come trovati, nessun dato di prova rimasto;
+      - nessun server locale acceso, porta 3000 verificata libera dopo ogni uso
+        (stop del task piu' taskkill sul PID preso da netstat).

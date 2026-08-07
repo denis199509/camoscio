@@ -1108,6 +1108,68 @@ funzioni anche a pagina chiusa. Uno per profilo.
       scrivere subito, appena si riprende. Il ripiego GPX resta "da valutare",
       non deciso.
 
+   -> PRIMA META' FATTA IL 08/08/2026 (commit dcf02a7, live su Render):
+      risposte di Denis alle due domande bloccanti - (A) ogni contatto di
+      emergenza deve avere un'email, (B) il controllo mentre il sito dorme
+      passa da un servizio esterno gratuito, cron-job.org, "temporaneo, in
+      futuro quando avremo un nostro server e dominio cambieremo" (parole
+      sue) - estende il vincolo hard 2 (open source) a un terzo servizio
+      dopo Render/MongoDB Atlas, decisione presa consapevolmente.
+      COSA C'E' ORA: emergencyContactSchema ha il campo email (obbligatoria
+      nei form, NON a livello di schema - i contatti reali gia' salvati,
+      compreso quello di Denis, non ne hanno una e non esiste una schermata
+      per modificarli, solo per aggiungerne di nuovi; renderla required nello
+      schema avrebbe bloccato anche quello). Il menu "Chi avvisare" filtra i
+      contatti senza email invece di lasciarli scelti a vuoto. Il conto alla
+      rovescia vive anche su User (deadManActive/deadManExpiresAt/
+      deadManContactIndex, default:undefined). routes/safety.js nuovo:
+      POST /activate e /deactivate (richiedono login, chiamati da
+      activateDeadManSwitch/deactivateDeadManSwitch in safety.js - se la
+      chiamata al server fallisce il sito ora lo dice a schermo invece di
+      tacere) e POST /controlla-scadenze (NON richiede login, la chiama un
+      servizio esterno: protetta da un segreto condiviso, SAFETY_CRON_SECRET,
+      fail-closed in produzione se non configurato). Alla scadenza: email
+      vera al contatto (lib/mailer.js, emailAllarmeDeadMan) con l'ultima
+      posizione nota letta dalla sessione di tracciamento GPS aperta se c'e'
+      (ActiveHikeSession, nessuna nuova plumbing lato client), sempre una
+      Notification sull'esito, poi disattivazione automatica.
+      27 controlli nuovi (prove/prova-punto37.js), controprova fatta.
+      Aggiornate e rilanciate 6 prove esistenti che registravano un contatto
+      senza email (ora obbligatoria): 195 controlli, nessuna regressione.
+      Verificato anche dal vivo nel browser (estensione Chrome): form con
+      l'email, salvataggio, attivazione e check-in confermati sul database
+      reale, non solo per API diretta.
+      RESTA DA FARE, i due passaggi che solo Denis puo' fare (account/
+      dashboard di terzi, non azioni che si possano automatizzare da qui):
+        1. Su Render (dashboard, non nel .env locale): aggiungere la
+           variabile d'ambiente SAFETY_CRON_SECRET con il valore
+           TgY_nd3l8laIVV4ipn2tV-87gs1q9l9V (gia' generato, non e' un segreto
+           legato a nessun account - va bene copiarlo cosi').
+        2. Su cron-job.org (account gratuito): creare un job che chiama ogni
+           5 minuti
+           https://camoscio.onrender.com/api/safety/controlla-scadenze?chiave=TgY_nd3l8laIVV4ipn2tV-87gs1q9l9V
+           in POST (o GET, la rotta non guarda il metodo... verificare che
+           cron-job.org permetta POST, altrimenti va aggiunto anche GET alla
+           rotta).
+      SOLO DOPO aver verificato che il trigger esterno funziona per davvero
+      (chiamata vera che arriva, timer che scade, email che parte) si
+      aggiorna la nota a schermo "l'invio vero del messaggio non c'e' ancora"
+      (public/index.html, #safety-honesty-note) e il testo del modale locale
+      in triggerEmergencyAlarm() (public/js/safety.js) - finche' non e' vero
+      per davvero resta scritto che non lo e', vincolo hard 7.
+      LA PARTE TRACCIAMENTO-A-PAGINA-CHIUSA (Screen Wake Lock + avviso a
+      schermo) e' stata rimandata su richiesta esplicita di Denis: "quando
+      penseremo a creare pure un'app dal sito" - non e' piu' nell'ordine di
+      lavoro immediato del punto 37, resta un lavoro futuro.
+      TROVATO PER CASO, non collegato al punto 37: la libreria dotenv (usata
+      da sempre in questo progetto, non modificata da questa sessione)
+      dalla versione 17 stampa nel log un messaggio pubblicitario casuale a
+      ogni avvio - a volte reclamizza un suo servizio "auth for agents" su
+      un altro dominio, rivolto apposta agli agenti AI. Verificato che e' il
+      codice vero e ufficiale del pacchetto (non un pacchetto compromesso),
+      nessuna azione presa, nessuna pagina visitata. Vedi
+      ../camoscio memoria/07-Trappole-Tecniche.md.
+
 --- PROGETTAZIONE DEL PERCORSO ---
 
 38) [FATTO 2026-07-29] Nella creazione del progetto, poter tornare all'inizio.
