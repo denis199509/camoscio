@@ -33,23 +33,32 @@ o ne arriva uno nuovo.
     toccato di nuovo. TUTTO PUSHATO E VERIFICATO LIVE SU RENDER. Dettaglio di ogni
     punto in cose_da_fare.txt e in ../camoscio memoria/06-Cronologia-Sessioni.md.
 
->>> PUNTO 37, PRIMA META' FATTA IL 08/08/2026 (commit dcf02a7, live su Render):
-    Dead Man's Switch spostato sul server (routes/safety.js nuovo: activate/
-    deactivate/controlla-scadenze), email vera al contatto scelto (lib/mailer.js),
-    email ora richiesta per ogni contatto di emergenza (nei form, non nello schema -
-    i contatti reali gia' salvati non ne hanno una). 27+195 controlli automatici,
-    verificato anche dal vivo nel browser. Dettaglio completo in cose_da_fare.txt
-    punto 37 e in ../camoscio memoria/06-Cronologia-Sessioni.md.
-    RESTA DA FARE, solo Denis puo' farlo (account di terzi): (1) su Render, aggiungere
-    la variabile SAFETY_CRON_SECRET (valore gia' generato, in cose_da_fare.txt punto
-    37); (2) su cron-job.org (account gratuito, scelto da Denis l'08/08 - "temporaneo,
-    in futuro quando avremo un nostro server e dominio cambieremo"), creare il job che
-    chiama /api/safety/controlla-scadenze ogni 5 minuti con quella chiave. SOLO DOPO
-    aver verificato che arriva per davvero si aggiorna la nota a schermo che oggi dice
-    ancora, correttamente, "l'invio vero non c'e' ancora" (vincolo hard 7).
-    La parte tracciamento-a-pagina-chiusa (Screen Wake Lock) e' stata rimandata da
-    Denis a quando si penserà a un'app - non e' piu' nell'ordine immediato.
-    Dopo il 37: 48 (ancora vago, serve un esempio da Denis prima di progettare), 45, 55.
+>>> SESSIONE CHIUSA VOLONTARIAMENTE L'08/08/2026 (Denis: "fermiamoci qui per
+    adesso") - PUNTO 37, PRIMA META' FATTA, tutto committato e pushato
+    (dcf02a7, db4d1d0, e004d08), verificato live su Render dopo ogni push.
+
+>>> PROSSIMA SESSIONE, PRIMA COSA DA FARE: chiedere a Denis se ha gia' fatto i
+    due passaggi che restano SOLO A LUI (non richiedono scrivere codice):
+    (1) su Render (dashboard, Environment): aggiungere la variabile
+        SAFETY_CRON_SECRET = TgY_nd3l8laIVV4ipn2tV-87gs1q9l9V
+    (2) su cron-job.org (account gratuito, scelto da Denis l'08/08 -
+        "temporaneo, in futuro quando avremo un nostro server e dominio
+        cambieremo"): creare un job che chiama ogni 5 minuti, in GET o POST
+        (la rotta accetta entrambi dall'08/08, commit e004d08)
+        https://camoscio.onrender.com/api/safety/controlla-scadenze?chiave=TgY_nd3l8laIVV4ipn2tV-87gs1q9l9V
+    Se SI': verificare dal vivo che il ping arrivi davvero e che un timer
+    scaduto per prova mandi l'email vera, POI (solo poi) aggiornare la nota
+    a schermo che oggi dice ancora, correttamente, "l'invio vero non c'e'
+    ancora" (public/index.html #safety-honesty-note) e il testo del modale
+    locale in triggerEmergencyAlarm() (public/js/safety.js) - vincolo hard 7.
+    Se NO, o se Denis vuole rimandare: si puo' passare al punto 48 (ancora
+    vago, serve un esempio concreto da Denis prima di progettare), poi 45, 55
+    - il punto 37 resta comunque utilizzabile cosi' com'e' (il timer e' gia'
+    sul server, manca solo chi lo controlla).
+    Dettaglio tecnico completo del punto 37 in cose_da_fare.txt e in
+    ../camoscio memoria/06-Cronologia-Sessioni.md e 03-Decisioni-Architetturali.md.
+    La parte tracciamento-a-pagina-chiusa (Screen Wake Lock) resta rimandata
+    da Denis a quando si pensera' a un'app - non riproporla.
 
 >>> PUNTI 52, 39, 65 E 66 - TUTTI CHIUSI IL 07/08/2026 (indietro del telefono nel
     wizard con la History API, mappa OpenTopoMap, due difetti diversi sulla stessa
@@ -81,16 +90,22 @@ o ne arriva uno nuovo.
 
 
 
->>> STATO A FINE SESSIONE (2026-08-08, punto 37 prima meta'):
-      - camoscio: commit dcf02a7 pushato e verificato live su Render (routes/safety.js
-        risponde davvero: 403 senza segreto su controlla-scadenze, 401 senza sessione
-        su activate; nota di onesta' a schermo confermata invariata; i due nuovi campi
-        email confermati presenti nell'HTML/JS serviti);
-      - camoscio memoria (vault): da aggiornare in questo stesso giro (04, 06, 03, 07);
-      - prove: prova-punto37.js (27/27) piu' le 6 prove esistenti toccate dal nuovo
-        campo email obbligatorio, tutte rilanciate (195 controlli, nessuna regressione);
+>>> STATO A FINE SESSIONE (2026-08-08, chiusa su richiesta di Denis - "fermiamoci
+    qui per adesso" - controllo di fine sessione fatto):
+      - camoscio: TRE commit pushati (dcf02a7 codice, db4d1d0 note, e004d08 GET su
+        controlla-scadenze), tutti verificati live su Render dopo il push - l'ultimo
+        controllo (dopo e004d08) ha ridato 403 su una GET senza segreto, quindi il
+        deploy definitivo c'e' davvero. Nota di onesta' a schermo confermata ancora
+        invariata (giusto cosi': il trigger esterno non e' ancora collegato);
+      - camoscio memoria (vault): committato e pushato (382d9d7) - 00, 03, 04, 06, 07
+        tutti aggiornati nello stesso giro;
+      - prove: prova-punto37.js (27/27, controprova fatta) piu' le 6 prove esistenti
+        toccate dal nuovo campo email obbligatorio, tutte rilanciate dopo la modifica
+        (195 controlli, nessuna regressione) - poi rilanciata anche dopo l'aggiunta
+        del GET, ancora 27/27;
       - verificato anche dal vivo nel browser (estensione Chrome, account demo Marco
-        Alpinista): aggiunto e poi rimosso un contatto di prova, contatti demo
-        ripristinati identici a come trovati, nessun dato di prova rimasto;
-      - nessun server locale acceso, porta 3000 verificata libera dopo ogni uso
-        (stop del task piu' taskkill sul PID preso da netstat).
+        Alpinista): aggiunto e poi rimosso un contatto di prova, attivato e disattivato
+        il timer con conferma sul database vero, contatti demo ripristinati identici a
+        come trovati, nessun dato di prova rimasto;
+      - `git log origin/master..HEAD` vuoto in ENTRAMBI i repository, nessun server
+        locale acceso, porta 3000 verificata libera.

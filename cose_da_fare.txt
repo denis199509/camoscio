@@ -1148,9 +1148,10 @@ funzioni anche a pagina chiusa. Uno per profilo.
         2. Su cron-job.org (account gratuito): creare un job che chiama ogni
            5 minuti
            https://camoscio.onrender.com/api/safety/controlla-scadenze?chiave=TgY_nd3l8laIVV4ipn2tV-87gs1q9l9V
-           in POST (o GET, la rotta non guarda il metodo... verificare che
-           cron-job.org permetta POST, altrimenti va aggiunto anche GET alla
-           rotta).
+           - va bene sia GET sia POST (aggiunto il GET apposta l'08/08,
+           commit e004d08, per non dipendere da quale metodo sceglie
+           cron-job.org; verificato live che risponde 403 senza il segreto,
+           quindi il deploy c'e' davvero).
       SOLO DOPO aver verificato che il trigger esterno funziona per davvero
       (chiamata vera che arriva, timer che scade, email che parte) si
       aggiorna la nota a schermo "l'invio vero del messaggio non c'e' ancora"
