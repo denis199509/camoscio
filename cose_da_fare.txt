@@ -1065,7 +1065,7 @@ funzioni anche a pagina chiusa. Uno per profilo.
    mezz'ora di chiarimento contro una giornata di lavoro forse inutile."
    Era la terza ipotesi, quella non scritta, a essere giusta. Mezz'ora ben spesa.
 
-39) [DA FARE - RISPOSTA AVUTA 2026-07-29, non e' piu' generica] Migliorare la resa
+39) [FATTO 2026-08-07] Migliorare la resa
 visiva dei sentieri sulla mappa.
    RISPOSTA DI DENIS: "come hai gia' detto i sentieri sono quasi invisibili, serve un
    disegno di mappa molto piu' visibile con i sentieri". Quindi non e' un ritocco alle
@@ -1092,8 +1092,47 @@ visiva dei sentieri sulla mappa.
         meta' del vero - ed e' il numero su cui uno decide prima di partire.
    DA SAPERE, conseguenza per l'utente: le tile gia' scaricate sono della mappa vecchia,
    quindi le escursioni gia' preparate andrebbero riscaricate.
-   DA VALUTARE: un interruttore per tornare alla mappa semplice, visto che la topografica
-   e' piu' pesante e i suoi server sono piu' lenti (progetto di volontari, uso leale).
+   DA VALUTARE (non fatto, non richiesto): un interruttore per tornare alla mappa
+   semplice, visto che la topografica e' piu' pesante e i suoi server sono piu' lenti
+   (progetto di volontari, uso leale). Resta un'idea sul tavolo, non implementata.
+
+   FATTO IL 2026-08-07. Cambiata la mappa base in public/js/map.js (OpenTopoMap,
+   https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png, maxZoom 17 contro i 18 di OSM -
+   OpenTopoMap non ha tile oltre) e RIUSATA in public/js/trailhead-picker.js (la
+   mini-mappa per scegliere il ritrovo/il punto meteo, che duplicava lo stesso URL):
+   estratte in due variabili condivise, window.CAMOSCIO_TILE_URL e
+   window.CAMOSCIO_TILE_OPTIONS (definite in map.js, che si carica prima), cosi'
+   restano UNA sola fonte invece di due copie da tenere allineate a mano.
+   Attribuzione aggiornata al formato richiesto da OpenTopoMap (dati OSM + SRTM, stile
+   OpenTopoMap CC-BY-SA), non solo quella OSM di prima.
+   LE DUE COSE "DA SISTEMARE INSIEME" (public/js/offline-map.js):
+     1) tileKey(z,x,y) e' diventata tileKey(z,x,y,styleId): la chiave ora e'
+        "styleId/z/x/y" invece di "z/x/y" - passato this.options.styleId nel layer
+        (OfflineAwareTileLayer.createTile) e tileLayer.options.styleId nel download
+        anticipato (downloadOfflineMapForBounds). Le tile gia' in cache con la vecchia
+        chiave restano semplicemente orfane (mai piu' cercate) - nessuna migrazione,
+        costo accettato come gia' scritto sopra;
+     2) estimateOfflineDownloadSize: 20 -> 32 KB/tile, il numero vero misurato sopra.
+   PROVATO DAL VIVO con l'estensione Chrome (account demo Marco Alpinista, server
+   locale): mappa principale su Corno Grande a piu' livelli di zoom - curve di
+   livello con quote, rilievo ombreggiato, sentieri con nome e classificazione CAI
+   (T2, T4) chiaramente visibili, attribuzione corretta a fondo mappa; zoom 17
+   (il vero massimo) senza nessuna tile rotta o vuota. Stessa resa confermata sulla
+   mini-mappa "Scegli il punto di ritrovo" (dalla creazione di un'escursione).
+   Verificato IndexedDB direttamente: le tile viste dopo la modifica sono salvate
+   con chiave "opentopo/z/x/y", quelle viste prima (stessa sessione browser, prima
+   del cambio) restano con la vecchia chiave a 3 pezzi - nessuna collisione, esattamente
+   il comportamento progettato. Stima di download ricontrollata via console
+   (estimateOfflineDownloadSize su un'area vera): numero coerente con 32 KB/tile.
+   Nessun errore in console in tutta la prova.
+   UN INCIDENTE DI PERCORSO, ripulito subito: cliccando "Comincia registrazione" per
+   raggiungere il pannello di download offline e' partita per sbaglio una
+   registrazione GPS vera (bottone che avvia subito, non un pannello inerte) - fermata
+   subito (00:00:36, 0,00 km) e la sessione cancellata con DELETE
+   /api/tracking/sessions/:id, ricontrollato che le altre sessioni demo di Marco
+   (gia' presenti prima) fossero rimaste intatte.
+   Server locale fermato con taskkill sul PID di netstat, porta 3000 riverificata
+   libera. Nessun commit ancora: in attesa che Denis lo chieda.
 
 --- PROFILO ---
 

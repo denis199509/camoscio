@@ -1,7 +1,7 @@
-// Fase F - Mappa offline: cache delle tile OpenStreetMap in IndexedDB (vedi idb.js) + un
-// layer Leaflet che le usa al posto di riscaricarle sempre dalla rete. Nessuna libreria
-// nuova: si sovrascrive semplicemente createTile, stessa tecnica dei plugin "leaflet
-// offline" piu' diffusi.
+// Fase F - Mappa offline: cache delle tile della mappa (oggi OpenTopoMap, vedi
+// CAMOSCIO_TILE_URL in map.js) in IndexedDB (vedi idb.js) + un layer Leaflet che le usa
+// al posto di riscaricarle sempre dalla rete. Nessuna libreria nuova: si sovrascrive
+// semplicemente createTile, stessa tecnica dei plugin "leaflet offline" piu' diffusi.
 //
 // Comportamento: OGNI tile vista dal vivo (online) viene salvata in cache automaticamente,
 // non solo quelle scaricate in anticipo col pulsante dedicato - cosi' qualunque zona gia'
@@ -20,8 +20,13 @@ function lat2tileY(lat, zoom) {
     return Math.floor((1 - Math.log(Math.tan(rad) + 1 / Math.cos(rad)) / Math.PI) / 2 * Math.pow(2, zoom));
 }
 
-function tileKey(z, x, y) {
-    return `${z}/${x}/${y}`;
+// Punto 39: la chiave include lo STILE (osm/opentopo/...), non solo z/x/y - altrimenti,
+// con due mappe attive nella storia del progetto, la stessa coordinata scaricata da uno
+// stile servirebbe (sbagliata) al posto dell'altro. Le tile gia' in cache con la vecchia
+// chiave a 3 pezzi restano semplicemente orfane, mai piu' cercate: nessuna migrazione,
+// e' un costo accettato (vedi cose_da_fare.txt punto 39).
+function tileKey(z, x, y, styleId) {
+    return `${styleId}/${z}/${x}/${y}`;
 }
 
 function setTileImgFromBlob(tile, blob) {
@@ -37,7 +42,7 @@ const OfflineAwareTileLayer = L.TileLayer.extend({
         tile.setAttribute('role', 'presentation');
 
         const url = this.getTileUrl(coords);
-        const key = tileKey(coords.z, coords.x, coords.y);
+        const key = tileKey(coords.z, coords.x, coords.y, this.options.styleId);
 
         idbGetTile(key).then(cachedBlob => {
             if (cachedBlob) {
@@ -107,7 +112,11 @@ function listTilesForBounds(bounds, minZoom = OFFLINE_MIN_ZOOM, maxZoom = OFFLIN
 
 function estimateOfflineDownloadSize(bounds) {
     const count = listTilesForBounds(bounds).length;
-    const estimatedKb = count * 20; // stima prudente: aree di montagna hanno poco dettaglio, tile leggere
+    // Punto 39: 32 KB/tile, misurato il 2026-07-29 su OpenTopoMap (Campo Imperatore,
+    // 15/17618/12109) - era 20 (stima per OSM standard, piu' leggero ma quasi vuoto
+    // in montagna). Il numero che conta e' quello vero della mappa che si scarica
+    // davvero, non una stima prudente scollegata dallo stile attivo.
+    const estimatedKb = count * 32;
     return { tileCount: count, estimatedMb: Math.round((estimatedKb / 1024) * 10) / 10 };
 }
 
@@ -123,7 +132,7 @@ async function downloadOfflineMapForBounds(bounds, onProgress) {
     let failed = 0;
 
     async function downloadOne(coords) {
-        const key = tileKey(coords.z, coords.x, coords.y);
+        const key = tileKey(coords.z, coords.x, coords.y, tileLayer.options.styleId);
         const already = await idbGetTile(key);
         if (!already) {
             const url = tileLayer.getTileUrl(coords);

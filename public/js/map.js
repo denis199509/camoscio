@@ -42,6 +42,22 @@ const LIVE_FOLLOW_ZOOM = 16; // ~2 metri per pixel: un passo si vede
 // i poligoni reali in data/region-boundaries.json, serviti da GET /api/regions/boundaries.
 window.CAMOSCIO_REGION_BOUNDS = { minLat: 40.8, maxLat: 43.9, minLng: 11.4, maxLng: 15.2 };
 
+// Stile della mappa base (punto 39): OpenTopoMap al posto di OSM standard, perche' il
+// sito non disegna i propri sentieri (servono solo ad agganciare il GPS e a costruire i
+// percorsi, vedi trailIndex.js/trailGraph.js) - senza curve di livello e sentieri veri
+// sul fondo, quella di OSM standard e' quasi vuota in montagna. Misurato il 2026-07-29
+// sulla tile di Campo Imperatore (15/17618/12109): 32 KB contro 13,8 di OSM standard,
+// vedi la stima aggiornata in estimateOfflineDownloadSize (offline-map.js).
+// Condiviso con trailhead-picker.js (la mini-mappa per scegliere ritrovo/meteo, script
+// caricato dopo questo): un solo posto dove cambiare provider, non due URL da tenere
+// allineate a mano.
+window.CAMOSCIO_TILE_URL = 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png';
+window.CAMOSCIO_TILE_OPTIONS = {
+    attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)',
+    maxZoom: 17, // OpenTopoMap non ha tile oltre lo zoom 17 (OSM standard arrivava a 18)
+    styleId: 'opentopo' // usato da tileKey() in offline-map.js: non mescolare la cache offline con tile di uno stile diverso
+};
+
 // Coordinate di default (Campo Imperatore, Gran Sasso - Abruzzo)
 const defaultCenter = [42.62, 13.40];
 window.userSimulatedLocation = { lat: 42.4423, lng: 13.5581 }; // Partenza da Campo Imperatore di default
@@ -132,14 +148,12 @@ async function initMapModule() {
         minZoom: 7
     }).setView(defaultCenter, 9);
 
-    // Carica i tiles da OpenStreetMap (Open Source). Layer "offline-aware" (Fase F,
-    // vedi public/js/offline-map.js): usa la cache IndexedDB quando disponibile invece
-    // di riscaricare sempre dalla rete, e salva ogni tile vista per l'uso offline futuro.
+    // Carica i tiles da OpenTopoMap, Open Source (punto 39, vedi CAMOSCIO_TILE_URL sopra).
+    // Layer "offline-aware" (Fase F, vedi public/js/offline-map.js): usa la cache
+    // IndexedDB quando disponibile invece di riscaricare sempre dalla rete, e salva
+    // ogni tile vista per l'uso offline futuro.
     const tileLayerFactory = window.createOfflineTileLayer || L.tileLayer;
-    window.CamoscioTileLayer = tileLayerFactory('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        maxZoom: 18
-    }).addTo(window.mapInstance);
+    window.CamoscioTileLayer = tileLayerFactory(window.CAMOSCIO_TILE_URL, window.CAMOSCIO_TILE_OPTIONS).addTo(window.mapInstance);
 
     // Gruppi di marker per poterli pulire e ricreare facilmente
     reportMarkersGroup = L.layerGroup().addTo(window.mapInstance);

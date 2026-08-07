@@ -146,11 +146,10 @@ function apriMappaScelta({ titolo, suggerimento, punto, onConfirm } = {}) {
             minZoom: 7
         }).setView([42.62, 13.40], 9);
 
+        // Stessa mappa base della mappa principale (punto 39): CAMOSCIO_TILE_URL/OPTIONS
+        // sono definite in map.js, caricato prima di questo script.
         const factory = window.createOfflineTileLayer || L.tileLayer;
-        factory('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-            maxZoom: 18
-        }).addTo(pickerMap);
+        factory(window.CAMOSCIO_TILE_URL, window.CAMOSCIO_TILE_OPTIONS).addTo(pickerMap);
 
         pickerMap.on('click', e => scegliPuntoSullaMappa(e.latlng.lat, e.latlng.lng));
     }

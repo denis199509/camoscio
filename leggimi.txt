@@ -33,12 +33,10 @@ o ne arriva uno nuovo.
     toccato di nuovo. TUTTO PUSHATO E VERIFICATO LIVE SU RENDER. Dettaglio di ogni
     punto in cose_da_fare.txt e in ../camoscio memoria/06-Cronologia-Sessioni.md.
 
->>> PROSSIMO, quando Denis da' il via libera (ordine gia' concordato): punto 39
-    (mappa di base piu' leggibile, OpenTopoMap) - richiede due correzioni alla cache
-    offline insieme (chiave che non contiene lo stile, stima del peso fissa a 20
-    KB/tile), vedi ../camoscio memoria/04-Da-Fare.md. Dopo: i lavori grandi, 37
-    (Dead Man's Switch seconda meta' + tracciamento a pagina chiusa), 48 (ancora
-    vago, serve un esempio da Denis prima di progettare), 45, 55.
+>>> PROSSIMO, quando Denis da' il via libera (ordine gia' concordato): i lavori
+    grandi, in ordine - 37 (Dead Man's Switch seconda meta' + tracciamento a pagina
+    chiusa), 48 (ancora vago, serve un esempio da Denis prima di progettare), 45, 55.
+    Vedi ../camoscio memoria/04-Da-Fare.md.
 
 >>> PUNTO 52 - CHIUSO IL 07/08/2026, in una sessione successiva a quella dei dieci punti
     sopra: Denis ha fatto la prova dal telefono (tasto di pagina perfetto, tasto/gesto
@@ -47,9 +45,23 @@ o ne arriva uno nuovo.
     (entry-sentinella che intercetta l'indietro vero e sposta la fase, si riarma da
     sola). Provato dal vivo con l'estensione Chrome (dati mai persi, anche mischiando
     tasto di pagina e indietro del telefono), piu' prova-configurazione.js (9/9) e
-    prova-punto7.js (53/53) di controllo, nessuna regressione. NON ANCORA COMMITTATO,
-    in attesa che Denis lo chieda. Dettaglio completo in
+    prova-punto7.js (53/53) di controllo, nessuna regressione. COMMITTATO E PUSHATO
+    (fd5c4cf camoscio, 27c220b vault), verificato live su Render. Dettaglio completo in
     ../camoscio memoria/03-Decisioni-Architetturali.md e
+    ../camoscio memoria/06-Cronologia-Sessioni.md.
+
+>>> PUNTO 39 - CHIUSO IL 07/08/2026, stessa sessione del punto 52: mappa base cambiata
+    da OSM standard a OpenTopoMap in public/js/map.js (curve di livello, rilievo
+    ombreggiato, sentieri con nome e grado CAI - prima quasi invisibili), URL
+    condivisa con public/js/trailhead-picker.js invece di ricopiata
+    (CAMOSCIO_TILE_URL/OPTIONS). Le due correzioni alla cache offline previste dal
+    29/07 fatte insieme, in public/js/offline-map.js: tileKey() ora include lo stile
+    (niente piu' collisione tra mappe diverse), estimateOfflineDownloadSize usa 32
+    KB/tile invece di 20 (il peso vero misurato). Provato dal vivo con l'estensione
+    Chrome su Corno Grande a piu' zoom (incluso il massimo, 17, nessuna tile rotta),
+    sulla mini-mappa del ritrovo, e controllando IndexedDB a mano (tile vecchie e
+    nuove non si mescolano). NON ANCORA COMMITTATO, in attesa che Denis lo chieda.
+    Dettaglio completo in ../camoscio memoria/03-Decisioni-Architetturali.md e
     ../camoscio memoria/06-Cronologia-Sessioni.md.
 
 >>> DUE COSE DA SAPERE PRIMA DI TOCCARE public/index.html (trovate in questa sessione,
@@ -68,22 +80,26 @@ o ne arriva uno nuovo.
 
 
 
->>> STATO A META' SESSIONE (2026-08-07, dopo la chiusura del punto 52 - sessione
+>>> STATO A META' SESSIONE (2026-08-07, dopo la chiusura dei punti 52 e 39 - sessione
     ANCORA APERTA, non e' il controllo di fine sessione):
-      - camoscio: modifiche LOCALI NON COMMITTATE - public/js/auth.js (la correzione),
-        cose_da_fare.txt e questo file (documentazione). Aggiornati subito invece che
-        a fine sessione apposta, per non perdere il filo se succede un altro
-        spegnimento imprevisto. Nessun commit, nessun push: in attesa che Denis lo
-        chieda, come sempre;
-      - camoscio memoria (vault): modifiche locali non committate - 03, 04, 06.
-        Stesso motivo, stessa attesa;
+      - camoscio: punto 52 committato e pushato (fd5c4cf), punto 39 ANCORA SOLO
+        LOCALE - public/js/map.js, trailhead-picker.js, offline-map.js (la
+        correzione), cose_da_fare.txt e questo file (documentazione). Nessun commit
+        per il 39: in attesa che Denis lo chieda, come sempre;
+      - camoscio memoria (vault): punto 52 committato e pushato (27c220b), il resto
+        (03, 04, 06 per il punto 39) ancora locale, stessa attesa;
       - controllo con le prove automatiche esistenti: prova-configurazione.js 9/9,
-        prova-punto7.js 53/53 - nessuna regressione sul codice toccato oggi
-        (public/js/auth.js, solo lato client, nessuna rotta server toccata);
-      - nessun account/dato di prova lasciato nel database (il punto 52 e' solo
-        front-end: l'unico account di prova usato durante il test dal vivo esiste
-        solo nel browser, mai inviato a POST /api/auth/register);
+        prova-punto7.js 53/53 - nessuna regressione sul codice toccato dal punto 52
+        (solo lato client, nessuna rotta server toccata); il punto 39 non tocca
+        nessuna rotta server ne' modello, verificato a vista che nessuna prova
+        automatica esistente riguarda la mappa;
+      - nessun account/dato di prova lasciato nel database: il punto 52 e' solo
+        front-end (mai inviata una registrazione); il punto 39 ha lasciato per
+        sbaglio una sessione di tracciamento GPS vuota (36s, 0 km, partita cliccando
+        "Comincia registrazione" per sbaglio) - cancellata subito con DELETE
+        /api/tracking/sessions/:id, le altre sessioni demo di Marco ricontrollate
+        intatte;
       - nessun server locale acceso, porta 3000 verificata libera (stop del task piu'
         taskkill sul PID preso da netstat, non basta lo stop da solo su Windows) -
-        avviato e fermato due volte in questa parte di sessione, stessa procedura
-        entrambe le volte.
+        avviato e fermato piu' volte in questa parte di sessione, stessa procedura
+        ogni volta.
