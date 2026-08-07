@@ -2382,3 +2382,45 @@ presente, confermato da chi ha creato l'escursione."
       "Modifica" da "Le mie escursioni" riprovato anche per create-hike-modal, ora visibile.
       Dati demo e statistiche utente (completedHikes di Marco e Luca) ripristinati
       identici a come sono stati trovati.
+
+--- NOTIFICHE DAL CAMPANELLO: TESTO COPERTO A DESTRA ---
+
+65) [FATTO 2026-08-07] Denis, dopo aver visto il punto 39 dal vivo: "le notifiche
+che arrivano dal campanello non sono bene leggibili perche' una parte a destra
+viene coperta". Chiarito subito dopo: "scusami le notifiche dal telefono, non
+avevo specificato prima" - vista sul telefono, non sul sito visto al computer.
+   RIPRODOTTO NEL BROWSER (non serve il telefono: e' un problema di CONTENUTO,
+   non di schermo piccolo - vedi sotto): .notification-item in public/css/styles.css
+   non aveva ne' overflow-wrap ne' word-break. Una notifica con una parola sola
+   senza spazi (tipico di uno USERNAME, scelto in registrazione apposta come
+   "una parola sola", vedi public/js/auth.js campo reg-username) non va mai a
+   capo: esce dal riquadro largo 320px, il contenitore .notification-dropdown ha
+   overflow:hidden e la parte che eccede resta tagliata fuori a destra - esattamente
+   "una parte a destra coperta". Il testo normale (parole con spazi) invece va gia'
+   a capo senza problemi: e' per questo che sul sito visto dal vivo non saltava
+   all'occhio subito, serve una parola lunga senza spazi per vederlo, e uno username
+   o un titolo escursione tutto-attaccato la produce facilmente.
+   TRIGGER PIU' PROBABILE VISTO IL TESTO DELLE NOTIFICHE ESISTENTI (routes/hikes.js,
+   lib/hikeStats.js): "USERNAME ha chiesto di partecipare alla tua escursione
+   TITOLO" - lo username e' spesso una sola parola per come lo si sceglie in
+   registrazione, quindi e' il candidato piu' probabile, non il titolo di
+   un'escursione (che di solito ha spazi, es. "Ascesa al Corno Grande").
+   CORRETTO: overflow-wrap: anywhere su .notification-item - stessa proprieta',
+   non un'invenzione nuova, gia' usata nel foglio di stile per lo stesso identico
+   problema su altri testi non garantiti brevi (es. .outing-card-title, il titolo
+   di un'escursione sulla card).
+   PROVATO DAL VIVO nel browser (account demo Marco Alpinista): riprodotto il
+   difetto con un testo-parola-sola finto (usciva dal riquadro, appariva una
+   barra di scorrimento orizzontale - la prova visibile che qualcosa restava
+   nascosto a destra) e con un caso realistico ("GiuliaEscursionistaSempreInMontagna
+   ha chiesto di partecipare..."). Con la correzione entrambi vanno a capo
+   dentro il riquadro, nessuna barra di scorrimento, nessun testo tagliato;
+   la notifica vera di Marco (frase con spazi normali) continua a comportarsi
+   come prima. Nessun dato di prova scritto sul server: solo DOM temporaneo nel
+   browser, mai toccato l'HTML sorgente ne' il database.
+   Non e' stato necessario riprodurre un vero schermo di telefono: la larghezza
+   del riquadro (320px) e' fissa, indipendente dallo schermo, quindi il difetto
+   e il rimedio sono identici su computer e telefono - solo piu' facile da
+   incontrare sul telefono perche' li' capita di leggere le notifiche piu' spesso.
+   Server locale fermato con taskkill sul PID di netstat, porta 3000 riverificata
+   libera. Nessun commit ancora: in attesa che Denis lo chieda.

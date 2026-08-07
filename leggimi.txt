@@ -60,8 +60,27 @@ o ne arriva uno nuovo.
     KB/tile invece di 20 (il peso vero misurato). Provato dal vivo con l'estensione
     Chrome su Corno Grande a piu' zoom (incluso il massimo, 17, nessuna tile rotta),
     sulla mini-mappa del ritrovo, e controllando IndexedDB a mano (tile vecchie e
-    nuove non si mescolano). NON ANCORA COMMITTATO, in attesa che Denis lo chieda.
-    Dettaglio completo in ../camoscio memoria/03-Decisioni-Architetturali.md e
+    nuove non si mescolano). COMMITTATO E PUSHATO (65053cf camoscio, d6eb99e vault),
+    verificato live su Render. Dettaglio completo in
+    ../camoscio memoria/03-Decisioni-Architetturali.md e
+    ../camoscio memoria/06-Cronologia-Sessioni.md.
+
+>>> PUNTO 65 (NUOVO) - CHIUSO IL 07/08/2026: Denis, dopo aver visto la mappa nuova,
+    ha segnalato che le notifiche del campanello "non sono bene leggibili perche' una
+    parte a destra viene coperta" (vista dal telefono). RIPRODOTTO NEL BROWSER senza
+    bisogno del telefono: non e' un problema di schermo, e' di CONTENUTO. Una notifica
+    con una parola sola senza spazi (tipico di uno username, scelto apposta senza
+    spazi in registrazione) non andava mai a capo, usciva dal riquadro di 320px e
+    veniva tagliata a destra (overflow:hidden del contenitore) - il trigger piu'
+    probabile e' "USERNAME ha chiesto di partecipare alla tua escursione TITOLO"
+    (routes/hikes.js). CORRETTO in public/css/styles.css: overflow-wrap: anywhere su
+    .notification-item - stessa proprieta' gia' in uso altrove nel foglio di stile
+    (es. .outing-card-title) per lo stesso identico problema, solo mai applicata alle
+    notifiche. Provato dal vivo (testo-parola-sola finto e caso realistico con
+    username lungo): entrambi vanno a capo dentro il riquadro dopo la correzione,
+    nessuna barra di scorrimento, nessun testo tagliato; la notifica vera di Marco
+    resta invariata. NON ANCORA COMMITTATO, in attesa che Denis lo chieda. Dettaglio
+    completo in cose_da_fare.txt punto 65 e in
     ../camoscio memoria/06-Cronologia-Sessioni.md.
 
 >>> DUE COSE DA SAPERE PRIMA DI TOCCARE public/index.html (trovate in questa sessione,
@@ -80,23 +99,22 @@ o ne arriva uno nuovo.
 
 
 
->>> STATO A META' SESSIONE (2026-08-07, dopo la chiusura dei punti 52 e 39 - sessione
-    ANCORA APERTA, non e' il controllo di fine sessione):
-      - camoscio: punto 52 committato e pushato (fd5c4cf), punto 39 ANCORA SOLO
-        LOCALE - public/js/map.js, trailhead-picker.js, offline-map.js (la
-        correzione), cose_da_fare.txt e questo file (documentazione). Nessun commit
-        per il 39: in attesa che Denis lo chieda, come sempre;
-      - camoscio memoria (vault): punto 52 committato e pushato (27c220b), il resto
-        (03, 04, 06 per il punto 39) ancora locale, stessa attesa;
+>>> STATO A META' SESSIONE (2026-08-07, dopo la chiusura dei punti 52, 39 e 65 -
+    sessione ANCORA APERTA, non e' il controllo di fine sessione):
+      - camoscio: punti 52 (fd5c4cf) e 39 (65053cf) committati e pushati. Punto 65
+        ANCORA SOLO LOCALE - public/css/styles.css (la correzione), cose_da_fare.txt
+        e questo file. Nessun commit per il 65: in attesa che Denis lo chieda;
+      - camoscio memoria (vault): punti 52 (27c220b) e 39 (d6eb99e) committati e
+        pushati. 06-Cronologia-Sessioni.md per il punto 65 ancora locale, stessa
+        attesa;
       - controllo con le prove automatiche esistenti: prova-configurazione.js 9/9,
-        prova-punto7.js 53/53 - nessuna regressione sul codice toccato dal punto 52
-        (solo lato client, nessuna rotta server toccata); il punto 39 non tocca
-        nessuna rotta server ne' modello, verificato a vista che nessuna prova
-        automatica esistente riguarda la mappa;
+        prova-punto7.js 53/53 (per il punto 52) - nessuno dei tre punti di questa
+        sessione tocca una rotta server o un modello, solo file statici lato client
+        (auth.js, map.js/offline-map.js/trailhead-picker.js, styles.css);
       - nessun account/dato di prova lasciato nel database: il punto 52 e' solo
-        front-end (mai inviata una registrazione); il punto 39 ha lasciato per
-        sbaglio una sessione di tracciamento GPS vuota (36s, 0 km, partita cliccando
-        "Comincia registrazione" per sbaglio) - cancellata subito con DELETE
+        front-end (mai inviata una registrazione), il punto 65 idem (solo DOM
+        temporaneo nel browser); il punto 39 ha lasciato per sbaglio una sessione di
+        tracciamento GPS vuota (36s, 0 km) - cancellata subito con DELETE
         /api/tracking/sessions/:id, le altre sessioni demo di Marco ricontrollate
         intatte;
       - nessun server locale acceso, porta 3000 verificata libera (stop del task piu'
