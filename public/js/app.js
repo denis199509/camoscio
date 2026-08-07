@@ -555,9 +555,37 @@ function setupNotificationBell() {
     const dropdown = document.getElementById("notification-dropdown");
     if (!btnBell || !dropdown) return;
 
+    // Spostato a figlio diretto di <body> una volta sola: .top-header ha
+    // backdrop-filter (per l'effetto vetro smerigliato), e in Chrome un
+    // backdrop-filter sull'antenato diventa il blocco di contenimento per i
+    // discendenti "position:fixed" - un riquadro finto-fixed dentro .top-header
+    // resta comunque ancorato li', quindi resta comunque dentro alla colonna
+    // .main-content (overflow:hidden) e si taglia lo stesso. Fuori da entrambi,
+    // "position:fixed" torna a essere relativo al viewport per davvero.
+    document.body.appendChild(dropdown);
+
     btnBell.addEventListener("click", (e) => {
         e.stopPropagation();
+        const opening = dropdown.classList.contains("hidden");
         dropdown.classList.toggle("hidden");
+        if (opening) {
+            // La posizione si calcola dal campanello vero ad ogni apertura (stesso
+            // posto di prima, stessa dimensione: su schermo largo c'e' sempre spazio).
+            // Il "Math.max" e' la sola differenza: se incollare il riquadro al
+            // campanello lo spingerebbe oltre il bordo sinistro vero dello schermo
+            // (il campanello non e' mai al bordo destro vero: c'e' sempre l'avatar
+            // dopo di lui), si scivola verso sinistra fino a un margine minimo invece
+            // di uscire dallo schermo - la dimensione del riquadro non cambia mai,
+            // solo dove viene messo.
+            const bellRect = btnBell.getBoundingClientRect();
+            const dropdownWidth = dropdown.getBoundingClientRect().width;
+            const margin = 8;
+            const left = Math.max(margin, bellRect.right - dropdownWidth);
+            dropdown.style.position = "fixed";
+            dropdown.style.top = (bellRect.bottom + 8) + "px";
+            dropdown.style.left = left + "px";
+            dropdown.style.right = "auto";
+        }
     });
 
     document.addEventListener("click", (e) => {
