@@ -40,12 +40,17 @@ o ne arriva uno nuovo.
     (Dead Man's Switch seconda meta' + tracciamento a pagina chiusa), 48 (ancora
     vago, serve un esempio da Denis prima di progettare), 45, 55.
 
->>> RICORDARE A DENIS A INIZIO SESSIONE, FINCHE' NON RIFERISCE L'ESITO (sua richiesta
-    esplicita, 06/08/2026): deve provare lui stesso dal telefono se il punto 52 (tasto
-    indietro nella registrazione che porta al login) succede col tasto scritto nella
-    pagina o con quello/gesto del telefono. Non e' un bug trovato nel codice: riprodotto
-    dal vivo il 06/08, il tasto in pagina non puo' farlo. Dettaglio in
-    ../camoscio memoria/04-Da-Fare.md.
+>>> PUNTO 52 - CHIUSO IL 07/08/2026, in una sessione successiva a quella dei dieci punti
+    sopra: Denis ha fatto la prova dal telefono (tasto di pagina perfetto, tasto/gesto
+    DEL TELEFONO usciva dal sito) e ha chiesto di farlo comportare come quello di pagina.
+    CORRETTO in public/js/auth.js: prima volta che il sito usa davvero la History API
+    (entry-sentinella che intercetta l'indietro vero e sposta la fase, si riarma da
+    sola). Provato dal vivo con l'estensione Chrome (dati mai persi, anche mischiando
+    tasto di pagina e indietro del telefono), piu' prova-configurazione.js (9/9) e
+    prova-punto7.js (53/53) di controllo, nessuna regressione. NON ANCORA COMMITTATO,
+    in attesa che Denis lo chieda. Dettaglio completo in
+    ../camoscio memoria/03-Decisioni-Architetturali.md e
+    ../camoscio memoria/06-Cronologia-Sessioni.md.
 
 >>> DUE COSE DA SAPERE PRIMA DI TOCCARE public/index.html (trovate in questa sessione,
     non ovvie a prima vista):
@@ -63,20 +68,22 @@ o ne arriva uno nuovo.
 
 
 
->>> STATO VERIFICATO A FINE SESSIONE (2026-08-07):
-      - camoscio: albero di lavoro pulito, allineato a origin/master, tutto pushato
-        e verificato online (app.js, hikes.js, tracking.js, notifications.js,
-        social.js, badges.js, profile.js, userprofile.js, index.html e altri);
-      - camoscio memoria (vault): 04-Da-Fare.md riscritto per intero, 06 con le
-        voci di oggi - committato e pushato (repository privato,
-        github.com/denis199509/Camoscio-memoria);
-      - controllo finale con le prove automatiche esistenti (non solo quelle nuove
-        provate dal vivo): prova-configurazione.js 9/9, prova-punto7.js 53/53,
-        prova-dislivello-vivo.js 28/28, prova-punto38.js 25/25 - 115/115, nessuna
-        regressione sul codice toccato oggi (routes/tracking.js, motore di
-        instradamento);
-      - database: nessun dato di prova lasciato in giro. Ogni prova dal vivo (badge,
-        escursioni di prova, progetti, completamento di gruppo, statistiche utente)
-        e' stata ripulita subito dopo e ricontrollata uguale al punto di partenza;
+>>> STATO A META' SESSIONE (2026-08-07, dopo la chiusura del punto 52 - sessione
+    ANCORA APERTA, non e' il controllo di fine sessione):
+      - camoscio: modifiche LOCALI NON COMMITTATE - public/js/auth.js (la correzione),
+        cose_da_fare.txt e questo file (documentazione). Aggiornati subito invece che
+        a fine sessione apposta, per non perdere il filo se succede un altro
+        spegnimento imprevisto. Nessun commit, nessun push: in attesa che Denis lo
+        chieda, come sempre;
+      - camoscio memoria (vault): modifiche locali non committate - 03, 04, 06.
+        Stesso motivo, stessa attesa;
+      - controllo con le prove automatiche esistenti: prova-configurazione.js 9/9,
+        prova-punto7.js 53/53 - nessuna regressione sul codice toccato oggi
+        (public/js/auth.js, solo lato client, nessuna rotta server toccata);
+      - nessun account/dato di prova lasciato nel database (il punto 52 e' solo
+        front-end: l'unico account di prova usato durante il test dal vivo esiste
+        solo nel browser, mai inviato a POST /api/auth/register);
       - nessun server locale acceso, porta 3000 verificata libera (stop del task piu'
-        taskkill sul PID preso da netstat, non basta lo stop da solo su Windows).
+        taskkill sul PID preso da netstat, non basta lo stop da solo su Windows) -
+        avviato e fermato due volte in questa parte di sessione, stessa procedura
+        entrambe le volte.

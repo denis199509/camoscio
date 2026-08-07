@@ -5,6 +5,29 @@ const TOTAL_WIZARD_STEPS = 6;
 let currentWizardStep = 1;
 let registerPhotoDataUrl = null;
 
+// --- Punto 52: il tasto/gesto indietro DEL TELEFONO usciva dal sito, perche' il sito
+// non gestisce mai history/pushState e quel tasto e' un "indietro" di sistema, non di
+// pagina. Rimedio: appena si entra nel wizard si pianta una entry-sentinella nella
+// cronologia; se il telefono la fa scattare (popstate), la si intercetta e si sposta
+// la fase come farebbe il tasto "Indietro" di pagina, poi si ripianta subito una nuova
+// sentinella per il prossimo indietro. Il tasto di pagina resta invariato (non tocca
+// mai history): i due percorsi restano indipendenti, ma finiscono nello stesso posto.
+let wizardHistoryGuardActive = false;
+
+function pushWizardHistoryGuard() {
+    history.pushState({ camoscioRegWizard: true }, '');
+    wizardHistoryGuardActive = true;
+}
+
+// Toglie di mezzo una sentinella rimasta armata quando si esce dal wizard per una via
+// diversa dall'indietro del telefono (es. il link "Accedi" sempre visibile sotto il
+// wizard) - altrimenti il prossimo indietro del telefono verrebbe assorbito a vuoto.
+function clearWizardHistoryGuard() {
+    if (!wizardHistoryGuardActive) return;
+    wizardHistoryGuardActive = false;
+    history.replaceState(null, '');
+}
+
 function showAuthError(elId, message) {
     const box = document.getElementById(elId);
     if (!box) return;
@@ -28,6 +51,7 @@ function showAuthView(idVista) {
 }
 
 function showLoginView() {
+    clearWizardHistoryGuard();
     showAuthView('auth-login-view');
 }
 
@@ -35,6 +59,7 @@ function showRegisterView() {
     showAuthView('auth-register-view');
     currentWizardStep = 1;
     renderWizardStep();
+    pushWizardHistoryGuard();
 }
 
 function showForgotView() {
@@ -314,6 +339,19 @@ function setupAuthGate() {
     document.getElementById('btn-wizard-prev').addEventListener('click', () => {
         currentWizardStep = Math.max(1, currentWizardStep - 1);
         renderWizardStep();
+    });
+
+    // Vedi il commento sopra pushWizardHistoryGuard(): qui arriva l'indietro DEL TELEFONO.
+    window.addEventListener('popstate', () => {
+        if (!wizardHistoryGuardActive) return;
+        if (currentWizardStep > 1) {
+            currentWizardStep--;
+            renderWizardStep();
+            pushWizardHistoryGuard();
+        } else {
+            wizardHistoryGuardActive = false;
+            showLoginView();
+        }
     });
 
     document.getElementById('btn-wizard-submit').addEventListener('click', () => {

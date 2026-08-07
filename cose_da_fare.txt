@@ -1703,7 +1703,7 @@ solo la verifica di sola lettura fatta oggi, zero righe di codice cambiate.
 
 --- REGISTRAZIONE: BUG DEL TASTO INDIETRO ---
 
-52) [RIPRODOTTO IL 2026-08-06, CAUSA ANCORA NON CONFERMATA] Durante la registrazione,
+52) [FATTO 2026-08-07] Durante la registrazione,
 un amico di Denis ha scelto una foto che superava il limite di peso; cliccando il
 tasto indietro per sceglierne un'altra, il sistema e' tornato completamente alla
 pagina iniziale, dovendo rifare l'iscrizione da capo.
@@ -1756,6 +1756,81 @@ pagina iniziale, dovendo rifare l'iscrizione da capo.
    del telefono, e riferira' l'esito. NON riproporre la domanda: aspettare
    che torni lui sull'argomento, ma RICORDARGLIELO a inizio sessione finche'
    non lo fa (richiesta esplicita sua).
+
+   [PROVA FATTA, DIAGNOSI CONFERMATA IL 2026-08-07]: Denis, testuale: "per il
+   punto 52 non e' il tasto indietro il problema, il tasto funziona alla
+   perfezione. Se sono arrivato al punto 4 della registrazione il tasto
+   indietro mi riporta al punto 3. Invece se sto al punto 4 e premo il tasto
+   indietro del telefono. A me personalmente mi caccia via dalla pagina
+   proprio come se ho aperto una finestra nuova. Esce pure dal sito."
+   CONFERMA L'IPOTESI DEL 06/08: il tasto IN PAGINA e' innocente (un passo
+   indietro alla volta, dati intatti - gia' verificato dal vivo quel giorno).
+   Il colpevole e' il tasto/gesto indietro DEL TELEFONO: e' un "indietro" del
+   sistema operativo/browser, mai intercettato dal sito (nessuna gestione di
+   history/pushState, vedi 02-Vincoli-Hard.md nel vault), quindi esce
+   dal sito invece di spostare solo la fase del wizard. Il caso originale
+   dell'amico di Denis (01/08: arrivato al login, non fuori dal sito) e'
+   verosimilmente la stessa identica causa con una cronologia del browser
+   diversa in quel momento (una pagina precedente ancora nella history del
+   tab) - non un comportamento diverso del sito.
+   DIAGNOSI CHIUSA: non serve nessun'altra prova. RESTA APERTA UNA SOLA
+   DECISIONE, NON TECNICA: se e come far si' che il tasto/gesto indietro del
+   telefono, durante la registrazione, si comporti come quello di pagina (un
+   passo indietro, dati salvi) invece di far uscire dal sito. Non ancora
+   implementato, non ancora deciso - chiesto a Denis.
+
+   DENIS HA RISPOSTO IL 2026-08-07: "Si', fallo comportare come quello di
+   pagina." IMPLEMENTATO in public/js/auth.js. Il sito non aveva MAI usato
+   prima l'History API per davvero (solo due history.replaceState cosmetici
+   altrove, per ripulire l'URL dei link di conferma email/reset password) -
+   e' la prima volta che si intercetta un indietro vero.
+   MECCANISMO (entry-sentinella, non uno stack per fase): entrando nel
+   wizard (showRegisterView) si pianta UNA entry nella cronologia del
+   browser (history.pushState({camoscioRegWizard:true}, '')) e si accende
+   un flag (wizardHistoryGuardActive). Il tasto "Indietro" DI PAGINA resta
+   identico a prima (decrementa currentWizardStep, non tocca mai history).
+   Il popstate (che scatta SOLO per un indietro vero: telefono, Alt+Left,
+   gesto) e' intercettato: se la fase e' > 1, la sposta indietro di uno,
+   ridisegna, e ripianta subito una nuova sentinella (pronta per il
+   prossimo indietro) - stessa identica renderWizardStep() del tasto di
+   pagina, nessuna logica duplicata. Se la fase e' 1 (dove il tasto di
+   pagina e' nascosto, nulla da confrontare), invece di lasciar uscire dal
+   sito si mostra la schermata di login (showLoginView, gia' usata per il
+   link "Accedi" sempre visibile sotto il wizard) - scelta presa da Claude
+   senza chiederla esplicitamente, segnalata a Denis: comportamento piu'
+   pulito di un indietro "assorbito" senza nessun effetto visibile, stesso
+   punto di arrivo del link "Accedi". showLoginView() ripulisce anche la
+   sentinella se si esce dal wizard con quel link invece che con
+   l'indietro, cosi' un indietro successivo dalla pagina di login non
+   trova una sentinella orfana ad assorbirlo a vuoto.
+   PROVATO DAL VIVO (estensione Chrome, server locale): compilata la fase
+   1 con dati veri, avanti fino alla fase 4 (username
+   "ProvaPunto52NonPerdere"), poi un indietro VERO (non il tasto in
+   pagina): navigate url:"back" della pagina - fase 3 mostrata, non il
+   login, nessuna uscita dal sito. Riverificato lo stesso passaggio
+   chiamando direttamente history.back() da console (la stessa identica
+   API che usa un gesto/tasto indietro del telefono, per essere sicuri che
+   non fosse una particolarita' dello strumento di prova) e tornando avanti
+   alla fase 4: username ancora "ProvaPunto52NonPerdere", nome ancora
+   "Prova" - nessun dato perso. Ripetuto l'indietro in sequenza fino alla
+   fase 1 (dati sempre intatti), poi un indietro in piu': schermata di
+   login mostrata, STESSA scheda del browser, nessuna ricarica, nessuna
+   uscita dal sito. Provato anche l'uso misto (rientrati nel wizard,
+   avanti con "Avanti", indietro col tasto di pagina, poi indietro col
+   telefono di nuovo): nessun disallineamento tra i due meccanismi.
+   NOTA A PARTE, NON UN BUG DEL SITO: il tool di test "navigate
+   url:back" dell'estensione Chrome ha fallito una volta con "Cannot find
+   a next page in history" su piu' indietro consecutivi con la stessa URL
+   (le sentinelle non cambiano mai l'URL, di proposito) - history.back()
+   chiamato subito dopo, sulla stessa situazione, ha funzionato
+   correttamente. Sembra un limite dello strumento di automazione con
+   cronologie fatte solo di pushState sulla stessa pagina, non un
+   comportamento del sito: la riprova con history.back() (l'API vera che
+   userebbe anche il telefono) toglie il dubbio.
+   Server locale fermato a fine prova con taskkill sul PID di netstat
+   (lo stop da solo non basta, lezione gia' nota), porta 3000
+   riverificata libera. Nessun commit ancora: in attesa che Denis lo
+   chieda, come sempre.
 
 --- TROVARE LE ESCURSIONI DEGLI ALTRI ---
 
