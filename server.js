@@ -26,6 +26,7 @@ const trackingRouter = require('./routes/tracking');
 const regionsRouter = require('./routes/regions');
 const geocodingRouter = require('./routes/geocoding');
 const routingRouter = require('./routes/routing'); // punto 13: progettazione percorso multi-punto
+const safetyRouter = require('./routes/safety'); // punto 37: Dead Man's Switch server-side
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -105,6 +106,7 @@ app.use('/api/tracking', trackingRouter);
 app.use('/api/regions', regionsRouter);
 app.use('/api/geocoding', geocodingRouter);
 app.use('/api/routing', routingRouter);
+app.use('/api/safety', safetyRouter);
 
 // Carica una nota vocale del diario (base64 in JSON, nessuna dipendenza aggiuntiva).
 // Salva su disco, non nel database: resta qui perche' non riguarda MongoDB. requireAuth

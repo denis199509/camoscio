@@ -179,7 +179,11 @@ function validateCurrentStep() {
             const name = row.querySelector('.ec-name').value.trim();
             const phone = row.querySelector('.ec-phone').value.trim();
             const relationship = row.querySelector('.ec-relationship').value.trim();
-            if (!name || !phone || !relationship) return 'Completa nome, telefono e relazione per ogni contatto di emergenza.';
+            const email = row.querySelector('.ec-email').value.trim();
+            if (!name || !phone || !relationship || !email) return 'Completa nome, telefono, relazione ed email per ogni contatto di emergenza.';
+            // Punto 37: e' il canale scelto per l'allarme vero - stesso controllo leggero
+            // gia' usato sopra per l'email dell'account, non la validazione piena del server.
+            if (!email.includes('@')) return 'Inserisci un\'email valida per ogni contatto di emergenza.';
         }
         return null;
     }
@@ -207,6 +211,10 @@ function addEmergencyContactRow() {
                 <input type="text" class="ec-relationship" placeholder="Es. Madre, Amico...">
             </div>
         </div>
+        <div class="form-group">
+            <label>Email:</label>
+            <input type="email" class="ec-email" placeholder="Serve per mandargli l'allarme">
+        </div>
     `;
     row.querySelector('.btn-remove-contact').addEventListener('click', () => {
         if (document.querySelectorAll('.emergency-contact-row').length > 1) {
@@ -222,7 +230,8 @@ function collectEmergencyContacts() {
     return Array.from(document.querySelectorAll('.emergency-contact-row')).map(row => ({
         name: row.querySelector('.ec-name').value.trim(),
         phone: row.querySelector('.ec-phone').value.trim(),
-        relationship: row.querySelector('.ec-relationship').value.trim()
+        relationship: row.querySelector('.ec-relationship').value.trim(),
+        email: row.querySelector('.ec-email').value.trim()
     }));
 }
 

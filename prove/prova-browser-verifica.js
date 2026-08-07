@@ -77,7 +77,7 @@ async function aspetta(page, fn, descrizione, timeout = 20000) {
                     body: JSON.stringify({
                         nome: 'Prova', cognome: 'Fascia', email, password: 'PasswordDiProva1!',
                         username: 'provafascia' + Date.now(), ageRange: '30-39', termsAccepted: true,
-                        emergencyContacts: [{ name: 'Contatto Di Prova', phone: '000', relationship: 'Prova' }]
+                        emergencyContacts: [{ name: 'Contatto Di Prova', phone: '000', relationship: 'Prova', email: 'contatto-di-prova@esempio-di-prova.invalid' }]
                     })
                 });
                 return r.status;

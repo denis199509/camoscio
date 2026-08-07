@@ -106,7 +106,7 @@ function tokenDa(link) {
                 body: {
                     nome: 'Prova', cognome: 'Punto7', email, password: P1,
                     username, ageRange: '30-39', termsAccepted: true,
-                    emergencyContacts: [{ name: 'Contatto Di Prova', phone: '000', relationship: 'Prova' }]
+                    emergencyContacts: [{ name: 'Contatto Di Prova', phone: '000', relationship: 'Prova', email: 'contatto-di-prova@esempio-di-prova.invalid' }]
                 }
             });
             return r;

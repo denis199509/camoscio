@@ -63,7 +63,7 @@ function ok(nome, condizione, dettaglio = '') {
             body: JSON.stringify({
                 nome: 'Prova', cognome: 'SenzaEmail', email, password: 'PasswordDiProva1!',
                 username: `provasenzaemail${MARCA}`, ageRange: '30-39', termsAccepted: true,
-                emergencyContacts: [{ name: 'Contatto Di Prova', phone: '000', relationship: 'Prova' }]
+                emergencyContacts: [{ name: 'Contatto Di Prova', phone: '000', relationship: 'Prova', email: 'contatto-di-prova@esempio-di-prova.invalid' }]
             })
         });
 

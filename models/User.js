@@ -18,7 +18,16 @@ const requiredUnlessDemo = function () {
 const emergencyContactSchema = new mongoose.Schema({
     name: { type: String, required: true },
     phone: { type: String, required: true },
-    relationship: { type: String, required: true }
+    relationship: { type: String, required: true },
+    // Punto 37: canale scelto per l'allarme vero del Dead Man's Switch. NON required a
+    // livello di schema apposta - i contatti reali gia' salvati (Denis compreso) non ne
+    // hanno uno, e questo campo vive dentro un array sostituito per intero a ogni salvataggio
+    // (vedi salvaNuovoContatto in public/js/safety.js): required:true qui bloccherebbe anche
+    // l'aggiunta di un contatto NUOVO finche' quelli vecchi non vengono sistemati, e non
+    // esiste (ancora) una schermata per modificarli. Obbligatoria invece nei form (wizard di
+    // registrazione e "Aggiungi un contatto"), e i contatti senza email restano selezionabili
+    // ma non usabili per attivare il timer (vedi popolaContattiEmergenza in safety.js).
+    email: { type: String, lowercase: true, trim: true }
 }, { _id: false });
 
 // Punto 42b: _id:false come sopra - un ObjectId per voce non aggiungerebbe niente, sono
@@ -131,7 +140,19 @@ const userSchema = new mongoose.Schema({
     // vedi 03-Decisioni-Architetturali.md del vault): per ora si scrive direttamente.
     // default: undefined come coordinates in Hike.js - quasi nessun utente avra' mai una
     // voce qui, e il vincolo hard sullo spazio dice di non scrivere il campo quando non serve.
-    recognizedAscents: { type: [recognizedAscentSchema], default: undefined }
+    recognizedAscents: { type: [recognizedAscentSchema], default: undefined },
+
+    // --- 11. Dead Man's Switch: il conto alla rovescia vive anche sul server (punto 37) ---
+    // Prima esisteva SOLO in localStorage (public/js/safety.js): se la pagina restava chiusa
+    // oltre la scadenza, non se ne accorgeva nessuno finche' qualcuno non riapriva il sito.
+    // Questi tre campi rispecchiano lo stesso stato gia' tenuto li' - duplicato qui perche'
+    // solo il server puo' controllarlo a pagina chiusa (routes/safety.js, chiamata da un
+    // trigger esterno: questo progetto non ha nessuno scheduler, vedi 04-Da-Fare.md del vault).
+    // default: undefined su tutti e tre (vincolo spazio, come recognizedAscents sopra): quasi
+    // nessun utente ha il timer attivo nello stesso istante in cui il documento viene letto.
+    deadManActive: { type: Boolean, default: undefined },
+    deadManExpiresAt: { type: Date, default: undefined },
+    deadManContactIndex: { type: Number, default: undefined }
 });
 
 const User = mongoose.models.User || mongoose.model('User', userSchema);

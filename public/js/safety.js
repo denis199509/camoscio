@@ -176,9 +176,11 @@ function aggiornaHintContatto() {
     const hint = document.getElementById("safety-contact-hint");
     if (!hint) return;
     const c = contattoScelto();
-    // textContent, mai innerHTML: nome e numero li scrive l'utente (regola della Fase H).
+    // textContent, mai innerHTML: nome ed email li scrive l'utente (regola della Fase H).
+    // Punto 37: l'email, non il telefono - e' il canale vero dell'allarme automatico. Il
+    // telefono resta comunque salvato, e' quello che si chiama a mano col tasto SOS/112.
     hint.textContent = c
-        ? `Alla scadenza l'allarme andrebbe a ${c.phone}.`
+        ? `Alla scadenza l'allarme andrebbe all'email di ${c.name} (${c.email}).`
         : "";
 }
 
@@ -207,18 +209,40 @@ function popolaContattiEmergenza() {
         return;
     }
 
+    // Punto 37: un contatto senza email non puo' ricevere l'allarme vero (l'email e' il
+    // canale scelto) - capita solo ai contatti salvati prima di questo punto, dato che il
+    // form ora la richiede sempre. Resta in contattiUtente() (serve intatto altrove, es. per
+    // non perderlo mandando l'array completo al server) ma qui non e' selezionabile: mostrarlo
+    // come scelta possibile prometterebbe un allarme che non puo' partire (vincolo hard 7).
+    const usabili = contatti.filter(c => c && c.email);
+    if (!usabili.length) {
+        const opt = document.createElement("option");
+        opt.value = "";
+        opt.textContent = "Nessun contatto con email salvata";
+        sel.appendChild(opt);
+        sel.disabled = true;
+        if (btnAttiva) btnAttiva.disabled = true;
+        if (hint) {
+            hint.textContent = "I tuoi contatti salvati non hanno un'email, serve per mandare l'allarme vero: aggiungine uno nuovo qui sotto.";
+        }
+        mostraFormContatto(true);
+        return;
+    }
+
     sel.disabled = false;
     if (btnAttiva) btnAttiva.disabled = false;
     contatti.forEach((c, i) => {
+        if (!c || !c.email) return;
         const opt = document.createElement("option");
-        opt.value = String(i);
+        opt.value = String(i); // indice VERO nell'array completo, non nella lista filtrata
         opt.textContent = `${c.name} (${c.relationship})`;
         sel.appendChild(opt);
     });
 
     // Conserva la scelta precedente se e' ancora valida: popolaContattiEmergenza() viene
     // richiamata anche dopo aver aggiunto un contatto, e non deve far ricominciare da capo.
-    if (sceltaPrecedente !== "" && contatti[Number(sceltaPrecedente)]) {
+    const precedente = contatti[Number(sceltaPrecedente)];
+    if (sceltaPrecedente !== "" && precedente && precedente.email) {
         sel.value = sceltaPrecedente;
     }
     mostraFormContatto(false);
@@ -229,12 +253,20 @@ async function salvaNuovoContatto() {
     const nome = document.getElementById("safety-new-name").value.trim();
     const relazione = document.getElementById("safety-new-rel").value.trim();
     const telefono = document.getElementById("safety-new-phone").value.trim();
+    const email = document.getElementById("safety-new-email").value.trim();
 
-    // Tutti e tre obbligatori come nello schema del database (emergencyContactSchema): se
-    // mancasse uno il server rifiuterebbe l'intero salvataggio con un errore di validazione,
-    // e da qui si vedrebbe solo "non funziona".
-    if (!nome || !relazione || !telefono) {
-        window.showToast("Servono tutti e tre i campi: nome, chi è e telefono.", "error");
+    // Nome/telefono/relazione sono obbligatori anche nello schema del database
+    // (emergencyContactSchema): se mancasse uno il server rifiuterebbe l'intero salvataggio.
+    // L'email (punto 37, canale dell'allarme vero) NON e' obbligatoria a livello di schema -
+    // altrimenti un contatto vecchio senza email dentro lo stesso array bloccherebbe questo
+    // salvataggio - ma lo e' qui: senza, il contatto verrebbe salvato e basta comparire nel
+    // menu "Chi avvisare" senza poter mai ricevere nulla (vedi popolaContattiEmergenza).
+    if (!nome || !relazione || !telefono || !email) {
+        window.showToast("Servono tutti e quattro i campi: nome, chi è, telefono ed email.", "error");
+        return;
+    }
+    if (!email.includes('@')) {
+        window.showToast("L'email non sembra valida.", "error");
         return;
     }
 
@@ -249,7 +281,7 @@ async function salvaNuovoContatto() {
     // Si manda l'elenco COMPLETO e non solo il nuovo: emergencyContacts e' un array e il
     // server lo sostituisce per intero (SELF_EDITABLE_FIELDS in routes/users.js). Mandare
     // solo l'ultimo cancellerebbe gli altri.
-    const nuovi = contattiUtente().concat([{ name: nome, phone: telefono, relationship: relazione }]);
+    const nuovi = contattiUtente().concat([{ name: nome, phone: telefono, relationship: relazione, email }]);
 
     try {
         const res = await fetch(`/api/users/${usr.id}`, {
@@ -263,6 +295,7 @@ async function salvaNuovoContatto() {
         document.getElementById("safety-new-name").value = "";
         document.getElementById("safety-new-rel").value = "";
         document.getElementById("safety-new-phone").value = "";
+        document.getElementById("safety-new-email").value = "";
         popolaContattiEmergenza();
         // Si sceglie da solo quello appena aggiunto: e' quasi sempre quello che si voleva.
         const sel = document.getElementById("safety-contact");
@@ -280,7 +313,39 @@ async function salvaNuovoContatto() {
 
 // --- DEAD MAN'S SWITCH LOGIC ---
 
-function activateDeadManSwitch() {
+// Punto 37: prova ad armare il conto alla rovescia anche sul server, l'unico che puo'
+// farlo scattare davvero a pagina chiusa. Non blocca mai l'uso locale (si e' in montagna,
+// magari senza linea proprio nel momento in cui si attiva): se fallisce il timer VISIBILE
+// funziona comunque come prima, ma senza la rete di sicurezza vera - va detto a schermo,
+// non taciuto (vincolo hard 7).
+async function attivaSulServer(targetTimeMs, contactIndex) {
+    try {
+        const res = await fetch('/api/safety/activate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                expiresAt: new Date(targetTimeMs).toISOString(),
+                contactIndex: Number(contactIndex)
+            })
+        });
+        return res.ok;
+    } catch (e) {
+        console.error("Attivazione Dead Man's Switch sul server fallita:", e);
+        return false;
+    }
+}
+
+async function disattivaSulServer() {
+    try {
+        const res = await fetch('/api/safety/deactivate', { method: 'POST' });
+        return res.ok;
+    } catch (e) {
+        console.error("Disattivazione Dead Man's Switch sul server fallita:", e);
+        return false;
+    }
+}
+
+async function activateDeadManSwitch() {
     const contatto = contattoScelto();
     if (!contatto) {
         window.showToast("Scegli chi avvisare prima di attivare il timer.", "error");
@@ -295,7 +360,7 @@ function activateDeadManSwitch() {
         const [hours, minutes] = exactTime.split(":");
         const now = new Date();
         const targetDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes, 0);
-        
+
         // Se l'orario è già passato oggi, assume sia domani
         if (targetDate.getTime() <= now.getTime()) {
             targetDate.setDate(targetDate.getDate() + 1);
@@ -304,6 +369,9 @@ function activateDeadManSwitch() {
     } else {
         targetTimeMs = Date.now() + (durationHours * 3600 * 1000);
     }
+
+    const contactIndex = document.getElementById("safety-contact").value;
+    const armatoSulServer = await attivaSulServer(targetTimeMs, contactIndex);
 
     deadManActive = true;
     returnTimestamp = targetTimeMs;
@@ -316,7 +384,7 @@ function activateDeadManSwitch() {
     // il numero nuovo invece di uno vecchio congelato al momento dell'attivazione.
     localStorage.setItem("deadman_active", "true");
     localStorage.setItem("deadman_timestamp", returnTimestamp.toString());
-    localStorage.setItem("deadman_contact_index", document.getElementById("safety-contact").value);
+    localStorage.setItem("deadman_contact_index", contactIndex);
     localStorage.removeItem("deadman_contact"); // vecchia chiave col numero dentro: si toglie
 
     aggiornaStatoTimer();
@@ -324,11 +392,39 @@ function activateDeadManSwitch() {
     // Registra evento sul log satellitare simulato
     logSimulatedSms("SYSTEM", `Timer attivato. Rientro atteso: ${new Date(returnTimestamp).toLocaleTimeString()}. Da avvisare: ${escapeHtml(contatto.name)}.`);
 
+    if (!armatoSulServer) {
+        window.showToast(
+            "Il timer è attivo su questo telefono, ma non sono riuscito ad avvisarne il server: " +
+            "se chiudi la pagina l'allarme automatico potrebbe non partire. Riprova quando hai linea.",
+            "error"
+        );
+    }
+
     startSafetyCountdown();
     aggiornaStatoTimer();
 }
 
-function deactivateDeadManSwitch(isSafeCheckin) {
+async function deactivateDeadManSwitch(isSafeCheckin) {
+    // Il check-in VERO deve raggiungere il server: e' l'unico modo per fermare l'allarme che
+    // altrimenti partirebbe comunque alla scadenza (vedi routes/safety.js). Se la chiamata
+    // fallisce non si spegne lo stato locale - il tasto resta li' per poter riprovare, invece
+    // di far credere disattivato un timer che sul server e' ancora armato.
+    // Quando isSafeCheckin e' false (chiamata da triggerEmergencyAlarm: il timer locale e'
+    // gia' scaduto) non si tocca il server per niente - non e' un check-in, e' solo la
+    // pulizia dello stato visivo dopo che l'allarme e' gia' scattato (o sta per scattare al
+    // prossimo giro del controllo esterno).
+    if (isSafeCheckin) {
+        const ok = await disattivaSulServer();
+        if (!ok) {
+            window.showAlertModal(
+                "Non sono riuscito ad avvisare il server che sei al sicuro. Il tuo contatto di " +
+                "emergenza potrebbe ricevere comunque un avviso quando scade il tempo. Riprova " +
+                "appena hai linea, oppure avvisalo/a direttamente tu."
+            );
+            return;
+        }
+    }
+
     deadManActive = false;
     returnTimestamp = 0;
 
@@ -349,6 +445,20 @@ function deactivateDeadManSwitch(isSafeCheckin) {
 }
 
 function restoreDeadManState() {
+    // Il server (currentUser.deadMan*, gia' dentro /api/auth/me) e' la fonte di verita': e'
+    // l'unico a contare mentre la pagina resta chiusa. Se dice che il timer e' attivo ci si
+    // fida anche se questo browser non lo sapeva ancora (es. primo accesso da un telefono
+    // diverso mentre il timer corre gia'), riallineando prima localStorage cosi' il resto
+    // della funzione non cambia.
+    const utente = window.CamoscioState && window.CamoscioState.currentUser;
+    if (utente && utente.deadManActive && utente.deadManExpiresAt) {
+        localStorage.setItem("deadman_active", "true");
+        localStorage.setItem("deadman_timestamp", new Date(utente.deadManExpiresAt).getTime().toString());
+        if (utente.deadManContactIndex !== undefined && utente.deadManContactIndex !== null) {
+            localStorage.setItem("deadman_contact_index", String(utente.deadManContactIndex));
+        }
+    }
+
     const isActive = localStorage.getItem("deadman_active") === "true";
     const ts = parseInt(localStorage.getItem("deadman_timestamp")) || 0;
     const indiceContatto = localStorage.getItem("deadman_contact_index");

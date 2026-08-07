@@ -17,7 +17,15 @@ const MAX_PHOTO_LENGTH = 2 * 1024 * 1024;
 // "emailVerified" sta qui in coppia con "email": se un indirizzo non e' visibile agli
 // altri, non deve esserlo nemmeno il suo stato. Sapere chi non ha ancora confermato
 // indicherebbe a un estraneo quali account sono piu' facili da contestare.
-const ALWAYS_PRIVATE_FIELDS = ['email', 'emailVerified', 'emergencyContacts', 'birthDate', 'ageRange', 'geolocationConsent', 'termsAcceptedAt', 'nome', 'cognome'];
+// Punto 37: deadManActive/deadManExpiresAt rivelano quando qualcuno e' atteso di rientro (e se
+// il timer sta correndo adesso) - la stessa categoria di dato sensibile di emergencyContacts,
+// mai da mostrare a chi non e' il proprietario. deadManContactIndex e' solo un indice dentro
+// emergencyContacts, gia' privato per conto suo, ma non ha senso esporlo isolato.
+const ALWAYS_PRIVATE_FIELDS = [
+    'email', 'emailVerified', 'emergencyContacts', 'birthDate', 'ageRange',
+    'geolocationConsent', 'termsAcceptedAt', 'nome', 'cognome',
+    'deadManActive', 'deadManExpiresAt', 'deadManContactIndex'
+];
 // Campi del "profilo pubblico" (sezione 6/9 della registrazione) governati da privacySetting
 const PRIVACY_GATED_FIELDS = ['bio', 'profilePhoto', 'interests', 'hikingLevel', 'preferredDifficulty', 'geoPreferences'];
 
