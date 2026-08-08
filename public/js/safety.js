@@ -532,16 +532,19 @@ function triggerEmergencyAlarm() {
 
     // Notifica visiva forte, persistente finché non viene riconosciuta (non un toast auto-dismiss:
     // un allarme di emergenza non deve poter passare inosservato).
-    // DETTO IN CHIARO CHE NON E' PARTITO NIENTE: prima questa finestra diceva "SMS Satellitare
-    // inviato a...", che era falso - nessun messaggio e' mai stato spedito, ed e' esattamente
-    // la cosa che il punto 21 chiede di non far credere. L'invio vero resta da fare e dipende
-    // dalla decisione sul canale (email o SMS).
+    // QUESTA FINESTRA E' SOLO LOCALE, NON MANDA NIENTE DA SOLA: dal punto 37 (08/08/2026) l'invio
+    // vero lo fa il server (routes/safety.js, controlla-scadenze), chiamato da un trigger esterno
+    // ogni 5 minuti indipendentemente da questa pagina - verificato dal vivo lo stesso giorno.
+    // Prima di allora questa finestra diceva "SMS Satellitare inviato a...", che era falso: nessun
+    // messaggio partiva mai. Ora e' vero, ma non e' QUESTA funzione a farlo partire - dirlo bene
+    // evita di far credere che chiudere questa finestra fermi (o non fermi) l'allarme reale.
     window.showAlertModal(
         `⏰ IL TEMPO È SCADUTO\n\n${msg}\n\n` +
         `Avresti dovuto avvisare: ${aChi}\n\n` +
-        `NESSUN MESSAGGIO È STATO INVIATO: questo avviso compare solo qui, su questo telefono. ` +
-        `Se sei tu a leggerlo e stai bene, fai il check-in. Se stai leggendo questo per conto ` +
-        `di qualcun altro, chiama tu il contatto qui sopra.`
+        `Questo avviso su schermo non manda niente da solo: è solo qui, su questo telefono. ` +
+        `L'invio vero lo fa il server, entro pochi minuti e indipendentemente da questa pagina. ` +
+        `Se sei tu a leggerlo e stai bene, fai il check-in subito per fermarlo. Se stai leggendo ` +
+        `questo per conto di qualcun altro, chiama tu il contatto qui sopra.`
     );
 
     deactivateDeadManSwitch(false);

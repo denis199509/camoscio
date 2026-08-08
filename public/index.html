@@ -877,19 +877,20 @@
                                     <button class="btn btn-danger hidden" id="btn-deactivate-switch">Sono al sicuro (disattiva)</button>
                                 </div>
 
-                                <!-- Detto in chiaro perche' e' una promessa che il sito NON puo'
-                                     ancora mantenere: alla scadenza oggi compare solo un avviso a
-                                     schermo, non parte nessun messaggio. E' la seconda meta' del
-                                     punto 21, ferma in attesa della decisione sul canale di invio
-                                     (email o SMS). Scriverlo qui e' l'unica cosa onesta: chi legge
-                                     "il sistema avvisera' i tuoi contatti" e' portato a fidarsene
-                                     proprio nel momento in cui non dovrebbe. -->
-                                <p class="small safety-honesty-note" id="safety-honesty-note">
-                                    <i data-lucide="alert-triangle"></i>
-                                    Attenzione: per ora l'allarme compare solo su questo telefono e
-                                    soltanto se la pagina resta aperta. L'invio vero del messaggio
-                                    non c'è ancora. Non usarlo come unica sicurezza: dì sempre a
-                                    qualcuno dove vai.
+                                <!-- Punto 37 chiuso l'08/08/2026: il conto alla rovescia vive sul
+                                     server (routes/safety.js) e un trigger esterno (cron-job.org,
+                                     ogni 5 minuti) manda l'email vera al contatto scelto quando
+                                     scade - verificato dal vivo lo stesso giorno (vedi
+                                     ../camoscio memoria/06-Cronologia-Sessioni.md). Il ritardo
+                                     possibile e' quello tra due controlli del trigger (fino a
+                                     ~5 minuti): onesto dirlo, non e' un allarme istantaneo al
+                                     secondo - vincolo hard 7. -->
+                                <p class="small safety-honesty-note is-ok" id="safety-honesty-note">
+                                    <i data-lucide="check-circle"></i>
+                                    L'allarme funziona davvero, anche a telefono spento o pagina
+                                    chiusa: se il timer scade, entro pochi minuti parte un'email
+                                    vera al contatto scelto. Non è comunque l'unica sicurezza: dì
+                                    sempre a qualcuno dove vai.
                                 </p>
                             </div>
 

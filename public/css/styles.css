@@ -2019,6 +2019,20 @@ h1, h2, h3, h4, h5, h6 {
     color: var(--accent-red);
 }
 
+/* Punto 37 (08/08/2026): stessa nota, ma per dire che qualcosa FUNZIONA (l'allarme vero
+   parte davvero) invece che manca - il rosso da avviso sarebbe fuorviante quanto il testo
+   sbagliato. Riusa i token --accent-green gia' in uso altrove (es. .toast.success). */
+.safety-honesty-note.is-ok {
+    background: var(--accent-green-glow);
+    border-color: var(--accent-green);
+    color: var(--accent-green);
+}
+
+.safety-honesty-note.is-ok i,
+.safety-honesty-note.is-ok svg {
+    color: var(--accent-green);
+}
+
 .sms-log-box {
     margin-top: 20px;
     background: rgba(0, 0, 0, 0.3);
