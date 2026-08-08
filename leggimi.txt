@@ -92,17 +92,21 @@ o ne arriva uno nuovo.
 
 
 
->>> STATO A FINE SESSIONE (2026-08-08, sessione della rotazione del segreto e
-    della chiusura del punto 37):
-      - camoscio: due commit di codice pushati e verificati live - `b4140ae`
-        (tolto il segreto in chiaro da cose_da_fare.txt e leggimi.txt) e
-        `33d9168` (nota a schermo e modale locale aggiornati, ora dicono che
-        l'allarme vero funziona). Confermato dal vivo nel browser: nota
-        verde/is-ok visibile su Mappa & Sentieri, testo del modale presente
-        nel file servito da Render;
-      - camoscio memoria (vault): 04, 06, 07 aggiornati con la stessa storia
-        (segreto trovato esposto e ruotato, poi punto 37 chiuso per intero) -
-        commit da verificare con `git log origin/master..HEAD` dopo il push;
+>>> SESSIONE CHIUSA VOLONTARIAMENTE L'08/08/2026 (Denis: "per adesso ci
+    fermiamo qui... fai un ultimo controllo finale") - PUNTO 37 CHIUSO PER
+    INTERO, controllo di fine sessione fatto DUE VOLTE (prima della chiusura
+    del punto 37 e di nuovo adesso su richiesta esplicita di Denis):
+      - camoscio: quattro commit pushati e verificati live - `b4140ae`
+        (tolto il segreto in chiaro), `33d9168` (nota a schermo e modale
+        locale, ora dicono che l'allarme vero funziona), `9f8917b` (note).
+        Ricontrollato ORA, a chiusura sessione: sito raggiungibile (200),
+        `controlla-scadenze` ancora fail-closed senza chiave (403), vecchio
+        segreto ancora assente dal file pubblico servito da GitHub (0
+        occorrenze);
+      - camoscio memoria (vault): tre commit pushati - `382d9d7` (prima meta'
+        punto 37), `b8b9365` (segreto trovato e ruotato), `1315108` (punto 37
+        chiuso per intero, guidato passo passo). 00 non toccato (nessun
+        cambio di struttura), 04/06/07 aggiornati;
       - prova reale fatta SUL SITO IN PRODUZIONE, non solo per API: timer di
         sicurezza attivato su un contatto di prova con l'email di Denis,
         scaduto per davvero, preso dal giro delle 07:10 di cron-job.org (non
@@ -111,11 +115,10 @@ o ne arriva uno nuovo.
         `PUT /api/users/:id`, account demo Marco Alpinista tornato
         esattamente come si trovava;
       - nessuna prova automatica (`prove/`) rilanciata questa sessione: le
-        modifiche erano solo testo/CSS sulla nota a schermo e sul modale
-        locale, nessuna riga toccata in `routes/safety.js` rispetto a quanto
-        gia' verificato dalla sessione precedente (27/27 su
-        prova-punto37.js) - controllata solo la sintassi di `safety.js`
-        (`node --check`) prima di pushare;
-      - `git log origin/master..HEAD` verificato vuoto in camoscio dopo il
-        push del codice; da riverificare in ENTRAMBI i repository dopo il
-        push di queste note. Nessun server locale acceso.
+        modifiche erano solo testo/CSS, nessuna riga toccata in
+        `routes/safety.js` rispetto a quanto gia' verificato dalla sessione
+        precedente (27/27 su prova-punto37.js) - controllata solo la
+        sintassi di `safety.js` (`node --check`) prima di pushare;
+      - `git log origin/master..HEAD` vuoto in ENTRAMBI i repository
+        (ricontrollato ORA, non solo prima), nessun server locale acceso,
+        porta 3000 verificata libera.
