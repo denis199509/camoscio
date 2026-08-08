@@ -2148,7 +2148,7 @@ modificare l'escursione (schermata iniziale)."
 
 --- PAGINA ESCURSIONE E CHAT DI GRUPPO ---
 
-55) [DA FARE] Denis: "Una volta organizzato l'escursione quando qualcuno
+55) [FATTO 2026-08-08] Denis: "Una volta organizzato l'escursione quando qualcuno
 partecipa si deve aprire una pagina dell'escursione. Li abbiamo bisogno di una
 chat comune tra i partecipanti per organizzare le cose."
    VERIFICATO NEL CODICE: nessuno schema di chat/messaggi esiste in models/.
@@ -2158,6 +2158,27 @@ chat comune tra i partecipanti per organizzare le cose."
    E' IL PIU' GRANDE dei sei punti di questa lista: una pagina nuova per
    escursione PIU' un sistema di messaggistica mai esistito prima. Da fare con
    calma e per intero, non a meta'.
+   Fatto subito dopo il punto 48 (scelta esplicita di Denis, saltando avanti
+   rispetto all'ordine "45 poi 55" concordato prima): ha creato un'escursione
+   di prova e chiesto un tasto "Chat" sotto il numero dei partecipanti, che apre
+   una pagina come quella della squadra - titolo, partecipanti, chat solo tra
+   chi partecipa, niente foto ne' ruoli. Confermato lui stesso di voler riusare
+   lo stesso sistema di chat del punto 48.
+   -> FATTO: cliccando "Chat" (visibile solo a chi partecipa) si apre la pagina
+      dell'escursione. La chat non e' stata duplicata: estratta in
+      public/js/chatpanel.js, condivisa con la pagina squadra (il punto 48 era
+      appena stato chiuso: refactoring di codice gia' in produzione, seconda
+      occorrenza identica di una chat a polling, stessa lezione gia' applicata
+      altrove nel progetto per non tenere due copie della stessa logica).
+      Nuova rotta isHikeParticipant() in routes/hikes.js, nuovo modello
+      HikeMessage. Provato dal vivo con l'estensione Chrome su tre account
+      demo: chat tra due partecipanti di un'escursione vera nelle due
+      direzioni, verificato che un account non partecipante non vede il tasto
+      e riceve 403 chiamando le rotte a mano, e verificato apposta lo scenario
+      "apro la chat squadra, scrivo, apro la chat escursione senza ricaricare"
+      per essere certi che i messaggi non si mescolassero tra le due (rischio
+      concreto trovato in revisione prima di scrivere codice, non dopo).
+      Committato e pushato (`999b9a5`), verificato live su Render.
 
 --- CARPOOLING: LA "TERZA POSSIBILITA'" ---
 

@@ -26,8 +26,9 @@ o ne arriva uno nuovo.
 
 
 
->>> STATO ATTUALE (08/08/2026): punti 37 e 48 chiusi per intero nella stessa
-    giornata, entrambi committati, pushati e verificati live su Render.
+>>> STATO ATTUALE (08/08/2026): punti 37, 48 e 55 chiusi per intero nella
+    stessa giornata (in tre sessioni separate), tutti committati, pushati e
+    verificati live su Render.
     - Punto 37: Dead Man's Switch, manda davvero un'email al contatto scelto
       quando scade, anche a pagina chiusa. Nel mezzo, un segreto
       (SAFETY_CRON_SECRET) finito per sbaglio nel repository pubblico e'
@@ -35,15 +36,22 @@ o ne arriva uno nuovo.
       ../camoscio memoria/07-Trappole-Tecniche.md.
     - Punto 48: cliccando una squadra si apre la sua pagina (foto cambiabile
       solo dagli admin, elenco membri, chat solo tra i membri, aggiornata a
-      polling ogni 5s). Dettaglio e perche' niente WebSocket in
+      polling ogni 5s).
+    - Punto 55: cliccando "Chat" su un'escursione (solo se si e' gia'
+      partecipanti) si apre la pagina dell'escursione (titolo, partecipanti,
+      chat solo tra chi partecipa). La chat NON e' stata duplicata: estratta
+      in public/js/chatpanel.js e condivisa con la pagina squadra - Denis ha
+      scelto lui di saltare avanti a questo punto rispetto all'ordine "45
+      poi 55" concordato prima.
+      Dettaglio di entrambe le chat e perche' niente WebSocket in
       ../camoscio memoria/03-Decisioni-Architetturali.md.
 
->>> PROSSIMA SESSIONE, PRIMA COSA DA FARE: nell'ordine concordato con Denis,
-    tocca al punto 45 (segnalazioni sullo stato dei sentieri: mancano foto,
-    controllo prima della pubblicazione, e un ruolo "chi approva" - vedi
-    ../camoscio memoria/04-Da-Fare.md per il dettaglio di cosa esiste gia').
-    Poi il punto 55 (pagina escursione + chat di gruppo).
-    Sessione chiusa volontariamente da Denis subito dopo il punto 48, non
+>>> PROSSIMA SESSIONE, PRIMA COSA DA FARE: il punto 45 (segnalazioni sullo
+    stato dei sentieri: mancano foto, controllo prima della pubblicazione, e
+    un ruolo "chi approva" - vedi ../camoscio memoria/04-Da-Fare.md per il
+    dettaglio di cosa esiste gia'). E' l'ultimo dei lavori grandi rimasti
+    nell'ordine concordato con Denis.
+    Sessione chiusa volontariamente da Denis subito dopo il punto 55, non
     per un blocco: si riparte da qui la prossima volta.
 
 >>> COSE FUORI SCOPE, NON RIPROPORLE finche' non torna Denis sull'argomento:
@@ -54,8 +62,9 @@ o ne arriva uno nuovo.
     - Raggio della "zona di competenza" (punto 42a) e il suo nuovo nome
       (punto 63b): Denis ci deve ancora pensare.
 
->>> DUE COSE DA SAPERE PRIMA DI TOCCARE public/index.html (trovate il
-    07/08/2026, non ovvie a prima vista):
+>>> TRE COSE DA SAPERE PRIMA DI TOCCARE public/index.html o un componente
+    condiviso tra piu' pagine (trovate il 07/08 e l'08/08/2026, non ovvie a
+    prima vista):
       - create-hike-modal e complete-group-modal vivono FUORI da
         .page-container (vicino a generic-modal), non dentro una
         .page-section: un modale raggiungibile da piu' di una pagina deve
@@ -67,6 +76,14 @@ o ne arriva uno nuovo.
         profilo 06/08) - se un pulsante sembra rotto senza errori in
         console, controllare prima QUANDO si e' agganciato il suo
         ascoltatore, non se il codice del gestore e' giusto.
+      - TUTTE le .page-section restano nel DOM insieme (navigateTo aggiunge/
+        toglie solo la classe "active", non smonta nulla): un componente
+        JS pensato per vivere dentro piu' di una pagina (es. chatpanel.js,
+        punto 55) non deve MAI usare id fissi per i propri elementi interni
+        - due copie con lo stesso id (una visibile, una nascosta) fanno
+        scrivere document.getElementById nel posto sbagliato, senza nessun
+        errore in console. Sempre box.querySelector(...) scoped al
+        contenitore ricevuto.
 
 >>> LEZIONE OPERATIVA: dopo qualunque interruzione di sessione non
     volontaria, controllare SEMPRE `git log origin/master..HEAD` in
