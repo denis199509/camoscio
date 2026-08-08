@@ -1637,6 +1637,22 @@ h1, h2, h3, h4, h5, h6 {
     margin-top: 8px;
 }
 
+/* Punto 45: righe della pagina di moderazione segnalazioni - stessa famiglia di colori/
+   padding di .waze-item sopra, ma a blocco (titolo+descrizione+due bottoni) invece che a riga. */
+.pending-report-item {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.pending-report-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
 /* ==========================================================================
    4. SECTION: CARPOOLING
    ========================================================================== */

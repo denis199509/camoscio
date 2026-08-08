@@ -152,7 +152,16 @@ const userSchema = new mongoose.Schema({
     // nessun utente ha il timer attivo nello stesso istante in cui il documento viene letto.
     deadManActive: { type: Boolean, default: undefined },
     deadManExpiresAt: { type: Date, default: undefined },
-    deadManContactIndex: { type: Number, default: undefined }
+    deadManContactIndex: { type: Number, default: undefined },
+
+    // --- 12. Moderazione segnalazioni sentiero (punto 45) ---
+    // Ruolo DI SITO, non scoped a una singola squadra come Squad.admins (punto 48, vedi
+    // 03-Decisioni-Architetturali.md del vault): chi puo' confermare o rifiutare le
+    // segnalazioni sentiero prima che diventino pubbliche. default: undefined come i campi
+    // Dead Man's Switch sopra - oggi lo avra' un solo utente su tutto il database. Nessuna
+    // interfaccia per impostarlo: si scrive con scripts/set-report-moderator.js. Un booleano
+    // per utente scala gia' a piu' moderatori futuri senza bisogno di un framework di ruoli.
+    canModerateReports: { type: Boolean, default: undefined }
 });
 
 const User = mongoose.models.User || mongoose.model('User', userSchema);

@@ -384,6 +384,18 @@
                         </div>
                     </div>
 
+                    <!-- Punto 45: canale ESCLUSIVO per le segnalazioni sentiero da moderare -
+                         non e' un doppione della campana (le notifiche normali restano solo li').
+                         "hidden" sul wrapper di default: chi non ha canModerateReports non deve
+                         vedere questo elemento comparire nel DOM, non solo "vederlo spento"
+                         (public/js/pendingreports.js, setupPendingReportsTriangle). -->
+                    <div class="notification-bell-wrapper hidden" id="moderation-triangle-wrapper">
+                        <button class="notification-bell-btn" id="btn-moderation-triangle" title="Segnalazioni sentiero da verificare">
+                            <i data-lucide="triangle-alert"></i>
+                            <span class="notification-count-badge hidden" id="moderation-count-badge">0</span>
+                        </button>
+                    </div>
+
                     <div class="active-user-badge" id="btn-goto-profile" title="Vai al tuo profilo">
                         <span id="current-user-avatar" class="avatar-icon">🥾</span>
                         <div class="user-details">
@@ -1630,6 +1642,22 @@
                     </div>
                 </section>
 
+                <!-- Pagina di moderazione segnalazioni sentiero (punto 45) - stesso principio
+                     di #user-profile/#squad-page/#hike-page qui sopra: nessuna voce in barra
+                     laterale, si apre cliccando il triangolo di attenzione nell'header (vedi
+                     public/js/pendingreports.js, window.showPendingReportsPage()). Raggiungibile
+                     solo da chi ha canModerateReports: chi non lo ha non vede mai il triangolo
+                     che ci porta, ma la rotta lato server e' comunque protetta a parte. -->
+                <section id="pending-reports-page" class="page-section">
+                    <div class="glass-card">
+                        <h4><i data-lucide="triangle-alert"></i> Segnalazioni sentiero da verificare</h4>
+                        <p class="small text-muted">Conferma le segnalazioni corrette (diventano visibili a tutti) o rifiutale (vengono eliminate).</p>
+                    </div>
+                    <div class="glass-card" id="pending-reports-list">
+                        <!-- Riempito da JS -->
+                    </div>
+                </section>
+
             </div>
         </main>
     </div>
@@ -1991,6 +2019,7 @@
     <script src="js/chatpanel.js"></script>
     <script src="js/squadpage.js"></script>
     <script src="js/hikepage.js"></script>
+    <script src="js/pendingreports.js"></script>
     <script src="js/peoplesearch.js"></script>
     <script src="js/storico.js"></script>
     <!-- Punto 26: permessi di posizione e puntino blu. Prima di map.js, che gli si iscrive

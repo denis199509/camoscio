@@ -10,6 +10,7 @@ window.CamoscioState = {
     bookmarks: [],
     completions: [], // Escursioni già segnate come completate dall'utente corrente
     notifications: [], // Notifiche dell'utente corrente (nuove escursioni di squadra, esiti iscrizioni)
+    pendingReports: [], // Punto 45: segnalazioni sentiero in attesa di verifica, solo per chi modera
     activeHikeId: null // Escursione attualmente selezionata da Zaino/Carpooling/Mappa; default hikes[0] finché non se ne sceglie una
 };
 
@@ -141,6 +142,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     // nascondere sezioni e a chiedere il rendering, che a sua volta ricarica i dati.
     setupNavigation();
     setupNotificationBell();
+
+    // Punto 45, stesso motivo del blocco email piu' sotto: checkAuthAndShowGate ha appena
+    // messo currentUser con la risposta piena di /api/auth/me, che contiene gia'
+    // canModerateReports - non serve aspettare initApp()/refreshState() per decidere se
+    // mostrare il triangolo. Collegarlo solo dentro initApp() sarebbe la stessa trappola
+    // "modulo che si aggancia tardi" gia' pagata due volte (navigazione 26/07, profilo 06/08).
+    if (window.setupPendingReportsTriangle) window.setupPendingReportsTriangle();
 
     // Stesso motivo: anche "Esci" deve funzionare da subito, non solo a caricamento
     // finito - chi si accorge di essere entrato con l'account sbagliato vuole poterne
@@ -307,6 +315,17 @@ async function refreshState() {
             const notifications = await fetchApi(`/api/notifications/${window.CamoscioState.currentUser.id}`);
             window.CamoscioState.notifications = notifications;
             renderNotificationBell();
+
+            // Punto 45: il conteggio del triangolo, SOLO per chi puo' moderare - altrimenti
+            // sarebbe una fetch-e-403 sprecata per chiunque altro ad ogni cambio sezione.
+            // Stessa cadenza event-driven gia' in uso per le notifiche sopra (nessun polling
+            // a intervallo in tutto il progetto): si aggiorna ad ogni refreshState(), cioe'
+            // ad ogni cambio pagina.
+            if (window.CamoscioState.currentUser.canModerateReports) {
+                const pendingReports = await fetchApi('/api/reports/pending');
+                window.CamoscioState.pendingReports = pendingReports;
+                if (window.renderPendingReportsBadge) window.renderPendingReportsBadge(pendingReports);
+            }
         }
     } catch (e) {
         if (e.status === 401) {

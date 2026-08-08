@@ -21,10 +21,12 @@ const MAX_PHOTO_LENGTH = 2 * 1024 * 1024;
 // il timer sta correndo adesso) - la stessa categoria di dato sensibile di emergencyContacts,
 // mai da mostrare a chi non e' il proprietario. deadManContactIndex e' solo un indice dentro
 // emergencyContacts, gia' privato per conto suo, ma non ha senso esporlo isolato.
+// Punto 45: canModerateReports non e' un dato sensibile come i contatti di emergenza, ma non
+// c'e' motivo che GET /api/users riveli a chiunque chi sono i moderatori delle segnalazioni.
 const ALWAYS_PRIVATE_FIELDS = [
     'email', 'emailVerified', 'emergencyContacts', 'birthDate', 'ageRange',
     'geolocationConsent', 'termsAcceptedAt', 'nome', 'cognome',
-    'deadManActive', 'deadManExpiresAt', 'deadManContactIndex'
+    'deadManActive', 'deadManExpiresAt', 'deadManContactIndex', 'canModerateReports'
 ];
 // Campi del "profilo pubblico" (sezione 6/9 della registrazione) governati da privacySetting
 const PRIVACY_GATED_FIELDS = ['bio', 'profilePhoto', 'interests', 'hikingLevel', 'preferredDifficulty', 'geoPreferences'];

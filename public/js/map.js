@@ -4,6 +4,20 @@ let userGpsMarker = null;
 let hikePolyline = null;
 let reportMarkersGroup = null;
 let peakMarkersGroup = null;
+
+// Punto 45: mappa tipo segnalazione -> emoji/titolo, usata da renderMapMarkers(),
+// renderWazeReportsList() qui sotto e da public/js/pendingreports.js. Estratta qui (invece di
+// una terza copia in pendingreports.js) perche' il progetto fattorizza gia' alla seconda
+// occorrenza, non aspetta la terza (stesso principio della chat condivisa, punto 55).
+window.CamoscioReportTypes = {
+    emoji: { frana: '⚠️', ghiaccio: '❄️', fontana_secca: '💧', ostacolo: '🌲' },
+    title: {
+        frana: 'Frana / Cedimento',
+        ghiaccio: 'Presenza Ghiaccio',
+        fontana_secca: 'Sorgente Senz\'Acqua',
+        ostacolo: 'Sentiero Ostruito'
+    }
+};
 let activeHikePath = []; // Array di coordinate per il sentiero attivo
 let liveTrackPolyline = null; // Percorso REALMENTE registrato durante un tracciamento GPS live (Fase F)
 
@@ -636,7 +650,12 @@ function setupMapForms() {
                 if (response.ok) {
                     form.reset();
                     formContainer.classList.add("hidden");
-                    
+
+                    // Punto 45: non e' piu' pubblicata subito (status 'pending' lato server) -
+                    // vincolo hard "niente promesse che il sito non puo' mantenere", chi segnala
+                    // deve saperlo subito, non scoprirlo non vedendola comparire in mappa.
+                    window.showToast("Segnalazione inviata: comparirà in mappa dopo una verifica.", "success");
+
                     // Ricarica i marker
                     await refreshState();
                     renderMapMarkers();
@@ -834,21 +853,8 @@ function renderMapMarkers() {
     db.reports.forEach(rep => {
         if (rep.status !== 'active') return;
 
-        const emojiMap = {
-            frana: '⚠️',
-            ghiaccio: '❄️',
-            fontana_secca: '💧',
-            ostacolo: '🌲'
-        };
-        const titleMap = {
-            frana: 'Frana / Cedimento',
-            ghiaccio: 'Presenza Ghiaccio',
-            fontana_secca: 'Sorgente Senz\'Acqua',
-            ostacolo: 'Sentiero Ostruito'
-        };
-
-        const emoji = emojiMap[rep.type] || '⚠️';
-        const title = titleMap[rep.type] || 'Avviso';
+        const emoji = window.CamoscioReportTypes.emoji[rep.type] || '⚠️';
+        const title = window.CamoscioReportTypes.title[rep.type] || 'Avviso';
 
         const customIcon = L.divIcon({
             className: 'waze-leaflet-marker',
@@ -893,8 +899,7 @@ function renderWazeReportsList() {
         const item = document.createElement("div");
         item.className = "waze-item";
 
-        const emojiMap = { frana: '⚠️', ghiaccio: '❄️', fontana_secca: '💧', ostacolo: '🌲' };
-        const emoji = emojiMap[rep.type] || '⚠️';
+        const emoji = window.CamoscioReportTypes.emoji[rep.type] || '⚠️';
 
         item.innerHTML = `
             <span>${emoji}</span>

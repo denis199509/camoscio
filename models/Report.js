@@ -5,7 +5,11 @@ const reportSchema = new mongoose.Schema({
     lat: { type: Number, required: true },
     lng: { type: Number, required: true },
     description: String,
-    status: { type: String, default: 'active' },
+    // Punto 45: 'pending' finche' un moderatore non la conferma. Il default e' fail-closed
+    // per qualunque creazione futura che dimenticasse di specificare lo stato - oggi non
+    // cambia nulla in pratica: sia POST /api/reports sia scripts/seed-atlas.js impostano
+    // sempre lo stato esplicitamente.
+    status: { type: String, enum: ['pending', 'active', 'resolved'], default: 'pending' },
     // Chi ha segnalato: puo' restare vuoto per segnalazioni pre-Fase-C o volutamente anonime
     reporterId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null }
 }, { timestamps: { createdAt: true, updatedAt: false } });
