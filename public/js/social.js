@@ -1147,7 +1147,7 @@ function renderSquadsList() {
         }
 
         item.innerHTML = `
-            <div>
+            <div class="squad-item-open" onclick="showSquadPage('${squad.id}')">
                 <h5>👥 ${escapeHtml(squad.name)}</h5>
                 <div class="squad-members-row">${membersAvatars}</div>
             </div>

@@ -1594,6 +1594,24 @@
                     </div>
                 </section>
 
+                <!-- Pagina di UNA squadra (punto 48) - stesso principio di #user-profile qui
+                     sopra: nessuna voce in barra laterale, si apre cliccando una squadra in
+                     Tribu' & Squadre (vedi public/js/squadpage.js, window.showSquadPage(squadId)). -->
+                <section id="squad-page" class="page-section">
+                    <div class="glass-card" id="squad-page-header">
+                        <!-- Riempito da JS: foto (+ input cambio foto se amministratore), nome -->
+                    </div>
+
+                    <div class="glass-card" id="squad-page-members">
+                        <!-- Riempito da JS: elenco membri, badge Admin, controlli promuovi/rimuovi
+                             visibili solo se chi guarda e' amministratore -->
+                    </div>
+
+                    <div class="glass-card" id="squad-page-chat">
+                        <!-- Riempito da JS: chat riservata ai soli membri della squadra -->
+                    </div>
+                </section>
+
             </div>
         </main>
     </div>
@@ -1952,6 +1970,7 @@
     <script src="js/badges.js"></script>
     <script src="js/personal-badges.js"></script>
     <script src="js/userprofile.js"></script>
+    <script src="js/squadpage.js"></script>
     <script src="js/peoplesearch.js"></script>
     <script src="js/storico.js"></script>
     <!-- Punto 26: permessi di posizione e puntino blu. Prima di map.js, che gli si iscrive
