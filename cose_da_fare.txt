@@ -1565,7 +1565,7 @@ stata scelta: il sistema non puo' sapere quanto ci si mette.
 
 --- SEGNALAZIONI SULLO STATO DEI SENTIERI ---
 
-45) [DA FARE] Serve un modo di ricevere e gestire le segnalazioni sullo stato dei
+45) [FATTO IN PARTE 2026-08-08] Serve un modo di ricevere e gestire le segnalazioni sullo stato dei
 sentieri, sia quelle degli utenti sia quelle che arrivano da fuori e che
 inseriamo noi.
    ESISTE GIA' PIU' DI QUANTO SEMBRI, e conviene saperlo prima di ricominciare da
@@ -1586,6 +1586,47 @@ inseriamo noi.
    sono dati che pesano, e c'e' il vincolo hard sullo spazio in cima a questo file.
    Le foto profilo sono gia' oggi la cosa piu' pesante del database (fino a 1,5 MB
    l'una, misurato al punto 15). Va deciso un formato e un tetto PRIMA, non dopo.
+
+   -> FATTO IN PARTE: il controllo prima della pubblicazione. Chiesto a Denis come
+      immaginava il flusso (una domanda aperta, non a scelta multipla): "affianco
+      alla campana di notifiche un triangolo stile attenzione... se clicco... si
+      apre una pagina segnalazioni pendenti dove posso confermare oppure rifiutare
+      la segnalazione. Se confermata diventa visibile sul sito. Se respinta viene
+      eliminata. Inizialmente saro' solo io che potro' accettare o rifiutare
+      segnalazioni. In futuro pure qualcun altro" - parole sue, usate cosi' come
+      sono per il disegno.
+      Costruito: nuovo campo User.canModerateReports (booleano, default: undefined
+      come deadManActive - oggi lo ha solo l'account di Denis, nessuna interfaccia
+      per assegnarlo, si usa scripts/set-report-moderator.js <username> quando in
+      futuro se ne aggiungeranno altri). Le segnalazioni nascono 'pending' invece
+      di 'active' (routes/reports.js) e restano invisibili finche' un moderatore
+      non le conferma (diventano 'active', esattamente come oggi) o le rifiuta
+      (Report.findByIdAndDelete - eliminazione vera, nessuno stato "rifiutato"
+      lasciato sul database, come chiesto). Triangolo nell'header (stesso stile
+      della campana, icona Lucide "triangle-alert" gia' presente nella libreria
+      vendorizzata) visibile SOLO a chi ha il permesso; porta a una pagina dedicata
+      (non un menu a tendina come la campana, come chiesto) con l'elenco e i due
+      tasti Conferma/Rifiuta.
+      TROVATA E CORRETTA UNA FALLA DI SICUREZZA MENTRE SI COSTRUIVA QUESTO: la
+      GET /api/reports pubblica non filtrava per stato, quindi una segnalazione
+      'pending' sarebbe stata comunque leggibile via rete da chiunque fosse
+      loggato, anche se il frontend la nascondeva. Ora filtra su status:'active'.
+      Chi invia una segnalazione ora vede subito un avviso ("comparira' in mappa
+      dopo una verifica") invece di credere che sia gia' pubblicata - vincolo hard
+      7 (niente promesse che il sito non puo' mantenere).
+      PROVATO: 23 controlli automatici nuovi (prove/prova-punto45.js) + verificato
+      dal vivo nel browser con l'estensione Chrome, su un account demo elevato
+      apposta e poi riportato esattamente come prima (triangolo assente senza
+      permesso, presente e funzionante con permesso, segnalazione creata/confermata/
+      rifiutata con effetti veri verificati sul database, poi tutti i dati di
+      prova rimossi). Permesso concesso per davvero all'account di Denis.
+      Committato e pushato (a07a463), verificato live su Render (deploy, markup
+      nuovo presente nella pagina, rotta nuova che risponde 401 senza sessione).
+      RESTA DAVVERO APERTO, rimandato insieme da Denis nella stessa risposta: la
+      FOTO nella segnalazione e il tasto di creazione "piu' trovabile" (finestra
+      breve 200/300 caratteri, posizione automatica invece del click sulla mappa).
+      Il formato e il tetto della foto vanno ancora decisi PRIMA di scrivere quel
+      codice, come gia' scritto sopra.
 
 --- CARPOOLING ---
 

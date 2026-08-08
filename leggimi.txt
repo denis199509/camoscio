@@ -26,9 +26,8 @@ o ne arriva uno nuovo.
 
 
 
->>> STATO ATTUALE (08/08/2026): punti 37, 48 e 55 chiusi per intero nella
-    stessa giornata (in tre sessioni separate), tutti committati, pushati e
-    verificati live su Render.
+>>> STATO ATTUALE (08/08/2026): giornata lunga, quattro punti toccati in
+    sessioni separate, tutti committati, pushati e verificati live su Render.
     - Punto 37: Dead Man's Switch, manda davvero un'email al contatto scelto
       quando scade, anche a pagina chiusa. Nel mezzo, un segreto
       (SAFETY_CRON_SECRET) finito per sbaglio nel repository pubblico e'
@@ -40,19 +39,28 @@ o ne arriva uno nuovo.
     - Punto 55: cliccando "Chat" su un'escursione (solo se si e' gia'
       partecipanti) si apre la pagina dell'escursione (titolo, partecipanti,
       chat solo tra chi partecipa). La chat NON e' stata duplicata: estratta
-      in public/js/chatpanel.js e condivisa con la pagina squadra - Denis ha
-      scelto lui di saltare avanti a questo punto rispetto all'ordine "45
-      poi 55" concordato prima.
+      in public/js/chatpanel.js e condivisa con la pagina squadra.
       Dettaglio di entrambe le chat e perche' niente WebSocket in
       ../camoscio memoria/03-Decisioni-Architetturali.md.
+    - Punto 45 (FATTO IN PARTE): le segnalazioni sentiero non sono piu'
+      subito pubbliche. Triangolo di attenzione nell'header (canale
+      ESCLUSIVO per questo evento, mai un doppione della campana), visibile
+      solo a chi ha il permesso di moderare (oggi solo Denis, campo
+      User.canModerateReports). Apre una pagina dedicata con Conferma
+      (diventa visibile a tutti, come oggi) e Rifiuta (eliminata per sempre,
+      nessuno stato "rifiutato" salvato). Trovata e corretta nel farlo una
+      falla: GET /api/reports non filtrava per stato, quindi un pending
+      sarebbe stato leggibile via rete da chiunque loggato. 23 controlli
+      automatici nuovi (prove/prova-punto45.js) + verificato dal vivo nel
+      browser. Resta aperto solo cio' che Denis ha rimandato insieme nella
+      stessa risposta: la FOTO nella segnalazione e il tasto di creazione
+      "piu' trovabile" - fermi finche' non decide formato e tetto della
+      foto (vincolo hard sullo spazio).
 
->>> PROSSIMA SESSIONE, PRIMA COSA DA FARE: il punto 45 (segnalazioni sullo
-    stato dei sentieri: mancano foto, controllo prima della pubblicazione, e
-    un ruolo "chi approva" - vedi ../camoscio memoria/04-Da-Fare.md per il
-    dettaglio di cosa esiste gia'). E' l'ultimo dei lavori grandi rimasti
-    nell'ordine concordato con Denis.
-    Sessione chiusa volontariamente da Denis subito dopo il punto 55, non
-    per un blocco: si riparte da qui la prossima volta.
+>>> PROSSIMA SESSIONE: nessun altro lavoro grande e' in coda nell'ordine
+    concordato con Denis - il 45 era l'ultimo. Si riparte da quello che
+    porta lui, oppure dalla parte foto/tasto del 45 quando avra' deciso
+    formato e tetto (vedi ../camoscio memoria/04-Da-Fare.md).
 
 >>> COSE FUORI SCOPE, NON RIPROPORLE finche' non torna Denis sull'argomento:
     - Tracciamento GPS a pagina chiusa (impossibile via browser, non difficile
