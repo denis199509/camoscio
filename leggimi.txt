@@ -37,15 +37,20 @@ o ne arriva uno nuovo.
     adesso") - PUNTO 37, PRIMA META' FATTA, tutto committato e pushato
     (dcf02a7, db4d1d0, e004d08), verificato live su Render dopo ogni push.
 
->>> PROSSIMA SESSIONE, PRIMA COSA DA FARE: chiedere a Denis se ha gia' fatto i
-    due passaggi che restano SOLO A LUI (non richiedono scrivere codice):
-    (1) su Render (dashboard, Environment): aggiungere la variabile
-        SAFETY_CRON_SECRET = TgY_nd3l8laIVV4ipn2tV-87gs1q9l9V
+>>> SEGRETO SAFETY_CRON_SECRET RUOTATO L'08/08/2026: il valore originale era
+    scritto in chiaro proprio in questo file e in cose_da_fare.txt, entrambi
+    nel repository camoscio, che e' PUBBLICO - trovato e sostituito nella
+    sessione successiva a quella che l'aveva generato. Il valore vero NON va
+    piu' scritto qui: e' stato comunicato a Denis in chat. Dettaglio in
+    cose_da_fare.txt punto 37 e in ../camoscio memoria/07-Trappole-Tecniche.md.
+
+>>> PRIMA COSA DA FARE: chiedere a Denis se ha gia' messo il valore nuovo
+    (1) su Render (dashboard, Environment, variabile SAFETY_CRON_SECRET) e
     (2) su cron-job.org (account gratuito, scelto da Denis l'08/08 -
         "temporaneo, in futuro quando avremo un nostro server e dominio
-        cambieremo"): creare un job che chiama ogni 5 minuti, in GET o POST
-        (la rotta accetta entrambi dall'08/08, commit e004d08)
-        https://camoscio.onrender.com/api/safety/controlla-scadenze?chiave=TgY_nd3l8laIVV4ipn2tV-87gs1q9l9V
+        cambieremo"): job che chiama ogni 5 minuti, in GET o POST (la rotta
+        accetta entrambi dall'08/08, commit e004d08)
+        https://camoscio.onrender.com/api/safety/controlla-scadenze?chiave=[valore vero, non scritto qui]
     Se SI': verificare dal vivo che il ping arrivi davvero e che un timer
     scaduto per prova mandi l'email vera, POI (solo poi) aggiornare la nota
     a schermo che oggi dice ancora, correttamente, "l'invio vero non c'e'

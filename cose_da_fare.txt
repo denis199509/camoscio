@@ -1141,17 +1141,32 @@ funzioni anche a pagina chiusa. Uno per profilo.
       reale, non solo per API diretta.
       RESTA DA FARE, i due passaggi che solo Denis puo' fare (account/
       dashboard di terzi, non azioni che si possano automatizzare da qui):
-        1. Su Render (dashboard, non nel .env locale): aggiungere la
-           variabile d'ambiente SAFETY_CRON_SECRET con il valore
-           TgY_nd3l8laIVV4ipn2tV-87gs1q9l9V (gia' generato, non e' un segreto
-           legato a nessun account - va bene copiarlo cosi').
-        2. Su cron-job.org (account gratuito): creare un job che chiama ogni
-           5 minuti
-           https://camoscio.onrender.com/api/safety/controlla-scadenze?chiave=TgY_nd3l8laIVV4ipn2tV-87gs1q9l9V
+        1. Su Render (dashboard, non nel .env locale): aggiungere/aggiornare
+           la variabile d'ambiente SAFETY_CRON_SECRET con il valore nuovo
+           (comunicato a Denis in chat l'08/08/2026 - NON va scritto qui,
+           vedi la nota subito sotto sul perche').
+        2. Su cron-job.org (account gratuito): creare/aggiornare un job che
+           chiama ogni 5 minuti
+           https://camoscio.onrender.com/api/safety/controlla-scadenze?chiave=[STESSO VALORE MESSO SU RENDER AL PUNTO 1]
            - va bene sia GET sia POST (aggiunto il GET apposta l'08/08,
            commit e004d08, per non dipendere da quale metodo sceglie
            cron-job.org; verificato live che risponde 403 senza il segreto,
            quindi il deploy c'e' davvero).
+      SEGRETO RUOTATO L'08/08/2026: il valore originale, generato lo stesso
+      giorno, era scritto in chiaro proprio in questo file e in
+      leggimi.txt - entrambi nel repository camoscio, che e' PUBBLICO.
+      Trovato dalla sessione successiva, verificato scaricando i due file
+      in forma anonima (senza login: il valore era li', leggibile da
+      chiunque). Danno pratico limitato (la rotta protetta da quel segreto,
+      letta in routes/safety.js, anche chiamata da uno sconosciuto fa solo
+      il suo lavoro normale sui timer gia' scaduti, non puo' inventare
+      allarmi falsi) ma resta una chiave d'accesso a una funzione che manda
+      email vere con posizione GPS a un contatto di emergenza, quindi
+      considerato bruciato e sostituito. DA QUI IN AVANTI: il valore vero di
+      un segreto non va MAI scritto in questo file ne' in leggimi.txt (sono
+      nel repository pubblico) - solo il nome della variabile e dove
+      trovarne il valore vero (Render). Lezione completa in
+      ../camoscio memoria/07-Trappole-Tecniche.md.
       SOLO DOPO aver verificato che il trigger esterno funziona per davvero
       (chiamata vera che arriva, timer che scade, email che parte) si
       aggiorna la nota a schermo "l'invio vero del messaggio non c'e' ancora"
