@@ -2758,3 +2758,165 @@ stesso difetto (quello era gia' corretto e verificato live, vedi sopra).
    Nessun dato di prova scritto sul server: solo DOM e file statici.
    COMMITTATO E PUSHATO su richiesta esplicita di Denis (0dbfac7 camoscio),
    verificato live scaricando app.js vero da camoscio.onrender.com.
+
+--- BATCH DI SEGNALAZIONI RACCOLTE L'08/08/2026 (SERA), CHIUDENDO LA SESSIONE ---
+Punti 67-77: portati tutti insieme da Denis a fine sessione, con l'istruzione
+esplicita di limitarsi ad annotarli ("aggiorna i file necessari"), senza
+implementare nulla. NESSUN ORDINE ANCORA CONCORDATO tra loro: vanno ordinati con
+lui all'inizio della prossima sessione, come sempre (vedi ../camoscio memoria/
+04-Da-Fare.md).
+
+--- COMPLETAMENTO ESCURSIONI: DUE TASTI DIVERSI, BUG ACCOUNT DEMO, GPX AL POSTO DELLE ORE ---
+
+67) [DA FARE] Denis, provando a completare un'escursione: "Con account demo (Marco
+Alpinista) ho cercato di completare un'escursione. Non mi piacciono due tasti veri
+di conferma. Uno "completa escursione" che ha il funzionamento che ho chiesto. Di
+poter scegliere i partecipanti [invece] di aggiungere altri presenti sul sito. Che
+pero' dal account demo il salvataggio non va a buon fine (non so se un problema
+magari solo con account demo). Il secondo tasto "segna come completato" che
+cliccando ti chiede quante ore ci hai messo se ti ricordi (un po' banale come
+messaggio e per lo piu' inutile). Quindi il tasto "segna come completato" va tolto
+assolutamente. Invece al completamento escursione, sulla stessa pagina che hai
+scelto i partecipanti, diamo la possibilita' di aggiungere un file .gpx magari.
+Proprio al momento del completamento dell'escursione. Senza chiedere quanto tempo
+ci ha messo se si ricorda."
+   Confermato che "completa escursione" (quello coi partecipanti, punto 64) invece
+   funziona dal suo account vero: "Dal profilo mio (Denis) invece sono riuscito a
+   chiudere l'escursione al Corno Grande ed aggiungere pure un'altra persona.
+   Adesso risulta completata in gruppo. Cosi' va benissimo."
+   Anche una scritta va tolta, ma SOLO quella legata al vecchio tasto: "Non mi
+   piace la scritta completata vicino. Quella la togliamo. E' il vecchio tasto di
+   completamento quello. Lo stesso che ti chiedeva quanto tempo ci hai messo. Che
+   come ho detto prima va tolto." La scritta "completata in gruppo" del punto 64
+   (il flusso giusto) invece va bene cosi' com'e', NON toccarla.
+   QUATTRO COSE DISTINTE IN QUESTO PUNTO, da non confondere quando si riprende:
+     - il tasto "segna come completato" (quello con la domanda delle ore) va
+       ELIMINATO del tutto, insieme alla scritta "Completata" (non "completata in
+       gruppo") che produce sulla card;
+     - il salvataggio di "completa escursione" (punto 64) da account DEMO non va a
+       buon fine - da riprodurre e capire se e' solo sui demo o generale, PRIMA di
+       decidere come correggerlo;
+     - aggiungere un campo per il file .gpx nella stessa schermata di scelta
+       partecipanti di "completa escursione";
+     - NON aggiungere nessuna domanda su quanto tempo ci si e' messo nel nuovo
+       campo gpx - e' proprio quello che si sta togliendo con l'altro tasto.
+
+--- ESPLORA ESCURSIONI DI GRUPPO: FILTRI FUORI SCHERMO SU TELEFONO, TOGLIERE OBIETTIVO DI ALLENAMENTO ---
+
+68) [DA FARE] Denis: "Esplora Escursioni di Gruppo, la parte di Filtri e Algoritmi
+di Corrispondenza e' l'unica parte che esce fuori dagli schemi verso destra sul
+telefono. Dalla stessa parte togliamo la sezione obiettivo di allenamento."
+   Due cose distinte: il layout di "Filtri e Algoritmi di Corrispondenza" da
+   sistemare per il telefono (probabilmente la stessa famiglia di difetto gia'
+   nota per Escursioni/Carpooling/Tribu' & Squadre, vedi debito tecnico in
+   ../camoscio memoria/04-Da-Fare.md); e la sezione "obiettivo di allenamento" da
+   togliere del tutto in quella stessa zona, non solo da sistemare visivamente.
+
+--- ELENCO ESCURSIONI: RICERCA, TRE CATEGORIE, SCHEDE CHIUSE CON SOLO IL TITOLO ---
+
+69) [DA FARE] Denis: "Ci sono due escursioni a cui posso partecipare e una gia'
+completata. Il problema e' che le escursioni sono con tutte le informazioni
+dentro, risultato con tre escursioni devo scendere giu' parecchio per trovare
+l'escursione completata ad esempio. Quindi immagino che quando saranno gia' circa
+100 escursioni diventera' difficile trovare quella giusta. Ci serve una barra di
+ricerca per escursioni. Dividere le escursioni a cui posso partecipare da quelle a
+cui partecipo e da quelle completate. Diventano categoria a cui puoi partecipare.
+A cui partecipi. Completate. Le escursioni invece dovranno essere visibili solo
+con il titolo. Ad esempio l'escursione che ho creato io si chiama "Alba Corno
+Grande", si deve vedere solo il titolo. Cliccando sul titolo allora scende tutta
+l'informazione che era nascosta. In questo modo sulla pagina possiamo leggere piu'
+titoli di escursioni invece di salire su e giu' per la pagina per cercare quella
+giusta. La barra di ricerca ci serve per filtrare le escursioni proposte."
+   Vale anche per l'altra pagina: "Stessa cosa nelle mie escursioni gia' fatte. Si
+   deve vedere solo il titolo. Tutta l'informazione solo se clicco sul titolo."
+   Tre pezzi distinti: (1) barra di ricerca/filtro testo; (2) tre categorie "a cui
+   puoi partecipare" / "a cui partecipi" / "completate"; (3) card chiuse per
+   default (solo titolo), che si aprono cliccando il titolo - su ENTRAMBE le
+   pagine (Escursioni e Le mie escursioni).
+   DA LEGGERE INSIEME AL PUNTO 77 quando si riprende: la categoria "completate"
+   vista da chi NON ha partecipato potrebbe dover sparire del tutto invece di
+   comparire - da chiarire con Denis prima di costruire, non presumerlo.
+
+--- MAPPA E SENTIERI: TESTO CONTATTO EMAIL TAGLIATO, FRECCIA CHE NON APRE NIENTE ---
+
+70) [DA FARE] Denis: "Mappa e sentieri. La frase "Nessun contatto con email
+salv..." poi non e' piu' visibile, affianco ha una freccia in giu' ma non si apre
+nulla. Da correggere."
+   Non ancora individuato in quale componente della pagina Mappa compare questa
+   frase (testo troncato + freccia inerte) - da riprodurre dal vivo prima di
+   toccare codice.
+
+--- RESPONSIVE MOBILE: CARPOOLING, SICUREZZA & MESH (SOS FUORI SCHERMO), TRIBU' & SQUADRE ---
+
+71) [DA FARE] Denis: "Carpooling, tutta la pagina esce verso destra sul
+telefono."
+   Conferma dal vivo del difetto gia' noto (vedi debito tecnico in ../camoscio
+   memoria/04-Da-Fare.md: Carpooling era gia' segnato tra le pagine non ancora
+   adattate al telefono).
+
+72) [DA FARE] Denis: "Sicurezza e Mesh pure sta verso destra. Il tasto SOS sta
+proprio fuori a destra."
+   ATTENZIONE - possibile contraddizione da chiarire prima di intervenire: il
+   vault (../camoscio memoria/04-Da-Fare.md, debito tecnico) segnava Sicurezza &
+   Mesh gia' tra le pagine SISTEMATE per il telefono, insieme a Mappa/Dashboard/
+   Zaino. O e' una regressione (qualcosa toccato dopo ha rotto il layout) o quella
+   nota era sbagliata/incompleta - da verificare dal vivo su telefono vero prima
+   di correggere, non dare per scontato quale dei due casi sia. E' il tasto piu'
+   critico del sito (SOS): priorita' alta rispetto agli altri due punti mobile di
+   questa lista.
+
+73) [DA FARE] Denis: "Squadre e tribu' pure sta verso destra sul telefono."
+   Conferma dal vivo del difetto gia' noto (stesso elenco debito tecnico di sopra:
+   Tribu' & Squadre era gia' segnata tra le pagine non ancora adattate).
+
+--- PROFILO UTENTE: MANCANO LE ESCURSIONI ---
+
+74) [DA FARE] Denis: "Se un utente mi cerca sul sito, apre il mio profilo non
+trova tutte le mie escursioni. Dovrebbe essere visibile. Sia le escursioni
+importanti con file gpx (soprattutto quelle importate) sia quelle create sul sito
+e completate con il tasto del sito. L'escursione completata "Alba Corno Grande"
+deve risultare visibile pure sul profilo dei partecipanti che ho confermato con
+il completamento dell'escursione."
+   Due cose distinte: (1) il profilo pubblico di un utente deve elencare le sue
+   escursioni (gpx importati, specialmente quelli importanti, e quelle create sul
+   sito e completate); (2) un'escursione completata in gruppo deve comparire sul
+   profilo di OGNI partecipante confermato, non solo su quello di chi l'ha
+   organizzata/completata.
+
+--- CREAZIONE SQUADRA: RICERCA PERSONE INVECE DI SPUNTARE TUTTI, RICHIESTA DI PARTECIPAZIONE ---
+
+75) [DA FARE] Denis: "Durante la creazione della squadra mi fa spuntare i membri
+della squadra elencando tutti gli iscritti al sito (demo compresi), per adesso non
+sembra un problema, lo diventa quando abbiamo molto piu' utenti sul sito. Quindi
+invece di spuntare i membri della squadra basta una sbarra di ricerca persone."
+   Insieme, una funzione collegata ma distinta: "Allo stesso modo una persona che
+   entra nella pagina squadre e trova la squadra Merenderos deve avere un tasto
+   "Richiesta Partecipazione". Richiesta inviata all'admin (a tutti gli admin se
+   piu' di uno). Basta una conferma da uno degli admin per approvare la
+   partecipazione alla squadra."
+   Due cose distinte: (1) sostituire l'elenco a checkbox nella creazione squadra
+   con una ricerca persone (problema di scala, non ancora urgente ma segnalato
+   apposta in anticipo - oggi elenca tutti gli iscritti, demo compresi); (2) un
+   flusso di richiesta/approvazione per entrare in una squadra gia' esistente,
+   notificata a tutti gli admin, approvabile da uno solo di loro.
+
+--- ESCURSIONE COMPLETATA: NON DEVE PIU' ESSERE MODIFICABILE ---
+
+76) [DA FARE] Denis: "Modifica escursione. L'escursione "Alba Corno Grande"
+risulta gia' completata. Ma comunque posso modificarla. Dobbiamo correggere.
+Un'escursione che risulta completata non puo' piu' essere modificata."
+   Riguarda la modifica gia' costruita al punto 54 (il tasto "modifica" di
+   un'escursione) - va negata quando l'escursione ha lo status di completata.
+
+--- VISIBILITA' DELLE ESCURSIONI: SOLO PROGRAMMATE E PROPRIE, DETTAGLI SOLO A CHI HA PARTECIPATO ---
+
+77) [DA FARE] Denis: "Se un'escursione a cui io non ho partecipato viene conclusa,
+a me non deve essere piu' visibile. Io devo vedere solo le escursioni che sono
+programmate (pure a cui non partecipo) pure quelle a cui partecipo. Una volta
+completata l'escursione i dettagli di quella escursione restano visibili solo a
+chi ha partecipato all'escursione non a tutti gli utenti del sito."
+   Regola di visibilita' in due parti: (1) le escursioni GIA' concluse spariscono
+   dalla vista di chi non vi ha partecipato (restano visibili solo le programmate,
+   a chiunque, piu' le proprie concluse); (2) i dettagli di un'escursione conclusa
+   diventano privati ai soli partecipanti, non piu' pubblici a tutti come oggi.
+   DA LEGGERE INSIEME AL PUNTO 69 quando si riprende (vedi nota li').

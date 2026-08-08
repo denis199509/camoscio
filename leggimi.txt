@@ -57,10 +57,23 @@ o ne arriva uno nuovo.
       "piu' trovabile" - fermi finche' non decide formato e tetto della
       foto (vincolo hard sullo spazio).
 
->>> PROSSIMA SESSIONE: nessun altro lavoro grande e' in coda nell'ordine
-    concordato con Denis - il 45 era l'ultimo. Si riparte da quello che
-    porta lui, oppure dalla parte foto/tasto del 45 quando avra' deciso
-    formato e tetto (vedi ../camoscio memoria/04-Da-Fare.md).
+>>> PROSSIMA SESSIONE: Denis ha portato un batch di 11 nuove segnalazioni a fine
+    sessione (punti 67-77 in cose_da_fare.txt), con l'istruzione esplicita di
+    limitarsi ad annotarle senza implementare nulla. NESSUN ORDINE ANCORA DATO -
+    la primissima cosa da fare e' chiedergli come vuole ordinarle (una domanda
+    aperta, non a scelta multipla), esattamente come si e' sempre fatto prima di
+    ogni batch di lavoro. Riepilogo dei temi (dettaglio e parole sue nei singoli
+    punti): completamento escursioni (due tasti da separare, bug account demo,
+    aggiungere gpx - punto 67); layout mobile di Esplora Escursioni + togliere
+    obiettivo di allenamento (68); ricerca/categorie/schede chiuse per le
+    escursioni (69); un testo tagliato senza funzione in Mappa (70); mobile
+    ancora rotto su Carpooling, Sicurezza & Mesh (SOS fuori schermo - il piu'
+    urgente dei tre) e Tribu' & Squadre (71-73); escursioni mancanti nel profilo
+    utente (74); ricerca persone invece di spuntare tutti + richiesta di
+    partecipazione per le squadre (75); un'escursione completata non deve piu'
+    essere modificabile (76); nuove regole di visibilita' per le escursioni
+    concluse (77). Resta anche, quando Denis decidera' formato e tetto della
+    foto, la parte foto/tasto ancora aperta del punto 45.
 
 >>> COSE FUORI SCOPE, NON RIPROPORLE finche' non torna Denis sull'argomento:
     - Tracciamento GPS a pagina chiusa (impossibile via browser, non difficile
