@@ -1167,12 +1167,37 @@ funzioni anche a pagina chiusa. Uno per profilo.
       nel repository pubblico) - solo il nome della variabile e dove
       trovarne il valore vero (Render). Lezione completa in
       ../camoscio memoria/07-Trappole-Tecniche.md.
-      SOLO DOPO aver verificato che il trigger esterno funziona per davvero
-      (chiamata vera che arriva, timer che scade, email che parte) si
-      aggiorna la nota a schermo "l'invio vero del messaggio non c'e' ancora"
-      (public/index.html, #safety-honesty-note) e il testo del modale locale
-      in triggerEmergencyAlarm() (public/js/safety.js) - finche' non e' vero
-      per davvero resta scritto che non lo e', vincolo hard 7.
+   -> SECONDA META' FATTA E CHIUSA L'08/08/2026 (sessione della rotazione del
+      segreto): Denis ha messo il nuovo SAFETY_CRON_SECRET su Render e creato
+      il job su cron-job.org (ogni 5 minuti). VERIFICATO DAL VIVO SU
+      PRODUZIONE, senza mai chiamare la rotta a mano:
+        - cron-job.org, cronologia di esecuzione: primo giro delle 06:55:18,
+          200 OK, poi tre in coda ogni 5 minuti (07:00/07:05/07:10) -
+          screenshot controllato;
+        - attivato un timer di prova vero (account demo Marco Alpinista,
+          contatto temporaneo "Prova Segreto Esterno" con l'email di Denis,
+          scadenza fissata alle 07:07 con l'orario esatto);
+        - alle 07:10 (il giro di cron-job.org successivo alla scadenza, non
+          un mio richiamo manuale) e' arrivata da sola la notifica sul sito
+          "Il timer di sicurezza e' scaduto: e' partito un avviso via email a
+          Prova Segreto Esterno (denis1995.09@gmail.com)" e Denis ha
+          confermato di aver ricevuto l'email vera (nello spam - causa gia'
+          nota, vedi sotto);
+        - timer risultato disattivato da solo sul server, nessun intervento
+          manuale;
+        - contatto di prova rimosso subito dopo (PUT /api/users/:id con
+          l'elenco filtrato, stesso meccanismo usato dal client), Marco
+          Alpinista tornato a "Nessun contatto salvato" come si trovava.
+      AGGIORNATA LA NOTA A SCHERMO (public/index.html, #safety-honesty-note,
+      ora classe "is-ok" e icona check-circle invece di alert-triangle) e il
+      testo del modale locale in triggerEmergencyAlarm() (public/js/safety.js):
+      dicono ora che l'allarme vero parte davvero, entro pochi minuti, anche a
+      pagina chiusa - non piu' "l'invio vero non c'e' ancora". Aggiunta la
+      variante di colore verde "is-ok" in public/css/styles.css (riusa i token
+      --accent-green gia' in uso altrove, es. .toast.success) perche' il rosso
+      da avviso sarebbe stato fuorviante quanto il testo vecchio. IL PUNTO 37 E'
+      COMPLETAMENTE CHIUSO (resta solo, volutamente fuori scope, la parte
+      tracciamento-a-pagina-chiusa rimandata da Denis - vedi sotto).
       LA PARTE TRACCIAMENTO-A-PAGINA-CHIUSA (Screen Wake Lock + avviso a
       schermo) e' stata rimandata su richiesta esplicita di Denis: "quando
       penseremo a creare pure un'app dal sito" - non e' piu' nell'ordine di
