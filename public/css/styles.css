@@ -2185,11 +2185,14 @@ h1, h2, h3, h4, h5, h6 {
     background: var(--accent-blue);
 }
 
-/* Chat Mesh (e Chat di Squadra, punto 48: stesso aspetto, stesso identico blocco di regole -
-   .squad-chat-box e .squad-messages sono nomi separati solo per non confondere due canali
-   che dietro sono tecnicamente diversi, non per avere uno stile diverso) */
+/* Chat Mesh (e il pannello chat generico public/js/chatpanel.js, punti 48/55: stesso
+   aspetto, stesso identico blocco di regole - .chat-box/.chat-messages restano nomi
+   separati da .mesh-* solo perche' dietro e' un canale tecnicamente diverso - WebSocket
+   globale senza stanze, vedi 03-Decisioni-Architetturali.md - non per avere uno stile
+   diverso. .chat-box è unico e condiviso tra pagina squadra e pagina escursione: passano
+   entrambe dallo stesso modulo, non ha senso un nome per ciascuna come per il mesh) */
 .mesh-chat-box,
-.squad-chat-box {
+.chat-box {
     background: rgba(0, 0, 0, 0.25);
     border: 1px solid var(--border-color);
     border-radius: 12px;
@@ -2197,13 +2200,13 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .mesh-chat-box h5,
-.squad-chat-box h5 {
+.chat-box h5 {
     font-size: 0.85rem;
     margin-bottom: 10px;
 }
 
 .mesh-messages,
-.squad-messages {
+.chat-messages {
     height: 140px;
     overflow-y: auto;
     padding: 8px;
@@ -2215,9 +2218,9 @@ h1, h2, h3, h4, h5, h6 {
     gap: 8px;
 }
 
-/* La pagina squadra e' una sezione intera dedicata alla chat, non un widget dentro una
-   card piu' grande come il simulatore Mesh: piu' spazio verticale per i messaggi. */
-.squad-messages {
+/* Pagina squadra/escursione: una sezione intera dedicata alla chat, non un widget dentro
+   una card piu' grande come il simulatore Mesh: piu' spazio verticale per i messaggi. */
+.chat-messages {
     height: 320px;
 }
 
@@ -2260,13 +2263,13 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .mesh-send-form,
-.squad-send-form {
+.chat-send-form {
     display: flex;
     gap: 6px;
 }
 
 .mesh-send-form input,
-.squad-send-form input {
+.chat-send-form input {
     flex-grow: 1;
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid var(--border-color);

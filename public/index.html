@@ -1612,6 +1612,24 @@
                     </div>
                 </section>
 
+                <!-- Pagina di UNA escursione (punto 55) - stesso principio di #squad-page qui
+                     sopra: nessuna voce in barra laterale, si apre cliccando "Chat" sulla card
+                     di un'escursione (vedi public/js/hikepage.js, window.showHikePage(hikeId)).
+                     Niente foto ne' ruoli admin, a differenza della pagina squadra. -->
+                <section id="hike-page" class="page-section">
+                    <div class="glass-card" id="hike-page-header">
+                        <!-- Riempito da JS: titolo dell'escursione -->
+                    </div>
+
+                    <div class="glass-card" id="hike-page-members">
+                        <!-- Riempito da JS: elenco partecipanti -->
+                    </div>
+
+                    <div class="glass-card" id="hike-page-chat">
+                        <!-- Riempito da JS: chat riservata ai soli partecipanti dell'escursione -->
+                    </div>
+                </section>
+
             </div>
         </main>
     </div>
@@ -1970,7 +1988,9 @@
     <script src="js/badges.js"></script>
     <script src="js/personal-badges.js"></script>
     <script src="js/userprofile.js"></script>
+    <script src="js/chatpanel.js"></script>
     <script src="js/squadpage.js"></script>
+    <script src="js/hikepage.js"></script>
     <script src="js/peoplesearch.js"></script>
     <script src="js/storico.js"></script>
     <!-- Punto 26: permessi di posizione e puntino blu. Prima di map.js, che gli si iscrive

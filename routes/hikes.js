@@ -5,6 +5,7 @@ const User = require('../models/User');
 const Squad = require('../models/Squad');
 const Notification = require('../models/Notification');
 const Completion = require('../models/Completion');
+const HikeMessage = require('../models/HikeMessage'); // punto 55: chat tra partecipanti
 const RouteDraft = require('../models/RouteDraft'); // punto 43: percorso da un progetto gia' fatto
 const { applyHikeCompletionStats } = require('../lib/hikeStats'); // punto 64: condivisa con /:id/complete-group
 const { requireAuth } = require('../middleware/auth');
@@ -13,6 +14,15 @@ const { mongoose } = require('../db/mongo');
 const { haversineKm } = require('../lib/geometry');
 const { parseGpx, statisticheTraccia, ErroreGpx, SOGLIA_DISLIVELLO_M } = require('../lib/gpx');
 const { progettaPercorso } = require('../lib/trailGraph');
+
+// Punto 55: usato da /:id/complete (gia' esistente, riscritto per riusare questa) e dalle
+// nuove rotte di chat. Non ci si fida al 100% che il creatore sia sempre dentro
+// "participants" (vero alla creazione, ma /:id/complete-group puo' sovrascrivere l'intero
+// elenco da una selezione libera) - controllo OR, stesso stile di isSquadMember in
+// routes/squads.js.
+function isHikeParticipant(hike, userId) {
+    return hike.creatorId.equals(userId) || hike.participants.some(p => p.equals(userId));
+}
 
 // --- Autorizzazione fine-grained per PUT /:id (vedi sotto) ---
 // Bug trovato in Fase H (caccia ai bug generale): questa rotta accettava QUALUNQUE modifica da
@@ -417,7 +427,7 @@ router.post('/:id/complete', requireAuth, async (req, res) => {
         if (!user) {
             return res.status(404).json({ error: 'Utente non trovato' });
         }
-        if (!hike.participants.some(p => p.equals(user._id))) {
+        if (!isHikeParticipant(hike, user._id)) {
             return res.status(403).json({ error: "Solo i partecipanti dell'escursione possono segnarla come completata" });
         }
 
@@ -488,6 +498,55 @@ router.post('/:id/complete-group', requireAuth, async (req, res) => {
     } catch (e) {
         console.error('Errore completamento di gruppo:', e);
         res.status(400).json({ error: 'Impossibile completare la richiesta' });
+    }
+});
+
+// Ultimi messaggi della chat tra i partecipanti dell'escursione - solo partecipanti (punto 55)
+router.get('/:id/messages', requireAuth, async (req, res) => {
+    try {
+        const hike = await Hike.findById(req.params.id);
+        if (!hike) {
+            return res.status(404).json({ error: 'Escursione non trovata' });
+        }
+        if (!isHikeParticipant(hike, req.session.userId)) {
+            return res.status(403).json({ error: "Solo i partecipanti dell'escursione possono vedere questa chat" });
+        }
+        const messages = await HikeMessage.find({ hikeId: hike._id })
+            .sort({ createdAt: -1 })
+            .limit(50);
+        res.json(messages.reverse());
+    } catch (e) {
+        console.error('Errore lettura messaggi escursione:', e);
+        res.status(400).json({ error: 'Impossibile leggere i messaggi' });
+    }
+});
+
+// Invia un messaggio nella chat tra i partecipanti dell'escursione - solo partecipanti (punto 55)
+router.post('/:id/messages', requireAuth, async (req, res) => {
+    try {
+        const hike = await Hike.findById(req.params.id);
+        if (!hike) {
+            return res.status(404).json({ error: 'Escursione non trovata' });
+        }
+        if (!isHikeParticipant(hike, req.session.userId)) {
+            return res.status(403).json({ error: "Solo i partecipanti dell'escursione possono scrivere in questa chat" });
+        }
+        const text = String(req.body.text || '').trim();
+        if (!text) {
+            return res.status(400).json({ error: 'Il messaggio non può essere vuoto' });
+        }
+        if (text.length > 1000) {
+            return res.status(400).json({ error: 'Messaggio troppo lungo (massimo 1000 caratteri)' });
+        }
+        const message = await HikeMessage.create({
+            hikeId: hike._id,
+            senderId: req.session.userId,
+            text
+        });
+        res.json(message);
+    } catch (e) {
+        console.error('Errore invio messaggio escursione:', e);
+        res.status(400).json({ error: 'Impossibile inviare il messaggio' });
     }
 });
 

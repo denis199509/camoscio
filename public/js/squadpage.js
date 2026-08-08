@@ -3,8 +3,8 @@
 // nessuna voce in barra laterale, la squadra si legge da window.CamoscioState.squads
 // (gia' caricata da refreshState - GET /api/squads porta gia' photo/admins) invece di
 // fare una fetch in piu' solo per aprire la pagina.
-
-let squadChatPollTimer = null;
+//
+// La chat (punto 48, poi condivisa col punto 55) vive in public/js/chatpanel.js.
 
 function isSquadAdminClient(squad, userId) {
     return squad.creatorId === userId || (squad.admins || []).includes(userId);
@@ -41,7 +41,7 @@ async function renderSquadPage(squadId) {
     const canManage = isSquadAdminClient(squad, db.currentUser.id);
     renderSquadHeader(squad, canManage, headerBox);
     renderSquadMembers(squad, canManage, membersBox);
-    renderSquadChat(squad, chatBox);
+    window.CamoscioChatPanel.render({ box: chatBox, apiBase: `/api/squads/${squad.id}`, title: 'Chat di Squadra' });
 
     if (window.lucide) window.lucide.createIcons();
 }
@@ -188,104 +188,6 @@ function updateLocalSquad(updatedSquad) {
     const idx = db.squads.findIndex(s => s.id === updatedSquad.id);
     if (idx !== -1) db.squads[idx] = updatedSquad;
     else db.squads.push(updatedSquad);
-}
-
-// Chat di squadra: niente WebSocket (vedi 03-Decisioni-Architetturali.md, punto 48) -
-// polling ogni 5s finche' la sezione resta aperta, si ferma da solo al primo giro in cui
-// non lo e' piu'. Ricreato ad ogni renderSquadChat (mai lasciato doppio: si ripulisce da
-// solo all'inizio della funzione).
-function renderSquadChat(squad, box) {
-    if (squadChatPollTimer) {
-        clearInterval(squadChatPollTimer);
-        squadChatPollTimer = null;
-    }
-
-    box.innerHTML = `
-        <div class="squad-chat-box">
-            <h5><i data-lucide="message-square"></i> Chat di Squadra</h5>
-            <div class="squad-messages" id="squad-messages-log">
-                <div class="message system">Caricamento messaggi...</div>
-            </div>
-            <form id="squad-send-form" class="squad-send-form">
-                <input type="text" id="squad-input-msg" placeholder="Scrivi un messaggio..." required maxlength="1000">
-                <button type="submit" class="btn btn-sm btn-primary">Invia</button>
-            </form>
-        </div>
-    `;
-
-    document.getElementById("squad-send-form").addEventListener("submit", (e) => {
-        e.preventDefault();
-        sendSquadMessage(squad.id);
-    });
-
-    loadSquadMessages(squad.id);
-    squadChatPollTimer = setInterval(() => {
-        const section = document.getElementById("squad-page");
-        if (!section || !section.classList.contains("active")) {
-            clearInterval(squadChatPollTimer);
-            squadChatPollTimer = null;
-            return;
-        }
-        loadSquadMessages(squad.id);
-    }, 5000);
-}
-
-async function loadSquadMessages(squadId) {
-    const log = document.getElementById("squad-messages-log");
-    if (!log) return;
-    try {
-        const response = await fetch(`/api/squads/${squadId}/messages`);
-        if (!response.ok) return;
-        renderSquadMessages(await response.json(), log);
-    } catch (e) {
-        console.error("Errore caricamento messaggi squadra:", e);
-    }
-}
-
-function renderSquadMessages(messages, log) {
-    const db = window.CamoscioState;
-    const esc = window.escapeHtml;
-    // Non forzare lo scroll in basso se si e' saliti a leggere i messaggi vecchi - solo
-    // se si era gia' in fondo (o vicino), coerente con qualunque chat.
-    const wasAtBottom = (log.scrollHeight - log.scrollTop - log.clientHeight) < 40;
-
-    if (messages.length === 0) {
-        log.innerHTML = `<div class="message system">Nessun messaggio, scrivi il primo.</div>`;
-    } else {
-        log.innerHTML = messages.map(m => {
-            const mittente = db.users.find(u => u.id === m.senderId);
-            const nome = mittente ? esc(mittente.username) : "Utente";
-            const isMine = m.senderId === db.currentUser.id;
-            return `<div class="message ${isMine ? 'sent' : 'received'}">${isMine ? '' : `<b>${nome}:</b> `}${esc(m.text)}</div>`;
-        }).join("");
-    }
-
-    if (wasAtBottom) log.scrollTop = log.scrollHeight;
-}
-
-async function sendSquadMessage(squadId) {
-    const input = document.getElementById("squad-input-msg");
-    if (!input) return;
-    const text = input.value.trim();
-    if (!text) return;
-
-    try {
-        const response = await fetch(`/api/squads/${squadId}/messages`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text })
-        });
-        if (response.ok) {
-            input.value = "";
-            await loadSquadMessages(squadId);
-        } else {
-            const err = await response.json().catch(() => ({}));
-            window.showToast(err.error || "Impossibile inviare il messaggio.", "error");
-        }
-    } catch (e) {
-        console.error("Errore invio messaggio squadra:", e);
-        window.showToast("Impossibile inviare il messaggio.", "error");
-    }
 }
 
 window.showSquadPage = showSquadPage;

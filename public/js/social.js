@@ -599,6 +599,7 @@ function buildHikeCard(hike) {
                     <button class="btn btn-sm btn-secondary" style="padding:2px 6px;" onclick="toggleBookmark('${hike.id}')" title="${isBookmarked ? 'Rimuovi dai preferiti' : 'Aggiungi ai preferiti'}">
                         ${isBookmarked ? '★' : '☆'}
                     </button>
+                    ${isParticipant ? `<button class="btn btn-sm btn-secondary" style="padding:2px 6px;" onclick="showHikePage('${hike.id}')" title="Chat tra i partecipanti">Chat</button>` : ""}
                 </div>
             </div>
             <div class="participants-avatars">${participantsHtml}</div>
