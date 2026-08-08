@@ -1672,11 +1672,36 @@ zaino".
 
 --- SQUADRE ---
 
-48) [DA FARE] Una squadra creata non ha una sua pagina. Serve come punto di
+48) [FATTO 2026-08-08] Una squadra creata non ha una sua pagina. Serve come punto di
 ritrovo: uno spazio della squadra dove condividere le cose in modo rapido.
    VERIFICATO: le squadre esistono davvero (si creano, si elencano, e servono a
    invitare tutti in un colpo quando si crea un'escursione), ma non hanno nessuna
    pagina propria.
+   Punto rimasto vago per settimane (stessa lezione del punto 38): chiesto un
+   esempio concreto a Denis prima di progettare. Risposta con esempio ("Merenderos
+   in Vetta"): in alto a sinistra la foto profilo della squadra, cambiabile solo
+   dagli amministratori; chi crea la squadra e' admin automatico e puo' promuovere
+   altri membri; accanto alla foto il nome; sotto l'elenco dei partecipanti; sotto
+   ancora una chat solo tra i membri della squadra, per informazioni veloci.
+   Esplicitamente fuori scope per ora: una galleria di foto della squadra e altre
+   funzioni, rimandate al giorno in cui si pensera' a un'app vera e propria.
+   -> FATTO: cliccando una squadra si apre la sua pagina (nessuna voce in barra,
+      stesso principio di #user-profile). Squad.js ha due campi nuovi: photo
+      (come User.profilePhoto) e admins (il creatore resta admin per calcolo,
+      mai duplicato nell'elenco). Nuove rotte in routes/squads.js: cambio foto
+      (solo admin), promuovi/rimuovi admin (solo admin, mai sul creatore),
+      messaggi di chat (solo membri). Chat aggiornata a polling ogni 5 secondi,
+      NON con WebSocket: quello gia' in uso (Mesh/SOS) e' un canale globale
+      unico senza stanze, non adatto a una chat privata, e non andava toccato
+      per un punto pensato come "per adesso facciamo cosi'".
+      Provato dal vivo con l'estensione Chrome, tre account demo: creazione
+      squadra, apertura pagina, cambio foto, promozione/rimozione admin (con
+      effetto immediato sui permessi di chi viene promosso), chat in entrambe
+      le direzioni tra due account diversi, e verificato che un account NON
+      membro riceve 403 sia sulla chat sia sul cambio foto. Dati di prova
+      creati e rimossi a fine verifica. Committato e pushato (ad65aff),
+      verificato live su Render (asset nuovi serviti, rotte nuove rispondono
+      401 senza login, nessun errore 500).
 
 --- POI L'ESTETICA ---
 

@@ -26,99 +26,51 @@ o ne arriva uno nuovo.
 
 
 
->>> DIECI PUNTI CHIUSI IN QUESTA SESSIONE (iniziata il 06/08, proseguita dopo un
-    riavvio imprevisto del PC fino al 07/08 - nessun lavoro perso, ogni volta):
-    58 (deploy rimasto indietro), 61, 54, 57, 63a, 59, 7, 42b, 43, 64. Il punto 43 ha
-    anche riattivato il 44 (tempo previsto CAI), gia' chiuso a inizio agosto e mai
-    toccato di nuovo. TUTTO PUSHATO E VERIFICATO LIVE SU RENDER. Dettaglio di ogni
-    punto in cose_da_fare.txt e in ../camoscio memoria/06-Cronologia-Sessioni.md.
+>>> STATO ATTUALE (08/08/2026): punti 37 e 48 chiusi per intero nella stessa
+    giornata, entrambi committati, pushati e verificati live su Render.
+    - Punto 37: Dead Man's Switch, manda davvero un'email al contatto scelto
+      quando scade, anche a pagina chiusa. Nel mezzo, un segreto
+      (SAFETY_CRON_SECRET) finito per sbaglio nel repository pubblico e'
+      stato trovato e ruotato - lezione e regola per il futuro in
+      ../camoscio memoria/07-Trappole-Tecniche.md.
+    - Punto 48: cliccando una squadra si apre la sua pagina (foto cambiabile
+      solo dagli admin, elenco membri, chat solo tra i membri, aggiornata a
+      polling ogni 5s). Dettaglio e perche' niente WebSocket in
+      ../camoscio memoria/03-Decisioni-Architetturali.md.
 
->>> PUNTO 37 COMPLETAMENTE CHIUSO L'08/08/2026 (in due sessioni: prima meta'
-    e poi, dopo una parentesi di sicurezza, la seconda). Il Dead Man's Switch
-    manda davvero un'email vera al contatto scelto quando scade, anche a
-    pagina chiusa - VERIFICATO DAL VIVO IN PRODUZIONE, non solo per API:
-      - nel mezzo, trovato e ruotato un segreto (SAFETY_CRON_SECRET) che era
-        finito in chiaro nel repository pubblico - dettaglio in
-        cose_da_fare.txt punto 37 e ../camoscio memoria/07-Trappole-Tecniche.md;
-      - Denis ha messo il nuovo valore su Render e creato il job su
-        cron-job.org (ogni 5 minuti);
-      - prova vera fatta e riuscita: timer attivato su un contatto di prova
-        con l'email di Denis, scaduto per davvero, preso dal giro delle 07:10
-        di cron-job.org (non da una chiamata mia a mano) - notifica sul sito
-        ed email vera arrivata (nello spam, causa gia' nota sotto), contatto
-        di prova rimosso subito dopo;
-      - aggiornata di conseguenza la nota a schermo (public/index.html,
-        #safety-honesty-note, ora verde/is-ok) e il modale locale in
-        triggerEmergencyAlarm() (public/js/safety.js): non dicono piu' "non
-        c'e' ancora", dicono che l'allarme vero parte davvero.
-    Dettaglio tecnico completo in cose_da_fare.txt punto 37 e in
-    ../camoscio memoria/06-Cronologia-Sessioni.md e 03-Decisioni-Architetturali.md.
-    La parte tracciamento-a-pagina-chiusa (Screen Wake Lock) resta rimandata
-    da Denis stesso a quando si pensera' a un'app - non riproporla.
+>>> PROSSIMA SESSIONE, PRIMA COSA DA FARE: nell'ordine concordato con Denis,
+    tocca al punto 45 (segnalazioni sullo stato dei sentieri: mancano foto,
+    controllo prima della pubblicazione, e un ruolo "chi approva" - vedi
+    ../camoscio memoria/04-Da-Fare.md per il dettaglio di cosa esiste gia').
+    Poi il punto 55 (pagina escursione + chat di gruppo).
+    Sessione chiusa volontariamente da Denis subito dopo il punto 48, non
+    per un blocco: si riparte da qui la prossima volta.
 
->>> PROSSIMA SESSIONE, PRIMA COSA DA FARE: chiedere a Denis un esempio
-    concreto per il punto 48 (pagina/spazio di squadra) - oggi troppo vago
-    per essere progettato ("uno spazio dove condividere le cose in modo
-    rapido" puo' voler dire troppe cose diverse, stessa lezione gia' fatta
-    col punto 38). Poi, nell'ordine concordato: 45, 55.
+>>> COSE FUORI SCOPE, NON RIPROPORLE finche' non torna Denis sull'argomento:
+    - Tracciamento GPS a pagina chiusa (impossibile via browser, non difficile
+      - serve un'app vera; rimandato da Denis stesso l'08/08).
+    - Galleria di foto della squadra e altre funzioni social (rimandate
+      insieme al tracciamento, "quando penseremo a un'app vera e propria").
+    - Raggio della "zona di competenza" (punto 42a) e il suo nuovo nome
+      (punto 63b): Denis ci deve ancora pensare.
 
->>> PUNTI 52, 39, 65 E 66 - TUTTI CHIUSI IL 07/08/2026 (indietro del telefono nel
-    wizard con la History API, mappa OpenTopoMap, due difetti diversi sulla stessa
-    notifica del campanello - testo coperto a destra e poi riquadro tagliato a
-    sinistra su schermo stretto). Tutti committati, pushati e verificati live su
-    Render (fd5c4cf/27c220b, 65053cf/d6eb99e, ec36887/bc91141, 0dbfac7). Dettaglio
-    completo in cose_da_fare.txt e in ../camoscio memoria/06-Cronologia-Sessioni.md
-    e 03-Decisioni-Architetturali.md.
+>>> DUE COSE DA SAPERE PRIMA DI TOCCARE public/index.html (trovate il
+    07/08/2026, non ovvie a prima vista):
+      - create-hike-modal e complete-group-modal vivono FUORI da
+        .page-container (vicino a generic-modal), non dentro una
+        .page-section: un modale raggiungibile da piu' di una pagina deve
+        stare li' con loro, altrimenti resta invisibile aprendolo dalla
+        sezione "sbagliata".
+      - un modulo che si collega SOLO da dentro initApp() (dopo
+        await refreshState()) rischia la finestra "pulsante visibile ma
+        senza listener" (gia' successo due volte: navigazione 26/07,
+        profilo 06/08) - se un pulsante sembra rotto senza errori in
+        console, controllare prima QUANDO si e' agganciato il suo
+        ascoltatore, non se il codice del gestore e' giusto.
 
->>> LEZIONE (07/08/2026): dopo un'interruzione di sessione per cause sconosciute, le
-    note (questo file compreso) erano rimaste ferme a un istante prima di un push gia'
-    avvenuto. Dopo un'interruzione, controllare SEMPRE `git log origin/master..HEAD`
-    in ogni repository PRIMA di fidarsi dell'ultima riga scritta qui. Vedi
+>>> LEZIONE OPERATIVA: dopo qualunque interruzione di sessione non
+    volontaria, controllare SEMPRE `git log origin/master..HEAD` in
+    entrambi i repository (camoscio e vault) prima di fidarsi dell'ultima
+    riga scritta qui - una volta le note sono rimaste indietro rispetto a
+    un push gia' avvenuto per davvero. Dettaglio in
     ../camoscio memoria/07-Trappole-Tecniche.md.
-
->>> DUE COSE DA SAPERE PRIMA DI TOCCARE public/index.html (trovate il 07/08/2026,
-    non ovvie a prima vista):
-      - create-hike-modal e complete-group-modal vivono FUORI da .page-container
-        (vicino a generic-modal), non dentro una .page-section: un modale raggiungibile
-        da piu' di una pagina (es. sia "Escursioni" sia "Le mie escursioni") deve stare
-        li' con loro, altrimenti resta invisibile aprendolo dalla sezione "sbagliata" -
-        bug vero trovato su create-hike-modal, in piedi dal punto 54 senza che nessuno
-        se ne accorgesse;
-      - un modulo che si collega SOLO da dentro initApp() (dopo await refreshState())
-        rischia la stessa finestra "pulsante visibile ma senza listener" gia' trovata
-        due volte (navigazione il 26/07, profilo il 06/08) - se un pulsante sembra
-        rotto senza nessun errore in console, controllare prima QUANDO si e' agganciato
-        il suo ascoltatore, non se il codice del gestore e' giusto.
-
-
-
->>> SESSIONE CHIUSA VOLONTARIAMENTE L'08/08/2026 (Denis: "per adesso ci
-    fermiamo qui... fai un ultimo controllo finale") - PUNTO 37 CHIUSO PER
-    INTERO, controllo di fine sessione fatto DUE VOLTE (prima della chiusura
-    del punto 37 e di nuovo adesso su richiesta esplicita di Denis):
-      - camoscio: quattro commit pushati e verificati live - `b4140ae`
-        (tolto il segreto in chiaro), `33d9168` (nota a schermo e modale
-        locale, ora dicono che l'allarme vero funziona), `9f8917b` (note).
-        Ricontrollato ORA, a chiusura sessione: sito raggiungibile (200),
-        `controlla-scadenze` ancora fail-closed senza chiave (403), vecchio
-        segreto ancora assente dal file pubblico servito da GitHub (0
-        occorrenze);
-      - camoscio memoria (vault): tre commit pushati - `382d9d7` (prima meta'
-        punto 37), `b8b9365` (segreto trovato e ruotato), `1315108` (punto 37
-        chiuso per intero, guidato passo passo). 00 non toccato (nessun
-        cambio di struttura), 04/06/07 aggiornati;
-      - prova reale fatta SUL SITO IN PRODUZIONE, non solo per API: timer di
-        sicurezza attivato su un contatto di prova con l'email di Denis,
-        scaduto per davvero, preso dal giro delle 07:10 di cron-job.org (non
-        da una chiamata mia a mano) - notifica sul sito ed email vera
-        arrivata (nello spam), contatto di prova rimosso subito dopo via
-        `PUT /api/users/:id`, account demo Marco Alpinista tornato
-        esattamente come si trovava;
-      - nessuna prova automatica (`prove/`) rilanciata questa sessione: le
-        modifiche erano solo testo/CSS, nessuna riga toccata in
-        `routes/safety.js` rispetto a quanto gia' verificato dalla sessione
-        precedente (27/27 su prova-punto37.js) - controllata solo la
-        sintassi di `safety.js` (`node --check`) prima di pushare;
-      - `git log origin/master..HEAD` vuoto in ENTRAMBI i repository
-        (ricontrollato ORA, non solo prima), nessun server locale acceso,
-        porta 3000 verificata libera.
