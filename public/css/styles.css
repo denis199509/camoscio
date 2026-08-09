@@ -4151,6 +4151,17 @@ h1, h2, h3, h4, h5, h6 {
         min-width: 0;
     }
 
+    /* Punto 73: stesso difetto e stessa cura di .safety-layout/.carpool-layout qui sopra -
+       la pagina Tribu' & Squadre sbordava a destra su telefono. */
+    .social-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .social-layout > .social-column,
+    .social-column > .glass-card {
+        min-width: 0;
+    }
+
     /* Il tasto di registrazione e' l'azione principale su telefono: si prende tutta la
        larghezza in fondo alla mappa, comodo da premere con il pollice anche con i guanti. */
     .map-record-controls {
