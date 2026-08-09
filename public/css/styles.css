@@ -737,8 +737,13 @@ h1, h2, h3, h4, h5, h6 {
     gap: 8px;
 }
 
+/* Stessa regola di .mesh-send-form/.chat-send-form: senza min-width:0 l'input non scende
+   mai sotto la sua larghezza minima predefinita e il tasto accanto esce dal riquadro su
+   telefono - trovato qui su "Salva Zona" (Carpooling) e "Salva Obiettivo" (Tribu' &
+   Squadre) verificando dal vivo il punto 72. Fuori da qualunque @media di proposito. */
 .input-with-btn input {
     flex-grow: 1;
+    min-width: 0;
 }
 
 /* Modali */
@@ -2299,6 +2304,13 @@ h1, h2, h3, h4, h5, h6 {
 .mesh-send-form input,
 .chat-send-form input {
     flex-grow: 1;
+    /* Punto 72: senza min-width:0 un input flex non scende mai sotto la sua larghezza
+       minima predefinita (~170-200px) - stessa regola gia' imparata per .form-row
+       .form-group. Qui non dipende dallo schermo ma dal numero di elementi nella riga:
+       .mesh-send-form ne ha tre (input, Invia, SOS) contro i due di .chat-send-form,
+       ed e' il tasto SOS in piu' a uscire dal riquadro su un telefono stretto - percio'
+       fuori da qualunque @media, come .form-row .form-group. */
+    min-width: 0;
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid var(--border-color);
     border-radius: 6px;
