@@ -295,6 +295,9 @@ async function submitRegistration() {
             return;
         }
         hideAuthError('auth-register-error');
+        if (data.scherzoBenvenuto && window.showAlertModal) {
+            await window.showAlertModal(data.scherzoBenvenuto, 'Ho capito');
+        }
         if (window.onAuthSuccess) window.onAuthSuccess();
     } catch (e) {
         console.error('Errore registrazione:', e);

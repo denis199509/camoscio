@@ -5,6 +5,7 @@ const router = express.Router();
 const User = require('../models/User');
 const PasswordReset = require('../models/PasswordReset');
 const EmailVerification = require('../models/EmailVerification');
+const ScherzoDamiano = require('../models/ScherzoDamiano');
 const { mongoose } = require('../db/mongo');
 const { chiudiTutteLeSessioni } = require('../db/sessionStore');
 const { trovaValido, creaToken } = require('../lib/tokens');
@@ -20,6 +21,33 @@ const MIN_PASSWORD = 8; // stessa regola della registrazione, in un posto solo
 function calculateAge(birthDate) {
     const ms = Date.now() - new Date(birthDate).getTime();
     return Math.floor(ms / (365.25 * 24 * 60 * 60 * 1000));
+}
+
+// Scherzo per un amico di Denis: messaggio mostrato una volta sola a chi si registra con
+// username "Damiano" (senza distinguere maiuscole/minuscole). L'interruttore vive su
+// MongoDB (ScherzoDamiano, un solo documento con _id fisso), non sull'account stesso, cosi'
+// Denis puo' provarlo con un account di prova e riarmarlo (scripts/riarma-scherzo-damiano.js)
+// senza "bruciare" la sorpresa prima che arrivi l'amico vero.
+const SCHERZO_DAMIANO_ID = 'benvenuto-damiano';
+const MESSAGGIO_SCHERZO_DAMIANO = `ACCESSO NEGATO... Anzi no, fermi tutti!
+Ci hai messo così tanto a registrarti che nel frattempo le montagne si sono erose di due centimetri.
+E ti definisci pure un "amico"? A quest'ora avevamo già fatto la scalata dell'Everest, andata e ritorno tre volte! Quasi quasi ti revocavo l'accesso per manifesta pigrizia.
+Comunque, incredibile ma vero: ce l'hai fatta. Benvenuto sul sito! Ora però vedi di non metterci sei mesi anche per allacciarti gli scarponi.`;
+
+// Atomico: se qualcun altro scattasse nello stesso istante non si mostra due volte. Ritorna
+// true solo alla registrazione che lo consuma per davvero (documento assente o usato:false).
+async function consumaScherzoDamianoSeArmato() {
+    try {
+        await ScherzoDamiano.findOneAndUpdate(
+            { _id: SCHERZO_DAMIANO_ID, usato: { $ne: true } },
+            { $set: { usato: true, usatoIl: new Date() } },
+            { upsert: true }
+        );
+        return true;
+    } catch (e) {
+        if (e.code === 11000) return false; // gia' scattato: l'upsert ha urtato il documento esistente
+        throw e;
+    }
 }
 
 // Registrazione utente reale (Fase C)
@@ -121,7 +149,12 @@ router.post('/register', async (req, res) => {
         });
 
         req.session.userId = user._id.toString();
-        res.json(user);
+
+        const risposta = user.toJSON();
+        if (normalizedUsername.toLowerCase() === 'damiano' && await consumaScherzoDamianoSeArmato()) {
+            risposta.scherzoBenvenuto = MESSAGGIO_SCHERZO_DAMIANO;
+        }
+        res.json(risposta);
     } catch (e) {
         console.error('Errore registrazione:', e);
         if (e.code === 11000) {
