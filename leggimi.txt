@@ -1,6 +1,6 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-09 (sessione di pulizia file e ottimizzazione lettura)
+Aggiornato: 2026-08-09 (pulizia file, poi sfoltito 06-Cronologia-Sessioni.md)
 ===================================================================
 
 QUESTO FILE DICE SOLO UNA COSA: a che punto siamo adesso e da dove si ricomincia.
@@ -53,15 +53,19 @@ o ne arriva uno nuovo.
     - NOTE_SVILUPPO.md: valutato, TENUTO - non e' superfluo (unico record
       di una decina di bug pre-progetto, gia' segnalato dal vault come "da
       non duplicare, solo da leggere").
+    - ../camoscio memoria/06-Cronologia-Sessioni.md SFOLTITO (era rimasto
+      in sospeso da questa stessa sessione): letto per intero prima di
+      tagliare, trovato che cronologia.txt si ferma a meta' del 6 agosto
+      (punto 59) - non a fine luglio come si credeva - e non ha mai
+      coperto il 1 agosto, quindi la proposta "taglia da inizio agosto"
+      avrebbe risparmiato solo ~12 KB su 113. Denis ha scelto il taglio
+      piu' deciso (per esteso da 8 agosto in poi, resto compresso, con la
+      cronologia Git di quel file come rete di sicurezza dove
+      cronologia.txt non arriva): 113 KB -> 68 KB (-40%), file riordinato
+      a un solo ordine cronologico crescente. Criterio scritto in cima al
+      file stesso, da riapplicare quando torna pesante.
 
-    ANCORA IN SOSPESO, proposto ma non eseguito: sfoltire
-    ../camoscio memoria/06-Cronologia-Sessioni.md (112 KB, il file piu'
-    pesante del vault), comprimendo le sessioni piu' vecchie a una riga con
-    rimando a cronologia.txt. Manca leggere le parti piu' vecchie del file
-    e concordare con Denis il taglio esatto - l'idea e' gia' discussa, non
-    ripartire da zero (vedi ../camoscio memoria/04-Da-Fare.md).
-
-    Resta aperto anche, dalla sessione precedente: quando Denis decidera'
+    Resta aperto, dalla sessione precedente: quando Denis decidera'
     formato e tetto della foto, il pezzo foto/tasto ancora sospeso del
     punto 45 - nessun altro punto in coda con un ordine gia' dato.
 
