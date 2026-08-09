@@ -2768,7 +2768,7 @@ lui all'inizio della prossima sessione, come sempre (vedi ../camoscio memoria/
 
 --- COMPLETAMENTO ESCURSIONI: DUE TASTI DIVERSI, BUG ACCOUNT DEMO, GPX AL POSTO DELLE ORE ---
 
-67) [DA FARE] Denis, provando a completare un'escursione: "Con account demo (Marco
+67) [FATTO IN PARTE 2026-08-09] Denis, provando a completare un'escursione: "Con account demo (Marco
 Alpinista) ho cercato di completare un'escursione. Non mi piacciono due tasti veri
 di conferma. Uno "completa escursione" che ha il funzionamento che ho chiesto. Di
 poter scegliere i partecipanti [invece] di aggiungere altri presenti sul sito. Che
@@ -2800,6 +2800,28 @@ ci ha messo se si ricorda."
        partecipanti di "completa escursione";
      - NON aggiungere nessuna domanda su quanto tempo ci si e' messo nel nuovo
        campo gpx - e' proprio quello che si sta togliendo con l'altro tasto.
+   -> FATTE tre cose su quattro. Tolto per intero "segna come completato"
+      (markHikeCompleted in profile.js cancellata, era la sua unica
+      chiamata) e la scritta che produceva - "completata in gruppo" non
+      toccata. Il backend POST /:id/complete resta: lo usa ancora il
+      completamento automatico da tracciamento GPS dal vivo, un flusso
+      diverso. Campo .gpx facoltativo aggiunto a "Completa escursione":
+      chiesto a Denis cosa doveva farci il sito ("una volta che clicci di
+      aver completato l'escursione puoi aggiungere il file gpx proprio per
+      avere i dati del escursione") - i numeri reali (quota, dislivello,
+      distanza, durata) letti dal file SOSTITUISCONO quelli scritti a mano,
+      e la durata diventa il tempo reale applicato a tutti i partecipanti
+      confermati, mai chiesta a voce. Bonus: impostare i dati reali fa
+      comparire da solo il "tempo previsto" gia' esistente (punto 44).
+      RESTA APERTO solo il bug di salvataggio da account demo: investigato
+      a fondo (API con uno e piu' partecipanti, browser reale con upload
+      vero, caso limite di un'escursione gia' completata) senza riuscire a
+      riprodurlo - ogni tentativo ha salvato correttamente o rifiutato con
+      un messaggio chiaro, mai in silenzio. Se ricapita, serve sapere
+      ESATTAMENTE cosa dice il sito nel momento in cui non funziona
+      (nessun messaggio? un errore di rete? un messaggio specifico?) per
+      distinguere un bug vero da un problema di rete/Render lento.
+      Committato e pushato (e167107), verificato live su Render.
 
 --- ESPLORA ESCURSIONI DI GRUPPO: FILTRI FUORI SCHERMO SU TELEFONO, TOGLIERE OBIETTIVO DI ALLENAMENTO ---
 
@@ -2924,7 +2946,7 @@ proprio fuori a destra."
 
 --- PROFILO UTENTE: MANCANO LE ESCURSIONI ---
 
-74) [DA FARE] Denis: "Se un utente mi cerca sul sito, apre il mio profilo non
+74) [FATTO 2026-08-09] Denis: "Se un utente mi cerca sul sito, apre il mio profilo non
 trova tutte le mie escursioni. Dovrebbe essere visibile. Sia le escursioni
 importanti con file gpx (soprattutto quelle importate) sia quelle create sul sito
 e completate con il tasto del sito. L'escursione completata "Alba Corno Grande"
@@ -2935,10 +2957,25 @@ il completamento dell'escursione."
    sito e completate); (2) un'escursione completata in gruppo deve comparire sul
    profilo di OGNI partecipante confermato, non solo su quello di chi l'ha
    organizzata/completata.
+   -> FATTO: nuova sezione "Escursioni" su entrambe le pagine profilo (propria
+      e altrui), stessa funzione condivisa (renderProfileHikes). Unisce le
+      uscite gpx (nuova rotta GET /api/tracking/sessions/:userId, gemella
+      di quella gia' esistente per le proprie) e le escursioni completate
+      sul sito (GET /api/completions/:userId, gia' pubblica). La parte (2)
+      non ha richiesto nessun cambiamento: il completamento di gruppo (punto
+      64) crea gia' un Completion per ogni partecipante confermato, non solo
+      per chi lo esegue - bastava andarlo a leggere. Verificato dal vivo con
+      l'escursione vera di Denis "Alba Corno Grande": compare sul suo
+      profilo e su quello di Marco Alpinista (demo, partecipante confermato
+      ma non organizzatore). Trovato e corretto un dettaglio mentre si
+      provava: il titolo condivideva la riga con i badge (schema pensato
+      per un tag corto, non per un titolo vero) e si spezzava a meta'
+      parola - ora ha sempre una riga tutta sua. Committato e pushato
+      (bbb801d), verificato live su Render.
 
 --- CREAZIONE SQUADRA: RICERCA PERSONE INVECE DI SPUNTARE TUTTI, RICHIESTA DI PARTECIPAZIONE ---
 
-75) [DA FARE] Denis: "Durante la creazione della squadra mi fa spuntare i membri
+75) [FATTO 2026-08-09] Denis: "Durante la creazione della squadra mi fa spuntare i membri
 della squadra elencando tutti gli iscritti al sito (demo compresi), per adesso non
 sembra un problema, lo diventa quando abbiamo molto piu' utenti sul sito. Quindi
 invece di spuntare i membri della squadra basta una sbarra di ricerca persone."
@@ -2952,6 +2989,24 @@ invece di spuntare i membri della squadra basta una sbarra di ricerca persone."
    apposta in anticipo - oggi elenca tutti gli iscritti, demo compresi); (2) un
    flusso di richiesta/approvazione per entrare in una squadra gia' esistente,
    notificata a tutti gli admin, approvabile da uno solo di loro.
+   -> FATTO: (1) ricerca per nome utente al posto delle checkbox, stesso
+      schema gia' scritto per "Completa escursione" (punto 64). (2) nuovo
+      campo Squad.pendingRequests (stesso principio di Hike.pendingApproval
+      ma per piu' amministratori), tre rotte nuove (richiesta, approvazione,
+      rifiuto - quest'ultima non esplicitamente chiesta ma simmetrica,
+      altrimenti una richiesta indesiderata resterebbe in coda per sempre),
+      notifica a TUTTI gli amministratori insieme, aggiornamento atomico
+      cosi' due admin che approvano quasi insieme non si pestano i piedi.
+      Trovato e corretto un problema di fondo prima di costruire il tasto:
+      non esisteva alcun modo di SCOPRIRE una squadra a cui non si
+      appartiene (la lista squadre mostrava solo le proprie) - aggiunta una
+      sezione "Altre Squadre" apposta, altrimenti "trova la squadra
+      Merenderos" (le tue parole) non sarebbe mai potuto succedere.
+      Verificato con uno script dedicato (19 controlli) e dal vivo nel
+      browser con quattro account demo: creazione con ricerca vera,
+      scoperta della squadra, richiesta con un click vero, pannello admin,
+      un'approvazione e un rifiuto, stato finale confermato sul server.
+      Committato e pushato (1c8ddd6), verificato live su Render.
 
 --- ESCURSIONE COMPLETATA: NON DEVE PIU' ESSERE MODIFICABILE ---
 

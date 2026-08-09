@@ -26,12 +26,15 @@ o ne arriva uno nuovo.
 
 
 
->>> STATO ATTUALE (09/08/2026): Denis ha chiesto di ordinare da solo 6 degli 11
-    punti del batch dell'08/08 (facili prima, i piu' grandi dopo) e ha dato il
-    via libera a farli in sequenza senza fermarsi a chiedere conferma tra uno
-    e l'altro. Tutti e sei chiusi, ognuno committato e pushato a parte, tutti
-    verificati live su Render, prove automatiche di regressione rilanciate
-    alla fine (9+27+23 controlli, 0 falliti).
+>>> STATO ATTUALE (09/08/2026): giornata lunga in due tempi, 9 degli 11 punti
+    del batch dell'08/08 chiusi. Primo tempo: Denis ha ordinato da solo 6
+    punti (facili prima, i piu' grandi dopo) col via libera a farli in
+    sequenza. Secondo tempo: chiesto a Denis di ordinare anche gli altri 5,
+    ordinati per complessita' reale (verificata leggendo il codice, non a
+    occhio) e fatti nello stesso modo finche' lui non ha detto di fermarsi
+    dopo il punto 75. Ogni punto committato e pushato a parte, verificato
+    live su Render; prove di regressione rilanciate piu' volte (9+27+23
+    controlli, sempre 0 falliti).
     - Punto 76: un'escursione completata in gruppo non si puo' piu'
       modificare (menu "Modifica" sparito dalla card, server rifiuta con 409
       chi ci provasse comunque). Segnale usato hike.groupCompletedAt, mai un
@@ -54,23 +57,47 @@ o ne arriva uno nuovo.
       mai applicata li'). Verificando con lo stesso metodo piu' rigoroso
       (posizione di ogni singolo elemento, non solo lo scrollWidth della
       pagina) e' emerso lo STESSO difetto anche su "Salva Zona" (Carpooling)
-      e "Salva Obiettivo" (Tribu' & Squadre, punti 71/73 chiusi in questa
-      stessa sessione) - corretto insieme (commit d54e27c). Lezione nuova:
-      un overflow piccolo dentro una riga flex puo' restare invisibile a un
-      controllo sull'intera pagina - vedi ../camoscio memoria/07-Trappole-
-      Tecniche.md.
+      e "Salva Obiettivo" (Tribu' & Squadre) - corretto insieme (commit
+      d54e27c).
+    - Punto 67 (FATTO IN PARTE): tolto per intero il vecchio tasto "segna
+      come completato" (chiedeva le ore); aggiunto un campo .gpx facoltativo
+      a "Completa escursione" - i numeri reali letti dal file sostituiscono
+      quelli scritti a mano, e la durata diventa il tempo reale per tutti i
+      partecipanti, mai chiesta a voce. RESTA APERTO il bug di salvataggio
+      da account demo: investigato a fondo, mai riprodotto - se ricapita
+      serve sapere esattamente cosa dice il sito quel momento (commit
+      e167107).
+    - Punto 74: le escursioni di un utente (gpx importati/registrati +
+      completate sul sito) sul suo profilo, proprio e altrui - verificato
+      dal vivo con l'escursione vera di Denis, visibile anche sul profilo di
+      un partecipante che non l'ha organizzata (commit bbb801d).
+    - Punto 75: ricerca persone invece delle checkbox nella creazione
+      squadra; richiesta di partecipazione con approvazione di un admin
+      qualsiasi tra tutti quelli notificati. Aggiunta anche una sezione
+      "Altre Squadre" (mancava qualunque modo di SCOPRIRE una squadra a cui
+      non si appartiene) - verificato con 19 controlli automatici e dal
+      vivo nel browser (commit 1c8ddd6).
+    Lezione nuova su come si prova con account demo collegati a una squadra
+    reale: creare un'escursione di prova come Marco Alpinista NOTIFICA
+    automaticamente i membri della sua squadra vera ("nuova escursione") -
+    trovati e ripuliti 18 residui di notifica dimenticati durante il punto
+    67, senza toccare 9 residui PRE-ESISTENTI di sessioni precedenti (non
+    miei da pulire). Vedi ../camoscio memoria/07-Trappole-Tecniche.md.
 
->>> PROSSIMA SESSIONE: restano 5 degli 11 punti del batch dell'08/08, SENZA
-    ordine ancora dato per questi (l'ordine ricevuto copriva solo i sei sopra):
-    67 (due tasti di completamento da separare, bug salvataggio da account
-    demo da riprodurre, campo gpx da aggiungere), 69 (ricerca/categorie/schede
-    chiuse per l'elenco escursioni - da leggere insieme al 77), 74 (escursioni
-    mancanti sul profilo utente), 75 (ricerca persone invece di spuntare tutti
-    + richiesta di partecipazione per le squadre), 77 (nuove regole di
-    visibilita' per le escursioni concluse - da leggere insieme al 69).
-    Chiedere a Denis come vuole ordinarli, una domanda aperta. Resta anche,
-    quando Denis decidera' formato e tetto della foto, la parte foto/tasto
-    ancora aperta del punto 45.
+>>> PROSSIMA SESSIONE: restano 2 degli 11 punti del batch dell'08/08, CON
+    L'ORDINE GIA' DATO (non richiederlo di nuovo): prima il 77, poi il 69.
+    - 77 — nuove regole di visibilita' per le escursioni concluse (chi non
+      ha partecipato non le vede piu' una volta finite; i dettagli restano
+      privati ai soli partecipanti). Tocca query di lista e di dettaglio in
+      piu' punti del sito (mappa inclusa) - il piu' delicato dei due perche'
+      decide chi vede cosa.
+    - 69 — ricerca, tre categorie, schede chiuse con solo il titolo per
+      l'elenco escursioni (Escursioni e Le mie escursioni). Messo dopo il 77
+      apposta: dovrebbe risolvere da solo il dubbio lasciato aperto su chi
+      vede la categoria "completate", senza un'altra domanda a Denis - da
+      confermare comunque quando si costruisce, non darlo per scontato.
+    Resta anche, quando Denis decidera' formato e tetto della foto, la parte
+    foto/tasto ancora aperta del punto 45.
 
 >>> COSE FUORI SCOPE, NON RIPROPORLE finche' non torna Denis sull'argomento:
     - Tracciamento GPS a pagina chiusa (impossibile via browser, non difficile
