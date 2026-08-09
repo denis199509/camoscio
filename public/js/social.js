@@ -241,11 +241,9 @@ function setupSocialEvents() {
     // Filtri dinamici nella pagina escursioni
     const filterDiff = document.getElementById("filter-difficulty");
     const filterTribeContainer = document.getElementById("filter-tribe-checkboxes");
-    const filterGoal = document.getElementById("filter-goal");
 
     if (filterDiff) filterDiff.addEventListener("change", renderHikesList);
     if (filterTribeContainer) filterTribeContainer.addEventListener("change", renderHikesList);
-    if (filterGoal) filterGoal.addEventListener("input", renderHikesList);
 }
 
 // Renderizza la UI del modulo social
@@ -281,13 +279,11 @@ function renderHikesList() {
 
     const diffFilter = document.getElementById("filter-difficulty").value;
     const tribeFilters = Array.from(document.querySelectorAll("input[name='filter-tribe-tag']:checked")).map(cb => cb.value);
-    const goalFilter = document.getElementById("filter-goal").value.toLowerCase().trim();
 
     // Filtra la lista. Più tag Tribù selezionati = AND (l'escursione deve averli tutti), non OR
     const filteredHikes = db.hikes.filter(h => {
         if (diffFilter !== "all" && h.difficulty !== diffFilter) return false;
         if (tribeFilters.length > 0 && !tribeFilters.every(tag => h.tribeTags.includes(tag))) return false;
-        if (goalFilter && (!h.description.toLowerCase().includes(goalFilter) && !h.title.toLowerCase().includes(goalFilter))) return false;
         return true;
     });
 

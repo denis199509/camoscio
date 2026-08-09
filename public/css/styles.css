@@ -1089,7 +1089,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .filter-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     gap: 16px;
 }
 
@@ -4156,6 +4156,14 @@ h1, h2, h3, h4, h5, h6 {
 
     .map-recenter-btn {
         align-self: center;
+    }
+
+    /* Punto 68: "Filtri e Algoritmi di Corrispondenza" era l'unica parte di Escursioni
+       mai toccata dalle @media - due colonne fisse (rimaste da tre finche' c'era anche
+       il filtro "Obiettivo di Allenamento", tolto in questa stessa modifica) non
+       scendono mai sotto la loro larghezza minima e sbordavano a destra su telefono. */
+    .filter-grid {
+        grid-template-columns: 1fr;
     }
 
     /* --- Schede escursione su schermo stretto ---
