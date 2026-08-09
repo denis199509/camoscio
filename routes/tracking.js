@@ -216,6 +216,26 @@ router.get('/sessions', requireAuth, async (req, res) => {
     }
 });
 
+// Punto 74: le stesse uscite (gpx importati e registrati dal vivo), ma di UN ALTRO utente -
+// per il profilo pubblico. Stessa esclusione dei punti GPS della rotta gemella sopra, stesso
+// principio gia' in uso per /api/completions/:userId e /api/stamps/:userId ("achievement
+// pubblici tra utenti loggati", vedi routes/stamps.js): nessun controllo di proprieta', solo
+// la sessione. Se domani servisse rispettare privacySetting come fa GET /api/users/:id, va
+// deciso apposta - oggi non esiste ancora una convenzione per questo tipo di dato.
+router.get('/sessions/:userId', requireAuth, async (req, res) => {
+    try {
+        const sessioni = await ActiveHikeSession
+            .find({ userId: req.params.userId, status: 'ended' })
+            .select('-points -offTrailBuffer')
+            .sort({ startedAt: -1 })
+            .limit(200);
+        res.json(sessioni);
+    } catch (e) {
+        console.error('Errore lettura storico uscite altrui:', e);
+        res.status(500).json({ error: 'Impossibile caricare lo storico' });
+    }
+});
+
 // Cancellare un'uscita dallo storico (richiesta dell'utente, 2026-07-27).
 //
 // PERCHE' SERVE: da quando si accettano anche i file .gpx senza orari e gli itinerari

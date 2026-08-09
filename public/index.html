@@ -1511,10 +1511,15 @@
                         <!-- Riempito da JS SOLO se questo utente ha attivato l'esperto locale -->
                     </div>
 
-                    <p class="small text-muted rp-nota-dislivello">
-                        <i data-lucide="info"></i>
-                        <span>Questa pagina è ancora in aggiornamento: presto ci saranno altre informazioni sul profilo.</span>
-                    </p>
+                    <!-- Punto 74: le escursioni di questa persona - gpx importati/registrati
+                         (ActiveHikeSession) e quelle completate sul sito (Completion), unite in
+                         un solo elenco da renderProfileHikes() in userprofile.js. -->
+                    <div class="profile-hikes-group">
+                        <h3 class="badges-group-title">
+                            <i data-lucide="footprints"></i> Escursioni
+                        </h3>
+                        <div id="user-profile-hikes"></div>
+                    </div>
 
                     <div class="badges-group">
                         <h3 class="badges-group-title">
@@ -1592,6 +1597,15 @@
                             </div>
                             <button class="btn btn-sm btn-primary" id="btn-change-password">Cambia password</button>
                         </div>
+                    </div>
+
+                    <!-- Punto 74: stesso elenco di #user-profile-hikes qui sopra, riempito dalla
+                         stessa funzione condivisa renderProfileHikes(). -->
+                    <div class="profile-hikes-group">
+                        <h3 class="badges-group-title">
+                            <i data-lucide="footprints"></i> Escursioni
+                        </h3>
+                        <div id="my-profile-hikes"></div>
                     </div>
 
                     <div class="badges-group">

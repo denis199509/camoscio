@@ -66,6 +66,114 @@ function renderProfileIdentity(utente, timbri, els, ascese) {
 }
 window.CamoscioProfileIdentity = { render: renderProfileIdentity };
 
+// Punto 74: le escursioni di questa persona, sia sul proprio profilo sia su quello di un
+// altro - stesso principio di renderProfileIdentity sopra, una funzione sola con "chi" e
+// "dove scrivere" a parametro. Due fonti diverse, unite in un solo elenco per data:
+//  - ActiveHikeSession (punto 15/tracciamento): gpx importati e uscite registrate dal vivo,
+//    GET /api/tracking/sessions/:userId (punto 74, gemella della propria in tracking.js);
+//  - Completion (escursioni create sul sito e completate, singole o in gruppo - punto 64),
+//    incrociate con window.CamoscioState.hikes (gia' in cache, GET /api/hikes non e' filtrata
+//    per utente) per avere titolo/data/stato.
+// Le card delle uscite riprendono lo stesso stile di schedaUscita() in storico.js (stesse
+// classi .outing-card*, gia' in CSS) ma senza il tasto di cancellazione: cancellare una
+// propria uscita ha senso solo da "Le mie escursioni", non qui.
+function formattaDataItaliana(iso) {
+    const d = new Date(iso);
+    if (isNaN(d)) return '';
+    return d.toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' });
+}
+
+function formattaDurata(secondi) {
+    if (!secondi || secondi < 60) return '—';
+    const ore = Math.floor(secondi / 3600);
+    const minuti = Math.round((secondi % 3600) / 60);
+    return ore > 0 ? `${ore}h ${minuti}min` : `${minuti} min`;
+}
+
+function schedaEscursioneCompletata(hike) {
+    const esc = window.escapeHtml;
+    // Titolo su una riga TUTTA sua, fuori da .outing-card-head: quella e' una riga flex
+    // pensata per un tag corto accanto a un nome file/data breve (storico.js). Un titolo
+    // vero in piu' parole ("Alba Corno Grande") condivisa con due badge si vede spezzare
+    // a meta' parola (overflow-wrap:anywhere su poco spazio) - qui il titolo ha sempre
+    // tutta la larghezza della card, i badge stanno sotto in una riga propria.
+    return `
+        <div class="outing-card">
+            <span class="outing-card-title">${esc(hike.title)}</span>
+            <div class="outing-card-head" style="margin-top: 4px;">
+                <span class="badge badge-primary outing-tag">${esc(hike.difficulty)}</span>
+                ${hike.groupCompletedAt
+                    ? `<span class="badge badge-green outing-tag" title="Completata insieme al gruppo"><i data-lucide="users"></i> in gruppo</span>`
+                    : ''}
+            </div>
+            <span class="outing-card-sub">${formattaDataItaliana(hike.date)}</span>
+            <div class="outing-card-stats">
+                <div><strong>${(hike.distanceKm || 0).toFixed(1).replace('.', ',')}</strong><span>km</span></div>
+                <div><strong>${Math.round(hike.elevationGain || 0)}</strong><span>m disliv.</span></div>
+                <div><strong>${Math.round(hike.maxAltitude || 0)}</strong><span>quota max</span></div>
+            </div>
+        </div>`;
+}
+
+function schedaUscitaProfilo(s) {
+    const esc = window.escapeHtml;
+    const importata = s.importedFrom === 'gpx';
+    const titolo = importata && s.importedName ? esc(s.importedName) : formattaDataItaliana(s.startedAt);
+    const sottotitolo = (importata && s.importedName) ? formattaDataItaliana(s.startedAt) : '';
+    return `
+        <div class="outing-card">
+            <div class="outing-card-head">
+                <span class="outing-card-title">${titolo}</span>
+                ${importata
+                    ? `<span class="badge badge-accent outing-tag" title="Traccia caricata da un file .gpx, non registrata dal sito"><i data-lucide="upload"></i> importata</span>`
+                    : `<span class="badge badge-green outing-tag" title="Registrata col GPS durante l'escursione"><i data-lucide="satellite-dish"></i> registrata</span>`}
+            </div>
+            ${sottotitolo ? `<span class="outing-card-sub">${sottotitolo}</span>` : ''}
+            <div class="outing-card-stats">
+                <div><strong>${(s.distanceKm || 0).toFixed(1).replace('.', ',')}</strong><span>km</span></div>
+                <div><strong>${Math.round(s.elevationGainM || 0)}</strong><span>m disliv.</span></div>
+                ${s.durationUnknown
+                    ? `<div title="Il file .gpx non conteneva gli orari dei punti: durata non disponibile."><strong>—</strong><span>durata ignota</span></div>`
+                    : `<div><strong>${formattaDurata(s.durationSeconds)}</strong><span>durata</span></div>`}
+            </div>
+        </div>`;
+}
+
+async function renderProfileHikes(userId, container) {
+    if (!container) return;
+    container.innerHTML = `<p class="text-muted small">Caricamento...</p>`;
+
+    let completions = [];
+    let sessioni = [];
+    try {
+        [completions, sessioni] = await Promise.all([
+            fetch(`/api/completions/${userId}`).then(r => r.ok ? r.json() : []),
+            fetch(`/api/tracking/sessions/${userId}`).then(r => r.ok ? r.json() : [])
+        ]);
+    } catch (e) {
+        console.error("Errore nel caricamento delle escursioni del profilo:", e);
+        container.innerHTML = `<p class="text-muted small">Non è stato possibile caricare le escursioni.</p>`;
+        return;
+    }
+
+    const db = window.CamoscioState;
+    const vociHike = completions
+        .map(c => (db.hikes || []).find(h => h.id === c.hikeId))
+        .filter(Boolean)
+        .map(h => ({ tipo: 'hike', data: h.date, html: schedaEscursioneCompletata(h) }));
+
+    const vociUscita = sessioni.map(s => ({ tipo: 'uscita', data: s.startedAt, html: schedaUscitaProfilo(s) }));
+
+    const tutte = [...vociHike, ...vociUscita].sort((a, b) => String(b.data || '').localeCompare(String(a.data || '')));
+
+    container.innerHTML = tutte.length
+        ? `<div class="outings-grid">${tutte.map(v => v.html).join('')}</div>`
+        : `<div class="glass-card text-center py-4 text-muted">Nessuna escursione da mostrare per ora.</div>`;
+
+    if (window.lucide) window.lucide.createIcons();
+}
+window.CamoscioProfileHikes = { render: renderProfileHikes };
+
 async function renderUserProfile(userId) {
     const header = document.getElementById("user-profile-header");
     const badgeBox = document.getElementById("user-profile-personal-badge");
@@ -119,6 +227,7 @@ async function renderUserProfile(userId) {
     }
 
     renderProfileIdentity(utente, timbri, { header, badgeBox, badgesGrid }, ascese);
+    renderProfileHikes(userId, document.getElementById("user-profile-hikes"));
 }
 
 window.showUserProfile = showUserProfile;

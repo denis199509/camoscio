@@ -22,6 +22,13 @@ function renderMyProfilePage() {
         }, window.CamoscioState.peakAscents);
     }
 
+    // Punto 74: a differenza dell'identita' qui sopra, le escursioni non sono gia' in
+    // CamoscioState (Completion/ActiveHikeSession non ci vivono) - stesso fetch della
+    // pagina dell'altro utente, stessa funzione condivisa.
+    if (window.CamoscioProfileHikes) {
+        window.CamoscioProfileHikes.render(usr.id, document.getElementById("my-profile-hikes"));
+    }
+
     renderProfileCard(usr);
 }
 window.renderMyProfilePage = renderMyProfilePage;
