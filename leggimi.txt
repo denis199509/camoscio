@@ -1,6 +1,6 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-09
+Aggiornato: 2026-08-09 (dopo il punto 77)
 ===================================================================
 
 QUESTO FILE DICE SOLO UNA COSA: a che punto siamo adesso e da dove si ricomincia.
@@ -84,18 +84,29 @@ o ne arriva uno nuovo.
     67, senza toccare 9 residui PRE-ESISTENTI di sessioni precedenti (non
     miei da pulire). Vedi ../camoscio memoria/07-Trappole-Tecniche.md.
 
->>> PROSSIMA SESSIONE: restano 2 degli 11 punti del batch dell'08/08, CON
-    L'ORDINE GIA' DATO (non richiederlo di nuovo): prima il 77, poi il 69.
-    - 77 — nuove regole di visibilita' per le escursioni concluse (chi non
-      ha partecipato non le vede piu' una volta finite; i dettagli restano
-      privati ai soli partecipanti). Tocca query di lista e di dettaglio in
-      piu' punti del sito (mappa inclusa) - il piu' delicato dei due perche'
-      decide chi vede cosa.
+>>> STESSA SESSIONE (09/08/2026), dopo lo stato sopra: punto 77 chiuso.
+    Regola in due parti (Denis): un'escursione CONCLUSA (hike.groupCompletedAt,
+    stesso segnale del punto 76, mai un confronto con la data) sparisce da chi
+    non vi ha partecipato; resta visibile a chi e' stato confermato presente.
+    Le programmate restano visibili a tutti come sempre. Filtrato in UN SOLO
+    punto - GET /api/hikes, l'unica fonte di window.CamoscioState.hikes per
+    tutto il frontend (mappa, Escursioni, Le mie escursioni, profilo, zaino,
+    carpooling) - quindi la stessa modifica copre da sola anche i "dettagli":
+    chi non e' partecipante non riceve piu' il documento dal server, nessun
+    cambio frontend necessario. Verificato con prove/prova-punto77.js (16
+    controlli: tre account, escursione vera creata/iscritta/completata in
+    gruppo, sparisce per l'iscritto non confermato e per l'estraneo dopo la
+    conclusione, resta a chi e' stato confermato) e le prove di regressione
+    (configurazione 9/9, punto37 27/27, punto45 23/23). Commit c3ad310.
+
+>>> PROSSIMA SESSIONE: resta 1 degli 11 punti del batch dell'08/08, l'ultimo,
+    con l'ordine gia' dato (non richiederlo di nuovo):
     - 69 — ricerca, tre categorie, schede chiuse con solo il titolo per
       l'elenco escursioni (Escursioni e Le mie escursioni). Messo dopo il 77
       apposta: dovrebbe risolvere da solo il dubbio lasciato aperto su chi
-      vede la categoria "completate", senza un'altra domanda a Denis - da
-      confermare comunque quando si costruisce, non darlo per scontato.
+      vede la categoria "completate" per chi non ha partecipato - da
+      confermare comunque quando si costruisce, non darlo per scontato solo
+      perche' sembra risolto dal 77.
     Resta anche, quando Denis decidera' formato e tetto della foto, la parte
     foto/tasto ancora aperta del punto 45.
 

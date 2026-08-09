@@ -3033,7 +3033,7 @@ Un'escursione che risulta completata non puo' piu' essere modificata."
 
 --- VISIBILITA' DELLE ESCURSIONI: SOLO PROGRAMMATE E PROPRIE, DETTAGLI SOLO A CHI HA PARTECIPATO ---
 
-77) [DA FARE] Denis: "Se un'escursione a cui io non ho partecipato viene conclusa,
+77) [FATTO 2026-08-09] Denis: "Se un'escursione a cui io non ho partecipato viene conclusa,
 a me non deve essere piu' visibile. Io devo vedere solo le escursioni che sono
 programmate (pure a cui non partecipo) pure quelle a cui partecipo. Una volta
 completata l'escursione i dettagli di quella escursione restano visibili solo a
@@ -3042,4 +3042,19 @@ chi ha partecipato all'escursione non a tutti gli utenti del sito."
    dalla vista di chi non vi ha partecipato (restano visibili solo le programmate,
    a chiunque, piu' le proprie concluse); (2) i dettagli di un'escursione conclusa
    diventano privati ai soli partecipanti, non piu' pubblici a tutti come oggi.
+   -> FATTO: stesso segnale del punto 76 (hike.groupCompletedAt), mai un confronto
+      con la data. GET /api/hikes (routes/hikes.js) e' l'UNICA fonte di
+      window.CamoscioState.hikes per tutto il frontend (mappa, Escursioni, Le mie
+      escursioni, profilo, zaino, carpooling): filtrata li', con
+      isHikeParticipant(hike,userId) gia' esistente (punto 55), risolve insieme
+      sia la visibilita' in elenco sia i "dettagli" - chi non e' partecipante non
+      riceve piu' il documento dal server, non solo non lo vede a schermo. Nessuna
+      modifica al frontend: le pagine leggevano gia' tutte da quella stessa fonte.
+      Verificato con uno script dedicato (prove/prova-punto77.js, 16 controlli: tre
+      account, un'escursione vera creata/iscritta/completata in gruppo, ancora
+      visibile a tutti finche' programmata, sparisce per l'iscritto NON confermato
+      presente e per l'estraneo dopo la conclusione, resta visibile a chi e' stato
+      confermato, chat ancora negata come da sempre, database ripulito a fine
+      prova) e le prove di regressione (prova-configurazione.js 9/9, prova-punto37.js
+      27/27, prova-punto45.js 23/23).
    DA LEGGERE INSIEME AL PUNTO 69 quando si riprende (vedi nota li').
