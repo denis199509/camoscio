@@ -997,7 +997,7 @@ B) L'UTENTE HA CHIESTO SE IL TRACCIAMENTO SI PUO' PORTARE SUL SERVER come il Dea
 
 --- SICUREZZA ---
 
-37) [DA FARE - E' IL PUNTO 21, SECONDA META'] Dead Man's Switch sul server, che
+37) [FATTO 2026-08-08 - ERA IL PUNTO 21, SECONDA META'] Dead Man's Switch sul server, che
 funzioni anche a pagina chiusa. Uno per profilo.
    GIA' FATTO (2026-07-26): contatti di emergenza veri dal profilo, posizione GPS
    vera, e nessuna bugia a schermo.
@@ -2280,7 +2280,7 @@ verifica fatta oggi nel codice, poi si decide insieme come procedere.
 
 --- RECENSIONE PRIMA DEL TEMPO (BUG) ---
 
-58) [DA FARE] Denis: "Sono riuscito a mandare una recensione a Manu
+58) [FATTO 2026-08-03] Denis: "Sono riuscito a mandare una recensione a Manu
 prima di fare un'escursione insieme. Ci siamo iscritti solo per fare
 la stessa escursione. Ma la recensione sono riuscito a metterla
 prima. La recensione deve essere disponibile solo una volta finita
@@ -2295,6 +2295,18 @@ l'escursione insieme."
    usare al posto della sola co-iscrizione: la recensione dovrebbe
    richiedere un Completion per ENTRAMBI gli utenti su quell'hikeId,
    non solo la presenza nella lista partecipanti.
+   -> FATTO E CHIUSO IL 2026-08-03: routes/reviews.js ora richiede un
+   Completion per ENTRAMBI gli utenti sulla stessa escursione, non piu'
+   la sola co-iscrizione. Corretto anche lato client (social.js,
+   populateReviewTargets): usava new Date(hike.date) < new Date() per
+   segnare un'escursione "gia' conclusa" dalla mezzanotte del suo
+   giorno, ore prima che avvenisse per davvero - causa esatta del caso
+   riportato sopra. Ora legge i completamenti veri (db.completions);
+   solo i propri sono disponibili lato client, quindi il server resta
+   l'arbitro finale. Provato dal vivo con gli account demo (Marco,
+   Sofia, Giulia). Commit 06d76c9, rimasto 4 giorni solo in locale,
+   pushato e verificato live durante la sessione del 6-7 agosto.
+   Dettaglio completo in ../camoscio memoria/03-Decisioni-Architetturali.md.
 
 --- PROFILO PROPRIO: FUORI DALLA DASHBOARD ---
 

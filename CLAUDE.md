@@ -13,12 +13,13 @@ All'inizio di ogni sessione, leggere in quest'ordine:
 3. `../camoscio memoria/04-Da-Fare.md` — cosa è aperto davvero
 4. `leggimi.txt` — mezza pagina: a che punto siamo e da dove si ricomincia
 
-Poi, secondo il tipo di lavoro:
+Poi, solo secondo il tipo di lavoro (non di default):
 
 - decisioni tecniche → `../camoscio memoria/03-Decisioni-Architetturali.md` (prima di riproporre una scelta, controllare se è già stata presa e perché)
 - debug, test, script → `../camoscio memoria/07-Trappole-Tecniche.md` (errori già pagati, non ripagarli)
+- si valuta di riprendere un'idea accantonata → `../camoscio memoria/05-Idee-Facoltative.md`
 
-**Non leggere `cronologia.txt` per capire a che punto siamo**: è lungo e serve ad altro (vedi sotto).
+**Mai leggere `../camoscio memoria/06-Cronologia-Sessioni.md` o `cronologia.txt` per capire a che punto siamo**: raccontano solo perché in passato si è scelta una strada. Si aprono solo per il dettaglio di una decisione specifica già presa, mai per orientarsi a inizio sessione.
 
 ## I tre file nel repo, e a cosa servono davvero
 

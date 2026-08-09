@@ -1,6 +1,6 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-09 (batch dell'08/08 chiuso per intero, punto 69 incluso)
+Aggiornato: 2026-08-09 (sessione di pulizia file e ottimizzazione lettura)
 ===================================================================
 
 QUESTO FILE DICE SOLO UNA COSA: a che punto siamo adesso e da dove si ricomincia.
@@ -26,24 +26,44 @@ o ne arriva uno nuovo.
 
 
 
->>> STATO ATTUALE (09/08/2026): il batch di 11 segnalazioni portato da Denis
-    l'08/08 e' CHIUSO PER INTERO (67-77, dettaglio e commit di ognuno in
-    cose_da_fare.txt e in ../camoscio memoria/06-Cronologia-Sessioni.md).
-    Ultimo chiuso oggi, il punto 69: ricerca per titolo, tre categorie ("a
-    cui puoi partecipare" / "a cui partecipi" / "completate") e schede
-    chiuse (solo titolo, si espandono al click) sulle pagine Escursioni e
-    Le mie escursioni. Nessuna rotta server toccata - solo frontend
-    (public/index.html, public/js/social.js, public/css/styles.css) - la
-    categoria "completate" mostra solo le TUE concluse perche' il punto 77
-    le filtra gia' a monte: confermato con Denis che va bene resti vuota per
-    chi non ne ha. Verificato con le prove di regressione (configurazione
-    9/9, punto37 27/27, punto45 23/23, punto77 16/16, sempre 0 falliti) e
-    dal vivo nel browser con due account (uno con una completata, uno
-    senza). Committato e pushato, verificato live su Render.
-    Resta aperto solo, quando Denis decidera' formato e tetto della foto, il
-    pezzo foto/tasto ancora sospeso del punto 45 - nessun altro punto in
-    coda con un ordine gia' dato: la prossima sessione comincia chiedendo a
-    Denis cosa vuole fare dopo.
+>>> STATO ATTUALE (09/08/2026, sessione di pulizia file): il batch di 11
+    segnalazioni (67-77) resta CHIUSO PER INTERO dalla sessione precedente
+    (dettaglio in cose_da_fare.txt e nel vault). QUESTA SESSIONE NON HA
+    TOCCATO NESSUN CODICE: dedicata a ottimizzare la lettura dei file a
+    inizio/fine sessione, su richiesta esplicita di Denis.
+
+    COSA E' CAMBIATO (solo strumenti/note, nessun impatto sul sito):
+    - CLAUDE.md esclude ora esplicitamente
+      ../camoscio memoria/06-Cronologia-Sessioni.md e cronologia.txt dalla
+      lettura di routine - si aprono solo per il dettaglio di una decisione
+      gia' presa, mai per orientarsi a inizio sessione. Perche':
+      ../camoscio memoria/03-Decisioni-Architetturali.md.
+    - NUOVO: C:\Users\lenovo\OneDrive\Desktop\Claude-Work.bat - lancia
+      Claude gia' dentro la cartella camoscio (fa scattare il caricamento
+      automatico di CLAUDE.md, mai successo finora perche' le sessioni
+      partivano da una cartella diversa). DA VERIFICARE alla prossima
+      sessione reale: se funziona, leggimi/vincoli/da-fare vengono citati
+      da soli, senza che Denis nomini percorsi o file.
+    - cose_da_fare.txt: corrette le etichette dei punti 37 e 58 (dicevano
+      ancora "DA FARE" pur chiusi da settimane - solo la scritta era
+      vecchia). Controllati anche 53/56/62: confermati genuinamente ancora
+      aperti, non toccati.
+    - prove/: tolti 18 file usa-e-getta (16 screenshot + 2 log, gia'
+      esclusi da git, si rigenerano da soli). Script .js intatti.
+    - NOTE_SVILUPPO.md: valutato, TENUTO - non e' superfluo (unico record
+      di una decina di bug pre-progetto, gia' segnalato dal vault come "da
+      non duplicare, solo da leggere").
+
+    ANCORA IN SOSPESO, proposto ma non eseguito: sfoltire
+    ../camoscio memoria/06-Cronologia-Sessioni.md (112 KB, il file piu'
+    pesante del vault), comprimendo le sessioni piu' vecchie a una riga con
+    rimando a cronologia.txt. Manca leggere le parti piu' vecchie del file
+    e concordare con Denis il taglio esatto - l'idea e' gia' discussa, non
+    ripartire da zero (vedi ../camoscio memoria/04-Da-Fare.md).
+
+    Resta aperto anche, dalla sessione precedente: quando Denis decidera'
+    formato e tetto della foto, il pezzo foto/tasto ancora sospeso del
+    punto 45 - nessun altro punto in coda con un ordine gia' dato.
 
 >>> COSE FUORI SCOPE, NON RIPROPORLE finche' non torna Denis sull'argomento:
     - Tracciamento GPS a pagina chiusa (impossibile via browser, non difficile
