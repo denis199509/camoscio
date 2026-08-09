@@ -3089,3 +3089,31 @@ chi ha partecipato all'escursione non a tutti gli utenti del sito."
       prova) e le prove di regressione (prova-configurazione.js 9/9, prova-punto37.js
       27/27, prova-punto45.js 23/23).
    DA LEGGERE INSIEME AL PUNTO 69 quando si riprende (vedi nota li').
+
+--- SCHERZO DI BENVENUTO PER L'AMICO DAMIANO ---
+
+78) [FATTO 2026-08-09] Denis: "Voglio fare uno scherzo ad un mio amico. Stavo pensando ad
+un messaggio divertente da fargli vedere a fine registrazione. Il mio amico si chiama
+'Damiano', quindi lo scherzo dobbiamo farlo alla prossima persona che si registra con
+questo nome." Messaggio dettato per intero (testo esatto in routes/auth.js). "Una volta
+che e' comparso il messaggio alla persona che si registra con questo nome non si fa
+piu', quindi una cosa che si fa una volta sola. E' possibile?"
+   -> FATTO: username "Damiano" (senza distinguere maiuscole/minuscole, confronto per
+      UGUAGLIANZA esatta - non basta contenere "damiano") mostra il messaggio in un
+      modale (showAlertModal, gia' in uso altrove nel sito) subito dopo la
+      registrazione, prima di entrare nel sito. L'interruttore "gia' scattato" vive
+      sul database (nuovo modello ScherzoDamiano, un solo documento) separato
+      dall'account stesso: se Denis vuole provarlo con un account di prova e poi
+      cancellarlo, un piccolo script lo riarma (scripts/riarma-scherzo-damiano.js)
+      senza consumare la sorpresa vera. Provato con 14 controlli dedicati (prima
+      registrazione: scatta; seconda con "damiano" minuscolo: non scatta piu';
+      username che CONTIENE "damiano" senza essere uguale: non scatta; dopo il
+      riarmo: scatta di nuovo) e dal vivo nel browser (modale, testo e a capo
+      corretti). Nessuna regressione (prova-configurazione.js 9/9,
+      prova-registrazione-senza-email.js 7/7, prova-punto7.js 53/53,
+      prova-verifica-email.js 34/34, prova-guasto-invio.js 6/6). Committato e
+      pushato (9e5692f), verificato live su Render.
+      RESTA A DENIS: dire all'amico di registrarsi con username ESATTAMENTE
+      "Damiano" (maiuscole/minuscole non contano, il resto si') - con un nome
+      diverso lo scherzo non scatta. Stato attuale: ARMATO, pronto per la prossima
+      registrazione con quel nome.
