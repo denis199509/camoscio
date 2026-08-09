@@ -1,6 +1,6 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-09 (dopo il punto 77)
+Aggiornato: 2026-08-09 (batch dell'08/08 chiuso per intero, punto 69 incluso)
 ===================================================================
 
 QUESTO FILE DICE SOLO UNA COSA: a che punto siamo adesso e da dove si ricomincia.
@@ -26,89 +26,24 @@ o ne arriva uno nuovo.
 
 
 
->>> STATO ATTUALE (09/08/2026): giornata lunga in due tempi, 9 degli 11 punti
-    del batch dell'08/08 chiusi. Primo tempo: Denis ha ordinato da solo 6
-    punti (facili prima, i piu' grandi dopo) col via libera a farli in
-    sequenza. Secondo tempo: chiesto a Denis di ordinare anche gli altri 5,
-    ordinati per complessita' reale (verificata leggendo il codice, non a
-    occhio) e fatti nello stesso modo finche' lui non ha detto di fermarsi
-    dopo il punto 75. Ogni punto committato e pushato a parte, verificato
-    live su Render; prove di regressione rilanciate piu' volte (9+27+23
-    controlli, sempre 0 falliti).
-    - Punto 76: un'escursione completata in gruppo non si puo' piu'
-      modificare (menu "Modifica" sparito dalla card, server rifiuta con 409
-      chi ci provasse comunque). Segnale usato hike.groupCompletedAt, mai un
-      confronto con la data (commit d3e85a5).
-    - Punto 70: il testo troncato "Nessun contatto con email..." nel Dead
-      Man's Switch (pagina Mappa) - non riprodotto un overflow vero a nessuna
-      larghezza reale testata, probabile rendering diverso sul telefono di
-      Denis; corretto comunque in modo robusto (testo piu' corto, ellissi
-      vera invece del taglio netto). La freccia disabilitata e' corretta:
-      non c'e' nulla da scegliere finche' non si aggiunge un contatto con
-      email (commit 17ad479).
-    - Punto 68: layout mobile dei filtri Escursioni sistemato, tolto il
-      filtro "Obiettivo di Allenamento" (commit a0b957e).
-    - Punto 71: layout mobile di Carpooling sistemato (commit 8d7fbe7).
-    - Punto 73: layout mobile di Tribu' & Squadre sistemato (commit 320bc17).
-    - Punto 72: il vero tasto SOS fuori schermo NON era la stessa cosa gia'
-      sistemata al punto 17 (quella funziona ancora) - era un bug mai
-      riportato prima in .mesh-send-form (input+Invia+SOS in riga senza
-      min-width:0, la stessa regola gia' nota per .form-row .form-group ma
-      mai applicata li'). Verificando con lo stesso metodo piu' rigoroso
-      (posizione di ogni singolo elemento, non solo lo scrollWidth della
-      pagina) e' emerso lo STESSO difetto anche su "Salva Zona" (Carpooling)
-      e "Salva Obiettivo" (Tribu' & Squadre) - corretto insieme (commit
-      d54e27c).
-    - Punto 67 (FATTO IN PARTE): tolto per intero il vecchio tasto "segna
-      come completato" (chiedeva le ore); aggiunto un campo .gpx facoltativo
-      a "Completa escursione" - i numeri reali letti dal file sostituiscono
-      quelli scritti a mano, e la durata diventa il tempo reale per tutti i
-      partecipanti, mai chiesta a voce. RESTA APERTO il bug di salvataggio
-      da account demo: investigato a fondo, mai riprodotto - se ricapita
-      serve sapere esattamente cosa dice il sito quel momento (commit
-      e167107).
-    - Punto 74: le escursioni di un utente (gpx importati/registrati +
-      completate sul sito) sul suo profilo, proprio e altrui - verificato
-      dal vivo con l'escursione vera di Denis, visibile anche sul profilo di
-      un partecipante che non l'ha organizzata (commit bbb801d).
-    - Punto 75: ricerca persone invece delle checkbox nella creazione
-      squadra; richiesta di partecipazione con approvazione di un admin
-      qualsiasi tra tutti quelli notificati. Aggiunta anche una sezione
-      "Altre Squadre" (mancava qualunque modo di SCOPRIRE una squadra a cui
-      non si appartiene) - verificato con 19 controlli automatici e dal
-      vivo nel browser (commit 1c8ddd6).
-    Lezione nuova su come si prova con account demo collegati a una squadra
-    reale: creare un'escursione di prova come Marco Alpinista NOTIFICA
-    automaticamente i membri della sua squadra vera ("nuova escursione") -
-    trovati e ripuliti 18 residui di notifica dimenticati durante il punto
-    67, senza toccare 9 residui PRE-ESISTENTI di sessioni precedenti (non
-    miei da pulire). Vedi ../camoscio memoria/07-Trappole-Tecniche.md.
-
->>> STESSA SESSIONE (09/08/2026), dopo lo stato sopra: punto 77 chiuso.
-    Regola in due parti (Denis): un'escursione CONCLUSA (hike.groupCompletedAt,
-    stesso segnale del punto 76, mai un confronto con la data) sparisce da chi
-    non vi ha partecipato; resta visibile a chi e' stato confermato presente.
-    Le programmate restano visibili a tutti come sempre. Filtrato in UN SOLO
-    punto - GET /api/hikes, l'unica fonte di window.CamoscioState.hikes per
-    tutto il frontend (mappa, Escursioni, Le mie escursioni, profilo, zaino,
-    carpooling) - quindi la stessa modifica copre da sola anche i "dettagli":
-    chi non e' partecipante non riceve piu' il documento dal server, nessun
-    cambio frontend necessario. Verificato con prove/prova-punto77.js (16
-    controlli: tre account, escursione vera creata/iscritta/completata in
-    gruppo, sparisce per l'iscritto non confermato e per l'estraneo dopo la
-    conclusione, resta a chi e' stato confermato) e le prove di regressione
-    (configurazione 9/9, punto37 27/27, punto45 23/23). Commit c3ad310.
-
->>> PROSSIMA SESSIONE: resta 1 degli 11 punti del batch dell'08/08, l'ultimo,
-    con l'ordine gia' dato (non richiederlo di nuovo):
-    - 69 — ricerca, tre categorie, schede chiuse con solo il titolo per
-      l'elenco escursioni (Escursioni e Le mie escursioni). Messo dopo il 77
-      apposta: dovrebbe risolvere da solo il dubbio lasciato aperto su chi
-      vede la categoria "completate" per chi non ha partecipato - da
-      confermare comunque quando si costruisce, non darlo per scontato solo
-      perche' sembra risolto dal 77.
-    Resta anche, quando Denis decidera' formato e tetto della foto, la parte
-    foto/tasto ancora aperta del punto 45.
+>>> STATO ATTUALE (09/08/2026): il batch di 11 segnalazioni portato da Denis
+    l'08/08 e' CHIUSO PER INTERO (67-77, dettaglio e commit di ognuno in
+    cose_da_fare.txt e in ../camoscio memoria/06-Cronologia-Sessioni.md).
+    Ultimo chiuso oggi, il punto 69: ricerca per titolo, tre categorie ("a
+    cui puoi partecipare" / "a cui partecipi" / "completate") e schede
+    chiuse (solo titolo, si espandono al click) sulle pagine Escursioni e
+    Le mie escursioni. Nessuna rotta server toccata - solo frontend
+    (public/index.html, public/js/social.js, public/css/styles.css) - la
+    categoria "completate" mostra solo le TUE concluse perche' il punto 77
+    le filtra gia' a monte: confermato con Denis che va bene resti vuota per
+    chi non ne ha. Verificato con le prove di regressione (configurazione
+    9/9, punto37 27/27, punto45 23/23, punto77 16/16, sempre 0 falliti) e
+    dal vivo nel browser con due account (uno con una completata, uno
+    senza). Committato e pushato, verificato live su Render.
+    Resta aperto solo, quando Denis decidera' formato e tetto della foto, il
+    pezzo foto/tasto ancora sospeso del punto 45 - nessun altro punto in
+    coda con un ordine gia' dato: la prossima sessione comincia chiedendo a
+    Denis cosa vuole fare dopo.
 
 >>> COSE FUORI SCOPE, NON RIPROPORLE finche' non torna Denis sull'argomento:
     - Tracciamento GPS a pagina chiusa (impossibile via browser, non difficile
@@ -134,16 +69,24 @@ o ne arriva uno nuovo.
         ascoltatore, non se il codice del gestore e' giusto.
       - TUTTE le .page-section restano nel DOM insieme (navigateTo aggiunge/
         toglie solo la classe "active", non smonta nulla): un componente
-        JS pensato per vivere dentro piu' di una pagina (es. chatpanel.js,
-        punto 55) non deve MAI usare id fissi per i propri elementi interni
-        - due copie con lo stesso id (una visibile, una nascosta) fanno
-        scrivere document.getElementById nel posto sbagliato, senza nessun
-        errore in console. Sempre box.querySelector(...) scoped al
-        contenitore ricevuto.
+        JS pensato per vivere dentro piu' di una pagina (es. chatpanel.js
+        punto 55, le schede di buildHikeCard punto 69) non deve MAI usare id
+        fissi per i propri elementi interni - due copie con lo stesso id
+        (una visibile, una nascosta) fanno scrivere document.getElementById
+        nel posto sbagliato, senza nessun errore in console. Sempre
+        box.querySelector(...) scoped al contenitore, o - per una card che
+        si apre/chiude da sola - il fratello nel DOM (nextElementSibling),
+        mai un id.
 
 >>> LEZIONE OPERATIVA: dopo qualunque interruzione di sessione non
     volontaria, controllare SEMPRE `git log origin/master..HEAD` in
     entrambi i repository (camoscio e vault) prima di fidarsi dell'ultima
     riga scritta qui - una volta le note sono rimaste indietro rispetto a
-    un push gia' avvenuto per davvero. Dettaglio in
+    un push gia' avvenuto per davvero. Il 09/08/2026 e' successo ANCHE il
+    contrario, dopo lo spegnimento a meta' del PC: `git status` diceva 2
+    commit locali non ancora pushati, ma era un ref locale non aggiornato -
+    il push era gia' riuscito per davvero. Un secondo ref rotto
+    (refs/heads/master-Denis, creato o scritto proprio nell'istante dello
+    spegnimento) bloccava anche `git fetch` col repository intatto. Dettaglio
+    completo, come si riconosce e come si e' risolto in
     ../camoscio memoria/07-Trappole-Tecniche.md.

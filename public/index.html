@@ -570,6 +570,16 @@
                         <button class="btn btn-primary" id="btn-open-create-hike"><i data-lucide="plus"></i> Crea Nuova Escursione</button>
                     </div>
 
+                    <!-- Punto 69: barra di ricerca per titolo - separata dalla filter-card qui sotto
+                         perche' Denis la vuole in evidenza ("ci serve una barra di ricerca"), non
+                         in mezzo ai filtri avanzati che restano un pannello a parte. -->
+                    <div class="glass-card hikes-search-card">
+                        <div class="filter-group filter-group-search">
+                            <label for="filter-search-hikes"><i data-lucide="search"></i> Cerca per titolo:</label>
+                            <input type="text" id="filter-search-hikes" placeholder="Es. Alba Corno Grande...">
+                        </div>
+                    </div>
+
                     <!-- Filtri avanzati (Tribù, Difficoltà, Obiettivo) -->
                     <div class="glass-card filter-card">
                         <h5><i data-lucide="sliders-horizontal"></i> Filtri e Algoritmi di Corrispondenza</h5>
@@ -598,9 +608,32 @@
                         </div>
                     </div>
 
-                    <!-- Griglia Escursioni -->
-                    <div class="hikes-grid" id="hikes-list-container">
-                        <!-- Renderizzato da JS -->
+                    <!-- Punto 69: tre categorie invece di un elenco unico, stesso principio gia'
+                         usato in "Le mie escursioni" qui sotto (stessa classe .my-hikes-group) -
+                         "Completate" mostra solo le escursioni concluse a cui si e' partecipato,
+                         perche' il punto 77 fa gia' sparire le altre a monte (GET /api/hikes). -->
+                    <div class="my-hikes-group">
+                        <h3 class="my-hikes-group-title">
+                            <i data-lucide="compass"></i> A cui puoi partecipare
+                            <span class="badge badge-accent" id="count-hikes-disponibili">0</span>
+                        </h3>
+                        <div class="hikes-grid" id="hikes-list-disponibili"></div>
+                    </div>
+
+                    <div class="my-hikes-group">
+                        <h3 class="my-hikes-group-title">
+                            <i data-lucide="users"></i> A cui partecipi
+                            <span class="badge badge-green" id="count-hikes-partecipi">0</span>
+                        </h3>
+                        <div class="hikes-grid" id="hikes-list-partecipi"></div>
+                    </div>
+
+                    <div class="my-hikes-group">
+                        <h3 class="my-hikes-group-title">
+                            <i data-lucide="circle-check-big"></i> Completate
+                            <span class="badge badge-primary" id="count-hikes-completate">0</span>
+                        </h3>
+                        <div class="hikes-grid" id="hikes-list-completate"></div>
                     </div>
                 </section>
 

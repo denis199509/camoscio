@@ -2846,7 +2846,7 @@ telefono. Dalla stessa parte togliamo la sezione obiettivo di allenamento."
 
 --- ELENCO ESCURSIONI: RICERCA, TRE CATEGORIE, SCHEDE CHIUSE CON SOLO IL TITOLO ---
 
-69) [DA FARE] Denis: "Ci sono due escursioni a cui posso partecipare e una gia'
+69) [FATTO 2026-08-09] Denis: "Ci sono due escursioni a cui posso partecipare e una gia'
 completata. Il problema e' che le escursioni sono con tutte le informazioni
 dentro, risultato con tre escursioni devo scendere giu' parecchio per trovare
 l'escursione completata ad esempio. Quindi immagino che quando saranno gia' circa
@@ -2868,6 +2868,25 @@ giusta. La barra di ricerca ci serve per filtrare le escursioni proposte."
    DA LEGGERE INSIEME AL PUNTO 77 quando si riprende: la categoria "completate"
    vista da chi NON ha partecipato potrebbe dover sparire del tutto invece di
    comparire - da chiarire con Denis prima di costruire, non presumerlo.
+   -> FATTO: chiarito con Denis prima di scrivere codice (risposta sua: "va bene
+      cosi', mostra vuota quando non ha completate"). Tre categorie nella pagina
+      Escursioni ottenute riusando classificaMieEscursioni() (punto 59, gia'
+      esistente per "Le mie escursioni"), estesa con un parametro lista opzionale
+      per poterla applicare DOPO i filtri (difficolta'/tribu'/ricerca) invece di
+      duplicare i confronti creatorId/participants/completions in un secondo
+      posto - "a cui puoi partecipare" e' il complementare delle altre due, non
+      un quarto confronto scritto a mano. La categoria "completate" mostra solo
+      le TUE concluse perche' il punto 77 le filtra gia' a monte (GET /api/hikes):
+      nessuna logica in piu' e' servita per quel dubbio, si e' risolto da solo.
+      Card chiuse (solo titolo, un chevron che ruota) su ENTRAMBE le pagine,
+      stessa buildHikeCard riusata ovunque: toggle sul fratello successivo nel
+      DOM, mai un id fisso (la stessa card vive su piu' gruppi/pagine diverse).
+      Nessuna rotta server toccata: non c'e' una prova-punto69.js dedicata,
+      stesso trattamento gia' dato ai punti 68/71/73 (solo CSS/UI) - verificato
+      invece con le prove di regressione (configurazione 9/9, punto37 27/27,
+      punto45 23/23, punto77 16/16) e dal vivo nel browser con due account
+      diversi (uno con una completata, uno senza, per vedere entrambi i casi
+      della categoria "completate").
 
 --- MAPPA E SENTIERI: TESTO CONTATTO EMAIL TAGLIATO, FRECCIA CHE NON APRE NIENTE ---
 

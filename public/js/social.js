@@ -245,9 +245,13 @@ function setupSocialEvents() {
     // Filtri dinamici nella pagina escursioni
     const filterDiff = document.getElementById("filter-difficulty");
     const filterTribeContainer = document.getElementById("filter-tribe-checkboxes");
+    const filterSearch = document.getElementById("filter-search-hikes");
 
     if (filterDiff) filterDiff.addEventListener("change", renderHikesList);
     if (filterTribeContainer) filterTribeContainer.addEventListener("change", renderHikesList);
+    // Punto 69: "input" invece di "change", cosi' la lista si aggiorna ad ogni carattere
+    // digitato invece che solo quando il campo perde il focus.
+    if (filterSearch) filterSearch.addEventListener("input", renderHikesList);
 }
 
 // Renderizza la UI del modulo social
@@ -273,31 +277,47 @@ function renderSocialModule() {
     renderDiaryTimeline();
 }
 
-// Disegna l'elenco delle escursioni filtrate
+// Disegna l'elenco delle escursioni filtrate, diviso in tre categorie (punto 69):
+// "a cui puoi partecipare" / "a cui partecipi" (organizzate + iscritto, unite: qui non
+// serve la distinzione che ha senso in "Le mie escursioni") / "completate". Quest'ultima
+// mostra solo le TUE concluse: il punto 77 fa gia' sparire le altre a monte, confermato
+// con Denis che va bene resti vuota per chi non ha ancora completato nulla.
 function renderHikesList() {
-    const container = document.getElementById("hikes-list-container");
-    if (!container) return;
-
-    container.innerHTML = "";
     const db = window.CamoscioState;
-    const currentUser = db.currentUser;
+    if (!db || !db.currentUser) return;
+    if (!document.getElementById("hikes-list-disponibili")) return;
 
     const diffFilter = document.getElementById("filter-difficulty").value;
     const tribeFilters = Array.from(document.querySelectorAll("input[name='filter-tribe-tag']:checked")).map(cb => cb.value);
+    const testoRicerca = (document.getElementById("filter-search-hikes").value || "").trim().toLowerCase();
 
     // Filtra la lista. Più tag Tribù selezionati = AND (l'escursione deve averli tutti), non OR
     const filteredHikes = db.hikes.filter(h => {
         if (diffFilter !== "all" && h.difficulty !== diffFilter) return false;
         if (tribeFilters.length > 0 && !tribeFilters.every(tag => h.tribeTags.includes(tag))) return false;
+        if (testoRicerca && !h.title.toLowerCase().includes(testoRicerca)) return false;
         return true;
     });
 
-    if (filteredHikes.length === 0) {
-        container.innerHTML = `<div class="glass-card text-center py-5 text-muted col-span-2">Nessuna escursione trovata con i filtri inseriti.</div>`;
-        return;
-    }
+    // Classificazione calcolata SOLO sulle escursioni gia' filtrate qui sopra (stessa
+    // funzione di "Le mie escursioni", punto 59: due pagine non devono poter raccontare
+    // due cose diverse per lo stesso criterio) - "disponibili" e' il complementare delle
+    // altre due, non un quarto confronto scritto a mano.
+    const { create, partecipo, fatte } = classificaMieEscursioni(filteredHikes);
+    const nonDisponibiliIds = new Set([...create, ...partecipo, ...fatte].map(h => h.id));
+    const disponibili = filteredHikes.filter(h => !nonDisponibiliIds.has(h.id));
+    const partecipi = [...create, ...partecipo].sort((a, b) => new Date(a.date) - new Date(b.date));
 
-    filteredHikes.forEach(hike => container.appendChild(buildHikeCard(hike)));
+    document.getElementById("count-hikes-disponibili").textContent = disponibili.length;
+    document.getElementById("count-hikes-partecipi").textContent = partecipi.length;
+    document.getElementById("count-hikes-completate").textContent = fatte.length;
+
+    riempiGruppo("hikes-list-disponibili", disponibili,
+        "Nessuna escursione trovata con i filtri inseriti.");
+    riempiGruppo("hikes-list-partecipi", partecipi,
+        "Non partecipi a nessuna escursione in programma.");
+    riempiGruppo("hikes-list-completate", fatte,
+        "Nessuna escursione completata.");
 
     if (window.lucide) window.lucide.createIcons();
 
@@ -316,7 +336,12 @@ function renderHikesList() {
 // Qui si usano gli stessi identici criteri (stessi confronti su creatorId, participants,
 // pendingApproval e db.completions) ma per DIVIDERE le escursioni in tre gruppi.
 
-function classificaMieEscursioni() {
+// Punto 69: accetta una lista opzionale su cui classificare (default db.hikes, il
+// comportamento di sempre) - serve a renderHikesList() per applicarla DOPO i filtri
+// (ricerca/difficolta'/tribu'), senza duplicare i tre confronti creatorId/participants/
+// completions in un secondo posto. Chiamata senza argomenti (backpack.js, punto 23)
+// si comporta esattamente come prima.
+function classificaMieEscursioni(lista) {
     const db = window.CamoscioState;
     const utente = db.currentUser;
     if (!utente) return { create: [], partecipo: [], fatte: [] };
@@ -329,7 +354,7 @@ function classificaMieEscursioni() {
     const partecipo = [];
     const fatte = [];
 
-    (db.hikes || []).forEach(h => {
+    (lista || db.hikes || []).forEach(h => {
         const completata = idFatte.has(h.id);
         const sonoIscritto = (h.participants || []).includes(utente.id);
         const inAttesa = (h.pendingApproval || []).includes(utente.id);
@@ -553,62 +578,81 @@ function buildHikeCard(hike) {
         </div>
     ` : "";
 
+    // Punto 69: la card nasce chiusa, solo il titolo (Denis: "sulla pagina possiamo
+    // leggere piu' titoli di escursioni invece di salire su e giu' per la pagina").
+    // Tutto il resto vive in un fratello successivo, aperto/chiuso da window.toggleHikeCard
+    // - mai un id fisso, questa stessa funzione costruisce card identiche su piu' gruppi
+    // e pagine diverse (Escursioni in tre categorie, Le mie escursioni in quattro).
     card.innerHTML = `
-        <div class="hike-card-topright">
-            <span class="badge badge-primary hike-difficulty-badge">${hike.difficulty}</span>
-            ${editMenuHtml}
+        <div class="hike-card-header" onclick="window.toggleHikeCard(this)">
+            <h4 class="hike-card-title">${escapeHtml(hike.title)}</h4>
+            <i data-lucide="chevron-down" class="hike-card-toggle-icon"></i>
         </div>
-        <h4 style="color:#FFF; margin-bottom: 4px;">${escapeHtml(hike.title)}</h4>
-        <p class="small text-muted" style="margin-bottom: 8px;">Organizzato da: <b class="user-link" onclick="showUserProfile('${hike.creatorId}')">${escapeHtml(creatorName)}</b>${creatorBadgeHtml}</p>
-
-        <p class="small text-secondary" style="line-height:1.4; height: 60px; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(hike.description)}</p>
-        
-        <div class="hike-meta-row">
-            <div class="hike-meta-item">
-                <span>Dislivello D+</span>
-                <strong>${hike.elevationGain}m</strong>
+        <div class="hike-card-body hidden">
+            <div class="hike-card-topright">
+                <span class="badge badge-primary hike-difficulty-badge">${hike.difficulty}</span>
+                ${editMenuHtml}
             </div>
-            <div class="hike-meta-item">
-                <span>Quota Max</span>
-                <strong>${hike.maxAltitude}m</strong>
-            </div>
-            <div class="hike-meta-item">
-                <span>Distanza</span>
-                <strong>${hike.distanceKm} km</strong>
-            </div>
-        </div>
+            <p class="small text-muted" style="margin-bottom: 8px;">Organizzato da: <b class="user-link" onclick="showUserProfile('${hike.creatorId}')">${escapeHtml(creatorName)}</b>${creatorBadgeHtml}</p>
 
-        ${tempoHtml}
+            <p class="small text-secondary" style="line-height:1.4; height: 60px; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(hike.description)}</p>
 
-        <div class="tag-list">
-            ${hike.tribeTags.map(t => `<span class="tag">${t}</span>`).join("")}
-            <span class="badge ${eligibility.class}">${eligibility.text}</span>
-        </div>
-
-        <div class="participants-section">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <span class="small text-muted">Partecipanti (${hike.participants.length}):</span>
-                <div style="display:flex; gap:6px;">
-                    <button class="btn btn-sm btn-secondary" style="padding:2px 6px;" onclick="loadHikeOnMapDirectly('${hike.id}')" title="Vedi sentiero sulla mappa">Mappa</button>
-                    <button class="btn btn-sm btn-secondary" style="padding:2px 6px;" onclick="toggleBookmark('${hike.id}')" title="${isBookmarked ? 'Rimuovi dai preferiti' : 'Aggiungi ai preferiti'}">
-                        ${isBookmarked ? '★' : '☆'}
-                    </button>
-                    ${isParticipant ? `<button class="btn btn-sm btn-secondary" style="padding:2px 6px;" onclick="showHikePage('${hike.id}')" title="Chat tra i partecipanti">Chat</button>` : ""}
+            <div class="hike-meta-row">
+                <div class="hike-meta-item">
+                    <span>Dislivello D+</span>
+                    <strong>${hike.elevationGain}m</strong>
+                </div>
+                <div class="hike-meta-item">
+                    <span>Quota Max</span>
+                    <strong>${hike.maxAltitude}m</strong>
+                </div>
+                <div class="hike-meta-item">
+                    <span>Distanza</span>
+                    <strong>${hike.distanceKm} km</strong>
                 </div>
             </div>
-            <div class="participants-avatars">${participantsHtml}</div>
-        </div>
 
-        ${trailMatchHtml}
-        ${vetoSectionHtml}
+            ${tempoHtml}
 
-        <div style="display:flex; justify-content: flex-end; gap: 8px; margin-top: auto; padding-top: 12px;">
-            ${completeGroupBtnHtml}
-            ${actionBtnHtml}
+            <div class="tag-list">
+                ${hike.tribeTags.map(t => `<span class="tag">${t}</span>`).join("")}
+                <span class="badge ${eligibility.class}">${eligibility.text}</span>
+            </div>
+
+            <div class="participants-section">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span class="small text-muted">Partecipanti (${hike.participants.length}):</span>
+                    <div style="display:flex; gap:6px;">
+                        <button class="btn btn-sm btn-secondary" style="padding:2px 6px;" onclick="loadHikeOnMapDirectly('${hike.id}')" title="Vedi sentiero sulla mappa">Mappa</button>
+                        <button class="btn btn-sm btn-secondary" style="padding:2px 6px;" onclick="toggleBookmark('${hike.id}')" title="${isBookmarked ? 'Rimuovi dai preferiti' : 'Aggiungi ai preferiti'}">
+                            ${isBookmarked ? '★' : '☆'}
+                        </button>
+                        ${isParticipant ? `<button class="btn btn-sm btn-secondary" style="padding:2px 6px;" onclick="showHikePage('${hike.id}')" title="Chat tra i partecipanti">Chat</button>` : ""}
+                    </div>
+                </div>
+                <div class="participants-avatars">${participantsHtml}</div>
+            </div>
+
+            ${trailMatchHtml}
+            ${vetoSectionHtml}
+
+            <div style="display:flex; justify-content: flex-end; gap: 8px; margin-top: auto; padding-top: 12px;">
+                ${completeGroupBtnHtml}
+                ${actionBtnHtml}
+            </div>
         </div>
     `;
     return card;
 }
+
+// Punto 69: toggle sul fratello successivo dell'header cliccato, mai un id - vedi
+// commento sopra buildHikeCard sul perche' qui un id fisso romperebbe le altre pagine.
+window.toggleHikeCard = function(headerEl) {
+    const body = headerEl.nextElementSibling;
+    if (!body) return;
+    body.classList.toggle('hidden');
+    headerEl.classList.toggle('expanded');
+};
 
 // Richiesta iscrizione con avviso se inesperto
 window.joinHikeRequest = async function(hikeId, isEligible) {

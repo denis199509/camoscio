@@ -1131,6 +1131,19 @@ h1, h2, h3, h4, h5, h6 {
     color: var(--color-text-secondary);
 }
 
+/* Punto 69: barra di ricerca escursioni - stessa .filter-group delle altre, solo
+   l'icona nella label da allineare col testo invece che sopra di esso. */
+.filter-group-search label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.filter-group-search label i {
+    width: 16px;
+    height: 16px;
+}
+
 .filter-group select,
 .filter-group input {
     background: rgba(255, 255, 255, 0.06);
@@ -1155,6 +1168,39 @@ h1, h2, h3, h4, h5, h6 {
     gap: 14px;
     position: relative;
     overflow: hidden;
+}
+
+/* Punto 69: header sempre visibile (solo titolo), il resto della card vive nel
+   fratello .hike-card-body e parte nascosto - vedi window.toggleHikeCard in social.js. */
+.hike-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    cursor: pointer;
+}
+
+.hike-card-title {
+    color: #FFF;
+    margin: 0;
+}
+
+.hike-card-toggle-icon {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    color: var(--color-text-secondary);
+    transition: transform 0.2s ease;
+}
+
+.hike-card-header.expanded .hike-card-toggle-icon {
+    transform: rotate(180deg);
+}
+
+.hike-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
 }
 
 .hike-card-topright {
