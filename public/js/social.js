@@ -546,7 +546,9 @@ function buildHikeCard(hike) {
 
     // Punto 54: solo il creatore vede il tasto "tre puntini" -> Modifica. Riusa il
     // create-hike-modal gia' esistente (openEditHikeModal lo precompila).
-    const editMenuHtml = isCreatorMe ? `
+    // Punto 76: una volta completata in gruppo il menu sparisce del tutto - l'unica voce
+    // che contiene, Modifica, non e' piu' permessa (guardia vera lato server in hikes.js).
+    const editMenuHtml = (isCreatorMe && !hike.groupCompletedAt) ? `
         <div class="hike-card-menu">
             <button type="button" class="hike-card-menu-btn" title="Opzioni escursione" aria-label="Opzioni escursione">
                 <i data-lucide="more-vertical"></i>

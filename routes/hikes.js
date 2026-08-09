@@ -310,6 +310,17 @@ router.put('/:id', requireAuth, async (req, res) => {
             'title', 'description', 'difficulty', 'maxAltitude', 'distanceKm', 'elevationGain',
             'date', 'tribeTags', 'manualApproval', 'peaks'
         ];
+
+        // Punto 76: un'escursione completata in gruppo non si modifica piu'. Stesso segnale
+        // gia' usato per nascondere "Completa escursione" (punto 64, hike.groupCompletedAt),
+        // mai la sola data prevista - confrontare con "adesso" avrebbe la stessa trappola gia'
+        // pagata al punto 58 (una data senza ora mente sempre a favore del passato). Non blocca
+        // partecipanti/carpooling/zaino: quelli restano un'altra cosa, non richiesta qui.
+        const EDIT_LOCKED_FIELDS = [...CREATOR_ONLY_FIELDS, 'trailhead', 'routeSource'];
+        if (hike.groupCompletedAt && EDIT_LOCKED_FIELDS.some(field => body[field] !== undefined)) {
+            return res.status(409).json({ error: 'Un\'escursione già completata non può più essere modificata' });
+        }
+
         for (const field of CREATOR_ONLY_FIELDS) {
             if (body[field] !== undefined) {
                 if (!isCreator) {
