@@ -211,7 +211,7 @@ function setupSocialEvents() {
     if (btnOpenSquadForm && squadFormBox) {
         btnOpenSquadForm.addEventListener("click", () => {
             squadFormBox.classList.remove("hidden");
-            populateSquadMembersCheckboxes();
+            resetSquadCreateForm();
         });
     }
 
@@ -227,6 +227,10 @@ function setupSocialEvents() {
             e.preventDefault();
             await submitCreateSquad();
         });
+    }
+    const inputSquadCreateSearch = document.getElementById("squad-create-search-input");
+    if (inputSquadCreateSearch) {
+        inputSquadCreateSearch.addEventListener("input", renderSquadCreateSearch);
     }
 
     // Form invio recensioni anonime obbligatorie
@@ -260,6 +264,7 @@ function renderSocialModule() {
 
     // Disegna le squadre ricorrenti
     renderSquadsList();
+    renderOtherSquadsList();
 
     // Popola i target delle recensioni (altri utenti escluse se stessi)
     populateReviewTargets();
@@ -1163,24 +1168,150 @@ function renderSquadsList() {
     });
 }
 
-// Popola le spunte per includere membri nella squadra
-function populateSquadMembersCheckboxes() {
-    const container = document.getElementById("squad-members-checkboxes");
+// Punto 75: senza questa lista non c'era alcun modo di TROVARE una squadra a cui non si
+// appartiene ancora (renderSquadsList qui sopra mostra solo le proprie) - GET /api/squads
+// porta gia' tutte le squadre al client, qui si mostrano solo quelle in cui non si e' ne'
+// creatore ne' membro. Il tasto cambia in base allo stato della propria richiesta.
+function renderOtherSquadsList() {
+    const container = document.getElementById("other-squads-list");
     if (!container) return;
 
     container.innerHTML = "";
     const db = window.CamoscioState;
     const currentUser = db.currentUser;
 
-    db.users.forEach(u => {
-        if (u.id === currentUser.id) return;
+    const altreSquadre = db.squads.filter(s =>
+        s.creatorId !== currentUser.id && !s.members.includes(currentUser.id)
+    );
 
-        const label = document.createElement("label");
-        label.innerHTML = `
-            <input type="checkbox" name="squad-member" value="${u.id}">
-            <span>${u.avatar} ${escapeHtml(u.username)}</span>
+    if (altreSquadre.length === 0) {
+        container.innerHTML = `<div class="text-muted small italic text-center py-2">Nessun'altra squadra per ora.</div>`;
+        return;
+    }
+
+    altreSquadre.forEach(squad => {
+        const item = document.createElement("div");
+        item.className = "squad-item";
+
+        const membersAvatars = squad.members.map(mId => {
+            const mem = db.users.find(u => u.id === mId);
+            return mem ? mem.avatar : "👤";
+        }).join(" ");
+
+        const giaRichiesta = (squad.pendingRequests || []).includes(currentUser.id);
+        const actionBtn = giaRichiesta
+            ? `<span class="badge badge-primary">Richiesta inviata</span>`
+            : `<button class="btn btn-sm btn-secondary" onclick="requestJoinSquad('${squad.id}')">Richiesta Partecipazione</button>`;
+
+        item.innerHTML = `
+            <div class="squad-item-open" onclick="showSquadPage('${squad.id}')">
+                <h5>👥 ${escapeHtml(squad.name)}</h5>
+                <div class="squad-members-row">${membersAvatars}</div>
+            </div>
+            <div>
+                ${actionBtn}
+            </div>
         `;
-        container.appendChild(label);
+        container.appendChild(item);
+    });
+}
+
+// Punto 75: usata sia dalla lista "Altre Squadre" sia dal tasto sulla pagina della singola
+// squadra (squadpage.js) - stessa richiesta, due punti di partenza diversi.
+window.requestJoinSquad = async function(squadId) {
+    try {
+        const response = await fetch(`/api/squads/${squadId}/request-join`, { method: 'POST' });
+        if (response.ok) {
+            const squadAggiornata = await response.json();
+            if (window.updateLocalSquad) window.updateLocalSquad(squadAggiornata);
+            renderOtherSquadsList();
+            if (window.refreshSquadHeaderAndMembers) window.refreshSquadHeaderAndMembers(squadId);
+            window.showToast("Richiesta inviata: aspetta la conferma di un amministratore.", "success");
+        } else {
+            const err = await response.json().catch(() => ({}));
+            window.showToast(err.error || "Impossibile inviare la richiesta.", "error");
+        }
+    } catch (e) {
+        console.error("Errore richiesta di partecipazione squadra:", e);
+        window.showToast("Impossibile inviare la richiesta.", "error");
+    }
+};
+
+// Punto 75: ricerca invece di spuntare *tutti* gli iscritti al sito (problema di scala,
+// segnalato apposta in anticipo da Denis) - stesso schema gia' scritto per "Completa
+// escursione" (renderCompleteGroupSearch/addToCompleteGroup), stessa soglia di ricerca.
+let squadCreateMemberIds = [];
+
+function resetSquadCreateForm() {
+    squadCreateMemberIds = [];
+    const searchInput = document.getElementById("squad-create-search-input");
+    if (searchInput) searchInput.value = "";
+    const results = document.getElementById("squad-create-search-results");
+    if (results) results.innerHTML = "";
+    renderSquadCreateSelectedMembers();
+}
+
+function renderSquadCreateSelectedMembers() {
+    const container = document.getElementById("squad-create-selected-members");
+    if (!container) return;
+    const db = window.CamoscioState;
+    const righe = squadCreateMemberIds.map(id => {
+        const u = db.users.find(u => u.id === id);
+        if (!u) return "";
+        return `
+            <label>
+                <span>${u.avatar} ${escapeHtml(u.username)}</span>
+                <button type="button" class="btn-inline-remove" onclick="removeFromSquadCreate('${id}')" title="Togli dalla squadra">&times;</button>
+            </label>
+        `;
+    }).join("");
+    container.innerHTML = righe || `<p class="small text-muted">Nessun membro aggiunto ancora (oltre a te).</p>`;
+}
+
+window.removeFromSquadCreate = function(userId) {
+    squadCreateMemberIds = squadCreateMemberIds.filter(id => id !== userId);
+    renderSquadCreateSelectedMembers();
+};
+
+// Aggiunta via ricerca, non ancora salvata - stesso principio di addToCompleteGroup: si
+// accoda un id solo, il salvataggio vero avviene al tasto "Crea Squadra".
+window.addToSquadCreate = function(userId) {
+    if (squadCreateMemberIds.includes(userId)) return;
+    squadCreateMemberIds.push(userId);
+    document.getElementById("squad-create-search-input").value = "";
+    document.getElementById("squad-create-search-results").innerHTML = "";
+    renderSquadCreateSelectedMembers();
+};
+
+function renderSquadCreateSearch() {
+    const input = document.getElementById("squad-create-search-input");
+    const results = document.getElementById("squad-create-search-results");
+    const db = window.CamoscioState;
+    if (!input || !results) return;
+
+    const query = input.value.trim().toLowerCase();
+    results.innerHTML = "";
+    if (query.length < SOGLIA_RICERCA_COMPLETAMENTO) return;
+
+    const giaPresenti = new Set([db.currentUser.id, ...squadCreateMemberIds]);
+    const trovati = db.users.filter(u => !giaPresenti.has(u.id) && (u.username || "").toLowerCase().includes(query));
+
+    if (!trovati.length) {
+        results.innerHTML = `<p class="small text-muted">Nessuna persona trovata.</p>`;
+        return;
+    }
+
+    trovati.forEach(u => {
+        const row = document.createElement("div");
+        row.className = "carpool-group-item";
+        row.innerHTML = `
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div class="p-avatar">${u.avatar}</div>
+                <b>${escapeHtml(u.username)}</b>
+            </div>
+            <button type="button" class="btn btn-sm btn-secondary" onclick="addToSquadCreate('${u.id}')">Aggiungi</button>
+        `;
+        results.appendChild(row);
     });
 }
 
@@ -1188,11 +1319,7 @@ function populateSquadMembersCheckboxes() {
 async function submitCreateSquad() {
     const db = window.CamoscioState;
     const name = document.getElementById("squad-name").value;
-    const memberIds = [db.currentUser.id];
-
-    document.querySelectorAll("input[name='squad-member']:checked").forEach(cb => {
-        memberIds.push(cb.value);
-    });
+    const memberIds = [db.currentUser.id, ...squadCreateMemberIds];
 
     try {
         const response = await fetch('/api/squads', {
@@ -1204,9 +1331,11 @@ async function submitCreateSquad() {
         if (response.ok) {
             document.getElementById("create-squad-form-box").classList.add("hidden");
             document.getElementById("create-squad-form").reset();
-            
+            resetSquadCreateForm();
+
             await refreshState();
             renderSquadsList();
+            renderOtherSquadsList();
         }
     } catch(e) {
         console.error("Errore creazione squadra:", e);
@@ -1516,3 +1645,5 @@ function setupDiaryForm() {
 window.initSocialModule = initSocialModule;
 window.renderSocialModule = renderSocialModule;
 window.renderHikesList = renderHikesList;
+window.renderSquadsList = renderSquadsList;
+window.renderOtherSquadsList = renderOtherSquadsList;

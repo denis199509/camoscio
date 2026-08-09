@@ -1340,10 +1340,23 @@
                                             <label for="squad-name">Nome Squadra:</label>
                                             <input type="text" id="squad-name" placeholder="Es. I Camosci del Gran Sasso" required>
                                         </div>
+                                        <!-- Punto 75: ricerca invece di spuntare tutti gli iscritti al
+                                             sito (problema di scala) - stesso schema gia' in uso per
+                                             "Completa escursione" (complete-group-modal). -->
                                         <div class="form-group">
-                                            <label>Seleziona i membri da includere:</label>
-                                            <div class="checkbox-group" id="squad-members-checkboxes">
-                                                <!-- Popolato da JS con altri utenti -->
+                                            <label for="squad-create-search-input">Aggiungi membri (cerca per nome utente):</label>
+                                            <div class="trailhead-search-row">
+                                                <div class="trailhead-search-field">
+                                                    <i data-lucide="search"></i>
+                                                    <input type="text" id="squad-create-search-input" autocomplete="off" maxlength="60" placeholder="Cerca per nome utente...">
+                                                </div>
+                                            </div>
+                                            <div id="squad-create-search-results" class="hike-carpools-list"></div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Membri selezionati:</label>
+                                            <div id="squad-create-selected-members" class="checkbox-group">
+                                                <!-- Popolato da JS -->
                                             </div>
                                         </div>
                                         <div class="form-row-buttons">
@@ -1351,6 +1364,18 @@
                                             <button type="submit" class="btn btn-success btn-sm">Crea Squadra</button>
                                         </div>
                                     </form>
+                                </div>
+                            </div>
+
+                            <!-- Punto 75: senza questa lista non c'era alcun modo di TROVARE una
+                                 squadra a cui non si appartiene - GET /api/squads porta gia' tutte
+                                 le squadre al client, ma renderSquadsList() mostrava solo le
+                                 proprie. Qui il tasto "Richiesta Partecipazione". -->
+                            <div class="glass-card squads-card">
+                                <h4><i data-lucide="search"></i> Altre Squadre</h4>
+                                <p class="small text-muted">Squadre di altri escursionisti: richiedi di entrare, basta la conferma di un amministratore.</p>
+                                <div id="other-squads-list" class="squads-list">
+                                    <!-- Renderizzato da JS -->
                                 </div>
                             </div>
 
@@ -1623,6 +1648,12 @@
                     <div class="glass-card" id="squad-page-header">
                         <!-- Riempito da JS: foto (+ input cambio foto se amministratore), nome -->
                     </div>
+
+                    <!-- Punto 75: chi non e' membro vede qui il tasto "Richiesta Partecipazione"
+                         (o lo stato "richiesta inviata"); chi e' amministratore vede qui le
+                         richieste pendenti da confermare o rifiutare. Le due cose non capitano
+                         mai insieme alla stessa persona. -->
+                    <div class="glass-card hidden" id="squad-page-join"></div>
 
                     <div class="glass-card" id="squad-page-members">
                         <!-- Riempito da JS: elenco membri, badge Admin, controlli promuovi/rimuovi

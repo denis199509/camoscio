@@ -732,6 +732,28 @@ h1, h2, h3, h4, h5, h6 {
     color: var(--color-text-primary);
 }
 
+/* Punto 75: riga di un membro gia' selezionato (ricerca squadra), con un tasto per
+   toglierlo - stesso .checkbox-group di sopra ma senza casella, quindi la riga si allarga
+   per lasciare il tasto "x" sempre sul bordo destro. */
+.checkbox-group label:has(.btn-inline-remove) {
+    justify-content: space-between;
+    cursor: default;
+}
+
+.btn-inline-remove {
+    background: transparent;
+    border: none;
+    color: var(--color-text-secondary);
+    font-size: 1.1rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 4px;
+}
+
+.btn-inline-remove:hover {
+    color: var(--accent-red);
+}
+
 .input-with-btn {
     display: flex;
     gap: 8px;

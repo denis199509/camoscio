@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const Squad = require('../models/Squad');
 const SquadMessage = require('../models/SquadMessage');
+const User = require('../models/User');
+const Notification = require('../models/Notification');
 const { requireAuth } = require('../middleware/auth');
 
 const MAX_PHOTO_LENGTH = 2 * 1024 * 1024;
@@ -109,6 +111,113 @@ router.delete('/:id/admins/:userId', requireAuth, async (req, res) => {
     } catch (e) {
         console.error('Errore rimozione admin squadra:', e);
         res.status(400).json({ error: "Impossibile rimuovere l'amministratore" });
+    }
+});
+
+// Punto 75: chiedere di entrare in una squadra gia' esistente - chiunque sia loggato e non
+// sia gia' membro. Idempotente: rifarla non duplica nulla in pendingRequests ne' manda una
+// seconda notifica agli admin.
+router.post('/:id/request-join', requireAuth, async (req, res) => {
+    try {
+        const squad = await Squad.findById(req.params.id);
+        if (!squad) {
+            return res.status(404).json({ error: 'Squadra non trovata' });
+        }
+        const userId = req.session.userId;
+        if (isSquadMember(squad, userId)) {
+            return res.status(400).json({ error: 'Fai già parte di questa squadra' });
+        }
+        if (squad.pendingRequests.some(p => p.equals(userId))) {
+            return res.status(409).json({ error: 'Hai già una richiesta in attesa per questa squadra' });
+        }
+        squad.pendingRequests.push(userId);
+        await squad.save();
+
+        const richiedente = await User.findById(userId).select('username');
+        // Tutti gli amministratori, creatore compreso ("richiesta inviata all'admin, a tutti
+        // gli admin se più di uno", parole di Denis) - stesso schema di notifica a più
+        // persone già in uso in routes/hikes.js per l'invito automatico di una squadra.
+        const destinatari = [squad.creatorId, ...squad.admins];
+        for (const adminId of destinatari) {
+            await Notification.create({
+                userId: adminId,
+                text: `${richiedente ? richiedente.username : 'Qualcuno'} ha chiesto di entrare nella squadra "${squad.name}"`,
+                read: false
+            });
+        }
+
+        res.json(squad);
+    } catch (e) {
+        console.error('Errore richiesta di partecipazione squadra:', e);
+        res.status(400).json({ error: 'Impossibile inviare la richiesta' });
+    }
+});
+
+// Approva una richiesta - un amministratore qualunque basta. Aggiornamento atomico ($pull +
+// $addToSet in un solo giro, non una lettura-e-riscrittura) cosi' due admin che approvano
+// quasi insieme non si pestano i piedi: il controllo sopra intercetta il secondo prima, e
+// anche se non lo intercettasse l'operazione atomica non produrrebbe comunque un doppione
+// ($addToSet) ne' un errore.
+router.post('/:id/approve/:userId', requireAuth, async (req, res) => {
+    try {
+        const squad = await Squad.findById(req.params.id);
+        if (!squad) {
+            return res.status(404).json({ error: 'Squadra non trovata' });
+        }
+        if (!isSquadAdmin(squad, req.session.userId)) {
+            return res.status(403).json({ error: 'Solo un amministratore della squadra può approvare le richieste' });
+        }
+        const targetId = req.params.userId;
+        if (!squad.pendingRequests.some(p => p.equals(targetId))) {
+            return res.status(409).json({ error: 'Questa richiesta non è più in attesa (forse già gestita da un altro amministratore)' });
+        }
+        const aggiornata = await Squad.findByIdAndUpdate(
+            req.params.id,
+            { $pull: { pendingRequests: targetId }, $addToSet: { members: targetId } },
+            { new: true }
+        );
+        await Notification.create({
+            userId: targetId,
+            text: `La tua richiesta per entrare in "${squad.name}" è stata accettata!`,
+            read: false
+        });
+        res.json(aggiornata);
+    } catch (e) {
+        console.error('Errore approvazione richiesta squadra:', e);
+        res.status(400).json({ error: 'Impossibile approvare la richiesta' });
+    }
+});
+
+// Rifiuta una richiesta - simmetrico all'approvazione (non chiesto esplicitamente, ma senza
+// non ci sarebbe alcun modo di togliere una richiesta indesiderata: resterebbe in coda per
+// sempre). Mai un blocco permanente: chi viene rifiutato puo' rimandare la richiesta.
+router.delete('/:id/pending/:userId', requireAuth, async (req, res) => {
+    try {
+        const squad = await Squad.findById(req.params.id);
+        if (!squad) {
+            return res.status(404).json({ error: 'Squadra non trovata' });
+        }
+        if (!isSquadAdmin(squad, req.session.userId)) {
+            return res.status(403).json({ error: 'Solo un amministratore della squadra può rifiutare le richieste' });
+        }
+        const targetId = req.params.userId;
+        if (!squad.pendingRequests.some(p => p.equals(targetId))) {
+            return res.status(409).json({ error: 'Questa richiesta non è più in attesa (forse già gestita da un altro amministratore)' });
+        }
+        const aggiornata = await Squad.findByIdAndUpdate(
+            req.params.id,
+            { $pull: { pendingRequests: targetId } },
+            { new: true }
+        );
+        await Notification.create({
+            userId: targetId,
+            text: `La tua richiesta per entrare in "${squad.name}" non è stata accettata.`,
+            read: false
+        });
+        res.json(aggiornata);
+    } catch (e) {
+        console.error('Errore rifiuto richiesta squadra:', e);
+        res.status(400).json({ error: 'Impossibile rifiutare la richiesta' });
     }
 });
 

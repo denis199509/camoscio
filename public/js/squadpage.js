@@ -24,12 +24,14 @@ async function renderSquadPage(squadId) {
     const db = window.CamoscioState;
     const squad = db.squads.find(s => s.id === squadId);
     const headerBox = document.getElementById("squad-page-header");
+    const joinBox = document.getElementById("squad-page-join");
     const membersBox = document.getElementById("squad-page-members");
     const chatBox = document.getElementById("squad-page-chat");
     if (!headerBox || !membersBox || !chatBox) return;
 
     if (!squad) {
         headerBox.innerHTML = `<p class="text-muted">Squadra non trovata.</p>`;
+        if (joinBox) { joinBox.innerHTML = ""; joinBox.classList.add("hidden"); }
         membersBox.innerHTML = "";
         chatBox.innerHTML = "";
         return;
@@ -38,25 +40,131 @@ async function renderSquadPage(squadId) {
     const sectionTitle = document.getElementById("section-title");
     if (sectionTitle) sectionTitle.textContent = squad.name;
 
+    const isMember = isSquadMemberClient(squad, db.currentUser.id);
     const canManage = isSquadAdminClient(squad, db.currentUser.id);
     renderSquadHeader(squad, canManage, headerBox);
+    if (joinBox) renderSquadJoinBox(squad, isMember, canManage, joinBox);
     renderSquadMembers(squad, canManage, membersBox);
-    window.CamoscioChatPanel.render({ box: chatBox, apiBase: `/api/squads/${squad.id}`, title: 'Chat di Squadra' });
+
+    // Punto 75: la chat resta riservata ai membri (stesso principio gia' seguito per il
+    // tasto Chat di un'escursione, punto 55: visibile/raggiungibile solo a chi partecipa).
+    // Senza questo controllo il pannello restava a "Caricamento messaggi..." per sempre -
+    // GET /:id/messages risponde 403 a un non membro e chatpanel.js non lo segnala a schermo.
+    if (isMember) {
+        chatBox.classList.remove("hidden");
+        window.CamoscioChatPanel.render({ box: chatBox, apiBase: `/api/squads/${squad.id}`, title: 'Chat di Squadra' });
+    } else {
+        chatBox.classList.add("hidden");
+        chatBox.innerHTML = "";
+    }
 
     if (window.lucide) window.lucide.createIcons();
 }
 
-// Solo intestazione ed elenco membri - usata dopo un'azione admin (foto, promuovi,
-// rimuovi) per non toccare la chat, che ha un suo giro di polling gia' avviato e non
-// deve ripartire da capo (perderebbe la posizione di scroll) ogni volta.
+// Solo intestazione, richieste pendenti ed elenco membri - usata dopo un'azione admin
+// (foto, promuovi, rimuovi, approva/rifiuta richiesta) per non toccare la chat, che ha un
+// suo giro di polling gia' avviato e non deve ripartire da capo (perderebbe la posizione
+// di scroll) ogni volta.
 function refreshSquadHeaderAndMembers(squadId) {
     const db = window.CamoscioState;
     const squad = db.squads.find(s => s.id === squadId);
     if (!squad) return;
+    const isMember = isSquadMemberClient(squad, db.currentUser.id);
     const canManage = isSquadAdminClient(squad, db.currentUser.id);
     renderSquadHeader(squad, canManage, document.getElementById("squad-page-header"));
+    const joinBox = document.getElementById("squad-page-join");
+    if (joinBox) renderSquadJoinBox(squad, isMember, canManage, joinBox);
     renderSquadMembers(squad, canManage, document.getElementById("squad-page-members"));
     if (window.lucide) window.lucide.createIcons();
+}
+
+// Punto 75: le due situazioni non capitano mai insieme alla stessa persona - un
+// amministratore e' sempre gia' membro, chi vede il tasto di richiesta non lo e' ancora.
+function renderSquadJoinBox(squad, isMember, canManage, box) {
+    const esc = window.escapeHtml;
+    const db = window.CamoscioState;
+
+    if (canManage) {
+        const pending = squad.pendingRequests || [];
+        if (pending.length === 0) {
+            box.classList.add("hidden");
+            box.innerHTML = "";
+            return;
+        }
+        box.classList.remove("hidden");
+        // Stesso stile del "Pannello Veto del Capogruppo" gia' usato per le richieste di
+        // partecipazione a un'escursione (social.js) - stesse classi, stesso principio.
+        const righe = pending.map(id => {
+            const u = db.users.find(u => u.id === id);
+            const nome = u ? esc(u.username) : "Utente";
+            const avatar = u ? esc(u.avatar) : "👤";
+            return `
+                <div class="veto-request-item">
+                    <span>${avatar} <b>${nome}</b></span>
+                    <div class="veto-actions">
+                        <button class="btn btn-sm btn-success" style="padding:2px 6px;" onclick="approveSquadRequest('${squad.id}','${id}')">Accetta</button>
+                        <button class="btn btn-sm btn-danger" style="padding:2px 6px;" onclick="declineSquadRequest('${squad.id}','${id}')">Rifiuta</button>
+                    </div>
+                </div>
+            `;
+        }).join("");
+        box.innerHTML = `
+            <div class="veto-management-box">
+                <span class="small font-bold text-warning" style="display:block; margin-bottom:6px;"><i data-lucide="shield-alert"></i> Richieste di partecipazione:</span>
+                ${righe}
+            </div>
+        `;
+        return;
+    }
+
+    if (isMember) {
+        box.classList.add("hidden");
+        box.innerHTML = "";
+        return;
+    }
+
+    box.classList.remove("hidden");
+    const giaRichiesta = (squad.pendingRequests || []).includes(db.currentUser.id);
+    box.innerHTML = giaRichiesta
+        ? `<p class="small text-muted"><i data-lucide="clock"></i> Richiesta di partecipazione inviata: aspetta la conferma di un amministratore.</p>`
+        : `<div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+               <p class="small text-muted" style="margin:0;">Non fai ancora parte di questa squadra.</p>
+               <button class="btn btn-sm btn-primary" onclick="requestJoinSquad('${squad.id}')">Richiesta Partecipazione</button>
+           </div>`;
+}
+
+async function approveSquadRequest(squadId, userId) {
+    try {
+        const response = await fetch(`/api/squads/${squadId}/approve/${userId}`, { method: 'POST' });
+        if (response.ok) {
+            updateLocalSquad(await response.json());
+            refreshSquadHeaderAndMembers(squadId);
+            if (window.renderOtherSquadsList) window.renderOtherSquadsList();
+            if (window.renderSquadsList) window.renderSquadsList();
+        } else {
+            const err = await response.json().catch(() => ({}));
+            window.showToast(err.error || "Impossibile approvare la richiesta.", "error");
+        }
+    } catch (e) {
+        console.error("Errore approvazione richiesta squadra:", e);
+        window.showToast("Impossibile approvare la richiesta.", "error");
+    }
+}
+
+async function declineSquadRequest(squadId, userId) {
+    try {
+        const response = await fetch(`/api/squads/${squadId}/pending/${userId}`, { method: 'DELETE' });
+        if (response.ok) {
+            updateLocalSquad(await response.json());
+            refreshSquadHeaderAndMembers(squadId);
+        } else {
+            const err = await response.json().catch(() => ({}));
+            window.showToast(err.error || "Impossibile rifiutare la richiesta.", "error");
+        }
+    } catch (e) {
+        console.error("Errore rifiuto richiesta squadra:", e);
+        window.showToast("Impossibile rifiutare la richiesta.", "error");
+    }
 }
 
 function renderSquadHeader(squad, canManage, box) {
@@ -193,3 +301,7 @@ function updateLocalSquad(updatedSquad) {
 window.showSquadPage = showSquadPage;
 window.promoteSquadMember = promoteSquadMember;
 window.demoteSquadMember = demoteSquadMember;
+window.approveSquadRequest = approveSquadRequest;
+window.declineSquadRequest = declineSquadRequest;
+window.updateLocalSquad = updateLocalSquad;
+window.refreshSquadHeaderAndMembers = refreshSquadHeaderAndMembers;
