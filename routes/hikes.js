@@ -219,10 +219,19 @@ async function calcolaDaPercorso(routeSource, userId) {
     throw new Error('Percorso non valido.');
 }
 
-// Ottieni escursioni
+// Ottieni escursioni - punto 77: una volta conclusa (hike.groupCompletedAt, stesso
+// segnale gia' usato dal punto 76 per bloccare le modifiche - non un confronto con la
+// data, stessa trappola gia' pagata al punto 58), un'escursione resta visibile SOLO a chi
+// vi ha partecipato (isHikeParticipant: creatore o in participants). Le programmate
+// restano visibili a chiunque, come sempre. E' l'unica fonte di window.CamoscioState.hikes
+// per tutto il frontend (mappa, Escursioni, Le mie escursioni, profilo...), quindi filtrare
+// qui basta a rendere privati anche i "dettagli" di cui parla Denis: chi non e' partecipante
+// non riceve piu' il documento, non solo non lo vede in lista.
 router.get('/', requireAuth, async (req, res) => {
     const hikes = await Hike.find();
-    res.json(hikes);
+    const userId = req.session.userId;
+    const visibili = hikes.filter(h => !h.groupCompletedAt || isHikeParticipant(h, userId));
+    res.json(visibili);
 });
 
 // Crea escursione - il creatore e' SEMPRE chi ha fatto login, mai un valore mandato dal client
