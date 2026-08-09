@@ -263,49 +263,6 @@ function getEligibilityBadge(hike, user) {
     }
 }
 
-// Segna un'escursione come completata: aggiorna cronologia, passo personale e livello esperienza
-window.markHikeCompleted = async function(hikeId) {
-    const db = window.CamoscioState;
-    const usr = db.currentUser;
-    if (!usr) return;
-
-    const hoursInput = await window.showPromptModal("Quante ore hai impiegato per completare l'escursione? (Lascia vuoto se non lo ricordi con precisione)");
-    if (hoursInput === null) return; // Annullato
-
-    const actualTimeHours = hoursInput.trim() ? parseFloat(hoursInput.trim()) : null;
-    if (hoursInput.trim() && (isNaN(actualTimeHours) || actualTimeHours <= 0)) {
-        window.showToast("Numero di ore non valido.", "error");
-        return;
-    }
-
-    try {
-        const response = await fetch(`/api/hikes/${hikeId}/complete`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: usr.id, actualTimeHours })
-        });
-
-        if (response.ok) {
-            window.showToast("Escursione segnata come completata! Il tuo passo e il tuo livello di esperienza sono stati aggiornati.", "success");
-
-            await refreshState();
-            updateHeaderUserWidget();
-
-            const activeSec = document.querySelector(".page-section.active");
-            if (activeSec && activeSec.id === "hikes") {
-                window.renderHikesList();
-            } else if (activeSec && activeSec.id === "dashboard") {
-                renderDashboard();
-            }
-        } else {
-            const err = await response.json();
-            window.showToast(err.error || "Non è stato possibile segnare l'escursione come completata.", "error");
-        }
-    } catch (e) {
-        console.error("Errore nel segnare l'escursione come completata:", e);
-    }
-};
-
 window.initProfileModule = initProfileModule;
 window.calculateHikeTimes = calculateHikeTimes;
 window.getEligibilityBadge = getEligibilityBadge;

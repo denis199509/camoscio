@@ -492,12 +492,39 @@ router.post('/:id/complete-group', requireAuth, async (req, res) => {
             return res.status(400).json({ error: 'Uno degli utenti confermati non esiste.' });
         }
 
-        // Il tempo reale non c'entra in questo flusso: Denis non ne ha mai parlato per il
-        // completamento di gruppo, riguarda solo "chi c'era". actualTimeHours resta null.
+        // Punto 67: un file .gpx facoltativo, "per avere i dati veri dell'escursione" (parole
+        // di Denis) - non chiede mai le ore a mano, quelle il file le porta gia' con se'.
+        // Stessa validazione di regione/dimensione di calcolaDaPercorso (sopra, punto 43): un
+        // secondo giro di parseGpx qui serve solo a leggere inizio/fine, che quella funzione
+        // condivisa non restituisce - non vale la pena cambiarne il contratto (la usano anche
+        // la creazione e la modifica) per un dato che a loro non serve.
+        let actualTimeHours = null;
+        if (req.body && typeof req.body.gpxText === 'string' && req.body.gpxText.trim()) {
+            let datiReali;
+            try {
+                datiReali = await calcolaDaPercorso({ kind: 'gpx', gpxText: req.body.gpxText }, req.session.userId);
+            } catch (e) {
+                return res.status(400).json({ error: e.message });
+            }
+            hike.maxAltitude = datiReali.maxAltitude;
+            hike.elevationGain = datiReali.elevationGain;
+            hike.distanceKm = datiReali.distanceKm;
+            hike.routeSource = datiReali.routeSource;
+
+            const letto = parseGpx(req.body.gpxText);
+            if (!letto.durataIgnota && letto.inizio && letto.fine) {
+                const ore = (letto.fine.getTime() - letto.inizio.getTime()) / 3600000;
+                if (ore > 0) actualTimeHours = ore;
+            }
+        }
+
+        // Senza un file .gpx, il tempo reale non c'entra in questo flusso: Denis non ne ha
+        // mai parlato per il completamento di gruppo "a mano", riguarda solo "chi c'era" -
+        // actualTimeHours resta null, esattamente come prima di questo punto.
         for (const u of utentiConfermati) {
             const persona = await User.findById(u._id);
             if (!persona) continue; // sparito fra la query sopra e questa, caso limite innocuo
-            const cambiato = await applyHikeCompletionStats(persona, hike, null);
+            const cambiato = await applyHikeCompletionStats(persona, hike, actualTimeHours);
             if (cambiato) await persona.save();
         }
 

@@ -487,15 +487,6 @@ function buildHikeCard(hike) {
         actionBtnHtml = `<button class="btn btn-sm btn-primary" onclick="joinHikeRequest('${hike.id}', ${eligibility.eligible})">Iscriviti</button>`;
     }
 
-    // Segna come completata: solo per un partecipante, dopo la data dell'escursione, una volta sola
-    let completionBtnHtml = "";
-    const hasCompletedThisHike = db.completions.some(c => c.userId === currentUser.id && c.hikeId === hike.id);
-    if (isParticipant && new Date(hike.date) < new Date()) {
-        completionBtnHtml = hasCompletedThisHike
-            ? `<span class="badge badge-green">Escursione Completata ✓</span>`
-            : `<button class="btn btn-sm btn-success" onclick="markHikeCompleted('${hike.id}')">Segna come completata</button>`;
-    }
-
     // Pannello Veto del Capogruppo (solo per l'organizzatore)
     let vetoSectionHtml = "";
     if (isCreatorMe && hike.pendingApproval && hike.pendingApproval.length > 0) {
@@ -608,7 +599,6 @@ function buildHikeCard(hike) {
 
         <div style="display:flex; justify-content: flex-end; gap: 8px; margin-top: auto; padding-top: 12px;">
             ${completeGroupBtnHtml}
-            ${completionBtnHtml}
             ${actionBtnHtml}
         </div>
     `;
@@ -998,6 +988,7 @@ window.openCompleteGroupModal = function(hikeId) {
     document.getElementById("complete-group-hike-title").textContent = hike.title;
     document.getElementById("complete-group-search-input").value = "";
     document.getElementById("complete-group-search-results").innerHTML = "";
+    document.getElementById("complete-group-gpx-file").value = "";
     renderCompleteGroupChecklist();
 
     document.getElementById("complete-group-modal").classList.remove("hidden");
@@ -1022,11 +1013,25 @@ async function submitCompleteGroup() {
         return;
     }
 
+    // Punto 67: facoltativo. Letto qui e non lasciato al server come multipart per restare
+    // coerenti con come il resto del sito manda gia' un .gpx (routeSource alla creazione,
+    // punto 43): testo semplice dentro lo stesso JSON, nessuna libreria di upload in piu'.
+    let gpxText;
+    const gpxFile = document.getElementById("complete-group-gpx-file").files[0];
+    if (gpxFile) {
+        try {
+            gpxText = await gpxFile.text();
+        } catch (e) {
+            window.showToast("Non è stato possibile leggere il file .gpx.", "error");
+            return;
+        }
+    }
+
     try {
         const response = await fetch(`/api/hikes/${completeGroupHikeId}/complete-group`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ confirmedUserIds })
+            body: JSON.stringify({ confirmedUserIds, gpxText })
         });
 
         if (response.ok) {
