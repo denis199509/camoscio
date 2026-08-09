@@ -1,6 +1,6 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-08
+Aggiornato: 2026-08-09
 ===================================================================
 
 QUESTO FILE DICE SOLO UNA COSA: a che punto siamo adesso e da dove si ricomincia.
@@ -26,54 +26,51 @@ o ne arriva uno nuovo.
 
 
 
->>> STATO ATTUALE (08/08/2026): giornata lunga, quattro punti toccati in
-    sessioni separate, tutti committati, pushati e verificati live su Render.
-    - Punto 37: Dead Man's Switch, manda davvero un'email al contatto scelto
-      quando scade, anche a pagina chiusa. Nel mezzo, un segreto
-      (SAFETY_CRON_SECRET) finito per sbaglio nel repository pubblico e'
-      stato trovato e ruotato - lezione e regola per il futuro in
-      ../camoscio memoria/07-Trappole-Tecniche.md.
-    - Punto 48: cliccando una squadra si apre la sua pagina (foto cambiabile
-      solo dagli admin, elenco membri, chat solo tra i membri, aggiornata a
-      polling ogni 5s).
-    - Punto 55: cliccando "Chat" su un'escursione (solo se si e' gia'
-      partecipanti) si apre la pagina dell'escursione (titolo, partecipanti,
-      chat solo tra chi partecipa). La chat NON e' stata duplicata: estratta
-      in public/js/chatpanel.js e condivisa con la pagina squadra.
-      Dettaglio di entrambe le chat e perche' niente WebSocket in
-      ../camoscio memoria/03-Decisioni-Architetturali.md.
-    - Punto 45 (FATTO IN PARTE): le segnalazioni sentiero non sono piu'
-      subito pubbliche. Triangolo di attenzione nell'header (canale
-      ESCLUSIVO per questo evento, mai un doppione della campana), visibile
-      solo a chi ha il permesso di moderare (oggi solo Denis, campo
-      User.canModerateReports). Apre una pagina dedicata con Conferma
-      (diventa visibile a tutti, come oggi) e Rifiuta (eliminata per sempre,
-      nessuno stato "rifiutato" salvato). Trovata e corretta nel farlo una
-      falla: GET /api/reports non filtrava per stato, quindi un pending
-      sarebbe stato leggibile via rete da chiunque loggato. 23 controlli
-      automatici nuovi (prove/prova-punto45.js) + verificato dal vivo nel
-      browser. Resta aperto solo cio' che Denis ha rimandato insieme nella
-      stessa risposta: la FOTO nella segnalazione e il tasto di creazione
-      "piu' trovabile" - fermi finche' non decide formato e tetto della
-      foto (vincolo hard sullo spazio).
+>>> STATO ATTUALE (09/08/2026): Denis ha chiesto di ordinare da solo 6 degli 11
+    punti del batch dell'08/08 (facili prima, i piu' grandi dopo) e ha dato il
+    via libera a farli in sequenza senza fermarsi a chiedere conferma tra uno
+    e l'altro. Tutti e sei chiusi, ognuno committato e pushato a parte, tutti
+    verificati live su Render, prove automatiche di regressione rilanciate
+    alla fine (9+27+23 controlli, 0 falliti).
+    - Punto 76: un'escursione completata in gruppo non si puo' piu'
+      modificare (menu "Modifica" sparito dalla card, server rifiuta con 409
+      chi ci provasse comunque). Segnale usato hike.groupCompletedAt, mai un
+      confronto con la data (commit d3e85a5).
+    - Punto 70: il testo troncato "Nessun contatto con email..." nel Dead
+      Man's Switch (pagina Mappa) - non riprodotto un overflow vero a nessuna
+      larghezza reale testata, probabile rendering diverso sul telefono di
+      Denis; corretto comunque in modo robusto (testo piu' corto, ellissi
+      vera invece del taglio netto). La freccia disabilitata e' corretta:
+      non c'e' nulla da scegliere finche' non si aggiunge un contatto con
+      email (commit 17ad479).
+    - Punto 68: layout mobile dei filtri Escursioni sistemato, tolto il
+      filtro "Obiettivo di Allenamento" (commit a0b957e).
+    - Punto 71: layout mobile di Carpooling sistemato (commit 8d7fbe7).
+    - Punto 73: layout mobile di Tribu' & Squadre sistemato (commit 320bc17).
+    - Punto 72: il vero tasto SOS fuori schermo NON era la stessa cosa gia'
+      sistemata al punto 17 (quella funziona ancora) - era un bug mai
+      riportato prima in .mesh-send-form (input+Invia+SOS in riga senza
+      min-width:0, la stessa regola gia' nota per .form-row .form-group ma
+      mai applicata li'). Verificando con lo stesso metodo piu' rigoroso
+      (posizione di ogni singolo elemento, non solo lo scrollWidth della
+      pagina) e' emerso lo STESSO difetto anche su "Salva Zona" (Carpooling)
+      e "Salva Obiettivo" (Tribu' & Squadre, punti 71/73 chiusi in questa
+      stessa sessione) - corretto insieme (commit d54e27c). Lezione nuova:
+      un overflow piccolo dentro una riga flex puo' restare invisibile a un
+      controllo sull'intera pagina - vedi ../camoscio memoria/07-Trappole-
+      Tecniche.md.
 
->>> PROSSIMA SESSIONE: Denis ha portato un batch di 11 nuove segnalazioni a fine
-    sessione (punti 67-77 in cose_da_fare.txt), con l'istruzione esplicita di
-    limitarsi ad annotarle senza implementare nulla. NESSUN ORDINE ANCORA DATO -
-    la primissima cosa da fare e' chiedergli come vuole ordinarle (una domanda
-    aperta, non a scelta multipla), esattamente come si e' sempre fatto prima di
-    ogni batch di lavoro. Riepilogo dei temi (dettaglio e parole sue nei singoli
-    punti): completamento escursioni (due tasti da separare, bug account demo,
-    aggiungere gpx - punto 67); layout mobile di Esplora Escursioni + togliere
-    obiettivo di allenamento (68); ricerca/categorie/schede chiuse per le
-    escursioni (69); un testo tagliato senza funzione in Mappa (70); mobile
-    ancora rotto su Carpooling, Sicurezza & Mesh (SOS fuori schermo - il piu'
-    urgente dei tre) e Tribu' & Squadre (71-73); escursioni mancanti nel profilo
-    utente (74); ricerca persone invece di spuntare tutti + richiesta di
-    partecipazione per le squadre (75); un'escursione completata non deve piu'
-    essere modificabile (76); nuove regole di visibilita' per le escursioni
-    concluse (77). Resta anche, quando Denis decidera' formato e tetto della
-    foto, la parte foto/tasto ancora aperta del punto 45.
+>>> PROSSIMA SESSIONE: restano 5 degli 11 punti del batch dell'08/08, SENZA
+    ordine ancora dato per questi (l'ordine ricevuto copriva solo i sei sopra):
+    67 (due tasti di completamento da separare, bug salvataggio da account
+    demo da riprodurre, campo gpx da aggiungere), 69 (ricerca/categorie/schede
+    chiuse per l'elenco escursioni - da leggere insieme al 77), 74 (escursioni
+    mancanti sul profilo utente), 75 (ricerca persone invece di spuntare tutti
+    + richiesta di partecipazione per le squadre), 77 (nuove regole di
+    visibilita' per le escursioni concluse - da leggere insieme al 69).
+    Chiedere a Denis come vuole ordinarli, una domanda aperta. Resta anche,
+    quando Denis decidera' formato e tetto della foto, la parte foto/tasto
+    ancora aperta del punto 45.
 
 >>> COSE FUORI SCOPE, NON RIPROPORLE finche' non torna Denis sull'argomento:
     - Tracciamento GPS a pagina chiusa (impossibile via browser, non difficile

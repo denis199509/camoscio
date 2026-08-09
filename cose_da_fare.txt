@@ -2803,7 +2803,7 @@ ci ha messo se si ricorda."
 
 --- ESPLORA ESCURSIONI DI GRUPPO: FILTRI FUORI SCHERMO SU TELEFONO, TOGLIERE OBIETTIVO DI ALLENAMENTO ---
 
-68) [DA FARE] Denis: "Esplora Escursioni di Gruppo, la parte di Filtri e Algoritmi
+68) [FATTO 2026-08-09] Denis: "Esplora Escursioni di Gruppo, la parte di Filtri e Algoritmi
 di Corrispondenza e' l'unica parte che esce fuori dagli schemi verso destra sul
 telefono. Dalla stessa parte togliamo la sezione obiettivo di allenamento."
    Due cose distinte: il layout di "Filtri e Algoritmi di Corrispondenza" da
@@ -2811,6 +2811,16 @@ telefono. Dalla stessa parte togliamo la sezione obiettivo di allenamento."
    nota per Escursioni/Carpooling/Tribu' & Squadre, vedi debito tecnico in
    ../camoscio memoria/04-Da-Fare.md); e la sezione "obiettivo di allenamento" da
    togliere del tutto in quella stessa zona, non solo da sistemare visivamente.
+   -> FATTO: era davvero la stessa famiglia di difetto (griglia a colonne fisse
+      mai toccata dalle @media). Tolto il filtro "Obiettivo di Allenamento"
+      (input libero su titolo/descrizione) insieme ai suoi riferimenti in
+      social.js - non erano protetti da un controllo di nullita', quindi senza
+      quella pulizia la lista escursioni si sarebbe rotta ad ogni caricamento.
+      .filter-grid passa da tre a due colonne su desktop (i filtri rimasti) e
+      per la prima volta si impila su una colonna sola sotto i 900px.
+      Verificato senza overflow orizzontale a 386px con un iframe a larghezza
+      vera (resize_window non la riproduce). Committato e pushato (a0b957e),
+      verificato live su Render.
 
 --- ELENCO ESCURSIONI: RICERCA, TRE CATEGORIE, SCHEDE CHIUSE CON SOLO IL TITOLO ---
 
@@ -2839,22 +2849,42 @@ giusta. La barra di ricerca ci serve per filtrare le escursioni proposte."
 
 --- MAPPA E SENTIERI: TESTO CONTATTO EMAIL TAGLIATO, FRECCIA CHE NON APRE NIENTE ---
 
-70) [DA FARE] Denis: "Mappa e sentieri. La frase "Nessun contatto con email
+70) [FATTO 2026-08-09] Denis: "Mappa e sentieri. La frase "Nessun contatto con email
 salv..." poi non e' piu' visibile, affianco ha una freccia in giu' ma non si apre
 nulla. Da correggere."
    Non ancora individuato in quale componente della pagina Mappa compare questa
    frase (testo troncato + freccia inerte) - da riprodurre dal vivo prima di
    toccare codice.
+   -> FATTO (in parte riprodotto, corretto in modo robusto): e' il menu "Chi
+      avvisare" del Dead Man's Switch (unica copia, vive nella pagina Mappa).
+      NON riprodotto un vero overflow a nessuna larghezza reale testata (1568
+      fino a 320px: la colonna della mappa e' fissa a 380px anche su desktop) -
+      probabile rendering diverso sul telefono di Denis (font di sistema piu'
+      largo sul <select> nativo), non riproducibile da qui. Corretto comunque:
+      testo piu' corto ("Nessun contatto con email" invece di "...email
+      salvata") e text-overflow:ellipsis al posto del taglio netto di default,
+      cosi' un taglio - se capita su un altro dispositivo - si legge come
+      testo che continua. La freccia che "non apre nulla" e' il <select>
+      nativo disabilitato quando non c'e' nessun contatto con email da poter
+      scegliere (corretto, vincolo hard 7: non c'e' nulla da selezionare
+      finche' non si aggiunge un contatto con email). Committato e pushato
+      (17ad479), verificato live su Render.
 
 --- RESPONSIVE MOBILE: CARPOOLING, SICUREZZA & MESH (SOS FUORI SCHERMO), TRIBU' & SQUADRE ---
 
-71) [DA FARE] Denis: "Carpooling, tutta la pagina esce verso destra sul
+71) [FATTO 2026-08-09] Denis: "Carpooling, tutta la pagina esce verso destra sul
 telefono."
    Conferma dal vivo del difetto gia' noto (vedi debito tecnico in ../camoscio
    memoria/04-Da-Fare.md: Carpooling era gia' segnato tra le pagine non ancora
    adattate al telefono).
+   -> FATTO: .carpool-layout non era mai stata toccata dalle @media (due
+      colonne 1fr non scendono mai sotto la larghezza minima del loro
+      contenuto). Stessa cura gia' usata per .safety-layout. Verificato senza
+      overflow orizzontale a 386px. Committato e pushato (8d7fbe7). Vedi anche
+      il punto 72 sotto: verificando meglio e' emerso un secondo difetto,
+      diverso, sulla stessa famiglia di pagine.
 
-72) [DA FARE] Denis: "Sicurezza e Mesh pure sta verso destra. Il tasto SOS sta
+72) [FATTO 2026-08-09] Denis: "Sicurezza e Mesh pure sta verso destra. Il tasto SOS sta
 proprio fuori a destra."
    ATTENZIONE - possibile contraddizione da chiarire prima di intervenire: il
    vault (../camoscio memoria/04-Da-Fare.md, debito tecnico) segnava Sicurezza &
@@ -2864,10 +2894,33 @@ proprio fuori a destra."
    di correggere, non dare per scontato quale dei due casi sia. E' il tasto piu'
    critico del sito (SOS): priorita' alta rispetto agli altri due punti mobile di
    questa lista.
+   -> FATTO, contraddizione risolta - non era ne' l'uno ne' l'altro caso
+      previsto: .safety-layout (il collasso a due colonne, punto 17) funziona
+      ancora perfettamente, verificato di nuovo. Il tasto SOS "fuori a destra"
+      e' un bug DIVERSO, mai riportato prima, in un widget diverso sulla
+      stessa pagina: .mesh-send-form (input + Invia + SOS in riga) non aveva
+      min-width:0 sull'input - stessa regola gia' imparata per .form-row
+      .form-group, mai applicata qui. Su telefono l'input non scende sotto la
+      sua larghezza minima e il terzo elemento (SOS) esce dal riquadro di
+      13px - invisibile a un controllo di overflow sull'intera pagina perche'
+      l'eccedenza resta locale alla riga, trovata solo misurando la posizione
+      reale di ogni singolo elemento. Verificando con lo stesso metodo anche
+      Carpooling e Tribu' & Squadre (punti 71/73, chiusi in questa stessa
+      sessione) e' emerso lo stesso difetto una seconda volta su una classe
+      diversa ma identica: .input-with-btn ("Salva Zona", "Salva Obiettivo") -
+      corretta anche quella. Verificato con un iframe a larghezza vera (386 e
+      320px) misurando la posizione di OGNI elemento della pagina, non solo lo
+      scrollWidth del documento: 0 elementi fuori schermo su tutte le pagine
+      toccate oggi piu' Dashboard/Le mie escursioni/Badge/Zaino. Committato e
+      pushato (d54e27c), verificato live su Render.
 
-73) [DA FARE] Denis: "Squadre e tribu' pure sta verso destra sul telefono."
+73) [FATTO 2026-08-09] Denis: "Squadre e tribu' pure sta verso destra sul telefono."
    Conferma dal vivo del difetto gia' noto (stesso elenco debito tecnico di sopra:
    Tribu' & Squadre era gia' segnata tra le pagine non ancora adattate).
+   -> FATTO: stesso difetto e stessa cura di .carpool-layout sopra
+      (.social-layout mai toccata dalle @media). Committato e pushato
+      (320bc17). Vedi punto 72: qui viveva anche il secondo difetto
+      (.input-with-btn su "Salva Obiettivo"), corretto insieme.
 
 --- PROFILO UTENTE: MANCANO LE ESCURSIONI ---
 
@@ -2902,11 +2955,26 @@ invece di spuntare i membri della squadra basta una sbarra di ricerca persone."
 
 --- ESCURSIONE COMPLETATA: NON DEVE PIU' ESSERE MODIFICABILE ---
 
-76) [DA FARE] Denis: "Modifica escursione. L'escursione "Alba Corno Grande"
+76) [FATTO 2026-08-09] Denis: "Modifica escursione. L'escursione "Alba Corno Grande"
 risulta gia' completata. Ma comunque posso modificarla. Dobbiamo correggere.
 Un'escursione che risulta completata non puo' piu' essere modificata."
    Riguarda la modifica gia' costruita al punto 54 (il tasto "modifica" di
    un'escursione) - va negata quando l'escursione ha lo status di completata.
+   -> FATTO: segnale usato hike.groupCompletedAt (lo stesso gia' usato per il
+      badge "Completata in gruppo", punto 64) - mai un confronto tra la data
+      dell'escursione e "adesso" (stessa trappola gia' pagata al punto 58).
+      Server: PUT /api/hikes/:id rifiuta con 409 se l'escursione e' completata
+      e il body tocca campi di modifica (titolo, descrizione, difficolta',
+      numeri, data, tag, ritrovo, percorso collegato) - partecipanti/
+      carpooling/zaino restano un'altra cosa, non toccati. Frontend: il menu
+      "tre puntini -> Modifica" sparisce dalla card (era l'unica voce del
+      menu). Verificato con uno script dedicato (crea un'escursione finta,
+      modifica permessa prima della chiusura, negata dopo con messaggio
+      chiaro, nessuna scrittura parziale, campi non di modifica come il
+      carpooling restano permessi, tutto ripulito a fine prova) e dal vivo nel
+      browser sulla vera escursione "Ascesa al Corno Grande" di Marco
+      Alpinista: menu assente li', presente su una sua escursione non ancora
+      completata. Committato e pushato (d3e85a5), verificato live su Render.
 
 --- VISIBILITA' DELLE ESCURSIONI: SOLO PROGRAMMATE E PROPRIE, DETTAGLI SOLO A CHI HA PARTECIPATO ---
 
