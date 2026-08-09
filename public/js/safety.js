@@ -218,7 +218,7 @@ function popolaContattiEmergenza() {
     if (!usabili.length) {
         const opt = document.createElement("option");
         opt.value = "";
-        opt.textContent = "Nessun contatto con email salvata";
+        opt.textContent = "Nessun contatto con email";
         sel.appendChild(opt);
         sel.disabled = true;
         if (btnAttiva) btnAttiva.disabled = true;

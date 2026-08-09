@@ -670,6 +670,18 @@ h1, h2, h3, h4, h5, h6 {
     transition: all var(--transition-speed);
 }
 
+/* Punto 70: un testo lungo (es. "Nessun contatto con email" nel Dead Man's Switch, vedi
+   safety.js) non deve mai tagliarsi a meta' parola senza nessun segno - su un dispositivo
+   con un font di sistema piu' largo del previsto potrebbe non starci, ed e' cosi' che va
+   letto: come qualcosa che continua, non come un'etichetta rotta. Non tocca la larghezza
+   (gia' verificata: la colonna della mappa e' 380px anche su desktop, vedi sopra) - e'
+   un margine di sicurezza per font/dispositivi che qui non si possono provare dal vivo. */
+.form-group select {
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
 /* La vera causa del campo che sbordava. .form-group e' gia' "flex column", quindi gli
    input si allargano da soli: quello che mancava e' che il GRUPPO potesse restringersi.
    Un elemento flex non scende mai sotto la larghezza minima del suo contenuto finche'
