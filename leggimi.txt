@@ -37,8 +37,9 @@ o ne arriva uno nuovo.
        width/height/overflow pensata solo per un'emoji - l'<img> si
        espandeva senza limiti coprendo mezza schermata, bloccando ogni
        click. Corretta dando a .avatar-icon una dimensione fissa (40x40) +
-       overflow:hidden. Committato e pushato (0bce55d). RESTA A DENIS: dire
-       a Daniel che puo' rimettere la foto profilo.
+       overflow:hidden. Committato e pushato (0bce55d). Denis ne parla con
+       Daniel di persona alla prossima occasione - non serve piu' ricordarlo
+       qui.
 
     2) Creato l'agente "designer" (.claude/agents/, SOLO LOCALE - non su
        GitHub, vedi vault 03-Decisioni-Architetturali) e provato subito
