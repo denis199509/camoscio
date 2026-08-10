@@ -90,8 +90,26 @@ function formattaDurata(secondi) {
     return ore > 0 ? `${ore}h ${minuti}min` : `${minuti} min`;
 }
 
-function schedaEscursioneCompletata(hike) {
+function schedaEscursioneCompletata(hike, completion) {
     const esc = window.escapeHtml;
+
+    // Punto 79: se questa persona ha un tempo di cammino reale misurato da un .gpx per
+    // questa escursione (Completion.movingTimeHours, solo quando la traccia era abbastanza
+    // fitta da fidarsene), confrontato con lo standard CAI calcolato sugli stessi dati VERI
+    // dell'escursione - stessa logica di buildHikeCard in social.js, qui perche' questa
+    // scheda resta consultabile nel tempo anche dopo che l'escursione e' sparita dalle liste.
+    let tempoRealeHtml = '';
+    if (completion && completion.movingTimeHours) {
+        const tVertStandard = (hike.elevationGain || 0) / 400;
+        const tFlatStandard = (hike.distanceKm || 0) / 4;
+        const caiOre = Math.max(tVertStandard, tFlatStandard) + Math.min(tVertStandard, tFlatStandard) / 2;
+        const pauseOre = completion.actualTimeHours
+            ? Math.max(0, completion.actualTimeHours - completion.movingTimeHours)
+            : 0;
+        const pausaText = pauseOre > (1 / 60) ? ` (+ ${window.formatHoursToMin(pauseOre)} di pause)` : '';
+        tempoRealeHtml = `<p class="small text-muted rp-nota-dislivello"><i data-lucide="footprints"></i><span>Cammino: <b>${window.formatHoursToMin(completion.movingTimeHours)}</b>${pausaText} · CAI: <b>${window.formatHoursToMin(caiOre)}</b></span></p>`;
+    }
+
     // Titolo su una riga TUTTA sua, fuori da .outing-card-head: quella e' una riga flex
     // pensata per un tag corto accanto a un nome file/data breve (storico.js). Un titolo
     // vero in piu' parole ("Alba Corno Grande") condivisa con due badge si vede spezzare
@@ -112,6 +130,7 @@ function schedaEscursioneCompletata(hike) {
                 <div><strong>${Math.round(hike.elevationGain || 0)}</strong><span>m disliv.</span></div>
                 <div><strong>${Math.round(hike.maxAltitude || 0)}</strong><span>quota max</span></div>
             </div>
+            ${tempoRealeHtml}
         </div>`;
 }
 
@@ -158,9 +177,11 @@ async function renderProfileHikes(userId, container) {
 
     const db = window.CamoscioState;
     const vociHike = completions
-        .map(c => (db.hikes || []).find(h => h.id === c.hikeId))
-        .filter(Boolean)
-        .map(h => ({ tipo: 'hike', data: h.date, html: schedaEscursioneCompletata(h) }));
+        .map(c => {
+            const h = (db.hikes || []).find(h => h.id === c.hikeId);
+            return h ? { tipo: 'hike', data: h.date, html: schedaEscursioneCompletata(h, c) } : null;
+        })
+        .filter(Boolean);
 
     const vociUscita = sessioni.map(s => ({ tipo: 'uscita', data: s.startedAt, html: schedaUscitaProfilo(s) }));
 

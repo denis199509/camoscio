@@ -465,6 +465,30 @@ function buildHikeCard(hike) {
         })()
         : `<p class="small text-muted rp-nota-dislivello"><i data-lucide="info"></i><span>Tempo previsto non disponibile: per questa escursione non è ancora stato scelto un percorso reale, quindi non si può sapere quanto ci vorrà davvero. Dislivello e distanza qui sopra sono quelli indicati da chi l'ha organizzata.</span></p>`;
 
+    // Punto 79: se l'escursione e' completata e IO ho un tempo di cammino reale misurato da
+    // un .gpx (Completion.movingTimeHours, presente solo quando la traccia era abbastanza
+    // fitta da fidarsene), lo confronto con lo standard CAI calcolato sugli stessi dati VERI
+    // dell'escursione - non sul mio passo storico, che e' gia' il confronto mostrato sopra
+    // prima di partire. Risponde alla domanda di Denis: "quanto ho camminato davvero, senza
+    // le mie pause, contro lo standard" - le pause si mostrano separate perche' sono sue,
+    // soggettive, non della escursione (a lui bastano 5 minuti, ad altri ne servono 10+).
+    let tempoRealeHtml = "";
+    if (hike.groupCompletedAt) {
+        const miaCompletion = db.completions.find(c => c.hikeId === hike.id);
+        if (miaCompletion && miaCompletion.movingTimeHours) {
+            const tVertStandard = hike.elevationGain / 400;
+            const tFlatStandard = hike.distanceKm / 4;
+            const caiOre = Math.max(tVertStandard, tFlatStandard) + Math.min(tVertStandard, tFlatStandard) / 2;
+            const pauseOre = miaCompletion.actualTimeHours
+                ? Math.max(0, miaCompletion.actualTimeHours - miaCompletion.movingTimeHours)
+                : 0;
+            const pausaText = pauseOre > (1 / 60) // sotto il minuto non si scrive, formatHoursToMin arrotonderebbe a "0h 0m"
+                ? ` (+ ${window.formatHoursToMin(pauseOre)} di pause)`
+                : "";
+            tempoRealeHtml = `<p class="small text-muted rp-nota-dislivello"><i data-lucide="footprints"></i><span>Il tuo tempo di cammino misurato: <b>${window.formatHoursToMin(miaCompletion.movingTimeHours)}</b>${pausaText} · CAI per questo percorso: <b>${window.formatHoursToMin(caiOre)}</b>.</span></p>`;
+        }
+    }
+
     // Verifica idoneità fisica
     const eligibility = window.getEligibilityBadge(hike, currentUser);
 
@@ -613,6 +637,7 @@ function buildHikeCard(hike) {
             </div>
 
             ${tempoHtml}
+            ${tempoRealeHtml}
 
             <div class="tag-list">
                 ${hike.tribeTags.map(t => `<span class="tag">${t}</span>`).join("")}

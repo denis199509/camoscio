@@ -272,4 +272,5 @@ function getEligibilityBadge(hike, user) {
 
 window.initProfileModule = initProfileModule;
 window.calculateHikeTimes = calculateHikeTimes;
+window.formatHoursToMin = formatHoursToMin;
 window.getEligibilityBadge = getEligibilityBadge;

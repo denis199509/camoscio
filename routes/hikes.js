@@ -12,7 +12,7 @@ const { requireAuth } = require('../middleware/auth');
 const { regionForPoint } = require('../lib/regions');
 const { mongoose } = require('../db/mongo');
 const { haversineKm } = require('../lib/geometry');
-const { parseGpx, statisticheTraccia, ErroreGpx, SOGLIA_DISLIVELLO_M } = require('../lib/gpx');
+const { parseGpx, statisticheTraccia, tempiTraccia, ErroreGpx, SOGLIA_DISLIVELLO_M } = require('../lib/gpx');
 const { progettaPercorso } = require('../lib/trailGraph');
 
 // Punto 55: usato da /:id/complete (gia' esistente, riscritto per riusare questa) e dalle
@@ -212,7 +212,12 @@ async function calcolaDaPercorso(routeSource, userId) {
             maxAltitude: stats.quotaMaxM,
             elevationGain: stats.dislivelloM,
             distanceKm: stats.distanzaKm,
-            routeSource: { kind: 'gpx', nome: (letto.nome || 'Traccia importata').slice(0, 80) }
+            routeSource: { kind: 'gpx', nome: (letto.nome || 'Traccia importata').slice(0, 80) },
+            // Punto 79: il gpx gia' letto, cosi' chi ha bisogno di inizio/fine o dei punti
+            // (es. tempiTraccia in complete-group) non deve fare un secondo giro di parseGpx
+            // sullo stesso testo - file fino a 10 MB, Render a 512 MB gia' caduto una volta.
+            // Aggiunta pura: chi ignora questo campo (creazione/modifica escursione) non cambia.
+            gpxLetto: letto
         };
     }
 
@@ -456,7 +461,9 @@ router.post('/:id/complete', requireAuth, async (req, res) => {
         // gruppo qui sotto. Il 409 resta specifico di QUESTA rotta (l'auto-dichiarazione
         // individuale non puo' ripetersi): nel completamento di gruppo lo stesso caso non
         // e' un errore, e' il normale "questa persona si era gia' completata da sola".
-        const applicato = await applyHikeCompletionStats(user, hike, actualTimeHours);
+        // Questo flusso (auto-completamento, es. dal tracciamento dal vivo) non porta un
+        // .gpx: nessun movingTimeHours, il passo personale ricade sul totale come sempre.
+        const applicato = await applyHikeCompletionStats(user, hike, { actualTimeHours });
         if (!applicato) {
             return res.status(409).json({ error: 'Escursione già segnata come completata', user });
         }
@@ -503,11 +510,10 @@ router.post('/:id/complete-group', requireAuth, async (req, res) => {
 
         // Punto 67: un file .gpx facoltativo, "per avere i dati veri dell'escursione" (parole
         // di Denis) - non chiede mai le ore a mano, quelle il file le porta gia' con se'.
-        // Stessa validazione di regione/dimensione di calcolaDaPercorso (sopra, punto 43): un
-        // secondo giro di parseGpx qui serve solo a leggere inizio/fine, che quella funzione
-        // condivisa non restituisce - non vale la pena cambiarne il contratto (la usano anche
-        // la creazione e la modifica) per un dato che a loro non serve.
+        // Stessa validazione di regione/dimensione di calcolaDaPercorso (sopra, punto 43), che
+        // ora restituisce anche il gpx gia' letto (gpxLetto) invece di doverlo riparsare qui.
         let actualTimeHours = null;
+        let movingTimeHours = null;
         if (req.body && typeof req.body.gpxText === 'string' && req.body.gpxText.trim()) {
             let datiReali;
             try {
@@ -520,20 +526,34 @@ router.post('/:id/complete-group', requireAuth, async (req, res) => {
             hike.distanceKm = datiReali.distanceKm;
             hike.routeSource = datiReali.routeSource;
 
-            const letto = parseGpx(req.body.gpxText);
+            const letto = datiReali.gpxLetto;
             if (!letto.durataIgnota && letto.inizio && letto.fine) {
                 const ore = (letto.fine.getTime() - letto.inizio.getTime()) / 3600000;
                 if (ore > 0) actualTimeHours = ore;
+
+                // Punto 79: separa cammino e pause, SOLO se la traccia e' abbastanza fitta
+                // da fidarsene (tempiTraccia lo dice da sola con "attendibile"). Mai
+                // bloccante: confermare chi ha partecipato e' cio' che conta in questa
+                // rotta, il tempo di cammino e' un di piu' - se il calcolo va storto per un
+                // motivo imprevisto, il completamento deve comunque andare a buon fine.
+                try {
+                    const tempi = tempiTraccia(letto.punti, haversineKm);
+                    if (tempi.attendibile && tempi.movimentoSec > 0) {
+                        movingTimeHours = tempi.movimentoSec / 3600;
+                    }
+                } catch (e) {
+                    console.error('Errore nel calcolo cammino/pause dal gpx:', e.message);
+                }
             }
         }
 
         // Senza un file .gpx, il tempo reale non c'entra in questo flusso: Denis non ne ha
         // mai parlato per il completamento di gruppo "a mano", riguarda solo "chi c'era" -
-        // actualTimeHours resta null, esattamente come prima di questo punto.
+        // actualTimeHours e movingTimeHours restano null, esattamente come prima di questo punto.
         for (const u of utentiConfermati) {
             const persona = await User.findById(u._id);
             if (!persona) continue; // sparito fra la query sopra e questa, caso limite innocuo
-            const cambiato = await applyHikeCompletionStats(persona, hike, actualTimeHours);
+            const cambiato = await applyHikeCompletionStats(persona, hike, { actualTimeHours, movingTimeHours });
             if (cambiato) await persona.save();
         }
 
