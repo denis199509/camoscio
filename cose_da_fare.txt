@@ -3145,7 +3145,7 @@ piu', quindi una cosa che si fa una volta sola. E' possibile?"
 
 --- TEMPO REALE DAL GPX: SEPARARE CAMMINO DA PAUSE ---
 
-79) [DA VALUTARE - NON ANCORA IMPLEMENTATO] Denis, dopo aver chiuso l'escursione
+79) [FATTO 2026-08-10] Denis, dopo aver chiuso l'escursione
 "prova" con un file .gpx vero esportato da Garmin: "Ho chiuso l'escursione 'prova'
 aggiungendo il file .gpx ricavato da Garmin. La quota massima, il dislivello e la
 distanza sono stati presi correttamente. Il tempo invece no. Ha considerato 4h 53
@@ -3167,18 +3167,52 @@ tempo CAI e' considerato senza pause."
    punti consecutivi dove la distanza percorsa supera una soglia minima,
    scartando gli intervalli sotto soglia come "pausa") e' possibile senza
    dati aggiuntivi rispetto a quelli gia' letti oggi.
-   NON ANCORA PROGETTATO NE' IMPLEMENTATO: tocca la stessa famiglia di calcoli
-   del tempo previsto CAI (punto 44) e del tempo di rientro - per le regole di
-   questo progetto (vedi CLAUDE.md e l'agente architect) va progettato PRIMA
-   di scrivere codice, non improvvisato. Punti aperti da decidere con Denis
-   prima di partire:
-     - la soglia di velocità/distanza sotto cui un intervallo conta come
-       "pausa" invece che "cammino lento" (un GPS fermo non sta mai
-       perfettamente immobile: serve una soglia, non zero);
-     - dove mostrare il confronto ("tempo previsto CAI" vs "il tuo tempo
-       senza pause" vs "il tuo tempo totale con pause") e se le pause vanno
-       salvate come dato a parte o solo mostrate una volta;
-     - se questo cambia anche il modo in cui viene aggiornato il passo
-       personale (`averagePaceUp`/`averagePaceDown`, lib/hikeStats.js) - oggi
-       usa il tempo totale letto dal file, andrebbe verificato se deve
-       passare al solo tempo in movimento.
+   -> FATTO: progettato prima con l'agente architect (tocca la stessa famiglia
+      di calcoli del tempo previsto CAI e del tempo di rientro), poi Denis ha
+      risposto alle domande aperte lasciate dall'architetto - soglia pausa:
+      60s continuativi; confronto mostrato sia sulla scheda escursione sia
+      nel profilo; il tempo di cammino SI SALVA per ogni partecipante
+      (Completion.movingTimeHours, nuovo campo, actualTimeHours resta il
+      totale invariato); il passo personale passa al tempo di cammino, con
+      ricalcolo immediato di quello gia' contaminato (pochi utenti reali).
+      Trovato mentre si progettava (non nella segnalazione originale, ma
+      collegato): il "4h53" che Denis aveva visto non era affatto il tempo
+      totale del file (che e' in realta' 3h38m) - era il "tempo previsto sul
+      tuo passo" (calculateHikeTimes, punto 44), calcolato dal SUO PASSO
+      STORICO gia' inquinato dalle pause di completamenti precedenti. Il
+      passo personale era quindi sbagliato per chiunque avesse gia'
+      completato un'escursione con un tempo reale, non solo il numero
+      mostrato dopo QUESTO completamento - effetto a cascata anche sulle
+      soglie di experienceLevel (350/500 m/h).
+      Nuova funzione lib/gpx.js:tempiTraccia - separa movimento/pausa/incerto
+      su una finestra di 60s misurando lo SPOSTAMENTO NETTO (non il percorso
+      cumulativo: un GPS fermo che deriva produce comunque un percorso
+      cumulativo di decine di metri, lo spostamento netto invece resta quasi
+      zero - e' quello che distingue davvero una sosta da un cammino lento),
+      isteresi per non far contare come pausa una sosta-foto sotto i 60s ne'
+      chiudere una pausa vera per un sobbalzo del GPS, gestione esplicita dei
+      buchi di campionamento >5 min (auto-pause di molti orologi). Quando la
+      traccia e' troppo rada per fidarsene, NESSUN numero viene prodotto -
+      stessa regola gia' presa ai punti 33 e 44 ("meglio nessun numero che
+      uno che sembra una misura e non lo e'"). Calibrato sul file .gpx vero
+      di Denis (Castel Madama Escursionismo, quello dell'escursione "prova"):
+      3h38m totali, 2h44m di cammino, 55 min di pause in 11 soste (la piu'
+      lunga 24 min), confermato plausibile da Denis.
+      Verificato con 26 controlli nuovi su tracce sintetiche
+      (prove/prova-punto79.js: cammino puro, sosta nota, GPS fermo che
+      deriva, sosta troppo breve per contare, buco con auto-pause, buco con
+      segnale perso, campionamento troppo rado, traccia troppo corta -
+      invariante movimento+pausa+incerto=totale su ognuna) e un giro
+      end-to-end sul server locale con un'escursione vera e il file gpx di
+      Denis (creazione, completamento di gruppo, Completion salvato col
+      tempo di cammino giusto, passo personale aggiornato, resa a schermo
+      corretta sia sulla scheda sia nel profilo), dati di prova ripuliti a
+      fine verifica. Nessuna regressione (prova-configurazione.js 9/9,
+      prova-punto37.js 27/27, prova-punto45.js 23/23, prova-punto77.js
+      16/16). Committato e pushato (6e2248f).
+      RESTA A DENIS: il passo gia' calcolato prima di oggi (es. il suo,
+      126/180) resta cosi' finche' non completa una nuova escursione con un
+      file gpx - nessuna riscrittura silenziosa dei dati vecchi. Lo script
+      scripts/ricalcola-passo-personale.js esiste se un giorno si vuole
+      correggere anche quello (non lanciato sugli account reali stavolta,
+      solo su un demo per la verifica).

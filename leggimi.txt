@@ -1,6 +1,6 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-10 (agente designer, dashboard, aperto punto 79 GPX/pause)
+Aggiornato: 2026-08-10 (chiuso il punto 79: cammino/pause dal gpx)
 ===================================================================
 
 QUESTO FILE DICE SOLO UNA COSA: a che punto siamo adesso e da dove si ricomincia.
@@ -26,12 +26,11 @@ o ne arriva uno nuovo.
 
 
 
->>> STATO ATTUALE (10/08/2026): punto 62 chiuso (guasto di Daniel), nuovo
-    agente "designer" creato e gia' provato sulla Dashboard, e un nuovo punto
-    (79) aperto ma NON implementato - dettaglio dei tre sotto. Nessun lavoro
-    grande in coda con un ordine gia' dato - la prossima sessione parte da
-    quello che portera' Denis, tranne il punto 79 che tocca pero' il calcolo
-    del tempo (va progettato con l'agente architect, non improvvisato).
+>>> STATO ATTUALE (10/08/2026): punto 62 chiuso (guasto di Daniel), agente
+    "designer" creato e gia' provato sulla Dashboard, punto 79 chiuso
+    (cammino/pause dal gpx) - dettaglio dei tre sotto. Nessun lavoro grande
+    in coda con un ordine gia' dato - la prossima sessione parte da quello
+    che portera' Denis.
 
     1) Punto 62 chiuso: la foto profilo nel widget utente in alto (presente
        su ogni pagina) finiva dentro .avatar-icon, una classe senza
@@ -52,20 +51,21 @@ o ne arriva uno nuovo.
        grafico sotto usa l'arancione per lo stesso dato - tre opzioni
        proposte, nessuna scelta, per ora resta cosi'.
 
-    3) Punto 79 APERTO, NON IMPLEMENTATO: chiudendo l'escursione "prova" con
-       un .gpx vero da Garmin, il "tempo previsto" mostrato e' risultato
-       uguale al tempo TOTALE di Denis (pause comprese), non al solo tempo
-       di cammino. Causa trovata: actualTimeHours (routes/hikes.js) legge
-       oggi la differenza fine-inizio del file, senza separare cammino da
-       pause. Denis vuole un confronto "tempo CAI vs il mio tempo senza
-       pause", perche' le pause sono soggettive (variano da persona a
-       persona) mentre il cammino no - e pure il tempo CAI e' gia' senza
-       pause. Tecnicamente fattibile (i punti del gpx hanno gia' l'istante
-       di ognuno), ma NON PROGETTATO: prima di scrivere codice serve
-       passare dall'agente architect (tocca la stessa famiglia di calcoli
-       del tempo di rientro) e decidere con Denis la soglia pausa/cammino e
-       dove mostrare il confronto. Dettaglio completo in cose_da_fare.txt,
-       punto 79.
+    3) Punto 79 CHIUSO: separato cammino e pause da un .gpx (nuova
+       lib/gpx.js:tempiTraccia, progettata prima con l'agente architect).
+       Trovato mentre si progettava: il "4h53" che Denis aveva visto NON era
+       il totale del file (che e' 3h38m) - era il "tempo previsto sul suo
+       passo", e il suo passo storico (averagePaceUp) era gia' inquinato
+       dalle pause di completamenti precedenti. Il passo personale ora usa
+       il tempo di cammino quando c'e' (Completion.movingTimeHours, nuovo
+       campo - actualTimeHours resta il totale, invariato nei documenti
+       vecchi). Calibrato sul file vero di Denis: 3h38m totali, 2h44m di
+       cammino, 55 min di pause in 11 soste - CONFERMATO plausibile da lui.
+       26 controlli nuovi (prove/prova-punto79.js) + verifica end-to-end sul
+       server locale, nessuna regressione. Committato e pushato (6e2248f).
+       RESTA A DENIS: il suo passo gia' calcolato (126/180) non e' stato
+       toccato - si corregge da solo alla prossima escursione con gpx, o con
+       scripts/ricalcola-passo-personale.js se lo vuole subito.
 
     FATTO IL 09/08 dopo la chiusura del batch 67-77 (dettaglio punto per punto in
     cose_da_fare.txt e nel vault, [[06-Cronologia-Sessioni]]):
