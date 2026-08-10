@@ -13,6 +13,11 @@ public/uploads/*
 # File di sistema Windows
 Thumbs.db
 
+# Agenti Claude Code: configurazione personale di come si lavora con l'AI su
+# questo progetto, non codice/documentazione che serve a chi clona il repo.
+# Il repo e' pubblico, questi file restano solo locali.
+.claude/
+
 # Progresso dell'estrazione dei sentieri (punto 13): file di lavoro, si rigenera
 data/estrazione-progresso.json
 
