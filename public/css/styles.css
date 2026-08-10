@@ -18,6 +18,10 @@
     /* Accenti "montagna" */
     --accent-orange: #C1662E;
     --accent-orange-glow: rgba(193, 102, 46, 0.25);
+    /* Alone piu' leggero, per gli elementi "accesi" che non sono un'azione da premere
+       (voce di menu attiva, timbro/badge conquistato): lo stesso valore era scritto a mano
+       identico in tre punti del foglio, ora sta qui una volta sola. */
+    --accent-orange-glow-soft: rgba(193, 102, 46, 0.1);
 
     --accent-green: #4C7A44;
     --accent-green-glow: rgba(76, 122, 68, 0.2);
@@ -181,7 +185,7 @@ h1, h2, h3, h4, h5, h6 {
     border-left: 3px solid var(--accent-orange);
     border-top-left-radius: 4px;
     border-bottom-left-radius: 4px;
-    box-shadow: 0 4px 15px rgba(193, 102, 46, 0.1);
+    box-shadow: 0 4px 15px var(--accent-orange-glow-soft);
 }
 
 .sidebar-footer {
@@ -502,7 +506,42 @@ h1, h2, h3, h4, h5, h6 {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    /* Il badge di destra ("Geofencing Attivo", "Altitudine > 2500m") non deve schiacciare
+       il titolo su schermo stretto: se non ci stanno affiancati va a capo. */
+    flex-wrap: wrap;
+    gap: 10px;
     margin-bottom: 16px;
+}
+
+/* TITOLO DI SCHEDA CON ICONA — un solo aspetto per tutto il sito.
+   Le icone dentro i titoli delle schede erano rimaste senza nessuna regola: lucide le
+   disegna a 24px nel colore del testo e allineate alla base, mentre OGNI altro titolo di
+   sezione del sito (.badges-group-title, .my-hikes-group-title, .gpx-import-head h4,
+   .backpack-add-shared h5) ha l'icona piu' piccola, allineata al centro e in un colore di
+   accento. Misurato: 24px contro i 20px di .badges-group-title, e color #F3EFE6 invece
+   dell'arancio. Qui si allinea al pattern gia' esistente.
+   La regola nomina "i" E "svg" perche' lucide.createIcons() sostituisce il tag <i> con un
+   <svg>: una regola sul solo "i" varrebbe per la frazione di secondo prima delle icone
+   (trappola gia' pagata al punto 8).
+   Solo gli h4 (che l'icona ce l'hanno) diventano flex: il titolo di benvenuto e' un
+   h3 di solo testo con dentro uno <span> col nome, e renderlo flex spezzerebbe la frase
+   in tre pezzi affiancati che su schermo stretto non andrebbero piu' a capo. */
+.card-header-row h4,
+#dashboard .glass-card > h4 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.card-header-row h4 i,
+.card-header-row h4 svg,
+#dashboard .glass-card > h4 i,
+#dashboard .glass-card > h4 svg {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    color: var(--accent-orange);
 }
 
 /* Pulsanti */
@@ -886,26 +925,78 @@ h1, h2, h3, h4, h5, h6 {
     display: flex;
     flex-direction: column;
     gap: 24px;
+    /* min-width:0 sta QUI e non dentro la @media da 900px (dove era finito) perche' il
+       difetto non dipende dalla larghezza dello SCHERMO ma da quella del CONTENITORE -
+       stessa lezione gia' scritta per .form-row .form-group e .input-with-btn input.
+       Misurato prima della correzione a 1100px di finestra: le due colonne "1fr 1fr"
+       venivano 392,9px e 359,1px invece che uguali, perche' una traccia 1fr non scende
+       mai sotto la larghezza minima del suo contenuto. Due colonne che dovrebbero essere
+       gemelle e differiscono di 34px si vedono a occhio nudo. */
+    min-width: 0;
 }
 
+.dash-col > .glass-card {
+    min-width: 0;
+}
+
+/* Distanza fra il titolo di una scheda e la riga di spiegazione che ci sta sotto.
+   Misurata prima della correzione: 16px nel Passaporto (che ha una .card-header-row) e
+   ZERO nelle altre tre schede, dove il titolo e la sua descrizione erano appiccicati.
+   Un valore solo per tutte e quattro. Il 16px di .card-header-row resta com'e' fuori
+   dalla Dashboard: li' quella classe la usa anche lo Zaino, che non e' stato provato
+   in questa sessione. */
+#dashboard .glass-card > h3,
+#dashboard .glass-card > h4,
+#dashboard .glass-card > .card-header-row {
+    margin-bottom: 10px;
+}
+
+/* La scheda di benvenuto e' la "prima" della pagina e lo dice con un filo arancione a
+   sinistra e uno sfondo leggermente piu' chiaro delle altre. Lo sfondo era scritto a mano
+   con due blu (rgba(22,30,49) / rgba(10,14,23)): valori rimasti dalla vecchia palette
+   "neon" e mai aggiornati al tema "rifugio di montagna", per cui l'unica scheda fredda
+   della pagina stava in mezzo a tre schede calde. Ora usa le variabili gia' esistenti. */
 .welcome-card {
-    background: linear-gradient(135deg, rgba(22, 30, 49, 0.85) 0%, rgba(10, 14, 23, 0.85) 100%);
+    background: linear-gradient(135deg, var(--bg-card-hover) 0%, var(--bg-card) 100%);
     border-left: 4px solid var(--accent-orange);
 }
 
-.quick-stats-row {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 24px;
-    background: rgba(0, 0, 0, 0.2);
-    padding: 16px;
-    border-radius: 12px;
+/* .glass-card:hover usa la scorciatoia border-color, che vale per TUTTI E QUATTRO i lati:
+   passando il mouse sulla scheda di benvenuto il filo arancione di sinistra diventava
+   grigio e la scheda perdeva il suo unico segno distintivo. */
+.welcome-card:hover {
+    border-left-color: var(--accent-orange);
 }
 
-.q-stat {
+/* RIQUADRO-DATO: un numero con la sua etichetta. Compare tre volte nella Dashboard
+   (benvenuto, "Quanto hai camminato", "Calcolatore Passo") e prima di questa riga erano
+   tre cose diverse nate in tre momenti diversi: raggio 12px / 10px / 10px, bordo solo su
+   .pace-row, e i tre numeri del benvenuto stipati dentro un unico riquadro flex mentre gli
+   altri sei erano riquadri separati. Ora e' una regola sola: stessa scatola ovunque.
+   min-width:0 fuori dalle @media per lo stesso motivo di .dash-col qui sopra (misurato a
+   1100px: .pace-stats dava colonne da 86px, 86px e 112px al posto di tre uguali). */
+.q-stat,
+.total-box,
+.pace-row {
     display: flex;
     flex-direction: column;
-    align-items: center;
+    gap: 4px;
+    min-width: 0;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 12px;
+    text-align: center;
+}
+
+/* Tre numeri affiancati, esattamente come .totals-grid e .pace-stats piu' sotto: era
+   l'unica delle tre file a essere un flex con space-between, e a schermo largo si allargava
+   in modo diverso dalle altre due. */
+.quick-stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-top: 16px;
 }
 
 .q-val {
@@ -913,82 +1004,108 @@ h1, h2, h3, h4, h5, h6 {
     font-weight: 700;
     font-family: 'Outfit', sans-serif;
     color: var(--accent-orange);
+    line-height: 1.1;
 }
 
-.q-lbl {
+/* Etichetta sotto il numero: unica misura per tutte e tre le file di riquadri
+   (era 0.75rem qui, 0.72rem nei totali - una differenza senza motivo). */
+.q-lbl,
+.total-lbl,
+.pace-row span {
     font-size: 0.75rem;
     color: var(--color-text-secondary);
 }
 
-/* Stamps Passaporto */
+/* Stamps Passaporto. margin 16px come .totals-grid e .pace-stats: era 20px, cioe' la
+   stessa distanza scritta con un numero diverso. */
 .stamps-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 16px;
-    margin: 20px 0;
+    margin: 16px 0 12px;
 }
 
-.stamp-slot {
-    background: rgba(0, 0, 0, 0.25);
-    border: 2px dashed var(--border-color);
-    border-radius: 14px;
-    padding: 16px 8px;
+/* .stamp-slot (anteprima in Dashboard) e .badge-card (pagina Badge) sono LO STESSO
+   componente: lo stesso timbro, mostrato in due posti. Erano due blocchi quasi identici
+   nati in sessioni diverse e gia' divergenti (sfondo 0,05 contro 0,06 dell'arancio,
+   opacita' 0,4 contro 0,55, e solo .badge-card aveva min-width:0 e overflow-wrap).
+   Ora la parte comune e' scritta una volta sola qui: restano diverse solo le misure del
+   testo, perche' la Dashboard ne mostra quattro in mezza colonna e la pagina Badge tutti
+   quanti a tutta larghezza. Stessa regola gia' applicata alla logica JS del progetto
+   (renderProfileIdentity, chatpanel.js): due copie della stessa cosa divergono sempre.
+   L'opacita' del bloccato passa da 0,4 a 0,55 (quella scelta per .badge-card proprio
+   perche' a 0,4 non si leggeva). */
+.stamp-slot,
+.badge-card {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
     text-align: center;
-    opacity: 0.4;
+    background: rgba(0, 0, 0, 0.25);
+    border: 2px dashed var(--border-color);
+    border-radius: 14px;
+    min-width: 0;
+    opacity: 0.55;
     transition: all var(--transition-speed);
 }
 
-.stamp-slot.unlocked {
+.stamp-slot.unlocked,
+.badge-card.unlocked {
     opacity: 1;
     border: 2px solid var(--accent-orange);
-    background: rgba(193, 102, 46, 0.05);
-    box-shadow: 0 4px 15px rgba(193, 102, 46, 0.1);
+    background: rgba(193, 102, 46, 0.06);
+    box-shadow: 0 4px 15px var(--accent-orange-glow-soft);
 }
 
-.stamp-icon {
-    font-size: 2.2rem;
+.stamp-slot .stamp-icon,
+.badge-card .badge-card-icon {
+    line-height: 1.1;
     filter: grayscale(1);
     transition: filter var(--transition-speed);
 }
 
-.stamp-slot.unlocked .stamp-icon {
+.stamp-slot.unlocked .stamp-icon,
+.badge-card.unlocked .badge-card-icon {
     filter: grayscale(0);
     animation: popIn 0.5s ease-out;
+}
+
+/* Misure proprie dell'anteprima in Dashboard (quattro riquadri in mezza colonna). */
+.stamp-slot {
+    padding: 16px 8px;
+    gap: 6px;
+}
+
+.stamp-icon {
+    font-size: 2.2rem;
 }
 
 .stamp-name {
     font-size: 0.75rem;
     font-weight: 600;
     color: var(--color-text-primary);
+    /* Senza questo "Rifugio Pino Ciuffarella" (nome vero del catalogo badge) allarga la
+       colonna e sfonda la griglia: misurato a 1100px, le quattro colonne "1fr" venivano
+       68px, 79px, 68px e 78px invece che uguali. Stessa riga che .badge-card-name aveva
+       gia' da tempo per lo stesso identico nome - qui mancava. */
+    overflow-wrap: anywhere;
 }
 
 .stamp-date {
     font-size: 0.65rem;
     color: var(--color-text-secondary);
+    overflow-wrap: anywhere;
 }
 
-/* Punto 16 - totali reali di cammino in Dashboard. Stessa impostazione di .pace-stats qui
-   sotto (tre riquadri affiancati), cosi' le due schede della colonna destra si somigliano
-   invece di sembrare disegnate da due persone diverse. */
+/* Punto 16 - totali reali di cammino in Dashboard. Stessa impostazione di .pace-stats e di
+   .quick-stats-row (tre riquadri affiancati), cosi' le schede si somigliano invece di
+   sembrare disegnate da persone diverse. La scatola dei riquadri e' quella condivisa piu'
+   sopra (.q-stat/.total-box/.pace-row). */
 .totals-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 12px;
     margin: 16px 0 12px;
-}
-
-.total-box {
-    background: rgba(0, 0, 0, 0.2);
-    padding: 12px;
-    border-radius: 10px;
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
 }
 
 .total-val {
@@ -997,11 +1114,6 @@ h1, h2, h3, h4, h5, h6 {
     font-weight: 700;
     color: var(--accent-orange);
     line-height: 1.1;
-}
-
-.total-lbl {
-    font-size: 0.72rem;
-    color: var(--color-text-secondary);
 }
 
 /* Punto 23 - riquadro "per quale escursione e' questo zaino", in cima al generatore. */
@@ -1034,29 +1146,18 @@ h1, h2, h3, h4, h5, h6 {
    mappa offline usa una classe sua (.tracking-download-progress-fill). Quando le sfide vere
    verranno costruite, la loro barra andra' scritta su misura del dato reale. */
 
-/* Pace stats */
+/* Pace stats - stessa griglia e stessi riquadri dei totali qui sopra (la scatola e' la
+   regola condivisa .q-stat/.total-box/.pace-row). Il margine inferiore era 0 mentre quello
+   dei totali era 12px: stessa fila di riquadri, due distanze diverse dal contenuto sotto. */
 .pace-stats {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 12px;
-    margin: 16px 0;
+    margin: 16px 0 12px;
 }
 
-.pace-row {
-    background: rgba(0, 0, 0, 0.2);
-    padding: 12px;
-    border-radius: 10px;
-    text-align: center;
-    border: 1px solid var(--border-color);
-}
-
-.pace-row span {
-    display: block;
-    font-size: 0.75rem;
-    color: var(--color-text-secondary);
-    margin-bottom: 4px;
-}
-
+/* La spaziatura fra etichetta e valore la da' il gap del riquadro condiviso: il
+   margin-bottom che c'era qui la raddoppiava solo in questa scheda. */
 .pace-row strong {
     font-size: 1.1rem;
     font-family: 'Outfit', sans-serif;
@@ -1066,6 +1167,15 @@ h1, h2, h3, h4, h5, h6 {
 .pace-chart-container {
     height: 160px;
     position: relative;
+}
+
+/* Chart.js ridimensiona la tela da solo (responsive:true, vedi renderPaceChart in app.js),
+   ma un <canvas> senza attributi nasce 300x150: nella finestra prima che il grafico venga
+   disegnato - o se Chart.js non parte - la tela sbordava dal riquadro. Misurato a 320px di
+   finestra: 102px fuori dal contenitore. Due righe di CSS, nessuna libreria e nessun JS. */
+.pace-chart-container canvas {
+    display: block;
+    max-width: 100%;
 }
 
 /* Card Profilo (Esperto Locale + cambio password) */
@@ -3575,40 +3685,17 @@ h1, h2, h3, h4, h5, h6 {
     gap: 14px;
 }
 
+/* Scatola, bordo, stato "conquistato" e animazione dell'icona sono in comune con i timbri
+   della Dashboard: stanno scritti una volta sola nella sezione DASHBOARD di questo foglio
+   (.stamp-slot, .badge-card). Qui restano solo le misure proprie della pagina Badge, dove
+   i riquadri sono piu' grandi perche' occupano tutta la larghezza. */
 .badge-card {
-    background: rgba(0, 0, 0, 0.25);
-    border: 2px dashed var(--border-color);
-    border-radius: 14px;
     padding: 18px 12px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
     gap: 6px;
-    text-align: center;
-    min-width: 0;
-    opacity: 0.55;
-    transition: all var(--transition-speed);
-}
-
-/* Bloccato ma leggibile: a 0.4 come i timbri della Dashboard, in una pagina fatta
-   quasi solo di badge da conquistare, non si sarebbe letto dove andare. */
-.badge-card.unlocked {
-    opacity: 1;
-    border: 2px solid var(--accent-orange);
-    background: rgba(193, 102, 46, 0.06);
-    box-shadow: 0 4px 15px rgba(193, 102, 46, 0.1);
 }
 
 .badge-card-icon {
     font-size: 2.4rem;
-    line-height: 1.1;
-    filter: grayscale(1);
-    transition: filter var(--transition-speed);
-}
-
-.badge-card.unlocked .badge-card-icon {
-    filter: grayscale(0);
-    animation: popIn 0.5s ease-out;
 }
 
 .badge-card-name {
@@ -3981,34 +4068,30 @@ h1, h2, h3, h4, h5, h6 {
     /* min-width:0 non e' una rifinitura, senza non funziona niente: una colonna "1fr" di
        una griglia non scende MAI sotto la larghezza minima del suo contenuto, a meno che
        non glielo si dica. Misurato: la colonna restava larga 366px dentro un contenitore
-       di 308, e le schede uscivano dallo schermo tagliate a destra. */
+       di 308, e le schede uscivano dallo schermo tagliate a destra.
+       I due min-width:0 che stavano qui (su .dash-col e sulle sue schede) sono stati
+       spostati FUORI da questa @media, insieme alla regola normale: lo stesso difetto si
+       vedeva anche su schermo largo, dove faceva venire le due colonne di larghezza
+       diversa (392,9px contro 359,1px a 1100px di finestra). */
     .dash-col {
         gap: 16px;
-        min-width: 0;
     }
 
-    /* Stesso motivo, un livello piu' sotto: senza questo sono le schede a non poter
-       rimpicciolire, e il problema si sposta invece di risolversi. */
-    .dash-col > .glass-card {
-        min-width: 0;
-    }
-
-    /* Tre numeri affiancati in 330px diventano illeggibili: i totali e le statistiche del
-       passo passano a due colonne, con l'ultimo riquadro che occupa tutta la riga. */
+    /* Tre numeri affiancati in 330px diventano illeggibili: le tre file di riquadri della
+       Dashboard passano a due colonne, con l'ultimo che occupa tutta la riga.
+       .quick-stats-row e' entrata in questo elenco quando e' diventata una griglia come le
+       altre due: prima era un flex a cui serviva un flex-wrap tutto suo, e si impilava in
+       modo diverso dalle sue gemelle a parita' di schermo. */
+    .quick-stats-row,
     .totals-grid,
     .pace-stats {
         grid-template-columns: 1fr 1fr;
     }
 
+    .quick-stats-row > :last-child,
     .totals-grid > :last-child,
     .pace-stats > :last-child {
         grid-column: 1 / -1;
-    }
-
-    /* Stesso problema nella scheda di benvenuto: "Punteggio Reputazione" usciva dal bordo. */
-    .quick-stats-row {
-        flex-wrap: wrap;
-        gap: 12px;
     }
 
     /* Quattro timbri affiancati in 280px: il terzo e il quarto restavano tagliati fuori
