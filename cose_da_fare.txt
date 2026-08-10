@@ -2430,7 +2430,7 @@ controllare, ma il sistema me lo dovrebbe ricordare prima."
 
 --- PROBLEMA DANIEL: NESSUN TASTO RISPONDE ---
 
-62) [DA INDAGARE - CAUSA NON TROVATA] Denis: "Abbiamo gia' avuto un
+62) [FATTO 2026-08-10] Denis: "Abbiamo gia' avuto un
 problema con l'account di Daniel. Non funzionava il tasto conferma
 mail. Abbiamo provato ed infatti Daniel non riesce a cliccare su
 nessun tasto, tutti non rispondono. Daniel ha iPhone, non so se puo'
@@ -2450,6 +2450,31 @@ influenzare."
    Console (su iPhone: Impostazioni -> Safari -> Avanzate -> Ispettore
    Web, collegato a un Mac; oppure anche solo uno screenshot di cosa
    succede quando preme).
+   -> RISOLTO IL 10/08/2026: Daniel ha mandato un video, e Denis ha
+      notato da solo la causa (confermata anche con un altro amico che
+      aveva lo stesso problema dopo aver aggiunto una foto profilo) -
+      niente indagine alla cieca stavolta, la traccia c'era gia' prima
+      di iniziare. La foto profilo, mostrata nel widget utente in alto
+      su OGNI pagina (public/index.html, #current-user-avatar), finiva
+      dentro uno span con la classe .avatar-icon - pensata solo per
+      contenere l'emoji di riserva (font-size, nessun width/height/
+      overflow). L'<img class="avatar-photo"> iniettato da app.js
+      (width:100% height:100%) non aveva quindi nessun contenitore che
+      lo limitasse, e si espandeva coprendo meta' schermo sopra il
+      resto del sito - da li' "nessun tasto risponde", su qualunque
+      pagina e qualunque telefono, non solo iPhone (coincidenza, non
+      causa). Stesso identico problema per chiunque avesse una foto
+      profilo: spiega anche il caso del secondo amico. Altrove nel sito
+      (profilo di un altro utente, userprofile.js) la stessa foto vive
+      gia' dentro .user-profile-avatar (56x56, overflow:hidden) - il
+      pattern giusto mancava solo qui. Corretto dando a .avatar-icon una
+      dimensione fissa (40x40) e overflow:hidden, l'unico punto del
+      sito che usa quella classe. Committato e pushato (0bce55d).
+      Foto di prova di Denis (usata per confermare il guasto dal vivo)
+      rimossa dal database subito dopo.
+      RESTA A DENIS: far sapere a Daniel che puo' rimettere la foto
+      profilo, ora dovrebbe restare nel cerchietto invece di coprire
+      lo schermo.
 
 --- ZONA DI COMPETENZA: SUL PROFILO, NOME DA CAMBIARE ---
 

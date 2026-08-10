@@ -1,6 +1,6 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-09 (pulizia file, sfoltimento vault, scherzo Damiano)
+Aggiornato: 2026-08-10 (chiuso il guasto di Daniel, punto 62)
 ===================================================================
 
 QUESTO FILE DICE SOLO UNA COSA: a che punto siamo adesso e da dove si ricomincia.
@@ -26,11 +26,18 @@ o ne arriva uno nuovo.
 
 
 
->>> STATO ATTUALE (09/08/2026): il batch di 11 segnalazioni (67-77) e' chiuso
-    per intero. Nessun lavoro grande in coda con un ordine gia' dato - la
-    prossima sessione parte da quello che portera' Denis.
+>>> STATO ATTUALE (10/08/2026): chiuso il punto 62 (guasto di Daniel, "nessun
+    tasto risponde"). Causa: la foto profilo nel widget utente in alto
+    (presente su ogni pagina) finiva dentro .avatar-icon, una classe senza
+    width/height/overflow pensata solo per un'emoji - l'<img> si espandeva
+    senza limiti coprendo mezza schermata sopra il resto del sito, bloccando
+    ogni click. Corretta dando a .avatar-icon una dimensione fissa (40x40) +
+    overflow:hidden. Committato e pushato (0bce55d). RESTA A DENIS: dire a
+    Daniel che puo' rimettere la foto profilo. Nessun lavoro grande in coda
+    con un ordine gia' dato - la prossima sessione parte da quello che
+    portera' Denis.
 
-    FATTO OGGI dopo la chiusura del batch (dettaglio punto per punto in
+    FATTO IL 09/08 dopo la chiusura del batch 67-77 (dettaglio punto per punto in
     cose_da_fare.txt e nel vault, [[06-Cronologia-Sessioni]]):
     - Pulizia file e note: CLAUDE.md esclude ora 06-Cronologia-Sessioni.md e
       cronologia.txt dalla lettura di routine; corrette due etichette vecchie
