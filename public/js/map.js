@@ -2,6 +2,7 @@
 window.mapInstance = null;
 let userGpsMarker = null;
 let hikePolyline = null;
+let trailheadMarker = null; // Marker del punto di ritrovo dell'escursione attiva (vedi loadActiveHikeOnMap)
 let reportMarkersGroup = null;
 let peakMarkersGroup = null;
 
@@ -949,6 +950,31 @@ function loadActiveHikeOnMap(hikeId) {
     // Pulisce sentiero precedente
     if (hikePolyline) {
         window.mapInstance.removeLayer(hikePolyline);
+    }
+
+    // Segna il punto di ritrovo deciso per l'escursione - prima la mappa si limitava a
+    // centrarsi li' sopra senza mostrare alcun segnaposto. Stesso stile gia' in uso per
+    // vette (drawStampablePoints) e segnalazioni (renderMapMarkers): cerchio scuro con
+    // l'emoji dentro, via L.divIcon.
+    if (trailheadMarker) {
+        window.mapInstance.removeLayer(trailheadMarker);
+    }
+    if (Number.isFinite(hike.trailhead.lat) && Number.isFinite(hike.trailhead.lng)) {
+        const trailheadIcon = L.divIcon({
+            className: 'trailhead-leaflet-marker',
+            html: `<div style="font-size: 1.6rem; background: rgba(0,0,0,0.6); padding: 4px; border-radius: 50%; border: 1.5px solid #4C7A44; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">📍</div>`,
+            iconSize: [32, 32],
+            iconAnchor: [16, 16]
+        });
+        trailheadMarker = L.marker([hike.trailhead.lat, hike.trailhead.lng], { icon: trailheadIcon })
+            .addTo(window.mapInstance)
+            .bindPopup(`
+                <div style="color: white; font-family: inherit; text-align: center;">
+                    <h5 style="margin: 0 0 4px 0;">📍 Punto di ritrovo</h5>
+                    ${hike.trailhead.name ? `<span>${escapeHtml(hike.trailhead.name)}</span>` : ''}
+                </div>
+            `)
+            .openPopup();
     }
 
     // Genera un percorso fittizio ma sensato attorno al trailhead

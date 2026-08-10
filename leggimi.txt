@@ -1,6 +1,6 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-10 (chiuso il punto 79: cammino/pause dal gpx)
+Aggiornato: 2026-08-10 sera (punto 80 in corso: 4 dei 7 sotto-punti fatti)
 ===================================================================
 
 QUESTO FILE DICE SOLO UNA COSA: a che punto siamo adesso e da dove si ricomincia.
@@ -26,68 +26,42 @@ o ne arriva uno nuovo.
 
 
 
->>> STATO ATTUALE (10/08/2026): punto 62 chiuso (guasto di Daniel), agente
-    "designer" creato e gia' provato sulla Dashboard, punto 79 chiuso
-    (cammino/pause dal gpx) - dettaglio dei tre sotto. Nessun lavoro grande
-    in coda con un ordine gia' dato - la prossima sessione parte da quello
-    che portera' Denis.
+>>> STATO ATTUALE (10/08/2026 sera): punto 80 APERTO, IN CORSO - 7 richieste
+    di Denis su "Le mie escursioni", preferiti e foto profilo (testo
+    completo e ragionamento in cose_da_fare.txt punto 80). Piano gia'
+    approvato per intero. Denis ha chiesto di ordinarle dal piu' piccolo al
+    piu' grande e farle una alla volta, fermandosi quando serve - non e'
+    un lavoro grande "a via libera" come 42b/43/64 o 67-77.
 
-    1) Punto 62 chiuso: la foto profilo nel widget utente in alto (presente
-       su ogni pagina) finiva dentro .avatar-icon, una classe senza
-       width/height/overflow pensata solo per un'emoji - l'<img> si
-       espandeva senza limiti coprendo mezza schermata, bloccando ogni
-       click. Corretta dando a .avatar-icon una dimensione fissa (40x40) +
-       overflow:hidden. Committato e pushato (0bce55d). Denis ne parla con
-       Daniel di persona alla prossima occasione - non serve piu' ricordarlo
-       qui.
+    ORDINE DATO: E (toast) -> F (marker mappa) -> D (foto profilo) -> C
+    (modale cancellazione) -> G (preferiti) -> A (rotte gpx retroattivo +
+    ricalcolo passo) -> B (unificare le due liste - va per ultima, usa A e
+    C, e chiude da sola anche il "4h53" senza codice a parte).
 
-    2) Creato l'agente "designer" (.claude/agents/, SOLO LOCALE - non su
-       GitHub, vedi vault 03-Decisioni-Architetturali) e provato subito
-       sulla Dashboard: card statistiche unificate, icone titolo allineate,
-       gradiente della welcome card sistemato, corretto un vero bug di
-       layout mobile (colonne diseguali, grafico che usciva dal
-       contenitore a 320px). Verificato dal vivo nel browser prima del via
-       libera di Denis. Committato e pushato (8f918c9). RESTA APERTO, non
-       deciso: nel "Calcolatore Passo & Fatica" i numeri sono blu ma il
-       grafico sotto usa l'arancione per lo stesso dato - tre opzioni
-       proposte, nessuna scelta, per ora resta cosi'.
+    FATTI e verificati dal vivo nel browser (account demo Marco Alpinista,
+    riportato come prima): E, F, D, C - vedi cose_da_fare.txt punto 80 per
+    il dettaglio di ciascuno. NON ANCORA COMMITTATI: Denis ha chiesto di
+    fermarsi dopo C, da decidere con lui se committare questi 4 pezzi ora o
+    aspettare che il punto 80 sia chiuso per intero.
 
-    3) Punto 79 CHIUSO: separato cammino e pause da un .gpx (nuova
-       lib/gpx.js:tempiTraccia, progettata prima con l'agente architect).
-       Trovato mentre si progettava: il "4h53" che Denis aveva visto NON era
-       il totale del file (che e' 3h38m) - era il "tempo previsto sul suo
-       passo", e il suo passo storico (averagePaceUp) era gia' inquinato
-       dalle pause di completamenti precedenti. Il passo personale ora usa
-       il tempo di cammino quando c'e' (Completion.movingTimeHours, nuovo
-       campo - actualTimeHours resta il totale, invariato nei documenti
-       vecchi). Calibrato sul file vero di Denis: 3h38m totali, 2h44m di
-       cammino, 55 min di pause in 11 soste - CONFERMATO plausibile da lui.
-       26 controlli nuovi (prove/prova-punto79.js) + verifica end-to-end sul
-       server locale, nessuna regressione. Committato e pushato (6e2248f).
-       RESTA A DENIS: il suo passo gia' calcolato (126/180) non e' stato
-       toccato - si corregge da solo alla prossima escursione con gpx, o con
-       scripts/ricalcola-passo-personale.js se lo vuole subito.
+    RESTANO, nell'ordine sopra: G (manca la rotta DELETE /api/bookmarks,
+    oggi il tasto preferiti non toglie mai davvero; icona capra 🐐 al posto
+    della stella), A (POST /api/completions/:id/gpx e DELETE
+    /api/completions/:id, con ricalcolo del passo personale - progettate e
+    validate con l'agente architect nel piano, non ancora scritte), B
+    (l'unificazione vera e propria).
 
-    FATTO IL 09/08 dopo la chiusura del batch 67-77 (dettaglio punto per punto in
-    cose_da_fare.txt e nel vault, [[06-Cronologia-Sessioni]]):
-    - Pulizia file e note: CLAUDE.md esclude ora 06-Cronologia-Sessioni.md e
-      cronologia.txt dalla lettura di routine; corrette due etichette vecchie
-      in cose_da_fare.txt; ripulito prove/ dai file usa-e-getta; creato
-      C:\Users\lenovo\OneDrive\Desktop\Claude-Work.bat (lancia Claude gia'
-      dentro camoscio, fa caricare CLAUDE.md da solo) - DA VERIFICARE alla
-      prossima sessione reale se funziona davvero.
-    - Sfoltito ../camoscio memoria/06-Cronologia-Sessioni.md: 113 KB -> 68 KB
-      (-40%), riordinato a un solo ordine cronologico. Criterio per la
-      prossima volta scritto in cima al file stesso.
-    - Scherzo di benvenuto per l'amico di Denis (Damiano): messaggio a
-      sorpresa (dettato da Denis) mostrato una volta sola a chi si registra
-      con username "Damiano" - committato, pushato, verificato live e
-      provato (14 controlli dedicati + nessuna regressione su 5 prove
-      esistenti). Stato attuale: ARMATO, pronto per la prossima
-      registrazione con quel nome.
-      RESTA A DENIS: dire all'amico di registrarsi con username ESATTAMENTE
-      "Damiano" (maiuscole/minuscole libere, il resto no) - con un nome
-      diverso lo scherzo non scatta.
+    RIPARTIRE DA: Parte G (vedi piano approvato, sezione "Parte G").
+
+    ---- Chiuso PRIMA di oggi pomeriggio (dettaglio in cose_da_fare.txt) ----
+    Punto 62 (foto profilo nel widget in alto copriva mezza schermata,
+    .avatar-icon senza dimensione fissa) chiuso e pushato (0bce55d). Agente
+    "designer" creato e provato sulla Dashboard, pushato (8f918c9) - resta
+    aperto solo un dettaglio di colore nel Calcolatore Passo & Fatica, non
+    deciso. Punto 79 (cammino/pause separati da un .gpx) chiuso e pushato
+    (6e2248f) - il passo gia' calcolato di Denis prima di oggi non e' stato
+    toccato, si corregge da solo con la prossima escursione con gpx (la
+    Parte A/B del punto 80, sopra, e' esattamente questo).
 
     Resta aperto, da prima: quando Denis decidera' formato e tetto della
     foto, il pezzo foto/tasto ancora sospeso del punto 45.

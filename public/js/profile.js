@@ -35,6 +35,11 @@ window.renderMyProfilePage = renderMyProfilePage;
 
 // Foto scelta ma non ancora salvata (punto 40): come registerPhotoDataUrl in auth.js.
 let newProfilePhotoDataUrl = null;
+// Richiesta di rimozione, non ancora salvata: distinta da "nessuna foto nuova scelta"
+// (quel caso non deve mandare il campo, altrimenti il PUT lo tratterebbe come "nessun
+// cambiamento" - vedi il commento sopra saveProfilePhotoAndBio). Qui invece l'utente ha
+// chiesto esplicitamente di togliere la foto: va mandato profilePhoto:null per davvero.
+let removePhotoRequested = false;
 
 // Collega i pulsanti della card "Il Tuo Profilo" (foto, bio, esperto locale, cambio password)
 function setupProfileCardEvents() {
@@ -71,9 +76,26 @@ function setupProfileCardEvents() {
             const reader = new FileReader();
             reader.onload = () => {
                 newProfilePhotoDataUrl = reader.result;
+                removePhotoRequested = false; // scegliere un file nuovo annulla una rimozione appena chiesta
                 document.getElementById("profile-photo-preview").innerHTML = `<img src="${reader.result}" alt="Anteprima">`;
             };
             reader.readAsDataURL(file);
+        });
+    }
+
+    // Rimuovi foto: al posto della foto torna il simbolo montagna gia' usato come
+    // avatar di default in tutto il sito (usr.avatar) - nessuna icona nuova da creare.
+    // Come la scelta di un file nuovo, resta "in sospeso" finche' non si preme
+    // "Salva foto e bio": stesso pulsante, stesso momento di conferma.
+    const btnRemovePhoto = document.getElementById("btn-remove-profile-photo");
+    if (btnRemovePhoto) {
+        btnRemovePhoto.addEventListener("click", () => {
+            removePhotoRequested = true;
+            newProfilePhotoDataUrl = null;
+            const photoInput = document.getElementById("profile-photo-input");
+            if (photoInput) photoInput.value = "";
+            const usr = window.CamoscioState.currentUser;
+            document.getElementById("profile-photo-preview").innerHTML = window.escapeHtml(usr ? usr.avatar : "🏔️");
         });
     }
 
@@ -90,10 +112,13 @@ async function saveProfilePhotoAndBio() {
     if (!usr) return;
 
     const payload = { bio: document.getElementById("profile-bio").value.trim() };
-    // Manda la foto SOLO se ne e' stata scelta una nuova: il PUT ignora i campi assenti
-    // dal corpo (vedi SELF_EDITABLE_FIELDS in routes/users.js), quindi senza questo "if"
-    // non salvare una foto nuova cancellerebbe comunque quella vecchia con "undefined".
+    // Manda la foto SOLO se ne e' stata scelta una nuova, o se e' stata chiesta la
+    // rimozione: il PUT ignora i campi assenti dal corpo (vedi SELF_EDITABLE_FIELDS in
+    // routes/users.js), quindi senza questo "if" non toccare la foto cancellerebbe
+    // comunque quella esistente con "undefined". removePhotoRequested manda null per
+    // davvero (accettato lato server, torna al simbolo montagna di default).
     if (newProfilePhotoDataUrl) payload.profilePhoto = newProfilePhotoDataUrl;
+    else if (removePhotoRequested) payload.profilePhoto = null;
 
     try {
         const response = await fetch(`/api/users/${usr.id}`, {
@@ -104,6 +129,7 @@ async function saveProfilePhotoAndBio() {
 
         if (response.ok) {
             newProfilePhotoDataUrl = null;
+            removePhotoRequested = false;
             window.showToast("Profilo aggiornato.", "success");
             await refreshState();
             updateHeaderUserWidget();

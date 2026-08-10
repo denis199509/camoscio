@@ -46,10 +46,10 @@ window.showToast = function(message, type = "info") {
     setTimeout(() => {
         toast.classList.add("fade-out");
         setTimeout(() => toast.remove(), 250);
-    }, 4000);
+    }, 9000);
 };
 
-function showGenericModal(message, { showInput = false, defaultValue = "", showCancel = true, confirmLabel = "OK", inputType = "text", inputMax = null } = {}) {
+function showGenericModal(message, { showInput = false, defaultValue = "", showCancel = true, confirmLabel = "OK", cancelLabel = "Annulla", danger = false, inputType = "text", inputMax = null } = {}) {
     return new Promise((resolve) => {
         const modal = document.getElementById("generic-modal");
         const messageEl = document.getElementById("generic-modal-message");
@@ -60,6 +60,14 @@ function showGenericModal(message, { showInput = false, defaultValue = "", showC
 
         messageEl.textContent = message;
         btnConfirm.textContent = confirmLabel;
+        btnCancel.textContent = cancelLabel;
+        // "danger" colora di rosso il bottone di conferma (riusa .btn-danger, gia' in CSS)
+        // per un'azione distruttiva - sempre risistemato ad ogni chiamata, mai solo quando
+        // serve: il modale e' UNO SOLO riusato da tutto il sito (stessa cautela gia' presa
+        // per input.type sotto), un rosso rimasto da una cancellazione non deve appiccicarsi
+        // alla prossima conferma non distruttiva.
+        btnConfirm.classList.toggle("btn-primary", !danger);
+        btnConfirm.classList.toggle("btn-danger", danger);
         btnCancel.classList.toggle("hidden", !showCancel);
         if (showInput) {
             inputWrapper.classList.remove("hidden");
@@ -97,9 +105,12 @@ function showGenericModal(message, { showInput = false, defaultValue = "", showC
 // Sostituisce confirm(): risolve a true/false.
 // L'etichetta del pulsante di conferma e' un parametro (punto 20): davanti a una finestra
 // che sta per far partire una telefonata al 112, un pulsante che dice "OK" non dice
-// abbastanza - deve dire cosa succede premendolo.
-window.showConfirmModal = function(message, confirmLabel = "OK") {
-    return showGenericModal(message, { showInput: false, confirmLabel });
+// abbastanza - deve dire cosa succede premendolo. cancelLabel/danger nelle opzioni: per
+// una cancellazione (escursioni/uscite) Denis vuole le parole "Cancella" per tornare
+// indietro ed "Elimina" rosso per confermare, diverse da "Annulla"/"OK" di una conferma
+// qualunque - senza toccare nessun altro chiamante, che resta sui default di sempre.
+window.showConfirmModal = function(message, confirmLabel = "OK", { cancelLabel = "Annulla", danger = false } = {}) {
+    return showGenericModal(message, { showInput: false, confirmLabel, cancelLabel, danger });
 };
 
 // Sostituisce prompt(): risolve al testo inserito, o null se annullato

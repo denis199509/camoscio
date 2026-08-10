@@ -112,7 +112,7 @@
             'I badge che hai conquistato restano nel passaporto.'
         ];
         const procedi = window.showConfirmModal
-            ? await window.showConfirmModal(righe.join('\n'), 'Cancella')
+            ? await window.showConfirmModal(righe.join('\n'), 'Elimina', { cancelLabel: 'Cancella', danger: true })
             : true;
         if (!procedi) return;
 

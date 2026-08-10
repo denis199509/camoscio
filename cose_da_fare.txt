@@ -3218,3 +3218,80 @@ tempo CAI e' considerato senza pause."
       scripts/ricalcola-passo-personale.js esiste se un giorno si vuole
       correggere anche quello (non lanciato sugli account reali stavolta,
       solo su un demo per la verifica).
+
+--- LE MIE ESCURSIONI, PREFERITI E FOTO PROFILO: SETTE PUNTI INSIEME ---
+
+80) [IN CORSO 2026-08-10] Denis, in un solo messaggio: "Sulla pagina 'Le mie
+escursioni' ci sono due voci. Gia' fatte, che sono le uscite completate sul sito
+con il tasto. E uscite completate, che sarebbero le uscite registrate con il
+sito e i file .gpx importati. Dobbiamo unire tutti e due le cose. [...] Adesso
+c'e' gia' la possibilita' di aggiungere il file gpx al completamento
+dell'escursione. Voglio pero' pure l'opzione di aggiungere il file gpx pure su
+le escursioni gia' completate. [...] Possibilita' di cancellare una traccia o
+un percorso che si trova fatto nelle mie escursioni. [...] Alle escursioni gia'
+fatte in angolo a destra in alto abbiamo il cestino. Cliccando sopra si apre un
+messaggio che avverte che cancellando l'escursione viene persa per sempre.
+Sotto due tasti uno normale 'cancella' per tornare indietro. Uno rosso 'elimina'
+per eliminare. Il simbolo del cestino sempre rosso lo voglio. [...] La foto
+profilo. Una volta scelta la foto ho solo la possibilita' di cambiarla. Voglio
+pure la possibilita' di rimuoverla. In cambio verra' messo uno dei simboli
+montagna che gia' usiamo in camoscio. [...] Quando apro un'escursione mia resta
+aperta per troppo poco tempo. Fai almeno il doppio o troppo del tempo. [...]
+L'escursione mia di prova ancora risulta con 4h 53 Min. Non considera le pause.
+[...] Sul escursione sotto vicino ai partecipanti c'e' il tasto mappa, preferito
+e chat. Se clicco sulla mappa si dovrebbe aprire la mappa come adesso. Solo che
+mi deve segnare il punto di incontro deciso per l'escursione. [...] Il tasto
+preferiti sembra funzionare. Ma dove vanno a finire l'escursioni preferite non
+si sa? [...] per ogni escursione che clicco il tasto la stella [...] dovrebbe
+essere visibile sul profilo [...] Anzi al posto della stella come simbolo per
+segnare un'escursione preferita voglio usare il simbolo del camoscio."
+   Sette cose distinte, pianificate insieme (Plan Mode, con esplorazione a fondo
+   del codice e un agente Plan a validare il ricalcolo del passo) perche' piu'
+   collegate di quanto sembrasse: "Gia' fatte" (Completion, legata a
+   un'escursione sociale vera) e "Uscite completate" (ActiveHikeSession, da gpx
+   importato o tracciamento live) sono due pipeline dati separate - non vanno
+   fuse come modello, solo come lista visiva (stesso schema gia' provato in
+   renderProfileHikes, punto 74). Il "4h53" non e' un bug nuovo: e' la
+   previsione sul passo personale (calculateHikeTimes), mai ricalcolato
+   sull'account vero di Denis dopo il punto 79 - si risolve da solo quando
+   Denis riallega il suo gpx vero alla "prova" con la funzione nuova del primo
+   punto. Il cestino esiste gia' per le uscite (routes/tracking.js), manca solo
+   per i completamenti. I preferiti si possono aggiungere ma non togliere (manca
+   la rotta DELETE) - va sistemato insieme, altrimenti un preferito sbagliato
+   resterebbe visibile per sempre una volta mostrato sul profilo. Nessuna emoji
+   camoscio esiste in Unicode: scelta con Denis la capra 🐐, la piu' vicina.
+   Denis ha chiesto di ordinare i sette punti dal piu' piccolo al piu' grande e
+   farli uno alla volta, fermandosi quando serve (non un "via libera" a
+   oltranza come 42b/43/64 o 67-77) - ordine dato: E, F, D, C, G, A, B (B per
+   ultima perche' usa sia A che C).
+   -> FATTO finora (verificato dal vivo nel browser sull'account demo Marco
+      Alpinista, riportato esattamente come prima):
+      - E: durata del toast (window.showToast, public/js/app.js) da 4 a 9
+        secondi.
+      - F: la mappa aperta dal tasto "Mappa" di un'escursione ora segna il
+        punto di ritrovo con un marker vero (prima si limitava a centrarsi
+        li' sopra) - loadActiveHikeOnMap in public/js/map.js, stesso stile
+        L.divIcon gia' in uso per vette e segnalazioni.
+      - D: bottone "Rimuovi foto" accanto al cambio foto esistente
+        (public/js/profile.js, public/index.html) - manda profilo:null a
+        PUT /api/users/:id (gia' accettato lato server), il sito torna da
+        solo al simbolo montagna 🏔️ gia' usato come avatar di default,
+        ovunque compaia (widget in alto, card profilo).
+      - C: il modale di conferma condiviso (showGenericModal/showConfirmModal
+        in public/js/app.js) accetta ora cancelLabel e danger (bottone rosso,
+        riusa .btn-danger gia' in CSS) - applicato SUBITO alla cancellazione
+        delle uscite gia' esistente (storico.js), che ora dice "Cancella"
+        (torna indietro) / "Elimina" rosso (conferma) invece delle parole di
+        prima. Icona cestino (.outing-card-del) sempre rossa, non piu' solo al
+        passaggio del mouse.
+      NON ANCORA COMMITTATI su richiesta di Denis (si e' fermato dopo la parte
+      C per oggi) - da decidere con lui se in un commit solo o aggiungendo via
+      via i pezzi rimasti.
+   RESTA (nell'ordine dato): G (rotta DELETE sui preferiti + tasto che toglie
+   per davvero + icona capra al posto della stella, visibile sul profilo), A
+   (POST /api/completions/:id/gpx e DELETE /api/completions/:id, con
+   ricalcolo del passo personale senza doppio conteggio - gia' progettate e
+   validate nel piano, non ancora scritte), B (unire "Gia' fatte" e "Uscite
+   registrate" in una sola sezione "Escursioni completate", per ultima perche'
+   usa sia le rotte di A sia il modale di C - chiude da sola anche il "4h53"
+   quando Denis riallega il suo gpx vero alla "prova").
