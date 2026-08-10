@@ -3142,3 +3142,43 @@ piu', quindi una cosa che si fa una volta sola. E' possibile?"
       "Damiano" (maiuscole/minuscole non contano, il resto si') - con un nome
       diverso lo scherzo non scatta. Stato attuale: ARMATO, pronto per la prossima
       registrazione con quel nome.
+
+--- TEMPO REALE DAL GPX: SEPARARE CAMMINO DA PAUSE ---
+
+79) [DA VALUTARE - NON ANCORA IMPLEMENTATO] Denis, dopo aver chiuso l'escursione
+"prova" con un file .gpx vero esportato da Garmin: "Ho chiuso l'escursione 'prova'
+aggiungendo il file .gpx ricavato da Garmin. La quota massima, il dislivello e la
+distanza sono stati presi correttamente. Il tempo invece no. Ha considerato 4h 53
+min come tempo previsto. Invece io ci ho messo 4h 53 min compresso tutte le pause.
+Si puo' estrarre dal file gpx pure il tempo in movimento e le pause? Alla fine ci
+sara' il tempo previsto CAI in confronto con il mio tempo (senza pause). Anche
+perche' il tempo di camminata piu' o meno sara' quello invece le pause no. Magari
+a me bastano 5 min di riposo, ad un altro servono minimo 10. Anche perche' pure il
+tempo CAI e' considerato senza pause."
+   Collegato al punto 67 (dove il campo .gpx e' stato aggiunto): oggi
+   `actualTimeHours` (routes/hikes.js, dentro POST /:id/confirm-completion) e'
+   calcolato come `(fine - inizio) / 3600000` - la differenza tra il PRIMO e
+   l'ULTIMO punto tracciato nel file, quindi tempo totale trascorso, pause
+   comprese. E' esattamente il numero che Denis ha visto tornare indietro
+   identico al suo tempo reale (pause incluse) invece che al solo cammino.
+   Tecnicamente fattibile: `lib/gpx.js` (parseGpx) legge gia' ogni punto con
+   il proprio istante (`secondi-da-inizio`), quindi calcolare separatamente
+   tempo in movimento e tempo fermo (es. sommando solo gli intervalli tra
+   punti consecutivi dove la distanza percorsa supera una soglia minima,
+   scartando gli intervalli sotto soglia come "pausa") e' possibile senza
+   dati aggiuntivi rispetto a quelli gia' letti oggi.
+   NON ANCORA PROGETTATO NE' IMPLEMENTATO: tocca la stessa famiglia di calcoli
+   del tempo previsto CAI (punto 44) e del tempo di rientro - per le regole di
+   questo progetto (vedi CLAUDE.md e l'agente architect) va progettato PRIMA
+   di scrivere codice, non improvvisato. Punti aperti da decidere con Denis
+   prima di partire:
+     - la soglia di velocità/distanza sotto cui un intervallo conta come
+       "pausa" invece che "cammino lento" (un GPS fermo non sta mai
+       perfettamente immobile: serve una soglia, non zero);
+     - dove mostrare il confronto ("tempo previsto CAI" vs "il tuo tempo
+       senza pause" vs "il tuo tempo totale con pause") e se le pause vanno
+       salvate come dato a parte o solo mostrate una volta;
+     - se questo cambia anche il modo in cui viene aggiornato il passo
+       personale (`averagePaceUp`/`averagePaceDown`, lib/hikeStats.js) - oggi
+       usa il tempo totale letto dal file, andrebbe verificato se deve
+       passare al solo tempo in movimento.

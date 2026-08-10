@@ -1,6 +1,6 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-10 (chiuso il guasto di Daniel, punto 62)
+Aggiornato: 2026-08-10 (agente designer, dashboard, aperto punto 79 GPX/pause)
 ===================================================================
 
 QUESTO FILE DICE SOLO UNA COSA: a che punto siamo adesso e da dove si ricomincia.
@@ -26,16 +26,46 @@ o ne arriva uno nuovo.
 
 
 
->>> STATO ATTUALE (10/08/2026): chiuso il punto 62 (guasto di Daniel, "nessun
-    tasto risponde"). Causa: la foto profilo nel widget utente in alto
-    (presente su ogni pagina) finiva dentro .avatar-icon, una classe senza
-    width/height/overflow pensata solo per un'emoji - l'<img> si espandeva
-    senza limiti coprendo mezza schermata sopra il resto del sito, bloccando
-    ogni click. Corretta dando a .avatar-icon una dimensione fissa (40x40) +
-    overflow:hidden. Committato e pushato (0bce55d). RESTA A DENIS: dire a
-    Daniel che puo' rimettere la foto profilo. Nessun lavoro grande in coda
-    con un ordine gia' dato - la prossima sessione parte da quello che
-    portera' Denis.
+>>> STATO ATTUALE (10/08/2026): punto 62 chiuso (guasto di Daniel), nuovo
+    agente "designer" creato e gia' provato sulla Dashboard, e un nuovo punto
+    (79) aperto ma NON implementato - dettaglio dei tre sotto. Nessun lavoro
+    grande in coda con un ordine gia' dato - la prossima sessione parte da
+    quello che portera' Denis, tranne il punto 79 che tocca pero' il calcolo
+    del tempo (va progettato con l'agente architect, non improvvisato).
+
+    1) Punto 62 chiuso: la foto profilo nel widget utente in alto (presente
+       su ogni pagina) finiva dentro .avatar-icon, una classe senza
+       width/height/overflow pensata solo per un'emoji - l'<img> si
+       espandeva senza limiti coprendo mezza schermata, bloccando ogni
+       click. Corretta dando a .avatar-icon una dimensione fissa (40x40) +
+       overflow:hidden. Committato e pushato (0bce55d). RESTA A DENIS: dire
+       a Daniel che puo' rimettere la foto profilo.
+
+    2) Creato l'agente "designer" (.claude/agents/, SOLO LOCALE - non su
+       GitHub, vedi vault 03-Decisioni-Architetturali) e provato subito
+       sulla Dashboard: card statistiche unificate, icone titolo allineate,
+       gradiente della welcome card sistemato, corretto un vero bug di
+       layout mobile (colonne diseguali, grafico che usciva dal
+       contenitore a 320px). Verificato dal vivo nel browser prima del via
+       libera di Denis. Committato e pushato (8f918c9). RESTA APERTO, non
+       deciso: nel "Calcolatore Passo & Fatica" i numeri sono blu ma il
+       grafico sotto usa l'arancione per lo stesso dato - tre opzioni
+       proposte, nessuna scelta, per ora resta cosi'.
+
+    3) Punto 79 APERTO, NON IMPLEMENTATO: chiudendo l'escursione "prova" con
+       un .gpx vero da Garmin, il "tempo previsto" mostrato e' risultato
+       uguale al tempo TOTALE di Denis (pause comprese), non al solo tempo
+       di cammino. Causa trovata: actualTimeHours (routes/hikes.js) legge
+       oggi la differenza fine-inizio del file, senza separare cammino da
+       pause. Denis vuole un confronto "tempo CAI vs il mio tempo senza
+       pause", perche' le pause sono soggettive (variano da persona a
+       persona) mentre il cammino no - e pure il tempo CAI e' gia' senza
+       pause. Tecnicamente fattibile (i punti del gpx hanno gia' l'istante
+       di ognuno), ma NON PROGETTATO: prima di scrivere codice serve
+       passare dall'agente architect (tocca la stessa famiglia di calcoli
+       del tempo di rientro) e decidere con Denis la soglia pausa/cammino e
+       dove mostrare il confronto. Dettaglio completo in cose_da_fare.txt,
+       punto 79.
 
     FATTO IL 09/08 dopo la chiusura del batch 67-77 (dettaglio punto per punto in
     cose_da_fare.txt e nel vault, [[06-Cronologia-Sessioni]]):
