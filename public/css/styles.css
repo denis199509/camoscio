@@ -1429,6 +1429,20 @@ h1, h2, h3, h4, h5, h6 {
     margin-top: 6px;
 }
 
+/* Punto 80/G: capra al posto della stella per segnare un preferito - stessa idea gia' in
+   uso per stamp-slot/badge-card (grayscale quando "non attivo", colori pieni quando lo e'),
+   qui applicata a un'emoji invece che a un'icona. */
+.bookmark-toggle-btn {
+    filter: grayscale(1);
+    opacity: 0.55;
+    transition: filter var(--transition-speed), opacity var(--transition-speed);
+}
+
+.bookmark-toggle-btn.is-bookmarked {
+    filter: grayscale(0);
+    opacity: 1;
+}
+
 .participants-avatars {
     display: flex;
     flex-wrap: wrap;

@@ -649,8 +649,8 @@ function buildHikeCard(hike) {
                     <span class="small text-muted">Partecipanti (${hike.participants.length}):</span>
                     <div style="display:flex; gap:6px;">
                         <button class="btn btn-sm btn-secondary" style="padding:2px 6px;" onclick="loadHikeOnMapDirectly('${hike.id}')" title="Vedi sentiero sulla mappa">Mappa</button>
-                        <button class="btn btn-sm btn-secondary" style="padding:2px 6px;" onclick="toggleBookmark('${hike.id}')" title="${isBookmarked ? 'Rimuovi dai preferiti' : 'Aggiungi ai preferiti'}">
-                            ${isBookmarked ? '★' : '☆'}
+                        <button class="btn btn-sm btn-secondary bookmark-toggle-btn ${isBookmarked ? 'is-bookmarked' : ''}" style="padding:2px 6px;" onclick="toggleBookmark('${hike.id}')" title="${isBookmarked ? 'Rimuovi dai preferiti' : 'Aggiungi ai preferiti'}">
+                            🐐
                         </button>
                         ${isParticipant ? `<button class="btn btn-sm btn-secondary" style="padding:2px 6px;" onclick="showHikePage('${hike.id}')" title="Chat tra i partecipanti">Chat</button>` : ""}
                     </div>
@@ -798,18 +798,26 @@ window.loadHikeOnMapDirectly = function(hikeId) {
     }
 };
 
-// Aggiunge o rimuove sentiero dai preferiti (Rileva chi ha interesse comune)
+// Aggiunge o rimuove sentiero dai preferiti (Rileva chi ha interesse comune).
+// Punto 80/G: prima chiamava sempre POST, che sull'account gia' salvato non faceva nulla
+// (idempotente lato server) - il tasto "Rimuovi dai preferiti" prometteva una cosa che non
+// faceva. Ora sceglie POST/DELETE guardando lo stato attuale, come tutti gli altri tasti a
+// due stati del progetto (es. il like delle recensioni).
 window.toggleBookmark = async function(hikeId) {
     const db = window.CamoscioState;
-    const userId = db.currentUser.id;
+    const isBookmarked = db.bookmarks.some(b => b.userId === db.currentUser.id && b.hikeId === hikeId);
 
     try {
-        await fetch('/api/bookmarks', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId, hikeId })
-        });
-        
+        if (isBookmarked) {
+            await fetch(`/api/bookmarks/${hikeId}`, { method: 'DELETE' });
+        } else {
+            await fetch('/api/bookmarks', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ hikeId })
+            });
+        }
+
         await refreshState();
         renderHikesList();
         renderSocialModule(); // Aggiorna match sentieri

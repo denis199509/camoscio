@@ -28,4 +28,18 @@ router.post('/', requireAuth, async (req, res) => {
     }
 });
 
+// Rimuovi preferito sentiero - punto 80/G. Sempre per l'utente che ha fatto login: il
+// confronto e' con req.session.userId, mai con un id mandato dal client (stessa regola di
+// tutte le altre rotte DELETE del progetto, vedi routes/tracking.js). Idempotente come il
+// POST: cancellare un preferito gia' non presente non e' un errore.
+router.delete('/:hikeId', requireAuth, async (req, res) => {
+    try {
+        await RouteBookmark.deleteOne({ userId: req.session.userId, hikeId: req.params.hikeId });
+        res.json({ success: true });
+    } catch (e) {
+        console.error('Errore rimozione preferito:', e);
+        res.status(400).json({ error: 'Impossibile rimuovere il preferito' });
+    }
+});
+
 module.exports = router;

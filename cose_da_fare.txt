@@ -3284,14 +3284,33 @@ segnare un'escursione preferita voglio usare il simbolo del camoscio."
         (torna indietro) / "Elimina" rosso (conferma) invece delle parole di
         prima. Icona cestino (.outing-card-del) sempre rossa, non piu' solo al
         passaggio del mouse.
-      NON ANCORA COMMITTATI su richiesta di Denis (si e' fermato dopo la parte
-      C per oggi) - da decidere con lui se in un commit solo o aggiungendo via
-      via i pezzi rimasti.
-   RESTA (nell'ordine dato): G (rotta DELETE sui preferiti + tasto che toglie
-   per davvero + icona capra al posto della stella, visibile sul profilo), A
-   (POST /api/completions/:id/gpx e DELETE /api/completions/:id, con
-   ricalcolo del passo personale senza doppio conteggio - gia' progettate e
-   validate nel piano, non ancora scritte), B (unire "Gia' fatte" e "Uscite
-   registrate" in una sola sezione "Escursioni completate", per ultima perche'
-   usa sia le rotte di A sia il modale di C - chiude da sola anche il "4h53"
-   quando Denis riallega il suo gpx vero alla "prova").
+      COMMITTATI in un commit solo (d230ccf), NON ANCORA PUSHATI - da
+      decidere con Denis quando pushare.
+      - G [FATTO in sessione successiva, verificato dal vivo]: la rotta
+        DELETE /api/bookmarks/:hikeId mancava (routes/bookmarks.js) - il
+        tasto "Rimuovi dai preferiti" chiamava sempre e solo la POST, che
+        sull'account gia' salvato non faceva nulla (idempotente lato
+        server): prometteva una cosa che non faceva. window.toggleBookmark
+        (social.js) ora sceglie POST/DELETE guardando lo stato attuale.
+        Icona ★/☆ sostituita dalla capra 🐐 (nessuna emoji camoscio esiste
+        in Unicode, scelta gia' presa con Denis in fase di piano): colorata
+        se nei preferiti, grigia se no (stesso filter:grayscale gia' in uso
+        per badge/timbri bloccati). "Dove vanno a finire i preferiti non si
+        sa" risolto aggiungendo una sezione "Sentieri preferiti" sul
+        profilo (proprio e altrui, funzione condivisa renderProfileBookmarks
+        in userprofile.js - dati gia' in CamoscioState, nessun fetch in
+        piu'): il tasto per togliere un preferito compare SOLO sul proprio,
+        mai su quello di un altro utente (la rotta DELETE toglie sempre e
+        solo il preferito di chi ha fatto login, mostrarlo altrove
+        toglierebbe il proprio mentre si guarda un profilo non proprio).
+        Verificato dal vivo: aggiunta/rimozione capra su una scheda
+        escursione, comparsa/sparizione sul profilo senza ricaricare la
+        pagina, profilo di un altro utente (Denis, account vero) in sola
+        lettura senza tasto di rimozione. Nessun errore in console.
+   RESTA (nell'ordine dato): A (POST /api/completions/:id/gpx e DELETE
+   /api/completions/:id, con ricalcolo del passo personale senza doppio
+   conteggio - gia' progettate e validate nel piano, non ancora scritte), B
+   (unire "Gia' fatte" e "Uscite registrate" in una sola sezione "Escursioni
+   completate", per ultima perche' usa sia le rotte di A sia il modale di C -
+   chiude da sola anche il "4h53" quando Denis riallega il suo gpx vero alla
+   "prova").

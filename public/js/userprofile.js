@@ -195,6 +195,62 @@ async function renderProfileHikes(userId, container) {
 }
 window.CamoscioProfileHikes = { render: renderProfileHikes };
 
+// Punto 80/G: sentieri salvati nei preferiti (tasto capra sulla scheda escursione,
+// public/js/social.js) - stesso principio di renderProfileHikes qui sopra, una funzione
+// sola per il proprio profilo e quello di un altro. A differenza di quella pero' non serve
+// nessun fetch: bookmarks e hikes sono gia' entrambi in window.CamoscioState da
+// refreshState() (GET /api/bookmarks non e' filtrata per utente apposta, serve anche al
+// "compagno di sentiero" in social.js). Il tasto per togliere un preferito compare SOLO
+// quando si guarda il proprio profilo: la rotta DELETE toglie sempre e solo il preferito di
+// chi ha fatto login, quindi mostrarlo anche sul profilo di un altro toglierebbe IL PROPRIO
+// preferito mentre si guarda la pagina di qualcun altro, senza che sia ovvio perche'.
+function schedaSentieroPreferito(hike, isOwnProfile, containerId) {
+    const esc = window.escapeHtml;
+    const rimuoviBtn = isOwnProfile ? `
+        <button class="outing-card-del" onclick="removeProfileBookmark('${esc(hike.id)}', '${esc(containerId)}')"
+                title="Togli dai preferiti" aria-label="Togli dai preferiti">🐐</button>
+    ` : '';
+    return `
+        <div class="outing-card">
+            <div class="outing-card-head">
+                <span class="outing-card-title">${esc(hike.title)}</span>
+                ${rimuoviBtn}
+            </div>
+            <span class="outing-card-sub">${formattaDataItaliana(hike.date)}</span>
+            <div class="outing-card-stats">
+                <div><strong>${(hike.distanceKm || 0).toFixed(1).replace('.', ',')}</strong><span>km</span></div>
+                <div><strong>${Math.round(hike.elevationGain || 0)}</strong><span>m disliv.</span></div>
+                <div><strong>${Math.round(hike.maxAltitude || 0)}</strong><span>quota max</span></div>
+            </div>
+        </div>`;
+}
+
+function renderProfileBookmarks(userId, container) {
+    if (!container) return;
+    const db = window.CamoscioState;
+    const isOwnProfile = !!(db.currentUser && db.currentUser.id === userId);
+
+    const hikes = (db.bookmarks || [])
+        .filter(b => b.userId === userId)
+        .map(b => (db.hikes || []).find(h => h.id === b.hikeId))
+        .filter(Boolean)
+        .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+
+    container.innerHTML = hikes.length
+        ? `<div class="outings-grid">${hikes.map(h => schedaSentieroPreferito(h, isOwnProfile, container.id)).join('')}</div>`
+        : `<div class="glass-card text-center py-4 text-muted">Nessun sentiero nei preferiti per ora.</div>`;
+
+    if (window.lucide) window.lucide.createIcons();
+}
+window.CamoscioProfileBookmarks = { render: renderProfileBookmarks };
+
+window.removeProfileBookmark = async function(hikeId, containerId) {
+    await window.toggleBookmark(hikeId);
+    const container = document.getElementById(containerId);
+    const userId = window.CamoscioState.currentUser.id;
+    if (container) renderProfileBookmarks(userId, container);
+};
+
 async function renderUserProfile(userId) {
     const header = document.getElementById("user-profile-header");
     const badgeBox = document.getElementById("user-profile-personal-badge");
@@ -249,6 +305,7 @@ async function renderUserProfile(userId) {
 
     renderProfileIdentity(utente, timbri, { header, badgeBox, badgesGrid }, ascese);
     renderProfileHikes(userId, document.getElementById("user-profile-hikes"));
+    renderProfileBookmarks(userId, document.getElementById("user-profile-bookmarks"));
 }
 
 window.showUserProfile = showUserProfile;

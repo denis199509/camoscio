@@ -29,6 +29,12 @@ function renderMyProfilePage() {
         window.CamoscioProfileHikes.render(usr.id, document.getElementById("my-profile-hikes"));
     }
 
+    // Punto 80/G: sentieri preferiti, stessa funzione condivisa con la pagina profilo di un
+    // altro utente - gia' in CamoscioState, nessun fetch qui.
+    if (window.CamoscioProfileBookmarks) {
+        window.CamoscioProfileBookmarks.render(usr.id, document.getElementById("my-profile-bookmarks"));
+    }
+
     renderProfileCard(usr);
 }
 window.renderMyProfilePage = renderMyProfilePage;

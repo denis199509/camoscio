@@ -1579,6 +1579,17 @@
                         <div id="user-profile-hikes"></div>
                     </div>
 
+                    <!-- Punto 80/G: sentieri salvati nei preferiti (tasto capra sulla scheda
+                         escursione, public/js/social.js) - prima non c'era alcun modo di
+                         vedere dove finivano. Dati gia' in window.CamoscioState, nessun
+                         fetch: vedi renderProfileBookmarks in userprofile.js. -->
+                    <div class="profile-hikes-group">
+                        <h3 class="badges-group-title">
+                            <i data-lucide="bookmark"></i> Sentieri preferiti 🐐
+                        </h3>
+                        <div id="user-profile-bookmarks"></div>
+                    </div>
+
                     <div class="badges-group">
                         <h3 class="badges-group-title">
                             <i data-lucide="award"></i> Badge guadagnati
@@ -1665,6 +1676,15 @@
                             <i data-lucide="footprints"></i> Escursioni
                         </h3>
                         <div id="my-profile-hikes"></div>
+                    </div>
+
+                    <!-- Punto 80/G: stesso elenco di #user-profile-bookmarks qui sopra,
+                         riempito dalla stessa funzione condivisa renderProfileBookmarks(). -->
+                    <div class="profile-hikes-group">
+                        <h3 class="badges-group-title">
+                            <i data-lucide="bookmark"></i> Sentieri preferiti 🐐
+                        </h3>
+                        <div id="my-profile-bookmarks"></div>
                     </div>
 
                     <div class="badges-group">

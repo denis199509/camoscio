@@ -1,6 +1,6 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-10 sera (punto 80 in corso: 4 dei 7 sotto-punti fatti)
+Aggiornato: 2026-08-11 (punto 80 in corso: 5 dei 7 sotto-punti fatti)
 ===================================================================
 
 QUESTO FILE DICE SOLO UNA COSA: a che punto siamo adesso e da dove si ricomincia.
@@ -40,18 +40,26 @@ o ne arriva uno nuovo.
 
     FATTI e verificati dal vivo nel browser (account demo Marco Alpinista,
     riportato come prima): E, F, D, C - vedi cose_da_fare.txt punto 80 per
-    il dettaglio di ciascuno. NON ANCORA COMMITTATI: Denis ha chiesto di
-    fermarsi dopo C, da decidere con lui se committare questi 4 pezzi ora o
-    aspettare che il punto 80 sia chiuso per intero.
+    il dettaglio di ciascuno. COMMITTATI in un commit solo (d230ccf), NON
+    ANCORA PUSHATI: da decidere con Denis quando pushare (subito o ad
+    attendere che il punto 80 sia chiuso per intero).
 
-    RESTANO, nell'ordine sopra: G (manca la rotta DELETE /api/bookmarks,
-    oggi il tasto preferiti non toglie mai davvero; icona capra 🐐 al posto
-    della stella), A (POST /api/completions/:id/gpx e DELETE
+    Sessione dell'11/08/2026: fatto e verificato dal vivo anche G - rotta
+    DELETE /api/bookmarks/:hikeId aggiunta (mancava per davvero), il tasto
+    preferiti ora toglie sul serio invece di richiamare sempre la POST,
+    icona capra 🐐 al posto della stella (colorata/grigia come i badge
+    bloccati), e nuova sezione "Sentieri preferiti" sul profilo (proprio e
+    altrui, tasto di rimozione solo sul proprio) - prima non c'era alcun
+    posto dove vederli. Dettaglio completo in cose_da_fare.txt punto 80.
+    Non ancora committato (da decidere con Denis insieme al resto).
+
+    RESTANO, nell'ordine sopra: A (POST /api/completions/:id/gpx e DELETE
     /api/completions/:id, con ricalcolo del passo personale - progettate e
     validate con l'agente architect nel piano, non ancora scritte), B
     (l'unificazione vera e propria).
 
-    RIPARTIRE DA: Parte G (vedi piano approvato, sezione "Parte G").
+    RIPARTIRE DA: Parte A (vedi piano approvato, sezione "Parte A") - solo
+    dopo il via libera di Denis, che ha chiesto di fermarsi punto per punto.
 
     ---- Chiuso PRIMA di oggi pomeriggio (dettaglio in cose_da_fare.txt) ----
     Punto 62 (foto profilo nel widget in alto copriva mezza schermata,
