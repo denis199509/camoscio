@@ -3314,3 +3314,82 @@ segnare un'escursione preferita voglio usare il simbolo del camoscio."
    completate", per ultima perche' usa sia le rotte di A sia il modale di C -
    chiude da sola anche il "4h53" quando Denis riallega il suo gpx vero alla
    "prova").
+
+   - A [FATTO in sessione successiva, validato con l'agente architect PRIMA
+     di scrivere codice]: due rotte nuove in routes/completions.js. POST
+     /:id/gpx aggiunge (o corregge) il tempo reale di un'escursione gia'
+     completata senza gpx all'epoca - riusa calcolaDaPercorso (ora estratta
+     in lib/percorso.js, la usava solo routes/hikes.js) SOLO per tempo:
+     dislivello/distanza restano quelli condivisi dell'escursione, un
+     caricamento personale non li tocca. DELETE /:id cancella un
+     completamento (stesso principio del cestino gia' esistente per le
+     uscite, routes/tracking.js - i badge gia' presi NON si revocano).
+     L'agente ha trovato un buco vero prima di scrivere una riga: esisteva
+     GIA' una media incrementale (applyHikeCompletionStats) e una
+     ricostruzione completa dimostrata equivalente ma solo per uno script a
+     mano (scripts/ricalcola-passo-personale.js, punto 79) - finche' quella
+     ricostruzione girava solo offline la divergenza si richiudeva al
+     prossimo lancio, ma con queste rotte online (aggiungere/togliere
+     un'osservazione da un Completion gia' esistente) le due matematiche
+     avrebbero potuto scollegarsi in silenzio. Risolto unificando tutto su
+     una funzione sola, recalculatePersonalPace (lib/hikeStats.js,
+     ricostruzione completa, mai incrementale), richiamata anche da
+     applyHikeCompletionStats e dallo script (che pero' NON scrive quando le
+     osservazioni sono zero - protegge i quattro account demo del seed, che
+     hanno un passo assegnato a mano senza completamenti a giustificarlo; le
+     rotte online invece scrivono sempre, anche il default, perche' li' zero
+     osservazioni vuol dire davvero "nessuna prova rimasta"). Aggiunti anche
+     limiti di plausibilita' (50-1500 m/h, oreEffettive max 24h): un .gpx
+     troncato o dimenticato acceso produce un numero assurdo che va
+     SCARTATO dalla media, non "aggiustato" - averagePaceUp e' un divisore
+     nel tempo previsto, un numero assurdo che sembra una misura vera e' il
+     tipo di errore che il vincolo hard 7 vieta. Trovato e corretto anche un
+     ordine di salvataggio sbagliato in /:id/complete-group (routes/hikes.js):
+     un gpx che corregge il dislivello va salvato PRIMA del ciclo sui
+     partecipanti, non dopo, altrimenti il primo ricalcolato leggerebbe
+     ancora il dislivello vecchio dal database.
+     VERIFICATO A MANO con l'account demo Marco Alpinista (nessun modo
+     automatico di scegliere un file in un input nativo, controllato invece
+     con chiamate dirette alla rotta): generato un .gpx sintetico plausibile,
+     caricato su un completamento senza tempo (Ascesa al Corno Grande) -
+     risultato del ricalcolo verificato A MANO (media fra la sua unica
+     osservazione precedente, ~123 m/h dalla "Prova", e quella nuova, ~518
+     m/h: 321 m/h, combaciato esatto). Ricaricato LO STESSO file una seconda
+     volta: passo IDENTICO, non raddoppiato - la proprieta' che contava di
+     piu' in questo punto. Cancellato lo stesso completamento: passo tornato
+     ESATTAMENTE a 123/176 (la sua unica osservazione rimasta), come
+     confermato dai conti a mano. Provati anche gli errori (file senza
+     orari -> 400, id non valido -> 400, completamento inesistente -> 404,
+     tentativo di toccare un completamento di un altro utente -> 403 su
+     entrambe le rotte). Ogni prova via API e' stata seguita da un
+     ripristino ESATTO del completamento e del contatore toccati (script a
+     parte, non nel repository, cancellato a fine sessione) - il
+     completamento provato esisteva gia' prima, non era dato finto.
+     Dal vivo nel browser: tasti "Carica gpx" e cestino comparsi solo sulle
+     schede con un proprio completamento, come da disegno. TROVATO E
+     CORRETTO UN BUG VERO provando il cestino: il modale di conferma
+     passava il TITOLO dell'escursione dentro l'attributo onclick fra
+     apici singoli - "Ascesa al Corno Grande (Gran Sasso d'Italia)" contiene
+     un apostrofo, che rompeva la stringa JavaScript (SyntaxError in
+     console, tasto silenziosamente morto). Corretto passando l'hikeId
+     (sempre sicuro, mai testo libero) invece del titolo, che si recupera
+     dentro la funzione da window.CamoscioState - stessa regola gia'
+     seguita da ogni altro onclick del progetto. Rifatta la prova dopo la
+     correzione: modale corretto con l'apostrofo visibile, cancellazione
+     completata, "Escursioni Fatte" sceso da 21 a 20 sulla Dashboard,
+     ricomparsa dell'escursione fra "Organizzate da me" (il completamento
+     e' sparito, l'escursione no: Marco ne resta l'organizzatore). Nessun
+     errore nuovo in console. Ripristinato di nuovo a fine prova.
+     Rilanciate le prove di regressione (configurazione 9/9, punto37 27/27,
+     punto45 23/23, punto77 16/16 - quest'ultima esercita per davvero
+     complete-group/applyHikeCompletionStats, punto79 26/26): tutte verdi.
+     TROVATO PER CASO, NON RISOLTO (fuori scope, annotato per quando serve):
+     4 dei 6 Completion di Marco Alpinista puntano a escursioni ormai
+     cancellate dal database (probabili residui di prove di sessioni
+     precedenti) - GET /api/hikes non li mostra piu' (punto 77, invisibili a
+     chi non e' piu' partecipante di un'escursione sparita) quindi restano
+     invisibili anche nell'interfaccia, ma pesano comunque sul database.
+     recalculatePersonalPace li scarta gia' correttamente (nessun
+     elevationGain a cui riferirsi). Da ripulire un giorno con uno script
+     dedicato, filtrato per userId, se si vuole recuperare quello spazio -
+     non urgente (vincolo spazio, 512 MB, oggi non e' un problema pratico).

@@ -5,18 +5,20 @@
 // da solo si correggerebbe solo pian piano, con le prossime escursioni. Denis ha scelto
 // invece la correzione immediata (pochi utenti reali, costo quasi nullo).
 //
-// RICOSTRUZIONE COMPLETA, MAI INCREMENTALE: rilanciare lo script due volte da' lo stesso
-// risultato (idempotente) - non applica correzioni sopra correzioni, ricalcola da capo
-// ogni volta usando solo i Completion esistenti sul database.
+// La matematica vera e propria (RICOSTRUZIONE COMPLETA, MAI INCREMENTALE - rilanciare lo
+// script due volte da' lo stesso risultato) vive in lib/hikeStats.js, recalculatePersonalPace:
+// punto 80/A, estratta da qui perche' ora la stessa ricostruzione serve anche online, dalle
+// rotte che aggiungono o tolgono un .gpx da un Completion gia' esistente
+// (routes/completions.js) - un'unica matematica, per non rischiare che le due copie
+// divergano in silenzio.
 //
-// La media e' equivalente, punto per punto, a quello che applyHikeCompletionStats
-// (lib/hikeStats.js) avrebbe prodotto applicando i completamenti in ordine, PARTENDO DAI
-// VALORI DI DEFAULT dello schema (350/500): la media incrementale che quella funzione usa
-// converge alla media aritmetica semplice delle osservazioni, indipendentemente
-// dall'ordine - dimostrabile per induzione sulla stessa formula. averagePaceDown non ha una
-// sua osservazione diretta (il sito non la misura mai da sola): resta esattamente il valore
-// di default riscalato nella stessa proporzione con cui e' cambiato averagePaceUp - identica
-// alla catena di riscalature che applyHikeCompletionStats fa una alla volta.
+// QUESTO SCRIPT NON SCRIVE MAI SU UN UTENTE CON ZERO OSSERVAZIONI: a differenza delle rotte
+// online, dove "zero osservazioni" per un utente vero significa davvero "nessuna prova sul
+// passo, torna al default", qui significherebbe anche azzerare gli utenti demo del seed
+// (scripts/seed-data.json), che hanno un passo assegnato a mano e "completions": [] apposta -
+// senza prove ma NON al default. recalculatePersonalPace calcola comunque il valore che
+// SAREBBE il default in quel caso: e' compito di questo script, non della funzione
+// condivisa, decidere se scriverlo.
 //
 // Uso: node scripts/ricalcola-passo-personale.js                  (mostra cosa cambierebbe, tutti)
 //      node scripts/ricalcola-passo-personale.js --scrivi          (scrive per davvero, tutti)
@@ -25,11 +27,7 @@
 require('dotenv').config();
 const { connectMongo, mongoose } = require('../db/mongo');
 const User = require('../models/User');
-const Completion = require('../models/Completion');
-const Hike = require('../models/Hike');
-
-const DEFAULT_PACE_UP = 350;
-const DEFAULT_PACE_DOWN = 500;
+const { recalculatePersonalPace } = require('../lib/hikeStats');
 
 (async () => {
     await connectMongo();
@@ -46,28 +44,8 @@ const DEFAULT_PACE_DOWN = 500;
     let toccati = 0;
 
     for (const user of utenti) {
-        const completamenti = await Completion.find({ userId: user._id });
-        if (completamenti.length === 0) continue;
-
-        const osservazioni = [];
-        for (const c of completamenti) {
-            const oreEffettive = (c.movingTimeHours && c.movingTimeHours > 0) ? c.movingTimeHours
-                : (c.actualTimeHours && c.actualTimeHours > 0) ? c.actualTimeHours : null;
-            if (!oreEffettive) continue;
-
-            const hike = await Hike.findById(c.hikeId).select('elevationGain title');
-            if (!hike) continue; // escursione cancellata nel frattempo: non c'e' piu' un dislivello a cui riferirsi
-
-            osservazioni.push({
-                paceUp: hike.elevationGain / oreEffettive,
-                conMovimento: !!(c.movingTimeHours && c.movingTimeHours > 0)
-            });
-        }
-
-        if (osservazioni.length === 0) continue; // nessun completamento con un tempo utilizzabile: resta com'e'
-
-        const nuovoPaceUp = Math.round(osservazioni.reduce((s, o) => s + o.paceUp, 0) / osservazioni.length);
-        const nuovoPaceDown = Math.round(DEFAULT_PACE_DOWN * (nuovoPaceUp / DEFAULT_PACE_UP));
+        const { osservazioni, nuovoPaceUp, nuovoPaceDown } = await recalculatePersonalPace(user._id);
+        if (osservazioni.length === 0) continue; // nessun completamento con un tempo utilizzabile: resta com'e' (vedi nota sopra)
 
         const cambiato = nuovoPaceUp !== user.averagePaceUp || nuovoPaceDown !== user.averagePaceDown;
         const conMovimento = osservazioni.filter(o => o.conMovimento).length;

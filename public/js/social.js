@@ -472,22 +472,45 @@ function buildHikeCard(hike) {
     // prima di partire. Risponde alla domanda di Denis: "quanto ho camminato davvero, senza
     // le mie pause, contro lo standard" - le pause si mostrano separate perche' sono sue,
     // soggettive, non della escursione (a lui bastano 5 minuti, ad altri ne servono 10+).
+    // Punto 80/A: la ricerca non e' piu' condizionata a hike.groupCompletedAt come prima -
+    // quel controllo era una scorciatoia valida solo finche' unicamente il completamento di
+    // gruppo poteva portare un movingTimeHours. Ora anche un'escursione auto-completata (mai
+    // passata dal gruppo) puo' averne uno, aggiunto in un secondo momento da qui sotto
+    // (tasto "Carica gpx") - serve quindi cercare il proprio Completion su OGNI escursione
+    // completata, non solo su quelle completate in gruppo. miaCompletion serve anche piu'
+    // sotto per i tasti "carica gpx"/cestino, visibili solo se questa escursione e' fra le
+    // mie "gia' fatte" (db.completions e' gia' filtrata per l'utente corrente, vedi app.js).
+    const miaCompletion = db.completions.find(c => c.hikeId === hike.id);
     let tempoRealeHtml = "";
-    if (hike.groupCompletedAt) {
-        const miaCompletion = db.completions.find(c => c.hikeId === hike.id);
-        if (miaCompletion && miaCompletion.movingTimeHours) {
-            const tVertStandard = hike.elevationGain / 400;
-            const tFlatStandard = hike.distanceKm / 4;
-            const caiOre = Math.max(tVertStandard, tFlatStandard) + Math.min(tVertStandard, tFlatStandard) / 2;
-            const pauseOre = miaCompletion.actualTimeHours
-                ? Math.max(0, miaCompletion.actualTimeHours - miaCompletion.movingTimeHours)
-                : 0;
-            const pausaText = pauseOre > (1 / 60) // sotto il minuto non si scrive, formatHoursToMin arrotonderebbe a "0h 0m"
-                ? ` (+ ${window.formatHoursToMin(pauseOre)} di pause)`
-                : "";
-            tempoRealeHtml = `<p class="small text-muted rp-nota-dislivello"><i data-lucide="footprints"></i><span>Il tuo tempo di cammino misurato: <b>${window.formatHoursToMin(miaCompletion.movingTimeHours)}</b>${pausaText} · CAI per questo percorso: <b>${window.formatHoursToMin(caiOre)}</b>.</span></p>`;
-        }
+    if (miaCompletion && miaCompletion.movingTimeHours) {
+        const tVertStandard = hike.elevationGain / 400;
+        const tFlatStandard = hike.distanceKm / 4;
+        const caiOre = Math.max(tVertStandard, tFlatStandard) + Math.min(tVertStandard, tFlatStandard) / 2;
+        const pauseOre = miaCompletion.actualTimeHours
+            ? Math.max(0, miaCompletion.actualTimeHours - miaCompletion.movingTimeHours)
+            : 0;
+        const pausaText = pauseOre > (1 / 60) // sotto il minuto non si scrive, formatHoursToMin arrotonderebbe a "0h 0m"
+            ? ` (+ ${window.formatHoursToMin(pauseOre)} di pause)`
+            : "";
+        tempoRealeHtml = `<p class="small text-muted rp-nota-dislivello"><i data-lucide="footprints"></i><span>Il tuo tempo di cammino misurato: <b>${window.formatHoursToMin(miaCompletion.movingTimeHours)}</b>${pausaText} · CAI per questo percorso: <b>${window.formatHoursToMin(caiOre)}</b>.</span></p>`;
     }
+
+    // Punto 80/A: aggiungere un .gpx a un'escursione gia' completata, o cancellarla dallo
+    // storico - solo quando ho davvero un Completion per questa escursione (le card di
+    // "disponibili"/"a cui partecipo" non entrano mai qui). L'input file e' creato al volo
+    // in uploadCompletionGpx invece che nel markup: piu' card identiche vivono insieme nel
+    // DOM (Escursioni "Completate" e Le mie escursioni "Gia' fatte" possono mostrare la
+    // stessa escursione due volte), e un id fisso qui ripeterebbe la stessa trappola gia'
+    // presa nota in leggimi.txt per chatpanel.js/buildHikeCard - mai un id fisso su un
+    // elemento di un componente che vive in piu' copie.
+    const completionToolsHtml = miaCompletion ? `
+        <button class="btn btn-sm btn-secondary" style="padding:2px 6px;" onclick="uploadCompletionGpx('${miaCompletion.id}')" title="Carica un file .gpx per avere il tempo reale di questa escursione">
+            <i data-lucide="upload"></i>
+        </button>
+        <button class="btn btn-sm btn-secondary" style="padding:2px 6px; color:var(--accent-red);" onclick="deleteCompletion('${miaCompletion.id}', '${hike.id}')" title="Cancella questa escursione dalle tue 'gia' fatte'">
+            <i data-lucide="trash-2"></i>
+        </button>
+    ` : "";
 
     // Verifica idoneità fisica
     const eligibility = window.getEligibilityBadge(hike, currentUser);
@@ -653,6 +676,7 @@ function buildHikeCard(hike) {
                             🐐
                         </button>
                         ${isParticipant ? `<button class="btn btn-sm btn-secondary" style="padding:2px 6px;" onclick="showHikePage('${hike.id}')" title="Chat tra i partecipanti">Chat</button>` : ""}
+                        ${completionToolsHtml}
                     </div>
                 </div>
                 <div class="participants-avatars">${participantsHtml}</div>
@@ -823,6 +847,101 @@ window.toggleBookmark = async function(hikeId) {
         renderSocialModule(); // Aggiorna match sentieri
     } catch(e) {
         console.error("Errore nel salvare il preferito:", e);
+    }
+};
+
+// Punto 80/A: aggiunge (o corregge) il tempo reale di un'escursione gia' completata,
+// caricando un .gpx dopo il fatto - "i numeri reali sostituiscono quelli scritti a mano",
+// stessa regola gia' applicata al punto 67. L'input file e' creato al volo, mai presente nel
+// markup della card (buildHikeCard): la stessa escursione puo' comparire in piu' liste
+// contemporaneamente (Escursioni "Completate" e Le mie escursioni "Gia' fatte"), quindi un
+// id fisso condiviso scriverebbe nel posto sbagliato - stessa cautela gia' presa per
+// chatpanel.js e le schede di buildHikeCard (leggimi.txt).
+window.uploadCompletionGpx = function(completionId) {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.gpx,application/gpx+xml';
+    input.addEventListener('change', async () => {
+        const file = input.files && input.files[0];
+        if (!file) return;
+
+        // Stesso tetto di storico.js (10 MB): dire subito cosa non va e' meglio che far
+        // aspettare un invio destinato a fallire.
+        if (file.size > 10 * 1024 * 1024) {
+            if (window.showToast) window.showToast(`Il file pesa ${(file.size / 1024 / 1024).toFixed(1)} MB, oltre il limite di 10 MB.`, 'error');
+            return;
+        }
+
+        let gpxText;
+        try {
+            gpxText = await file.text();
+        } catch (e) {
+            if (window.showToast) window.showToast('Non è stato possibile leggere il file.', 'error');
+            return;
+        }
+
+        try {
+            const res = await fetch(`/api/completions/${completionId}/gpx`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ gpxText })
+            });
+            const dati = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                if (window.showToast) window.showToast(dati.error || 'Non è stato possibile aggiungere il file.', 'error');
+                return;
+            }
+            if (window.showToast) {
+                const avviso = (dati.avvisi || []).length ? ` (${dati.avvisi[0]})` : '';
+                window.showToast(`Tempo reale aggiunto${avviso}.`, 'success');
+            }
+            await refreshState();
+            renderHikesList();
+        } catch (e) {
+            console.error('Errore nel caricare il gpx sul completamento:', e);
+            if (window.showToast) window.showToast('Non è stato possibile contattare il server.', 'error');
+        }
+    });
+    input.click();
+};
+
+// Punto 80/A: cancella un'escursione dalle "gia' fatte" - stesso schema gia' provato per
+// cancellaUscita in storico.js (conferma con showConfirmModal, bottone rosso "Elimina"),
+// stessa onesta': dice cosa cambia davvero prima di farlo sparire, invece di un generico
+// "sei sicuro?".
+// Riceve hikeId, MAI il titolo per esteso: un titolo puo' contenere un apostrofo (es.
+// "Gran Sasso d'Italia") che romperebbe la stringa JS dentro l'onclick della card - bug
+// vero, trovato provando dal vivo. Il titolo si recupera qui da window.CamoscioState,
+// stesso principio di ogni altro onclick del progetto (mai testo libero, solo id).
+window.deleteCompletion = async function(completionId, hikeId) {
+    const hike = (window.CamoscioState.hikes || []).find(h => h.id === hikeId);
+    const hikeTitle = hike ? hike.title : 'questa escursione';
+    const righe = [
+        `Cancellare "${hikeTitle}" dalle escursioni fatte?`,
+        '',
+        'Il tuo passo personale verrà ricalcolato senza questa escursione.',
+        'Non potrai più scrivere né ricevere recensioni per questa escursione.',
+        '',
+        'I badge che hai conquistato restano nel passaporto.'
+    ];
+    const procedi = window.showConfirmModal
+        ? await window.showConfirmModal(righe.join('\n'), 'Elimina', { cancelLabel: 'Cancella', danger: true })
+        : true;
+    if (!procedi) return;
+
+    try {
+        const res = await fetch(`/api/completions/${completionId}`, { method: 'DELETE' });
+        const dati = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            if (window.showToast) window.showToast(dati.error || 'Non è stato possibile cancellare questa escursione.', 'error');
+            return;
+        }
+        if (window.showToast) window.showToast('Escursione cancellata dalle "già fatte".', 'success');
+        await refreshState();
+        renderHikesList();
+    } catch (e) {
+        console.error('Errore cancellazione completamento:', e);
+        if (window.showToast) window.showToast('Non è stato possibile contattare il server.', 'error');
     }
 };
 

@@ -4,16 +4,15 @@ const Hike = require('../models/Hike');
 const User = require('../models/User');
 const Squad = require('../models/Squad');
 const Notification = require('../models/Notification');
-const Completion = require('../models/Completion');
 const HikeMessage = require('../models/HikeMessage'); // punto 55: chat tra partecipanti
-const RouteDraft = require('../models/RouteDraft'); // punto 43: percorso da un progetto gia' fatto
 const { applyHikeCompletionStats } = require('../lib/hikeStats'); // punto 64: condivisa con /:id/complete-group
 const { requireAuth } = require('../middleware/auth');
 const { regionForPoint } = require('../lib/regions');
-const { mongoose } = require('../db/mongo');
 const { haversineKm } = require('../lib/geometry');
-const { parseGpx, statisticheTraccia, tempiTraccia, ErroreGpx, SOGLIA_DISLIVELLO_M } = require('../lib/gpx');
-const { progettaPercorso } = require('../lib/trailGraph');
+const { tempiTraccia } = require('../lib/gpx');
+// Punto 80/A: calcolaDaPercorso e' stata estratta in lib/percorso.js perche' ora la usa
+// anche routes/completions.js (aggiungere un .gpx retroattivo a un completamento).
+const { calcolaDaPercorso } = require('../lib/percorso');
 
 // Punto 55: usato da /:id/complete (gia' esistente, riscritto per riusare questa) e dalle
 // nuove rotte di chat. Non ci si fida al 100% che il creatore sia sempre dentro
@@ -138,91 +137,8 @@ function canNonCreatorEditBackpack(hike, newTemplate, userIdStr) {
     );
 }
 
-// --- PUNTO 43: quota massima, dislivello e distanza calcolati da un percorso vero ---
-//
-// "routeSource" e' facoltativo: assente, tutto resta scritto a mano come sempre. Presente,
-// i tre numeri si CALCOLANO invece di fidarsi di un valore mandato dal client - un numero
-// mandato dal client non e' un dato, e' un'affermazione (stesso principio gia' applicato ai
-// progetti in routes/routing.js). Solleva un Error col messaggio gia' pronto per l'utente.
-const MAX_BYTE_GPX_HIKE = 10 * 1024 * 1024; // stesso tetto di routes/tracking.js
-const CAMPIONE_REGIONE_HIKE = 40; // stesso campione di routes/tracking.js
-async function calcolaDaPercorso(routeSource, userId) {
-    if (!routeSource || typeof routeSource !== 'object') {
-        throw new Error('Percorso non valido.');
-    }
-
-    if (routeSource.kind === 'draft') {
-        if (typeof routeSource.draftId !== 'string' || !mongoose.isValidObjectId(routeSource.draftId)) {
-            throw new Error('Percorso non valido.');
-        }
-        // SOLO le PROPRIE bozze, stessa regola di ogni altra rotta su RouteDraft.
-        const bozza = await RouteDraft.findOne({ _id: routeSource.draftId, userId });
-        if (!bozza) throw new Error('Questo progetto non esiste o non è tuo.');
-
-        // Stesso calcolo di quando si riapre la bozza (punto 13): non si salva mai il
-        // percorso, si ricalcola - se un domani i sentieri migliorano, l'escursione
-        // collegata trova i numeri nuovi la prossima volta che viene ricollegata.
-        const punti = bozza.anello ? [...bozza.punti, bozza.punti[0]] : bozza.punti;
-        const esito = await progettaPercorso(punti, { agganciaAiSentieri: bozza.agganciaAiSentieri });
-        if (!esito.dislivelloDisponibile) {
-            throw new Error('La fonte delle quote non ha risposto per questo progetto: riprova fra poco.');
-        }
-        return {
-            maxAltitude: Math.round(esito.quotaMaxM),
-            elevationGain: Math.round(esito.salitaM),
-            distanceKm: Math.round(esito.metriTotali / 100) / 10,
-            routeSource: { kind: 'draft', nome: bozza.nome }
-        };
-    }
-
-    if (routeSource.kind === 'gpx') {
-        const testo = routeSource.gpxText;
-        if (typeof testo !== 'string' || !testo.trim()) {
-            throw new Error('Nessun file .gpx ricevuto.');
-        }
-        if (Buffer.byteLength(testo, 'utf8') > MAX_BYTE_GPX_HIKE) {
-            throw new Error('Il file supera i 10 MB. Una traccia normalmente pesa molto meno.');
-        }
-
-        let letto;
-        try {
-            letto = parseGpx(testo);
-        } catch (e) {
-            throw new Error((e instanceof ErroreGpx || e.utente) ? e.message : 'File .gpx non leggibile.');
-        }
-
-        // Stesso controllo "la maggioranza dei punti dentro le 4 regioni" gia' usato per le
-        // tracce importate come uscite (routes/tracking.js): un sentiero di crinale entra ed
-        // esce dai confini di continuo, bocciarlo per un punto solo sarebbe un rifiuto a caso.
-        const passo = Math.max(1, Math.floor(letto.punti.length / CAMPIONE_REGIONE_HIKE));
-        let dentro = 0, esaminati = 0;
-        for (let i = 0; i < letto.punti.length; i += passo) {
-            esaminati++;
-            if (regionForPoint(letto.punti[i][0], letto.punti[i][1])) dentro++;
-        }
-        if (dentro * 2 <= esaminati) {
-            throw new Error('Questa traccia si svolge fuori dalle quattro regioni coperte dal sito (Marche, Lazio, Abruzzo, Molise).');
-        }
-
-        const stats = statisticheTraccia(letto.punti, SOGLIA_DISLIVELLO_M, haversineKm);
-        if (stats.quotaMaxM === null) {
-            throw new Error('Questo file .gpx non contiene le quote: non è possibile calcolare il dislivello.');
-        }
-        return {
-            maxAltitude: stats.quotaMaxM,
-            elevationGain: stats.dislivelloM,
-            distanceKm: stats.distanzaKm,
-            routeSource: { kind: 'gpx', nome: (letto.nome || 'Traccia importata').slice(0, 80) },
-            // Punto 79: il gpx gia' letto, cosi' chi ha bisogno di inizio/fine o dei punti
-            // (es. tempiTraccia in complete-group) non deve fare un secondo giro di parseGpx
-            // sullo stesso testo - file fino a 10 MB, Render a 512 MB gia' caduto una volta.
-            // Aggiunta pura: chi ignora questo campo (creazione/modifica escursione) non cambia.
-            gpxLetto: letto
-        };
-    }
-
-    throw new Error('Percorso non valido.');
-}
+// calcolaDaPercorso (quota massima, dislivello e distanza da un progetto o da un .gpx,
+// punto 43) vive in lib/percorso.js dal punto 80/A - importata sopra.
 
 // Ottieni escursioni - punto 77: una volta conclusa (hike.groupCompletedAt, stesso
 // segnale gia' usato dal punto 76 per bloccare le modifiche - non un confronto con la
@@ -546,6 +462,15 @@ router.post('/:id/complete-group', requireAuth, async (req, res) => {
                 }
             }
         }
+
+        // Punto 80/A: se il .gpx qui sopra ha corretto il dislivello, va salvato PRIMA del
+        // ciclo qui sotto. applyHikeCompletionStats ora ricalcola il passo personale
+        // rileggendo TUTTI i Completion dell'utente dal database (mai in modo incrementale,
+        // vedi lib/hikeStats.js) - e questa stessa escursione e' fra quelli: se il
+        // salvataggio restasse dopo il ciclo, la prima persona ricalcolata leggerebbe ancora
+        // il dislivello vecchio. Senza un file .gpx questo save() non scrive nulla di nuovo
+        // (nessun campo modificato).
+        await hike.save();
 
         // Senza un file .gpx, il tempo reale non c'entra in questo flusso: Denis non ne ha
         // mai parlato per il completamento di gruppo "a mano", riguarda solo "chi c'era" -
