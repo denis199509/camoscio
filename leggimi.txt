@@ -41,8 +41,8 @@ o ne arriva uno nuovo.
     FATTI E VERIFICATI (account demo Marco Alpinista, riportato come prima
     ogni volta): E, F, D, C, G, A - dettaglio completo di ciascuno in
     cose_da_fare.txt punto 80. Tutti COMMITTATI (E/F/D/C in d230ccf, G in
-    474c7d9, A nel commit di questa sessione), NON ANCORA PUSHATI - da
-    decidere con Denis quando pushare, ora che manca solo B.
+    474c7d9, A in 486e867), NON ANCORA PUSHATI - da decidere con Denis
+    quando pushare, ora che manca solo B.
 
     Sessione dell'11/08/2026, la piu' delicata del punto 80: fatta la Parte
     A, validata con l'agente architect PRIMA di scrivere codice (rischio
