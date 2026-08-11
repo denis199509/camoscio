@@ -3444,3 +3444,24 @@ clicco completa ed e' fatta."
    punto45 23/23, punto77 16/16 - stavolta senza lasciare residui,
    verificato rilanciandola due volte di fila - punto79 26/26): tutte
    verdi.
+
+--- BADGE PERSONALI: CAMILLA E BOB84 ---
+
+82) [FATTO 2026-08-11] Denis: assegnare il badge personale (quello del team
+di Camoscio, personal-badges.js) ai due account registrati per davvero il
+10/08 - Camilla ("Non cammina, fa flamenco in salita." / "Non affronta la
+salita: la interpreta.") e Bob84 ("Pescara sopra tutto. Anche sopra i
+2000." / "La quota puo' cambiare, la fede no. In vetta come allo stadio,
+sempre biancazzurro."), con le immagini gia' pronte nella cartella
+"Desktop\Logo per Camoscio" (flamenco.png, pescara.png).
+   Copiate le due immagini in public/img/badge-personali/ (camilla-flamenco.png,
+   bob84-pescara.png, stessa convenzione di nome degli altri quattro badge
+   gia' presenti) e aggiunte due righe al catalogo (personal-badges.js),
+   con l'userId vero di ciascuno (trovato per username: Camilla
+   6a798ca12539954e0769bcb2, Bob84 6a798f8e2539954e0769bcb4). Nessun'altra
+   modifica: lo stesso identico meccanismo gia' in uso per gli altri
+   quattro (Denis, DaniWoll, Manu er 5 lingue, Matteo Bi).
+   Verificato dal vivo nel browser (window.showUserProfile sui due id, dato
+   che sono account veri e non demo - nessuna password per entrarci
+   direttamente): entrambi i badge compaiono con l'icona giusta, titolo e
+   descrizione esatti, nessun errore in console.

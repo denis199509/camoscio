@@ -35,6 +35,16 @@
             icon: "matteo-geologo.png",
             titolo: "Paleontologo... Più o Meno",
             descrizione: "Alla ricerca del fossile perfetto. Il gruppo, nel frattempo, lo aspetta qualche curva più avanti."
+        },
+        "6a798ca12539954e0769bcb2": { // Camilla
+            icon: "camilla-flamenco.png",
+            titolo: "Non cammina, fa flamenco in salita.",
+            descrizione: "Non affronta la salita: la interpreta."
+        },
+        "6a798f8e2539954e0769bcb4": { // Bob84
+            icon: "bob84-pescara.png",
+            titolo: "Pescara sopra tutto. Anche sopra i 2000.",
+            descrizione: "La quota può cambiare, la fede no. In vetta come allo stadio, sempre biancazzurro."
         }
     };
 

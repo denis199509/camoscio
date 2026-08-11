@@ -73,6 +73,10 @@ o ne arriva uno nuovo.
     Dettaglio completo in cose_da_fare.txt punto 81 e nel vault
     (07-Trappole-Tecniche.md).
 
+    Ancora la stessa sessione: chiuso il punto 82 - badge personale del
+    team assegnato a Camilla e Bob84 (i due account veri registrati il
+    10/08). Dettaglio in cose_da_fare.txt punto 82.
+
     ---- Chiuso prima di questa sessione (dettaglio in cose_da_fare.txt) ----
     Punto 62 (foto profilo nel widget in alto copriva mezza schermata,
     .avatar-icon senza dimensione fissa) chiuso e pushato (0bce55d). Agente
