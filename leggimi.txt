@@ -1,6 +1,6 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-11 (punto 80 in corso: 6 dei 7 sotto-punti fatti, resta solo B)
+Aggiornato: 2026-08-11 sera (punto 80 in corso: 6 dei 7 sotto-punti fatti e pushati, resta solo B)
 ===================================================================
 
 QUESTO FILE DICE SOLO UNA COSA: a che punto siamo adesso e da dove si ricomincia.
@@ -26,7 +26,7 @@ o ne arriva uno nuovo.
 
 
 
->>> STATO ATTUALE (10/08/2026 sera): punto 80 APERTO, IN CORSO - 7 richieste
+>>> STATO ATTUALE (11/08/2026 sera): punto 80 APERTO, IN CORSO - 7 richieste
     di Denis su "Le mie escursioni", preferiti e foto profilo (testo
     completo e ragionamento in cose_da_fare.txt punto 80). Piano gia'
     approvato per intero. Denis ha chiesto di ordinarle dal piu' piccolo al
@@ -38,32 +38,32 @@ o ne arriva uno nuovo.
     ricalcolo passo) -> B (unificare le due liste - va per ultima, usa A e
     C, e chiude da sola anche il "4h53" senza codice a parte).
 
-    FATTI E VERIFICATI (account demo Marco Alpinista, riportato come prima
-    ogni volta): E, F, D, C, G, A - dettaglio completo di ciascuno in
-    cose_da_fare.txt punto 80. Tutti COMMITTATI (E/F/D/C in d230ccf, G in
-    474c7d9, A in 486e867), NON ANCORA PUSHATI - da decidere con Denis
-    quando pushare, ora che manca solo B.
+    FATTI, VERIFICATI E PUSHATI (account demo Marco Alpinista, riportato
+    come prima ogni volta): E, F, D, C, G, A - dettaglio completo di
+    ciascuno in cose_da_fare.txt punto 80. Commit: E/F/D/C in d230ccf, G in
+    474c7d9, A in 486e867 (+ fa42903, correzione di una nota). Verificato
+    live su Render dopo il push (vedi sotto).
 
-    Sessione dell'11/08/2026, la piu' delicata del punto 80: fatta la Parte
-    A, validata con l'agente architect PRIMA di scrivere codice (rischio
-    vero trovato: due matematiche diverse per lo stesso passo personale,
-    unificate in recalculatePersonalPace, lib/hikeStats.js - dettaglio in
-    cose_da_fare.txt e 03-Decisioni-Architetturali.md del vault). Verificata
-    a mano via API (numeri ricalcolati a mano e combaciati, ricaricare lo
-    stesso file due volte non raddoppia il passo) e dal vivo nel browser,
-    dove e' stato trovato e corretto un bug vero (apostrofo in un titolo
-    rompeva l'onclick del cestino). Regressione: 101/101 su cinque prove.
+    La Parte A e' stata la piu' delicata: validata con l'agente architect
+    PRIMA di scrivere codice (rischio vero trovato: due matematiche diverse
+    per lo stesso passo personale, unificate in recalculatePersonalPace,
+    lib/hikeStats.js - dettaglio in cose_da_fare.txt e
+    03-Decisioni-Architetturali.md del vault). Verificata a mano via API
+    (numeri ricalcolati a mano e combaciati, ricaricare lo stesso file due
+    volte non raddoppia il passo) e dal vivo nel browser, dove e' stato
+    trovato e corretto un bug vero (apostrofo in un titolo rompeva l'onclick
+    del cestino). Regressione: 101/101 su cinque prove.
 
     RESTA SOLO: B, l'unificazione vera e propria di "Gia' fatte" e "Uscite
     registrate" in una sola sezione - usa le rotte appena fatte in A e il
     modale di C, chiude da sola anche il "4h53" quando Denis riallega il suo
     gpx vero alla "prova" (si vede gia' funzionare: provato a mano sull'
-    account demo).
+    account demo). Denis ha chiesto di fermarsi qui per oggi.
 
     RIPARTIRE DA: Parte B (vedi piano approvato, sezione "Parte B") - solo
     dopo il via libera di Denis, che ha chiesto di fermarsi punto per punto.
 
-    ---- Chiuso PRIMA di oggi pomeriggio (dettaglio in cose_da_fare.txt) ----
+    ---- Chiuso prima di questa sessione (dettaglio in cose_da_fare.txt) ----
     Punto 62 (foto profilo nel widget in alto copriva mezza schermata,
     .avatar-icon senza dimensione fissa) chiuso e pushato (0bce55d). Agente
     "designer" creato e provato sulla Dashboard, pushato (8f918c9) - resta
@@ -71,7 +71,7 @@ o ne arriva uno nuovo.
     deciso. Punto 79 (cammino/pause separati da un .gpx) chiuso e pushato
     (6e2248f) - il passo gia' calcolato di Denis prima di oggi non e' stato
     toccato, si corregge da solo con la prossima escursione con gpx (la
-    Parte A/B del punto 80, sopra, e' esattamente questo).
+    Parte A del punto 80, sopra, e' esattamente questo).
 
     Resta aperto, da prima: quando Denis decidera' formato e tetto della
     foto, il pezzo foto/tasto ancora sospeso del punto 45.

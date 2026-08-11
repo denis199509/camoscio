@@ -3284,8 +3284,8 @@ segnare un'escursione preferita voglio usare il simbolo del camoscio."
         (torna indietro) / "Elimina" rosso (conferma) invece delle parole di
         prima. Icona cestino (.outing-card-del) sempre rossa, non piu' solo al
         passaggio del mouse.
-      COMMITTATI in un commit solo (d230ccf), NON ANCORA PUSHATI - da
-      decidere con Denis quando pushare.
+      COMMITTATI in un commit solo (d230ccf), pushato a fine sessione
+      insieme al resto del punto 80 (vedi in fondo a questo punto).
       - G [FATTO in sessione successiva, verificato dal vivo]: la rotta
         DELETE /api/bookmarks/:hikeId mancava (routes/bookmarks.js) - il
         tasto "Rimuovi dai preferiti" chiamava sempre e solo la POST, che
@@ -3393,3 +3393,7 @@ segnare un'escursione preferita voglio usare il simbolo del camoscio."
      elevationGain a cui riferirsi). Da ripulire un giorno con uno script
      dedicato, filtrato per userId, se si vuole recuperare quello spazio -
      non urgente (vincolo spazio, 512 MB, oggi non e' un problema pratico).
+
+   Denis ha chiesto di fermarsi qui per oggi (resta solo B). Tutto il lavoro
+   di questo punto (E, F, D, C, G, A) COMMITTATO E PUSHATO a fine sessione,
+   verificato live su Render - vedi leggimi.txt per i riferimenti ai commit.
