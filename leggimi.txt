@@ -63,6 +63,16 @@ o ne arriva uno nuovo.
     RIPARTIRE DA: Parte B (vedi piano approvato, sezione "Parte B") - solo
     dopo il via libera di Denis, che ha chiesto di fermarsi punto per punto.
 
+    Stessa sessione, dopo la chiusura del punto 80: chiuso anche il punto
+    81 (Denis, richiesta piccola e separata) - campana che segna tutto come
+    letto al solo aprirsi, click su una notifica di completamento che porta
+    dritto alla scheda dell'escursione. Trovato e corretto per strada un
+    bug vero: prove/prova-punto77.js lasciava un residuo (Completion mai
+    ripulito) sull'account demo Marco Alpinista ad ogni lancio - "Escursioni
+    Fatte" mostrava 22 invece di 17. Corretti sia lo script sia l'accumulo.
+    Dettaglio completo in cose_da_fare.txt punto 81 e nel vault
+    (07-Trappole-Tecniche.md).
+
     ---- Chiuso prima di questa sessione (dettaglio in cose_da_fare.txt) ----
     Punto 62 (foto profilo nel widget in alto copriva mezza schermata,
     .avatar-icon senza dimensione fissa) chiuso e pushato (0bce55d). Agente

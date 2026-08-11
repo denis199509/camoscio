@@ -534,6 +534,11 @@ function buildHikeCard(hike) {
 
     const card = document.createElement("div");
     card.className = "glass-card hike-card";
+    // Punto 81: permette a goToHikeToComplete (app.js) di trovare la scheda giusta partendo
+    // da una notifica - MAI un id fisso (questa stessa funzione costruisce piu' copie della
+    // stessa escursione su piu' pagine/gruppi), un data-attribute invece si ripete identico
+    // su ogni copia senza collidere, esattamente come i data-del-* gia' in uso altrove.
+    card.dataset.hikeId = hike.id;
 
     // Costruzione partecipanti. Cliccabile: apre la pagina profilo di quella persona
     // (funzionalita' chiesta da Denis in sessione il 01/08/2026, non in cose_da_fare.txt).
@@ -701,6 +706,34 @@ window.toggleHikeCard = function(headerEl) {
     if (!body) return;
     body.classList.toggle('hidden');
     headerEl.classList.toggle('expanded');
+};
+
+// Punto 81: cliccare la notifica "non hai ancora completato" porta qui invece di limitarsi
+// a segnarla come letta. Il tasto "Completa escursione" vive solo su "Le mie escursioni" ->
+// "Organizzate da me" (isCreatorMe, buildHikeCard sopra) - e il promemoria stesso lo manda
+// SOLO al creatore (ensureCompletionReminders, lib/hikeStats.js), quindi la scheda giusta
+// esiste sempre li'. renderMyHikes() legge gia' window.CamoscioState (nessun fetch), la
+// scheda e' gia' nel DOM appena si naviga: nessuna attesa a tempo fisso.
+// Scoped a #my-hikes-created, non a document: la stessa escursione puo' comparire anche in
+// "Escursioni" (buildHikeCard costruisce piu' copie identiche su piu' pagine/gruppi) - senza
+// questo scope si rischierebbe di espandere/scrollare la copia sbagliata.
+window.goToHikeToComplete = function(hikeId) {
+    // Il pannello notifiche resta aperto altrimenti: e' dentro di lui che si e' cliccato,
+    // quindi il chiudi-al-click-fuori di setupNotificationBell (app.js) non scatta da solo.
+    const dropdown = document.getElementById('notification-dropdown');
+    if (dropdown) dropdown.classList.add('hidden');
+
+    if (window.navigateTo) window.navigateTo('my-hikes');
+
+    const card = document.querySelector(`#my-hikes-created .hike-card[data-hike-id="${hikeId}"]`);
+    if (!card) return;
+
+    const header = card.querySelector('.hike-card-header');
+    const body = card.querySelector('.hike-card-body');
+    if (header && body && body.classList.contains('hidden')) {
+        window.toggleHikeCard(header);
+    }
+    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
 };
 
 // Richiesta iscrizione con avviso se inesperto

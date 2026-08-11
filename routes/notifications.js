@@ -37,6 +37,19 @@ router.post('/', requireAuth, async (req, res) => {
     }
 });
 
+// Punto 81: segna TUTTE le proprie notifiche come lette in un colpo solo - aprire il
+// pannello del campanello basta a considerarle lette, senza cliccarle una per una. Sempre
+// req.session.userId, mai un id mandato dal client - stessa regola di ogni altra rotta.
+router.put('/read-all', requireAuth, async (req, res) => {
+    try {
+        await Notification.updateMany({ userId: req.session.userId, read: false }, { read: true });
+        res.json({ success: true });
+    } catch (e) {
+        console.error('Errore nel segnare tutte le notifiche come lette:', e);
+        res.status(400).json({ error: 'Impossibile segnare le notifiche come lette' });
+    }
+});
+
 // Segna una notifica come letta - SOLO se e' la propria
 router.put('/:id/read', requireAuth, async (req, res) => {
     try {

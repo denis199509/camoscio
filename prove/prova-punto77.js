@@ -12,6 +12,12 @@
 require('dotenv').config({ path: __dirname + '/../.env' });
 const { spawn } = require('child_process');
 const mongoose = require('mongoose');
+// Punto 81: per disfare per davvero le conseguenze del completamento di gruppo del passo 5
+// (completedHikes/averagePaceUp di A), non solo il documento Completion - stessa unica
+// matematica del resto del progetto (lib/hikeStats.js, punto 80/A), mai ricalcolata a mano
+// una seconda volta qui.
+const User = require('../models/User');
+const { recalculatePersonalPace, recalculateExperienceLevel } = require('../lib/hikeStats');
 
 const PORTA = 3104;
 const BASE = `http://localhost:${PORTA}`;
@@ -61,6 +67,7 @@ function vedeEscursione(risposta, hikeId) {
     let server;
     let logServer = '';
     let hikeId = null;
+    let idA = null; // hoisted: serve anche al cleanup nel finally, non solo al try
 
     try {
         server = spawn(process.execPath, ['server.js'], {
@@ -82,7 +89,8 @@ function vedeEscursione(risposta, hikeId) {
         //        conferma di gruppo, C non si iscrive mai ---
         const elenco = await (await fetch(BASE + '/api/auth/demo-accounts')).json();
         ok('almeno tre account demo disponibili', Array.isArray(elenco) && elenco.length >= 3, `trovati ${elenco.length}`);
-        const idA = elenco[0].id, idB = elenco[1].id, idC = elenco[2].id;
+        idA = elenco[0].id;
+        const idB = elenco[1].id, idC = elenco[2].id;
         const cookieA = await loginDemo(idA);
         const cookieB = await loginDemo(idB);
         const cookieC = await loginDemo(idC);
@@ -146,6 +154,30 @@ function vedeEscursione(risposta, hikeId) {
 
         // Cleanup mirato per id, mai una deleteMany generica.
         if (hikeId) await mongoose.connection.collection('hikes').deleteOne({ _id: new mongoose.Types.ObjectId(hikeId) }).catch(() => {});
+
+        // BUG TROVATO IL 11/08/2026 (punto 81): il passo 5 completa l'escursione in gruppo
+        // per A, che crea per davvero un Completion (applyHikeCompletionStats,
+        // lib/hikeStats.js) e aggiorna completedHikes/averagePaceUp/experienceLevel di A -
+        // questo cleanup cancellava solo l'escursione, MAI quelle conseguenze: ogni lancio
+        // della prova lasciava un residuo orfano sull'account demo scelto come "A" (sempre
+        // lo stesso, il primo di /api/auth/demo-accounts), gonfiando silenziosamente il suo
+        // contatore "Escursioni Fatte" a ogni sessione in cui la prova veniva rilanciata.
+        // Va tolto PRIMA di ricontare le escursioni sotto.
+        if (hikeId && idA) {
+            const tolti = await mongoose.connection.collection('completions')
+                .deleteMany({ hikeId: new mongoose.Types.ObjectId(hikeId) }).catch(() => ({ deletedCount: 0 }));
+            if (tolti.deletedCount > 0) {
+                const utenteA = await User.findById(idA);
+                if (utenteA) {
+                    utenteA.completedHikes = Math.max(0, (utenteA.completedHikes || 0) - tolti.deletedCount);
+                    const risultato = await recalculatePersonalPace(utenteA._id);
+                    utenteA.averagePaceUp = risultato.nuovoPaceUp;
+                    utenteA.averagePaceDown = risultato.nuovoPaceDown;
+                    recalculateExperienceLevel(utenteA, risultato.osservazioni.length > 0);
+                    await utenteA.save();
+                }
+            }
+        }
 
         const fine = {
             utenti: await mongoose.connection.collection('users').countDocuments(),

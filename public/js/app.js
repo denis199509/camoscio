@@ -557,15 +557,20 @@ function renderNotificationBell() {
         return;
     }
 
+    // Punto 81: una notifica legata a un'escursione (oggi solo il promemoria "non hai
+    // ancora completato", relatedHikeId - lib/hikeStats.js) porta li' invece di limitarsi a
+    // segnarsi come letta: aprire il campanello gia' la segna letta da sola (vedi sotto),
+    // quindi cliccarla sopra puo' fare qualcosa di piu' utile.
     list.innerHTML = notifications.map(n => `
-        <div class="notification-item ${n.read ? '' : 'unread'}" onclick="markNotificationRead('${n.id}')">
+        <div class="notification-item ${n.read ? '' : 'unread'}" onclick="${n.relatedHikeId ? `goToHikeToComplete('${n.relatedHikeId}')` : `markNotificationRead('${n.id}')`}">
             ${escapeHtml(n.text)}
             <span class="notification-time">${new Date(n.createdAt).toLocaleString([], { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
         </div>
     `).join("");
 }
 
-// Segna una notifica come letta al click
+// Segna una notifica come letta al click - solo quelle senza un posto dove portare
+// (relatedHikeId assente, vedi renderNotificationBell sopra).
 window.markNotificationRead = async function(notificationId) {
     const notif = window.CamoscioState.notifications.find(n => n.id === notificationId);
     if (!notif || notif.read) return;
@@ -576,6 +581,21 @@ window.markNotificationRead = async function(notificationId) {
         renderNotificationBell();
     } catch (e) {
         console.error("Errore nel segnare la notifica come letta:", e);
+    }
+};
+
+// Punto 81: aprire il pannello del campanello basta a considerare tutto letto, senza dover
+// cliccare ogni notifica una per una - chiesto esplicitamente da Denis.
+window.markAllNotificationsRead = async function() {
+    const db = window.CamoscioState;
+    if (!db.notifications.some(n => !n.read)) return;
+
+    try {
+        await fetch('/api/notifications/read-all', { method: 'PUT' });
+        db.notifications.forEach(n => { n.read = true; });
+        renderNotificationBell();
+    } catch (e) {
+        console.error("Errore nel segnare tutte le notifiche come lette:", e);
     }
 };
 
@@ -615,6 +635,10 @@ function setupNotificationBell() {
             dropdown.style.top = (bellRect.bottom + 8) + "px";
             dropdown.style.left = left + "px";
             dropdown.style.right = "auto";
+
+            // Punto 81: aprire il pannello basta a considerare tutto letto - chiesto
+            // esplicitamente da Denis, non serve piu' cliccare ogni notifica una per una.
+            window.markAllNotificationsRead();
         }
     });
 

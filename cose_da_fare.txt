@@ -3383,17 +3383,64 @@ segnare un'escursione preferita voglio usare il simbolo del camoscio."
      Rilanciate le prove di regressione (configurazione 9/9, punto37 27/27,
      punto45 23/23, punto77 16/16 - quest'ultima esercita per davvero
      complete-group/applyHikeCompletionStats, punto79 26/26): tutte verdi.
-     TROVATO PER CASO, NON RISOLTO (fuori scope, annotato per quando serve):
-     4 dei 6 Completion di Marco Alpinista puntano a escursioni ormai
-     cancellate dal database (probabili residui di prove di sessioni
-     precedenti) - GET /api/hikes non li mostra piu' (punto 77, invisibili a
-     chi non e' piu' partecipante di un'escursione sparita) quindi restano
-     invisibili anche nell'interfaccia, ma pesano comunque sul database.
-     recalculatePersonalPace li scarta gia' correttamente (nessun
-     elevationGain a cui riferirsi). Da ripulire un giorno con uno script
-     dedicato, filtrato per userId, se si vuole recuperare quello spazio -
-     non urgente (vincolo spazio, 512 MB, oggi non e' un problema pratico).
+     TROVATO PER CASO, RISOLTO PIU' TARDI NELLA STESSA GIORNATA (punto 81
+     sotto): 4 dei 6 Completion di Marco Alpinista puntavano a escursioni
+     ormai cancellate dal database - la causa vera (prova-punto77.js non
+     puliva il Completion che il suo stesso test creava) e' stata trovata e
+     corretta lo stesso giorno, vedi punto 81. Non piu' un problema aperto.
 
    Denis ha chiesto di fermarsi qui per oggi (resta solo B). Tutto il lavoro
    di questo punto (E, F, D, C, G, A) COMMITTATO E PUSHATO a fine sessione,
    verificato live su Render - vedi leggimi.txt per i riferimenti ai commit.
+
+--- NOTIFICHE: SEGNARE COME LETTE E ANDARE ALL'ESCURSIONE ---
+
+81) [FATTO 2026-08-11] Denis, in un solo messaggio: "Quando arriva la
+notifica sulla campana, clicco sopra e leggo le notifiche. Per segnarle
+come lette devo cliccare sopra. Secondo me basta cliccare una volta sulla
+campana e una volta che si apre la finestra delle notifiche si possono
+considerare come lette. Invece per le notifiche delle escursioni. Arriva la
+notifica della escursione da completare, cliccando sopra mi deve riportare
+alla pagina del escursione per poterla chiudere. [...] Apro il sito vedo
+una notifica e sulla campana ce il numero 1. clicco sulla campana e il
+numero 1 sparisce (notifica letta). Cliccando invece sulla notifica, per
+esempio la notifica di completare la notifica del escursione prova.
+cliccando sulla notifica si deve aprire la pagina con lescursione cosi
+clicco completa ed e' fatta."
+   Due cambi distinti. Rotta nuova PUT /api/notifications/read-all
+   (Notification.updateMany, filtrata per req.session.userId come tutte le
+   altre) richiamata all'apertura del pannello (setupNotificationBell,
+   app.js) - il badge sparisce senza dover cliccare ogni notifica una per
+   una. Il click su una singola notifica ora guarda relatedHikeId (gia'
+   presente nello schema dal punto 64, prima mai letto dal frontend): se
+   c'e' (oggi solo il promemoria "non hai ancora completato"), porta su "Le
+   mie escursioni" e apre/scrolla la scheda giusta (window.goToHikeToComplete,
+   social.js) invece di limitarsi a segnare letto - il tasto "Completa
+   escursione" vive solo li', su "Organizzate da me", e il promemoria lo
+   manda solo al creatore, quindi la scheda c'e' sempre. Aggiunto
+   data-hike-id alla scheda (mai un id fisso, la stessa escursione compare
+   anche altrove) per trovarla, scoped a #my-hikes-created per non prendere
+   per sbaglio la copia sbagliata quando la stessa escursione compare anche
+   su "Escursioni".
+   TROVATO E CORRETTO UN BUG VERO, non collegato alla richiesta ma scoperto
+   controllando i numeri prima di testare dal vivo: "Escursioni Fatte" di
+   Marco Alpinista mostrava 22 invece del suo vero valore. Causa:
+   prove/prova-punto77.js completa un'escursione vera per l'account "A"
+   (sempre Marco, primo della lista demo) per provare la visibilita' dopo
+   la conclusione, ma il suo cleanup cancellava solo l'escursione, mai il
+   Completion che quel completamento aveva creato - ogni volta che la prova
+   veniva rilanciata in una sessione passata, restava un residuo orfano
+   sull'account di Marco (5 in tutto, l'ultimo aggiunto dal mio stesso
+   controllo di regressione di oggi). Corretto lo script (ora ripulisce
+   anche il Completion e ricalcola passo/livello di A con la stessa
+   recalculatePersonalPace del punto 80/A, mai una seconda matematica) e
+   pulito l'accumulo sull'account di Marco: 22 -> 17 (il suo vero numero),
+   passo invariato (123/176, nessuno dei residui aveva un tempo reale).
+   Verificato dal vivo nel browser: badge sparisce all'apertura della
+   campana (controllato anche lato server, 0 notifiche non lette), click
+   sulla notifica "Monte Gennaro" porta su "Le mie escursioni" con la
+   scheda gia' aperta e scrollata in vista. Nessun errore in console.
+   Prove di regressione rilanciate (configurazione 9/9, punto37 27/27,
+   punto45 23/23, punto77 16/16 - stavolta senza lasciare residui,
+   verificato rilanciandola due volte di fila - punto79 26/26): tutte
+   verdi.
