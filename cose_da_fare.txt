@@ -1485,6 +1485,8 @@ dalle tracce: 5 tracce in una zona = salita di livello, 30+ = livello massimo
       in chilometri, non un elenco di zone con nome fisso). NESSUN CODICE SCRITTO:
       restano da definire i livelli intermedi (punto 63b qui sotto, "ci devo pensare"
       di Denis) prima di poter scrivere il calcolo automatico.
+      Committato e pushato insieme al resto di questa sessione (`483c3ef`),
+      verificato live su Render.
 
 --- ESCURSIONI ---
 
@@ -2622,6 +2624,7 @@ perche' ci devo pensare."
          I LIVELLI restano in sospeso, Denis ci deve ancora pensare:
          non richiederlo finche' non ne parla lui (vedi punto 42a nel
          vault, raggio gia' deciso a 20 km).
+         Committato e pushato (`483c3ef`), verificato live su Render.
 
 --- COMPLETAMENTO DI GRUPPO DAL CREATORE ---
 

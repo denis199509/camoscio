@@ -1,8 +1,8 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
 Aggiornato: 2026-08-16 notte (le quattro decisioni ferme chieste e
-risposte da Denis; due piccoli cambi fatti nel codice, non ancora
-committati - vedi STATO ATTUALE sotto)
+risposte da Denis; due piccoli cambi nel codice committati e pushati
+- vedi STATO ATTUALE sotto)
 ===================================================================
 
 QUESTO FILE DICE SOLO UNA COSA: a che punto siamo adesso e da dove si ricomincia.
@@ -43,19 +43,19 @@ o ne arriva uno nuovo.
          Rilevato" ora blu, "Standard CAI Alpino" ora arancione.
          public/js/app.js, renderPaceChart.
 
-    >>> I due FATTO sopra (2 e 4) NON sono ancora committati ne' pushati
-    - in attesa che Denis dica se procedere. VERIFICATI DAL VIVO nel
+    >>> I due FATTO sopra (2 e 4) sono stati VERIFICATI DAL VIVO nel
     browser (account demo Marco Alpinista, sessione gia' autenticata,
-    nessuna password inserita): grafico coerente, campo "Esperto
-    locale:" presente. UNA COSA DA FAR NOTARE A DENIS: "Sono un esperto
-    locale" (casella) ed "Esperto locale:" (etichetta campo, subito
-    sotto) si leggono vicini e un po' ripetuti - non un errore, e' quello
-    che ha chiesto, ma meglio che lo veda prima di chiudere del tutto.
+    nessuna password inserita) e poi COMMITTATI E PUSHATI col via libera
+    esplicito di Denis: camoscio `483c3ef`, vault `11fb54f`. Verificato
+    anche live su Render. UNA COSA DA FAR NOTARE A DENIS SE NON L'HA GIA'
+    VISTA: "Sono un esperto locale" (casella) ed "Esperto locale:"
+    (etichetta campo, subito sotto) si leggono vicini e un po' ripetuti -
+    non e' un errore, e' quello che ha chiesto lui, screenshot gia'
+    mandati in chat.
 
     >>> RIPARTIRE DA: nessun lavoro tecnico pronto. Restano aperti solo
     i "livelli" del punto 63b (Denis deve pensarci, non richiederlo) e
-    il dominio email (rimandato da lui). Prima di qualunque altro lavoro,
-    chiedere il via libera per il commit dei due FATTO sopra.
+    il dominio email (rimandato da lui).
 
     Punto 80 (camoscio bf2d72d, vault f0ec371): "Le mie escursioni" ha
     ora una sola sezione "Escursioni completate" al posto delle due
