@@ -1,7 +1,7 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-16 (punto 80 chiuso per intero, tutti e sette i
-sotto-punti E/F/D/C/G/A/B - committato, non ancora pushato)
+Aggiornato: 2026-08-16 sera (punto 80 chiuso e pushato; punto 45 progettato
+per intero con l'agente architect, NIENTE CODICE SCRITTO - si riparte da li')
 ===================================================================
 
 QUESTO FILE DICE SOLO UNA COSA: a che punto siamo adesso e da dove si ricomincia.
@@ -46,14 +46,38 @@ o ne arriva uno nuovo.
     Nessuna rotta server toccata. Regressione 101/101 (configurazione,
     punto37, punto45, punto77, punto79) + verifica dal vivo nel browser.
 
-    COMMITTATO, NON ANCORA PUSHATO (ne' su Render): da decidere con Denis
-    quando pushare, come gia' fatto per il resto del punto 80.
+    COMMITTATO E PUSHATO (camoscio bf2d72d, vault f0ec371), verificato live
+    su Render (i cinque file cambiati confermati con curl dopo il deploy).
 
-    RIPARTIRE DA: nessun lavoro grande in coda. Aspettare la prossima
-    richiesta di Denis. Resta aperto, non bloccante, in attesa di una sua
-    decisione (formato e tetto della foto): il pezzo foto/tasto ancora
-    sospeso del punto 45 - non riproporlo, aspettare che torni lui
-    sull'argomento.
+    >>> RIPARTIRE DA: punto 45, foto sulle segnalazioni + tasto piu' trovabile.
+    Stessa sessione, DOPO aver chiuso il punto 80: Denis ha deciso le tre
+    scelte che mancavano (testo completo del suo ragionamento in
+    cose_da_fare.txt punto 45) - foto ridimensionata/compressa IN AUTOMATICO
+    dal browser (tetto ~300-400 KB), risolvere una segnalazione la CANCELLA
+    per intero (non piu' "resolved per sempre" come oggi), conferma
+    obbligatoria prima di risolvere, chi non si risolve mai sparisce da sola
+    dopo 30 giorni (indice TTL), anteprima nell'elenco solo un'iconcina 📷.
+    IDEA DI DENIS: il tasto "piu' trovabile" prende il POSTO del pulsante
+    flottante a scarpone del tracciamento (mai un secondo tasto flottante) -
+    le due cose che solo quel pannello offriva (escursione collegata, mappa
+    offline) si spostano sulla pagina Mappa vicino a "Comincia registrazione".
+    Piano tecnico COMPLETO validato dall'agente architect PRIMA di scrivere
+    codice - ha trovato piu' rischi veri (non dettagli): oggi chiunque loggato
+    potrebbe "risolvere" anche una segnalazione mai moderata (con la
+    cancellazione diventerebbe distruttivo, serve un controllo in piu' sullo
+    stato); togliere il blocco sbagliato dal pannello del tracciamento avrebbe
+    rotto le statistiche live a meta' escursione; il menu "escursione
+    collegata" spostato sulla mappa resterebbe vuoto per sempre senza una
+    chiamata in piu' per popolarlo. Riepilogo tecnico completo (schema dati,
+    rotte nuove, come comprimere la foto nel browser, dove va il nuovo
+    pulsante) in [[04-Da-Fare]] del vault, sezione punto 45 - e' li' che si
+    riparte, NON da capo. Una lista di 11 passi concreti (in ordine di
+    dipendenza: modello dati -> rotte server -> compressore immagine nuovo ->
+    tasto/pannello -> spostamento controlli tracciamento -> prove) e' stata
+    preparata ma vive negli strumenti di questa sessione, non e' detto sia
+    visibile alla prossima - il riepilogo nel vault basta comunque a
+    ricostruirla. NESSUN FILE DI CODICE toccato: solo cose_da_fare.txt,
+    leggimi.txt e il vault sono cambiati stasera.
 
     ---- Chiuso prima di questa sessione (dettaglio in cose_da_fare.txt) ----
     Punti 81 e 82 chiusi e pushati l'11/08 (campana/notifiche con un bug

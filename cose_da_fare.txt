@@ -1628,6 +1628,42 @@ inseriamo noi.
       Il formato e il tetto della foto vanno ancora decisi PRIMA di scrivere quel
       codice, come gia' scritto sopra.
 
+   -> SESSIONE 16/08/2026: decise le scelte che mancavano, NIENTE CODICE SCRITTO
+      (Denis ha chiesto di fermarsi prima di iniziare). Decisioni prese CON Denis
+      in chat, ragionamento suo:
+        - foto: l'utente carica, il BROWSER la ridimensiona e comprime da solo
+          prima di inviarla (tetto ~300-400 KB dopo compressione, stesso principio
+          delle foto profilo - base64/Buffer nel documento Mongo, perche' Render
+          perde i file su disco ad ogni riavvio - ma tetto piu' basso);
+        - risolvere una segnalazione = cancellarla per intero (foto compresa), non
+          piu' solo "status: resolved" per sempre com'e' oggi - parole di Denis:
+          "cancelliamo la foto e la segnalazione una volta che il pericolo non c'e'
+          piu'";
+        - chi non viene mai risolta sparisce da sola dopo 30 giorni (indice TTL su
+          createdAt - non serve nessuno script/cron a parte, lo fa MongoDB);
+        - risolvere richiede una conferma (come gia' oggi per "rifiuta" in
+          moderazione): con la cancellazione vera un tocco sbagliato distrugge
+          l'avviso per tutti, non lo nasconde piu';
+        - anteprima nell'elenco/mappa: solo un'iconcina 📷 se c'e' una foto, mai
+          la foto vera finche' non si apre quella segnalazione;
+        - IDEA DI DENIS, non mia: il tasto "piu' trovabile" prende il POSTO del
+          pulsante flottante a scarpone del tracciamento (mai un secondo tasto
+          flottante insieme) - "non serve piu' il tasto dello scarpone per
+          cominciare il tracciamento", perche' esiste gia' un tasto dedicato
+          "Comincia registrazione" sulla pagina Mappa (punto 14) che fa la stessa
+          cosa. Le due cose che SOLO il pannello del vecchio scarpone offriva -
+          scegliere l'escursione collegata, scaricare la mappa offline - si
+          spostano sulla pagina Mappa vicino a quel tasto, cosi' non si perde
+          nulla (proposto da me, non ancora obiettato da Denis ma nemmeno confermato
+          parola per parola - da ricontrollare all'inizio della prossima sessione).
+      Piano tecnico completo validato dall'agente `architect` PRIMA di scrivere
+      codice (trovati alcuni rischi veri, non solo dettagli: vedi il riepilogo in
+      [[04-Da-Fare]] del vault, sezione punto 45). Da li' si riparte, in ordine:
+      modello Report (campo foto + indice TTL) -> rotte server (foto, cancellazione
+      alla risoluzione) -> compressore immagine nuovo (nessuno strumento del
+      genere esiste ancora nel progetto) -> nuovo tasto/pannello di segnalazione
+      rapida -> spostamento dei controlli del tracciamento sulla Mappa -> prove.
+
 --- CARPOOLING ---
 
 46) [FATTO 2026-08-01] L'utente ha pubblicato la disponibilita' della propria auto per il
