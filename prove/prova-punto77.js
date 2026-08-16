@@ -17,7 +17,7 @@ const mongoose = require('mongoose');
 // matematica del resto del progetto (lib/hikeStats.js, punto 80/A), mai ricalcolata a mano
 // una seconda volta qui.
 const User = require('../models/User');
-const { recalculatePersonalPace, recalculateExperienceLevel } = require('../lib/hikeStats');
+const { recalculatePersonalPace, applyPersonalPace, recalculateExperienceLevel } = require('../lib/hikeStats');
 
 const PORTA = 3104;
 const BASE = `http://localhost:${PORTA}`;
@@ -171,8 +171,18 @@ function vedeEscursione(risposta, hikeId) {
                 if (utenteA) {
                     utenteA.completedHikes = Math.max(0, (utenteA.completedHikes || 0) - tolti.deletedCount);
                     const risultato = await recalculatePersonalPace(utenteA._id);
-                    utenteA.averagePaceUp = risultato.nuovoPaceUp;
-                    utenteA.averagePaceDown = risultato.nuovoPaceDown;
+                    // A e' SEMPRE un account demo (il primo di /api/auth/demo-accounts), e i 4
+                    // demo del seed hanno un passo assegnato a mano senza completamenti a
+                    // giustificarlo: se questa pulizia lo lasciasse a zero osservazioni,
+                    // applicare il risultato gli CANCELLEREBBE quel passo (dal 16/08/2026
+                    // "zero osservazioni" vuol dire "campo assente", non piu' 350/500). Stessa
+                    // regola gia' seguita da scripts/ricalcola-passo-personale.js: a zero
+                    // osservazioni non si scrive. Una prova non deve lasciare l'account demo
+                    // peggio di come l'ha trovato - e' la stessa lezione del residuo orfano
+                    // che ha fatto nascere questa pulizia (punto 81).
+                    if (risultato.osservazioni.length > 0) {
+                        applyPersonalPace(utenteA, risultato);
+                    }
                     recalculateExperienceLevel(utenteA, risultato.osservazioni.length > 0);
                     await utenteA.save();
                 }

@@ -56,8 +56,28 @@ const userSchema = new mongoose.Schema({
     username: { type: String, required: true, unique: true, trim: true },
     reputation: { type: Number, default: 50 },
     completedHikes: { type: Number, default: 0 },
-    averagePaceUp: { type: Number, default: 350 },
-    averagePaceDown: { type: Number, default: 500 },
+    // IL CAMPO ASSENTE VUOL DIRE "MAI MISURATO", e non e' la stessa cosa di "350".
+    // Prima del 16/08/2026 questi due campi nascevano con 350/500 gia' scritti addosso: un
+    // account appena registrato, senza una sola escursione, mostrava in Dashboard "Velocita'
+    // Ascesa 350 m/h" e un grafico a barre piene, indistinguibili da una misura vera
+    // (segnalato da Denis su un account reale). Un'ipotesi di calcolo mostrata come un dato
+    // rilevato e' esattamente il vincolo hard 7 ("niente promesse che il sito non puo'
+    // mantenere"), e default: undefined e' anche la regola del vincolo hard 1 quando "non
+    // c'e' ancora" e' il caso normale.
+    // Chi scrive qui: SOLO il server, ricostruendo da tutte le osservazioni vere presenti
+    // (recalculatePersonalPace + applyPersonalPace in lib/hikeStats.js) - mai il client
+    // (non sono in SELF_EDITABLE_FIELDS, routes/users.js).
+    // ECCEZIONE VOLUTA: i 4 account demo del seed (scripts/seed-data.json) hanno un passo
+    // assegnato a mano SENZA completamenti a giustificarlo, per simulare un utente esperto -
+    // scelta gia' presa e approvata. Per loro il campo c'e' ed e' giusto che si veda: e'
+    // anche il motivo per cui "campo presente = mostralo" basta al frontend senza bisogno di
+    // guardare isDemoAccount.
+    // Il numero 350/500 continua a esistere come IPOTESI DI CALCOLO dove un divisore serve
+    // comunque (DEFAULT_PACE_UP/DOWN in lib/hikeStats.js, calculateHikeTimes in
+    // public/js/profile.js): li' serve un numero, il divieto riguarda solo mostrarlo
+    // all'utente spacciandolo per "il tuo passo rilevato".
+    averagePaceUp: { type: Number, default: undefined },
+    averagePaceDown: { type: Number, default: undefined },
     // Calcolato automaticamente dallo storico escursioni (vedi routes/hikes.js) - MAI autodichiarato
     experienceLevel: {
         type: String,

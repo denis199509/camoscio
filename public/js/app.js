@@ -666,16 +666,41 @@ function renderDashboard() {
     document.getElementById("stat-stamps-count").textContent = window.CamoscioState.stamps.length;
     document.getElementById("stat-reputation").textContent = `${usr.reputation}%`;
 
-    // Sezione Passo Personalizzato
-    document.getElementById("pace-up-val").textContent = usr.averagePaceUp;
-    document.getElementById("pace-down-val").textContent = usr.averagePaceDown;
-    
+    // Sezione Passo Personalizzato.
+    // IL PASSO SI MOSTRA SOLO SE E' STATO MISURATO. Il campo esiste sul documento utente solo
+    // quando c'e' almeno un'osservazione vera dietro (models/User.js: default undefined dal
+    // 16/08/2026, ricostruito da recalculatePersonalPace in lib/hikeStats.js) - quindi qui
+    // basta guardare se il numero c'e', senza nessun controllo su isDemoAccount: i 4 account
+    // demo hanno un passo assegnato a mano apposta ed e' giusto che continuino a vederlo.
+    // Prima di oggi ogni utente nasceva con 350/500 gia' scritti e la Dashboard li mostrava
+    // come "passo rilevato" a chi non aveva mai camminato: un'ipotesi travestita da misura,
+    // cioe' la stessa bugia gia' evitata poche righe piu' sotto in renderTrackingTotals per
+    // la velocita' media ("senza tempo registrato non e' zero, e' che non si sa ancora").
+    const paceUp = Number(usr.averagePaceUp);
+    const paceDown = Number(usr.averagePaceDown);
+    const passoMisurato = Number.isFinite(paceUp) && paceUp > 0 && Number.isFinite(paceDown) && paceDown > 0;
+
+    document.getElementById("pace-up-val").textContent = passoMisurato ? paceUp : "—";
+    document.getElementById("pace-down-val").textContent = passoMisurato ? paceDown : "—";
     // Indice di fatica: CAI standard stima 400m/h in salita.
-    const fatigueIndex = (400 / usr.averagePaceUp).toFixed(2);
-    document.getElementById("pace-index-val").textContent = fatigueIndex;
+    document.getElementById("pace-index-val").textContent = passoMisurato ? (400 / paceUp).toFixed(2) : "—";
+
+    // Le unita' di misura seguono il numero: "— m/h" e "—x rispetto a CAI" sarebbero due
+    // frasi che promettono un dato che non c'e' (vedi index.html, .pace-unit).
+    for (const id of ["pace-up-unit", "pace-down-unit", "pace-index-unit"]) {
+        const unita = document.getElementById(id);
+        if (unita) unita.classList.toggle("hidden", !passoMisurato);
+    }
+
+    const notaPasso = document.getElementById("dash-pace-note");
+    if (notaPasso) {
+        notaPasso.textContent = passoMisurato
+            ? ""
+            : "Il tuo passo non è ancora stato misurato: completa un'escursione indicando il tempo impiegato (o allegando la traccia .gpx) e questi numeri compariranno.";
+    }
 
     // Disegna il grafico del passo
-    renderPaceChart(usr);
+    renderPaceChart(usr, passoMisurato);
 
     // Punto 16: i totali reali di distanza, dislivello e velocita' media. Non si aspetta la
     // sua risposta (nessun await): il resto della Dashboard deve comparire subito, e i tre
@@ -821,7 +846,13 @@ function renderProfileCard(usr) {
 
 // Disegna il grafico delle prestazioni di ascesa/discesa con Chart.js
 let paceChartInstance = null;
-function renderPaceChart(user) {
+// "passoMisurato" arriva da renderDashboard, che ha gia' guardato se il numero esiste: senza
+// una misura vera la barra blu NON si disegna e la sua voce sparisce anche dalla legenda -
+// una barra alta 350 m/h disegnata su un'ipotesi e' la stessa bugia dei tre numeri sopra, e
+// una legenda che promette "Tuo Passo Rilevato" senza nessuna barra sotto sarebbe pure
+// peggio (sembrerebbe un guasto). Resta il solo Standard CAI Alpino, che e' un riferimento
+// vero e non una supposizione su chi guarda.
+function renderPaceChart(user, passoMisurato) {
     const ctx = document.getElementById("paceChart");
     if (!ctx) return;
 
@@ -829,29 +860,29 @@ function renderPaceChart(user) {
         paceChartInstance.destroy();
     }
 
+    const datasetUtente = {
+        label: 'Tuo Passo Rilevato',
+        data: [Number(user.averagePaceUp), Number(user.averagePaceDown)],
+        backgroundColor: 'rgba(76, 126, 144, 0.65)',
+        borderColor: '#4C7E90',
+        borderWidth: 2,
+        borderRadius: 6
+    };
+    const datasetCai = {
+        label: 'Standard CAI Alpino',
+        data: [400, 600],
+        backgroundColor: 'rgba(193, 102, 46, 0.25)',
+        borderColor: '#C1662E',
+        borderWidth: 2,
+        borderRadius: 6
+    };
+
     // Dati per il grafico: confronta il passo dell'utente con lo standard CAI
     paceChartInstance = new Chart(ctx, {
         type: 'bar',
         data: {
             labels: ['Ascesa (m/ora)', 'Discesa (m/ora)'],
-            datasets: [
-                {
-                    label: 'Tuo Passo Rilevato',
-                    data: [user.averagePaceUp, user.averagePaceDown],
-                    backgroundColor: 'rgba(76, 126, 144, 0.65)',
-                    borderColor: '#4C7E90',
-                    borderWidth: 2,
-                    borderRadius: 6
-                },
-                {
-                    label: 'Standard CAI Alpino',
-                    data: [400, 600],
-                    backgroundColor: 'rgba(193, 102, 46, 0.25)',
-                    borderColor: '#C1662E',
-                    borderWidth: 2,
-                    borderRadius: 6
-                }
-            ]
+            datasets: passoMisurato ? [datasetUtente, datasetCai] : [datasetCai]
         },
         options: {
             responsive: true,

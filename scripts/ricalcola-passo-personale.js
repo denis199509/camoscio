@@ -14,11 +14,16 @@
 //
 // QUESTO SCRIPT NON SCRIVE MAI SU UN UTENTE CON ZERO OSSERVAZIONI: a differenza delle rotte
 // online, dove "zero osservazioni" per un utente vero significa davvero "nessuna prova sul
-// passo, torna al default", qui significherebbe anche azzerare gli utenti demo del seed
-// (scripts/seed-data.json), che hanno un passo assegnato a mano e "completions": [] apposta -
-// senza prove ma NON al default. recalculatePersonalPace calcola comunque il valore che
-// SAREBBE il default in quel caso: e' compito di questo script, non della funzione
-// condivisa, decidere se scriverlo.
+// passo, il campo va tolto", qui significherebbe anche cancellare il passo degli utenti demo
+// del seed (scripts/seed-data.json), che hanno un passo assegnato a mano e "completions": []
+// apposta - senza prove ma con un valore voluto. recalculatePersonalPace in quel caso torna
+// null (dal 16/08/2026, non piu' 350/500): e' compito del chiamante, non della funzione
+// condivisa, decidere se applicarlo.
+//
+// PER SVUOTARE il passo di chi non ha nessuna osservazione dietro c'e' uno script apposta,
+// scripts/azzera-passo-non-misurato.js (conguaglio una tantum degli account registrati
+// quando lo schema scriveva 350/500 a tutti): due lavori diversi, due script diversi, cosi'
+// un --scrivi dato per sbaglio qui non puo' cancellare niente.
 //
 // Uso: node scripts/ricalcola-passo-personale.js                  (mostra cosa cambierebbe, tutti)
 //      node scripts/ricalcola-passo-personale.js --scrivi          (scrive per davvero, tutti)
@@ -49,9 +54,10 @@ const { recalculatePersonalPace } = require('../lib/hikeStats');
 
         const cambiato = nuovoPaceUp !== user.averagePaceUp || nuovoPaceDown !== user.averagePaceDown;
         const conMovimento = osservazioni.filter(o => o.conMovimento).length;
+        const passoOggi = (user.averagePaceUp == null) ? 'non misurato' : `${user.averagePaceUp}/${user.averagePaceDown}`;
         console.log(
             `${user.username}: ${osservazioni.length} osservazioni (${conMovimento} con tempo di solo cammino) — ` +
-            `passo ${user.averagePaceUp}/${user.averagePaceDown} -> ${nuovoPaceUp}/${nuovoPaceDown}` +
+            `passo ${passoOggi} -> ${nuovoPaceUp}/${nuovoPaceDown}` +
             (cambiato ? '' : '  (invariato)')
         );
 

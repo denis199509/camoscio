@@ -7,7 +7,7 @@ const { mongoose } = require('../db/mongo');
 const { haversineKm } = require('../lib/geometry');
 const { tempiTraccia } = require('../lib/gpx');
 const { calcolaDaPercorso } = require('../lib/percorso');
-const { recalculatePersonalPace, recalculateExperienceLevel } = require('../lib/hikeStats');
+const { recalculatePersonalPace, applyPersonalPace, recalculateExperienceLevel } = require('../lib/hikeStats');
 
 // Ottieni le escursioni già segnate come completate da un utente
 router.get('/:userId', requireAuth, async (req, res) => {
@@ -97,10 +97,10 @@ router.post('/:id/gpx', requireAuth, async (req, res) => {
         // Punto 80/A: passo ricostruito da zero sulle osservazioni oggi presenti (mai in
         // modo incrementale - lib/hikeStats.js) - questa rotta cambia le osservazioni
         // disponibili per QUESTO completamento, quindi il passo va sempre riallineato,
-        // anche se il risultato finale coincide col default (nessuna osservazione valida).
+        // anche quando non resta nessuna osservazione valida (in quel caso applyPersonalPace
+        // toglie il campo: "non misurato", non 350).
         const risultato = await recalculatePersonalPace(user._id);
-        user.averagePaceUp = risultato.nuovoPaceUp;
-        user.averagePaceDown = risultato.nuovoPaceDown;
+        applyPersonalPace(user, risultato);
         recalculateExperienceLevel(user, risultato.osservazioni.length > 0);
         await user.save();
 
@@ -139,11 +139,12 @@ router.delete('/:id', requireAuth, async (req, res) => {
         user.completedHikes = Math.max(0, (user.completedHikes || 0) - 1);
 
         // Passo ricostruito da zero SENZA questo completamento - se era l'unica prova sul
-        // passo personale, torna al default: un valore ormai orfano di qualunque
-        // osservazione mentirebbe restando fermo dov'era (vedi lib/hikeStats.js).
+        // passo personale il campo sparisce (dal 16/08/2026 non torna piu' al default 350/
+        // 500, che era anch'esso un numero senza niente dietro): un valore ormai orfano di
+        // qualunque osservazione mentirebbe sia restando fermo dov'era sia tornando a un
+        // default (vedi applyPersonalPace in lib/hikeStats.js).
         const risultato = await recalculatePersonalPace(user._id);
-        user.averagePaceUp = risultato.nuovoPaceUp;
-        user.averagePaceDown = risultato.nuovoPaceDown;
+        applyPersonalPace(user, risultato);
         recalculateExperienceLevel(user, risultato.osservazioni.length > 0);
         await user.save();
 

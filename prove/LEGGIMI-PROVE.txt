@@ -29,6 +29,19 @@ poi, in un'altra finestra:
     node prove/prova-configurazione.js               9 controlli  (non serve il server)
     node prove/prova-registrazione-senza-email.js    7 controlli  (ne avvia uno suo sulla 3100)
 
+La prova del PASSO NON MISURATO (16/08/2026) non vuole il server acceso, ma legge il
+database (in SOLA lettura: l'unica interrogazione vera e' su un id inesistente, quindi non
+crea e non pulisce niente):
+
+    node prove/prova-passo-non-misurato.js          28 controlli
+
+    Sorveglia la regola "non misurato non e' 350": che un utente nuovo nasca SENZA
+    averagePaceUp/averagePaceDown, che recalculatePersonalPace torni null a zero
+    osservazioni e applyPersonalPace tolga il campo invece di scriverci un numero, e che
+    calculateHikeTimes continui a dare un tempo previsto dichiarando pero' che non e' "il
+    tuo passo". Controprova fatta il giorno stesso sul codice di prima (git worktree su
+    HEAD): 7 controlli cadono, la prova sta guardando davvero quello che dice.
+
 La prova del PUNTO 35 vuole anche Puppeteer (vedi sotto), ma non legge il log:
 
     PUPPETEER_PATH=... node prove/prova-punto35.js  16 controlli

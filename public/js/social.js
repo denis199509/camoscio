@@ -468,7 +468,16 @@ function buildHikeCard(hike) {
     const tempoHtml = hike.routeSource
         ? (() => {
             const tempi = calculateHikeTimes(hike, currentUser);
-            return `<p class="small text-muted rp-nota-dislivello"><i data-lucide="clock"></i><span>Tempo previsto: <b>${tempi.standardText}</b> (CAI standard) · <b>${tempi.customText}</b> sul tuo passo. Percorso: ${escapeHtml(hike.routeSource.nome)}.</span></p>`;
+            // "sul tuo passo" si scrive SOLO se un passo misurato esiste davvero. Senza
+            // misure il calcolo usa un'ipotesi di partenza (350 m/h, vedi calculateHikeTimes):
+            // stamparla accanto alla parola "tuo" e' lo stesso difetto trovato da Denis sulla
+            // card Passo & Fatica in Dashboard - un numero inventato che sembra personale.
+            // Il tempo CAI standard invece si mostra sempre: e' calcolato sui dati veri del
+            // percorso collegato e non dice niente su chi guarda.
+            const parteMia = tempi.passoMisurato
+                ? ` · <b>${tempi.customText}</b> sul tuo passo`
+                : '';
+            return `<p class="small text-muted rp-nota-dislivello"><i data-lucide="clock"></i><span>Tempo previsto: <b>${tempi.standardText}</b> (CAI standard)${parteMia}. Percorso: ${escapeHtml(hike.routeSource.nome)}.</span></p>`;
         })()
         : `<p class="small text-muted rp-nota-dislivello"><i data-lucide="info"></i><span>Tempo previsto non disponibile: per questa escursione non è ancora stato scelto un percorso reale, quindi non si può sapere quanto ci vorrà davvero. Dislivello e distanza qui sopra sono quelli indicati da chi l'ha organizzata.</span></p>`;
 
