@@ -3585,6 +3585,18 @@ h1, h2, h3, h4, h5, h6 {
     letter-spacing: 0.03em;
 }
 
+/* Punto 80/B: riga a parte per i bottoni azione (carica gpx/cestino), iniettati via
+   azioniHtml da schedaEscursioneCompletata/schedaUscitaProfilo (userprofile.js) solo
+   sulla propria pagina "Le mie escursioni" - MAI dentro .outing-card-head, che su
+   schedaEscursioneCompletata ha gia' i suoi badge distribuiti con space-between e con
+   piu' di due elementi diventerebbe illeggibile. */
+.outing-card-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 4px;
+    margin-top: 8px;
+}
+
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* ==========================================================================

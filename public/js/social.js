@@ -403,14 +403,21 @@ function renderMyHikes() {
 
     document.getElementById("count-created").textContent = create.length;
     document.getElementById("count-joined").textContent = partecipo.length;
-    document.getElementById("count-done").textContent = fatte.length;
 
     riempiGruppo("my-hikes-created", create,
         "Non hai ancora organizzato nessuna escursione. Puoi crearne una dalla sezione Escursioni.");
     riempiGruppo("my-hikes-joined", partecipo,
         "Non sei iscritto a nessuna escursione in programma. Guarda quelle degli altri nella sezione Escursioni.");
-    riempiGruppo("my-hikes-done", fatte,
-        "Nessuna escursione completata per ora. Dopo un'uscita ricordati di segnarla come completata.");
+
+    // Punto 80/B: "Gia' fatte" e "Uscite registrate" sono ora un'unica lista visiva
+    // (public/js/storico.js, renderCompletate) - vive li' perche' e' l'unico file che ha
+    // gia' la parte ASINCRONA della sezione (fetch delle sessioni, cancellazione,
+    // caricamento gpx). Chiamata senza await (fire-and-forget): renderMyHikes resta
+    // sincrona, non fa aspettare i dodici punti che passano da renderHikesList qui sopra.
+    // Scrive da sola il proprio contatore (#count-completate) quando la sua fetch
+    // finisce - #my-hikes-summary qui sotto conta invece SOLO le escursioni sociali
+    // (fatte.length), non cambia significato.
+    if (window.renderCompletate) window.renderCompletate(fatte);
 
     const riepilogo = document.getElementById("my-hikes-summary");
     if (riepilogo) {
@@ -955,7 +962,14 @@ window.deleteCompletion = async function(completionId, hikeId) {
         'Il tuo passo personale verrà ricalcolato senza questa escursione.',
         'Non potrai più scrivere né ricevere recensioni per questa escursione.',
         '',
-        'I badge che hai conquistato restano nel passaporto.'
+        'I badge che hai conquistato restano nel passaporto.',
+        // Punto 80/B: se questa escursione aveva anche un tracciamento dal vivo collegato
+        // (public/js/tracking.js, completeLinkedHike), quella traccia GPS non viene
+        // toccata da questo cestino - resterebbe visibile come voce a parte in questa
+        // stessa lista. Riga sempre presente (non si sa qui se il caso ricorre davvero,
+        // controllarlo servirebbe una fetch in piu' per un'informazione che non cambia la
+        // decisione di procedere) invece di lasciarlo scoprire come sorpresa dopo il click.
+        'Se avevi anche registrato il percorso col GPS, quella traccia resta separata nello storico.'
     ];
     const procedi = window.showConfirmModal
         ? await window.showConfirmModal(righe.join('\n'), 'Elimina', { cancelLabel: 'Cancella', danger: true })

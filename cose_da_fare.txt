@@ -3393,6 +3393,91 @@ segnare un'escursione preferita voglio usare il simbolo del camoscio."
    di questo punto (E, F, D, C, G, A) COMMITTATO E PUSHATO a fine sessione,
    verificato live su Render - vedi leggimi.txt per i riferimenti ai commit.
 
+   - B [FATTO 2026-08-16, validato con l'agente architect PRIMA di scrivere
+     codice - la piu' grande dei sette, come previsto dall'ordine dato da
+     Denis]: "Gia' fatte" (Completion) e "Uscite registrate" (ActiveHikeSession)
+     unite in una sola sezione "Escursioni completate" su "Le mie escursioni".
+     DUE pipeline dati restano separate (mai un modello solo) - fuse SOLO come
+     lista visiva, stesso schema gia' provato in renderProfileHikes (punto 74):
+     le voci-escursione (compact schedaEscursioneCompletata) e le voci-uscita
+     (compact schedaUscitaProfilo, gia' esistente in userprofile.js) ordinate
+     insieme per data. A differenza del profilo pero' qui servono i bottoni
+     azione (carica gpx/cestino sui completamenti dalla Parte A, cestino sulle
+     uscite gia' esistente) - le due funzioni condivise hanno preso un
+     parametro opzionale azioniHtml (mai deciso con un "isOwnProfile" interno,
+     sempre iniettato da chi chiama: il profilo, anche il proprio, resta sola
+     lettura). Esportate insieme come window.CamoscioSchedeCompatte.
+     RISCHIO VERO TROVATO DALL'AGENTE PRIMA DI SCRIVERE CODICE (stesso tipo di
+     buco della Parte A, stavolta di visualizzazione non di calcolo): un
+     tracciamento dal vivo collegato a un'escursione sociale
+     (trackingState.hikeId, public/js/tracking.js) puo', con un click esplicito
+     dell'utente a fine escursione ("Segna l'escursione collegata come
+     completata"), generare SIA una ActiveHikeSession con quel hikeId SIA un
+     Completion per la stessa escursione - la STESSA camminata reale mostrata
+     due volte in un elenco unito senza pensarci. Risolto: si costruiscono
+     PRIMA le voci-escursione (solo quelle che hanno davvero una card, cioe'
+     l'hike e' ancora in db.hikes CON un mio Completion), si raccoglie
+     l'insieme dei hikeId gia' rappresentati, e SOLO DOPO si scartano le
+     sessioni il cui hikeId e' in quell'insieme - mai il contrario. Motivo:
+     l'agente ha trovato un caso raggiungibile per davvero in cui un Completion
+     esiste ma NON produce nessuna card (l'organizzatore chiude il
+     completamento di gruppo togliendo la spunta a chi si era auto-completato
+     da solo - complete-group, routes/hikes.js - il Completion resta sul
+     database ma quell'hike sparisce da db.hikes per chi non e' piu'
+     partecipante, quindi da 'fatte'/classificaMieEscursioni). Con la regola
+     nell'ordine sbagliato quella sessione sarebbe sparita nel nulla invece di
+     restare l'unica prova visibile della camminata. Al massimo UNA sessione
+     per hikeId viene tolta (un Completion e' unico per utente+escursione, ma
+     due sessioni con lo stesso hikeId sono possibili - tracciamento chiuso per
+     sbaglio e ripreso - la seconda resta comunque una traccia GPS vera).
+     STILE DELLE CARD: l'agente ha raccomandato il compatto uniforme (non la
+     card ricca di buildHikeCard) con tre motivi concreti - niente si perde
+     davvero (la card ricca, coi bottoni della Parte A compresi, resta
+     su "Escursioni" -> "Completate", mai toccata da questo punto), quello che
+     manca nella versione compatta (descrizione, tag, partecipanti, veto) non
+     serve piu' dopo che l'escursione e' conclusa, e la lista unificata cresce
+     per sempre quindi la densita' conta. Confermato provando: nessuna perdita
+     di funzionalita' reale, solo un secondo posto (gia' esistente) dove
+     vedere la card intera.
+     CANCELLAZIONE ASIMMETRICA (scelta presa senza fermare la sessione,
+     riga aggiunta invece di una rotta nuova - vedi sotto): cancellare il
+     Completion (cestino su una card-escursione) NON tocca la sessione
+     collegata, che a quel punto ricompare come voce a parte - corretto
+     (la traccia GPS e i suoi km restano veri) ma sorprendente senza
+     spiegazione. Aggiunta una riga alla conferma di deleteCompletion
+     (public/js/social.js): "Se avevi anche registrato il percorso col GPS,
+     quella traccia resta separata nello storico." Sempre presente (non vale
+     una fetch in piu' solo per sapere se il caso ricorre), nessuna rotta
+     nuova, nessun cambiamento nella cancellazione stessa - stessa onesta'
+     gia' applicata ovunque nel progetto (vincolo hard 7).
+     "I MIEI PROGETTI" (route drafts) promossa da sotto-sezione senza stile
+     dentro "Uscite registrate" (il gruppo appena sciolto) a gruppo proprio con
+     lo stesso .my-hikes-group-title degli altri tre - puramente
+     presentazionale, `.section-group-header` non aveva mai avuto una regola
+     CSS propria.
+     VERIFICATO CON DATI VERI, non solo a mente: creata via API una sessione di
+     prova (POST /start con l'hikeId di "Prova", gia' un Completion di Marco
+     Alpinista, 2 punti finti ~220m, POST /end) - la card di "Prova" e' rimasta
+     UNA sola, la sessione non e' comparsa come doppione. Creata una SECONDA
+     sessione con lo stesso hikeId: il contatore e' salito da 3 a 4, comparsa
+     UNA sola card nuova (l'altra sessione resta nascosta, come da regola
+     "al massimo una per hikeId") - esattamente il comportamento disegnato.
+     Entrambe le sessioni di prova cancellate con la stessa DELETE gia' in uso
+     dal sito, verificato che /api/tracking/sessions e' tornata IDENTICA
+     (stessi id, stessi valori) a prima della prova. Verificato dal vivo anche
+     il resto: conferma di cancellazione di un completamento (con la nuova
+     riga), conferma di cancellazione di un'uscita (testo invariato, ancora
+     legge titolo/tipo dal DOM via data-outing-id, preservato nella funzione
+     condivisa), la card ricca su "Escursioni" -> "Completate" intatta
+     (Mappa/capra/Chat/carica-gpx/cestino tutti presenti), il profilo proprio
+     (renderProfileHikes) ancora sola lettura senza bottoni. Nessun errore in
+     console durante l'intera prova. Prove di regressione rilanciate
+     (configurazione 9/9, punto37 27/27, punto45 23/23, punto77 16/16,
+     punto79 26/26 - 101/101): nessuna tocca il frontend toccato da questo
+     punto (nessuna rotta server modificata), rilanciate comunque per la
+     stessa disciplina di sempre.
+     PUNTO 80 CHIUSO PER INTERO (tutti e sette i sotto-punti E/F/D/C/G/A/B).
+
 --- NOTIFICHE: SEGNARE COME LETTE E ANDARE ALL'ESCURSIONE ---
 
 81) [FATTO 2026-08-11] Denis, in un solo messaggio: "Quando arriva la

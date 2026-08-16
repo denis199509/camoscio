@@ -38,46 +38,116 @@
         return ore > 0 ? `${ore}h ${minuti}min` : `${minuti} min`;
     }
 
-    // --- ELENCO DELLE USCITE ---
-
-    async function renderStorico() {
-        const box = document.getElementById('outings-list');
+    // --- ELENCO UNIFICATO "ESCURSIONI COMPLETATE" (punto 80/B) ---
+    //
+    // Prima erano due sezioni separate - "Già fatte" (Completion, un'escursione sociale
+    // segnata come completata) e "Uscite registrate" (ActiveHikeSession, gpx importato o
+    // tracciamento libero) - che a Denis raccontavano la stessa cosa: "quello che ho
+    // fatto". Restano DUE pipeline dati separate (mai fuse come modello), ma diventano
+    // UNA sola lista visiva, ordinata per data. Stesso principio già provato sul profilo
+    // utente (punto 74, renderProfileHikes in userprofile.js) - qui in più ci sono i
+    // bottoni azione (carica gpx/cestino) perché questa è la propria pagina, non un
+    // profilo altrui.
+    //
+    // DEDUPLICAZIONE: un tracciamento dal vivo collegato a un'escursione sociale
+    // (trackingState.hikeId, public/js/tracking.js) può, con un click esplicito
+    // dell'utente a fine escursione, generare SIA una ActiveHikeSession con quel hikeId
+    // SIA un Completion per la stessa escursione (completeLinkedHike -> POST
+    // /api/hikes/:id/complete) - la stessa camminata reale, mostrata due volte, se non si
+    // fa nulla. Si costruiscono PRIMA le voci-escursione (quelle che hanno davvero una
+    // card, cioè le hike ancora in db.hikes con un mio Completion - se l'organizzatore
+    // chiude il gruppo togliendo la spunta a chi si era auto-completato da solo, quel
+    // Completion resta sul database ma NON produce una card qui), e SOLO DOPO si
+    // scartano le sessioni il cui hikeId è fra quelle voci - mai il contrario, altrimenti
+    // una sessione con un hikeId "orfano" (nessuna card a rappresentarlo) sparirebbe nel
+    // nulla invece di restare l'unica prova visibile di quella camminata. Al massimo UNA
+    // sessione per hikeId viene tolta (un Completion è unico per utente+escursione, ma due
+    // sessioni con lo stesso hikeId sono possibili - tracciamento chiuso per sbaglio e
+    // ripreso - e la seconda resta comunque una traccia GPS vera da mostrare).
+    async function renderCompletate(fatte) {
+        const box = document.getElementById('completate-list');
+        const contatore = document.getElementById('count-completate');
         if (!box) return;
 
+        // renderMyHikes() (social.js) chiama questa funzione ad OGNI ridisegno di
+        // "Escursioni" (join/approva/rifiuta/preferito...), non solo quando si è
+        // davvero su "Le mie escursioni" - senza questa guardia partirebbe una fetch
+        // delle sessioni per una sezione nascosta a ogni azione fatta altrove. Quando la
+        // sezione torna visibile, triggerSectionRender (app.js) richiama comunque
+        // refreshState()+renderMyHikes() da capo: niente resta mai vecchio a schermo.
+        const sezione = document.getElementById('my-hikes');
+        if (!sezione || !sezione.classList.contains('active')) return;
+
+        // Le voci-escursione vengono da window.CamoscioState, già in memoria: si
+        // disegnano SEMPRE, anche se la fetch delle sessioni qui sotto fallisce. Cosa
+        // significa "degradare" in questa lista: si vede di meno (mancano le uscite
+        // registrate), mai qualcosa di sbagliato.
+        const db = window.CamoscioState;
+        const vociHike = (fatte || []).map(h => {
+            const completion = (db.completions || []).find(c => c.hikeId === h.id);
+            if (!completion) return null; // non dovrebbe succedere: 'fatte' viene proprio da lì
+            const azioni = `
+                <button class="btn btn-sm btn-secondary" style="padding:2px 6px;" onclick="uploadCompletionGpx('${completion.id}')" title="Carica un file .gpx per avere il tempo reale di questa escursione">
+                    <i data-lucide="upload"></i>
+                </button>
+                <button class="outing-card-del" onclick="deleteCompletion('${completion.id}', '${h.id}')" title="Cancella questa escursione dalle tue 'già fatte'" aria-label="Cancella questa escursione dalle tue 'già fatte'"><i data-lucide="trash-2"></i></button>
+            `;
+            return {
+                ordinamento: Date.parse(h.date) || 0,
+                hikeIdCollegato: h.id,
+                html: window.CamoscioSchedeCompatte.escursione(h, completion, { azioniHtml: azioni })
+            };
+        }).filter(Boolean);
+
+        const hikeIdGiaRappresentati = new Set(vociHike.map(v => v.hikeIdCollegato));
+
         let sessioni = [];
+        let erroreSessioni = false;
         try {
             const res = await fetch('/api/tracking/sessions');
             if (!res.ok) throw new Error('richiesta fallita');
             sessioni = await res.json();
         } catch (e) {
             console.error('Impossibile caricare lo storico delle uscite:', e);
-            box.innerHTML = `<div class="glass-card text-center py-4 text-muted">Non è stato possibile caricare lo storico. Riprova più tardi.</div>`;
-            return;
+            erroreSessioni = true;
         }
 
         // Le sessioni senza nemmeno un punto GPS non si mostrano: sono avvii annullati
         // o prove finite subito (ce n'e' piu' d'una sul database, da prove vere fatte dal
         // telefono). In un elenco di uscite fatte direbbero solo "0 km, 0 min".
+        // IL CONTATORE CONTA QUELLO CHE SI VEDE, non tutte le sessioni (punto 15, stessa
+        // regola di sempre - vedi la spiegazione storica lasciata più sotto in questo file).
         const vere = sessioni.filter(s => (s.distanceKm || 0) > 0.05);
+        const vociUscita = vere
+            .filter(s => {
+                if (s.hikeId && hikeIdGiaRappresentati.has(s.hikeId)) {
+                    hikeIdGiaRappresentati.delete(s.hikeId); // al massimo una per hikeId, vedi sopra
+                    return false;
+                }
+                return true;
+            })
+            .map(s => ({
+                ordinamento: Date.parse(s.startedAt) || 0,
+                html: window.CamoscioSchedeCompatte.uscita(s, {
+                    azioniHtml: `<button class="outing-card-del" data-del-outing="${esc(s.id)}" title="Cancella questa uscita dallo storico" aria-label="Cancella questa uscita dallo storico"><i data-lucide="trash-2"></i></button>`
+                })
+            }));
 
-        // IL CONTATORE CONTA QUELLO CHE SI VEDE, non tutte le sessioni.
-        // Segnalato dall'utente il 2026-07-27: "vedo 3 registrazioni ma solo due file
-        // importati e visibili". Aveva ragione, ed era un difetto vero: il contatore
-        // diceva 3 perche' contava anche un avvio di tracciamento a zero punti GPS, che
-        // l'elenco giustamente nasconde. Un numero che promette una scheda che non c'e'
-        // e' la stessa classe di difetto delle finte "sfide in corso" del punto 19.
-        const contatore = document.getElementById('count-outings');
-        if (contatore) contatore.textContent = vere.length;
+        const tutte = [...vociHike, ...vociUscita].sort((a, b) => b.ordinamento - a.ordinamento);
+        if (contatore) contatore.textContent = tutte.length;
 
-        if (vere.length === 0) {
+        if (tutte.length === 0 && !erroreSessioni) {
             box.innerHTML = `<div class="glass-card text-center py-4 text-muted">
-                Nessuna uscita registrata per ora. Avvia il tracciamento dalla Mappa durante
-                un'escursione, oppure carica qui sopra un file .gpx di un'uscita già fatta.
+                Nessuna escursione completata per ora. Dopo un'uscita ricordati di segnarla
+                come completata, oppure carica qui sopra un file .gpx di un'uscita già fatta.
             </div>`;
             return;
         }
 
-        box.innerHTML = `<div class="outings-grid">${vere.map(schedaUscita).join('')}</div>`;
+        const avvisoErrore = erroreSessioni
+            ? `<div class="glass-card text-center py-3 text-muted">Le escursioni completate sono aggiornate; non è stato possibile caricare anche le uscite registrate col GPS. Riprova più tardi.</div>`
+            : '';
+        box.innerHTML = avvisoErrore + (tutte.length ? `<div class="outings-grid">${tutte.map(v => v.html).join('')}</div>` : '');
 
         // Un ascoltatore solo sul contenitore invece di uno per scheda: le schede vengono
         // ridisegnate ad ogni caricamento, e agganciarli uno per uno vorrebbe dire
@@ -125,7 +195,10 @@
             }
             if (window.showToast) window.showToast('Uscita cancellata dallo storico.', 'success');
 
-            await renderStorico();
+            // Punto 80/B: non piu' renderStorico() (la sezione non esiste piu' da sola) -
+            // renderMyHikes() ridisegna anche i contatori in cima alla pagina, non solo la
+            // lista, e a cascata richiama renderCompletate() qui sotto con le hike fresche.
+            if (window.renderMyHikes) window.renderMyHikes();
             // I totali cambiano, e cambia anche quanti file puoi ancora caricare questo
             // mese: si rileggono entrambi invece di lasciare due numeri vecchi a schermo.
             if (window.renderDashboard) window.renderDashboard();
@@ -159,41 +232,9 @@
         } catch (e) { /* la nota resta com'e': non vale un messaggio d'errore */ }
     }
 
-    function schedaUscita(s) {
-        const importata = s.importedFrom === 'gpx';
-        const titolo = importata && s.importedName
-            ? esc(s.importedName)
-            : dataItaliana(s.startedAt);
-
-        // Il sottotitolo ripete la data solo quando il titolo e' un nome, per non
-        // scrivere due volte la stessa cosa.
-        const sottotitolo = (importata && s.importedName) ? dataItaliana(s.startedAt) : '';
-
-        return `
-            <div class="outing-card" data-outing-id="${esc(s.id)}">
-                <div class="outing-card-head">
-                    <span class="outing-card-title">${titolo}</span>
-                    ${importata
-                        ? `<span class="badge badge-accent outing-tag" title="Traccia caricata da un file .gpx, non registrata dal sito"><i data-lucide="upload"></i> importata</span>`
-                        : `<span class="badge badge-green outing-tag" title="Registrata col GPS durante l'escursione"><i data-lucide="satellite-dish"></i> registrata</span>`}
-                    <button class="outing-card-del" data-del-outing="${esc(s.id)}"
-                            title="Cancella questa uscita dallo storico"
-                            aria-label="Cancella questa uscita dallo storico"><i data-lucide="trash-2"></i></button>
-                </div>
-                ${sottotitolo ? `<span class="outing-card-sub">${sottotitolo}</span>` : ''}
-                <div class="outing-card-stats">
-                    <div><strong>${(s.distanceKm || 0).toFixed(1).replace('.', ',')}</strong><span>km</span></div>
-                    <div><strong>${Math.round(s.elevationGainM || 0)}</strong><span>m disliv.</span></div>
-                    ${s.durationUnknown
-                        // Il file non aveva gli orari: si scrive che la durata non si sa,
-                        // invece di un trattino muto che sembrerebbe un dato mancante per
-                        // sbaglio. Il titolo spiega anche la conseguenza, che e' la cosa
-                        // che uno si chiede guardando la Dashboard.
-                        ? `<div title="Il file .gpx non conteneva gli orari dei punti, quindi la durata non si può ricavare. Questa uscita non entra nel tempo totale né nella velocità media, che restano così corretti."><strong>—</strong><span>durata ignota</span></div>`
-                        : `<div><strong>${durata(s.durationSeconds)}</strong><span>durata</span></div>`}
-                </div>
-            </div>`;
-    }
+    // La card compatta di una singola uscita ora vive in userprofile.js
+    // (schedaUscitaProfilo, esportata come window.CamoscioSchedeCompatte.uscita) - punto
+    // 80/B, per non avere due copie della stessa formula fra questo file e il profilo.
 
     // --- CARICAMENTO DI UN FILE .GPX ---
 
@@ -292,7 +333,9 @@
                 </span>`, 'ok');
 
             aggiornaNotaQuota(dati.caricatiQuestoMese, dati.massimoAlMese);
-            await renderStorico();
+            // Punto 80/B: vedi la stessa nota in cancellaUscita qui sopra - renderMyHikes()
+            // e non piu' renderStorico(), che non esiste piu' da solo.
+            if (window.renderMyHikes) window.renderMyHikes();
 
             // Se sono stati conquistati dei badge, i timbri sul database sono cambiati e
             // quelli in memoria no: senza rileggerli, il Passaporto e la pagina Badge
@@ -376,6 +419,11 @@
         });
     }
 
-    window.renderStorico = renderStorico;
+    // Punto 80/B: non piu' window.renderStorico - l'unico chiamante esterno era
+    // triggerSectionRender (app.js), che ora passa da renderMyHikes() (social.js) come
+    // ogni altra azione di questa pagina. renderCompletate resta pensata per un solo
+    // chiamante, renderMyHikes: nessun altro deve richiamarla direttamente, altrimenti i
+    // contatori in cima a "Le mie escursioni" restano vecchi.
+    window.renderCompletate = renderCompletate;
     window.initStorico = initStorico;
 })();

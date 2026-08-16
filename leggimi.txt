@@ -1,7 +1,7 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-11 sera (punto 80: 6 dei 7 sotto-punti fatti e pushati,
-resta solo B - punti 81 e 82 chiusi per intero nella stessa sessione)
+Aggiornato: 2026-08-16 (punto 80 chiuso per intero, tutti e sette i
+sotto-punti E/F/D/C/G/A/B - committato, non ancora pushato)
 ===================================================================
 
 QUESTO FILE DICE SOLO UNA COSA: a che punto siamo adesso e da dove si ricomincia.
@@ -27,69 +27,39 @@ o ne arriva uno nuovo.
 
 
 
->>> STATO ATTUALE (11/08/2026 sera): punto 80 APERTO, IN CORSO - 7 richieste
-    di Denis su "Le mie escursioni", preferiti e foto profilo (testo
-    completo e ragionamento in cose_da_fare.txt punto 80). Piano gia'
-    approvato per intero. Denis ha chiesto di ordinarle dal piu' piccolo al
-    piu' grande e farle una alla volta, fermandosi quando serve - non e'
-    un lavoro grande "a via libera" come 42b/43/64 o 67-77.
+>>> STATO ATTUALE (16/08/2026): punto 80 CHIUSO PER INTERO - tutti e sette
+    i sotto-punti (E/F/D/C/G/A/B) fatti, verificati e committati. Dettaglio
+    completo di ciascuno in cose_da_fare.txt punto 80 (la Parte B, l'ultima
+    e la piu' grande, ha il suo blocco appena aggiunto in fondo al punto).
 
-    ORDINE DATO: E (toast) -> F (marker mappa) -> D (foto profilo) -> C
-    (modale cancellazione) -> G (preferiti) -> A (rotte gpx retroattivo +
-    ricalcolo passo) -> B (unificare le due liste - va per ultima, usa A e
-    C, e chiude da sola anche il "4h53" senza codice a parte).
+    Riassunto brevissimo: "Le mie escursioni" ora ha UNA sola sezione
+    "Escursioni completate" al posto delle due vecchie voci ("Gia' fatte" +
+    "Uscite registrate") - stessa idea gia' provata sul profilo utente
+    (punto 74), validata con l'agente architect PRIMA di scrivere codice
+    perche' un tracciamento dal vivo collegato a un'escursione puo' creare
+    sia un Completion sia una ActiveHikeSession per la STESSA camminata:
+    trovata e risolta la deduplicazione (mai nascondere una sessione se non
+    c'e' davvero una card a rappresentarla), verificata con dati veri creati
+    e poi cancellati via API (non solo a mente). Chiude da solo anche il
+    vecchio "4h53" (mai stato un tempo reale). "I miei progetti" promossa a
+    gruppo proprio, non piu' annidata sotto la sezione appena sciolta.
+    Nessuna rotta server toccata. Regressione 101/101 (configurazione,
+    punto37, punto45, punto77, punto79) + verifica dal vivo nel browser.
 
-    FATTI, VERIFICATI E PUSHATI (account demo Marco Alpinista, riportato
-    come prima ogni volta): E, F, D, C, G, A - dettaglio completo di
-    ciascuno in cose_da_fare.txt punto 80. Commit: E/F/D/C in d230ccf, G in
-    474c7d9, A in 486e867 (+ fa42903, correzione di una nota). Verificato
-    live su Render dopo il push (vedi sotto).
+    COMMITTATO, NON ANCORA PUSHATO (ne' su Render): da decidere con Denis
+    quando pushare, come gia' fatto per il resto del punto 80.
 
-    La Parte A e' stata la piu' delicata: validata con l'agente architect
-    PRIMA di scrivere codice (rischio vero trovato: due matematiche diverse
-    per lo stesso passo personale, unificate in recalculatePersonalPace,
-    lib/hikeStats.js - dettaglio in cose_da_fare.txt e
-    03-Decisioni-Architetturali.md del vault). Verificata a mano via API
-    (numeri ricalcolati a mano e combaciati, ricaricare lo stesso file due
-    volte non raddoppia il passo) e dal vivo nel browser, dove e' stato
-    trovato e corretto un bug vero (apostrofo in un titolo rompeva l'onclick
-    del cestino). Regressione: 101/101 su cinque prove.
-
-    RESTA SOLO: B, l'unificazione vera e propria di "Gia' fatte" e "Uscite
-    registrate" in una sola sezione - usa le rotte appena fatte in A e il
-    modale di C, chiude da sola anche il "4h53" quando Denis riallega il suo
-    gpx vero alla "prova" (si vede gia' funzionare: provato a mano sull'
-    account demo). Denis ha chiesto di fermarsi qui per oggi.
-
-    RIPARTIRE DA: Parte B (vedi piano approvato, sezione "Parte B") - solo
-    dopo il via libera di Denis, che ha chiesto di fermarsi punto per punto.
-
-    Stessa sessione, dopo la chiusura del punto 80: chiuso anche il punto
-    81 (Denis, richiesta piccola e separata) - campana che segna tutto come
-    letto al solo aprirsi, click su una notifica di completamento che porta
-    dritto alla scheda dell'escursione. Trovato e corretto per strada un
-    bug vero: prove/prova-punto77.js lasciava un residuo (Completion mai
-    ripulito) sull'account demo Marco Alpinista ad ogni lancio - "Escursioni
-    Fatte" mostrava 22 invece di 17. Corretti sia lo script sia l'accumulo.
-    Dettaglio completo in cose_da_fare.txt punto 81 e nel vault
-    (07-Trappole-Tecniche.md).
-
-    Ancora la stessa sessione: chiuso il punto 82 - badge personale del
-    team assegnato a Camilla e Bob84 (i due account veri registrati il
-    10/08). Dettaglio in cose_da_fare.txt punto 82.
+    RIPARTIRE DA: nessun lavoro grande in coda. Aspettare la prossima
+    richiesta di Denis. Resta aperto, non bloccante, in attesa di una sua
+    decisione (formato e tetto della foto): il pezzo foto/tasto ancora
+    sospeso del punto 45 - non riproporlo, aspettare che torni lui
+    sull'argomento.
 
     ---- Chiuso prima di questa sessione (dettaglio in cose_da_fare.txt) ----
-    Punto 62 (foto profilo nel widget in alto copriva mezza schermata,
-    .avatar-icon senza dimensione fissa) chiuso e pushato (0bce55d). Agente
-    "designer" creato e provato sulla Dashboard, pushato (8f918c9) - resta
-    aperto solo un dettaglio di colore nel Calcolatore Passo & Fatica, non
-    deciso. Punto 79 (cammino/pause separati da un .gpx) chiuso e pushato
-    (6e2248f) - il passo gia' calcolato di Denis prima di oggi non e' stato
-    toccato, si corregge da solo con la prossima escursione con gpx (la
-    Parte A del punto 80, sopra, e' esattamente questo).
-
-    Resta aperto, da prima: quando Denis decidera' formato e tetto della
-    foto, il pezzo foto/tasto ancora sospeso del punto 45.
+    Punti 81 e 82 chiusi e pushati l'11/08 (campana/notifiche con un bug
+    vero corretto in prova-punto77.js; badge personali di Camilla e Bob84).
+    Punto 62 (foto profilo nel widget copriva mezza schermata) e punto 79
+    (cammino/pause separati da un .gpx) chiusi l'11/08 e prima.
 
 >>> COSE FUORI SCOPE, NON RIPROPORLE finche' non torna Denis sull'argomento:
     - Tracciamento GPS a pagina chiusa (impossibile via browser, non difficile

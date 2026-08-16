@@ -473,11 +473,11 @@ function triggerSectionRender(sectionId) {
                 if (window.renderHikesList) window.renderHikesList();
                 break;
             case "my-hikes":
+                // Punto 80/B: renderMyHikes() ora richiama da sola anche la lista
+                // unificata "Escursioni completate" (renderCompletate, storico.js) -
+                // niente piu' una seconda chiamata qui, sarebbe stata una sezione
+                // ridisegnata due volte a ogni ingresso in pagina.
                 if (window.renderMyHikes) window.renderMyHikes();
-                // Punto 15: lo storico delle uscite registrate/importate vive nella stessa
-                // pagina ma legge da un'altra rotta (le sessioni di tracciamento, non le
-                // escursioni), quindi si aggiorna per conto suo.
-                if (window.renderStorico) window.renderStorico();
                 if (window.renderProgetti) window.renderProgetti(); // punto 13: i miei progetti
                 break;
             case "badges":

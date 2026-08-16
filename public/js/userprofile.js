@@ -74,9 +74,11 @@ window.CamoscioProfileIdentity = { render: renderProfileIdentity };
 //  - Completion (escursioni create sul sito e completate, singole o in gruppo - punto 64),
 //    incrociate con window.CamoscioState.hikes (gia' in cache, GET /api/hikes non e' filtrata
 //    per utente) per avere titolo/data/stato.
-// Le card delle uscite riprendono lo stesso stile di schedaUscita() in storico.js (stesse
-// classi .outing-card*, gia' in CSS) ma senza il tasto di cancellazione: cancellare una
-// propria uscita ha senso solo da "Le mie escursioni", non qui.
+// Le card di schedaEscursioneCompletata/schedaUscitaProfilo qui sotto sono le stesse
+// riusate, con i bottoni azione (carica gpx/cestino), dalla propria pagina "Le mie
+// escursioni" (punto 80/B, public/js/storico.js) - qui invece SENZA azioniHtml: restano
+// sola lettura, perche' questa funzione disegna anche il profilo di un ALTRO utente e
+// cancellare una propria escursione/uscita ha senso solo dalla propria pagina.
 function formattaDataItaliana(iso) {
     const d = new Date(iso);
     if (isNaN(d)) return '';
@@ -90,7 +92,13 @@ function formattaDurata(secondi) {
     return ore > 0 ? `${ore}h ${minuti}min` : `${minuti} min`;
 }
 
-function schedaEscursioneCompletata(hike, completion) {
+// Punto 80/B: azioniHtml è iniettato dal chiamante, mai deciso qui dentro con un
+// controllo tipo "isOwnProfile" - questa stessa funzione la chiama anche il profilo di
+// UN ALTRO utente (renderProfileHikes qui sotto, sempre sola lettura), e un controllo
+// interno sbagliato metterebbe il cestino sul profilo di qualcun altro. Chi chiama con
+// azioniHtml (public/js/storico.js, la propria pagina "Le mie escursioni") decide cosa
+// mostrare; chi non lo passa resta sola lettura come sempre.
+function schedaEscursioneCompletata(hike, completion, { azioniHtml = '' } = {}) {
     const esc = window.escapeHtml;
 
     // Punto 79: se questa persona ha un tempo di cammino reale misurato da un .gpx per
@@ -131,16 +139,20 @@ function schedaEscursioneCompletata(hike, completion) {
                 <div><strong>${Math.round(hike.maxAltitude || 0)}</strong><span>quota max</span></div>
             </div>
             ${tempoRealeHtml}
+            ${azioniHtml ? `<div class="outing-card-actions">${azioniHtml}</div>` : ''}
         </div>`;
 }
 
-function schedaUscitaProfilo(s) {
+// Stesso principio di azioniHtml spiegato sopra su schedaEscursioneCompletata.
+// data-outing-id resta SEMPRE presente (anche in sola lettura): cancellaUscita
+// (public/js/storico.js) lo usa per ritrovare titolo/tipo della scheda cliccata.
+function schedaUscitaProfilo(s, { azioniHtml = '' } = {}) {
     const esc = window.escapeHtml;
     const importata = s.importedFrom === 'gpx';
     const titolo = importata && s.importedName ? esc(s.importedName) : formattaDataItaliana(s.startedAt);
     const sottotitolo = (importata && s.importedName) ? formattaDataItaliana(s.startedAt) : '';
     return `
-        <div class="outing-card">
+        <div class="outing-card" data-outing-id="${esc(s.id)}">
             <div class="outing-card-head">
                 <span class="outing-card-title">${titolo}</span>
                 ${importata
@@ -155,8 +167,13 @@ function schedaUscitaProfilo(s) {
                     ? `<div title="Il file .gpx non conteneva gli orari dei punti: durata non disponibile."><strong>—</strong><span>durata ignota</span></div>`
                     : `<div><strong>${formattaDurata(s.durationSeconds)}</strong><span>durata</span></div>`}
             </div>
+            ${azioniHtml ? `<div class="outing-card-actions">${azioniHtml}</div>` : ''}
         </div>`;
 }
+// Punto 80/B: superficie pubblica esplicita per queste due card compatte - riusate da
+// public/js/storico.js (Le mie escursioni, con azioniHtml) oltre che da qui sotto
+// (profilo, sempre sola lettura). Un'unica formula per card, mai una copia per file.
+window.CamoscioSchedeCompatte = { escursione: schedaEscursioneCompletata, uscita: schedaUscitaProfilo };
 
 async function renderProfileHikes(userId, container) {
     if (!container) return;
