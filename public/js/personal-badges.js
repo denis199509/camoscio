@@ -45,6 +45,11 @@
             icon: "bob84-pescara.png",
             titolo: "Pescara sopra tutto. Anche sopra i 2000.",
             descrizione: "La quota può cambiare, la fede no. In vetta come allo stadio, sempre biancazzurro."
+        },
+        "6a7b643da0bc42ac66955583": { // Nicolo97
+            icon: "nicolo-football.png",
+            titolo: "Fuori sentiero, dentro il football",
+            descrizione: "Viene in montagna con noi quando il calendario del football americano glielo permette. Se c’è una partita, la vetta può aspettare. Prima il touchdown, poi il dislivello."
         }
     };
 
