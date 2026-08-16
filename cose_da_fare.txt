@@ -1481,6 +1481,10 @@ dalle tracce: 5 tracce in una zona = salita di livello, 30+ = livello massimo
       vetta mai raggiunta assente dall'elenco) e dal vivo nel browser sui tre punti che
       mostrano badge. Dati di prova rimossi.
       LA META' (a), zona di competenza, RESTA FERMA: Denis deve ancora decidere il raggio.
+   -> RAGGIO DECISO IL 2026-08-16 (notte): 20 km. Confermato anche lo stile (un raggio
+      in chilometri, non un elenco di zone con nome fisso). NESSUN CODICE SCRITTO:
+      restano da definire i livelli intermedi (punto 63b qui sotto, "ci devo pensare"
+      di Denis) prima di poter scrivere il calcolo automatico.
 
 --- ESCURSIONI ---
 
@@ -2598,12 +2602,26 @@ perche' ci devo pensare."
          giusto, badge veri di Denis ancora visibili sotto, nessun
          errore. Profilo di Luca TrailRunner (nessun esperto locale
          attivo): riquadro vuoto, nessun buco nel layout.
-     (b) [IN SOSPESO PER RICHIESTA ESPLICITA DI DENIS: "ci devo
-         pensare"] rinominare "competenza" (parole sue: "non e' che
+     (b) [NOME DECISO E FATTO IL 2026-08-16 (notte), LIVELLI ANCORA IN SOSPESO]
+         rinominare "competenza" (parole sue: "non e' che
          la zona e' di competenza, e' solo conoscenza migliore del
          territorio") e i "vari livelli" gia' annotati nel punto 42
          del vault (la domanda sul raggio, mai risposta) - NON
          toccare finche' non decide lui, e' lui stesso a chiederlo.
+         -> NOME: "Esperto locale" (Denis ha scartato esplicitamente
+         "Zona (Esperto locale)"). FATTO in public/index.html: il
+         campo dove si scrive la zona (label for="local-expert-area")
+         non dice piu' "Zona di competenza:" ma "Esperto locale:" -
+         sta subito sotto la casella "Sono un esperto locale", quindi
+         le due scritte ora compaiono vicine. VERIFICATO DAL VIVO
+         (2026-08-16, notte, account demo Marco Alpinista, sessione
+         gia' autenticata nel browser - nessuna password inserita):
+         le due scritte si leggono davvero vicine e un po' ripetute
+         ("Sono un esperto locale" subito sopra "Esperto locale:") -
+         non e' un errore, ma vale la pena farlo notare a Denis.
+         I LIVELLI restano in sospeso, Denis ci deve ancora pensare:
+         non richiederlo finche' non ne parla lui (vedi punto 42a nel
+         vault, raggio gia' deciso a 20 km).
 
 --- COMPLETAMENTO DI GRUPPO DAL CREATORE ---
 

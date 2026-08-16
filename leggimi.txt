@@ -1,7 +1,8 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-16 sera (punto 45 chiuso per intero, committato e
-pushato - era l'ULTIMO dei lavori grandi in coda: 37/48/55/45 tutti fatti)
+Aggiornato: 2026-08-16 notte (le quattro decisioni ferme chieste e
+risposte da Denis; due piccoli cambi fatti nel codice, non ancora
+committati - vedi STATO ATTUALE sotto)
 ===================================================================
 
 QUESTO FILE DICE SOLO UNA COSA: a che punto siamo adesso e da dove si ricomincia.
@@ -27,24 +28,34 @@ o ne arriva uno nuovo.
 
 
 
->>> STATO ATTUALE (16/08/2026 sera): NESSUN LAVORO TECNICO IN CODA. I
-    quattro "lavori grandi" concordati (37, 48, 55, 45) sono tutti chiusi.
-    Il punto 80 (7 sotto-punti su "Le mie escursioni"/preferiti/foto
-    profilo) e il punto 45 sono stati chiusi entrambi in questa sessione.
+>>> STATO ATTUALE (16/08/2026, notte): le quattro decisioni ferme sono
+    state chieste (sessione aperta con /remote-control) e Denis ha
+    risposto a tutte. Dettaglio completo in [[04-Da-Fare]] del vault,
+    sezione "Le quattro decisioni" in cima al file. Riassunto:
+      1. Punto 42a (raggio zona) — DECISO: 20 km. Codice non scritto,
+         resta legato ai "livelli" del punto 2.
+      2. Punto 63b (nome) — DECISO E FATTO: "Esperto locale" (non "Zona
+         Esperto Locale"). public/index.html, campo local-expert-area.
+         I LIVELLI restano in sospeso, Denis ci deve ancora pensare.
+      3. Dominio email proprio — Denis ha risposto "non ora": rimandato
+         per sua scelta, non piu' da chiedere finche' non ci torna lui.
+      4. Colore grafico Passo & Fatica — DECISO E FATTO: "Tuo Passo
+         Rilevato" ora blu, "Standard CAI Alpino" ora arancione.
+         public/js/app.js, renderPaceChart.
 
-    >>> RIPARTIRE DA: quattro decisioni ferme in attesa di Denis (chiesto
-    a lui esplicitamente il 16/08/2026 sera di aprire la prossima sessione
-    con queste, PRIMA di qualunque altro lavoro). Dettaglio completo in
-    [[04-Da-Fare]] del vault, sezione "Aperti, in attesa di una decisione
-    di Denis":
-      1. Punto 42a — raggio della "zona di competenza" (chiesto 29/07).
-      2. Punto 63b — nuovo nome (non piu' "competenza") e i "livelli"
-         (chiesto 03/08).
-      3. Dominio email proprio, per non finire in spam (SPF/DKIM) - spesa
-         e volonta' di Denis, non tecnica.
-      4. Colore del grafico "Calcolatore Passo & Fatica" in Dashboard
-         (numeri blu, grafico arancione) - il piu' piccolo dei quattro,
-         puramente estetico.
+    >>> I due FATTO sopra (2 e 4) NON sono ancora committati ne' pushati
+    - in attesa che Denis dica se procedere. VERIFICATI DAL VIVO nel
+    browser (account demo Marco Alpinista, sessione gia' autenticata,
+    nessuna password inserita): grafico coerente, campo "Esperto
+    locale:" presente. UNA COSA DA FAR NOTARE A DENIS: "Sono un esperto
+    locale" (casella) ed "Esperto locale:" (etichetta campo, subito
+    sotto) si leggono vicini e un po' ripetuti - non un errore, e' quello
+    che ha chiesto, ma meglio che lo veda prima di chiudere del tutto.
+
+    >>> RIPARTIRE DA: nessun lavoro tecnico pronto. Restano aperti solo
+    i "livelli" del punto 63b (Denis deve pensarci, non richiederlo) e
+    il dominio email (rimandato da lui). Prima di qualunque altro lavoro,
+    chiedere il via libera per il commit dei due FATTO sopra.
 
     Punto 80 (camoscio bf2d72d, vault f0ec371): "Le mie escursioni" ha
     ora una sola sezione "Escursioni completate" al posto delle due
