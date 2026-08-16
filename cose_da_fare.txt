@@ -1565,7 +1565,7 @@ stata scelta: il sistema non puo' sapere quanto ci si mette.
 
 --- SEGNALAZIONI SULLO STATO DEI SENTIERI ---
 
-45) [FATTO IN PARTE 2026-08-08] Serve un modo di ricevere e gestire le segnalazioni sullo stato dei
+45) [FATTO 2026-08-16] Serve un modo di ricevere e gestire le segnalazioni sullo stato dei
 sentieri, sia quelle degli utenti sia quelle che arrivano da fuori e che
 inseriamo noi.
    ESISTE GIA' PIU' DI QUANTO SEMBRI, e conviene saperlo prima di ricominciare da
@@ -1663,6 +1663,40 @@ inseriamo noi.
       alla risoluzione) -> compressore immagine nuovo (nessuno strumento del
       genere esiste ancora nel progetto) -> nuovo tasto/pannello di segnalazione
       rapida -> spostamento dei controlli del tracciamento sulla Mappa -> prove.
+
+   -> SESSIONE 16/08/2026 (stessa sera, "si comincia con il codice"): FOTO e
+      tasto "piu' trovabile" costruiti e verificati - PUNTO 45 CHIUSO PER
+      INTERO, era l'ultimo dei lavori grandi rimasti nell'ordine concordato.
+      Costruito esattamente come deciso con Denis e come validato
+      dall'agente architect: Report.photo (Buffer, select:false) +
+      Report.hasPhoto, indice TTL 30 giorni sui report mai risolti;
+      GET /:id/photo (requireAuth, non gated moderatore); DELETE
+      /:id/resolve al posto della vecchia PATCH /:id - cancella per
+      intero, idempotente; compressore nuovo public/js/imagecompress.js
+      (ridimensionamento 1280->960->720px e qualita' JPEG a scendere, esce
+      al primo risultato sotto il tetto). Il vecchio pulsante a scarpone e'
+      sparito per davvero, sostituito da #report-fab che apre un pannello
+      con la posizione GPS gia' presa (nuovo CamoscioGeo.posizioneSegnalazione(),
+      accetta la posizione nota solo se fresca <60s e precisa <=50m). Il
+      click sulla mappa resta il flusso "preciso", invariato - condivide
+      ora la stessa funzione di invio del pannello nuovo. Escursione
+      collegata e mappa offline spostate vicino a "Comincia registrazione"
+      sulla pagina Mappa.
+      TROVATO E CORRETTO PROVANDO DAL VIVO: la foto in un popup di marker
+      poteva rendere il popup piu' alto dello spazio che Leaflet riesce a
+      recuperare (non conosce la barra fissa in cima alla pagina),
+      tagliando titolo e descrizione fuori dallo schermo - corretta con
+      un'anteprima piu' piccola solo li'.
+      prove/prova-punto45.js riscritta (23 -> 45 controlli). Regressione
+      (configurazione 9/9, punto37 27/27, punto77 16/16, punto79 26/26)
+      tutte verdi. Verificato anche dal vivo nel browser per intero: upload
+      foto vera compressa da 1,2 MB a 80 KB, moderazione con foto,
+      conferma, popup del marker, risoluzione con conferma e cancellazione
+      vera, flusso vecchio ancora funzionante. Non verificato a schermo il
+      layout mobile del nuovo riquadro (strumento di ridimensionamento
+      finestra non funzionante in questa sessione) - il CSS ricalca lo
+      stesso schema gia' in uso per .map-record-controls accanto.
+      Committato e pushato (3687aa6), verificato live su Render.
 
 --- CARPOOLING ---
 

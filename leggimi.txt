@@ -1,7 +1,7 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-16 sera (punto 80 chiuso e pushato; punto 45 progettato
-per intero con l'agente architect, NIENTE CODICE SCRITTO - si riparte da li')
+Aggiornato: 2026-08-16 sera (punto 45 chiuso per intero, committato e
+pushato - era l'ULTIMO dei lavori grandi in coda: 37/48/55/45 tutti fatti)
 ===================================================================
 
 QUESTO FILE DICE SOLO UNA COSA: a che punto siamo adesso e da dove si ricomincia.
@@ -27,63 +27,35 @@ o ne arriva uno nuovo.
 
 
 
->>> STATO ATTUALE (16/08/2026): punto 80 CHIUSO PER INTERO - tutti e sette
-    i sotto-punti (E/F/D/C/G/A/B) fatti, verificati e committati. Dettaglio
-    completo di ciascuno in cose_da_fare.txt punto 80 (la Parte B, l'ultima
-    e la piu' grande, ha il suo blocco appena aggiunto in fondo al punto).
+>>> STATO ATTUALE (16/08/2026 sera): NESSUN PUNTO IN CODA. I quattro
+    "lavori grandi" concordati (37, 48, 55, 45) sono tutti chiusi. Il
+    punto 80 (7 sotto-punti su "Le mie escursioni"/preferiti/foto profilo)
+    e il punto 45 sono stati chiusi entrambi in questa sessione. ALLA
+    PROSSIMA SESSIONE: chiedere a Denis cosa vuole fare, non c'e' un
+    "da dove riprendere" tecnico da solo.
 
-    Riassunto brevissimo: "Le mie escursioni" ora ha UNA sola sezione
-    "Escursioni completate" al posto delle due vecchie voci ("Gia' fatte" +
-    "Uscite registrate") - stessa idea gia' provata sul profilo utente
-    (punto 74), validata con l'agente architect PRIMA di scrivere codice
-    perche' un tracciamento dal vivo collegato a un'escursione puo' creare
-    sia un Completion sia una ActiveHikeSession per la STESSA camminata:
-    trovata e risolta la deduplicazione (mai nascondere una sessione se non
-    c'e' davvero una card a rappresentarla), verificata con dati veri creati
-    e poi cancellati via API (non solo a mente). Chiude da solo anche il
-    vecchio "4h53" (mai stato un tempo reale). "I miei progetti" promossa a
-    gruppo proprio, non piu' annidata sotto la sezione appena sciolta.
-    Nessuna rotta server toccata. Regressione 101/101 (configurazione,
-    punto37, punto45, punto77, punto79) + verifica dal vivo nel browser.
+    Punto 80 (camoscio bf2d72d, vault f0ec371): "Le mie escursioni" ha
+    ora una sola sezione "Escursioni completate" al posto delle due
+    vecchie voci. Dettaglio in cose_da_fare.txt punto 80.
 
-    COMMITTATO E PUSHATO (camoscio bf2d72d, vault f0ec371), verificato live
-    su Render (i cinque file cambiati confermati con curl dopo il deploy).
+    Punto 45 (camoscio 3687aa6): foto sulle segnalazioni (compressa dal
+    browser, mai piu' di ~380 KB, indice TTL 30 giorni sui report mai
+    risolti) e nuovo tasto "segnala un pericolo" (usa la posizione GPS
+    attuale) al POSTO del vecchio pulsante a scarpone del tracciamento -
+    quel pannello ora si apre solo durante una registrazione o a fine
+    escursione, mai piu' da fermo. "Risolvi" ora cancella la segnalazione
+    per intero, con conferma obbligatoria. Bug vero trovato provando dal
+    vivo (una foto poteva rendere il popup di un marker piu' alto dello
+    spazio che Leaflet riesce a recuperare, tagliando fuori schermo
+    titolo/descrizione) e corretto nello stesso commit. Regressione
+    123/123 + verifica end-to-end nel browser. NON verificato a schermo
+    il layout mobile del nuovo riquadro sulla Mappa (lo strumento di
+    ridimensionamento finestra non ha funzionato in questa sessione) - da
+    ricontrollare la prima volta che si tocca quella pagina da telefono.
+    Dettaglio completo in cose_da_fare.txt punto 45 e in [[04-Da-Fare]]
+    del vault.
 
-    >>> RIPARTIRE DA: punto 45, foto sulle segnalazioni + tasto piu' trovabile.
-    Stessa sessione, DOPO aver chiuso il punto 80: Denis ha deciso le tre
-    scelte che mancavano (testo completo del suo ragionamento in
-    cose_da_fare.txt punto 45) - foto ridimensionata/compressa IN AUTOMATICO
-    dal browser (tetto ~300-400 KB), risolvere una segnalazione la CANCELLA
-    per intero (non piu' "resolved per sempre" come oggi), conferma
-    obbligatoria prima di risolvere, chi non si risolve mai sparisce da sola
-    dopo 30 giorni (indice TTL), anteprima nell'elenco solo un'iconcina 📷.
-    IDEA DI DENIS: il tasto "piu' trovabile" prende il POSTO del pulsante
-    flottante a scarpone del tracciamento (mai un secondo tasto flottante) -
-    le due cose che solo quel pannello offriva (escursione collegata, mappa
-    offline) si spostano sulla pagina Mappa vicino a "Comincia registrazione".
-    Piano tecnico COMPLETO validato dall'agente architect PRIMA di scrivere
-    codice - ha trovato piu' rischi veri (non dettagli): oggi chiunque loggato
-    potrebbe "risolvere" anche una segnalazione mai moderata (con la
-    cancellazione diventerebbe distruttivo, serve un controllo in piu' sullo
-    stato); togliere il blocco sbagliato dal pannello del tracciamento avrebbe
-    rotto le statistiche live a meta' escursione; il menu "escursione
-    collegata" spostato sulla mappa resterebbe vuoto per sempre senza una
-    chiamata in piu' per popolarlo. Riepilogo tecnico completo (schema dati,
-    rotte nuove, come comprimere la foto nel browser, dove va il nuovo
-    pulsante) in [[04-Da-Fare]] del vault, sezione punto 45 - e' li' che si
-    riparte, NON da capo. Una lista di 11 passi concreti (in ordine di
-    dipendenza: modello dati -> rotte server -> compressore immagine nuovo ->
-    tasto/pannello -> spostamento controlli tracciamento -> prove) e' stata
-    preparata ma vive negli strumenti di questa sessione, non e' detto sia
-    visibile alla prossima - il riepilogo nel vault basta comunque a
-    ricostruirla. NESSUN FILE DI CODICE toccato: solo cose_da_fare.txt,
-    leggimi.txt e il vault sono cambiati stasera.
-
-    ---- Chiuso prima di questa sessione (dettaglio in cose_da_fare.txt) ----
-    Punti 81 e 82 chiusi e pushati l'11/08 (campana/notifiche con un bug
-    vero corretto in prova-punto77.js; badge personali di Camilla e Bob84).
-    Punto 62 (foto profilo nel widget copriva mezza schermata) e punto 79
-    (cammino/pause separati da un .gpx) chiusi l'11/08 e prima.
+    Entrambi committati e pushati, verificati live su Render.
 
 >>> COSE FUORI SCOPE, NON RIPROPORLE finche' non torna Denis sull'argomento:
     - Tracciamento GPS a pagina chiusa (impossibile via browser, non difficile
