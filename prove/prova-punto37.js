@@ -107,8 +107,8 @@ async function chiama(metodo, percorso, corpo, cookie) {
 
         const emailProva = `contatto-prova-37-${MARCA}@esempio-di-prova.invalid`;
         const nuoviContatti = contattiOriginali.concat([
-            { name: 'Contatto Prova SenzaEmail', phone: '000', relationship: 'Prova' },
-            { name: 'Contatto Prova ConEmail', phone: '000', relationship: 'Prova', email: emailProva }
+            { name: 'Contatto Prova SenzaEmail', relationship: 'Prova' },
+            { name: 'Contatto Prova ConEmail', relationship: 'Prova', email: emailProva }
         ]);
         const indiceSenzaEmail = contattiOriginali.length;
         const indiceConEmail = contattiOriginali.length + 1;

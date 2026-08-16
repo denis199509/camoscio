@@ -83,7 +83,7 @@ const tokenDa = (link) => link ? new URL(link).searchParams.get('token') : null;
             body: {
                 nome: 'Prova', cognome: 'Verifica', email, password: P1, username,
                 ageRange: '30-39', termsAccepted: true,
-                emergencyContacts: [{ name: 'Contatto Di Prova', phone: '000', relationship: 'Prova', email: 'contatto-di-prova@esempio-di-prova.invalid' }]
+                emergencyContacts: [{ name: 'Contatto Di Prova', relationship: 'Prova', email: 'contatto-di-prova@esempio-di-prova.invalid' }]
             }
         });
         return { r, barattolo };

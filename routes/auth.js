@@ -85,8 +85,10 @@ router.post('/register', async (req, res) => {
             return res.status(400).json({ error: 'Serve almeno un contatto di emergenza' });
         }
         for (const c of emergencyContacts) {
-            if (!c || !c.name || !c.phone || !c.relationship || !c.email) {
-                return res.status(400).json({ error: 'Ogni contatto di emergenza richiede nome, telefono, relazione ed email' });
+            // Il telefono non e' piu' fra i campi richiesti (16/08/2026): non viene piu'
+            // chiesto in registrazione, e lo schema non lo pretende piu' (models/User.js).
+            if (!c || !c.name || !c.relationship || !c.email) {
+                return res.status(400).json({ error: 'Ogni contatto di emergenza richiede nome, relazione ed email' });
             }
             // Punto 37: l'email e' il canale scelto per l'allarme vero del Dead Man's Switch -
             // stessa validazione gia' usata sotto per l'email dell'account (validator.isEmail).

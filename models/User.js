@@ -17,7 +17,21 @@ const requiredUnlessDemo = function () {
 
 const emergencyContactSchema = new mongoose.Schema({
     name: { type: String, required: true },
-    phone: { type: String, required: true },
+    // Non piu' chiesto dai form dal 16/08/2026 (richiesta di Denis: "il numero del telefono
+    // al momento non serve quindi cancelliamo quella voce. basta il nome, relazione e la
+    // mail"). Due scelte separate, entrambe volute:
+    //  - VIA required: l'array emergencyContacts viene sostituito PER INTERO a ogni
+    //    salvataggio (vedi salvaNuovoContatto in public/js/safety.js, e la PUT con
+    //    runValidators:true in routes/users.js), quindi un solo contatto NUOVO senza numero
+    //    farebbe rifiutare l'intero elenco, vecchi compresi. E' lo stesso motivo per cui
+    //    l'email qui sotto non e' required, letto al contrario.
+    //  - IL CAMPO RESTA: i contatti salvati prima di oggi (Denis compreso) un numero ce
+    //    l'hanno, e proprio perche' l'array si riscrive per intero Mongoose lo scarterebbe
+    //    al primo salvataggio successivo - il dato sparirebbe senza che nessuno l'abbia
+    //    chiesto. Chi ce l'ha se lo tiene (lo mostra ancora triggerEmergencyAlarm in
+    //    public/js/safety.js), chi non ce l'ha non scrive niente: nessun default, come da
+    //    vincolo spazio.
+    phone: { type: String },
     relationship: { type: String, required: true },
     // Punto 37: canale scelto per l'allarme vero del Dead Man's Switch. NON required a
     // livello di schema apposta - i contatti reali gia' salvati (Denis compreso) non ne

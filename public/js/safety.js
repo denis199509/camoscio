@@ -177,8 +177,10 @@ function aggiornaHintContatto() {
     if (!hint) return;
     const c = contattoScelto();
     // textContent, mai innerHTML: nome ed email li scrive l'utente (regola della Fase H).
-    // Punto 37: l'email, non il telefono - e' il canale vero dell'allarme automatico. Il
-    // telefono resta comunque salvato, e' quello che si chiama a mano col tasto SOS/112.
+    // Punto 37: l'email, non il telefono - e' il canale vero dell'allarme automatico. Dal
+    // 16/08/2026 il telefono non si chiede piu' affatto (richiesta di Denis): resta salvato
+    // solo sui contatti inseriti prima di allora, e nessuna funzione del sito lo compone -
+    // il tasto SOS chiama il 112, mai il contatto personale (vedi chiamaSos qui sopra).
     hint.textContent = c
         ? `Alla scadenza l'allarme andrebbe all'email di ${c.name} (${c.email}).`
         : "";
@@ -252,17 +254,18 @@ function popolaContattiEmergenza() {
 async function salvaNuovoContatto() {
     const nome = document.getElementById("safety-new-name").value.trim();
     const relazione = document.getElementById("safety-new-rel").value.trim();
-    const telefono = document.getElementById("safety-new-phone").value.trim();
     const email = document.getElementById("safety-new-email").value.trim();
 
-    // Nome/telefono/relazione sono obbligatori anche nello schema del database
+    // Nome e relazione sono obbligatori anche nello schema del database
     // (emergencyContactSchema): se mancasse uno il server rifiuterebbe l'intero salvataggio.
+    // Il telefono non si chiede piu' dal 16/08/2026 (richiesta di Denis) e lo schema non lo
+    // pretende piu'; il campo esiste ancora solo per non perdere i numeri gia' salvati.
     // L'email (punto 37, canale dell'allarme vero) NON e' obbligatoria a livello di schema -
     // altrimenti un contatto vecchio senza email dentro lo stesso array bloccherebbe questo
     // salvataggio - ma lo e' qui: senza, il contatto verrebbe salvato e basta comparire nel
     // menu "Chi avvisare" senza poter mai ricevere nulla (vedi popolaContattiEmergenza).
-    if (!nome || !relazione || !telefono || !email) {
-        window.showToast("Servono tutti e quattro i campi: nome, chi è, telefono ed email.", "error");
+    if (!nome || !relazione || !email) {
+        window.showToast("Servono tutti e tre i campi: nome, chi è ed email.", "error");
         return;
     }
     if (!email.includes('@')) {
@@ -281,7 +284,7 @@ async function salvaNuovoContatto() {
     // Si manda l'elenco COMPLETO e non solo il nuovo: emergencyContacts e' un array e il
     // server lo sostituisce per intero (SELF_EDITABLE_FIELDS in routes/users.js). Mandare
     // solo l'ultimo cancellerebbe gli altri.
-    const nuovi = contattiUtente().concat([{ name: nome, phone: telefono, relationship: relazione, email }]);
+    const nuovi = contattiUtente().concat([{ name: nome, relationship: relazione, email }]);
 
     try {
         const res = await fetch(`/api/users/${usr.id}`, {
@@ -294,7 +297,6 @@ async function salvaNuovoContatto() {
         usr.emergencyContacts = nuovi;
         document.getElementById("safety-new-name").value = "";
         document.getElementById("safety-new-rel").value = "";
-        document.getElementById("safety-new-phone").value = "";
         document.getElementById("safety-new-email").value = "";
         popolaContattiEmergenza();
         // Si sceglie da solo quello appena aggiunto: e' quasi sempre quello che si voleva.
@@ -515,7 +517,15 @@ function triggerEmergencyAlarm() {
     // stringa congelata in localStorage.
     const indice = localStorage.getItem("deadman_contact_index");
     const contatto = contattiUtente()[Number(indice)] || null;
-    const aChi = contatto ? `${contatto.name} (${contatto.phone})` : "nessun contatto salvato";
+    // Il telefono non si chiede piu' dai form (16/08/2026): un contatto salvato da allora ha
+    // solo nome/relazione/email, uno piu' vecchio puo' ancora avere un numero. Senza questo
+    // controllo qui si leggerebbe "Anna (undefined)" a schermo. Si mostra il recapito che
+    // c'e' davvero - il numero se salvato, altrimenti l'email - e se non c'e' nessuno dei
+    // due solo il nome, invece di una parentesi vuota.
+    const recapito = contatto ? (contatto.phone || contatto.email || "") : "";
+    const aChi = contatto
+        ? (recapito ? `${contatto.name} (${recapito})` : contatto.name)
+        : "nessun contatto salvato";
 
     // Punto 21 - la posizione VERA del GPS quando c'e' (punto 26). Prima si usava sempre e
     // solo il segnaposto trascinabile, che di norma e' fermo a Campo Imperatore: un allarme
@@ -544,7 +554,7 @@ function triggerEmergencyAlarm() {
         `Questo avviso su schermo non manda niente da solo: è solo qui, su questo telefono. ` +
         `L'invio vero lo fa il server, entro pochi minuti e indipendentemente da questa pagina. ` +
         `Se sei tu a leggerlo e stai bene, fai il check-in subito per fermarlo. Se stai leggendo ` +
-        `questo per conto di qualcun altro, chiama tu il contatto qui sopra.`
+        `questo per conto di qualcun altro, avvisa tu il contatto qui sopra.`
     );
 
     deactivateDeadManSwitch(false);

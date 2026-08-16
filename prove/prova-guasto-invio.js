@@ -46,7 +46,7 @@ async function chiedi(email) {
             body: JSON.stringify({
                 nome: 'Prova', cognome: 'Guasto', email: emailRegistrata, password: 'PasswordDiProva1!',
                 username: `provaguasto${MARCA}`, ageRange: '30-39', termsAccepted: true,
-                emergencyContacts: [{ name: 'Contatto Di Prova', phone: '000', relationship: 'Prova', email: 'contatto-di-prova@esempio-di-prova.invalid' }]
+                emergencyContacts: [{ name: 'Contatto Di Prova', relationship: 'Prova', email: 'contatto-di-prova@esempio-di-prova.invalid' }]
             })
         });
         ok('account di prova creato', reg.status === 200);
