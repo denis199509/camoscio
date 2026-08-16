@@ -50,6 +50,11 @@
             icon: "nicolo-football.png",
             titolo: "Fuori sentiero, dentro il football",
             descrizione: "Viene in montagna con noi quando il calendario del football americano glielo permette. Se c’è una partita, la vetta può aspettare. Prima il touchdown, poi il dislivello."
+        },
+        "6a81e2e4609ba367d0688bc0": { // Scheldon
+            icon: "sheldon-mishka.png",
+            titolo: "Il Passeggero del Rottweiler",
+            descrizione: "Non viene in montagna, è il cane che lo porta."
         }
     };
 
