@@ -206,6 +206,7 @@ async function initMapModule() {
 
     // Inizializza eventi dei form
     setupMapForms();
+    setupReportFab();
 
     // Punto 26 - il puntino blu si disegna qui ogni volta che arriva una posizione, da
     // qualunque fonte (watch del modulo geolocation o fix del tracciamento in corso).
@@ -625,6 +626,44 @@ function onMapClick(e) {
     window.mapInstance.panTo(e.latlng);
 }
 
+// Punto 45: invio condiviso fra il form "clicca sulla mappa" (posizione precisa,
+// waze-report-form qui sotto) e il pannello del FAB "segnala un pericolo" (posizione
+// automatica, report-fab-form - vedi setupReportFab) - stesso principio gia' seguito per
+// startTracking() in tracking.js, riusata sia dal pannello che dal tasto mappa. Ritorna
+// true/false: chi chiama decide cosa fare in caso di successo (resettare il proprio form).
+async function submitReport({ type, lat, lng, description, photoDataUrl }) {
+    try {
+        const body = { type, lat, lng, description };
+        if (photoDataUrl) body.photo = photoDataUrl;
+
+        const response = await fetch('/api/reports', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            window.showToast(err.error || "Impossibile inviare la segnalazione.", "error");
+            return false;
+        }
+
+        // Punto 45: non e' piu' pubblicata subito (status 'pending' lato server) - vincolo
+        // hard "niente promesse che il sito non puo' mantenere", chi segnala deve saperlo
+        // subito, non scoprirlo non vedendola comparire in mappa.
+        window.showToast("Segnalazione inviata: comparirà in mappa dopo una verifica.", "success");
+
+        await refreshState();
+        renderMapMarkers();
+        renderWazeReportsList();
+        return true;
+    } catch (e) {
+        console.error("Errore nell'invio del report:", e);
+        window.showToast("Impossibile inviare la segnalazione.", "error");
+        return false;
+    }
+}
+
 // Configura i form relativi alla mappa
 function setupMapForms() {
     // Form Waze
@@ -635,35 +674,16 @@ function setupMapForms() {
             const formContainer = document.getElementById("waze-form-container");
             const lat = parseFloat(formContainer.getAttribute("data-clicked-lat"));
             const lng = parseFloat(formContainer.getAttribute("data-clicked-lng"));
-            
+
             const type = document.getElementById("waze-type").value;
             const desc = document.getElementById("waze-desc").value;
 
             if (isNaN(lat) || isNaN(lng)) return;
 
-            try {
-                const response = await fetch('/api/reports', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ type, lat, lng, description: desc })
-                });
-
-                if (response.ok) {
-                    form.reset();
-                    formContainer.classList.add("hidden");
-
-                    // Punto 45: non e' piu' pubblicata subito (status 'pending' lato server) -
-                    // vincolo hard "niente promesse che il sito non puo' mantenere", chi segnala
-                    // deve saperlo subito, non scoprirlo non vedendola comparire in mappa.
-                    window.showToast("Segnalazione inviata: comparirà in mappa dopo una verifica.", "success");
-
-                    // Ricarica i marker
-                    await refreshState();
-                    renderMapMarkers();
-                    renderWazeReportsList();
-                }
-            } catch (e) {
-                console.error("Errore nell'invio del report:", e);
+            const ok = await submitReport({ type, lat, lng, description: desc });
+            if (ok) {
+                form.reset();
+                formContainer.classList.add("hidden");
             }
         });
     }
@@ -688,6 +708,114 @@ function setupMapForms() {
     if (btnRealGps) {
         btnRealGps.addEventListener("click", useRealGpsPosition);
     }
+}
+
+// --- Punto 45: FAB "segnala un pericolo" - posizione automatica invece del click sulla
+// mappa (che resta il flusso "preciso", invariato, vedi #waze-form-container sopra). ---
+
+let reportFabPosizione = null; // {lat,lng} risolta all'apertura del pannello, null finche' non arriva
+let reportFabPhotoDataUrl = null; // gia' compressa (imagecompress.js), pronta per l'invio
+
+function setupReportFab() {
+    const fab = document.getElementById('report-fab');
+    const btnClose = document.getElementById('report-panel-close');
+    const btnCancel = document.getElementById('btn-report-fab-cancel');
+    const form = document.getElementById('report-fab-form');
+    const photoInput = document.getElementById('report-fab-photo');
+
+    if (fab) fab.addEventListener('click', openReportFabPanel);
+    if (btnClose) btnClose.addEventListener('click', closeReportFabPanel);
+    if (btnCancel) btnCancel.addEventListener('click', closeReportFabPanel);
+
+    if (photoInput) {
+        photoInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            const preview = document.getElementById('report-fab-photo-preview');
+            if (!file) {
+                reportFabPhotoDataUrl = null;
+                if (preview) { preview.classList.add('hidden'); preview.innerHTML = ''; }
+                return;
+            }
+            reportFabPhotoDataUrl = window.CamoscioImageCompress
+                ? await window.CamoscioImageCompress.comprimi(file)
+                : null;
+
+            if (!preview) return;
+            if (reportFabPhotoDataUrl) {
+                preview.innerHTML = `<img src="${reportFabPhotoDataUrl}" alt="Anteprima foto">`;
+                preview.classList.remove('hidden');
+            } else {
+                preview.classList.add('hidden');
+                preview.innerHTML = '';
+                window.showToast("Non è stato possibile elaborare la foto scelta.", "error");
+            }
+        });
+    }
+
+    if (form) {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!reportFabPosizione) {
+                window.showToast("Sto ancora cercando la tua posizione: attendi un istante e riprova.", "error");
+                return;
+            }
+
+            const btnSubmit = document.getElementById('btn-report-fab-submit');
+            const type = document.getElementById('report-fab-type').value;
+            const description = document.getElementById('report-fab-desc').value;
+
+            if (btnSubmit) btnSubmit.disabled = true;
+            const ok = await submitReport({
+                type, description,
+                lat: reportFabPosizione.lat, lng: reportFabPosizione.lng,
+                photoDataUrl: reportFabPhotoDataUrl
+            });
+            if (btnSubmit) btnSubmit.disabled = false;
+            if (ok) closeReportFabPanel();
+        });
+    }
+}
+
+// Apre il pannello SUBITO (non si aspetta il GPS per farlo comparire: chi cammina non deve
+// fissare uno schermo vuoto) e cerca la posizione in parallelo, disabilitando l'invio finche'
+// non arriva - vedi CamoscioGeo.posizioneSegnalazione() in geolocation.js, che accetta una
+// posizione gia' nota solo se fresca e precisa, altrimenti ne chiede una nuova.
+async function openReportFabPanel() {
+    const panel = document.getElementById('report-panel');
+    if (!panel || !window.CamoscioGeo) return;
+
+    const consenso = await window.CamoscioGeo.assicuraConsenso(
+        "Per segnalare un pericolo nella tua posizione attuale serve il GPS del telefono. Avevi lasciato il consenso alla geolocalizzazione disattivato in registrazione: vuoi attivarlo ora?"
+    );
+    if (!consenso) return;
+
+    const form = document.getElementById('report-fab-form');
+    if (form) form.reset();
+    reportFabPhotoDataUrl = null;
+    const preview = document.getElementById('report-fab-photo-preview');
+    if (preview) { preview.classList.add('hidden'); preview.innerHTML = ''; }
+
+    panel.classList.remove('hidden');
+    if (window.lucide) window.lucide.createIcons();
+
+    const btnSubmit = document.getElementById('btn-report-fab-submit');
+    const etichettaOriginale = btnSubmit ? btnSubmit.textContent : '';
+    if (btnSubmit) { btnSubmit.disabled = true; btnSubmit.textContent = 'Cerco la posizione...'; }
+
+    reportFabPosizione = await window.CamoscioGeo.posizioneSegnalazione();
+
+    if (panel.classList.contains('hidden')) return; // chiuso nel frattempo, non toccare piu' niente
+
+    if (btnSubmit) { btnSubmit.disabled = false; btnSubmit.textContent = etichettaOriginale; }
+    if (!reportFabPosizione) {
+        window.showToast("Impossibile trovare la posizione GPS: riprova, o segnala cliccando sul punto esatto in mappa.", "error");
+    }
+}
+
+function closeReportFabPanel() {
+    const panel = document.getElementById('report-panel');
+    if (panel) panel.classList.add('hidden');
+    reportFabPosizione = null;
 }
 
 // Punto 26 - il tasto in alto a destra e' quello che l'utente preme aspettandosi di vedere
@@ -865,11 +993,23 @@ function renderMapMarkers() {
         });
 
         const marker = L.marker([rep.lat, rep.lng], { icon: customIcon });
-        
+
+        // Punto 45 (foto): l'anteprima nell'elenco a fianco resta solo un'iconcina (vedi
+        // renderWazeReportsList) - la foto vera si carica solo qui, e solo quando il popup si
+        // apre per davvero: bindPopup memorizza la stringa HTML, Leaflet la trasforma in DOM
+        // (facendo scattare il fetch dell'<img>) solo all'apertura, mai prima.
+        // .map-popup-photo e non .pending-report-photo (piu' grande, usata nella card di
+        // moderazione): provato dal vivo, un popup troppo alto finisce tagliato sopra lo
+        // schermo perche' Leaflet non sa che sotto la sua mappa c'e' anche una barra fissa.
+        const fotoHtml = rep.hasPhoto
+            ? `<img src="/api/reports/${rep.id}/photo" alt="Foto della segnalazione" class="map-popup-photo">`
+            : '';
+
         marker.bindPopup(`
             <div style="color: white; font-family: inherit;">
                 <h5 style="margin: 0 0 4px 0; color: #A83B2E;">${title}</h5>
                 <p style="font-size: 0.8rem; margin: 0 0 8px 0;">${escapeHtml(rep.description)}</p>
+                ${fotoHtml}
                 <span class="small text-muted">Segnalato il: ${new Date(rep.createdAt).toLocaleDateString()}</span>
             </div>
         `);
@@ -902,11 +1042,15 @@ function renderWazeReportsList() {
 
         const emoji = window.CamoscioReportTypes.emoji[rep.type] || '⚠️';
 
+        // Punto 45 (foto): solo l'iconcina qui, mai la foto vera - la si vede aprendo il
+        // marker sulla mappa (vedi renderMapMarkers), non nell'elenco compatto.
+        const fotoFlag = rep.hasPhoto ? ' · 📷' : '';
+
         item.innerHTML = `
             <span>${emoji}</span>
             <div class="waze-item-desc">
                 <strong>${escapeHtml(rep.description)}</strong>
-                <div class="text-muted small">Coord: ${rep.lat.toFixed(3)}, ${rep.lng.toFixed(3)}</div>
+                <div class="text-muted small">Coord: ${rep.lat.toFixed(3)}, ${rep.lng.toFixed(3)}${fotoFlag}</div>
             </div>
             <button class="waze-item-resolve" onclick="resolveReportDirectly('${rep.id}')" title="Risolvi segnalazione">✓</button>
         `;
@@ -914,22 +1058,34 @@ function renderWazeReportsList() {
     });
 }
 
-// Segna un report come risolto sul server (aggiorna l'originale, non ne crea uno nuovo)
+// Punto 45: "risolvi" ora CANCELLA la segnalazione per intero (foto compresa), non la marca
+// piu' solo 'resolved' - decisione di Denis, con conferma obbligatoria perche' un tocco
+// sbagliato ora distrugge l'avviso per sempre invece di limitarsi a nasconderlo. Stesso
+// schema/stesso testo di rejectPendingReport() in pendingreports.js (azione gemella, sulla
+// stessa funzionalita', decisa nella stessa sessione).
 window.resolveReportDirectly = async function(reportId) {
-    const db = window.CamoscioState;
-    const index = db.reports.findIndex(r => r.id === reportId);
-    if (index !== -1) {
-        db.reports[index].status = 'resolved';
-        try {
-            await fetch(`/api/reports/${reportId}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status: 'resolved' })
-            });
-        } catch(e) {}
+    const confermato = await window.showConfirmModal(
+        "Confermi che il pericolo segnalato non c'è più? La segnalazione (foto compresa) verrà eliminata per sempre, senza possibilità di recupero.",
+        "Segna come risolta"
+    );
+    if (!confermato) return;
 
+    try {
+        const res = await fetch(`/api/reports/${reportId}/resolve`, { method: 'DELETE' });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            window.showToast(err.error || "Impossibile segnare la segnalazione come risolta.", "error");
+            return;
+        }
+
+        const db = window.CamoscioState;
+        db.reports = db.reports.filter(r => r.id !== reportId);
+        window.showToast("Segnalazione risolta ed eliminata.", "success");
         renderMapMarkers();
         renderWazeReportsList();
+    } catch (e) {
+        console.error("Errore nel risolvere la segnalazione:", e);
+        window.showToast("Impossibile segnare la segnalazione come risolta.", "error");
     }
 };
 

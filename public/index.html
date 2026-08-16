@@ -809,6 +809,34 @@
                                 <i data-lucide="locate"></i> Dove sono
                             </button>
 
+                            <!-- Punto 45: escursione collegata e mappa offline, spostate qui
+                                 dal vecchio pannello a scarpone (idle, non più raggiungibile -
+                                 vedi tracking.js) - vicino al tasto di registrazione, come
+                                 chiesto da Denis. Popolate da renderHikeSelectOptions()/
+                                 toggleGeoConsentAlert() (tracking.js), richiamate quando si
+                                 apre questa pagina (app.js, caso "map-section"). -->
+                            <div class="map-record-setup" id="map-record-setup">
+                                <div class="form-group">
+                                    <label for="tracking-hike-select">Escursione collegata (facoltativo):</label>
+                                    <select id="tracking-hike-select" class="form-control">
+                                        <option value="">Nessuna - traccia libera</option>
+                                    </select>
+                                </div>
+
+                                <div id="tracking-geo-consent-alert" class="privacy-alert-box hidden">
+                                    <i data-lucide="alert-triangle"></i>
+                                    <span>Il tracciamento userà la posizione GPS reale del telefono. Avevi lasciato il consenso alla geolocalizzazione disattivato in registrazione: verrà attivato ora, se prosegui.</span>
+                                </div>
+
+                                <button type="button" id="btn-tracking-download-map" class="btn btn-secondary btn-sm btn-block">
+                                    <i data-lucide="download"></i> Scarica mappa offline per quest'area
+                                </button>
+                                <div id="tracking-download-progress" class="tracking-download-progress hidden">
+                                    <div class="tracking-download-progress-fill" id="tracking-download-progress-fill"></div>
+                                    <span id="tracking-download-progress-label" class="small text-muted"></span>
+                                </div>
+                            </div>
+
                             <!-- Punto 14 di cose_da_fare.txt: un tasto unico e semplice per
                                  registrare il percorso, direttamente sulla mappa (senza dover
                                  passare dal pannello del pulsante a scarpone). -->
@@ -1980,13 +2008,55 @@
         </div>
     </div>
 
-    <!-- Fase F: Tracciamento GPS live. Pulsante flottante + pannello indipendenti dalla
-         sidebar (che non e' responsive), raggiungibili da qualunque sezione dell'app:
-         e' l'unica parte dell'interfaccia pensata apposta per essere comoda anche su
-         schermo piccolo, visto che verra' usata davvero da telefono in montagna. -->
-    <button id="tracking-fab" class="tracking-fab" title="Escursione dal vivo" type="button">
-        🥾
+    <!-- Punto 45: il pulsante flottante a scarpone che apriva il pannello di tracciamento da
+         fermo ha lasciato il posto a questo - Denis: "non serve più il tasto dello scarpone
+         per cominciare il tracciamento", perché lo stesso avvio è già raggiungibile dal
+         tasto dedicato sulla pagina Mappa (#btn-map-quick-record, punto 14). Mai un secondo
+         pulsante flottante insieme: .app-fab è la classe di posizionamento generica,
+         .report-fab solo il colore/aspetto - vedi styles.css. -->
+    <button id="report-fab" class="app-fab report-fab" title="Segnala un pericolo sul sentiero" type="button">
+        ⚠️
     </button>
+
+    <!-- Pannello del FAB sopra: segnalazione rapida con la posizione GPS attuale, invece di
+         dover cliccare sul punto esatto sulla mappa (quel flusso "preciso" resta invariato,
+         vedi #waze-form-container più sotto nella sezione Mappa). Stesso stile di
+         .tracking-panel (bottom sheet), invio condiviso con l'altro form in map.js. -->
+    <div id="report-panel" class="tracking-panel hidden">
+        <div class="modal-header">
+            <h3><i data-lucide="alert-octagon"></i> Segnala un pericolo</h3>
+            <button type="button" class="close-modal-btn" id="report-panel-close">&times;</button>
+        </div>
+
+        <p class="small text-muted" style="margin-bottom:14px;">
+            Userà la tua posizione GPS attuale. Comparirà in mappa dopo una verifica.
+        </p>
+
+        <form id="report-fab-form">
+            <div class="form-group">
+                <label for="report-fab-type">Tipo pericolo:</label>
+                <select id="report-fab-type" class="form-control">
+                    <option value="frana">⚠️ Frana / Cedimento</option>
+                    <option value="ghiaccio">❄️ Ghiaccio / Nevaio</option>
+                    <option value="fontana_secca">💧 Fontana Senz'Acqua</option>
+                    <option value="ostacolo">🌲 Albero / Ostacolo</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="report-fab-desc">Descrizione della criticità:</label>
+                <input type="text" id="report-fab-desc" class="form-control" required maxlength="300" placeholder="Descrivi il pericolo...">
+            </div>
+            <div class="form-group">
+                <label for="report-fab-photo">Foto (facoltativa):</label>
+                <input type="file" id="report-fab-photo" accept="image/*">
+                <div id="report-fab-photo-preview" class="report-photo-preview hidden"></div>
+            </div>
+            <div class="form-row-buttons">
+                <button type="button" class="btn btn-secondary btn-sm" id="btn-report-fab-cancel">Annulla</button>
+                <button type="submit" class="btn btn-primary btn-sm" id="btn-report-fab-submit">Invia segnalazione</button>
+            </div>
+        </form>
+    </div>
 
     <div id="tracking-mini-bar" class="tracking-mini-bar hidden">
         <span id="tracking-mini-icon">🔴</span>
@@ -2008,26 +2078,12 @@
                 con poco campo e si sincronizza da solo appena torna segnale.
             </p>
 
-            <div class="form-group">
-                <label for="tracking-hike-select">Escursione collegata (facoltativo):</label>
-                <select id="tracking-hike-select" class="form-control">
-                    <option value="">Nessuna - traccia libera</option>
-                </select>
-            </div>
-
-            <div id="tracking-geo-consent-alert" class="privacy-alert-box hidden">
-                <i data-lucide="alert-triangle"></i>
-                <span>Il tracciamento userà la posizione GPS reale del telefono. Avevi lasciato il consenso alla geolocalizzazione disattivato in registrazione: verrà attivato ora, se prosegui.</span>
-            </div>
-
-            <button type="button" id="btn-tracking-download-map" class="btn btn-secondary btn-block" style="margin-top:14px;">
-                <i data-lucide="download"></i> Scarica mappa offline per quest'area
-            </button>
-            <div id="tracking-download-progress" class="tracking-download-progress hidden">
-                <div class="tracking-download-progress-fill" id="tracking-download-progress-fill"></div>
-                <span id="tracking-download-progress-label" class="small text-muted"></span>
-            </div>
-
+            <!-- Punto 45: escursione collegata, alert di consenso e mappa offline si sono
+                 spostati sulla pagina Mappa, vicino a "Comincia registrazione" (vedi
+                 .map-record-setup più sotto) - questo pannello non si apre più da fermo
+                 (il vecchio pulsante a scarpone ha lasciato il posto a #report-fab), quindi
+                 non c'era più modo di raggiungerli da qui. #btn-tracking-start resta: non fa
+                 male tenerlo, anche se in pratica non lo apre più nessuno. -->
             <button type="button" id="btn-tracking-start" class="btn btn-primary btn-block" style="margin-top:12px;">
                 <i data-lucide="play"></i> Avvia tracciamento GPS
             </button>
@@ -2128,6 +2184,8 @@
     <!-- Fase F: tracciamento GPS live (coda IndexedDB + mappa offline + mappa) -->
     <script src="js/idb.js"></script>
     <script src="js/offline-map.js"></script>
+    <!-- Punto 45: compressione foto lato browser, usata dal modulo segnalazioni in map.js -->
+    <script src="js/imagecompress.js"></script>
     <script src="js/map.js"></script>
     <script src="js/routeplanner.js"></script>
     <script src="js/tracking.js"></script>

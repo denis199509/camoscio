@@ -1591,6 +1591,26 @@ h1, h2, h3, h4, h5, h6 {
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.35);
 }
 
+/* Punto 45: escursione collegata + mappa offline, spostate qui dal vecchio pannello a
+   scarpone (idle, non piu' raggiungibile - vedi tracking.js). Stessa "carta scura
+   galleggiante sopra la mappa" di .map-overlay-instructions qui sotto, non .glass-card:
+   quest'ultima e' pensata per la sidebar su sfondo gia' scuro dell'app, e sulle tile
+   chiare di OpenTopoMap il suo sfondo semitrasparente chiaro sarebbe poco leggibile. */
+.map-record-setup {
+    position: absolute;
+    right: 16px;
+    bottom: 84px;
+    z-index: 999;
+    width: 280px;
+    max-width: calc(100vw - 32px);
+    background: rgba(20, 21, 15, 0.92);
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(243, 239, 230, 0.18);
+    border-radius: 14px;
+    padding: 14px 16px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
 /* --- Punto 14: comandi di registrazione direttamente sulla mappa --- */
 .map-record-controls {
     position: absolute;
@@ -3018,6 +3038,50 @@ h1, h2, h3, h4, h5, h6 {
     object-fit: cover;
 }
 
+/* Punto 45: anteprima della foto scelta per una segnalazione - rettangolare e non
+   circolare come .photo-preview-circle sopra (quella e' pensata per un volto/avatar,
+   qui serve vedere il pericolo intero prima di inviare). */
+.report-photo-preview {
+    margin-top: 8px;
+    max-width: 100%;
+    max-height: 160px;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.report-photo-preview img {
+    display: block;
+    width: 100%;
+    max-height: 160px;
+    object-fit: cover;
+}
+
+/* Foto vera, mostrata per intero nella card di moderazione (pendingreports.js, dove serve
+   a decidere se confermare o rifiutare) - li' lo spazio verticale e' quello di una pagina
+   intera, non quello di un popup Leaflet. */
+.pending-report-photo {
+    display: block;
+    max-width: 100%;
+    max-height: 220px;
+    object-fit: cover;
+    border-radius: 8px;
+    margin: 8px 0;
+}
+
+/* Stessa foto, ma dentro il popup di un marker sulla mappa (map.js): trovato dal vivo che
+   220px di altezza, sommati a titolo/descrizione/data, potevano rendere il popup piu' alto
+   dello spazio che Leaflet riesce a recuperare (autoPan conosce solo i bordi del riquadro
+   mappa, non la barra fissa in cima alla pagina) - titolo e descrizione finivano tagliati
+   sopra lo schermo. Piu' bassa apposta, non e' un dettaglio da vedere ingrandito qui. */
+.map-popup-photo {
+    display: block;
+    max-width: 100%;
+    max-height: 100px;
+    object-fit: cover;
+    border-radius: 6px;
+    margin: 4px 0 8px;
+}
+
 .auth-error-box {
     background: rgba(168, 59, 46, 0.1);
     border: 1px solid var(--accent-red);
@@ -3159,14 +3223,18 @@ h1, h2, h3, h4, h5, h6 {
    piccolo, dato che verra' usata davvero da telefono durante l'escursione.
    ========================================================================== */
 
-.tracking-fab {
+/* Punto 45: .app-fab e' la classe di posizionamento generica (dimensione, forma, angolo
+   fisso in basso a destra) - prima era tutta dentro .tracking-fab, che pero' era la sola
+   ad usarla. Con il pulsante a scarpone rimosso (il suo posto lo prende .report-fab
+   sotto), separarle costa niente ed evita di dover ricopiare tutto se in futuro nasce
+   un secondo pulsante flottante con un colore diverso. */
+.app-fab {
     position: fixed;
     bottom: 24px;
     right: 24px;
     width: 60px;
     height: 60px;
     border-radius: 50%;
-    background: var(--accent-orange);
     color: white;
     border: none;
     font-size: 1.6rem;
@@ -3174,14 +3242,18 @@ h1, h2, h3, h4, h5, h6 {
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 6px 20px rgba(193, 102, 46, 0.45);
     cursor: pointer;
     z-index: 1400;
     transition: transform var(--transition-speed);
 }
 
-.tracking-fab:hover {
+.app-fab:hover {
     transform: scale(1.06);
+}
+
+.report-fab {
+    background: var(--accent-red);
+    box-shadow: 0 6px 20px var(--accent-red-glow);
 }
 
 .tracking-mini-bar {
@@ -4375,6 +4447,16 @@ h1, h2, h3, h4, h5, h6 {
 
     .map-recenter-btn {
         align-self: center;
+    }
+
+    /* Punto 45: stesso allargamento di .map-record-controls qui sopra, per restare
+       allineata a sinistra e a destra con il tasto di registrazione sotto. */
+    .map-record-setup {
+        left: 10px;
+        right: 10px;
+        width: auto;
+        max-width: none;
+        bottom: 76px;
     }
 
     /* Punto 68: "Filtri e Algoritmi di Corrispondenza" era l'unica parte di Escursioni

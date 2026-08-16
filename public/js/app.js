@@ -486,6 +486,12 @@ function triggerSectionRender(sectionId) {
             case "map-section":
                 if (window.renderWazeReportsList) window.renderWazeReportsList();
                 if (window.renderMapMarkers) window.renderMapMarkers();
+                // Punto 45: hike-select e alert di consenso del tracciamento, spostati qui
+                // dal vecchio pannello a scarpone (idle, non piu' raggiungibile da solo -
+                // vedi tracking.js). Senza questa chiamata il menu resterebbe vuoto per
+                // sempre: prima lo popolava solo renderTrackingUi() nel suo ramo idle.
+                if (window.renderHikeSelectOptions) window.renderHikeSelectOptions();
+                if (window.toggleGeoConsentAlert) window.toggleGeoConsentAlert();
                 break;
             case "carpool":
                 if (window.renderCarpoolModule) window.renderCarpoolModule();

@@ -387,10 +387,46 @@ function aggiornaTasto() {
     if (window.aggiornaTastoPosizione) window.aggiornaTastoPosizione(geoState.acceso);
 }
 
+// --- Punto 45: posizione singola e affidabile per piantare una segnalazione di pericolo ---
+//
+// ultimaPosizione() da sola non basta: puo' essere vecchia di minuti (utente fermo, il
+// puntino non si aggiorna) o arrivata dal ripiego wi-fi/celle (larga centinaia di metri, vedi
+// OPZIONI_GPS_APPROSSIMATE sopra) - mai piantare un pericolo dove ci si trovava 40 minuti fa.
+// Si accetta la posizione gia' nota solo se fresca E precisa, altrimenti si chiede un fix
+// singolo nuovo (non un watch: qui serve un punto solo, non un inseguimento continuo).
+const SEGNALAZIONE_MAX_ETA_MS = 60 * 1000;
+const SEGNALAZIONE_MAX_PRECISIONE_M = 50;
+
+function posizioneAbbastanzaBuonaPerSegnalazione(p) {
+    if (!p) return false;
+    const fresca = (Date.now() - p.quando) < SEGNALAZIONE_MAX_ETA_MS;
+    const precisa = typeof p.precisioneM !== 'number' || p.precisioneM <= SEGNALAZIONE_MAX_PRECISIONE_M;
+    return fresca && precisa;
+}
+
+// Promise<{lat,lng}> oppure null se il GPS non risponde. Non chiede da sola il consenso
+// dell'utente (Fase C): chi chiama - il pannello "segnala pericolo" - deve gia' aver
+// chiamato assicuraConsenso() prima, stesso schema gia' in uso in startTracking().
+function posizioneSegnalazione() {
+    return new Promise((resolve) => {
+        if (posizioneAbbastanzaBuonaPerSegnalazione(geoState.ultimaPosizione)) {
+            resolve({ lat: geoState.ultimaPosizione.lat, lng: geoState.ultimaPosizione.lng });
+            return;
+        }
+        if (!navigator.geolocation) { resolve(null); return; }
+        navigator.geolocation.getCurrentPosition(
+            pos => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+            () => resolve(null),
+            OPZIONI_GPS
+        );
+    });
+}
+
 window.CamoscioGeo = {
     statoPermesso,
     assicuraConsenso,
     serveConsenso,
+    posizioneSegnalazione,
     descriviErrore,
     segnalaErrore,
     mostraGuidaSblocco,

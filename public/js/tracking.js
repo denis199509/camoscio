@@ -566,6 +566,14 @@ function updateMapRecordButton() {
     btn.classList.toggle('btn-primary', !recording);
     btn.classList.toggle('is-recording', recording);
 
+    // Punto 45: hike-select e download mappa offline, spostati qui dal vecchio pannello a
+    // scarpone, si bloccano mentre si registra - l'hikeId si fissa a startTracking() e un
+    // select ancora modificabile mentirebbe a schermo su quale escursione si sta registrando.
+    const hikeSelect = document.getElementById('tracking-hike-select');
+    if (hikeSelect) hikeSelect.disabled = recording;
+    const btnDownload = document.getElementById('btn-tracking-download-map');
+    if (btnDownload) btnDownload.disabled = recording;
+
     if (window.updateRecenterButton) window.updateRecenterButton();
 }
 
@@ -686,17 +694,6 @@ function hidePanel() {
     if (panel) panel.classList.add('hidden');
 }
 
-function togglePanel() {
-    const panel = document.getElementById('tracking-panel');
-    if (!panel) return;
-    if (panel.classList.contains('hidden')) {
-        renderTrackingUi();
-        showPanel();
-    } else {
-        hidePanel();
-    }
-}
-
 function resetToIdleUi() {
     trackingState.status = 'idle';
     trackingState.sessionId = null;
@@ -813,7 +810,6 @@ async function checkForResumableSession() {
 // --- Inizializzazione modulo ---
 
 function initTrackingModule() {
-    const fab = document.getElementById('tracking-fab');
     const miniBar = document.getElementById('tracking-mini-bar');
     const panelClose = document.getElementById('tracking-panel-close');
     const btnStart = document.getElementById('btn-tracking-start');
@@ -823,7 +819,9 @@ function initTrackingModule() {
     const btnDownload = document.getElementById('btn-tracking-download-map');
     const btnSummaryClose = document.getElementById('btn-tracking-summary-close');
 
-    if (fab) fab.addEventListener('click', togglePanel);
+    // Punto 45: il pulsante a scarpone che apriva questo pannello da fermo non c'e' piu' (il
+    // suo posto lo prende #report-fab, map.js) - si arriva qui solo mentre si registra
+    // (tocco sulla mini-bar) o a fine escursione (riepilogo, vedi renderSummary/showPanel).
     if (miniBar) miniBar.addEventListener('click', () => { renderTrackingUi(); showPanel(); });
     if (panelClose) panelClose.addEventListener('click', hidePanel);
     if (btnStart) btnStart.addEventListener('click', startTracking);
@@ -850,3 +848,9 @@ function initTrackingModule() {
 }
 
 window.initTrackingModule = initTrackingModule;
+// Punto 45: hike-select e alert di consenso, spostati sulla pagina Mappa vicino al tasto di
+// registrazione - prima erano raggiungibili SOLO aprendo il pannello da fermo (il ramo idle
+// di renderTrackingUi), che con il vecchio pulsante a scarpone rimosso non si apre piu' da
+// soli. Chiamate esplicitamente dal caso "map-section" di triggerSectionRender (app.js).
+window.renderHikeSelectOptions = renderHikeSelectOptions;
+window.toggleGeoConsentAlert = toggleGeoConsentAlert;

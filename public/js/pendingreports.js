@@ -101,6 +101,14 @@ function renderPendingReportsListBody(reports) {
         const nomeReporter = reporter ? esc(reporter.username) : "utente non disponibile";
         const data = new Date(rep.createdAt).toLocaleString([], { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 
+        // Punto 45 (foto): qui, a differenza dell'elenco pubblico/mappa (solo un'iconcina,
+        // vedi map.js), la foto vera serve a decidere se confermare o rifiutare - si carica
+        // sempre, non solo "aprendo" la segnalazione, perche' la card di moderazione E' gia'
+        // la vista di dettaglio.
+        const fotoHtml = rep.hasPhoto
+            ? `<img src="/api/reports/${rep.id}/photo" alt="Foto della segnalazione" class="pending-report-photo">`
+            : '';
+
         return `
             <div class="pending-report-item">
                 <div class="pending-report-header">
@@ -108,6 +116,7 @@ function renderPendingReportsListBody(reports) {
                     <strong>${esc(titolo)}</strong>
                 </div>
                 <p>${esc(rep.description)}</p>
+                ${fotoHtml}
                 <div class="text-muted small">
                     Segnalato da ${nomeReporter} il ${data} — coord: ${rep.lat.toFixed(3)}, ${rep.lng.toFixed(3)}
                 </div>
