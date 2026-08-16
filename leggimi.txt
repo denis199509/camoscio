@@ -27,12 +27,24 @@ o ne arriva uno nuovo.
 
 
 
->>> STATO ATTUALE (16/08/2026 sera): NESSUN PUNTO IN CODA. I quattro
-    "lavori grandi" concordati (37, 48, 55, 45) sono tutti chiusi. Il
-    punto 80 (7 sotto-punti su "Le mie escursioni"/preferiti/foto profilo)
-    e il punto 45 sono stati chiusi entrambi in questa sessione. ALLA
-    PROSSIMA SESSIONE: chiedere a Denis cosa vuole fare, non c'e' un
-    "da dove riprendere" tecnico da solo.
+>>> STATO ATTUALE (16/08/2026 sera): NESSUN LAVORO TECNICO IN CODA. I
+    quattro "lavori grandi" concordati (37, 48, 55, 45) sono tutti chiusi.
+    Il punto 80 (7 sotto-punti su "Le mie escursioni"/preferiti/foto
+    profilo) e il punto 45 sono stati chiusi entrambi in questa sessione.
+
+    >>> RIPARTIRE DA: quattro decisioni ferme in attesa di Denis (chiesto
+    a lui esplicitamente il 16/08/2026 sera di aprire la prossima sessione
+    con queste, PRIMA di qualunque altro lavoro). Dettaglio completo in
+    [[04-Da-Fare]] del vault, sezione "Aperti, in attesa di una decisione
+    di Denis":
+      1. Punto 42a — raggio della "zona di competenza" (chiesto 29/07).
+      2. Punto 63b — nuovo nome (non piu' "competenza") e i "livelli"
+         (chiesto 03/08).
+      3. Dominio email proprio, per non finire in spam (SPF/DKIM) - spesa
+         e volonta' di Denis, non tecnica.
+      4. Colore del grafico "Calcolatore Passo & Fatica" in Dashboard
+         (numeri blu, grafico arancione) - il piu' piccolo dei quattro,
+         puramente estetico.
 
     Punto 80 (camoscio bf2d72d, vault f0ec371): "Le mie escursioni" ha
     ora una sola sezione "Escursioni completate" al posto delle due
