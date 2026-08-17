@@ -3730,7 +3730,7 @@ mostrare non definito oppure una cosa simile. non possiamo fare ipotesi."
 
 --- BADGE CIME: LIVELLI DI FREQUENTAZIONE E CONTATORE "xN" ---
 
-86) [FATTO 2026-08-17, in attesa della verifica di Denis coi dati veri] Denis:
+86) [FATTO E VERIFICATO 2026-08-17] Denis:
 "5 Salite – Frequentatore (Hai preso la mano e la salita non ha più segreti
 iniziali) / 10 Salite – Habitué della Cima (Riconosci i punti di sosta, i
 panorami e il ritmo giusto) / 15 Salite – Custode del Sentiero (Conosci ogni
@@ -3781,5 +3781,8 @@ badge."
    profilo proprio. Nessun errore in console. Pagina ricaricata subito dopo
    per non lasciare lo stato simulato nella sessione demo condivisa - stessa
    cautela gia' presa il 16/08 per il passo personale. Committato e pushato
-   (camoscio `8cbda25`). LA VERIFICA VERA la fa Denis importando almeno 5
-   tracce .gpx per il Corno Grande sul suo account reale, come annunciato.
+   (camoscio `8cbda25`). LA VERIFICA VERA: Denis ha importato le tracce
+   .gpx per il Corno Grande sul suo account reale come annunciato e ha
+   confermato "tutto perfettamente funzionante" (2026-08-17) - pillola
+   "×N", titolo e descrizione del livello raggiunto, tutto corretto coi
+   dati veri. Punto chiuso per intero, nessun residuo aperto.

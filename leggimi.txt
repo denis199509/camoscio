@@ -2,8 +2,8 @@
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
 Aggiornato: 2026-08-17 (traccia vuota del 24/07 cancellata dal database
 su richiesta di Denis; punto 86 - livelli badge cime e contatore "xN" -
-costruito, committato e pushato, in attesa che Denis lo verifichi coi
-suoi dati veri - vedi STATO ATTUALE sotto)
+costruito, pushato E VERIFICATO da Denis coi suoi dati veri: "tutto
+perfettamente funzionante" - vedi STATO ATTUALE sotto)
 ===================================================================
 
 QUESTO FILE DICE SOLO UNA COSA: a che punto siamo adesso e da dove si ricomincia.
@@ -89,20 +89,15 @@ o ne arriva uno nuovo.
        seconda salita. Nessun dato nuovo su MongoDB, solo lettura diversa
        a schermo (public/js/badges.js, schedaBadge - un solo punto di
        modifica, riusato da pagina Badge e profilo). Solo per le cime, non
-       i rifugi (deciso con Denis). Verificato SOLO in simulazione nel
-       browser (nessuna scrittura reale, il Corno Grande di Denis e' a
-       quota 1 sul database): manca la prova coi dati veri. camoscio
-       `8cbda25`.
+       i rifugi (deciso con Denis). camoscio `8cbda25`. Prima verificato
+       solo in simulazione, POI Denis ha importato le tracce .gpx vere per
+       il Corno Grande sul suo account e confermato: "tutto perfettamente
+       funzionante". Punto chiuso per intero.
 
-    >>> RIPARTIRE DA: Denis ha detto che importera' almeno 5 tracce .gpx
-    per il Corno Grande sul suo account per verificare il badge del punto
-    86 (titolo di livello, descrizione, contatore ×N) con dati veri - se
-    la sessione riparte da li', NON ripianificare, controllare solo che il
-    risultato a schermo corrisponda a quanto descritto sopra. A parte
-    questo, nessun lavoro tecnico pronto: restano aperti solo i "livelli"
-    del punto 63b - quelli della zona "Esperto locale", DIVERSI da quelli
-    del punto 86 (Denis deve pensarci, non richiederlo) - e il dominio
-    email (rimandato da lui).
+    >>> RIPARTIRE DA: nessun lavoro tecnico pronto. Restano aperti solo i
+    "livelli" del punto 63b - quelli della zona "Esperto locale", DIVERSI
+    da quelli gia' fatti del punto 86 (Denis deve pensarci, non
+    richiederlo) - e il dominio email (rimandato da lui).
 
 >>> COSE FUORI SCOPE, NON RIPROPORLE finche' non torna Denis sull'argomento:
     - Tracciamento GPS a pagina chiusa (impossibile via browser, non difficile
