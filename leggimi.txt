@@ -1,8 +1,8 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-16 notte (le quattro decisioni ferme chieste e
-risposte da Denis; due piccoli cambi nel codice committati e pushati
-- vedi STATO ATTUALE sotto)
+Aggiornato: 2026-08-16 notte (sessione lunga, PC spento all'improvviso
+a meta' - le quattro decisioni ferme chiuse, piu' tre richieste nuove
+di Denis, tutte finite e pushate - vedi STATO ATTUALE sotto)
 ===================================================================
 
 QUESTO FILE DICE SOLO UNA COSA: a che punto siamo adesso e da dove si ricomincia.
@@ -30,55 +30,55 @@ o ne arriva uno nuovo.
 
 >>> STATO ATTUALE (16/08/2026, notte): le quattro decisioni ferme sono
     state chieste (sessione aperta con /remote-control) e Denis ha
-    risposto a tutte. Dettaglio completo in [[04-Da-Fare]] del vault,
-    sezione "Le quattro decisioni" in cima al file. Riassunto:
-      1. Punto 42a (raggio zona) — DECISO: 20 km. Codice non scritto,
-         resta legato ai "livelli" del punto 2.
-      2. Punto 63b (nome) — DECISO E FATTO: "Esperto locale" (non "Zona
-         Esperto Locale"). public/index.html, campo local-expert-area.
-         I LIVELLI restano in sospeso, Denis ci deve ancora pensare.
-      3. Dominio email proprio — Denis ha risposto "non ora": rimandato
-         per sua scelta, non piu' da chiedere finche' non ci torna lui.
-      4. Colore grafico Passo & Fatica — DECISO E FATTO: "Tuo Passo
-         Rilevato" ora blu, "Standard CAI Alpino" ora arancione.
-         public/js/app.js, renderPaceChart.
+    risposto a tutte. Nella stessa sessione (con un riavvio imprevisto
+    del PC nel mezzo - vedi [[07-Trappole-Tecniche]] del vault) sono
+    arrivate anche tre richieste nuove, tutte chiuse. Dettaglio completo
+    in [[04-Da-Fare]] del vault.
 
-    >>> I due FATTO sopra (2 e 4) sono stati VERIFICATI DAL VIVO nel
-    browser (account demo Marco Alpinista, sessione gia' autenticata,
-    nessuna password inserita) e poi COMMITTATI E PUSHATI col via libera
-    esplicito di Denis: camoscio `483c3ef`, vault `11fb54f`. Verificato
-    anche live su Render. UNA COSA DA FAR NOTARE A DENIS SE NON L'HA GIA'
-    VISTA: "Sono un esperto locale" (casella) ed "Esperto locale:"
-    (etichetta campo, subito sotto) si leggono vicini e un po' ripetuti -
-    non e' un errore, e' quello che ha chiesto lui, screenshot gia'
-    mandati in chat.
+    Le quattro decisioni:
+      1. Punto 42a (raggio zona) — DECISO: 20 km. Codice non scritto,
+         resta legato ai "livelli" del punto 2 (ancora aperto).
+      2. Punto 63b (nome) — FATTO: "Esperto locale". public/index.html,
+         campo local-expert-area. I LIVELLI restano in sospeso, Denis
+         ci deve ancora pensare.
+      3. Dominio email proprio — "non ora": rimandato per sua scelta,
+         non richiederlo finche' non ci torna lui.
+      4. Colore grafico Passo & Fatica — FATTO: "Tuo Passo Rilevato"
+         blu, "Standard CAI Alpino" arancione.
+    Committate e pushate (camoscio `483c3ef`, vault `11fb54f`), verificate
+    dal vivo e su Render.
+
+    Tre lavori nuovi della stessa sessione, tutti committati, pushati e
+    verificati dal vivo nel browser:
+
+    A. Badge personali a Nicolo97 ("Fuori sentiero, dentro il football")
+       e Scheldon ("Il Passeggero del Rottweiler") — stesso meccanismo
+       gia' in uso per gli altri sei. camoscio `d508c34` / `172d0c9`.
+
+    B. Tolto il campo Telefono dai contatti di emergenza — non serve a
+       niente, chiesto da Denis. Era in DUE form separati (wizard di
+       registrazione, pagina Sicurezza & Mesh): tolto da entrambi.
+       Schema reso opzionale, non cancellato (l'array si riscrive per
+       intero ad ogni salvataggio: cancellarlo avrebbe perso i numeri
+       gia' salvati dei contatti esistenti). Corretto anche un
+       "undefined" latente nel messaggio a schermo di scadenza del Dead
+       Man's Switch. camoscio `09dad29`.
+
+    C. Bug trovato da Denis: il "Passo & Fatica" mostrava 350/500 (il
+       default dello schema) spacciato per "il tuo passo rilevato" a
+       chiunque non avesse ancora nessuna escursione tracciata — visto
+       su Scheldon, appena registrato. Ora il campo resta assente finche'
+       non c'e' un'osservazione vera (schermo mostra "—", non un numero
+       finto); i 4 account demo del seed non sono toccati. 7 utenti
+       reali gia' registrati sistemati con una migrazione dedicata
+       (Scheldon, Nicolo97, Camilla, Bob84, DaniWoll, Manu, Matteo — gli
+       ultimi tre avevano gia' un'escursione ma senza un tempo
+       dichiarato, quindi erano affetti anche loro). camoscio `b5c1305`.
 
     >>> RIPARTIRE DA: nessun lavoro tecnico pronto. Restano aperti solo
     i "livelli" del punto 63b (Denis deve pensarci, non richiederlo) e
-    il dominio email (rimandato da lui).
-
-    Punto 80 (camoscio bf2d72d, vault f0ec371): "Le mie escursioni" ha
-    ora una sola sezione "Escursioni completate" al posto delle due
-    vecchie voci. Dettaglio in cose_da_fare.txt punto 80.
-
-    Punto 45 (camoscio 3687aa6): foto sulle segnalazioni (compressa dal
-    browser, mai piu' di ~380 KB, indice TTL 30 giorni sui report mai
-    risolti) e nuovo tasto "segnala un pericolo" (usa la posizione GPS
-    attuale) al POSTO del vecchio pulsante a scarpone del tracciamento -
-    quel pannello ora si apre solo durante una registrazione o a fine
-    escursione, mai piu' da fermo. "Risolvi" ora cancella la segnalazione
-    per intero, con conferma obbligatoria. Bug vero trovato provando dal
-    vivo (una foto poteva rendere il popup di un marker piu' alto dello
-    spazio che Leaflet riesce a recuperare, tagliando fuori schermo
-    titolo/descrizione) e corretto nello stesso commit. Regressione
-    123/123 + verifica end-to-end nel browser. NON verificato a schermo
-    il layout mobile del nuovo riquadro sulla Mappa (lo strumento di
-    ridimensionamento finestra non ha funzionato in questa sessione) - da
-    ricontrollare la prima volta che si tocca quella pagina da telefono.
-    Dettaglio completo in cose_da_fare.txt punto 45 e in [[04-Da-Fare]]
-    del vault.
-
-    Entrambi committati e pushati, verificati live su Render.
+    il dominio email (rimandato da lui) — stessi due punti di sempre,
+    nessuno dei due toccato in questa sessione.
 
 >>> COSE FUORI SCOPE, NON RIPROPORLE finche' non torna Denis sull'argomento:
     - Tracciamento GPS a pagina chiusa (impossibile via browser, non difficile

@@ -3641,3 +3641,89 @@ sempre biancazzurro."), con le immagini gia' pronte nella cartella
    che sono account veri e non demo - nessuna password per entrarci
    direttamente): entrambi i badge compaiono con l'icona giusta, titolo e
    descrizione esatti, nessun errore in console.
+
+--- BADGE PERSONALI: NICOLO97 E SCHELDON ---
+
+83) [FATTO 2026-08-16] Denis, due richieste separate nella stessa sessione:
+"dobbiamo assegnare un badge al profilo di Nicolo (il badge assegnato dal
+team camoscio). [...] il titolo e' 'Fuori sentiero, dentro il football' la
+descrizione e' 'Viene in montagna con noi quando il calendario del football
+americano glielo permette. Se c'e' una partita, la vetta puo' aspettare.
+Prima il touchdown, poi il dislivello.'" e poi "adesso il badge per
+Sheldon. il titolo 'Il Passeggero del Rottweiler' la descrizione 'Non
+viene in montagna, e' il cane che lo porta.'", immagini gia' pronte nella
+cartella "Desktop\Logo per Camoscio" (football.png, mishka.png).
+   Stesso identico meccanismo dei sei badge gia' presenti: immagini copiate
+   in public/img/badge-personali/ (nicolo-football.png, sheldon-mishka.png)
+   e due righe aggiunte al catalogo (personal-badges.js), con l'userId vero
+   di ciascuno (trovato per username: Nicolo97 6a7b643da0bc42ac66955583,
+   Scheldon - non "Sheldon", con la c, coerente con la sua email
+   scheldon1998@gmail.com - 6a81e2e4609ba367d0688bc0). Nessun'altra modifica.
+   Verificato dal vivo nel browser prima di ciascun commit (window.showUserProfile
+   sui due id, account veri senza password nota): icona, titolo e descrizione
+   corretti, nessun errore in console. Committati e pushati separatamente
+   (camoscio `d508c34` Nicolo97, `172d0c9` Scheldon).
+
+--- CONTATTI DI EMERGENZA: TOLTO IL TELEFONO ---
+
+84) [FATTO 2026-08-16] Denis, con uno screenshot del wizard di
+registrazione: "nella fase di registrazione ancora chiediamo il numero di
+telefono. ma il numero del telefono al momento non serve quindi
+cancelliamo quella voce. basta il nome, relazione e la mail."
+   Il campo esisteva in DUE form indipendenti, non uno solo: il wizard di
+   registrazione (public/js/auth.js, righe .ec-phone) e la pagina "Sicurezza
+   & Mesh" per aggiungere un contatto dopo la registrazione (public/js/safety.js,
+   #safety-new-phone) - tolto da entrambi, insieme alla validazione lato
+   server (routes/auth.js). Progettato con l'agente data-modeler prima di
+   scrivere codice: lo schema (models/User.js) e' stato reso opzionale, MAI
+   cancellato, perche' l'array emergencyContacts si riscrive per intero ad
+   ogni salvataggio (PUT con runValidators) - cancellare il campo avrebbe
+   fatto perdere anche i numeri gia' salvati dei contatti esistenti al primo
+   salvataggio successivo, non solo smesso di chiederne uno nuovo.
+   Trovato e corretto per strada: il messaggio a schermo di scadenza del
+   Dead Man's Switch mostrava il telefono del contatto in due punti
+   (safety.js) - senza un ripiego avrebbe scritto "undefined" per ogni
+   contatto creato da ora in poi. Tolto anche un commento nel codice che non
+   era piu' vero (diceva che quel telefono serviva per il tasto SOS, che in
+   realta' ha sempre chiamato solo il 112).
+   7 prove aggiornate, 231/231 verdi. Verificato dal vivo nel browser (wizard
+   di registrazione, step 5: resta solo Nome/Relazione/Email). Committato e
+   pushato (camoscio `09dad29`).
+
+--- IL "TUO PASSO" NON PUO' ESSERE UN NUMERO INVENTATO ---
+
+85) [FATTO 2026-08-16] Denis, con uno screenshot del profilo di Scheldon
+appena registrato: "l'utente Sheldon appena registrato gia' aveva il passo
+in salita e discesa. per un utente Appena registrato senza dati dovrebbe
+mostrare non definito oppure una cosa simile. non possiamo fare ipotesi."
+   Causa: averagePaceUp/averagePaceDown (models/User.js) avevano un default
+   numerico (350/500) scritto fin dalla creazione dell'account, mai distinto
+   da un dato vero in nessuno dei punti che lo leggono. Progettato con
+   l'agente architect prima di scrivere codice, che ha trovato la stessa
+   bugia anche in un terzo posto non citato da Denis (la scheda di
+   un'escursione, "sul tuo passo" in public/js/social.js) e che gli utenti
+   reali gia' affetti erano 7, non 2: oltre a Scheldon e Nicolo97, anche
+   Camilla, Bob84, DaniWoll, Manu e Matteo, che avevano gia' un'escursione
+   completata ma senza un tempo dichiarato - quindi mostravano comunque il
+   numero finto.
+   Contratto nuovo: il campo resta ASSENTE finche' non esiste un'osservazione
+   vera (mai piu' riscritto a 350/500), scrittura centralizzata in una
+   funzione sola (applyPersonalPace, lib/hikeStats.js) cosi' nessun punto del
+   codice decide per conto proprio cosa fare a zero osservazioni. I quattro
+   account demo del seed (passo assegnato a mano apposta, senza completamenti
+   a giustificarlo) non sono toccati: hanno gia' il campo valorizzato, quindi
+   la stessa regola "campo assente = mai misurato" li lascia in pace da sola,
+   senza bisogno di un'eccezione scritta a mano. Migrazione dedicata
+   (scripts/azzera-passo-non-misurato.js, dry-run di default, salta i demo)
+   per i 7 utenti gia' registrati col default intonso.
+   A schermo: i tre numeri diventano "—" (unita' di misura comprese, non solo
+   il numero) con una nota che spiega perche'; il grafico mostra solo lo
+   Standard CAI. 28 prove nuove (verificate vere: cadono davvero sul codice
+   di prima), regressione invariata verde. Verificato dal vivo: account demo
+   per la non-regressione (passo ancora corretto), stato di un utente reale
+   simulato sul rendering vero per il caso "nessun dato". Un caso limite
+   lasciato deliberatamente cosi' (confermato da Denis, "va bene cosi'"): se
+   su /demo si cancella l'unica escursione di un account demo, il suo passo
+   ora sparisce invece di tornare al vecchio finto 350/500 - non si e' voluto
+   rimettere una condizione "e' un demo" dentro il calcolo vero. Committato e
+   pushato (camoscio `b5c1305`).
