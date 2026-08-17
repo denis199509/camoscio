@@ -932,8 +932,14 @@ function renderDashboardStamps() {
         const slot = document.createElement("div");
         slot.className = `stamp-slot ${badge.sbloccato ? 'unlocked' : ''}`;
 
+        // Punto 91, 18/08/2026: stessa scelta icona/emoji di schedaBadge in badges.js -
+        // stamp-icon resta la classe condivisa col grayscale blocco/sblocco (styles.css).
+        const iconaHtml = badge.icona
+            ? `<img src="${escapeHtml(badge.icona)}" alt="" class="stamp-icon stamp-icon-img">`
+            : `<span class="stamp-icon">${escapeHtml(badge.emoji)}</span>`;
+
         slot.innerHTML = `
-            <span class="stamp-icon">${escapeHtml(badge.emoji)}</span>
+            ${iconaHtml}
             <span class="stamp-name">${escapeHtml(badge.nome)}</span>
             <span class="stamp-date">${escapeHtml(badge.sbloccato ? window.CamoscioBadges.dataItaliana(badge.data) : "Bloccato")}</span>
         `;

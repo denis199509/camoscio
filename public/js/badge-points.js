@@ -72,9 +72,22 @@
         // e' registrato come "Bivacco Tito Zilioli" (wilderness_hut, 2253 m): il nome
         // mostrato resta "Rifugio Zilioli", che e' come lo chiamano in zona ed e' quello
         // che gli utenti vedono gia' nel passaporto.
-        { stampId: 'stamp_mezzeno',     nome: 'Rifugio Franchetti',       tipo: 'rifugio', quota: 2433, lat: 42.47711, lng: 13.56522, zona: 'Gran Sasso',       regione: 'Abruzzo', emoji: '🧗'  },
-        { stampId: 'stamp_gnifetti',    nome: 'Rifugio Zilioli',          tipo: 'rifugio', quota: 2253, lat: 42.81740, lng: 13.26850, zona: 'Monti Sibillini',  regione: 'Marche',  emoji: '❄️' },
+        //
+        // "icona" (punto 91, 18/08/2026): facoltativa, un file in public/img/badge-luoghi/
+        // invece dell'emoji - emoji resta scritta comunque, e' il ripiego se un giorno
+        // l'immagine manca o non carica (vedi schedaBadge in badges.js). Tre rifugi finora,
+        // scelti da Denis: gli altri restano a emoji finche' non arrivano altre icone.
+        { stampId: 'stamp_mezzeno',     nome: 'Rifugio Franchetti',       tipo: 'rifugio', quota: 2433, lat: 42.47711, lng: 13.56522, zona: 'Gran Sasso',       regione: 'Abruzzo', emoji: '🧗',  icona: 'img/badge-luoghi/rifugio-franchetti.png' },
+        { stampId: 'stamp_gnifetti',    nome: 'Rifugio Zilioli',          tipo: 'rifugio', quota: 2253, lat: 42.81740, lng: 13.26850, zona: 'Monti Sibillini',  regione: 'Marche',  emoji: '❄️', icona: 'img/badge-luoghi/rifugio-zilioli.png' },
         { stampId: 'badge_pomilio',     nome: 'Rifugio Bruno Pomilio',    tipo: 'rifugio', quota: 1930, lat: 42.16084, lng: 14.13258, zona: 'Maiella',          regione: 'Abruzzo', emoji: '🛖'  },
-        { stampId: 'badge_ciuffarella', nome: 'Rifugio Pino Ciuffarella', tipo: 'rifugio', quota: 1770, lat: 41.79662, lng: 13.50140, zona: 'Monti Ernici',     regione: 'Lazio',   emoji: '🏕️' }
+        { stampId: 'badge_ciuffarella', nome: 'Rifugio Pino Ciuffarella', tipo: 'rifugio', quota: 1770, lat: 41.79662, lng: 13.50140, zona: 'Monti Ernici',     regione: 'Lazio',   emoji: '🏕️' },
+        // Punto 91: rifugio nuovo nel catalogo, non solo un cambio icona - non c'era
+        // nessuna voce precedente ne' nel catalogo fisso ne' fra le vette di un'escursione
+        // (verificato sul database prima di aggiungerlo). Coordinate incrociate fra il sito
+        // ufficiale del rifugio e prenotarifugi.cai.it (differenza fra i due: ~5 metri),
+        // non da Nominatim - stesso criterio del punto 1 in cima al file. Regione confermata
+        // con lib/regions.js (Abruzzo). Quota 2388 m coincide con quella dichiarata da
+        // entrambe le fonti.
+        { stampId: 'badge_ducadegliabruzzi', nome: 'Rifugio Duca degli Abruzzi', tipo: 'rifugio', quota: 2388, lat: 42.44812, lng: 13.55204, zona: 'Gran Sasso', regione: 'Abruzzo', emoji: '🏠', icona: 'img/badge-luoghi/rifugio-duca-degli-abruzzi.png' }
     ];
 });

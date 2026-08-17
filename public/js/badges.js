@@ -229,9 +229,19 @@
             </div>
         ` : '';
 
+        // Punto 91, 18/08/2026: "icona" (facoltativa, un file vero) al posto dell'emoji per
+        // chi ce l'ha - stessa classe badge-card-icon di sempre, cosi' il grayscale del
+        // blocco/sblocco (styles.css) continua a funzionare identico senza scriverlo due
+        // volte per emoji e immagine. L'emoji resta comunque nei dati (badge-points.js) come
+        // ripiego, mai tolta: se l'immagine manca o non carica, un'emoji e' sempre meglio di
+        // un buco vuoto sulla scheda.
+        const iconaHtml = b.icona
+            ? `<img src="${esc(b.icona)}" alt="" class="badge-card-icon badge-card-icon-img">`
+            : `<span class="badge-card-icon">${esc(b.emoji)}</span>`;
+
         el.innerHTML = `
             ${ripetizione}
-            <span class="badge-card-icon">${esc(b.emoji)}</span>
+            ${iconaHtml}
             ${livelloHtml}
             <span class="badge-card-name">${esc(b.nome)}</span>
             <span class="badge-card-context">${contesto}</span>

@@ -1097,6 +1097,17 @@ option {
     font-size: 2.2rem;
 }
 
+/* Punto 91, 18/08/2026: dimensione per un'icona VERA (immagine) al posto dell'emoji -
+   font-size sopra non serve a un <img>. width/height sostituiscono la dimensione che
+   l'emoji aveva col proprio font-size, object-fit:cover perche' i file sono gia' badge
+   circolari pieni (non serve "contain": andrebbero a capire dentro un riquadro vuoto). */
+.stamp-icon-img {
+    width: 2.2rem;
+    height: 2.2rem;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
 .stamp-name {
     font-size: 0.75rem;
     font-weight: 600;
@@ -3900,6 +3911,15 @@ option {
 
 .badge-card-icon {
     font-size: 2.4rem;
+}
+
+/* Stessa ragione di .stamp-icon-img qui sopra, misura piu' grande perche' questa scheda
+   e' quella a piena pagina (Badge, profilo), non l'anteprima compatta della Dashboard. */
+.badge-card-icon-img {
+    width: 2.6rem;
+    height: 2.6rem;
+    border-radius: 50%;
+    object-fit: cover;
 }
 
 .badge-card-name {
