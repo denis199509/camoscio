@@ -4223,3 +4223,50 @@ schermo spento ancora."
    script isolato che il tetto torni 10 per Denis fino ad agosto incluso,
    5 per chiunque altro sempre, 5 anche per Denis da settembre.
    Rilanciata prova-punto92.js (84/84, nessuna regressione).
+
+93) [APERTO 2026-08-18, IN ATTESA - nessuna modifica di codice] Denis,
+   con uno screenshot dal telefono: creando l'escursione reale "Monte
+   Terminillo" (progetto con anello, punto di ritrovo Rifugio Angelo
+   Sebastiani), "Pubblica Escursione" dava l'errore "La fonte delle
+   quote non ha risposto per questo progetto: riprova fra poco." -
+   successo DUE volte di fila.
+   VERIFICATO SUL DATABASE (sola lettura, nessun dato toccato): trovato
+   il suo progetto vero (RouteDraft id 6a832362fda37cc7fa1c1812, anello,
+   agganciato ai sentieri, 5 punti -> 6 dopo la chiusura dell'anello).
+   Rifatto io stesso lo stesso identico calcolo (lib/trailGraph.js:
+   progettaPercorso) da questo terminale: RIUSCITO, in ~3,6 secondi -
+   6,9 km, 516 m di dislivello, quota massima 2195 m. Non e' quindi il
+   caso "percorso troppo lungo" (soglia ~25 km, il suo e' molto sotto).
+   Confermato anche che l'API di Open-Meteo risponde normalmente
+   (200 OK, <1s) e che il sito in produzione su Render e' su, servendo
+   il codice piu' recente.
+   IPOTESI PIU' PROBABILE (non confermabile senza i log di Render, a cui
+   non c'e' accesso in questa sessione): il tetto orario/al minuto di
+   Open-Meteo, gratuito e condiviso con la barra meteo del sito (stessa
+   fonte, vedi lib/elevation.js), esaurito nel momento esatto del
+   tentativo - sul 429 il sito NON riprova di proposito (righe di
+   lib/elevation.js: "un tetto non si libera in mezzo secondo, insistere
+   peggiora la situazione per tutti").
+   DIFETTO LATERALE TROVATO PER STRADA, non collegato a questo caso (il
+   suo percorso e' corto) ma reale: lib/percorso.js:calcolaDaPercorso
+   (eseguita al momento di "Pubblica Escursione") controlla solo
+   esito.dislivelloDisponibile e mostra SEMPRE lo stesso messaggio "la
+   fonte non ha risposto" - non guarda esito.motivoDislivello ('fonte'
+   vs 'troppo lungo'), la distinzione gia' fatta correttamente nel
+   pannello di progettazione dal vivo (punto 38, public/js/
+   routeplanner.js) per la stessa, identica ragione: "chi legge riprova
+   fra poco riprova all'infinito su un percorso che non funzionera' mai"
+   - qui quella correzione non e' mai arrivata, seconda copia della
+   stessa logica rimasta indietro. NON CORRETTO IN QUESTA SESSIONE (non
+   e' la causa del problema di oggi).
+   PROPOSTO a Denis un fallback (se il calcolo automatico fallisce due
+   volte, permettere di inserire dislivello/distanza a mano per
+   pubblicare comunque) - oggi non esiste, la pubblicazione resta
+   bloccata del tutto finche' le quote non arrivano. DENIS HA DETTO DI
+   ASPETTARE prima di costruirlo, per vedere se il tetto orario si
+   libera da solo. RIPARTIRE DA QUI: chiedere a Denis se ha ripubblicato
+   con successo. Se SI', il punto si chiude com'era (nessun codice da
+   scrivere). Se NO ancora, valutare con lui: (a) il fallback manuale
+   proposto, (b) correggere comunque il difetto laterale sul messaggio
+   (utile in ogni caso, ma non risolverebbe un vero 429 in corso), (c)
+   controllare i log di Render se Denis puo' condividerli.

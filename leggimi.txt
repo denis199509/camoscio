@@ -1,7 +1,8 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-18 (punti 83-92 TUTTI chiusi; per il 92 resta solo
-un'azione che puo' fare SOLO Denis, vedi RIPARTIRE DA in fondo)
+Aggiornato: 2026-08-18 (punti 83-92 TUTTI chiusi; punto 93 APERTO, IN
+ATTESA della risposta di Denis - vedi RIPARTIRE DA in fondo, e' la
+PRIMA cosa da chiedere all'apertura della prossima sessione)
 ===================================================================
 
 QUESTO FILE DICE SOLO UNA COSA: a che punto siamo adesso e da dove si ricomincia.
@@ -95,11 +96,39 @@ o ne arriva uno nuovo.
     sola il 01/09/2026 - niente da disattivare a mano). Committato e
     pushato (camoscio 1aa6fe3).
 
-    >>> RIPARTIRE DA: nessun punto tecnico aperto. Resta solo
-    un'azione che PUO' FARE SOLO DENIS (non richiederla, e' sua):
-    ricaricare le 7 tracce esistenti per ottenere il tempo di movimento
-    vero (decisione 1 del punto 92) - ora puo' farle tutte e 7 in una
-    volta sola (tetto personale 10 fino a fine agosto, vedi sopra).
+    >>> PUNTO 93, APERTO E IN ATTESA (18/08/2026, nessun codice scritto):
+    Denis, pubblicando l'escursione reale "Monte Terminillo" (progetto
+    con anello, ritrovo Rifugio Angelo Sebastiani), ha preso DUE volte
+    di fila l'errore "La fonte delle quote non ha risposto per questo
+    progetto: riprova fra poco." Verificato sul database (sola lettura):
+    rifatto lo stesso identico calcolo da terminale (lib/trailGraph.js:
+    progettaPercorso sul suo RouteDraft vero, id 6a832362fda37cc7fa1c1812)
+    ed E' RIUSCITO (6,9 km, 516 m disl., 3,6s) - non e' un percorso
+    troppo lungo (soglia ~25 km), Open-Meteo risponde normale (200 OK,
+    <1s), Render serve il codice piu' recente. Ipotesi piu' probabile
+    (non confermabile senza i log di Render): il tetto orario/al minuto
+    di Open-Meteo, condiviso con la barra meteo del sito, esaurito nel
+    momento del tentativo - il sito NON riprova di proposito su un 429.
+    Trovato per strada (non collegato a QUESTO caso, il suo percorso e'
+    corto, ma reale): lib/percorso.js:calcolaDaPercorso non distingue
+    mai 'fonte' da 'troppo lungo' come invece fa gia' correttamente il
+    pannello di progettazione dal vivo (punto 38) - stesso messaggio
+    fuorviante in una seconda copia della stessa logica, mai corretta li'.
+    NON corretto in questa sessione. Proposto un fallback (inserimento
+    manuale dopo due fallimenti) - Denis ha detto di ASPETTARE prima di
+    costruirlo. Dettaglio completo in cose_da_fare.txt punto 93.
+
+    >>> RIPARTIRE DA: PRIMA COSA, chiedere a Denis se ha ripubblicato
+    "Monte Terminillo" con successo (punto 93 sopra). Se si', si chiude
+    senza scrivere codice. Se no, tre strade da valutare con lui: (a) il
+    fallback manuale gia' proposto, (b) correggere comunque il difetto
+    del messaggio fuorviante (utile sempre, ma non risolve un vero 429
+    in corso), (c) i log di Render se puo' condividerli.
+
+    Poi resta solo un'azione che PUO' FARE SOLO DENIS (non richiederla,
+    e' sua): ricaricare le 7 tracce esistenti per ottenere il tempo di
+    movimento vero (decisione 1 del punto 92) - ora puo' farle tutte e 7
+    in una volta sola (tetto personale 10 fino a fine agosto, vedi sopra).
     Restano anche aperti - non toccati da nessuno dei punti sopra - i "livelli"
     ORIGINALI del punto 63b (quanti gradini per la ZONA dichiarata a
     mano, es. "Monti Lucretili" in quanto tale, non le singole cime -
