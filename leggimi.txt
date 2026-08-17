@@ -56,6 +56,8 @@ o ne arriva uno nuovo.
           ancora nel catalogo (coordinate incrociate da due fonti
           ufficiali, non indovinate). Ingrandite subito dopo su
           segnalazione di Denis (troppo piccole per leggere il disegno).
+          Quota di Zilioli corretta a 2250 m (era 2253, dato OSM) per
+          farla coincidere col numero scritto sulla sua icona.
 
     Anche una pulizia dati: cancellata una traccia vuota (0 km, 0
     dislivello) del 24/07/2026 sull'account reale di Denis.

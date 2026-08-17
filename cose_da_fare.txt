@@ -4042,3 +4042,12 @@ per il Rifugio Zilioli."
    schede (align-items:start sulla griglia, gia' in uso dal punto 86,
    evita che le schede piu' alte stirino le vicine). Committato e
    pushato (camoscio `276c32c`), con via libera esplicito di Denis.
+
+   ANCORA DOPO, Denis: "sul icona del rifugio zilioli ho scritto 2250 m,
+   tu invece hai messo 2253 m nella descrizione. coreggi la descrizione
+   con 2250 m." 2253 era il dato OSM (nota storica del 2026-07-27, non un
+   errore mio), solo diverso dal numero scritto sull'icona commissionata
+   da Denis. Corretto il campo quota a 2250, con una nota nel codice per
+   non "correggerlo" di nuovo a 2253 ricontrollando OSM in futuro.
+   Committato e pushato (camoscio `171d712`), con via libera esplicito di
+   Denis.
