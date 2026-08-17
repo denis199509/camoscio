@@ -3829,3 +3829,60 @@ locale."
    RESTA COMUNQUE APERTO (non toccato da questo punto): i livelli della
    ZONA dichiarata a mano e il calcolo automatico del raggio, punti 63b/
    42a originali - Denis deve ancora pensarci se vuole anche quello.
+
+--- SEGNALAZIONE SENTIERO: NON PIU' SEMPRE LA POSIZIONE GPS ATTUALE ---
+
+88) [FATTO 2026-08-17] Denis: "Al momento quando qualcuno segnala una
+frana o altre cose sul sentiero il sito prende la sua posizione esatta. Ma
+non è detto che la persona segnala al momento la frana. Quindi prima di
+inviare la segnalazione dobbiamo chiedere se si trova adesso di fronte al
+punto che viene segnalato o desidera mostrarlo sulla mappa. Mettiamo che
+io ho finito l'escursione e adesso sono a casa. Mi sono ricordato che
+avevo visto una frana da segnalare. Quindi mi serve la possibilità di
+selezionare sulla mappa dove sta il problema, non di considerare la
+segnalazione in base alla posizione GPS."
+   Causa: il pannello del tasto ⚠️ "Segnala un pericolo" (raggiungibile da
+   QUALUNQUE pagina del sito, non solo dalla Mappa) prendeva sempre e solo
+   la posizione GPS del momento in cui si apriva, senza chiedere né
+   avvisare - se aperto da casa, la segnalazione finiva a casa. L'unico
+   modo per indicare un punto diverso era gia' cliccare direttamente sulla
+   mappa (flusso separato, mai collegato al tasto ⚠️).
+   Prima di scrivere codice, chiesto a Denis con un confronto concreto
+   (due opzioni) come deve succedere "indica sulla mappa" dato che il
+   tasto ⚠️ funziona da ovunque nel sito, mentre la mappa vera esiste solo
+   nella sua pagina: navigare li' (riusando il click preciso gia'
+   esistente) oppure costruire una mini-mappa dentro il popup. Denis ha
+   scelto la prima - nessuna mappa nuova da costruire ne' da mantenere in
+   memoria.
+   Il pannello ora apre mostrando SUBITO due scelte esplicite ("Sono qui
+   ora" / "Indica sulla mappa") al posto della vecchia nota passiva "Userà
+   la tua posizione GPS attuale" - il permesso GPS non viene piu' chiesto
+   finche' non si sceglie davvero quella strada (miglioramento in piu' non
+   chiesto esplicitamente ma naturale: chi vuole solo indicare un punto
+   sulla mappa non vede piu' un permesso che non gli serve).
+   "Indica sulla mappa" nasconde il pannello SENZA svuotarlo (tipo/
+   descrizione/foto gia' scritti restano), naviga sulla pagina Mappa con
+   un avviso al posto delle istruzioni normali ("Tocca il punto dove si
+   trova il pericolo" + Annulla - stesso elemento riusato, testo originale
+   letto dal DOM una volta sola e mai duplicato a mano), e mette il
+   prossimo click in una modalita' dedicata con priorita' su tutto il
+   resto (anche sul progettista percorsi) - riusa lo stesso meccanismo di
+   click gia' esistente (public/js/map.js, onMapClick), non un secondo
+   flusso. Al click il pannello si riapre con la posizione impostata,
+   pronto per l'invio; un tasto "Cambia" lascia tornare sulla scelta
+   iniziale in ogni momento.
+   Nessuna modifica lato server: routes/reports.js non ha mai avuto un
+   controllo di prossimita' fra la posizione inviata e quella del
+   reporter, quindi non c'era nulla da sbloccare li' - la scelta e' del
+   tutto lato interfaccia.
+   Verificato dal vivo nel browser, riproducendo lo scenario esatto di
+   Denis: pannello aperto dalla Dashboard (non dalla Mappa), scritta una
+   descrizione, scelto "Indica sulla mappa", navigato alla Mappa, cliccato
+   un punto, pannello riaperto con posizione impostata E la descrizione
+   scritta prima ancora intatta. Provato anche "Cambia" (torna alla
+   scelta, form intatto) e "Sono qui ora" (fallisce con un messaggio
+   chiaro quando il browser automatizzato non ha un GPS vero, torna alla
+   scelta - stesso comportamento gia' presente prima). Nessun errore in
+   console, nessuna segnalazione di prova arrivata sul database (chiuso
+   con Annulla, mai inviato per davvero). Committato e pushato (camoscio
+   `c576240`), con via libera esplicito di Denis.

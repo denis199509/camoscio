@@ -1,9 +1,9 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-17 (punto 86 - livelli badge cime e contatore "xN" -
-verificato da Denis coi suoi dati veri; punto 87 - le cime con un
-livello compaiono anche come "esperto locale" sul profilo - costruito,
-verificato coi dati veri di Denis e pushato - vedi STATO ATTUALE sotto)
+Aggiornato: 2026-08-17 (punti 86/87 su badge e esperto locale chiusi;
+punto 88 - la segnalazione di un pericolo ora chiede prima se sei sul
+posto o vuoi indicarlo sulla mappa, invece di usare sempre il GPS del
+momento - costruito, verificato dal vivo e pushato - vedi sotto)
 ===================================================================
 
 QUESTO FILE DICE SOLO UNA COSA: a che punto siamo adesso e da dove si ricomincia.
@@ -109,8 +109,24 @@ o ne arriva uno nuovo.
        Frequentatore" accanto a "Esperto locale: Monti Lucretili".
        camoscio `11b6324`, pushato con via libera esplicito di Denis.
 
+    G. Punto 88: il tasto ⚠️ "Segnala un pericolo" (raggiungibile da
+       QUALUNQUE pagina, non solo dalla Mappa) prendeva sempre e solo la
+       posizione GPS del momento, senza chiedere - se aperto da casa dopo
+       un'escursione, la segnalazione finiva a casa. Denis: "mi serve la
+       possibilità di selezionare sulla mappa dove sta il problema, non
+       di considerare la segnalazione in base alla posizione GPS". Ora il
+       pannello apre chiedendo "Sono qui ora" o "Indica sulla mappa" -
+       niente più permesso GPS finché non si sceglie davvero quella
+       strada. "Indica sulla mappa" naviga sulla pagina Mappa (riusando
+       il click preciso già esistente, non un secondo flusso), il
+       pannello si riapre con la posizione impostata e tipo/descrizione/
+       foto già scritti intatti. Nessuna modifica lato server. Verificato
+       dal vivo riproducendo lo scenario di Denis (pannello aperto dalla
+       Dashboard, non dalla Mappa). camoscio `c576240`, pushato con via
+       libera esplicito di Denis.
+
     >>> RIPARTIRE DA: nessun lavoro tecnico pronto. Restano aperti - non
-    toccati dal punto 87 - i "livelli" ORIGINALI del punto 63b (quanti
+    toccati da 87/88 - i "livelli" ORIGINALI del punto 63b (quanti
     gradini per la ZONA dichiarata a mano, es. "Monti Lucretili" in
     quanto tale, non le singole cime) e il calcolo automatico del raggio
     (punto 42a) - Denis deve ancora pensarci, non richiederlo - e il
