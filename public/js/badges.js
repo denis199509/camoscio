@@ -160,6 +160,26 @@
         return `${a.siteCount} volte registrate dal sito`;
     }
 
+    // Livelli di frequentazione di una cima, decisi da Denis il 17/08/2026: soglie sul
+    // totale ascesa.total (stesso numero gia' mostrato da testoAscesa, riconosciute +
+    // registrate - punto 42b, un solo conto, mai due matematiche diverse). SOLO per le
+    // cime: i nomi parlano sempre di "cima"/"vetta"/"montagna", su un rifugio visitato
+    // piu' volte suonerebbero fuori posto. Ordinata dalla soglia piu' alta: il primo
+    // elemento che total soddisfa e' il livello giusto.
+    const LIVELLI_ASCESA = [
+        { soglia: 30, titolo: 'Esperto della Cima', descrizione: 'Il livello massimo: la vetta è diventata la tua seconda casa.' },
+        { soglia: 25, titolo: 'Colonna della Montagna', descrizione: 'Sei un punto di riferimento per chiunque incontri sul percorso.' },
+        { soglia: 20, titolo: 'Veterano della Vetta', descrizione: 'Hai affrontato la salita con ogni meteo e stagionalità.' },
+        { soglia: 15, titolo: 'Custode del Sentiero', descrizione: 'Conosci ogni svolta, sasso e cambio di pendenza.' },
+        { soglia: 10, titolo: 'Habitué della Cima', descrizione: 'Riconosci i punti di sosta, i panorami e il ritmo giusto.' },
+        { soglia: 5, titolo: 'Frequentatore', descrizione: 'Hai preso la mano e la salita non ha più segreti iniziali.' }
+    ];
+
+    function livelloAscesa(b) {
+        if (b.tipo !== 'cima' || !b.ascesa) return null;
+        return LIVELLI_ASCESA.find(l => b.ascesa.total >= l.soglia) || null;
+    }
+
     function schedaBadge(b) {
         const esc = window.escapeHtml;
         const el = document.createElement('div');
@@ -182,8 +202,25 @@
             ? `<span class="badge-card-count">${esc(testoAscesa(b.ascesa))}</span>`
             : '';
 
+        // "×N" in alto a destra sulla scheda dalla seconda salita in poi: b.ascesa esiste
+        // gia' solo quando ascesePerVetta[...].total > 1 (statoBadgePer piu' sopra), stessa
+        // soglia richiesta da Denis - nessuna nuova condizione da inventare qui.
+        const ripetizione = b.ascesa
+            ? `<span class="badge-card-repeat-pill">×${b.ascesa.total}</span>`
+            : '';
+
+        const livello = livelloAscesa(b);
+        const livelloHtml = livello ? `
+            <div class="badge-card-tier">
+                <span class="badge-card-tier-title">${esc(livello.titolo)}</span>
+                <span class="badge-card-tier-desc">${esc(livello.descrizione)}</span>
+            </div>
+        ` : '';
+
         el.innerHTML = `
+            ${ripetizione}
             <span class="badge-card-icon">${esc(b.emoji)}</span>
+            ${livelloHtml}
             <span class="badge-card-name">${esc(b.nome)}</span>
             <span class="badge-card-context">${contesto}</span>
             ${stato}

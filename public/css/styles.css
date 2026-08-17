@@ -3780,6 +3780,10 @@ h1, h2, h3, h4, h5, h6 {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
     gap: 14px;
+    /* align-items:start (non lo stretch di default di grid): una scheda con un livello
+       di ascesa (piu' alta delle altre, vedi .badge-card-tier) non deve stirare le
+       schede vicine nella stessa riga per pareggiarne l'altezza. */
+    align-items: start;
 }
 
 /* Scatola, bordo, stato "conquistato" e animazione dell'icona sono in comune con i timbri
@@ -3789,6 +3793,52 @@ h1, h2, h3, h4, h5, h6 {
 .badge-card {
     padding: 18px 12px;
     gap: 6px;
+    /* Ancora per .badge-card-repeat-pill qui sotto (in alto a destra SULLA scheda,
+       non sulla sola icona: la posizione resta stabile anche se l'emoji cambia
+       dimensione). */
+    position: relative;
+}
+
+/* Punto "livelli", 17/08/2026: quante volte questa vetta e' stata salita, in alto a
+   destra sulla scheda dalla seconda salita in poi (b.ascesa esiste solo da li' in su,
+   vedi statoBadgePer in badges.js - stessa soglia gia' in uso per badge-card-count,
+   qui e' solo un secondo modo di mostrare lo stesso numero). */
+.badge-card-repeat-pill {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: var(--accent-orange);
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 700;
+    line-height: 1;
+    padding: 3px 7px;
+    border-radius: 999px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+/* Titolo di livello ("Frequentatore" ecc.) e descrizione, sempre visibili insieme -
+   stesso principio gia' scelto per .personal-badge-showcase (h4+p, mai un titolo senza
+   la sua descrizione dietro un hover che su telefono non esiste). Solo per le cime che
+   hanno raggiunto una soglia (livelloAscesa in badges.js), quindi assente sulla
+   maggioranza delle schede. */
+.badge-card-tier {
+    margin: 2px 0 4px;
+}
+
+.badge-card-tier-title {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--accent-orange);
+}
+
+.badge-card-tier-desc {
+    display: block;
+    font-size: 0.7rem;
+    color: var(--color-text-secondary);
+    font-style: italic;
+    margin-top: 2px;
 }
 
 .badge-card-icon {
