@@ -3727,3 +3727,59 @@ mostrare non definito oppure una cosa simile. non possiamo fare ipotesi."
    ora sparisce invece di tornare al vecchio finto 350/500 - non si e' voluto
    rimettere una condizione "e' un demo" dentro il calcolo vero. Committato e
    pushato (camoscio `b5c1305`).
+
+--- BADGE CIME: LIVELLI DI FREQUENTAZIONE E CONTATORE "xN" ---
+
+86) [FATTO 2026-08-17, in attesa della verifica di Denis coi dati veri] Denis:
+"5 Salite – Frequentatore (Hai preso la mano e la salita non ha più segreti
+iniziali) / 10 Salite – Habitué della Cima (Riconosci i punti di sosta, i
+panorami e il ritmo giusto) / 15 Salite – Custode del Sentiero (Conosci ogni
+svolta, sasso e cambio di pendenza) / 20 Salite – Veterano della Vetta (Hai
+affrontato la salita con ogni meteo e stagionalità) / 25 Salite – Colonna
+della Montagna (Sei un punto di riferimento per chiunque incontri sul
+percorso) / 30 Salite – Esperto della Cima (Il livello massimo: la vetta è
+diventata la tua seconda casa). Questi sono i livelli. Prendiamo come esempio
+l'account di Denis. Ad esempio il badge corno grande conquistato il 11.08.24.
+dalla seconda salita deve comparire in alto a destra sul badge 'x2' che deve
+indicare due salite sul corno grande. Quando arriva a 5 deve comparire pure
+la descrizione sempre in alto nel badge come se fosse un titolo. [...] Una
+volta finito importerò minimo 5 tracce per corno grande per verificare il
+badge."
+   Nessun nuovo dato su MongoDB: il conteggio "quante volte" esisteva gia' dal
+   punto 42b (User.recognizedAscents + le uscite registrate che toccano la
+   vetta, sommati in GET /api/tracking/peak-ascents/:userId in un unico
+   "total", mai due matematiche separate). I livelli sono solo un modo nuovo
+   di leggere quel numero a schermo: una tabella fissa di soglie in
+   public/js/badges.js (livelloAscesa), SOLO per le cime - i nomi dei livelli
+   parlano sempre di "cima"/"vetta"/"montagna", su un rifugio visitato piu'
+   volte sarebbero fuori posto (deciso con Denis prima di scrivere il CSS).
+   Due scelte visive fatte con Denis prima di costruire (domanda con
+   anteprime): la scheda badge, una volta raggiunta la prima soglia, mostra
+   SEMPRE titolo e descrizione del livello insieme (mai un titolo senza la
+   sua descrizione dietro un hover che su telefono non esiste) - stesso
+   principio gia' scelto per i badge personali. Il contatore "×N" compare in
+   alto a destra sulla scheda (non solo sull'icona) dalla seconda salita in
+   poi, stessa soglia gia' esistente per il conteggio testuale in fondo alla
+   scheda (che resta, non e' stato tolto: dice ANCHE da dove viene il numero,
+   riconosciute vs registrate - principio del punto 42b, non toccato).
+   Un solo punto di modifica per la logica di disegno (schedaBadge in
+   badges.js), riusato senza saperlo sia dalla pagina Badge sia dal riquadro
+   badge di ogni profilo (renderProfileIdentity in userprofile.js) - nessun
+   secondo posto da tenere allineato. Aggiunta anche una correzione piccola
+   ma necessaria: .badges-grid usava lo stretch di default di CSS grid, che
+   avrebbe stirato le schede vicine a pareggiare l'altezza di una scheda con
+   livello (piu' alta delle altre) - passata a align-items:start.
+   Verificato SOLO in simulazione: nessuna traccia vera esiste ancora per
+   provare un totale >= 2 sul database (il Corno Grande di Denis risultava a
+   quota 1 dopo la pulizia della traccia vuota del 24/07 - vedi voce sopra).
+   Patchato a mano in memoria window.CamoscioState.peakAscents nel browser
+   (account demo Marco Alpinista, MAI scritto sul database) per simulare ×3,
+   ×7 e ×32 su una cima (Corno Grande, confermati pillola + titolo +
+   descrizione ai livelli "Frequentatore" e "Esperto della Cima") e ×3 su un
+   rifugio (Rifugio Franchetti, confermato SOLO la pillola, nessun titolo di
+   livello, come da scelta "solo cime"), sia sulla pagina Badge sia sul
+   profilo proprio. Nessun errore in console. Pagina ricaricata subito dopo
+   per non lasciare lo stato simulato nella sessione demo condivisa - stessa
+   cautela gia' presa il 16/08 per il passo personale. Committato e pushato
+   (camoscio `8cbda25`). LA VERIFICA VERA la fa Denis importando almeno 5
+   tracce .gpx per il Corno Grande sul suo account reale, come annunciato.
