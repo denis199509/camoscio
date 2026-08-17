@@ -1,9 +1,9 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-17 (traccia vuota del 24/07 cancellata dal database
-su richiesta di Denis; punto 86 - livelli badge cime e contatore "xN" -
-costruito, pushato E VERIFICATO da Denis coi suoi dati veri: "tutto
-perfettamente funzionante" - vedi STATO ATTUALE sotto)
+Aggiornato: 2026-08-17 (punto 86 - livelli badge cime e contatore "xN" -
+verificato da Denis coi suoi dati veri; punto 87 - le cime con un
+livello compaiono anche come "esperto locale" sul profilo - costruito,
+verificato coi dati veri di Denis e pushato - vedi STATO ATTUALE sotto)
 ===================================================================
 
 QUESTO FILE DICE SOLO UNA COSA: a che punto siamo adesso e da dove si ricomincia.
@@ -94,10 +94,27 @@ o ne arriva uno nuovo.
        il Corno Grande sul suo account e confermato: "tutto perfettamente
        funzionante". Punto chiuso per intero.
 
-    >>> RIPARTIRE DA: nessun lavoro tecnico pronto. Restano aperti solo i
-    "livelli" del punto 63b - quelli della zona "Esperto locale", DIVERSI
-    da quelli gia' fatti del punto 86 (Denis deve pensarci, non
-    richiederlo) - e il dominio email (rimandato da lui).
+    F. Punto 87, risposta di Denis a "punto 63b?": non ha definito i
+       livelli per la ZONA dichiarata a mano - ha invece agganciato
+       l'esperto locale al sistema di livelli GIA' ESISTENTE delle cime
+       (punto 86). Una cima con un livello raggiunto (5+ salite) compare
+       ora anche come riga "Nome cima — Titolo" nella sezione Esperto
+       locale del profilo, accanto alla zona scritta a mano - indipendente
+       dal checkbox "Sono un esperto locale". Nessun dato nuovo su
+       MongoDB (montagneEsperienza() in badges.js legge lo stato gia'
+       calcolato per i badge). Un solo punto di modifica
+       (renderProfileIdentity, userprofile.js), riusato da profilo
+       proprio e altrui. VERIFICATO CON DATI VERI: profilo vero di Denis
+       (letto in sola lettura, nessuna password) mostra "Corno Grande —
+       Frequentatore" accanto a "Esperto locale: Monti Lucretili".
+       camoscio `11b6324`, pushato con via libera esplicito di Denis.
+
+    >>> RIPARTIRE DA: nessun lavoro tecnico pronto. Restano aperti - non
+    toccati dal punto 87 - i "livelli" ORIGINALI del punto 63b (quanti
+    gradini per la ZONA dichiarata a mano, es. "Monti Lucretili" in
+    quanto tale, non le singole cime) e il calcolo automatico del raggio
+    (punto 42a) - Denis deve ancora pensarci, non richiederlo - e il
+    dominio email (rimandato da lui).
 
 >>> COSE FUORI SCOPE, NON RIPROPORLE finche' non torna Denis sull'argomento:
     - Tracciamento GPS a pagina chiusa (impossibile via browser, non difficile

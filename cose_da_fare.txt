@@ -3786,3 +3786,46 @@ badge."
    confermato "tutto perfettamente funzionante" (2026-08-17) - pillola
    "×N", titolo e descrizione del livello raggiunto, tutto corretto coi
    dati veri. Punto chiuso per intero, nessun residuo aperto.
+
+--- ESPERTO LOCALE: LE CIME CON UN LIVELLO CI COMPAIONO ANCHE ---
+
+87) [FATTO 2026-08-17] Denis, rispondendo alla propria domanda "punto 63b?"
+(i livelli della zona esperto locale, mai decisi): "ok, allora ci
+agganciamo dai badge. come nel caso Denis, una volta salito minimo 5 volte
+sul corno grande, facciamo comparire questa informazione pure sul profilo
+nella parte esperto locale. Denis ha gia inserito i Monti Lucretili come
+esperto locale adesso denis guadagna pure il Corno Grande come esperto
+locale con il suo titolo affianco (in questo caso 'frequentatore'). quando
+arriva a 10 salite si aggiorna sia il badge che la scritta del esperto
+locale."
+   ATTENZIONE A NON CONFONDERLO CON IL PUNTO 63b ORIGINALE: questo non
+   definisce i "livelli" per la ZONA dichiarata a mano (quanti gradini fra
+   5 uscite e "30+ tipo leggenda" per "Monti Lucretili" in quanto tale) -
+   quella domanda resta ancora aperta, insieme al calcolo automatico del
+   raggio (punto 42a). Quello che Denis ha deciso qui e' un'idea diversa e
+   piu' semplice: agganciare l'informazione "esperto locale" al sistema di
+   livelli GIA' ESISTENTE delle cime (punto 86), non inventarne uno nuovo
+   per le zone.
+   Nessun dato nuovo su MongoDB, nessuna nuova rotta: una cima con un
+   livello raggiunto (5+ salite, stessa tabella del punto 86) diventa una
+   riga in piu' "Nome cima — Titolo" nella sezione Esperto locale del
+   profilo, accanto alla zona dichiarata a mano (se c'e'). Nuova funzione
+   montagneEsperienza() in public/js/badges.js, che legge lo stesso "stato"
+   gia' calcolato per disegnare i badge - nessun secondo conteggio.
+   Indipendente dal checkbox "Sono un esperto locale": quel checkbox
+   riguarda solo la zona scritta a mano, qui non c'e' niente da attivare,
+   e' gia' successo. Un solo punto di modifica per il disegno
+   (renderProfileIdentity in userprofile.js, la stessa funzione condivisa
+   gia' nota), riusata sia dal profilo proprio sia da quello di un altro
+   utente - bastava passarle un contenitore in piu'.
+   Verificato con DATI VERI, non solo in simulazione: profilo vero di
+   Denis guardato in sola lettura da un account demo (nessuna password
+   inserita) dopo che aveva gia' importato le tracce del Corno Grande per
+   il punto 86 - comparsa la riga "Corno Grande — Frequentatore" accanto a
+   "Esperto locale: Monti Lucretili", coerente con la scheda badge (×5,
+   "Frequentatore") sotto. Lato profilo proprio verificato in simulazione
+   (nessuna scrittura sul database). Nessun errore in console. Committato
+   e pushato (camoscio `11b6324`), con via libera esplicito di Denis.
+   RESTA COMUNQUE APERTO (non toccato da questo punto): i livelli della
+   ZONA dichiarata a mano e il calcolo automatico del raggio, punti 63b/
+   42a originali - Denis deve ancora pensarci se vuole anche quello.
