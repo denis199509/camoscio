@@ -1,9 +1,9 @@
-// Ricalcola da zero averagePaceUp/averagePaceDown di ogni utente con almeno un
-// completamento con tempo - punto 79. Serve perche' prima di oggi il passo personale si
-// costruiva SEMPRE sul tempo totale (pause comprese): chi aveva gia' completato
-// un'escursione con un tempo reale porta un valore contaminato dalle sue stesse pause, e
-// da solo si correggerebbe solo pian piano, con le prossime escursioni. Denis ha scelto
-// invece la correzione immediata (pochi utenti reali, costo quasi nullo).
+// Ricalcola da zero averagePaceUp/averagePaceDown di ogni utente con almeno un'osservazione
+// valida - punto 79, esteso al punto 92: le osservazioni vengono sia dalle tracce GPS con
+// tempo di cammino misurato sia dai Completion con un .gpx allegato (mai piu' dai tempi
+// scritti a mano, decisione di Denis del 18/08/2026). Serve rilanciare questo script dopo
+// un cambiamento che tocca molti utenti insieme (es. il ricaricamento delle tracce vecchie,
+// che da solo si correggerebbe solo pian piano con le prossime escursioni).
 //
 // La matematica vera e propria (RICOSTRUZIONE COMPLETA, MAI INCREMENTALE - rilanciare lo
 // script due volte da' lo stesso risultato) vive in lib/hikeStats.js, recalculatePersonalPace:
@@ -53,10 +53,11 @@ const { recalculatePersonalPace } = require('../lib/hikeStats');
         if (osservazioni.length === 0) continue; // nessun completamento con un tempo utilizzabile: resta com'e' (vedi nota sopra)
 
         const cambiato = nuovoPaceUp !== user.averagePaceUp || nuovoPaceDown !== user.averagePaceDown;
-        const conMovimento = osservazioni.filter(o => o.conMovimento).length;
+        const daTracce = osservazioni.filter(o => o.fonte === 'traccia').length;
+        const daCompletamenti = osservazioni.length - daTracce;
         const passoOggi = (user.averagePaceUp == null) ? 'non misurato' : `${user.averagePaceUp}/${user.averagePaceDown}`;
         console.log(
-            `${user.username}: ${osservazioni.length} osservazioni (${conMovimento} con tempo di solo cammino) — ` +
+            `${user.username}: ${osservazioni.length} osservazioni (${daTracce} da tracce GPS, ${daCompletamenti} da completamenti) — ` +
             `passo ${passoOggi} -> ${nuovoPaceUp}/${nuovoPaceDown}` +
             (cambiato ? '' : '  (invariato)')
         );

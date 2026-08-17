@@ -236,11 +236,9 @@ async function saveLocalExpertStatus() {
 }
 
 // Calcolo tempi del sentiero personalizzati in base al passo dell'utente (Pace Calculator)
-// Formula CAI Standard:
-// - Salita: 400 metri di dislivello all'ora.
-// - Discesa: 600 metri all'ora.
-// - In piano: 4 km all'ora.
-// Formula di sintesi CAI: Max(tempo_dislivello, tempo_sviluppo) + Min(tempo_dislivello, tempo_sviluppo)/2
+// La formula di sintesi CAI vera e propria vive ora in public/js/cai-tempi.js (punto 92),
+// condivisa col server: prima stava solo qui, ma il server ne ha bisogno per invertirla
+// (lib/hikeStats.js:paceUpDaMisura) - un'unica copia, mai due formule che possono divergere.
 // IPOTESI DI PARTENZA quando il passo dell'utente non è mai stato misurato: qui un divisore
 // serve comunque, quindi il numero si usa - ma il risultato NON va presentato come "sul tuo
 // passo" (vedi passoMisurato nel valore di ritorno, e chi lo legge in social.js).
@@ -254,9 +252,7 @@ function calculateHikeTimes(hike, user) {
     const distance = hike.distanceKm;
 
     // 1. CALCOLO CAI STANDARD
-    const tVertStandard = dPlus / 400; // ore
-    const tFlatStandard = distance / 4; // ore
-    const standardTotalHours = Math.max(tVertStandard, tFlatStandard) + Math.min(tVertStandard, tFlatStandard) / 2;
+    const standardTotalHours = window.oreCai(dPlus, distance);
 
     // 2. CALCOLO PERSONALIZZATO UTENTE
     // Il campo esiste solo se c'è almeno un'osservazione vera dietro (models/User.js): il
@@ -266,9 +262,7 @@ function calculateHikeTimes(hike, user) {
     const passoMisurato = Number.isFinite(paceUp) && paceUp > 0;
 
     // Salita calibrata sulla velocità dell'utente, in discesa usiamo il suo passo di discesa
-    const tVertUpCustom = dPlus / (passoMisurato ? paceUp : PASSO_SALITA_IPOTESI);
-    const tFlatCustom = distance / 4;
-    const customTotalHours = Math.max(tVertUpCustom, tFlatCustom) + Math.min(tVertUpCustom, tFlatCustom) / 2;
+    const customTotalHours = window.oreCai(dPlus, distance, passoMisurato ? paceUp : PASSO_SALITA_IPOTESI);
 
     return {
         standardText: formatHoursToMin(standardTotalHours),
@@ -277,7 +271,7 @@ function calculateHikeTimes(hike, user) {
         // stessa bugia della card "Passo & Fatica" in Dashboard.
         customText: formatHoursToMin(customTotalHours),
         passoMisurato,
-        fatigueIndex: (passoMisurato ? (400 / paceUp).toFixed(2) : null),
+        fatigueIndex: (passoMisurato ? (window.PASSO_SALITA_CAI / paceUp).toFixed(2) : null),
         hoursDifference: (customTotalHours - standardTotalHours)
     };
 }

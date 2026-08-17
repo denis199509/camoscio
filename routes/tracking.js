@@ -8,9 +8,10 @@ const User = require('../models/User'); // punto 42b: recognizedAscents
 const { requireAuth } = require('../middleware/auth');
 const { isFiniteNum, haversineKm, simplifyTrack } = require('../lib/geometry');
 const { regionForPoint } = require('../lib/regions');
-const { parseGpx, statisticheTraccia, ErroreGpx, SOGLIA_DISLIVELLO_M } = require('../lib/gpx');
+const { parseGpx, statisticheTraccia, ErroreGpx, SOGLIA_DISLIVELLO_M, movimentoSecAttendibile } = require('../lib/gpx');
 const trailIndex = require('../lib/trailIndex');
 const { mongoose } = require('../db/mongo');
+const { recalculateAndApplyPace } = require('../lib/hikeStats');
 
 const MAX_POINTS_PER_BATCH = 500; // un client onesto ne manda ~60-180 ogni 20-30s, mai a uno a uno
 // LA SOGLIA DEL DISLIVELLO DAL VIVO NON ESISTE PIU' COME NUMERO A PARTE. Fino al 2026-07-28
@@ -260,7 +261,7 @@ router.delete('/sessions/:id', requireAuth, async (req, res) => {
         if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
             return res.status(400).json({ error: 'Identificativo non valido.' });
         }
-        const sessione = await ActiveHikeSession.findById(req.params.id).select('userId status importedFrom');
+        const sessione = await ActiveHikeSession.findById(req.params.id).select('userId status importedFrom movingTimeSec');
         if (!sessione) return res.status(404).json({ error: 'Questa uscita non esiste (forse e\' gia\' stata cancellata).' });
 
         // Il confronto e' con req.session.userId, MAI con un id mandato dal client: e' la
@@ -277,6 +278,21 @@ router.delete('/sessions/:id', requireAuth, async (req, res) => {
         }
 
         await ActiveHikeSession.deleteOne({ _id: sessione._id, userId: req.session.userId });
+
+        // Punto 92: una traccia in meno cambia le osservazioni disponibili per il passo
+        // personale allo stesso modo di una in piu' - senza, cancellare l'unica traccia
+        // misurata lascerebbe un passo orfano di qualunque osservazione (stesso difetto gia'
+        // chiuso per i Completion al punto 80/A). Solo se la traccia cancellata aveva
+        // davvero un tempo di cammino, per non fare lavoro inutile ad ogni cancellazione.
+        if (sessione.movingTimeSec) {
+            try {
+                const utente = await User.findById(req.session.userId);
+                if (utente) await recalculateAndApplyPace(utente);
+            } catch (e) {
+                console.error('Errore ricalcolo passo personale dopo cancellazione traccia:', e);
+            }
+        }
+
         res.json({ success: true, eraImportata: sessione.importedFrom === 'gpx' });
     } catch (e) {
         console.error('Cancellazione uscita fallita:', e);
@@ -510,8 +526,15 @@ router.post('/import-gpx', requireAuth, async (req, res) => {
             });
         }
 
-        // La data scelta dall'utente vince sempre su quella del file.
-        if (req.body.dataUscita) {
+        // La data scelta dall'utente vince su quella del file, MA SOLO quando il file non
+        // aveva gia' i suoi orari veri: la richiesta 422 sopra la chiede solo per i file
+        // senza orari, ma senza questo controllo un dataUscita mandato "a mano" (richiesta
+        // costruita apposta, non raggiungibile dall'interfaccia oggi) sovrascriverebbe
+        // inizio/fine anche su un file CON orari, azzerando la durata (startedAt===endedAt)
+        // senza pero' impostare durationUnknown - una traccia con un movingTimeSec (punto
+        // 92) misurato ma una durata totale pari a zero, due numeri che si contraddicono
+        // sullo stesso documento. Trovato dall'agente architect progettando il punto 92.
+        if (req.body.dataUscita && letto.durataIgnota) {
             const scelta = String(req.body.dataUscita).trim();
             if (!/^\d{4}-\d{2}-\d{2}$/.test(scelta)) {
                 return res.status(400).json({ error: 'La data non e\' in un formato valido.' });
@@ -556,6 +579,20 @@ router.post('/import-gpx', requireAuth, async (req, res) => {
         // seguita a fine registrazione in Fase F. Semplificare serve a risparmiare spazio
         // sul disegno della linea, non a cambiare quanti chilometri hai camminato.
         const { distanzaKm, dislivelloM } = statisticheTraccia(letto.punti, SOGLIA_DISLIVELLO_IMPORT_M, haversineKm);
+
+        // Punto 92: il tempo di SOLO CAMMINO si calcola QUI, sui punti completi, PRIMA che
+        // simplifyTrack li riduca (~8m, campionamento troppo rado per tempiTraccia dopo la
+        // semplificazione - misurato su tutte e 7 le tracce vere di Denis: zero
+        // osservazioni). Solo se il file ha gli orari: senza, non c'e' niente da separare.
+        let movingTimeSec = null;
+        if (!letto.durataIgnota) {
+            const movimento = movimentoSecAttendibile(letto.punti, haversineKm);
+            movingTimeSec = movimento.sec;
+            if (movingTimeSec == null && movimento.motivi.length) {
+                letto.avvisi = [...(letto.avvisi || []), ...movimento.motivi];
+            }
+        }
+
         const puntiSemplificati = simplifyTrack(letto.punti, SIMPLIFY_TOLERANCE_M);
 
         // Quando il file non porta nessuna data (ne' sui punti ne' nell'intestazione) si usa
@@ -578,7 +615,9 @@ router.post('/import-gpx', requireAuth, async (req, res) => {
             importedFrom: 'gpx',
             importedName: (letto.nome || '').slice(0, 120) || undefined,
             // Solo dove serve: su una traccia con gli orari il campo non viene scritto affatto.
-            durationUnknown: letto.durataIgnota ? true : undefined
+            durationUnknown: letto.durataIgnota ? true : undefined,
+            // Punto 92: assente se non misurabile, mai zero (vedi models/ActiveHikeSession.js).
+            ...(movingTimeSec ? { movingTimeSec } : {})
             // openSession NON impostato di proposito: una traccia importata e' gia' conclusa,
             // e l'indice unico parziale su openSession impedirebbe di caricarne una seconda
             // mentre una registrazione dal vivo e' in corso.
@@ -589,6 +628,30 @@ router.post('/import-gpx', requireAuth, async (req, res) => {
         // Si guardano i punti COMPLETI, non quelli semplificati: la semplificazione puo'
         // spostare la linea fino a 8 metri e su una vetta contano i metri.
         const timbri = await assegnaTimbriDallaTraccia(req.session.userId, letto.punti, inizio);
+
+        // Punto 92: una traccia in piu' cambia le osservazioni disponibili per il passo
+        // personale - stesso principio gia' in uso per un .gpx aggiunto a un Completion
+        // (routes/completions.js). Mai bloccante: importare la traccia e' cio' che conta,
+        // il passo e' un derivato che si puo' sempre ricalcolare in un secondo momento.
+        //
+        // SOLO SE movingTimeSec e' stato misurato, come in /:id/end e DELETE /sessions/:id -
+        // senza questa guardia, importare un file SENZA orari (nessuna osservazione aggiunta)
+        // ricalcolerebbe comunque da zero e cancellerebbe il passo di un account che l'aveva
+        // assegnato a mano senza prove dietro (i quattro account demo del seed), come effetto
+        // collaterale di un'importazione che non ha cambiato nulla di rilevante. Trovato dal
+        // test-engineer verificando il punto 92, prima di qualunque uso in produzione.
+        let utenteAggiornato = null;
+        if (movingTimeSec) {
+            try {
+                const utente = await User.findById(req.session.userId);
+                if (utente) {
+                    await recalculateAndApplyPace(utente);
+                    utenteAggiornato = utente;
+                }
+            } catch (e) {
+                console.error('Errore ricalcolo passo personale dopo import gpx:', e);
+            }
+        }
 
         res.json({
             id: sessione._id,
@@ -603,7 +666,11 @@ router.post('/import-gpx', requireAuth, async (req, res) => {
             avvisi: letto.avvisi,
             badge: timbri,
             caricatiQuestoMese: giaCaricati + 1,
-            massimoAlMese: MAX_GPX_AL_MESE
+            massimoAlMese: MAX_GPX_AL_MESE,
+            // Cosi' la Dashboard puo' aggiornare subito il passo mostrato senza dover
+            // ricaricare la pagina - stesso motivo per cui le rotte di completions.js
+            // rimandano "user" nella risposta.
+            ...(utenteAggiornato ? { user: utenteAggiornato } : {})
         });
     } catch (e) {
         console.error('Errore importazione .gpx:', e);
@@ -805,6 +872,11 @@ router.post('/:id/end', requireAuth, async (req, res) => {
                 pausedMs += (Date.now() - session.pausedAt.getTime());
             }
 
+            // Punto 92: il tempo di SOLO CAMMINO si calcola QUI, su session.points COMPLETI,
+            // PRIMA che simplifyTrack li riduca - stessa ragione del gemello in /import-gpx.
+            const movimentoFineTracciamento = movimentoSecAttendibile(session.points, haversineKm);
+            const movingTimeSec = movimentoFineTracciamento.sec;
+
             // Una volta archiviata la traccia dettagliata non serve piu' punto per punto:
             // viene semplificata per risparmiare spazio (vincolo hard di cose_da_fare.txt),
             // le statistiche sopra sono gia' state calcolate sui dati completi prima d'ora.
@@ -836,12 +908,26 @@ router.post('/:id/end', requireAuth, async (req, res) => {
                         endedAt: new Date(),
                         pausedMs,
                         pausedAt: null,
-                        points: simplifiedPoints
+                        points: simplifiedPoints,
+                        // Punto 92: assente se non misurabile, mai zero.
+                        ...(movingTimeSec ? { movingTimeSec } : {})
                     },
                     $unset: { openSession: 1, offTrailBuffer: 1 }
                 },
                 { new: true }
             );
+
+            // Punto 92: una traccia in piu' cambia le osservazioni disponibili per il passo
+            // personale - solo se questa ne ha aggiunta una davvero (movingTimeSec), per non
+            // fare una query e un salvataggio di utente inutili ad ogni fine tracciamento.
+            if (movingTimeSec) {
+                try {
+                    const utente = await User.findById(session.userId);
+                    if (utente) await recalculateAndApplyPace(utente);
+                } catch (e) {
+                    console.error('Errore ricalcolo passo personale a fine tracciamento:', e);
+                }
+            }
         }
 
         res.json(result);

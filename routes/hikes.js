@@ -9,7 +9,7 @@ const { applyHikeCompletionStats } = require('../lib/hikeStats'); // punto 64: c
 const { requireAuth } = require('../middleware/auth');
 const { regionForPoint } = require('../lib/regions');
 const { haversineKm } = require('../lib/geometry');
-const { tempiTraccia } = require('../lib/gpx');
+const { movimentoSecAttendibile } = require('../lib/gpx');
 // Punto 80/A: calcolaDaPercorso e' stata estratta in lib/percorso.js perche' ora la usa
 // anche routes/completions.js (aggiungere un .gpx retroattivo a un completamento).
 const { calcolaDaPercorso } = require('../lib/percorso');
@@ -448,18 +448,11 @@ router.post('/:id/complete-group', requireAuth, async (req, res) => {
                 if (ore > 0) actualTimeHours = ore;
 
                 // Punto 79: separa cammino e pause, SOLO se la traccia e' abbastanza fitta
-                // da fidarsene (tempiTraccia lo dice da sola con "attendibile"). Mai
-                // bloccante: confermare chi ha partecipato e' cio' che conta in questa
-                // rotta, il tempo di cammino e' un di piu' - se il calcolo va storto per un
-                // motivo imprevisto, il completamento deve comunque andare a buon fine.
-                try {
-                    const tempi = tempiTraccia(letto.punti, haversineKm);
-                    if (tempi.attendibile && tempi.movimentoSec > 0) {
-                        movingTimeHours = tempi.movimentoSec / 3600;
-                    }
-                } catch (e) {
-                    console.error('Errore nel calcolo cammino/pause dal gpx:', e.message);
-                }
+                // da fidarsene (movimentoSecAttendibile lo dice da sola). Mai bloccante:
+                // confermare chi ha partecipato e' cio' che conta in questa rotta, il tempo
+                // di cammino e' un di piu' - movimentoSecAttendibile non solleva mai.
+                const movimento = movimentoSecAttendibile(letto.punti, haversineKm);
+                if (movimento.sec) movingTimeHours = movimento.sec / 3600;
             }
         }
 

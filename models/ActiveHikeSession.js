@@ -75,12 +75,40 @@ const activeHikeSessionSchema = new mongoose.Schema({
     // per cui prima questi file venivano rifiutati.
     // default: undefined come importedFrom/importedName e come shareable/covers al punto
     // 24: scritto solo dove serve, mai sulle sessioni normali (vincolo hard sullo spazio).
-    durationUnknown: { type: Boolean, default: undefined }
+    durationUnknown: { type: Boolean, default: undefined },
+
+    // --- Punto 92: tempo di SOLO CAMMINO, separato dalle pause ---
+    // Calcolato UNA VOLTA SOLA, al momento dell'import o della fine tracciamento, sui punti
+    // COMPLETI (prima di simplifyTrack) - mai piu' ricalcolato dopo. Non e' recuperabile in
+    // seguito: dopo la semplificazione (~8m) il campionamento scende a 130-230 secondi/punto,
+    // troppo rado per lib/gpx.js:tempiTraccia (soglia 60s) - verificato su tutte e 7 le
+    // tracce vere di Denis, avrebbe dato zero osservazioni.
+    // ASSENTE = non misurabile (traccia troppo rada, troppo corta, o senza orari), MAI zero:
+    // default undefined come importedFrom/durationUnknown, vincolo hard sullo spazio. Una
+    // traccia creata prima di questo campo e' assente per lo stesso motivo (non c'e' modo di
+    // distinguerla da una "non attendibile" spendendo altro spazio, e non serve: l'_id
+    // contiene gia' il momento di creazione).
+    movingTimeSec: { type: Number, default: undefined }
 });
 
 activeHikeSessionSchema.index(
     { userId: 1, openSession: 1 },
     { unique: true, partialFilterExpression: { openSession: true } }
+);
+
+// Punto 92: indice COPRENTE per recalculatePersonalPace (lib/hikeStats.js), che legge solo
+// le tracce con un tempo di movimento misurato. Senza, MongoDB caricherebbe i documenti
+// INTERI (points compreso, il campo piu' pesante) per poi scartare i campi non richiesti -
+// e quella funzione gira una volta per partecipante dentro complete-group (routes/hikes.js),
+// quindi il costo si moltiplica dentro una sola richiesta HTTP. Parziale (solo le tracce con
+// movingTimeSec > 0: oggi 7 documenti in tutto) perche' un indice non parziale conterrebbe
+// ogni sessione mai registrata, per niente - stesso principio dell'indice unico sopra.
+// Per restare coprente la query non deve MAI proiettare _id (non e' nell'indice) ne'
+// filtrare su status: movingTimeSec lo scrivono solo /import-gpx e /:id/end, che chiudono
+// entrambi la sessione, quindi "ha un tempo di cammino" implica gia' "e' conclusa".
+activeHikeSessionSchema.index(
+    { userId: 1, movingTimeSec: 1, elevationGainM: 1, distanceKm: 1, hikeId: 1 },
+    { partialFilterExpression: { movingTimeSec: { $gt: 0 } } }
 );
 
 // Durata calcolata dal dato reale (ultimo punto ricevuto), non dall'orologio di sistema:

@@ -45,10 +45,12 @@ function ok(nome, condizione, dettaglio = '') {
 
 // Carica una funzione di un file del frontend in Node: i file di public/js dichiarano
 // funzioni e le appendono a window in fondo, quindi basta un "window" finto - nessun DOM
-// coinvolto in calculateHikeTimes.
+// coinvolto in calculateHikeTimes. "finestra" e' condivisa fra piu' chiamate: dal punto 92
+// profile.js legge window.oreCai da cai-tempi.js, esattamente come nella pagina vera lo
+// script di cai-tempi.js gira PRIMA di profile.js (vedi index.html).
+const finestra = {};
 function daFrontend(file) {
     const sorgente = fs.readFileSync(path.join(RADICE, 'public', 'js', file), 'utf8');
-    const finestra = {};
     new Function('window', sorgente)(finestra);
     return finestra;
 }
@@ -120,6 +122,7 @@ function daFrontend(file) {
 
         console.log('\n--- 3. INTERFACCIA: il tempo previsto non si rompe, ma non mente ---');
 
+        daFrontend('cai-tempi.js');
         const { calculateHikeTimes } = daFrontend('profile.js');
         const escursione = { elevationGain: 800, distanceKm: 12 };
 

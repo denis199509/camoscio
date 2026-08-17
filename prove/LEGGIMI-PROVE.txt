@@ -42,6 +42,36 @@ crea e non pulisce niente):
     tuo passo". Controprova fatta il giorno stesso sul codice di prima (git worktree su
     HEAD): 7 controlli cadono, la prova sta guardando davvero quello che dice.
 
+La prova del PUNTO 92 (il passo personale misurato anche dalle TRACCE, e misurato
+invertendo la formula CAI invece di dividere dislivello per ore):
+
+    node prove/prova-punto92.js                     84 controlli  (62 senza il server)
+
+    Le prime sette sezioni non vogliono il server e girano su un userId SINTETICO - un
+    ObjectId che non appartiene a nessuno - cosi' nessun account vero o demo viene sfiorato:
+    recalculatePersonalPace interroga tracce e completamenti per userId, non ha bisogno che
+    l'utente esista. La sezione 8 vuole il server acceso, carica un .gpx sintetico di 40
+    minuti (241 punti, con dentro una sosta vera di 5 minuti) sull'ULTIMO account demo - i
+    primi tre sono gia' impegnati da prova-punto77.js - e lo rimette esattamente com'era.
+    Senza server la sezione 8 si salta da sola e lo dice.
+    Sorveglia: che chi cammina come il CAI risulti misurato 400 m/h e non ~267; che il file
+    cai-tempi.js dia gli stessi numeri letto dal server e letto come nel browser; che una
+    traccia produca un'osservazione senza bisogno di un Completion; che i tempi scritti a
+    mano non facciano piu' passo; che traccia collegata + completamento sullo stesso hikeId
+    contino UNA volta sola; che la query sulle tracce non si porti mai dietro il campo
+    "points" (vincolo hard sulla RAM: si intercetta cosa torna davvero dal database, non
+    come e' scritta la query); e che movingTimeSec venga misurato sui punti COMPLETI, prima
+    della semplificazione - la stessa traccia, dopo simplifyTrack, scende a 2 punti e non
+    direbbe piu' niente.
+    CONTROPROVA fatta il 17/08/2026 rimettendo il codice di prima un pezzo alla volta (git
+    worktree + mutazioni): con la vecchia divisione dislivello/ore cadono 10 controlli, col
+    ripiego su actualTimeHours 2, togliendo l'anti-doppio-conteggio 2, togliendo la
+    proiezione della query 2. La prova guarda davvero quello che dice di guardare.
+    ATTENZIONE, trappola gia' pagata: le sessioni stanno su MongoDB Atlas (connect-mongo),
+    quindi la risposta di demo-login torna PRIMA che la sessione sia leggibile e la
+    richiesta subito dopo si prende un 401 che non e' un difetto del sito. Si aspetta una
+    condizione vera (GET /api/auth/me finche' non risponde), mai un tempo fisso.
+
 La prova del PUNTO 35 vuole anche Puppeteer (vedi sotto), ma non legge il log:
 
     PUPPETEER_PATH=... node prove/prova-punto35.js  16 controlli

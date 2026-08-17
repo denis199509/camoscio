@@ -5,9 +5,9 @@ const User = require('../models/User');
 const { requireAuth } = require('../middleware/auth');
 const { mongoose } = require('../db/mongo');
 const { haversineKm } = require('../lib/geometry');
-const { tempiTraccia } = require('../lib/gpx');
+const { movimentoSecAttendibile } = require('../lib/gpx');
 const { calcolaDaPercorso } = require('../lib/percorso');
-const { recalculatePersonalPace, applyPersonalPace, recalculateExperienceLevel } = require('../lib/hikeStats');
+const { recalculateAndApplyPace } = require('../lib/hikeStats');
 
 // Ottieni le escursioni già segnate come completate da un utente
 router.get('/:userId', requireAuth, async (req, res) => {
@@ -68,15 +68,11 @@ router.post('/:id/gpx', requireAuth, async (req, res) => {
         // rifiutare un file che una risposta parziale la darebbe comunque.
         let movingTimeHours = null;
         const avvisi = [...(letto.avvisi || [])];
-        try {
-            const tempi = tempiTraccia(letto.punti, haversineKm);
-            if (tempi.attendibile && tempi.movimentoSec > 0) {
-                movingTimeHours = tempi.movimentoSec / 3600;
-            } else {
-                avvisi.push(...(tempi.motivi || []));
-            }
-        } catch (e) {
-            console.error('Errore nel calcolo cammino/pause dal gpx:', e.message);
+        const movimento = movimentoSecAttendibile(letto.punti, haversineKm);
+        if (movimento.sec) {
+            movingTimeHours = movimento.sec / 3600;
+        } else {
+            avvisi.push(...movimento.motivi);
         }
 
         // Questa traccia sostituisce per intero il tempo di questo completamento: i due
@@ -99,10 +95,7 @@ router.post('/:id/gpx', requireAuth, async (req, res) => {
         // disponibili per QUESTO completamento, quindi il passo va sempre riallineato,
         // anche quando non resta nessuna osservazione valida (in quel caso applyPersonalPace
         // toglie il campo: "non misurato", non 350).
-        const risultato = await recalculatePersonalPace(user._id);
-        applyPersonalPace(user, risultato);
-        recalculateExperienceLevel(user, risultato.osservazioni.length > 0);
-        await user.save();
+        await recalculateAndApplyPace(user);
 
         const completionAggiornato = await Completion.findById(completion._id);
         res.json({ completion: completionAggiornato, user, avvisi });
@@ -143,10 +136,7 @@ router.delete('/:id', requireAuth, async (req, res) => {
         // 500, che era anch'esso un numero senza niente dietro): un valore ormai orfano di
         // qualunque osservazione mentirebbe sia restando fermo dov'era sia tornando a un
         // default (vedi applyPersonalPace in lib/hikeStats.js).
-        const risultato = await recalculatePersonalPace(user._id);
-        applyPersonalPace(user, risultato);
-        recalculateExperienceLevel(user, risultato.osservazioni.length > 0);
-        await user.save();
+        await recalculateAndApplyPace(user);
 
         res.json({ success: true, user });
     } catch (e) {

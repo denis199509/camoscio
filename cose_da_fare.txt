@@ -4054,8 +4054,7 @@ per il Rifugio Zilioli."
 
 --- PASSO PERSONALE: LE TRACCE GIA' SALVATE NON BASTANO PER SEPARARE CAMMINO/SOSTA ---
 
-92) [IN CORSO 2026-08-18, PROGETTAZIONE con l'agente architect, NESSUN
-CODICE SCRITTO] Denis, guardando il proprio account reale: "guardando il
+92) [FATTO 2026-08-18] Denis, guardando il proprio account reale: "guardando il
 passo personalizzato sul account di Denis risulta molto inferiore
 rispetto al tempo cai. sulle tracce imparate si calcola il tempo in
 camminata e quello a riposo? Dovrebbe considerare solo il tempo in
@@ -4140,3 +4139,74 @@ schermo spento ancora."
    agente di verificare lui stesso i quattro dettagli implementativi
    (quali siano non e' mai stato scritto) prima di fidarsi che siano gia'
    a posto.
+
+   RIPRESO IL 2026-08-18, STESSA SESSIONE: l'architect fatto ripartire ha
+   trovato la SCOPERTA GROSSA che era andata persa nella connessione
+   caduta - separare cammino e pause NON bastava. Il passo si misurava
+   come dislivello/ore totali ma si usava dentro la formula CAI dove i
+   400 m/h sono SOLO salita: un escursionista che camminasse esattamente
+   come il CAI risultava misurato a ~267 m/h, non 400 - la formula
+   sottostimava chiunque, sempre, indipendentemente dal carico o dalla
+   velocita' vera. Denis ha capito la differenza fra questo (un difetto
+   della formula) e la variazione naturale del suo passo da zaino/
+   stanchezza (che deve restare visibile, non e' quello che si stava
+   correggendo) e ha scelto la SOLUZIONE B: invertire la formula di
+   sintesi CAI invece di dividere - "quale passo di salita avrebbe
+   predetto esattamente il mio tempo?" invece di "dislivello/ore". Con B
+   chi cammina come il CAI viene misurato 400, non 267. Costo: la formula
+   CAI (prima solo nel browser) e' ora condivisa anche col server
+   (public/js/cai-tempi.js, stesso giro di scatole di badge-points.js).
+   Scelto anche SI' per l'indice parziale su ActiveHikeSession (7
+   documenti oggi, spazio trascurabile) - evita che MongoDB carichi i
+   punti GPS solo per scartarli, importante perche' il calcolo gira una
+   volta per partecipante su un'escursione di gruppo.
+
+   IMPLEMENTATO PER INTERO nella stessa sessione: nuovo campo
+   movingTimeSec su ActiveHikeSession (mai zero, calcolato una sola volta
+   su import-gpx e fine tracciamento, sui punti completi prima della
+   semplificazione); lib/hikeStats.js:paceUpDaMisura come unico punto di
+   conversione misura->osservazione (formula B); recalculatePersonalPace
+   ora legge sia le tracce sia i Completion (mai piu' i tempi scritti a
+   mano); regola anti-doppio-conteggio quando una traccia ha gia' un
+   hikeId collegato; tre agganci nuovi in routes/tracking.js (import,
+   fine tracciamento, cancellazione) che ricalcolano il passo quando
+   cambia un'osservazione. Estratta anche lib/gpx.js:movimentoSecAttendibile
+   (esisteva identica due volte in routes/completions.js e routes/hikes.js,
+   lezione del punto 18) e lib/hikeStats.js:recalculateAndApplyPace
+   (stesso blocco di quattro righe, viveva gia' due volte in
+   routes/completions.js). Corretto per strada un piccolo difetto
+   trovato dall'architect (non raggiungibile dall'interfaccia oggi): una
+   data mandata a mano sovrascriveva inizio/fine anche su un file CON
+   orari, azzerando la durata senza impostare durationUnknown.
+
+   VERIFICATO dal test-engineer con prove/prova-punto92.js (84 controlli
+   nuovi, dati veri creati e ripuliti, controprova sul codice di prima -
+   10 controlli cadono senza la formula B, 2 senza il divieto dei tempi a
+   mano, 2 senza l'anti-doppio-conteggio, 2 senza la proiezione che
+   esclude i punti GPS dalla query). TROVATI E CORRETTI due difetti veri
+   prima di qualunque uso in produzione:
+   1) /import-gpx ricalcolava il passo SEMPRE, anche quando il file
+      importato non misurava nessun tempo di cammino (es. senza orari) -
+      cancellava il passo di un account come effetto collaterale di
+      un'importazione che non aveva aggiunto nulla. Dimostrato dal vivo
+      in sola lettura sull'account reale di Denis: il suo 126 m/h di
+      oggi (residuo della vecchia formula, zero osservazioni valide
+      sotto le regole nuove) sarebbe sparito al prossimo import
+      qualsiasi. Corretto con la stessa guardia gia' presente sugli
+      altri due agganci (solo se e' stato misurato un movingTimeSec).
+   2) L'anti-doppio-conteggio costruiva l'insieme "hikeId con una
+      traccia collegata" da TUTTE le tracce trovate, prima del filtro
+      di plausibilita': una traccia implausibile (troncata, dimenticata
+      accesa) con un hikeId zittiva comunque il Completion collegato
+      pur non contribuendo lei stessa nessuna osservazione. Corretto
+      costruendo l'insieme solo dalle tracce che hanno gia' superato
+      paceUpDaMisura.
+   Rilanciate anche le regressioni prova-punto37/45/77/79 e
+   prova-passo-non-misurato: tutte verdi, nessuna rottura.
+
+   RESTA SOLO CIO' CHE PUO' FARE SOLO DENIS: ricaricare le 7 tracce
+   esistenti (decisione 1) per ottenere il tempo di movimento vero -
+   ATTENZIONE, il tetto mensile fa passare solo 5 delle 7 entro agosto
+   2026, le altre 2 vanno a settembre (o Denis alza MAX_GPX_AL_MESE, la
+   valvola di sicurezza in routes/tracking.js, se preferisce farle tutte
+   subito). PUNTO 92 CHIUSO PER INTERO.
