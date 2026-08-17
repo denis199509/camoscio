@@ -3891,7 +3891,7 @@ segnalazione in base alla posizione GPS."
 
 --- MAPPA DA TELEFONO: RIQUADRO CHE COPRIVA TROPPO, POPUP TAGLIATO ---
 
-89) [FATTO 2026-08-17, in attesa della verifica di Denis dal telefono]
+89) [FATTO E VERIFICATO 2026-08-18]
 Denis, con due screenshot veri dal suo telefono: "quando si guarda la
 mappa, la sezione 'escursione collegata' si trova esattamente sulla
 mappa riducendo di molto la visuale della mappa. Cliccando su un
@@ -3950,13 +3950,12 @@ avvertimento tipo frana non è ben visibile il messaggio."
    apre/chiude per davvero all'interno dell'iframe stretto (non solo
    simulato). Nessun errore in console. Committato e pushato (camoscio
    `ef3d9f9` + una correzione successiva sullo stesso giorno), con via
-   libera esplicito di Denis. LA VERIFICA VERA resta comunque da fare dal
-   suo telefono - la mappa reale ha piu' variabili (zoom, densita' di
-   marker vicini) di quante l'iframe di prova ne riproduca.
+   libera esplicito di Denis. VERIFICATO DAL VIVO DA DENIS (18/08/2026):
+   "mappa dal telefono piu' visibile". Punto chiuso per intero.
 
 --- MENU A TENDINA: OPZIONI QUASI INVISIBILI FINCHE' NON CI SI PASSA SOPRA ---
 
-90) [FATTO 2026-08-18, in attesa della verifica visiva di Denis] Denis,
+90) [FATTO E VERIFICATO 2026-08-18] Denis,
 con una foto durante la registrazione (fascia d'eta'): "durante la
 registrazione abbiamo notato come in questo caso le fasce di età non
 sono ben visibili fino a quando non passi sopra con il mouse. stesso
@@ -3988,5 +3987,6 @@ livello di escursioni preferite ecc.)."
    non si riesce a fotografare in questo ambiente (stesso tipo di limite
    gia' noto per il ridimensionamento finestra - vedi 07-Trappole-Tecniche
    del vault). Nessun errore in console. Committato e pushato (camoscio
-   `0dca314`), con via libera esplicito di Denis. LA VERIFICA VERA A
-   SCHERMO resta da fare da Denis.
+   `0dca314`), con via libera esplicito di Denis. VERIFICATO DAL VIVO DA
+   DENIS (18/08/2026): "menu a tendina visibile". Punto chiuso per
+   intero.
