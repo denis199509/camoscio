@@ -826,24 +826,35 @@
                                  toggleGeoConsentAlert() (tracking.js), richiamate quando si
                                  apre questa pagina (app.js, caso "map-section"). -->
                             <div class="map-record-setup" id="map-record-setup">
-                                <div class="form-group">
-                                    <label for="tracking-hike-select">Escursione collegata (facoltativo):</label>
-                                    <select id="tracking-hike-select" class="form-control">
-                                        <option value="">Nessuna - traccia libera</option>
-                                    </select>
-                                </div>
-
-                                <div id="tracking-geo-consent-alert" class="privacy-alert-box hidden">
-                                    <i data-lucide="alert-triangle"></i>
-                                    <span>Il tracciamento userà la posizione GPS reale del telefono. Avevi lasciato il consenso alla geolocalizzazione disattivato in registrazione: verrà attivato ora, se prosegui.</span>
-                                </div>
-
-                                <button type="button" id="btn-tracking-download-map" class="btn btn-secondary btn-sm btn-block">
-                                    <i data-lucide="download"></i> Scarica mappa offline per quest'area
+                                <!-- Punto 45c, 17/08/2026: su telefono il riquadro copriva troppa
+                                     mappa (segnalato da Denis) - parte chiuso, un tocco lo apre.
+                                     Il tasto si nasconde da solo sul desktop (styles.css), dove il
+                                     riquadro resta sempre aperto come prima. Vedi map.js,
+                                     setupMapRecordSetupToggle. -->
+                                <button type="button" id="btn-map-record-setup-toggle" class="map-record-setup-toggle">
+                                    <span><i data-lucide="route"></i> Opzioni escursione</span>
+                                    <i data-lucide="chevron-down" class="map-record-setup-toggle-icon"></i>
                                 </button>
-                                <div id="tracking-download-progress" class="tracking-download-progress hidden">
-                                    <div class="tracking-download-progress-fill" id="tracking-download-progress-fill"></div>
-                                    <span id="tracking-download-progress-label" class="small text-muted"></span>
+                                <div id="map-record-setup-body">
+                                    <div class="form-group">
+                                        <label for="tracking-hike-select">Escursione collegata (facoltativo):</label>
+                                        <select id="tracking-hike-select" class="form-control">
+                                            <option value="">Nessuna - traccia libera</option>
+                                        </select>
+                                    </div>
+
+                                    <div id="tracking-geo-consent-alert" class="privacy-alert-box hidden">
+                                        <i data-lucide="alert-triangle"></i>
+                                        <span>Il tracciamento userà la posizione GPS reale del telefono. Avevi lasciato il consenso alla geolocalizzazione disattivato in registrazione: verrà attivato ora, se prosegui.</span>
+                                    </div>
+
+                                    <button type="button" id="btn-tracking-download-map" class="btn btn-secondary btn-sm btn-block">
+                                        <i data-lucide="download"></i> Scarica mappa offline per quest'area
+                                    </button>
+                                    <div id="tracking-download-progress" class="tracking-download-progress hidden">
+                                        <div class="tracking-download-progress-fill" id="tracking-download-progress-fill"></div>
+                                        <span id="tracking-download-progress-label" class="small text-muted"></span>
+                                    </div>
                                 </div>
                             </div>
 

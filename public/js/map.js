@@ -207,6 +207,7 @@ async function initMapModule() {
     // Inizializza eventi dei form
     setupMapForms();
     setupReportFab();
+    setupMapRecordSetupToggle();
 
     // Punto 26 - il puntino blu si disegna qui ogni volta che arriva una posizione, da
     // qualunque fonte (watch del modulo geolocation o fix del tracciamento in corso).
@@ -674,6 +675,16 @@ async function submitReport({ type, lat, lng, description, photoDataUrl }) {
     }
 }
 
+// Punto 45c, 17/08/2026: apre/chiude il riquadro "Escursione collegata" - il tasto stesso
+// e' nascosto via CSS sul desktop (li' il riquadro resta sempre aperto, c'era gia' spazio),
+// quindi qui basta un semplice toggle di classe, nessun controllo su quale schermo sia.
+function setupMapRecordSetupToggle() {
+    const btn = document.getElementById('btn-map-record-setup-toggle');
+    const card = document.getElementById('map-record-setup');
+    if (!btn || !card) return;
+    btn.addEventListener('click', () => card.classList.toggle('expanded'));
+}
+
 // Configura i form relativi alla mappa
 function setupMapForms() {
     // Form Waze
@@ -1124,6 +1135,13 @@ function renderMapMarkers() {
             ? `<img src="/api/reports/${rep.id}/photo" alt="Foto della segnalazione" class="map-popup-photo">`
             : '';
 
+        // Punto 45c, 17/08/2026: maxHeight non e' un altro tentativo di indovinare un'altezza
+        // che stia sempre entro lo schermo (gia' provato con .map-popup-photo sopra, non
+        // bastava su telefono - segnalato da Denis, titolo/descrizione restavano tagliati
+        // fuori). E' l'opzione nativa di Leaflet per il caso "il contenuto e' comunque piu'
+        // alto dello spazio disponibile": oltre quella soglia il popup diventa scorrevole
+        // (overflow-y:auto su .leaflet-popup-content) invece di restare tagliato senza modo
+        // di leggerlo - funziona qualunque sia l'altezza vera della mappa in quel momento.
         marker.bindPopup(`
             <div style="color: white; font-family: inherit;">
                 <h5 style="margin: 0 0 4px 0; color: #A83B2E;">${title}</h5>
@@ -1131,7 +1149,7 @@ function renderMapMarkers() {
                 ${fotoHtml}
                 <span class="small text-muted">Segnalato il: ${new Date(rep.createdAt).toLocaleDateString()}</span>
             </div>
-        `);
+        `, { maxHeight: 220 });
         
         reportMarkersGroup.addLayer(marker);
     });

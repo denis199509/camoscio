@@ -1611,6 +1611,46 @@ h1, h2, h3, h4, h5, h6 {
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
 }
 
+/* Punto 45c: il tasto apri/chiudi esiste solo per telefono (vedi @media piu' sotto) - sul
+   desktop il riquadro c'era gia' spazio a sufficienza, resta sempre aperto come prima e
+   questo tasto non serve, display:none di base. */
+.map-record-setup-toggle {
+    display: none;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--color-text-primary);
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.map-record-setup-toggle span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.map-record-setup-toggle i {
+    width: 17px;
+    height: 17px;
+    flex-shrink: 0;
+}
+
+/* Stessa rotazione gia' in uso per .hike-card-toggle-icon - stesso linguaggio visivo per
+   "questo si apre/chiude", non un secondo modo di dirlo. */
+.map-record-setup-toggle-icon {
+    transition: transform var(--transition-speed);
+}
+
+.map-record-setup.expanded .map-record-setup-toggle-icon {
+    transform: rotate(180deg);
+}
+
 /* --- Punto 14: comandi di registrazione direttamente sulla mappa --- */
 .map-record-controls {
     position: absolute;
@@ -4514,6 +4554,24 @@ h1, h2, h3, h4, h5, h6 {
         width: auto;
         max-width: none;
         bottom: 76px;
+    }
+
+    /* Punto 45c, 17/08/2026: su schermo stretto il riquadro pieno (selezione escursione +
+       scarica mappa offline) copriva gran parte della mappa - segnalato da Denis da
+       telefono vero. Parte chiuso (solo il tasto sotto, una riga sola) e si apre al tocco -
+       stesso principio gia' scelto per .map-overlay-instructions qui sopra (non
+       rinunciare all'informazione, solo non tenerla sempre davanti alla mappa). */
+    .map-record-setup-toggle {
+        display: flex;
+    }
+
+    #map-record-setup-body {
+        display: none;
+        margin-top: 12px;
+    }
+
+    .map-record-setup.expanded #map-record-setup-body {
+        display: block;
     }
 
     /* Punto 68: "Filtri e Algoritmi di Corrispondenza" era l'unica parte di Escursioni
