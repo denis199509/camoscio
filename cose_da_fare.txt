@@ -3990,3 +3990,42 @@ livello di escursioni preferite ecc.)."
    `0dca314`), con via libera esplicito di Denis. VERIFICATO DAL VIVO DA
    DENIS (18/08/2026): "menu a tendina visibile". Punto chiuso per
    intero.
+
+--- ICONE VERE PER TRE RIFUGI, E UN RIFUGIO NUOVO NEL CATALOGO ---
+
+91) [FATTO E VERIFICATO 2026-08-18] Denis: "Adesso dobbiamo cambiare
+l'icona del badge di tre rifugi C:\Users\lenovo\OneDrive\Desktop\Badge
+per Camoscio file Rif. Franchetti per il Rifugio Franchetti file Rif.
+Duca degli Abruzzi per il Rifugio Duca degli Abruzzi file Rif Zilioli
+per il Rifugio Zilioli."
+   Controllato prima di scrivere codice: il Rifugio Duca degli Abruzzi
+   NON era nel catalogo (badge-points.js) ne' altrove sul database
+   (nessun Completion/Stamp/peak di escursione lo cita) - non un cambio
+   icona per lui come per gli altri due, un rifugio nuovo da aggiungere.
+   Coordinate cercate e incrociate fra il sito ufficiale del rifugio
+   (rifugioducadegliabruzzi.it, "dove siamo") e prenotarifugi.cai.it: le
+   due fonti concordano a ~5 metri di distanza (42.44808/13.55212 contro
+   42.44812/13.55204) - non da una ricerca generica per nome, che per la
+   montagna ha gia' dato risultati sbagliati in questo progetto (vedi
+   nota in cima a badge-points.js). Quota 2388 m confermata da entrambe
+   le fonti e dall'immagine stessa. Regione Abruzzo confermata con
+   lib/regions.js (il codice vero del sito, non un occhio esperto).
+   stampId nuovo: badge_ducadegliabruzzi, zona "Gran Sasso" come Corno
+   Grande e Franchetti (e' li' vicino per davvero, a 40 minuti da Campo
+   Imperatore).
+   Aggiunto un campo facoltativo "icona" nel catalogo: un file vero
+   invece dell'emoji quando c'e', l'emoji resta scritta comunque come
+   ripiego (mai tolta) se l'immagine manca o non carica. Le tre immagini
+   copiate cosi' come fornite in public/img/badge-luoghi/ (nessun
+   ridimensionamento - stesso trattamento gia' accettato per i badge
+   personali, debito noto e non nuovo). Un solo punto di modifica per
+   ciascuna scheda (schedaBadge in badges.js, renderDashboardStamps in
+   app.js), stessa classe CSS per emoji e immagine cosi' il grayscale
+   blocco/sblocco gia' esistente funziona identico su entrambe.
+   Verificato dal vivo nel browser: Rifugio Franchetti (gia' sbloccato
+   sull'account demo, a colori), Rifugio Duca degli Abruzzi e Rifugio
+   Zilioli (bloccati, in scala di grigi come facevano gia' gli emoji) -
+   sia sulla pagina Badge sia nell'anteprima "Passaporto" in Dashboard.
+   Gli altri due rifugi (Bruno Pomilio, Pino Ciuffarella) restano a
+   emoji, invariati. Nessun errore in console. Committato e pushato
+   (camoscio `79f42ae`), con via libera esplicito di Denis.

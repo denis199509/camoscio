@@ -27,149 +27,45 @@ o ne arriva uno nuovo.
 
 
 
->>> STATO ATTUALE (16/08/2026, notte): le quattro decisioni ferme sono
-    state chieste (sessione aperta con /remote-control) e Denis ha
-    risposto a tutte. Nella stessa sessione (con un riavvio imprevisto
-    del PC nel mezzo - vedi [[07-Trappole-Tecniche]] del vault) sono
-    arrivate anche tre richieste nuove, tutte chiuse. Dettaglio completo
-    in [[04-Da-Fare]] del vault.
+>>> STATO ATTUALE (18/08/2026): sessione lunga dal 16/08, con dentro le
+    quattro decisioni ferme di allora (raggio zona 20 km, nome "Esperto
+    locale", colore grafico Passo & Fatica, dominio email rimandato) e
+    poi i punti 83-91, TUTTI chiusi - quelli che si potevano provare dal
+    vivo sono stati confermati da Denis di persona, non solo costruiti.
+    Dettaglio completo di ognuno, con le parole di Denis e il
+    ragionamento, in cose_da_fare.txt (cercare il numero) - qui solo
+    l'elenco, per non ripetere quello che l'archivio dice gia' meglio:
 
-    Le quattro decisioni:
-      1. Punto 42a (raggio zona) — DECISO: 20 km. Codice non scritto,
-         resta legato ai "livelli" del punto 2 (ancora aperto).
-      2. Punto 63b (nome) — FATTO: "Esperto locale". public/index.html,
-         campo local-expert-area. I LIVELLI restano in sospeso, Denis
-         ci deve ancora pensare.
-      3. Dominio email proprio — "non ora": rimandato per sua scelta,
-         non richiederlo finche' non ci torna lui.
-      4. Colore grafico Passo & Fatica — FATTO: "Tuo Passo Rilevato"
-         blu, "Standard CAI Alpino" arancione.
-    Committate e pushate (camoscio `483c3ef`, vault `11fb54f`), verificate
-    dal vivo e su Render.
+      83. Badge personali a Nicolo97 e Scheldon.
+      84. Tolto il telefono dai contatti di emergenza.
+      85. "Passo & Fatica": mai piu' un numero finto per chi non ha
+          ancora un dato vero.
+      86. Livelli di frequentazione di una cima (badge, "Frequentatore"
+          -> "Esperto della Cima") + contatore "×N".
+      87. Le cime con un livello raggiunto compaiono anche come "esperto
+          locale" sul profilo.
+      88. Segnalazione sentiero: chiede prima se sei sul posto o vuoi
+          indicare il punto sulla mappa, invece di usare sempre il GPS.
+      89. Mappa da telefono: riquadro "Escursione collegata" chiuso di
+          default (occupava troppo spazio), popup delle segnalazioni
+          sempre leggibile (si sposta la mappa prima di aprirlo).
+      90. Menu a tendina: le opzioni aperte non erano piu' quasi
+          invisibili (sfondo scuro anche li', non solo sul chiuso).
+      91. Icone vere per Rifugio Franchetti/Zilioli/Duca degli Abruzzi
+          al posto dell'emoji - quest'ultimo era un rifugio NUOVO, non
+          ancora nel catalogo (coordinate incrociate da due fonti
+          ufficiali, non indovinate).
 
-    Tre lavori nuovi della stessa sessione, tutti committati, pushati e
-    verificati dal vivo nel browser:
+    Anche una pulizia dati: cancellata una traccia vuota (0 km, 0
+    dislivello) del 24/07/2026 sull'account reale di Denis.
 
-    A. Badge personali a Nicolo97 ("Fuori sentiero, dentro il football")
-       e Scheldon ("Il Passeggero del Rottweiler") — stesso meccanismo
-       gia' in uso per gli altri sei. camoscio `d508c34` / `172d0c9`.
-
-    B. Tolto il campo Telefono dai contatti di emergenza — non serve a
-       niente, chiesto da Denis. Era in DUE form separati (wizard di
-       registrazione, pagina Sicurezza & Mesh): tolto da entrambi.
-       Schema reso opzionale, non cancellato (l'array si riscrive per
-       intero ad ogni salvataggio: cancellarlo avrebbe perso i numeri
-       gia' salvati dei contatti esistenti). Corretto anche un
-       "undefined" latente nel messaggio a schermo di scadenza del Dead
-       Man's Switch. camoscio `09dad29`.
-
-    C. Bug trovato da Denis: il "Passo & Fatica" mostrava 350/500 (il
-       default dello schema) spacciato per "il tuo passo rilevato" a
-       chiunque non avesse ancora nessuna escursione tracciata — visto
-       su Scheldon, appena registrato. Ora il campo resta assente finche'
-       non c'e' un'osservazione vera (schermo mostra "—", non un numero
-       finto); i 4 account demo del seed non sono toccati. 7 utenti
-       reali gia' registrati sistemati con una migrazione dedicata
-       (Scheldon, Nicolo97, Camilla, Bob84, DaniWoll, Manu, Matteo — gli
-       ultimi tre avevano gia' un'escursione ma senza un tempo
-       dichiarato, quindi erano affetti anche loro). camoscio `b5c1305`.
-
-    Sessione successiva (17/08/2026):
-
-    D. Cancellata dal database una traccia vuota (0 km, 0 dislivello, 0
-       punti GPS) del 24/07/2026 sull'account reale di Denis, trovata per
-       _id esatto dopo conferma - nessuna delle due tracce vere del suo
-       account toccata.
-
-    E. Punto 86, i "livelli" del badge di una cima (Frequentatore -> ... ->
-       Esperto della Cima ogni 5 salite, soglie sul totale gia' calcolato
-       al punto 42b) + contatore "×N" in alto a destra sulla scheda dalla
-       seconda salita. Nessun dato nuovo su MongoDB, solo lettura diversa
-       a schermo (public/js/badges.js, schedaBadge - un solo punto di
-       modifica, riusato da pagina Badge e profilo). Solo per le cime, non
-       i rifugi (deciso con Denis). camoscio `8cbda25`. Prima verificato
-       solo in simulazione, POI Denis ha importato le tracce .gpx vere per
-       il Corno Grande sul suo account e confermato: "tutto perfettamente
-       funzionante". Punto chiuso per intero.
-
-    F. Punto 87, risposta di Denis a "punto 63b?": non ha definito i
-       livelli per la ZONA dichiarata a mano - ha invece agganciato
-       l'esperto locale al sistema di livelli GIA' ESISTENTE delle cime
-       (punto 86). Una cima con un livello raggiunto (5+ salite) compare
-       ora anche come riga "Nome cima — Titolo" nella sezione Esperto
-       locale del profilo, accanto alla zona scritta a mano - indipendente
-       dal checkbox "Sono un esperto locale". Nessun dato nuovo su
-       MongoDB (montagneEsperienza() in badges.js legge lo stato gia'
-       calcolato per i badge). Un solo punto di modifica
-       (renderProfileIdentity, userprofile.js), riusato da profilo
-       proprio e altrui. VERIFICATO CON DATI VERI: profilo vero di Denis
-       (letto in sola lettura, nessuna password) mostra "Corno Grande —
-       Frequentatore" accanto a "Esperto locale: Monti Lucretili".
-       camoscio `11b6324`, pushato con via libera esplicito di Denis.
-
-    G. Punto 88: il tasto ⚠️ "Segnala un pericolo" (raggiungibile da
-       QUALUNQUE pagina, non solo dalla Mappa) prendeva sempre e solo la
-       posizione GPS del momento, senza chiedere - se aperto da casa dopo
-       un'escursione, la segnalazione finiva a casa. Denis: "mi serve la
-       possibilità di selezionare sulla mappa dove sta il problema, non
-       di considerare la segnalazione in base alla posizione GPS". Ora il
-       pannello apre chiedendo "Sono qui ora" o "Indica sulla mappa" -
-       niente più permesso GPS finché non si sceglie davvero quella
-       strada. "Indica sulla mappa" naviga sulla pagina Mappa (riusando
-       il click preciso già esistente, non un secondo flusso), il
-       pannello si riapre con la posizione impostata e tipo/descrizione/
-       foto già scritti intatti. Nessuna modifica lato server. Verificato
-       dal vivo riproducendo lo scenario di Denis (pannello aperto dalla
-       Dashboard, non dalla Mappa). camoscio `c576240`, pushato con via
-       libera esplicito di Denis. POI confermato da Denis stesso, uso
-       vero: "funziona perfettamente". Punto chiuso per intero.
-
-    H. Punto 89: da due screenshot veri del telefono di Denis, due
-       difetti mobile della pagina Mappa mai visti prima da uno schermo
-       vero (dubbio gia' scritto nel vault al punto 45). Il riquadro
-       "Escursione collegata" copriva gran parte della mappa - ora parte
-       chiuso su telefono (un tasto "Opzioni escursione" lo apre),
-       nascosto sul desktop dove tutto resta come prima. Il popup di una
-       segnalazione (frana, ghiaccio...) restava tagliato in alto - un
-       primo tentativo (solo maxHeight Leaflet) sembrava bastare ma
-       provandolo per davvero (vedi sotto) non copriva il caso di un
-       marker a meta' mappa; corretto spostando la mappa PRIMA di aprire
-       il popup, cosi' il marker parte sempre con spazio sufficiente
-       sopra di se'.
-       Il vero ridimensionamento finestra non funziona in questo
-       ambiente (limite noto) MA un iframe della stessa origine si' (ha
-       un window.innerWidth vero, i suoi @media rispondono per davvero) -
-       usato qui per la prima volta invece di limitarsi a simulare le
-       regole CSS a mano, ed e' proprio cosi' che si e' scoperto che il
-       primo tentativo sul popup non bastava. Verificato dentro l'iframe
-       a piu' posizioni del marker (cima, centro, 40%, gia' in basso):
-       sempre dentro i bordi della mappa. camoscio `ef3d9f9` + una
-       correzione successiva, pushato con via libera esplicito di Denis.
-       VERIFICATO DAL VIVO DA DENIS (18/08/2026): "mappa dal telefono
-       piu' visibile". Punto chiuso per intero.
-
-    I. Punto 90: da una foto di Denis durante la registrazione, le
-       opzioni di un menu a tendina APERTO (fascia d'eta', livello
-       escursioni, difficolta'...) restavano quasi invisibili - testo
-       chiaro su sfondo chiaro di default del browser, leggibile solo
-       sotto il puntatore (ricolorato dal browser stesso). Corretto in
-       UN punto solo (regola globale sugli <option>, styles.css), valido
-       per ogni menu a tendina del sito, non un fix per pagina.
-       Verificato coi valori CALCOLATI (getComputedStyle): sfondo e testo
-       risolvono esattamente ai colori del tema. NON VERIFICATO
-       VISIVAMENTE: il popup nativo di un <select> aperto non si riesce
-       a fotografare in questo ambiente (stesso limite del
-       ridimensionamento finestra). camoscio `0dca314`, pushato con via
-       libera esplicito di Denis. VERIFICATO DAL VIVO DA DENIS
-       (18/08/2026): "menu a tendina visibile". Punto chiuso per intero.
-
-    >>> RIPARTIRE DA: nessun lavoro tecnico pronto - punti 86/87/88/89/90
-    TUTTI chiusi e confermati dal vivo da Denis. Restano aperti - non
-    toccati da nessuno di questi - i "livelli" ORIGINALI del punto 63b (quanti
-    gradini per la ZONA dichiarata a mano, es. "Monti Lucretili" in
-    quanto tale, non le singole cime) e il calcolo automatico del raggio
-    (punto 42a) - Denis deve ancora pensarci, non richiederlo - e il
-    dominio email (rimandato da lui).
+    >>> RIPARTIRE DA: nessun lavoro tecnico pronto. Restano aperti - non
+    toccati da nessuno dei punti sopra - i "livelli" ORIGINALI del punto
+    63b (quanti gradini per la ZONA dichiarata a mano, es. "Monti
+    Lucretili" in quanto tale, non le singole cime - DIVERSI dai livelli
+    gia' fatti del punto 86) e il calcolo automatico del raggio (punto
+    42a) - Denis deve ancora pensarci, non richiederlo - e il dominio
+    email (rimandato da lui).
 
 >>> COSE FUORI SCOPE, NON RIPROPORLE finche' non torna Denis sull'argomento:
     - Tracciamento GPS a pagina chiusa (impossibile via browser, non difficile
