@@ -729,6 +729,23 @@ h1, h2, h3, h4, h5, h6 {
     white-space: nowrap;
 }
 
+/* Punto 90, 18/08/2026: le opzioni di un menu a tendina aperto (fascia d'eta',
+   difficolta', tipo pericolo...) restavano quasi invisibili - segnalato da Denis con una
+   foto durante la registrazione. Lo sfondo scuro dato qui sopra al <select> CHIUSO non
+   raggiunge da solo l'elenco che si apre: il browser lo disegna per conto suo, di norma
+   chiaro, e il testo (colore ereditato da --color-text-primary, chiaro anche lui) ci
+   spariva sopra - restava leggibile solo la riga sotto il puntatore, ricolorata dal
+   browser stesso. Una sola regola per TUTTI gli <option> del sito, non ripetuta per ogni
+   classe che stila un select (.form-group, .filter-group, e qualunque select futuro):
+   e' lo stesso identico difetto ovunque compaia un elenco a tendina, non un caso per
+   pagina. Colore pieno apposta, non una delle rgba semitrasparenti gia' in uso altrove:
+   il popup nativo di un <select> non sempre compone sullo sfondo scuro della pagina come
+   farebbe un elemento normale, quindi serve un colore che resti scuro da solo. */
+option {
+    background-color: var(--bg-dark);
+    color: var(--color-text-primary);
+}
+
 /* La vera causa del campo che sbordava. .form-group e' gia' "flex column", quindi gli
    input si allargano da soli: quello che mancava e' che il GRUPPO potesse restringersi.
    Un elemento flex non scende mai sotto la larghezza minima del suo contenuto finche'
