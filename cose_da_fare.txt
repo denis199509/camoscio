@@ -4029,3 +4029,16 @@ per il Rifugio Zilioli."
    Gli altri due rifugi (Bruno Pomilio, Pino Ciuffarella) restano a
    emoji, invariati. Nessun errore in console. Committato e pushato
    (camoscio `79f42ae`), con via libera esplicito di Denis.
+
+   SUBITO DOPO, Denis: "i nuovi badge Appena messi risultano troppo
+   piccoli. non si capisce cosa c'è dentro l'icona. dobbiamo farla più
+   grande. sempre stile badge ma l'icona leggermente più grande per
+   essere visibile l'immagine." Causa: le misure scelte (2.2rem/2.6rem)
+   ricalcavano quelle gia' in uso per l'emoji, un singolo glifo che resta
+   leggibile anche piccolo - un'illustrazione con scritte dentro no.
+   Ingrandite a 3.2rem (Dashboard) e 5rem (pagina Badge, dove le schede
+   sono piu' larghe). Verificato dal vivo che il disegno di ciascun
+   rifugio ora si legge chiaramente, senza rompere il layout delle
+   schede (align-items:start sulla griglia, gia' in uso dal punto 86,
+   evita che le schede piu' alte stirino le vicine). Committato e
+   pushato (camoscio `276c32c`), con via libera esplicito di Denis.

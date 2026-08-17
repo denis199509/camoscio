@@ -54,7 +54,8 @@ o ne arriva uno nuovo.
       91. Icone vere per Rifugio Franchetti/Zilioli/Duca degli Abruzzi
           al posto dell'emoji - quest'ultimo era un rifugio NUOVO, non
           ancora nel catalogo (coordinate incrociate da due fonti
-          ufficiali, non indovinate).
+          ufficiali, non indovinate). Ingrandite subito dopo su
+          segnalazione di Denis (troppo piccole per leggere il disegno).
 
     Anche una pulizia dati: cancellata una traccia vuota (0 km, 0
     dislivello) del 24/07/2026 sull'account reale di Denis.
