@@ -4210,3 +4210,16 @@ schermo spento ancora."
    2026, le altre 2 vanno a settembre (o Denis alza MAX_GPX_AL_MESE, la
    valvola di sicurezza in routes/tracking.js, se preferisce farle tutte
    subito). PUNTO 92 CHIUSO PER INTERO.
+
+   SUBITO DOPO, stesso giorno: Denis ha chiesto un tetto piu' alto SOLO
+   per il proprio account, SOLO ad agosto 2026 ("riusciamo a fare una
+   modifica solo per me... 10 tracce solo nel mese di agosto. dopodiche'
+   da settembre in poi 5 tracce al mese?"), per poter ricaricare le 7
+   tracce in un mese solo invece di due. Aggiunta un'eccezione hardcoded
+   in routes/tracking.js (ECCEZIONE_TETTO_GPX_DENIS: id del suo account,
+   scade da sola il 01/09/2026 - niente da disattivare a mano). Nessuna
+   modifica allo schema, nessun campo nuovo: e' una costante con l'id
+   dell'account, non una regola generale del sito. Verificato con uno
+   script isolato che il tetto torni 10 per Denis fino ad agosto incluso,
+   5 per chiunque altro sempre, 5 anche per Denis da settembre.
+   Rilanciata prova-punto92.js (84/84, nessuna regressione).

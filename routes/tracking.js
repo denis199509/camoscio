@@ -28,6 +28,18 @@ const MIN_CANDIDATE_POINTS = 5; // sotto questa lunghezza un tratto "fuori senti
 // senza, un solo caricamento automatico impazzito riempirebbe il database prima che
 // qualcuno se ne accorga. E' una valvola di sicurezza, non un razionamento.
 const MAX_GPX_AL_MESE = 5;
+
+// Eccezione UNA TANTUM per il solo account di Denis, per ricaricare le 7 tracce del punto
+// 92 (serve il vero movingTimeSec, mai misurato finora - vedi cose_da_fare.txt punto 92).
+// SOLO agosto 2026, poi torna il tetto normale da sola: niente da disattivare a mano a
+// settembre. Non e' una regola del sito, e' hardcoded apposta per restare visibile e
+// temporanea - da togliere quando non serve piu' (id invece di username: stabile anche se
+// lo username cambiasse).
+const ECCEZIONE_TETTO_GPX_DENIS = {
+    userId: '6a62e398a1e019a3d635817d',
+    finoA: new Date('2026-09-01T00:00:00Z'),
+    tetto: 10
+};
 // Il corpo della richiesta e' gia' limitato a 10 MB da express.json in server.js; qui
 // si ricontrolla sul TESTO del file perche' quel limite vale per l'intera richiesta e
 // perche' un rifiuto con un messaggio comprensibile e' meglio di un 413 muto.
@@ -485,11 +497,16 @@ router.post('/import-gpx', requireAuth, async (req, res) => {
             importedFrom: 'gpx',
             _id: { $gte: sogliaId }
         });
-        if (giaCaricati >= MAX_GPX_AL_MESE) {
+
+        const tetto = (req.session.userId === ECCEZIONE_TETTO_GPX_DENIS.userId && Date.now() < ECCEZIONE_TETTO_GPX_DENIS.finoA.getTime())
+            ? ECCEZIONE_TETTO_GPX_DENIS.tetto
+            : MAX_GPX_AL_MESE;
+
+        if (giaCaricati >= tetto) {
             const prossimo = new Date(inizioMese);
             prossimo.setMonth(prossimo.getMonth() + 1);
             return res.status(429).json({
-                error: `Hai gia' caricato ${giaCaricati} file questo mese (il massimo e' ${MAX_GPX_AL_MESE}). Potrai caricarne altri dal ${prossimo.toLocaleDateString('it-IT')}.`
+                error: `Hai gia' caricato ${giaCaricati} file questo mese (il massimo e' ${tetto}). Potrai caricarne altri dal ${prossimo.toLocaleDateString('it-IT')}.`
             });
         }
 
@@ -666,7 +683,7 @@ router.post('/import-gpx', requireAuth, async (req, res) => {
             avvisi: letto.avvisi,
             badge: timbri,
             caricatiQuestoMese: giaCaricati + 1,
-            massimoAlMese: MAX_GPX_AL_MESE,
+            massimoAlMese: tetto,
             // Cosi' la Dashboard puo' aggiornare subito il passo mostrato senza dover
             // ricaricare la pagina - stesso motivo per cui le rotte di completions.js
             // rimandano "user" nella risposta.
