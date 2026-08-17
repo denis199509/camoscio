@@ -88,13 +88,19 @@ o ne arriva uno nuovo.
     con le parole di Denis e il ragionamento, in cose_da_fare.txt punto
     92.
 
+    >>> SUBITO DOPO, stesso giorno: Denis ha chiesto un tetto piu' alto
+    solo per il proprio account, solo ad agosto 2026, per ricaricare le
+    7 tracce in un mese solo. Fatto: ECCEZIONE_TETTO_GPX_DENIS in
+    routes/tracking.js (id del suo account, 10 invece di 5, scade da
+    sola il 01/09/2026 - niente da disattivare a mano). Committato e
+    pushato (camoscio 1aa6fe3).
+
     >>> RIPARTIRE DA: nessun punto tecnico aperto. Resta solo
     un'azione che PUO' FARE SOLO DENIS (non richiederla, e' sua):
     ricaricare le 7 tracce esistenti per ottenere il tempo di movimento
-    vero (decisione 1 del punto 92) - il tetto mensile ne fa passare
-    solo 5 delle 7 entro agosto 2026, le altre 2 a settembre (o alza lui
-    stesso MAX_GPX_AL_MESE se preferisce farle tutte subito). Restano
-    anche aperti - non toccati da nessuno dei punti sopra - i "livelli"
+    vero (decisione 1 del punto 92) - ora puo' farle tutte e 7 in una
+    volta sola (tetto personale 10 fino a fine agosto, vedi sopra).
+    Restano anche aperti - non toccati da nessuno dei punti sopra - i "livelli"
     ORIGINALI del punto 63b (quanti gradini per la ZONA dichiarata a
     mano, es. "Monti Lucretili" in quanto tale, non le singole cime -
     DIVERSI dai livelli gia' fatti del punto 86) e il calcolo automatico
