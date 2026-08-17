@@ -2041,9 +2041,23 @@
             <button type="button" class="close-modal-btn" id="report-panel-close">&times;</button>
         </div>
 
-        <p class="small text-muted" style="margin-bottom:14px;">
-            Userà la tua posizione GPS attuale. Comparirà in mappa dopo una verifica.
+        <p class="small text-muted" style="margin-bottom:10px;">
+            Comparirà in mappa dopo una verifica.
         </p>
+
+        <!-- Punto 45b, 17/08/2026: prima di oggi si assumeva sempre la posizione GPS
+             attuale - ma chi segnala potrebbe essersene accorto solo dopo, non più sul
+             posto (idea di Denis). Le due scelte iniziali si nascondono a vicenda con
+             report-fab-position-status (vedi map.js, mostraSceltaPosizioneReport /
+             impostaStatoPosizioneReport). -->
+        <div id="report-fab-position" style="margin-bottom:14px;">
+            <p class="small text-muted" style="margin-bottom:8px;">Dove si trova il pericolo?</p>
+            <div class="form-row-buttons" id="report-fab-position-choice">
+                <button type="button" class="btn btn-secondary btn-sm" id="btn-report-fab-here"><i data-lucide="locate-fixed"></i> Sono qui ora</button>
+                <button type="button" class="btn btn-secondary btn-sm" id="btn-report-fab-onmap"><i data-lucide="map-pin"></i> Indica sulla mappa</button>
+            </div>
+            <p class="small text-muted hidden" id="report-fab-position-status"></p>
+        </div>
 
         <form id="report-fab-form">
             <div class="form-group">

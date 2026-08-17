@@ -607,6 +607,16 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
 
 // Click sulla mappa per segnalare anomalia (Waze)
 function onMapClick(e) {
+    // Punto 45b, 17/08/2026: mentre si sta scegliendo sulla mappa il punto di un pericolo
+    // (pannello #report-fab aperto altrove, vedi avviaScegliPuntoSullaMappa piu' sotto),
+    // il click prende SEMPRE questo significato - viene prima persino del progettista
+    // percorso, perche' e' uno stato che l'utente ha scelto esplicitamente un istante
+    // prima e resta attivo solo finche' non tocca un punto o annulla.
+    if (modalitaScegliPuntoReport) {
+        confermaPuntoReportScelto(e.latlng.lat, e.latlng.lng);
+        return;
+    }
+
     // Punto 13: mentre si sta progettando un percorso, il click sulla mappa serve ad
     // aggiungere una tappa, non ad aprire il modulo delle segnalazioni. Il progettista
     // dice lui se ha preso il click: cosi' i due usi della mappa non si pestano i piedi
@@ -710,11 +720,88 @@ function setupMapForms() {
     }
 }
 
-// --- Punto 45: FAB "segnala un pericolo" - posizione automatica invece del click sulla
-// mappa (che resta il flusso "preciso", invariato, vedi #waze-form-container sopra). ---
+// --- Punto 45: FAB "segnala un pericolo". Due modi di scegliere la posizione, non piu'
+// solo la posizione automatica: chi segnala potrebbe non essere piu' sul posto (punto 45b,
+// 17/08/2026, idea di Denis - "ho finito l'escursione e sono a casa, mi sono ricordato di
+// una frana da segnalare"). Il click diretto sulla mappa resta comunque disponibile a
+// parte, invariato (vedi #waze-form-container sopra) - questo e' solo il flusso del FAB. ---
 
-let reportFabPosizione = null; // {lat,lng} risolta all'apertura del pannello, null finche' non arriva
+let reportFabPosizione = null; // {lat,lng} risolta con uno dei due modi sotto, null finche' non c'e'
 let reportFabPhotoDataUrl = null; // gia' compressa (imagecompress.js), pronta per l'invio
+let modalitaScegliPuntoReport = false; // true mentre si aspetta il click "indica sulla mappa"
+let overlayIstruzioniMappaOriginali = null; // testo vero di .map-overlay-instructions, letto una sola volta dal DOM - mai duplicato qui a mano, altrimenti i due copie potrebbero divergere
+
+// Mostra le due scelte iniziali (GPS attuale / indica sulla mappa), nascondendo l'eventuale
+// stato precedente - stato "di riposo" del widget posizione, sia all'apertura del pannello
+// sia se l'utente preme "Cambia" dopo aver gia' scelto.
+function mostraSceltaPosizioneReport() {
+    const scelta = document.getElementById('report-fab-position-choice');
+    const stato = document.getElementById('report-fab-position-status');
+    if (stato) { stato.classList.add('hidden'); stato.innerHTML = ''; }
+    if (scelta) scelta.classList.remove('hidden');
+    reportFabPosizione = null;
+}
+
+// Sostituisce le due scelte con una riga di stato (in corso, trovata, o scelta sulla mappa) +
+// un tasto "Cambia" per tornare alla scelta - un solo posto che sa disegnare questa riga,
+// richiamato da entrambi i modi di ottenere la posizione.
+function impostaStatoPosizioneReport(html) {
+    const scelta = document.getElementById('report-fab-position-choice');
+    const stato = document.getElementById('report-fab-position-status');
+    if (scelta) scelta.classList.add('hidden');
+    if (stato) { stato.classList.remove('hidden'); stato.innerHTML = html; }
+    if (window.lucide) window.lucide.createIcons();
+}
+
+// Mostra/nasconde l'avviso sopra la mappa vera ("tocca il punto del pericolo" + Annulla),
+// sostituendo temporaneamente le istruzioni normali (.map-overlay-instructions, gia'
+// esistenti) invece di aggiungerne un secondo elemento - il testo originale si legge dal
+// DOM una sola volta e si ripristina identico, non viene mai riscritto a mano qui.
+function impostaAvvisoMappaScegliPunto(attivo) {
+    const overlay = document.querySelector('.map-overlay-instructions');
+    if (!overlay) return;
+    if (attivo) {
+        if (overlayIstruzioniMappaOriginali === null) overlayIstruzioniMappaOriginali = overlay.innerHTML;
+        overlay.innerHTML = `<span class="badge badge-accent"><i data-lucide="map-pin"></i> Tocca il punto dove si trova il pericolo</span> <button type="button" class="btn btn-secondary btn-sm" id="btn-annulla-scegli-punto-report">Annulla</button>`;
+    } else if (overlayIstruzioniMappaOriginali !== null) {
+        overlay.innerHTML = overlayIstruzioniMappaOriginali;
+    }
+    if (window.lucide) window.lucide.createIcons();
+}
+
+// Chiude (senza svuotare) il pannello, naviga sulla pagina Mappa e mette il prossimo click
+// in modalita' "scegli il punto del pericolo" (vedi onMapClick piu' sopra). Tipo/descrizione/
+// foto gia' scritti nel form restano intatti: nasconde il pannello, non lo resetta - stessa
+// distinzione gia' fatta da closeReportFabPanel, che infatti non tocca il form.
+function avviaScegliPuntoSullaMappa() {
+    const panel = document.getElementById('report-panel');
+    if (panel) panel.classList.add('hidden');
+    modalitaScegliPuntoReport = true;
+    impostaAvvisoMappaScegliPunto(true);
+    if (window.navigateTo) window.navigateTo('map-section');
+}
+
+// L'utente ha toccato il punto sulla mappa (onMapClick piu' sopra): richiude il cerchio,
+// riapre il pannello con la posizione impostata e il form ancora com'era.
+function confermaPuntoReportScelto(lat, lng) {
+    modalitaScegliPuntoReport = false;
+    impostaAvvisoMappaScegliPunto(false);
+    reportFabPosizione = { lat, lng };
+    const panel = document.getElementById('report-panel');
+    if (panel) panel.classList.remove('hidden');
+    impostaStatoPosizioneReport(`<i data-lucide="map-pin"></i> Posizione scelta sulla mappa <button type="button" class="btn btn-secondary btn-sm" id="btn-report-fab-change">Cambia</button>`);
+    window.showToast("Punto scelto: completa e invia la segnalazione.", "success");
+}
+
+// L'utente ha premuto "Annulla" sull'avviso sopra la mappa: si riapre il pannello sullo
+// stato di scelta iniziale, come se non avesse mai premuto "Indica sulla mappa".
+function annullaScegliPuntoSullaMappa() {
+    modalitaScegliPuntoReport = false;
+    impostaAvvisoMappaScegliPunto(false);
+    const panel = document.getElementById('report-panel');
+    if (panel) panel.classList.remove('hidden');
+    mostraSceltaPosizioneReport();
+}
 
 function setupReportFab() {
     const fab = document.getElementById('report-fab');
@@ -722,10 +809,51 @@ function setupReportFab() {
     const btnCancel = document.getElementById('btn-report-fab-cancel');
     const form = document.getElementById('report-fab-form');
     const photoInput = document.getElementById('report-fab-photo');
+    const positionBox = document.getElementById('report-fab-position');
+    const overlayMappa = document.querySelector('.map-overlay-instructions');
 
     if (fab) fab.addEventListener('click', openReportFabPanel);
     if (btnClose) btnClose.addEventListener('click', closeReportFabPanel);
     if (btnCancel) btnCancel.addEventListener('click', closeReportFabPanel);
+
+    // Delegato sul contenitore, non sui tre tasti singolarmente: "Cambia" viene creato e
+    // distrutto da impostaStatoPosizioneReport ad ogni cambio di stato, un listener diretto
+    // su di lui andrebbe perso ogni volta - stesso principio gia' in uso altrove nel
+    // progetto per elementi che compaiono/spariscono dal DOM.
+    if (positionBox) {
+        positionBox.addEventListener('click', async (e) => {
+            const btn = e.target.closest('button');
+            if (!btn) return;
+
+            if (btn.id === 'btn-report-fab-here') {
+                const consenso = await window.CamoscioGeo.assicuraConsenso(
+                    "Per segnalare un pericolo nella tua posizione attuale serve il GPS del telefono. Avevi lasciato il consenso alla geolocalizzazione disattivato in registrazione: vuoi attivarlo ora?"
+                );
+                if (!consenso) return;
+
+                impostaStatoPosizioneReport('<i data-lucide="loader"></i> Cerco la posizione GPS...');
+                reportFabPosizione = await window.CamoscioGeo.posizioneSegnalazione();
+                if (!reportFabPosizione) {
+                    window.showToast("Impossibile trovare la posizione GPS: riprova, oppure scegli \"Indica sulla mappa\".", "error");
+                    mostraSceltaPosizioneReport();
+                    return;
+                }
+                impostaStatoPosizioneReport(`<i data-lucide="locate-fixed"></i> Posizione GPS attuale <button type="button" class="btn btn-secondary btn-sm" id="btn-report-fab-change">Cambia</button>`);
+            } else if (btn.id === 'btn-report-fab-onmap') {
+                avviaScegliPuntoSullaMappa();
+            } else if (btn.id === 'btn-report-fab-change') {
+                mostraSceltaPosizioneReport();
+            }
+        });
+    }
+
+    // Anche l'"Annulla" dentro l'avviso sopra la mappa e' delegato, per lo stesso motivo:
+    // quel bottone esiste solo mentre impostaAvvisoMappaScegliPunto(true) l'ha appena creato.
+    if (overlayMappa) {
+        overlayMappa.addEventListener('click', (e) => {
+            if (e.target.closest('#btn-annulla-scegli-punto-report')) annullaScegliPuntoSullaMappa();
+        });
+    }
 
     if (photoInput) {
         photoInput.addEventListener('change', async (e) => {
@@ -756,7 +884,7 @@ function setupReportFab() {
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             if (!reportFabPosizione) {
-                window.showToast("Sto ancora cercando la tua posizione: attendi un istante e riprova.", "error");
+                window.showToast("Scegli prima se ti trovi sul posto oppure vuoi indicarlo sulla mappa.", "error");
                 return;
             }
 
@@ -776,46 +904,37 @@ function setupReportFab() {
     }
 }
 
-// Apre il pannello SUBITO (non si aspetta il GPS per farlo comparire: chi cammina non deve
-// fissare uno schermo vuoto) e cerca la posizione in parallelo, disabilitando l'invio finche'
-// non arriva - vedi CamoscioGeo.posizioneSegnalazione() in geolocation.js, che accetta una
-// posizione gia' nota solo se fresca e precisa, altrimenti ne chiede una nuova.
-async function openReportFabPanel() {
+// Apre il pannello mostrando SUBITO la scelta della posizione (punto 45b, 17/08/2026): non
+// si assume piu' che chi segnala sia sul posto in questo momento, ne' si chiede il consenso
+// GPS finche' non si sa se serve davvero (solo scegliendo "Sono qui ora" - vedi
+// setupReportFab). Chi e' davvero sul sentiero perde un tocco in piu' rispetto a prima, chi
+// segnala da casa non vede piu' un permesso GPS che non gli serve.
+function openReportFabPanel() {
     const panel = document.getElementById('report-panel');
-    if (!panel || !window.CamoscioGeo) return;
-
-    const consenso = await window.CamoscioGeo.assicuraConsenso(
-        "Per segnalare un pericolo nella tua posizione attuale serve il GPS del telefono. Avevi lasciato il consenso alla geolocalizzazione disattivato in registrazione: vuoi attivarlo ora?"
-    );
-    if (!consenso) return;
+    if (!panel) return;
 
     const form = document.getElementById('report-fab-form');
     if (form) form.reset();
     reportFabPhotoDataUrl = null;
     const preview = document.getElementById('report-fab-photo-preview');
     if (preview) { preview.classList.add('hidden'); preview.innerHTML = ''; }
+    mostraSceltaPosizioneReport();
 
     panel.classList.remove('hidden');
     if (window.lucide) window.lucide.createIcons();
-
-    const btnSubmit = document.getElementById('btn-report-fab-submit');
-    const etichettaOriginale = btnSubmit ? btnSubmit.textContent : '';
-    if (btnSubmit) { btnSubmit.disabled = true; btnSubmit.textContent = 'Cerco la posizione...'; }
-
-    reportFabPosizione = await window.CamoscioGeo.posizioneSegnalazione();
-
-    if (panel.classList.contains('hidden')) return; // chiuso nel frattempo, non toccare piu' niente
-
-    if (btnSubmit) { btnSubmit.disabled = false; btnSubmit.textContent = etichettaOriginale; }
-    if (!reportFabPosizione) {
-        window.showToast("Impossibile trovare la posizione GPS: riprova, o segnala cliccando sul punto esatto in mappa.", "error");
-    }
 }
 
+// Chiude il pannello SENZA svuotarlo (non lo tocca) - serve anche a avviaScegliPuntoSullaMappa
+// piu' sopra, che deve poter nascondere il pannello mantenendo tipo/descrizione/foto gia'
+// scritti. Il reset vero avviene solo in apertura (openReportFabPanel), mai in chiusura.
 function closeReportFabPanel() {
     const panel = document.getElementById('report-panel');
     if (panel) panel.classList.add('hidden');
     reportFabPosizione = null;
+    if (modalitaScegliPuntoReport) {
+        modalitaScegliPuntoReport = false;
+        impostaAvvisoMappaScegliPunto(false);
+    }
 }
 
 // Punto 26 - il tasto in alto a destra e' quello che l'utente preme aspettandosi di vedere
