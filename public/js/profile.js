@@ -18,7 +18,8 @@ function renderMyProfilePage() {
         window.CamoscioProfileIdentity.render(usr, window.CamoscioState.stamps, {
             header: document.getElementById("my-profile-header"),
             badgeBox: document.getElementById("my-profile-personal-badge"),
-            badgesGrid: document.getElementById("my-profile-badges")
+            badgesGrid: document.getElementById("my-profile-badges"),
+            expertPeaks: document.getElementById("my-profile-expert-peaks")
         }, window.CamoscioState.peakAscents);
     }
 

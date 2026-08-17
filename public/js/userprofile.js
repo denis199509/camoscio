@@ -60,6 +60,19 @@ function renderProfileIdentity(utente, timbri, els, ascese) {
         } else {
             presi.forEach(b => els.badgesGrid.appendChild(window.CamoscioBadges.schedaBadge(b)));
         }
+
+        // Punto 63b, 17/08/2026: le cime dove e' stato raggiunto un livello (5+ salite)
+        // diventano anche una riga "Esperto locale" - guadagnata, non dichiarata a mano.
+        // Sempre mostrata (non dipende dal checkbox "Sono un esperto locale", che riguarda
+        // solo la zona scritta a mano: qui non c'e' niente da attivare, e' gia' successo).
+        // Presente sia sul proprio profilo sia su quello di un altro, perche' e' proprio
+        // questa funzione condivisa a disegnarla in entrambi i casi.
+        if (els.expertPeaks) {
+            const montagne = window.CamoscioBadges.montagneEsperienza(stato);
+            els.expertPeaks.innerHTML = montagne.map(m => `
+                <p class="local-expert-line earned"><i data-lucide="mountain"></i> ${esc(m.nome)} — <b>${esc(m.livello.titolo)}</b></p>
+            `).join('');
+        }
     }
 
     if (window.lucide) window.lucide.createIcons();
@@ -320,7 +333,7 @@ async function renderUserProfile(userId) {
             : "";
     }
 
-    renderProfileIdentity(utente, timbri, { header, badgeBox, badgesGrid }, ascese);
+    renderProfileIdentity(utente, timbri, { header, badgeBox, badgesGrid, expertPeaks: document.getElementById("user-profile-expert-peaks") }, ascese);
     renderProfileHikes(userId, document.getElementById("user-profile-hikes"));
     renderProfileBookmarks(userId, document.getElementById("user-profile-bookmarks"));
 }

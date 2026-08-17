@@ -1598,6 +1598,11 @@
                         <!-- Riempito da JS SOLO se questo utente ha attivato l'esperto locale -->
                     </div>
 
+                    <!-- Punto 63b, 17/08/2026: le cime dove questa persona ha raggiunto un
+                         livello (5+ salite, stesse soglie del badge) - guadagnate, non
+                         dichiarate a mano come sopra. Riempito da renderProfileIdentity. -->
+                    <div id="user-profile-expert-peaks"></div>
+
                     <!-- Punto 74: le escursioni di questa persona - gpx importati/registrati
                          (ActiveHikeSession) e quelle completate sul sito (Completion), unite in
                          un solo elenco da renderProfileHikes() in userprofile.js. -->
@@ -1673,6 +1678,10 @@
                                     <button class="btn btn-sm btn-primary" id="btn-save-local-expert">Salva</button>
                                 </div>
                             </div>
+                            <!-- Punto 63b, 17/08/2026: le cime dove ho raggiunto un livello
+                                 (5+ salite) - guadagnate, non c'e' niente da dichiarare qui
+                                 sotto come sopra. Riempito da renderProfileIdentity. -->
+                            <div id="my-profile-expert-peaks"></div>
                         </div>
 
                         <!-- Punto 7 di cose_da_fare.txt: prima di oggi NON esisteva nessuna

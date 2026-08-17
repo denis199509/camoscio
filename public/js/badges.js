@@ -180,6 +180,18 @@
         return LIVELLI_ASCESA.find(l => b.ascesa.total >= l.soglia) || null;
     }
 
+    // Punto 63b, 17/08/2026: le stesse soglie del badge "guadagnano" anche una riga nella
+    // parte "Esperto locale" del profilo (idea di Denis - una cima con abbastanza salite
+    // conta come esperto locale di quella cima, in aggiunta alla zona dichiarata a mano).
+    // Prende uno "stato" gia' calcolato (statoBadge/statoBadgePer), non lo ricalcola: stesso
+    // numero, stesso livello del badge - un secondo conteggio qui potrebbe solo disallinearsi.
+    function montagneEsperienza(stato) {
+        return stato
+            .map(b => ({ nome: b.nome, livello: livelloAscesa(b) }))
+            .filter(m => m.livello)
+            .sort((a, b) => b.livello.soglia - a.livello.soglia || a.nome.localeCompare(b.nome));
+    }
+
     function schedaBadge(b) {
         const esc = window.escapeHtml;
         const el = document.createElement('div');
@@ -309,6 +321,6 @@
         if (window.lucide) window.lucide.createIcons();
     }
 
-    window.CamoscioBadges = { catalogo, puntiTimbrabili, statoBadge, statoBadgePer, schedaBadge, anteprima, dataItaliana, render: renderBadges };
+    window.CamoscioBadges = { catalogo, puntiTimbrabili, statoBadge, statoBadgePer, schedaBadge, anteprima, dataItaliana, montagneEsperienza, render: renderBadges };
     window.renderBadges = renderBadges;
 })();

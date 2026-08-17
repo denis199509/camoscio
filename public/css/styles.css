@@ -3980,6 +3980,13 @@ h1, h2, h3, h4, h5, h6 {
     height: 18px;
 }
 
+/* Punto 63b, 17/08/2026: stessa riga, ma per una cima GUADAGNATA (badge + livello) invece
+   che dichiarata a mano - icona diversa (montagna, non stella) e colore coerente col tema
+   arancione gia' usato per i badge/il livello, non il verde della dichiarazione manuale. */
+.local-expert-line.earned i {
+    color: var(--accent-orange);
+}
+
 /* ==========================================================================
    SCELTA DEL PUNTO DI RITROVO — punto 8 di cose_da_fare.txt
    ========================================================================== */
