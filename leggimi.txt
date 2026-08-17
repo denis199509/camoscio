@@ -1,9 +1,10 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-17 (punti 86/87/88 chiusi e confermati da Denis;
-punto 89 - due difetti mappa visti dal suo telefono vero, riquadro che
-copriva la mappa + popup segnalazioni tagliato - costruito e pushato,
-IN ATTESA che Denis lo controlli dal telefono - vedi sotto)
+Aggiornato: 2026-08-18 (punti 86/87/88 chiusi e confermati da Denis;
+punto 89 - due difetti mappa da telefono - pushato, IN ATTESA della sua
+verifica; punto 90 - opzioni dei menu a tendina quasi invisibili,
+corretto in un punto solo per tutto il sito - pushato, IN ATTESA della
+sua verifica visiva - vedi sotto)
 ===================================================================
 
 QUESTO FILE DICE SOLO UNA COSA: a che punto siamo adesso e da dove si ricomincia.
@@ -149,11 +150,28 @@ o ne arriva uno nuovo.
        correzione successiva, pushato con via libera esplicito di Denis.
        LA VERIFICA VERA resta comunque da fare dal suo telefono.
 
+    I. Punto 90: da una foto di Denis durante la registrazione, le
+       opzioni di un menu a tendina APERTO (fascia d'eta', livello
+       escursioni, difficolta'...) restavano quasi invisibili - testo
+       chiaro su sfondo chiaro di default del browser, leggibile solo
+       sotto il puntatore (ricolorato dal browser stesso). Corretto in
+       UN punto solo (regola globale sugli <option>, styles.css), valido
+       per ogni menu a tendina del sito, non un fix per pagina.
+       Verificato coi valori CALCOLATI (getComputedStyle): sfondo e testo
+       risolvono esattamente ai colori del tema. NON VERIFICATO
+       VISIVAMENTE: il popup nativo di un <select> aperto non si riesce
+       a fotografare in questo ambiente (stesso limite del
+       ridimensionamento finestra). camoscio `0dca314`, pushato con via
+       libera esplicito di Denis. LA VERIFICA VERA A SCHERMO resta da
+       fare da Denis.
+
     >>> RIPARTIRE DA: se la sessione riparte da qui, il primo passo e'
-    sapere da Denis se i due difetti del punto 89 sono davvero risolti
-    guardando la mappa dal suo telefono vero - non dato per scontato.
+    sapere da Denis se i due difetti del punto 89 (guardando la mappa dal
+    telefono) e il punto 90 (aprendo un menu a tendina qualsiasi) sono
+    davvero risolti - nessuno dei tre dato per scontato, tutti e tre
+    verificati solo "a tavolino" in questo ambiente, mai a schermo vero.
     A parte questo, nessun lavoro tecnico pronto. Restano aperti - non
-    toccati da 87/88/89 - i "livelli" ORIGINALI del punto 63b (quanti
+    toccati da 87/88/89/90 - i "livelli" ORIGINALI del punto 63b (quanti
     gradini per la ZONA dichiarata a mano, es. "Monti Lucretili" in
     quanto tale, non le singole cime) e il calcolo automatico del raggio
     (punto 42a) - Denis deve ancora pensarci, non richiederlo - e il

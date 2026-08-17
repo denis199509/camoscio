@@ -3953,3 +3953,40 @@ avvertimento tipo frana non è ben visibile il messaggio."
    libera esplicito di Denis. LA VERIFICA VERA resta comunque da fare dal
    suo telefono - la mappa reale ha piu' variabili (zoom, densita' di
    marker vicini) di quante l'iframe di prova ne riproduca.
+
+--- MENU A TENDINA: OPZIONI QUASI INVISIBILI FINCHE' NON CI SI PASSA SOPRA ---
+
+90) [FATTO 2026-08-18, in attesa della verifica visiva di Denis] Denis,
+con una foto durante la registrazione (fascia d'eta'): "durante la
+registrazione abbiamo notato come in questo caso le fasce di età non
+sono ben visibili fino a quando non passi sopra con il mouse. stesso
+problema da tutte le parti quando bisogna scegliere (es. fasce di età,
+livello di escursioni preferite ecc.)."
+   Causa: lo sfondo scuro dato al <select> CHIUSO (rgba(255,255,255,0.05)
+   su sfondo pagina scuro) non raggiunge da solo l'elenco che si apre - il
+   browser disegna quella lista per conto suo, di norma su sfondo chiaro,
+   e il testo (colore chiaro ereditato da --color-text-primary) ci
+   spariva sopra. Restava leggibile solo la riga sotto il puntatore,
+   ricolorata dal browser stesso indipendentemente dal CSS del sito -
+   ecco perche' "passandoci sopra col mouse" si vedeva.
+   Confermato che il difetto e' generale, non solo della fascia d'eta':
+   ogni <select class="form-control"> del sito (livello escursioni,
+   difficolta' CAI, tipo pericolo nel pannello di segnalazione, escursione
+   collegata sulla mappa, filtri...) condivide la stessa causa, perche'
+   nessuno di loro stilava esplicitamente i propri <option>.
+   Corretto in UN punto solo (public/css/styles.css): una regola globale
+   sull'elemento <option>, non ripetuta per ogni classe che oggi stila un
+   select (.form-group, .filter-group, e qualunque select futuro) - stesso
+   difetto ovunque compaia un menu a tendina, non un caso per pagina.
+   Colore pieno (var(--bg-dark) + var(--color-text-primary)), non una
+   rgba semitrasparente come altrove nel foglio: il popup nativo di un
+   <select> non sempre compone sullo sfondo scuro della pagina.
+   Verificato coi valori CALCOLATI (getComputedStyle) su un <option> vero
+   nel pannello "Segnala un pericolo": sfondo e colore del testo risolvono
+   esattamente a rgb(20,21,15) e rgb(243,239,230), gli stessi valori del
+   tema. NON VERIFICATO VISIVAMENTE: il popup nativo di un <select> aperto
+   non si riesce a fotografare in questo ambiente (stesso tipo di limite
+   gia' noto per il ridimensionamento finestra - vedi 07-Trappole-Tecniche
+   del vault). Nessun errore in console. Committato e pushato (camoscio
+   `0dca314`), con via libera esplicito di Denis. LA VERIFICA VERA A
+   SCHERMO resta da fare da Denis.
