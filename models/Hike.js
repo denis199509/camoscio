@@ -83,7 +83,13 @@ const hikeSchema = new mongoose.Schema({
     routeSource: {
         type: new mongoose.Schema({
             kind: { type: String, enum: ['draft', 'gpx'], required: true },
-            nome: { type: String, required: true }
+            nome: { type: String, required: true },
+            // Il progetto c'e' e il tracciato/la distanza vengono da lui, ma quota massima e
+            // dislivello li ha scritti il creatore perche' la fonte delle quote non
+            // rispondeva (o il percorso era oltre i 25 km, dove la fonte non si puo' usare).
+            // Assente = tutto calcolato, come sempre - stesso principio di default undefined
+            // gia' seguito da questo stesso sotto-schema (vincolo hard sullo spazio).
+            dislivelloManuale: { type: Boolean, default: undefined }
         }, { _id: false }),
         default: undefined
     },

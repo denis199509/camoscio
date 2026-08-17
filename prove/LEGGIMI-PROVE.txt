@@ -72,6 +72,30 @@ invertendo la formula CAI invece di dividere dislivello per ore):
     richiesta subito dopo si prende un 401 che non e' un difetto del sito. Si aspetta una
     condizione vera (GET /api/auth/me finche' non risponde), mai un tempo fisso.
 
+La prova del PUNTO 93 (il ripiego "quote a mano" quando il dislivello di un progetto non si
+puo' calcolare - fonte delle quote giu', o percorso oltre i 25 km):
+
+    node prove/prova-punto93.js                     28 controlli  (ne avvia uno suo, sulla 3107)
+
+    La sezione 1 chiama calcolaDaPercorso/risolviPercorso direttamente (lib/percorso.js), con
+    un percorso di due punti a ~40 km in linea d'aria (deliberatamente troppo lungo, MAI "fonte
+    giu'" - quel caso non e' pilotabile dal client per scelta di sicurezza, e dipendere
+    dall'umore di Open-Meteo renderebbe la prova instabile). La sezione 2 passa dal server vero
+    (POST e PUT /api/hikes): un tentativo senza quote a mano deve rispondere 422 e non creare
+    niente, il rinvio con quoteManuali deve riuscire e portarsi dietro routeSource.
+    dislivelloManuale:true, un valore assurdo (es. 99999 m) deve tornare quoteMancanti invece
+    di essere accettato.
+    Sorveglia anche: che la distanza sia SEMPRE calcolata e mai chiesta all'utente; che il
+    motivo (fonte/troppo lungo) torni nel corpo del 422; che la modifica (PUT) si comporti
+    esattamente come la creazione (POST) - due punti diversi di routes/hikes.js, stessa
+    risolviPercorso.
+    CONTROPROVA fatta il 18/08/2026 (git stash di lib/percorso.js): col codice di prima la
+    prova si rompe subito, con l'errore vecchio non gestito - la prova guarda davvero quello
+    che dice di guardare.
+    Verificato ANCHE visivamente nel browser (non automatizzato in questa prova): account demo,
+    riquadro comparso col messaggio giusto su un progetto apposta troppo lungo, pubblicazione
+    riuscita con la nota "... - dislivello indicato da chi organizza" sulla card.
+
 La prova del PUNTO 35 vuole anche Puppeteer (vedi sotto), ma non legge il log:
 
     PUPPETEER_PATH=... node prove/prova-punto35.js  16 controlli

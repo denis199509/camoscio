@@ -12,7 +12,7 @@ const { haversineKm } = require('../lib/geometry');
 const { movimentoSecAttendibile } = require('../lib/gpx');
 // Punto 80/A: calcolaDaPercorso e' stata estratta in lib/percorso.js perche' ora la usa
 // anche routes/completions.js (aggiungere un .gpx retroattivo a un completamento).
-const { calcolaDaPercorso } = require('../lib/percorso');
+const { calcolaDaPercorso, risolviPercorso } = require('../lib/percorso');
 
 // Punto 55: usato da /:id/complete (gia' esistente, riscritto per riusare questa) e dalle
 // nuove rotte di chat. Non ci si fida al 100% che il creatore sia sempre dentro
@@ -169,14 +169,13 @@ router.post('/', requireAuth, async (req, res) => {
 
         // Punto 43: se e' stato scelto un progetto o una traccia, i tre numeri si calcolano
         // qui e sovrascrivono quelli eventualmente scritti a mano nel form (che il client, in
-        // quella modalita', non manda nemmeno piu').
+        // quella modalita', non manda nemmeno piu'). Punto 93: se la fonte delle quote non
+        // risponde, risolviPercorso puo' rispondere 422 invece di 400 - vedi lib/percorso.js.
         let datiPercorso = {};
         if (req.body.routeSource) {
-            try {
-                datiPercorso = await calcolaDaPercorso(req.body.routeSource, req.session.userId);
-            } catch (e) {
-                return res.status(400).json({ error: e.message });
-            }
+            const r = await risolviPercorso(req.body.routeSource, req.session.userId);
+            if (!r.ok) return res.status(r.status).json(r.corpo);
+            datiPercorso = r.dati;
         }
 
         const creatorId = req.session.userId;
@@ -286,15 +285,11 @@ router.put('/:id', requireAuth, async (req, res) => {
             if (body.routeSource === null) {
                 update.routeSource = null;
             } else {
-                try {
-                    const calcolato = await calcolaDaPercorso(body.routeSource, userId);
-                    update.maxAltitude = calcolato.maxAltitude;
-                    update.elevationGain = calcolato.elevationGain;
-                    update.distanceKm = calcolato.distanceKm;
-                    update.routeSource = calcolato.routeSource;
-                } catch (e) {
-                    return res.status(400).json({ error: e.message });
-                }
+                // Punto 93: risolviPercorso puo' rispondere 422 se la fonte delle quote non
+                // risponde - vedi lib/percorso.js e il gemello in POST / qui sopra.
+                const r = await risolviPercorso(body.routeSource, userId);
+                if (!r.ok) return res.status(r.status).json(r.corpo);
+                Object.assign(update, r.dati);
             }
         } else if (isCreator && hike.routeSource &&
             (body.maxAltitude !== undefined || body.elevationGain !== undefined || body.distanceKm !== undefined)) {

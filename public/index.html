@@ -1867,6 +1867,26 @@
                     <input type="file" id="hike-route-gpx-file" accept=".gpx">
                 </div>
                 <p class="small text-muted hidden" id="hike-route-calcolato-nota"></p>
+                <!-- Punto 93: ripiego quando il calcolo automatico fallisce (fonte delle
+                     quote non disponibile, o percorso oltre i 25 km) - il progetto resta
+                     collegato (mappa, distanza gia' calcolata), l'utente scrive solo i due
+                     numeri che il sito non e' riuscito a calcolare da solo. Compare SOLO
+                     dopo un 422 richiedeQuote dal server (mostraQuoteManuali in social.js):
+                     invisibile e senza "required" finche' non serve, cosi' non cambia niente
+                     per chi non incontra mai questo problema. -->
+                <div class="form-group hidden" id="hike-route-quote-manuali">
+                    <p class="small text-muted" id="hike-route-quote-manuali-nota"></p>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="hike-quota-manuale">Quota massima (metri):</label>
+                            <input type="number" id="hike-quota-manuale">
+                        </div>
+                        <div class="form-group">
+                            <label for="hike-dislivello-manuale">Dislivello positivo (D+ metri):</label>
+                            <input type="number" id="hike-dislivello-manuale">
+                        </div>
+                    </div>
+                </div>
                 <div class="form-row" id="hike-route-manual-row">
                     <div class="form-group">
                         <label for="hike-alt">Quota Massima (metri):</label>

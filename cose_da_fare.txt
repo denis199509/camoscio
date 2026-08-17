@@ -4224,7 +4224,7 @@ schermo spento ancora."
    5 per chiunque altro sempre, 5 anche per Denis da settembre.
    Rilanciata prova-punto92.js (84/84, nessuna regressione).
 
-93) [APERTO 2026-08-18, IN ATTESA - nessuna modifica di codice] Denis,
+93) [FATTO 2026-08-18] Denis,
    con uno screenshot dal telefono: creando l'escursione reale "Monte
    Terminillo" (progetto con anello, punto di ritrovo Rifugio Angelo
    Sebastiani), "Pubblica Escursione" dava l'errore "La fonte delle
@@ -4264,9 +4264,52 @@ schermo spento ancora."
    pubblicare comunque) - oggi non esiste, la pubblicazione resta
    bloccata del tutto finche' le quote non arrivano. DENIS HA DETTO DI
    ASPETTARE prima di costruirlo, per vedere se il tetto orario si
-   libera da solo. RIPARTIRE DA QUI: chiedere a Denis se ha ripubblicato
-   con successo. Se SI', il punto si chiude com'era (nessun codice da
-   scrivere). Se NO ancora, valutare con lui: (a) il fallback manuale
-   proposto, (b) correggere comunque il difetto laterale sul messaggio
-   (utile in ogni caso, ma non risolverebbe un vero 429 in corso), (c)
-   controllare i log di Render se Denis puo' condividerli.
+   libera da solo.
+
+   RIPROVATO, STESSO PROBLEMA UNA TERZA VOLTA: Denis ha ripubblicato
+   "Monte Terminillo" e ha preso di nuovo lo stesso errore - i dati a
+   mano invece funzionavano subito. Non era quindi il tetto orario che
+   si liberava da solo: il fallito era persistente, non occasionale.
+   Denis: "io posso pure inserire i dati a mano visto che so quanti km
+   sono e il dislivello ma per qualcuno che non lo sa diventa difficile"
+   - confermato il bisogno del ripiego per chiunque non conosca gia' i
+   due numeri a memoria.
+
+   COSTRUITO IL FALLBACK, progettato con l'agente architect prima di
+   scrivere codice (tocca la creazione E la modifica di un'escursione,
+   piu' lo schema e il form). Due decisioni chieste a Denis prima di
+   implementare:
+   1. Come mostrare il tempo previsto quando il dislivello e' dichiarato
+      a mano: scelto "tempo CAI normale, con una nota" (non un
+      avvertimento vistoso, non nasconderlo del tutto).
+   2. Cosa dire se poi la fonte torna a rispondere e i numeri calcolati
+      sostituiscono quelli scritti a mano: scelto "sì, un avviso breve"
+      (non silenzioso).
+   Contratto nuovo: quando la fonte non risponde (o il percorso supera
+   i 25 km), calcolaDaPercorso (lib/percorso.js) non lancia piu' un
+   errore secco - torna {quoteMancanti:true, motivo, distanceKm,
+   nomePercorso} (la distanza si sa gia' sempre, non si chiede mai).
+   routes/hikes.js (creazione E modifica, stesso comportamento nei due
+   punti tramite una nuova risolviPercorso condivisa) risponde 422
+   invece di 400, stesso schema gia' in uso per la data mancante di un
+   .gpx (punto 32). Il client (public/js/social.js) mostra un riquadro
+   con due soli campi (quota massima, dislivello - MAI la distanza, che
+   e' gia' calcolata ed e' un numero migliore di qualunque stima), il
+   progetto resta collegato. Nuovo campo routeSource.dislivelloManuale
+   su models/Hike.js (booleano, default undefined) - la prova che quei
+   due numeri sono stati dichiarati, non calcolati; usato per la nota
+   sul tempo previsto ("... - dislivello indicato da chi organizza").
+   Chiuso nello stesso intervento anche il difetto laterale gia' trovato
+   (motivoDislivello ignorato): il messaggio ora distingue "la fonte non
+   risponde, riprova" da "il percorso e' troppo lungo, riprovare non
+   servira' mai" - necessario per scrivere il testo giusto nel riquadro.
+   VERIFICATO: prove/prova-punto93.js (28 controlli, funzioni dirette E
+   dal vivo via HTTP su creazione E modifica, controprova sul codice di
+   prima - fallisce esattamente dove deve), regressione completa
+   (configurazione/37/45/77/79/92/passo-non-misurato) tutta verde, E
+   verificato VISIVAMENTE nel browser (account demo Marco Alpinista):
+   progetto apposta troppo lungo, riquadro comparso col messaggio
+   giusto, pubblicazione riuscita con "950m D+, 1820m quota, 60.6 km
+   (calcolata)" e la nota "Percorso: ... - dislivello indicato da chi
+   organizza" sulla card. Dati di prova cancellati subito dopo.
+   PUNTO 93 CHIUSO PER INTERO.

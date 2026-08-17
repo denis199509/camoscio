@@ -35,6 +35,33 @@ function resetHikeRouteSourcePicker() {
     const gpxInput = document.getElementById('hike-route-gpx-file');
     if (gpxInput) gpxInput.value = '';
     document.querySelectorAll('#hike-alt, #hike-elev, #hike-dist').forEach(el => el.required = true);
+    nascondiQuoteManuali();
+}
+
+// Punto 93 - il riquadro "scrivi tu quota e dislivello" (mostraQuoteManuali sotto) non deve
+// mai restare visibile o "required" oltre il tentativo che lo ha fatto comparire: cambiare
+// progetto, riaprire il modulo, o un secondo invio riuscito invalidano i numeri digitati.
+function nascondiQuoteManuali() {
+    const box = document.getElementById('hike-route-quote-manuali');
+    if (box) box.classList.add('hidden');
+    const quota = document.getElementById('hike-quota-manuale');
+    const disl = document.getElementById('hike-dislivello-manuale');
+    if (quota) { quota.required = false; quota.value = ''; }
+    if (disl) { disl.required = false; disl.value = ''; }
+}
+
+// Mostra il riquadro con i due campi manuali dopo un 422 {richiedeQuote:true} dal server -
+// vedi lib/percorso.js:risolviPercorso. "corpo" e' il JSON gia' letto dalla risposta.
+function mostraQuoteManuali(corpo) {
+    const box = document.getElementById('hike-route-quote-manuali');
+    const nota = document.getElementById('hike-route-quote-manuali-nota');
+    if (!box || !nota) return;
+    nota.textContent = corpo.error || 'Scrivi tu quota massima e dislivello: il progetto resta collegato.';
+    box.classList.remove('hidden');
+    const quota = document.getElementById('hike-quota-manuale');
+    const disl = document.getElementById('hike-dislivello-manuale');
+    if (quota) quota.required = true;
+    if (disl) { disl.required = true; disl.focus(); }
 }
 
 // Riempie il menu a tendina dei progetti con le bozze dell'utente (GET /api/routing/drafts,
@@ -154,6 +181,9 @@ function setupSocialEvents() {
 
             if (manualRow) manualRow.classList.toggle('hidden', !manuale);
             document.querySelectorAll('#hike-alt, #hike-elev, #hike-dist').forEach(el => el.required = manuale);
+            // Cambiare la fonte del percorso invalida qualunque numero scritto a mano per
+            // un tentativo precedente andato in 422 (punto 93).
+            nascondiQuoteManuali();
 
             if (draftPicker) draftPicker.classList.toggle('hidden', selRouteSource.value !== 'draft');
             if (selRouteSource.value === 'draft') popolaBozzePerHike();
@@ -477,7 +507,12 @@ function buildHikeCard(hike) {
             const parteMia = tempi.passoMisurato
                 ? ` · <b>${tempi.customText}</b> sul tuo passo`
                 : '';
-            return `<p class="small text-muted rp-nota-dislivello"><i data-lucide="clock"></i><span>Tempo previsto: <b>${tempi.standardText}</b> (CAI standard)${parteMia}. Percorso: ${escapeHtml(hike.routeSource.nome)}.</span></p>`;
+            // Punto 93: dislivelloManuale = la distanza e il tracciato sono veri (dal
+            // percorso), ma quota massima e dislivello li ha scritti chi organizza perche'
+            // la fonte delle quote non rispondeva - lo si dice, invece di far credere che
+            // tutti e tre i numeri siano stati misurati allo stesso modo.
+            const notaManuale = hike.routeSource.dislivelloManuale ? ' - dislivello indicato da chi organizza' : '';
+            return `<p class="small text-muted rp-nota-dislivello"><i data-lucide="clock"></i><span>Tempo previsto: <b>${tempi.standardText}</b> (CAI standard)${parteMia}. Percorso: ${escapeHtml(hike.routeSource.nome)}${notaManuale}.</span></p>`;
         })()
         : `<p class="small text-muted rp-nota-dislivello"><i data-lucide="info"></i><span>Tempo previsto non disponibile: per questa escursione non è ancora stato scelto un percorso reale, quindi non si può sapere quanto ci vorrà davvero. Dislivello e distanza qui sopra sono quelli indicati da chi l'ha organizzata.</span></p>`;
 
@@ -1022,6 +1057,18 @@ async function submitCreateHike() {
             return;
         }
         routeSource = { kind: 'draft', draftId };
+        // Punto 93: se il riquadro "scrivi tu quota e dislivello" e' visibile (un tentativo
+        // precedente e' finito in 422, la fonte delle quote non ha risposto), si rimandano
+        // anche quei due numeri insieme al progetto - non lo si manda mai se il riquadro
+        // e' nascosto, altrimenti numeri di un tentativo passato viaggerebbero anche su un
+        // calcolo che stavolta riesce da solo.
+        const boxQuoteManuali = document.getElementById('hike-route-quote-manuali');
+        if (boxQuoteManuali && !boxQuoteManuali.classList.contains('hidden')) {
+            routeSource.quoteManuali = {
+                maxAltitude: parseInt(document.getElementById('hike-quota-manuale').value),
+                elevationGain: parseInt(document.getElementById('hike-dislivello-manuale').value)
+            };
+        }
     } else if (fonte === 'gpx') {
         const file = document.getElementById("hike-route-gpx-file").files[0];
         if (!file) {
@@ -1103,6 +1150,15 @@ async function submitCreateHike() {
         });
 
         if (response.ok) {
+            // Punto 93: se avevamo mandato dei numeri scritti a mano (routeSource.quoteManuali)
+            // e la fonte nel frattempo e' tornata a rispondere, il server ha calcolato lui i
+            // due numeri e li ha preferiti ai nostri - l'escursione salvata NON ha
+            // routeSource.dislivelloManuale in quel caso. Non e' un errore, ma l'utente ha
+            // appena scritto due numeri che non sono finiti sull'escursione: va detto,
+            // altrimenti sembra solo un salvataggio riuscito uguale a tutti gli altri.
+            const avevamoMandatoQuoteManuali = !!(routeSource && routeSource.quoteManuali);
+            const hikeSalvata = await response.json().catch(() => null);
+
             document.getElementById("create-hike-modal").classList.add("hidden");
             document.getElementById("create-hike-form").reset();
             if (window.resetTrailheadPicker) window.resetTrailheadPicker();
@@ -1112,12 +1168,29 @@ async function submitCreateHike() {
             await refreshState();
             renderHikesList(); // ridisegna anche "Le mie escursioni", vedi commento li'
             if (window.populateHikeSelects) window.populateHikeSelects();
-            window.showToast(inModifica ? "Escursione aggiornata!" : "Escursione pubblicata!", "success");
+
+            if (avevamoMandatoQuoteManuali && hikeSalvata && hikeSalvata.routeSource && !hikeSalvata.routeSource.dislivelloManuale) {
+                window.showToast(
+                    `La fonte delle quote ha risposto: quota massima e dislivello sono stati calcolati dal percorso (${hikeSalvata.maxAltitude} m, ${hikeSalvata.elevationGain} m D+), non quelli che avevi scritto.`,
+                    "success"
+                );
+            } else {
+                window.showToast(inModifica ? "Escursione aggiornata!" : "Escursione pubblicata!", "success");
+            }
         } else {
             // Prima non si diceva NIENTE quando il server rifiutava: la finestra restava
             // aperta senza spiegazioni e sembrava che il pulsante non funzionasse. Il caso
             // piu' probabile e' proprio il rifiuto per ritrovo fuori dalle 4 regioni.
             const body = await response.json().catch(() => ({}));
+
+            // Punto 93: la fonte delle quote non ha risposto (o il percorso e' troppo
+            // lungo) - non un errore da mostrare e basta, un'informazione mancante da
+            // chiedere. Il modulo resta aperto, il progetto resta selezionato.
+            if (response.status === 422 && body.richiedeQuote) {
+                mostraQuoteManuali(body);
+                return;
+            }
+
             const messaggioDefault = inModifica
                 ? "Non è stato possibile salvare le modifiche. Controlla i dati inseriti."
                 : "Non è stato possibile pubblicare l'escursione. Controlla i dati inseriti.";
