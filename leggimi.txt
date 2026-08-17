@@ -1,8 +1,8 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-18 (punti 83-91 TUTTI chiusi, i verificabili dal
-vivo confermati da Denis di persona - nessun lavoro tecnico pronto,
-vedi sotto)
+Aggiornato: 2026-08-18 (punti 83-91 TUTTI chiusi, confermati da Denis
+di persona; punto 92 APERTO E PROGETTATO ma NESSUN CODICE SCRITTO -
+si riparte da li', vedi RIPARTIRE DA in fondo)
 ===================================================================
 
 QUESTO FILE DICE SOLO UNA COSA: a che punto siamo adesso e da dove si ricomincia.
@@ -63,7 +63,34 @@ o ne arriva uno nuovo.
     Anche una pulizia dati: cancellata una traccia vuota (0 km, 0
     dislivello) del 24/07/2026 sull'account reale di Denis.
 
-    >>> RIPARTIRE DA: nessun lavoro tecnico pronto. Restano aperti - non
+    >>> PUNTO 92, APERTO (nessun codice scritto): il passo personale di
+    Denis (126/180 m/h, verificato sul database) risultava troppo basso
+    perche' i suoi Completion non hanno mai movingTimeHours - il tempo
+    di cammino separato dalle soste. Progettato con l'agente architect
+    (indagine su dati veri, non teoria): le tracce GIA' salvate non
+    bastano per ricalcolare cammino/sosta (semplificate PRIMA di essere
+    salvate, troppo rade - darebbe zero osservazioni), va calcolato una
+    volta sola all'import/fine tracciamento, sui punti completi. Le
+    QUATTRO DECISIONI di Denis (gia' definitive, non richiederle di
+    nuovo - dettaglio completo in cose_da_fare.txt punto 92):
+      1. Ricaricare le 7 tracce esistenti per ottenere il dato vero
+         (attenzione: e' al tetto di 5 caricamenti/mese).
+      2. I tempi scritti a mano NON contano piu' nel passo, solo le
+         tracce misurate.
+      3. Nessun filtro nuovo per durata/multi-giorno - bastano i
+         cancelli gia' esistenti in tempiTraccia.
+      4. Il collegamento esplicito traccia->escursione non ora.
+    L'architect stava controllando alcuni dettagli implementativi finali
+    (mai arrivata la lista completa - la sua sessione si e' interrotta
+    per un limite dell'account, fatta ripartire ma la risposta non e'
+    arrivata prima della chiusura di questa sessione).
+
+    >>> RIPARTIRE DA: il punto 92 (sopra) - verificare prima di tutto se
+    l'agente architect ha risposto nel frattempo con lo "scheletro dei
+    contratti" (firma di recalculatePersonalPace con le due fonti, punto
+    esatto in routes/tracking.js dove scrivere il nuovo campo). Se non
+    ha risposto, richiamarlo da capo MA le quattro decisioni di Denis
+    sopra sono gia' ferme, non vanno rifatte. Restano anche aperti - non
     toccati da nessuno dei punti sopra - i "livelli" ORIGINALI del punto
     63b (quanti gradini per la ZONA dichiarata a mano, es. "Monti
     Lucretili" in quanto tale, non le singole cime - DIVERSI dai livelli

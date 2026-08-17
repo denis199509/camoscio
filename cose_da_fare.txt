@@ -4051,3 +4051,87 @@ per il Rifugio Zilioli."
    non "correggerlo" di nuovo a 2253 ricontrollando OSM in futuro.
    Committato e pushato (camoscio `171d712`), con via libera esplicito di
    Denis.
+
+--- PASSO PERSONALE: LE TRACCE GIA' SALVATE NON BASTANO PER SEPARARE CAMMINO/SOSTA ---
+
+92) [IN CORSO 2026-08-18, PROGETTAZIONE con l'agente architect, NESSUN
+CODICE SCRITTO] Denis, guardando il proprio account reale: "guardando il
+passo personalizzato sul account di Denis risulta molto inferiore
+rispetto al tempo cai. sulle tracce imparate si calcola il tempo in
+camminata e quello a riposo? Dovrebbe considerare solo il tempo in
+movimento altrimenti considera tutta la durata della traccia ballando di
+parecchio il passo personalizzato." Poi, scegliendo come procedere: "il
+passo andrebbe calcolato pure sulle tracce importate, anzi sopratutto
+sulle tracce importate visto che non possiamo registrare tracce a
+schermo spento ancora."
+   VERIFICATO SUL DATABASE PRIMA DI PROGETTARE: il passo di Denis (126/180
+   m/h, molto sotto lo standard CAI 400/600) viene da soli 2 dei suoi 3
+   Completion, ENTRAMBI basati su actualTimeHours (tempo totale, mai
+   movingTimeHours) - non un bug nella preferenza "cammino prima del
+   totale" (che esiste gia' ed e' corretta, vedi punto 79), ma il fatto
+   che quel campo non e' MAI stato popolato per lui. Ha pero' 7 tracce
+   GPS vere (Corno Grande x6, Monte Gorzano x1) importate come
+   ActiveHikeSession, che oggi alimentano solo i badge e i km della
+   Dashboard, mai il passo - due pipeline dati tenute separate dal punto
+   80.
+   PROGETTATO CON L'AGENTE architect (indagine approfondita, non solo
+   teoria - query dirette sul database reale di Denis). Tre scoperte
+   importanti, prima di qualunque decisione:
+   1) "Far girare tempiTraccia sulle tracce gia' salvate" NON FUNZIONA:
+      i punti vengono semplificati (Douglas-Peucker, ~8m) PRIMA di essere
+      salvati, quindi il campionamento scende a 130-230 secondi/punto -
+      troppo rado per il cancello di tempiTraccia (60s). Misurato su
+      tutte e 7 le tracce vere di Denis: attendibile:false su tutte.
+      Costruire la funzione cosi' com'era immaginata avrebbe prodotto
+      ZERO osservazioni, passo invariato a 126.
+   2) La soluzione e' calcolare il tempo di movimento UNA VOLTA SOLA, nel
+      momento dell'import/fine tracciamento, sui punti COMPLETI, prima
+      della semplificazione - salvato come nuovo campo su
+      ActiveHikeSession, mai piu' ricalcolato (ricalculatePersonalPace
+      continua a non leggere mai "points", il campo piu' pesante -
+      vincolo hard 3).
+   3) Una traccia NON ha bisogno di essere collegata a un'escursione per
+      dare una misura valida del passo: ha gia' sia il dislivello che il
+      tempo misurati per davvero. Il collegamento (hikeId, gia' esistente
+      sullo schema) serve solo a evitare il doppio conteggio, non a far
+      funzionare il calcolo. Un abbinamento automatico per data e' stato
+      scartato: sui dati veri di Denis avrebbe abbinato Monte Gorzano
+      (14/06) a "Ascesa al Corno Grande" (15/06) - montagne diverse, un
+      giorno di distanza, lo stesso errore gia' pagato al punto 32 (data
+      del file confusa con data della camminata).
+   LE QUATTRO DECISIONI DI DENIS (chieste con anteprime prima di
+   scrivere codice):
+   1. Ricarica le 7 tracce esistenti (cancella + ricarica gli stessi
+      file .gpx) per ottenere il tempo di movimento vero su ciascuna -
+      il passo salirebbe verso ~378 m/h invece di 126. ATTENZIONE: e'
+      gia' al tetto di 5 caricamenti/mese (5 delle 7 tracce caricate il
+      17/08/2026) - va coordinato quando si arriva a farlo per davvero.
+   2. I tempi scritti a mano (es. le "7 ore" di "Alba Corno Grande") NON
+      contano piu' nel calcolo del passo - solo le tracce misurate. Un
+      Completion senza una traccia collegata smette di produrre
+      un'osservazione (diverso da oggi, che ripiega su actualTimeHours).
+   3. NESSUN filtro nuovo per durata o tracce di piu' giorni. Denis ha
+      fatto notare, correttamente (verificato rileggendo tempiTraccia):
+      un gap notturno lungo (bivacco) viene gia' classificato come pausa
+      dalla gestione dei "buchi" gia' esistente, quindi il tempo di
+      movimento risulta gia' corretto anche per una traccia di piu'
+      giorni - non serve un'esclusione ad hoc. Le camminate troppo brevi
+      sono gia' scartate da DURATA_MIN_SEC dentro tempiTraccia (10 min).
+      Bastano i cancelli gia' esistenti (tempiTraccia + i limiti di
+      plausibilita' 50-1500 m/h e ORE_MAX gia' in recalculatePersonalPace).
+   4. Il collegamento esplicito traccia->escursione NON ora - solo il
+      calcolo del passo per questa modifica.
+   STATO ESATTO A FINE SESSIONE: l'architect stava controllando "quattro
+   dettagli implementativi" resi rilevanti dalle decisioni di Denis
+   (mai elencati per intero: la sessione dell'agente si e' interrotta
+   per un limite di sessione dell'account, si sblocca alle 15:00) prima
+   di scrivere lo "scheletro dei contratti" (firma esatta di
+   recalculatePersonalPace con le due fonti, punto esatto in
+   routes/tracking.js dove va scritto il nuovo campo su
+   ActiveHikeSession). Fatto ripartire subito dopo l'interruzione, ma la
+   sessione si e' chiusa prima che tornasse con una risposta.
+   NESSUN CODICE SCRITTO. RIPARTIRE DA: aspettare/rileggere la risposta
+   dell'agente architect (task id interno, vedi se la sessione precedente
+   e' ripresa automaticamente) - se la risposta non e' mai arrivata,
+   richiedergliela da capo, ma le quattro decisioni di Denis sopra sono
+   gia' definitive e NON vanno richieste di nuovo.
