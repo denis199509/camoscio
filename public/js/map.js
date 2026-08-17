@@ -1098,6 +1098,31 @@ function drawStampablePoints() {
     });
 }
 
+// Punto 45c, 17/08/2026: apre il popup di un marker lasciandogli sopra quanto piu' spazio
+// possibile, spostando la mappa PRIMA (non dopo) se il marker e' troppo vicino alla cima -
+// senza, un popup di lunghezza media su una mappa di telefono puo' restare tagliato in alto
+// (titolo compreso) anche con autoPan e maxHeight, perche' nessuno dei due puo' creare piu'
+// spazio di quanto la mappa sia alta per davvero (misurato dal vivo, vedi commento sopra
+// bindPopup). animate:false: e' una correzione piccola e immediata, non una navigazione vera
+// da mostrare in movimento - il popup si apre gia' nella posizione giusta, senza un salto
+// visibile subito dopo.
+function apriPopupConSpazio(marker) {
+    const map = window.mapInstance;
+    if (!map) { marker.openPopup(); return; }
+
+    const puntoY = map.latLngToContainerPoint(marker.getLatLng()).y;
+    const yDesiderata = map.getSize().y * 0.72;
+    const scarto = puntoY - yDesiderata;
+
+    // scarto negativo = il marker e' PIU' IN ALTO del desiderato (troppo vicino alla cima):
+    // va spostato in basso, cioe' panBy con lo stesso scarto negativo (verificato dal vivo -
+    // panBy([0, numero negativo]) fa scendere il punto sullo schermo, non salire).
+    if (scarto < -20) {
+        map.panBy([0, scarto], { animate: false });
+    }
+    marker.openPopup();
+}
+
 // Render dei marker sulla mappa (Waze reports + Vette e Rifugi)
 function renderMapMarkers() {
     if (!window.mapInstance) return;
@@ -1135,13 +1160,15 @@ function renderMapMarkers() {
             ? `<img src="/api/reports/${rep.id}/photo" alt="Foto della segnalazione" class="map-popup-photo">`
             : '';
 
-        // Punto 45c, 17/08/2026: maxHeight non e' un altro tentativo di indovinare un'altezza
-        // che stia sempre entro lo schermo (gia' provato con .map-popup-photo sopra, non
-        // bastava su telefono - segnalato da Denis, titolo/descrizione restavano tagliati
-        // fuori). E' l'opzione nativa di Leaflet per il caso "il contenuto e' comunque piu'
-        // alto dello spazio disponibile": oltre quella soglia il popup diventa scorrevole
-        // (overflow-y:auto su .leaflet-popup-content) invece di restare tagliato senza modo
-        // di leggerlo - funziona qualunque sia l'altezza vera della mappa in quel momento.
+        // Punto 45c, 17/08/2026: maxHeight NON basta da solo (verificato dal vivo, vedi sotto
+        // apriPopupConSpazio) - dice solo "oltre questa altezza scorri", ma se il popup resta
+        // comunque piu' alto dello spazio VERO fra il marker e la cima della mappa, la parte
+        // che sborda in alto (titolo compreso) resta fuori dallo schermo lo stesso, scorrimento
+        // o no. autoPan di Leaflet da solo non basta nemmeno lui: puo' spostare la mappa, ma
+        // non puo' creare piu' spazio di quanto la mappa sia alta per davvero, e un marker
+        // gia' a meta' altezza non lascia abbastanza margine sopra per un popup di media
+        // lunghezza su uno schermo di telefono (misurato: mappa 488px, marker al centro,
+        // popup 246px - matematicamente non ci sta anche spostando la mappa al massimo).
         marker.bindPopup(`
             <div style="color: white; font-family: inherit;">
                 <h5 style="margin: 0 0 4px 0; color: #A83B2E;">${title}</h5>
@@ -1149,8 +1176,20 @@ function renderMapMarkers() {
                 ${fotoHtml}
                 <span class="small text-muted">Segnalato il: ${new Date(rep.createdAt).toLocaleDateString()}</span>
             </div>
-        `, { maxHeight: 220 });
-        
+        `, { maxHeight: 180, autoPan: false });
+
+        // autoPan:false qui sopra: lo spostamento lo fa apriPopupConSpazio PRIMA di aprire
+        // (vedi sotto), non Leaflet dopo. Provato dal vivo con entrambi attivi insieme: sul
+        // caso di mezzo (marker a meta' mappa) i due spostamenti si mettevano in competizione
+        // e il risultato finale era peggiore di uno dei due presi da soli - un solo
+        // responsabile della posizione, non due che si aggiustano a vicenda.
+        //
+        // off('click') toglie SOLO l'apertura automatica che bindPopup ha appena agganciato
+        // (e' l'unico listener 'click' che un marker nuovo ha), sostituita da questa - mai un
+        // secondo popup che si apre in competizione con quello gia' gestito da Leaflet.
+        marker.off('click');
+        marker.on('click', () => apriPopupConSpazio(marker));
+
         reportMarkersGroup.addLayer(marker);
     });
 

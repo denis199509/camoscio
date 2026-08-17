@@ -3888,3 +3888,68 @@ segnalazione in base alla posizione GPS."
    `c576240`), con via libera esplicito di Denis. VERIFICATO ANCHE DA
    DENIS PER DAVVERO, stesso giorno: "funziona perfettamente". Punto
    chiuso per intero.
+
+--- MAPPA DA TELEFONO: RIQUADRO CHE COPRIVA TROPPO, POPUP TAGLIATO ---
+
+89) [FATTO 2026-08-17, in attesa della verifica di Denis dal telefono]
+Denis, con due screenshot veri dal suo telefono: "quando si guarda la
+mappa, la sezione 'escursione collegata' si trova esattamente sulla
+mappa riducendo di molto la visuale della mappa. Cliccando su un
+avvertimento tipo frana non è ben visibile il messaggio."
+   Due problemi distinti, entrambi confermano un dubbio gia' scritto nel
+   vault al punto 45 ("non verificato visivamente il layout mobile...da
+   ricontrollare la prima volta che si tocca la pagina Mappa da un
+   telefono vero" - vedi 03-Decisioni-Architetturali.md): la prima volta
+   e' stata questa.
+   1) Il riquadro "Escursione collegata" (selezione escursione + scarica
+      mappa offline) copriva gran parte della mappa. Chiesta a Denis una
+      scelta fra due strade prima di scrivere codice (chiuso di default
+      con un tasto per aprirlo, oppure spostato sotto la mappa sempre
+      visibile) - scelto il primo, piu' semplice e a rischio piu' basso
+      (il secondo avrebbe richiesto spostare anche il tasto "Comincia
+      registrazione", tenuto apposta incollato in fondo alla mappa per
+      il pollice). Ora il riquadro parte chiuso su telefono (un tasto
+      "Opzioni escursione"), un tocco lo apre - nascosto via CSS, sul
+      desktop resta sempre aperto come prima.
+   2) Il popup di una segnalazione (frana, ghiaccio...) restava tagliato
+      in alto, poco leggibile. Il tetto d'altezza gia' messo sulla sola
+      foto (punto 45) non bastava quando anche titolo+descrizione erano
+      lunghi.
+      Primo tentativo (maxHeight Leaflet, 220px): sembrava funzionare in
+      teoria ma provandolo per davvero su una mappa vera (non solo
+      applicando le regole a mano) e' emerso che NON bastava - maxHeight
+      dice solo "oltre questa altezza scorri", ma se il popup resta
+      comunque piu' alto dello spazio VERO fra il marker e la cima della
+      mappa, la parte che sborda in alto (titolo compreso) resta fuori
+      dallo schermo lo stesso, scorrimento o no. Misurato: mappa 488px,
+      marker al centro, popup 246px - matematicamente non ci stava,
+      nemmeno con l'autoPan gia' integrato in Leaflet (puo' spostare la
+      mappa ma non creare piu' spazio di quanto la mappa sia alta per
+      davvero).
+      Corretto per davvero spostando la mappa PRIMA di aprire il popup
+      (nuova apriPopupConSpazio in map.js): se il marker e' troppo vicino
+      alla cima, la mappa si sposta cosi' che il marker parta gia' al
+      72% dell'altezza disponibile, lasciandosi sopra tutto lo spazio che
+      la mappa puo' dare. autoPan di Leaflet disattivato apposta su
+      questi popup (provato dal vivo che i due spostamenti insieme si
+      mettevano in competizione, risultato peggiore di uno preso da
+      solo - un solo responsabile della posizione). maxHeight resta a
+      180px come rete di sicurezza in piu', non piu' l'unica difesa.
+   Il vero ridimensionamento della finestra non funziona in questo
+   ambiente (limite gia' noto, vedi 07-Trappole-Tecniche.md del vault) -
+   ma esiste un rimedio gia' scritto li': un iframe della stessa origine
+   ha un window.innerWidth VERO e indipendente, i suoi @media rispondono
+   per davvero. Usato qui per la prima volta su questo punto invece di
+   limitarsi ad applicare le regole a mano - ed e' proprio cosi' che si
+   e' scoperto che il primo tentativo sul popup non bastava (misurando
+   la posizione vera del popup dentro l'iframe, non supponendola).
+   Verificato dentro l'iframe a piu' posizioni del marker (vicino alla
+   cima, al centro, al 40%, gia' in basso): tutte e quattro il popup
+   resta dentro i bordi della mappa. Verificato anche sul desktop (mappa
+   piu' alta, nessuna regressione) e che il riquadro "Opzioni escursione"
+   apre/chiude per davvero all'interno dell'iframe stretto (non solo
+   simulato). Nessun errore in console. Committato e pushato (camoscio
+   `ef3d9f9` + una correzione successiva sullo stesso giorno), con via
+   libera esplicito di Denis. LA VERIFICA VERA resta comunque da fare dal
+   suo telefono - la mappa reale ha piu' variabili (zoom, densita' di
+   marker vicini) di quante l'iframe di prova ne riproduca.
