@@ -3885,4 +3885,6 @@ segnalazione in base alla posizione GPS."
    scelta - stesso comportamento gia' presente prima). Nessun errore in
    console, nessuna segnalazione di prova arrivata sul database (chiuso
    con Annulla, mai inviato per davvero). Committato e pushato (camoscio
-   `c576240`), con via libera esplicito di Denis.
+   `c576240`), con via libera esplicito di Denis. VERIFICATO ANCHE DA
+   DENIS PER DAVVERO, stesso giorno: "funziona perfettamente". Punto
+   chiuso per intero.

@@ -1,9 +1,9 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-17 (punti 86/87 su badge e esperto locale chiusi;
-punto 88 - la segnalazione di un pericolo ora chiede prima se sei sul
-posto o vuoi indicarlo sulla mappa, invece di usare sempre il GPS del
-momento - costruito, verificato dal vivo e pushato - vedi sotto)
+Aggiornato: 2026-08-17 (punti 86/87/88 tutti chiusi e confermati da
+Denis con "funziona perfettamente" - vedi sotto. Nessun lavoro tecnico
+pronto, solo i due punti fermi di sempre: livelli zona 63b e dominio
+email)
 ===================================================================
 
 QUESTO FILE DICE SOLO UNA COSA: a che punto siamo adesso e da dove si ricomincia.
@@ -123,7 +123,8 @@ o ne arriva uno nuovo.
        foto già scritti intatti. Nessuna modifica lato server. Verificato
        dal vivo riproducendo lo scenario di Denis (pannello aperto dalla
        Dashboard, non dalla Mappa). camoscio `c576240`, pushato con via
-       libera esplicito di Denis.
+       libera esplicito di Denis. POI confermato da Denis stesso, uso
+       vero: "funziona perfettamente". Punto chiuso per intero.
 
     >>> RIPARTIRE DA: nessun lavoro tecnico pronto. Restano aperti - non
     toccati da 87/88 - i "livelli" ORIGINALI del punto 63b (quanti
