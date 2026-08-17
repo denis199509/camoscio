@@ -77,8 +77,17 @@
         // invece dell'emoji - emoji resta scritta comunque, e' il ripiego se un giorno
         // l'immagine manca o non carica (vedi schedaBadge in badges.js). Tre rifugi finora,
         // scelti da Denis: gli altri restano a emoji finche' non arrivano altre icone.
+        //
+        // Zilioli, quota 2250 (non 2253 come sopra): corretta il 18/08/2026 su richiesta
+        // esplicita di Denis, per farla coincidere col numero scritto sull'icona nuova
+        // (badge-luoghi/rifugio-zilioli.png dice "2250 m"). 2253 resta il dato OSM del
+        // "Bivacco Tito Zilioli" (nota qui sopra) - i tre metri di scarto non vengono da un
+        // errore trovato in nessuna delle due fonti, e' una scelta di quale numero mostrare.
+        // NON "correggerla" di nuovo a 2253 ricontrollando OSM: e' gia' successo il contrario
+        // una volta in questo file (vedi nota in cima), qui la richiesta va nella direzione
+        // opposta ed e' voluta.
         { stampId: 'stamp_mezzeno',     nome: 'Rifugio Franchetti',       tipo: 'rifugio', quota: 2433, lat: 42.47711, lng: 13.56522, zona: 'Gran Sasso',       regione: 'Abruzzo', emoji: '🧗',  icona: 'img/badge-luoghi/rifugio-franchetti.png' },
-        { stampId: 'stamp_gnifetti',    nome: 'Rifugio Zilioli',          tipo: 'rifugio', quota: 2253, lat: 42.81740, lng: 13.26850, zona: 'Monti Sibillini',  regione: 'Marche',  emoji: '❄️', icona: 'img/badge-luoghi/rifugio-zilioli.png' },
+        { stampId: 'stamp_gnifetti',    nome: 'Rifugio Zilioli',          tipo: 'rifugio', quota: 2250, lat: 42.81740, lng: 13.26850, zona: 'Monti Sibillini',  regione: 'Marche',  emoji: '❄️', icona: 'img/badge-luoghi/rifugio-zilioli.png' },
         { stampId: 'badge_pomilio',     nome: 'Rifugio Bruno Pomilio',    tipo: 'rifugio', quota: 1930, lat: 42.16084, lng: 14.13258, zona: 'Maiella',          regione: 'Abruzzo', emoji: '🛖'  },
         { stampId: 'badge_ciuffarella', nome: 'Rifugio Pino Ciuffarella', tipo: 'rifugio', quota: 1770, lat: 41.79662, lng: 13.50140, zona: 'Monti Ernici',     regione: 'Lazio',   emoji: '🏕️' },
         // Punto 91: rifugio nuovo nel catalogo, non solo un cambio icona - non c'era
