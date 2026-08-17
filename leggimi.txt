@@ -1,7 +1,8 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-18 (punti 83-93 TUTTI chiusi - nessun punto tecnico
-aperto, vedi RIPARTIRE DA in fondo)
+Aggiornato: 2026-08-18 (punti 83-93 TUTTI chiusi; punto 94 PROGETTATO,
+nessun codice scritto, parte solo quando Denis vuole - vedi RIPARTIRE
+DA in fondo)
 ===================================================================
 
 QUESTO FILE DICE SOLO UNA COSA: a che punto siamo adesso e da dove si ricomincia.
@@ -123,11 +124,38 @@ o ne arriva uno nuovo.
     riuscita, nota corretta sulla card). Dettaglio completo in
     cose_da_fare.txt punto 93.
 
-    >>> RIPARTIRE DA: nessun punto tecnico aperto. Resta solo un'azione
-    che PUO' FARE SOLO DENIS (non richiederla, e' sua): ricaricare le 7
-    tracce esistenti per ottenere il tempo di movimento vero (decisione 1
-    del punto 92) - ora puo' farle tutte e 7 in una volta sola (tetto
-    personale 10 fino a fine agosto, vedi sopra).
+    >>> PUNTO 94, PROGETTATO (18/08/2026), NESSUN CODICE SCRITTO: Denis
+    ha chiesto di valutare un'app Android (.apk) per Camoscio - chiarito
+    che lo scopo vero e' sbloccare il tracciamento GPS a schermo spento
+    (impossibile via browser, rimandato l'8/08 a "quando penseremo a
+    un'app dal sito"), non solo un'icona sul telefono. Chiesto SOLO il
+    piano in questa sessione - il lavoro vero parte in una sessione
+    futura, quando Denis lo decide.
+    Piano completo (Explore+Plan, non l'agente architect - e'
+    infrastruttura/packaging): Capacitor "hosted/remote app" (l'app
+    carica le pagine vere di Render, eredita la sessione via cookie,
+    ZERO modifiche al backend). Plugin @capgo/background-geolocation
+    (MPL-2.0), scartato quello di transistorsoft (a pagamento in
+    release, contro il vincolo open source). Il punto delicato non e'
+    catturare il GPS ma consegnarlo al JS esistente - il bridge
+    nativo->JS di Capacitor si blocca dopo 5 minuti in background, si
+    risolve con useLegacyBridge:true - con questo, ZERO riscrittura
+    della coda/flush/endpoint gia' in public/js/tracking.js, solo
+    beginWatchingPosition()/stopWatchingPosition() guadagnano un ramo
+    nativo. 8 passi ordinati, ognuno verificabile (ambiente Android
+    Studio -> Capacitor minimo -> plugin isolato -> collegamento vero,
+    testato con un cammino REALE fuori casa -> permessi/testi onesti ->
+    produzione -> pulizia -> .apk firmato). Dettaglio completo con le
+    parole di Denis in cose_da_fare.txt punto 94, decisioni tecniche in
+    ../camoscio memoria/03-Decisioni-Architetturali.md.
+
+    >>> RIPARTIRE DA: nessun punto tecnico urgente. Il punto 94 (sopra)
+    parte SOLO quando Denis lo decide lui, dal passo 1 (installare
+    Android Studio) - non riproporlo di sua iniziativa. Nell'immediato
+    resta solo un'azione che PUO' FARE SOLO DENIS (non richiederla, e'
+    sua): ricaricare le 7 tracce esistenti per ottenere il tempo di
+    movimento vero (decisione 1 del punto 92) - ora puo' farle tutte e 7
+    in una volta sola (tetto personale 10 fino a fine agosto, vedi sopra).
     Restano anche aperti - non toccati da nessuno dei punti sopra - i "livelli"
     ORIGINALI del punto 63b (quanti gradini per la ZONA dichiarata a
     mano, es. "Monti Lucretili" in quanto tale, non le singole cime -

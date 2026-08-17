@@ -4313,3 +4313,85 @@ schermo spento ancora."
    (calcolata)" e la nota "Percorso: ... - dislivello indicato da chi
    organizza" sulla card. Dati di prova cancellati subito dopo.
    PUNTO 93 CHIUSO PER INTERO.
+
+94) [PROGETTATO 2026-08-18, NESSUN CODICE SCRITTO - Denis ha chiesto
+   solo il piano, il lavoro vero parte in una sessione futura] Denis:
+   "possiamo valutare di creare un'app? sempre riguardo il progetto
+   camoscio. serve un file .apk in modo da poter installare l'app sul
+   telefono android." Chiesto subito qual era la spinta vera (un'icona
+   comoda, o sbloccare il tracciamento GPS a schermo spento - rimandato
+   piu' volte, ultima volta l'8/08/2026 con le parole "quando penseremo
+   a creare pure un'app dal sito"): Denis ha scelto la seconda,
+   sbloccare il tracciamento a schermo spento.
+   Verificato sull'ambiente di questo PC prima di progettare: solo Java
+   1.8 presente, nessun Gradle/SDK Android/adb - serve installare
+   Android Studio da zero (stesso tipo di "primo ambiente nuovo" gia'
+   affrontato con Python).
+   Piano costruito con un giro Explore + Plan (harness ufficiale di
+   Claude Code, non l'agente architect del progetto - questo tipo di
+   lavoro e' infrastruttura/packaging, non logica applicativa), con
+   ricerca esterna sulle licenze dei plugin. Il piano completo e'
+   salvato in C:\Users\lenovo\.claude\plans\joyful-pondering-wind.md
+   (file locale di Claude Code, non nel repo) - qui sotto solo il
+   riassunto, per non perdere il filo se quel file locale sparisse.
+   APPROCCIO SCELTO: Capacitor "hosted/remote app" - l'app nativa carica
+   le pagine VERE del sito da Render (non un bundle locale), eredita la
+   sessione via cookie senza toccare il backend (verificato:
+   routes/tracking.js si basa solo su req.session.userId, niente JWT).
+   Stesso repo (cartella android/ + capacitor.config.ts alla radice),
+   non un repo separato - l'app e' solo un contenitore che punta al
+   sito, non una copia del frontend.
+   PLUGIN scelto: @capgo/background-geolocation (MPL-2.0, aggiornato
+   per Capacitor v8). @capacitor-community/background-geolocation
+   (MIT) come piano B se il primo mostra un difetto bloccante in prova.
+   SCARTATO transistorsoft/capacitor-background-geolocation: licenza a
+   pagamento per le build di release, incompatibile col vincolo "tutto
+   open source".
+   IL PUNTO TECNICO DELICATO: non catturare il GPS in background
+   (uguale per ogni plugin, foreground service + notifica persistente,
+   obbligo di Android), ma consegnare i fix al JS esistente - il bridge
+   nativo->JS di default di Capacitor si blocca dopo ~5 minuti in
+   background (bug noto, documentato in entrambi i plugin). Si risolve
+   con android:{useLegacyBridge:true} nella config Capacitor. Con
+   questo, ZERO riscrittura della pipeline coda IndexedDB/flush ogni
+   25s/endpoint gia' esistente in public/js/tracking.js - solo
+   beginWatchingPosition()/stopWatchingPosition() guadagnano un ramo
+   "if (Capacitor.isNativePlatform())" che usa il plugin invece di
+   navigator.geolocation. Il ramo browser resta identico.
+   PERMESSI ANDROID: posizione precisa+approssimativa, posizione in
+   background (separata per legge da Android 10+, un secondo consenso
+   che da Android 11+ porta l'utente alle Impostazioni di sistema, non
+   un popup), foreground service, notifiche. Va spiegato a schermo
+   PRIMA di mandare l'utente alle Impostazioni, e va detto con onestà
+   se l'utente concede solo "mentre in uso" (il tracciamento funziona
+   comunque, si ferma a schermo spento) - vincolo hard 7.
+   TESTI DA AGGIUNGERE: lato browser, un avviso mai scritto finora
+   ("serve la pagina aperta e lo schermo acceso") - va aggiunto SOLO
+   insieme al rilascio dell'app, non prima (altrimenti si promette
+   un'app che ancora non esiste, stesso vincolo hard 7 al contrario).
+   ORDINE DI LAVORO (8 passi, ognuno con una verifica propria prima di
+   passare al successivo): 1) Android Studio + app vuota di prova sul
+   telefono. 2) Capacitor minimo puntato a localhost/IP LAN, senza
+   plugin GPS - verificare che login/sessione/mappa funzionino dentro
+   il contenitore nativo. 3) Plugin isolato (solo un pulsante di prova
+   che logga i fix), non ancora collegato a tracking.js - verificare
+   che i fix arrivino con 10+ minuti di schermo spento. 4) Collegamento
+   vero a tracking.js - verificare con un cammino REALE fuori casa, non
+   da fermo. 5) Flusso di consenso in due passaggi + testi onesti. 6)
+   server.url puntato a Render vero, ripetere la verifica del passo 4
+   in produzione. 7) .gitignore esteso (build Gradle, local.properties,
+   keystore - MAI il keystore nel repo pubblico, stessa regola di
+   .env), commit di android/+capacitor.config.ts. 8) Solo se tutto
+   verde: .apk di release firmato, sideload (nessun Play Store per ora,
+   costa 25$ una tantum solo se un giorno si vorra' pubblicarla).
+   RISCHI SEGNALATI, NON NASCOSTI: useLegacyBridge risolve il blocco
+   noto del bridge, ma non e' confermato che risolva anche eventuali
+   rallentamenti dei timer JS per risparmio energetico - da verificare
+   empiricamente al passo 3. L'ottimizzazione batteria aggressiva di
+   alcuni produttori (Xiaomi/MIUI, Huawei, alcuni Samsung/OnePlus) puo'
+   uccidere il foreground service comunque, indipendente dal plugin -
+   potrebbe servire disattivarla a mano sul telefono di Denis. Gli
+   emulatori Android hanno GPS simulato, inutili per verificare in
+   montagna - serve un dispositivo fisico, fuori casa, non da fermo.
+   NESSUN CODICE SCRITTO, NESSUN AMBIENTE TOCCATO. Ripartire dal passo 1
+   dell'ordine di lavoro sopra quando Denis vorra' iniziare per davvero.
