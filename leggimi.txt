@@ -80,17 +80,17 @@ o ne arriva uno nuovo.
       3. Nessun filtro nuovo per durata/multi-giorno - bastano i
          cancelli gia' esistenti in tempiTraccia.
       4. Il collegamento esplicito traccia->escursione non ora.
-    L'architect stava controllando alcuni dettagli implementativi finali
-    (mai arrivata la lista completa - la sua sessione si e' interrotta
-    per un limite dell'account, fatta ripartire ma la risposta non e'
-    arrivata prima della chiusura di questa sessione).
+    L'architect si e' interrotto DUE volte: prima per un limite di
+    sessione, poi (fatto ripartire) di nuovo per una connessione caduta -
+    proprio mentre aveva finito di verificare i suoi ultimi dettagli e
+    stava per scrivere "l'ultima misura cambia una cosa nel piano". QUALE
+    cosa cambia non e' mai stato scritto da nessuna parte.
 
-    >>> RIPARTIRE DA: il punto 92 (sopra) - verificare prima di tutto se
-    l'agente architect ha risposto nel frattempo con lo "scheletro dei
-    contratti" (firma di recalculatePersonalPace con le due fonti, punto
-    esatto in routes/tracking.js dove scrivere il nuovo campo). Se non
-    ha risposto, richiamarlo da capo MA le quattro decisioni di Denis
-    sopra sono gia' ferme, non vanno rifatte. Restano anche aperti - non
+    >>> RIPARTIRE DA: il punto 92 (sopra) - far ripartire lo stesso
+    agente se il task e' recuperabile, altrimenti ripartire SOLO
+    dall'ultimo passo (scoperte e decisioni di Denis gia' solide, non
+    vanno rifatte) chiedendo di riverificare i dettagli implementativi
+    prima di fidarsene. Restano anche aperti - non
     toccati da nessuno dei punti sopra - i "livelli" ORIGINALI del punto
     63b (quanti gradini per la ZONA dichiarata a mano, es. "Monti
     Lucretili" in quanto tale, non le singole cime - DIVERSI dai livelli

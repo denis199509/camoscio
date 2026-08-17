@@ -4121,17 +4121,22 @@ schermo spento ancora."
       plausibilita' 50-1500 m/h e ORE_MAX gia' in recalculatePersonalPace).
    4. Il collegamento esplicito traccia->escursione NON ora - solo il
       calcolo del passo per questa modifica.
-   STATO ESATTO A FINE SESSIONE: l'architect stava controllando "quattro
-   dettagli implementativi" resi rilevanti dalle decisioni di Denis
-   (mai elencati per intero: la sessione dell'agente si e' interrotta
-   per un limite di sessione dell'account, si sblocca alle 15:00) prima
-   di scrivere lo "scheletro dei contratti" (firma esatta di
-   recalculatePersonalPace con le due fonti, punto esatto in
-   routes/tracking.js dove va scritto il nuovo campo su
-   ActiveHikeSession). Fatto ripartire subito dopo l'interruzione, ma la
-   sessione si e' chiusa prima che tornasse con una risposta.
-   NESSUN CODICE SCRITTO. RIPARTIRE DA: aspettare/rileggere la risposta
-   dell'agente architect (task id interno, vedi se la sessione precedente
-   e' ripresa automaticamente) - se la risposta non e' mai arrivata,
-   richiedergliela da capo, ma le quattro decisioni di Denis sopra sono
-   gia' definitive e NON vanno richieste di nuovo.
+   STATO ESATTO A FINE SESSIONE (due interruzioni, non una): l'architect
+   stava controllando "quattro dettagli implementativi" resi rilevanti
+   dalle decisioni di Denis - primo stop per un limite di sessione
+   dell'account (si sblocca alle 15:00). Fatto ripartire: ha finito di
+   verificare tutti e quattro i dettagli e ha scritto "l'ultima misura
+   cambia una cosa nel piano" - MA la connessione e' caduta proprio
+   mentre stava per scrivere QUALE cosa cambia e lo scheletro dei
+   contratti (firma esatta di recalculatePersonalPace con le due fonti,
+   punto esatto in routes/tracking.js dove va scritto il nuovo campo su
+   ActiveHikeSession). Quella scoperta finale non e' MAI stata
+   consegnata - non esiste da nessuna parte, non solo in questo file.
+   NESSUN CODICE SCRITTO. RIPARTIRE DA: far ripartire di nuovo lo stesso
+   agente (task id interno alla sessione precedente, se recuperabile) o,
+   se non recuperabile, ripartire da capo SOLO per l'ultimo passo (le tre
+   scoperte iniziali e le quattro decisioni di Denis qui sopra sono gia'
+   solide e verificate due volte, non vanno rifatte) - dire al nuovo
+   agente di verificare lui stesso i quattro dettagli implementativi
+   (quali siano non e' mai stato scritto) prima di fidarsi che siano gia'
+   a posto.
