@@ -4620,3 +4620,120 @@ schermo spento ancora."
    ../camoscio memoria/04-Da-Fare.md (sezione "Debito tecnico noto") -
    da riprendere quando arriva un'icona nuova con la quota corretta,
    nessun codice da toccare nel frattempo.
+
+98. [18/08/2026, notte] Denis, sei segnalazioni insieme, parole sue -
+   NON ANCORA IMPLEMENTATE, solo registrate. Chiesto a Denis di
+   ordinarle io stesso ("segna la lista da fare e ordina i punti in
+   seguenza che consideri meglio"). Ordine proposto e ragionamento in
+   fondo a questo punto.
+
+   A. ACCOUNT DENIS, INVITO SQUADRA INCOMPLETO. Parole sue: "Sono
+      stato accettato dal admin della squadra 'Camosci della Val
+      Brembana'. Ma per invitare la squadra ad una gita riesco ad
+      invitare solo la squadra 'Merenderos in Vetta'. Dovrei avere la
+      possibilita' di inviare l'invito a tutte le squadre a cui
+      appartengo."
+
+   B. RECENSIONI POST ESCURSIONE, BLOCCO SBAGLIATO. Parole sue:
+      "Esempio Denis e Marco Alpinista hanno fatto un escursione
+      insieme. Marco scrive una recensione su Denis sulla base del
+      escursione fatta insieme. Marco non puo' piu' recensire Denis
+      su un escursione su cui ha gia' messo recensioni." (probabile:
+      il blocco anti-doppia-recensione e' per coppia di utenti invece
+      che per coppia utenti+escursione - da verificare sullo schema
+      prima di correggere).
+
+   C. SPLIT SPESE VIAGGIO, SOLO ANDATA DA INSERIRE. Parole sue: "Al
+      momento viene chiesta la distanza A/R, il consumo L/100 km, il
+      costo e pedaggio. L'utente deve calcolare da solo la distanza
+      di andata e poi considerare pure il ritorno, il costo del
+      pedaggio piu' quello del ritorno. Facciamo che si inseriscono
+      solo i km di andata il consumo e il pedaggio di sola andata, il
+      sistema calcola in automatico con gli stessi dati il ritorno.
+      Il risultato mostra la spesa finale considerando sia l'andata
+      che il ritorno."
+
+   D. MATCH SU OBIETTIVI COMUNI, NIENTE RISCONTRO PER CHI SCEGLIE.
+      Parole sue: "Una volta inserito il Monte Bianco come obbiettivo
+      di allenamento e' comparso solo il nome di marco Alpinista con
+      lo stesso obiettivo. Mentre dove ho scritto Monte Bianco e'
+      rimasto tutto uguale. Voglio vedere l'obbiettivo sotto una
+      volta che ho scelto uno." (da esplorare nel codice prima di
+      progettare: quale funzione mostra oggi gli altri utenti con lo
+      stesso obiettivo, e perche' non mostra anche il proprio).
+
+   E. PROGETTO PERCORSO, SOLO SENTIERI BLOCCA IN CERTI CASI. Parole
+      sue: "Problemi a creare il progetto. In certi punti e'
+      obbligatorio passare su strade sterrate per potersi ricollegare
+      al sentiero. Quindi adesso il sistema cerca di passare solo su
+      sentieri di conseguenza in certi casi aumenta notevolmente i km
+      del percorso." Tocca il motore di progettazione percorso
+      (lib/trailGraph.js) - probabile filtro sui tag OSM troppo
+      stretto (solo sentieri veri, niente strade sterrate/tratturi di
+      collegamento).
+
+   F. DIARIO DI VIAGGIO COLLABORATIVO, NON PRONTO PER ESSERE
+      COSTRUITO. Parole sue: "Scelgo l'escursione, racconti un
+      momento poi devo inserire un link. Perche'? Io magari le foto
+      le ho sul telefono. Poi sotto devo inserire le coordinate della
+      foto. Per un utente normale e' difficile trovare le coordinate
+      della foto. Devo capire ancora bene come sviluppare questa
+      parte. Al momento e' un disastro." Denis stesso dice di non
+      avere ancora chiaro come deve funzionare - stessa lezione dei
+      punti 38/48 (una richiesta vaga si chiede, non si indovina):
+      NON entra nell'ordine di lavoro finche' non ne riparliamo e non
+      diventa un disegno concreto.
+
+   ORDINE PROPOSTO (dal piu' piccolo/isolato al piu' grande, F fuori
+   ordine perche' non pronta): A, B, C, D, E — poi F quando Denis
+   avra' le idee piu' chiare. Ragionamento: A e B sono bug su
+   funzioni gia' esistenti e isolate (inviti squadra, recensioni),
+   probabilmente piccoli una volta trovata la causa. C e' una
+   richiesta gia' chiarissima (nessuna esplorazione serve, solo
+   implementare). D richiede prima capire cosa fa oggi il codice
+   (esplorazione, non chiaro dal solo racconto di Denis). E tocca il
+   motore di progettazione percorso, la parte piu' delicata del sito
+   (RAM, indice sentieri, vincolo hard 3) - va indagata con cura
+   prima di cambiare un filtro che decide quali strade sono
+   ammesse. F resta fuori dall'ordine, non e' una richiesta pronta.
+
+   PUNTO B FATTO E VERIFICATO (18/08/2026 notte) - fermato qui su
+   richiesta di Denis di salvare, non ancora committato quando questa
+   nota e' stata scritta (vedi leggimi.txt per lo stato vero del
+   commit). Diagnosi confermata con Denis prima di scrivere codice:
+   il blocco server (ReviewLock, terna recensore+recensito+escursione)
+   era gia' corretto - il bug vero era nel menu del frontend
+   (populateReviewTargets, social.js), che non toglieva mai le coppie
+   escursione+persona gia' recensite, restando selezionabili per
+   sempre e fallendo con un 409 confuso. Progettato con l'agente
+   architect (rispettando l'anonimato delle recensioni - Review.js
+   non salva mai chi scrive): nuova rotta POST /api/reviews/gia-
+   recensite (sola lettura, risponde solo per la sessione di chi
+   chiama, mai chi ha recensito chi), helper condiviso
+   lib/reviewLock.js per l'hash (prima duplicato identico in due
+   punti - stessa lezione del punto 18), filtro nel menu con un
+   contatore di generazione contro corse fra render ravvicinati,
+   messaggio diverso per "nessuna escursione condivisa" vs "hai gia'
+   recensito tutti".
+   SUBITO DOPO, Denis ha notato (parole sue): "risulta inutile allora
+   il commento di feedback costruttivo, togliamolo, lasciamo solo le
+   tre voci con voti da 1 a 5" - motivato dal fatto, trovato mentre si
+   rispondeva a una sua domanda, che le recensioni ricevute non sono
+   MAI mostrate da nessuna parte del sito (solo la reputazione
+   aggregata sul profilo) - il campo commento era quindi scritto e
+   salvato ma letto da nessuno. Tolto per intero: campo `comment` da
+   models/Review.js, dalla richiesta POST /api/reviews, dal form in
+   index.html e da submitAnonymousReview in social.js.
+   VERIFICATO: via API con due account demo, due escursioni distinte
+   completate insieme - recensita la prima, confermato che SOLO
+   quella coppia risulta "gia' recensita" (la seconda resta
+   disponibile), confermato che dal punto di vista dell'altro account
+   (che non ha recensito nessuno) l'elenco resta vuoto (anonimato
+   intatto), confermato 409 su un secondo tentativo sulla stessa
+   coppia. Dati di prova rimossi subito dopo, filtrati con lo stesso
+   hash della prova (mai una deleteMany larga). VERIFICATO ANCHE dal
+   vivo nel browser: campo commento sparito dal form, messaggio "hai
+   gia' recensito tutti" comparso correttamente per l'account demo
+   con tutte le coppie gia' consumate, e una coppia finta non ancora
+   recensita (mai scritta sul database, solo in memoria) confermata
+   visibile nel menu. Nessun errore in console.

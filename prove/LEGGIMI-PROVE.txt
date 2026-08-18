@@ -244,10 +244,9 @@ E UNA REGOLA NUOVA, dalla prova del punto 35:
    sa se sta guardando quello che dice di guardare.
 
 
-RESIDUI VECCHI ANCORA SUL DATABASE
------------------------------------
- - 30 notifiche orfane sugli account demo, lasciate da 15 lanci di prova-punto77.js prima che
-   il suo cleanup imparasse a toglierle (corretto il 18/08/2026, i lanci nuovi non ne
-   lasciano piu'). Quelle vecchie sono ancora li' e si tolgono cosi', filtrate sul testo
-   finto che nessun dato vero puo' avere:
-       db.notifications.deleteMany({ text: /ha una nuova escursione: "PROVA-77-\d+"/ })
+RESIDUI VECCHI SUL DATABASE — NESSUNO NOTO AL MOMENTO
+------------------------------------------------------
+ - Le 30 notifiche orfane lasciate da 15 lanci di prova-punto77.js prima che il suo
+   cleanup imparasse a toglierle (corretto il 18/08/2026) sono state ripulite lo stesso
+   giorno (filtrate sul testo finto "PROVA-77-<timestamp>", verificato 0 rimaste). I
+   lanci nuovi della prova non ne lasciano piu'.

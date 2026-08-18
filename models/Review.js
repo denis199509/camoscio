@@ -6,8 +6,7 @@ const reviewSchema = new mongoose.Schema({
     targetUserId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     punctuality: { type: Number, min: 1, max: 5, required: true },
     equipment: { type: Number, min: 1, max: 5, required: true },
-    respect: { type: Number, min: 1, max: 5, required: true },
-    comment: { type: String, default: '' }
+    respect: { type: Number, min: 1, max: 5, required: true }
 });
 
 module.exports = mongoose.models.Review || mongoose.model('Review', reviewSchema);

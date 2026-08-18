@@ -1921,12 +1921,17 @@ window.confermaInvitoSquadra = async function(hikeId) {
 // stesso, prima ancora che l'escursione iniziasse). Qui si può controllare solo il PROPRIO
 // completamento (db.completions ha solo quelli dell'utente corrente): il server verifica anche
 // quello dell'altra persona al momento dell'invio, vedi routes/reviews.js.
-function populateReviewTargets() {
+// Contatore di generazione (punto 98/B): renderSocialModule() richiama questa funzione
+// da più punti, e ora che c'è un await in mezzo due chiamate ravvicinate potrebbero far
+// atterrare la risposta più vecchia DOPO quella nuova, ridipingendo un elenco stantio -
+// stesso principio già usato per invitoInCorso più sopra in questo file.
+let generazioneTendinaRecensioni = 0;
+
+async function populateReviewTargets() {
     const select = document.getElementById("review-target");
     if (!select) return;
 
     const db = window.CamoscioState;
-    select.innerHTML = "";
 
     const completedHikeIds = new Set(db.completions.map(c => c.hikeId));
     const pastSharedHikes = db.hikes.filter(h =>
@@ -1948,7 +1953,45 @@ function populateReviewTargets() {
         return;
     }
 
-    options.forEach(opt => {
+    const generazione = ++generazioneTendinaRecensioni;
+    select.innerHTML = `<option value="" disabled selected>Caricamento...</option>`;
+
+    // Punto 98/B: senza questo filtro una coppia gia' recensita restava per sempre
+    // selezionabile - il server la rifiuta (409), ma l'utente non lo sapeva finche' non
+    // ci provava, e con molte escursioni condivise diventava ingestibile trovare quella
+    // giusta. Un solo giro col server (mai N), che risponde solo per la sessione corrente
+    // senza rivelare chi ha recensito chi - vedi routes/reviews.js.
+    let disponibili = options;
+    try {
+        const response = await fetch('/api/reviews/gia-recensite', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                coppie: options.map(o => ({ hikeId: o.hikeId, targetUserId: o.user.id }))
+            })
+        });
+        if (response.ok) {
+            const { gia } = await response.json();
+            const giaRecensite = new Set(gia);
+            disponibili = options.filter(o => !giaRecensite.has(`${o.hikeId}::${o.user.id}`));
+        }
+        // Risposta non ok (es. sessione scaduta): si mostra tutto, come prima di questo
+        // punto, invece di nascondere per sbaglio escursioni davvero recensibili.
+    } catch (e) {
+        console.error('Errore verifica recensioni già fatte:', e);
+    }
+
+    if (generazione !== generazioneTendinaRecensioni) return; // una chiamata più recente ha già ridisegnato
+
+    if (disponibili.length === 0) {
+        select.innerHTML = options.length === 0
+            ? `<option value="" disabled selected>Nessuna escursione passata condivisa da recensire</option>`
+            : `<option value="" disabled selected>Hai già recensito tutti i compagni delle tue escursioni concluse</option>`;
+        return;
+    }
+
+    select.innerHTML = "";
+    disponibili.forEach(opt => {
         const el = document.createElement("option");
         el.value = `${opt.hikeId}::${opt.user.id}`;
         el.textContent = `${opt.user.avatar} ${opt.user.username} (${opt.hikeTitle})`;
@@ -1965,7 +2008,6 @@ async function submitAnonymousReview() {
     const punctuality = document.getElementById("rate-punctuality").value;
     const equipment = document.getElementById("rate-equipment").value;
     const respect = document.getElementById("rate-respect").value;
-    const comment = document.getElementById("review-comment").value;
     const db = window.CamoscioState;
 
     try {
@@ -1974,7 +2016,7 @@ async function submitAnonymousReview() {
             headers: { 'Content-Type': 'application/json' },
             // reviewerId e hikeId servono SOLO lato server per l'hash anti-duplicati:
             // non vengono mai salvati né restituiti nel record di recensione visibile.
-            body: JSON.stringify({ targetUserId, punctuality, equipment, respect, comment, reviewerId: db.currentUser.id, hikeId })
+            body: JSON.stringify({ targetUserId, punctuality, equipment, respect, reviewerId: db.currentUser.id, hikeId })
         });
 
         if (response.ok) {

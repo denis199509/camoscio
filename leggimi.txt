@@ -1,9 +1,9 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-18 notte (punti 83-93 e 95-97 TUTTI chiusi,
-committati e pushati, badge verificati anche da Denis di persona;
-punto 94 PROGETTATO, nessun codice scritto - nessun punto pronto in
-coda, vedi RIPARTIRE DA in fondo)
+Aggiornato: 2026-08-18 notte (punti 83-93 e 95-97 chiusi, committati
+e pushati; punto 98/B FATTO E VERIFICATO, COMMITTATO E PUSHATO su
+richiesta di Denis di salvare tutto in sicurezza; punto 94
+PROGETTATO, nessun codice scritto - vedi RIPARTIRE DA in fondo)
 ===================================================================
 
 QUESTO FILE DICE SOLO UNA COSA: a che punto siamo adesso e da dove si ricomincia.
@@ -81,7 +81,35 @@ o ne arriva uno nuovo.
     annotato in ../camoscio memoria/04-Da-Fare.md, sezione "Debito tecnico
     noto". Nessun codice da toccare finche' non arriva l'immagine nuova.
 
-    >>> RIPARTIRE DA: nessun punto pronto in coda. Il punto 94 (app Android
+    >>> PUNTO 98/B, CHIUSO PER INTERO (18/08/2026 notte): il menu
+    recensioni (populateReviewTargets, social.js) non toglieva mai le
+    coppie escursione+persona gia' recensite - restavano selezionabili
+    per sempre, fallendo con un 409 confuso. Il blocco server era gia'
+    corretto (per terna recensore+recensito+escursione, non per sola
+    coppia di persone). Progettato con l'agente architect rispettando
+    l'anonimato (Review.js non salva mai chi scrive): nuova rotta
+    POST /api/reviews/gia-recensite (sola lettura, risponde solo per
+    la sessione di chi chiama), helper condiviso lib/reviewLock.js per
+    l'hash. Subito dopo, Denis ha chiesto di togliere anche il campo
+    commento del form recensioni: le recensioni ricevute non sono mai
+    mostrate da nessuna parte del sito (solo la reputazione aggregata),
+    quindi il commento era scritto ma letto da nessuno - tolto da
+    schema, rotta, form e invio. Verificato via API (due escursioni
+    distinte, recensita una sola, confermato che solo quella risulta
+    "gia' recensita") e dal vivo nel browser, nessun errore in console.
+    Dettaglio completo in cose_da_fare.txt punto 98 (dentro il punto B).
+
+    >>> RIPARTIRE DA: punto 98/A (invito squadra incompleto per
+    l'account di Denis) - prossimo nell'ordine dato: A, poi C
+    (split spese viaggio), D (match obiettivi comuni), E (progetto
+    percorso, sentieri/strade sterrate). F (diario di viaggio
+    collaborativo) resta FUORI ordine, Denis stesso dice di non avere
+    ancora chiaro come deve funzionare, non riproporla come pronta.
+    Dettaglio completo, con le parole di Denis, in cose_da_fare.txt
+    punto 98. Pulizia delle ~30 notifiche demo orfane gia' fatta e
+    committata (vedi sopra).
+
+    >>> Il punto 94 (app Android
     per il tracciamento a schermo spento, PROGETTATO ma nessun codice
     scritto) resta SOLO quando Denis lo decide lui, dal passo 1 (installare
     Android Studio) - non riproporlo di sua iniziativa. Restano aperte, non
@@ -89,9 +117,8 @@ o ne arriva uno nuovo.
     ORIGINALI del punto 63b (quanti gradini per la ZONA dichiarata a mano,
     DIVERSI dai livelli gia' fatti del punto 86) e il calcolo automatico del
     raggio (punto 42a) - Denis deve ancora pensarci, non richiederlo - e il
-    dominio email (rimandato da lui). Facoltativa, non legata a nessun punto:
-    pulizia delle ~30 notifiche demo orfane trovate per caso (comando pronto
-    in prove/LEGGIMI-PROVE.txt).
+    dominio email (rimandato da lui). Pulite (18/08/2026) le ~30 notifiche
+    demo orfane trovate per caso al punto 95 - vedi prove/LEGGIMI-PROVE.txt.
 
 >>> LEZIONI OPERATIVE (git dopo un'interruzione, moduli che si collegano
     tardi, componenti condivisi fra piu' pagine): tutte in

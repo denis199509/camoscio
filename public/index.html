@@ -1483,7 +1483,7 @@
                             <!-- Recensioni Anonime Post-Escursione -->
                             <div class="glass-card review-card">
                                 <h4><i data-lucide="star"></i> Recensioni Post-Escursione (100% Anonime)</h4>
-                                <p class="small text-muted">Per garantire la sicurezza e la fiducia nel gruppo, le valutazioni reciproche sono obbligatorie e **rigorosamente anonime** (i voti vengono aggregati e i commenti mostrati senza nomi o date).</p>
+                                <p class="small text-muted">Per garantire la sicurezza e la fiducia nel gruppo, le valutazioni reciproche sono obbligatorie e **rigorosamente anonime** (i voti vengono solo aggregati, mai mostrati singolarmente).</p>
                                 
                                 <form id="peer-review-form">
                                     <div class="form-group">
@@ -1505,10 +1505,6 @@
                                             <label for="rate-respect">Rispetto Gruppo/Ambiente (1-5):</label>
                                             <input type="number" id="rate-respect" min="1" max="5" value="5" required>
                                         </div>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="review-comment">Commento di feedback costruttivo:</label>
-                                        <textarea id="review-comment" placeholder="Es. Ottimo passo, attento alla sicurezza..." required></textarea>
                                     </div>
                                     <button type="submit" class="btn btn-primary btn-block">Invia Recensione Anonima</button>
                                 </form>
