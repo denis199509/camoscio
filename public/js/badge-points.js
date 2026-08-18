@@ -72,6 +72,24 @@
         { stampId: 'badge_terminillo',  nome: 'Monte Terminillo',         tipo: 'cima',    quota: 2217, lat: 42.47330, lng: 12.99736, zona: 'Terminillo',       regione: 'Lazio',   emoji: '🏔️', icona: 'img/badge-luoghi/monte-terminillo.png' },
         { stampId: 'badge_miletto',     nome: 'Monte Miletto',            tipo: 'cima',    quota: 2050, lat: 41.44962, lng: 14.37209, zona: 'Matese',           regione: 'Molise',  emoji: '🌄',  icona: 'img/badge-luoghi/monte-miletto.png' },
 
+        // Otto voci nuove (18/08/2026), stesso criterio del punto 1 in cima al file: coordinate
+        // e quote confermate su Overpass (natural=peak), non prese dalle icone. Sette su otto
+        // sono risultate identiche fino alla quinta cifra decimale ai dati dati da Denis, quota
+        // compresa - le cifre disegnate sulle icone (anche loro identiche) sono quindi corrette
+        // per coincidenza, non per essere una fonte affidabile in generale (vedi Bivacco Ju
+        // Busciu subito sotto, dove NON coincidono).
+        { stampId: 'badge_cornopiccolo',  nome: 'Corno Piccolo',        tipo: 'cima', quota: 2655, lat: 42.47913, lng: 13.55998, zona: 'Gran Sasso', regione: 'Abruzzo', emoji: '🪨',  icona: 'img/badge-luoghi/corno-piccolo.png' },
+        { stampId: 'badge_brancastello',  nome: 'Monte Brancastello',   tipo: 'cima', quota: 2385, lat: 42.44736, lng: 13.63990, zona: 'Gran Sasso', regione: 'Abruzzo', emoji: '🏞️', icona: 'img/badge-luoghi/monte-brancastello.png' },
+        { stampId: 'badge_camicia',       nome: 'Monte Camicia',        tipo: 'cima', quota: 2564, lat: 42.43922, lng: 13.71842, zona: 'Gran Sasso', regione: 'Abruzzo', emoji: '🌋',  icona: 'img/badge-luoghi/monte-camicia.png' },
+        { stampId: 'badge_corvo',         nome: 'Monte Corvo',          tipo: 'cima', quota: 2623, lat: 42.47918, lng: 13.49352, zona: 'Gran Sasso', regione: 'Abruzzo', emoji: '🐦‍⬛', icona: 'img/badge-luoghi/monte-corvo.png' },
+        { stampId: 'badge_prena',         nome: 'Monte Prena',          tipo: 'cima', quota: 2561, lat: 42.44227, lng: 13.68282, zona: 'Gran Sasso', regione: 'Abruzzo', emoji: '🏕️', icona: 'img/badge-luoghi/monte-prena.png' },
+        // OSM registra questa vetta come "Pizzo d'Intermesoli" (con l'apostrofo): il nome
+        // mostrato resta "Pizzo Intermesoli", come scritto da Denis e come titola la voce
+        // Wikipedia collegata allo stesso nodo OSM (it:Pizzo Intermesoli) - stessa scelta gia'
+        // fatta per Rifugio Zilioli (nome d'uso invece del nome tecnico OSM).
+        { stampId: 'badge_intermesoli',   nome: 'Pizzo Intermesoli',    tipo: 'cima', quota: 2635, lat: 42.47253, lng: 13.52724, zona: 'Gran Sasso', regione: 'Abruzzo', emoji: '🙏',  icona: 'img/badge-luoghi/pizzo-intermesoli.png' },
+        { stampId: 'badge_viglio',        nome: 'Monte Viglio',         tipo: 'cima', quota: 2156, lat: 41.88476, lng: 13.37388, zona: 'Monti Simbruini', regione: 'Lazio', emoji: '🕊️', icona: 'img/badge-luoghi/monte-viglio.png' },
+
         // --- RIFUGI ---
         // Anche queste due corrette il 2026-07-27, vedi la nota sopra. In OSM il secondo
         // e' registrato come "Bivacco Tito Zilioli" (wilderness_hut, 2253 m): il nome
@@ -105,6 +123,18 @@
         // scarto di 5 m fra le due fonti, si usa quella ufficiale. Regione confermata con
         // lib/regions.js (Abruzzo).
         { stampId: 'badge_fusco',       nome: 'Bivacco Carlo Fusco',      tipo: 'rifugio', quota: 2455, lat: 42.11519,  lng: 14.12139, zona: 'Maiella',          regione: 'Abruzzo', emoji: '🛖',  icona: 'img/badge-luoghi/bivacco-carlo-fusco.png' },
+        // Bivacco Ju Busciu (18/08/2026): l'UNICA voce di questa sessione le cui coordinate
+        // NON sono state confermate in modo indipendente - Overpass non ha nessun punto con
+        // questo nome (ne' "Busciu" ne' "Bafile") nella zona del Gran Sasso, quindi non si e'
+        // potuto incrociare come per le altre dieci voci aggiunte oggi. L'unica fonte con
+        // coordinate trovata (Wikipedia, "Bivacco Andrea Bafile", 42.468622/13.571847, 2669 m)
+        // e' ~730 m da quelle date da Denis - e potrebbe riferirsi a una struttura diversa: le
+        // fonti web distinguono "Ju Busciu" (il vecchio bivacco del 1949) dal bivacco Bafile
+        // attuale. Denis ha scelto esplicitamente di usare le sue coordinate (fonte diretta,
+        // probabile GPX) invece di quelle di Wikipedia - quota presa dall'icona (2645 m, dentro
+        // l'intervallo 2645-2669 m riportato dalle fonti web per questo luogo). Se il badge
+        // dovesse risultare impossibile da prendere stando sul posto vero, e' il primo sospetto.
+        { stampId: 'badge_jubusciu',    nome: 'Bivacco Ju Busciu',        tipo: 'rifugio', quota: 2645, lat: 42.47294,  lng: 13.56525, zona: 'Gran Sasso',       regione: 'Abruzzo', emoji: '🪨',  icona: 'img/badge-luoghi/bivacco-ju-busciu.png' },
         // Rifugio Pino Ciuffarella ELIMINATO il 18/08/2026 su richiesta di Denis - stessa
         // verifica fatta per Pomilio qui sopra, nessun utente reale aveva ancora preso
         // badge_ciuffarella. Nessuna sostituzione: la voce sparisce e basta, il totale badge
@@ -116,6 +146,17 @@
         // non da Nominatim - stesso criterio del punto 1 in cima al file. Regione confermata
         // con lib/regions.js (Abruzzo). Quota 2388 m coincide con quella dichiarata da
         // entrambe le fonti.
-        { stampId: 'badge_ducadegliabruzzi', nome: 'Rifugio Duca degli Abruzzi', tipo: 'rifugio', quota: 2388, lat: 42.44812, lng: 13.55204, zona: 'Gran Sasso', regione: 'Abruzzo', emoji: '🏠', icona: 'img/badge-luoghi/rifugio-duca-degli-abruzzi.png' }
+        { stampId: 'badge_ducadegliabruzzi', nome: 'Rifugio Duca degli Abruzzi', tipo: 'rifugio', quota: 2388, lat: 42.44812, lng: 13.55204, zona: 'Gran Sasso', regione: 'Abruzzo', emoji: '🏠', icona: 'img/badge-luoghi/rifugio-duca-degli-abruzzi.png' },
+
+        // Tre rifugi nuovi (18/08/2026), coordinate/quote confermate su Overpass
+        // (tourism=alpine_hut), stesso criterio delle otto voci sopra.
+        { stampId: 'badge_garibaldi',   nome: 'Rifugio Garibaldi',        tipo: 'rifugio', quota: 2230, lat: 42.46075, lng: 13.55035, zona: 'Gran Sasso', regione: 'Abruzzo', emoji: '🎖️', icona: 'img/badge-luoghi/rifugio-garibaldi.png' },
+        // Denis lo aveva scritto "D'Archangelo": il nome reale, confermato su OSM (operatore
+        // CAI Isola del Gran Sasso) e su piu' fonti web, e' "D'Arcangelo" senza H - corretto
+        // qui su conferma esplicita di Denis. Quota OSM 1655 m (una fonte web indipendente
+        // dice 1665 m, 10 m di scarto) - molto lontana dai 2235 m decorativi sull'icona,
+        // ulteriore conferma che quei numeri non vanno mai presi per buoni da soli.
+        { stampId: 'badge_darcangelo',  nome: "Rifugio Nicola D'Arcangelo", tipo: 'rifugio', quota: 1655, lat: 42.45959, lng: 13.59243, zona: 'Gran Sasso', regione: 'Abruzzo', emoji: '🛏️', icona: 'img/badge-luoghi/rifugio-nicola-darcangelo.png' },
+        { stampId: 'badge_rinaldi',     nome: 'Rifugio Massimo Rinaldi',  tipo: 'rifugio', quota: 2108, lat: 42.46736, lng: 12.99001, zona: 'Terminillo',  regione: 'Lazio',   emoji: '📡',  icona: 'img/badge-luoghi/rifugio-massimo-rinaldi.png' }
     ];
 });

@@ -4571,5 +4571,40 @@ schermo spento ancora."
    caricate senza errori (naturalWidth confermato per ognuna, nessun
    404), Bivacco Carlo Fusco presente, Rifugio Pino Ciuffarella
    assente, contatore Dashboard passato da "2 badge su 11" a "2 badge
-   su 10", nessun errore in console. PUNTO 96 CHIUSO PER INTERO -
-   in attesa del via libera di Denis per commit e push.
+   su 10", nessun errore in console. Via libera di Denis, COMMITTATO
+   E PUSHATO (camoscio 7ffb6ef, vault 1038d14). PUNTO 96 CHIUSO PER
+   INTERO.
+
+97. [18/08/2026, sera - dopo il punto 96] Denis: "adesso aggiungiamo
+   dei badge con le rispettive immagini" - otto cime/bivacco del Gran
+   Sasso e dei Simbruini (Bivacco Ju Busciu, Corno Piccolo, Monte
+   Brancastello, Monte Camicia, Monte Corvo, Monte Prena, Pizzo
+   Intermesoli, Monte Viglio) e tre rifugi nuovi (Rifugio Garibaldi,
+   Rifugio Nicola D'Archangelo, Rifugio Massimo Rinaldi), ciascuno con
+   coordinate date da Denis e il file immagine con lo stesso nome.
+   VERIFICATO PRIMA DI SCRIVERE NEL CATALOGO: coordinate e quote
+   incrociate su OpenStreetMap/Overpass (natural=peak per le cime,
+   tourism=alpine_hut per i rifugi) - dieci degli undici luoghi
+   confermati identici (fino alla quinta cifra decimale) ai dati di
+   Denis, quote comprese. Un errore vero trovato per strada: il
+   Rifugio "Nicola D'Archangelo" si chiama in realta' "D'Arcangelo"
+   (senza H) - confermato su OSM (operatore CAI Isola del Gran Sasso)
+   e su piu' fonti web indipendenti; quota reale 1655 m, non i 2235 m
+   decorativi sull'icona (differenza enorme, ulteriore prova che le
+   cifre disegnate sulle icone non sono una fonte affidabile).
+   Chiesto a Denis conferma su due punti prima di scrivere: (1) usare
+   "D'Arcangelo" (nome vero) invece di "D'Archangelo" - confermato SI';
+   (2) le coordinate del Bivacco Ju Busciu erano ~730 m dall'unica
+   fonte indipendente trovata (Wikipedia, "Bivacco Andrea Bafile",
+   che potrebbe pero' essere un luogo leggermente diverso - il vecchio
+   bivacco del 1949 contro quello attuale) - Denis ha confermato di
+   usare le sue coordinate (fonte diretta, probabile GPX).
+   21 voci totali nel catalogo (10 + gli 11 nuovi). stampId tutti
+   nuovi, nessuna collisione con quelli esistenti. Zona/regione
+   verificate con lib/regions.js per tutti e undici i punti.
+   VERIFICATO dal vivo nel browser (server locale, account demo Marco
+   Alpinista): 21 schede sul passaporto, tutte e 21 le immagini
+   caricate senza errori (nessun 404), contatore Dashboard passato da
+   "2 badge su 10" a "2 badge su 21", nessun errore in console.
+   PUNTO 97 CHIUSO PER INTERO - in attesa del via libera di Denis per
+   commit e push.

@@ -1,7 +1,7 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-18 notte (punti 83-93 e 95 TUTTI chiusi,
-committati e pushati; punto 96 CODICE SCRITTO E VERIFICATO, NON
+Aggiornato: 2026-08-18 notte (punti 83-93, 95 e 96 TUTTI chiusi,
+committati e pushati; punto 97 CODICE SCRITTO E VERIFICATO, NON
 COMMITTATO - in attesa del via libera di Denis; punto 94 PROGETTATO,
 nessun codice scritto - vedi RIPARTIRE DA in fondo)
 ===================================================================
@@ -171,21 +171,35 @@ o ne arriva uno nuovo.
     getComputedStyle, doppio clic testato intercettando fetch: una
     sola PUT vera). Committato e pushato.
 
-    >>> PUNTO 96, CODICE SCRITTO E VERIFICATO, NON COMMITTATO
-    (18/08/2026 sera): Denis ha chiesto di cambiare icone/badge -
-    icona vera alle sei cime gia' nel catalogo (Corno Grande, Monte
-    Amaro, Monte Vettore, Monte Gorzano, Monte Terminillo, Monte
-    Miletto), Rifugio Bruno Pomilio sostituito da Bivacco Carlo Fusco
-    (stampId nuovo, coordinate date da Denis e confermate su
-    escursionismo.it, quota 2455 m dalla fonte ufficiale del parco),
-    Rifugio Pino Ciuffarella tolto senza sostituzione (11 -> 10 badge
-    totali). Verificato PRIMA sul database che nessun account reale
-    avesse gia' preso i due badge toccati (0 risultati - nessun timbro
-    perso). Verificato dal vivo nel browser: 10 schede, tutte le
-    immagini caricate senza 404, contatore Dashboard aggiornato a "su
-    10", nessun errore in console.
+    >>> PUNTO 96, CHIUSO PER INTERO, COMMITTATO E PUSHATO
+    (18/08/2026 sera): icona vera alle sei cime gia' nel catalogo,
+    Rifugio Bruno Pomilio sostituito da Bivacco Carlo Fusco (stampId
+    nuovo, coordinate confermate su escursionismo.it, quota dalla
+    fonte ufficiale del parco), Rifugio Pino Ciuffarella tolto senza
+    sostituzione (11 -> 10 badge). Nessun account reale aveva gia'
+    preso i due badge toccati. Verificato dal vivo nel browser.
+    Commit camoscio 7ffb6ef, vault 1038d14.
 
-    >>> RIPARTIRE DA: punto 96 - chiedere a Denis il via libera per
+    >>> PUNTO 97, CODICE SCRITTO E VERIFICATO, NON COMMITTATO
+    (18/08/2026 notte): Denis ha chiesto altri undici badge - otto
+    cime/bivacco del Gran Sasso e dei Simbruini (Bivacco Ju Busciu,
+    Corno Piccolo, Monte Brancastello, Monte Camicia, Monte Corvo,
+    Monte Prena, Pizzo Intermesoli, Monte Viglio) e tre rifugi nuovi
+    (Rifugio Garibaldi, Rifugio Nicola D'Arcangelo, Rifugio Massimo
+    Rinaldi). Coordinate/quote verificate su OSM/Overpass PRIMA di
+    scrivere nel catalogo: dieci su undici identiche a quelle date da
+    Denis. Trovato un errore vero: "D'Archangelo" (come scritto da
+    Denis) non e' il nome reale, e' "D'Arcangelo" (senza H, confermato
+    su OSM/CAI) - corretto su conferma esplicita di Denis, insieme
+    alla quota vera (1655 m, non i 2235 m decorativi sull'icona).
+    Bivacco Ju Busciu: uniche coordinate non confermabili in modo
+    indipendente (Overpass non ha il punto, l'unica fonte trovata era
+    ~730 m di distanza e forse un luogo diverso) - Denis ha confermato
+    di usare le sue. Catalogo ora a 21 voci. Verificato dal vivo nel
+    browser: 21 schede, tutte le immagini caricate senza 404, contatore
+    Dashboard "su 21", nessun errore in console.
+
+    >>> RIPARTIRE DA: punto 97 - chiedere a Denis il via libera per
     commit e push (fatto tutto, non ancora committato). Il punto 94
     resta SOLO quando Denis lo decide lui, dal passo 1 (installare
     Android Studio) - non riproporlo di sua iniziativa. Restano
