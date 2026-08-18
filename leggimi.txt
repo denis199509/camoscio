@@ -8,7 +8,10 @@ coda, vedi RIPARTIRE DA in fondo)
 
 QUESTO FILE DICE SOLO UNA COSA: a che punto siamo adesso e da dove si ricomincia.
 Si legge in cinque minuti, e va tenuto corto. Se cresce oltre un paio di pagine vuol
-dire che ci e' finito dentro qualcosa che appartiene a un altro file.
+dire che ci e' finito dentro qualcosa che appartiene a un altro file. Sfoltito il
+18/08/2026 (16 KB -> questo file): i punti chiusi erano narrati per esteso invece che
+in una riga sola come gia' si faceva per gli 83-91 qui sotto - stessa cosa gia' scritta
+uguale in cose_da_fare.txt e nel vault, nessuna informazione persa comprimendola.
 
 DOVE STA IL RESTO, in ordine di lettura:
 
@@ -29,235 +32,68 @@ o ne arriva uno nuovo.
 
 
 
->>> STATO ATTUALE (18/08/2026): sessione lunga dal 16/08, con dentro le
-    quattro decisioni ferme di allora (raggio zona 20 km, nome "Esperto
-    locale", colore grafico Passo & Fatica, dominio email rimandato) e
-    poi i punti 83-91, TUTTI chiusi - quelli che si potevano provare dal
-    vivo sono stati confermati da Denis di persona, non solo costruiti.
-    Dettaglio completo di ognuno, con le parole di Denis e il
-    ragionamento, in cose_da_fare.txt (cercare il numero) - qui solo
-    l'elenco, per non ripetere quello che l'archivio dice gia' meglio:
+>>> STATO ATTUALE (18/08/2026): sessione lunga dal 16/08, tutti i punti sotto
+    chiusi, committati e pushati - quelli che si potevano provare dal vivo sono
+    stati confermati da Denis di persona, non solo costruiti. Dettaglio completo
+    di ognuno, con le parole di Denis e il ragionamento, in cose_da_fare.txt
+    (cercare il numero) e in ../camoscio memoria/06-Cronologia-Sessioni.md - qui
+    solo l'elenco:
 
       83. Badge personali a Nicolo97 e Scheldon.
       84. Tolto il telefono dai contatti di emergenza.
-      85. "Passo & Fatica": mai piu' un numero finto per chi non ha
-          ancora un dato vero.
-      86. Livelli di frequentazione di una cima (badge, "Frequentatore"
-          -> "Esperto della Cima") + contatore "×N".
+      85. "Passo & Fatica": mai piu' un numero finto per chi non ha ancora un
+          dato vero.
+      86. Livelli di frequentazione di una cima (badge, "Frequentatore" ->
+          "Esperto della Cima") + contatore "×N".
       87. Le cime con un livello raggiunto compaiono anche come "esperto
           locale" sul profilo.
-      88. Segnalazione sentiero: chiede prima se sei sul posto o vuoi
-          indicare il punto sulla mappa, invece di usare sempre il GPS.
-      89. Mappa da telefono: riquadro "Escursione collegata" chiuso di
-          default (occupava troppo spazio), popup delle segnalazioni
-          sempre leggibile (si sposta la mappa prima di aprirlo).
-      90. Menu a tendina: le opzioni aperte non erano piu' quasi
-          invisibili (sfondo scuro anche li', non solo sul chiuso).
-      91. Icone vere per Rifugio Franchetti/Zilioli/Duca degli Abruzzi
-          al posto dell'emoji - quest'ultimo era un rifugio NUOVO, non
-          ancora nel catalogo (coordinate incrociate da due fonti
-          ufficiali, non indovinate). Ingrandite subito dopo su
-          segnalazione di Denis (troppo piccole per leggere il disegno).
-          Quota di Zilioli corretta a 2250 m (era 2253, dato OSM) per
-          farla coincidere col numero scritto sulla sua icona.
+      88. Segnalazione sentiero: chiede prima se sei sul posto o vuoi indicare
+          il punto sulla mappa, invece di usare sempre il GPS.
+      89. Mappa da telefono: riquadro "Escursione collegata" chiuso di default,
+          popup delle segnalazioni sempre leggibile.
+      90. Menu a tendina: le opzioni aperte non erano piu' quasi invisibili.
+      91. Icone vere per Rifugio Franchetti/Zilioli/Duca degli Abruzzi (quota
+          di Zilioli corretta a 2250 m per farla coincidere con l'icona).
+      92. Il passo personale ora legge anche le tracce GPS (non solo i tempi
+          scritti a mano), formula CAI invertita invece di divisa - eccezione
+          al tetto mensile .gpx concessa a Denis fino a fine agosto.
+      93. Ripiego "quote a mano" quando la fonte delle quote non risponde,
+          tenendo il progetto collegato.
+      95. "Invita a Gita" sceglieva l'escursione a caso invece di farla
+          scegliere - corretto anche un buco di sicurezza separato
+          (manualApproval scavalcato per gli inviti di terzi).
+      96. Icona vera alle sei cime gia' nel catalogo; Rifugio Bruno Pomilio
+          sostituito dal Bivacco Carlo Fusco; Rifugio Pino Ciuffarella tolto
+          senza sostituzione (11 -> 10 badge).
+      97. Altri undici badge (otto cime/bivacco del Gran Sasso e dei
+          Simbruini, tre rifugi nuovi) - corretto per strada il nome del
+          Rifugio Nicola D'Arcangelo (non "D'Archangelo"), quota vera 1655 m
+          contro i 2235 m decorativi sull'icona. Catalogo a 21 badge totali,
+          verificati anche da Denis di persona.
 
-    Anche una pulizia dati: cancellata una traccia vuota (0 km, 0
-    dislivello) del 24/07/2026 sull'account reale di Denis.
+    Anche una pulizia dati: cancellata una traccia vuota (0 km, 0 dislivello)
+    del 24/07/2026 sull'account reale di Denis.
 
-    >>> PUNTO 92, CHIUSO (18/08/2026): il passo personale di Denis
-    (126/180 m/h) risultava troppo basso perche' i Completion non hanno
-    mai movingTimeHours. Progettato con l'architect (interrotto due
-    volte, ripreso entrambe le volte): le tracce GIA' salvate non
-    bastavano (semplificate PRIMA di essere salvate, troppo rade), il
-    tempo di cammino va calcolato una volta sola all'import/fine
-    tracciamento sui punti completi. Trovata anche una SCOPERTA GROSSA
-    (quella persa nella connessione caduta): separare cammino e pause da
-    solo non bastava, perche' il passo si misurava come dislivello/ore
-    TOTALI mentre lo si usava contro lo standard CAI (400 m/h di SOLA
-    salita) - chi camminasse esattamente come il CAI sarebbe risultato a
-    ~267, non 400. Denis ha scelto la SOLUZIONE B: invertire la formula
-    CAI invece di dividere (public/js/cai-tempi.js, condivisa col
-    server) - ora chi cammina come il CAI si misura davvero 400. Scelto
-    anche SI' per l'indice parziale su ActiveHikeSession (spazio
-    trascurabile, evita che MongoDB carichi i punti GPS per poi
-    scartarli). IMPLEMENTATO PER INTERO e VERIFICATO dal test-engineer
-    (prova-punto92.js, 84 controlli, dati veri, controprova sul codice
-    di prima). Trovati e corretti due difetti veri prima della
-    produzione: /import-gpx cancellava il passo anche quando il file non
-    misurava nulla (mancava una guardia presente sugli altri due
-    agganci); l'anti-doppio-conteggio poteva zittire un Completion
-    valido a causa di una traccia implausibile. Dettaglio completo,
-    con le parole di Denis e il ragionamento, in cose_da_fare.txt punto
-    92.
+    >>> DEBITO TECNICO SEGNALATO DA DENIS (18/08/2026 notte, non urgente):
+    l'icona di Rifugio Nicola D'Arcangelo disegna 2235 m, quota sbagliata - il
+    catalogo ha gia' il numero vero (1655 m), solo il disegno mente. Da
+    correggere in futuro con un'icona nuova che porti la quota giusta -
+    annotato in ../camoscio memoria/04-Da-Fare.md, sezione "Debito tecnico
+    noto". Nessun codice da toccare finche' non arriva l'immagine nuova.
 
-    >>> SUBITO DOPO, stesso giorno: Denis ha chiesto un tetto piu' alto
-    solo per il proprio account, solo ad agosto 2026, per ricaricare le
-    7 tracce in un mese solo. Fatto: ECCEZIONE_TETTO_GPX_DENIS in
-    routes/tracking.js (id del suo account, 10 invece di 5, scade da
-    sola il 01/09/2026 - niente da disattivare a mano). Committato e
-    pushato (camoscio 1aa6fe3).
+    >>> RIPARTIRE DA: nessun punto pronto in coda. Il punto 94 (app Android
+    per il tracciamento a schermo spento, PROGETTATO ma nessun codice
+    scritto) resta SOLO quando Denis lo decide lui, dal passo 1 (installare
+    Android Studio) - non riproporlo di sua iniziativa. Restano aperte, non
+    urgenti (dettaglio in ../camoscio memoria/04-Da-Fare.md): i "livelli"
+    ORIGINALI del punto 63b (quanti gradini per la ZONA dichiarata a mano,
+    DIVERSI dai livelli gia' fatti del punto 86) e il calcolo automatico del
+    raggio (punto 42a) - Denis deve ancora pensarci, non richiederlo - e il
+    dominio email (rimandato da lui). Facoltativa, non legata a nessun punto:
+    pulizia delle ~30 notifiche demo orfane trovate per caso (comando pronto
+    in prove/LEGGIMI-PROVE.txt).
 
-    >>> PUNTO 93, CHIUSO (18/08/2026): Denis, pubblicando l'escursione
-    reale "Monte Terminillo" (progetto con anello), ha preso l'errore
-    "La fonte delle quote non ha risposto" TRE volte di fila (persistente,
-    non occasionale - probabile limite condiviso sull'IP di uscita di
-    Render, fuori dal nostro controllo) - i dati a mano invece funzionavano
-    subito. Progettato con l'architect (tocca creazione E modifica di
-    un'escursione, schema, form): quando il dislivello non si calcola,
-    calcolaDaPercorso (lib/percorso.js) non blocca piu' la pubblicazione -
-    torna {quoteMancanti, motivo, distanceKm, nomePercorso} (la distanza
-    si sa gia' sempre), routes/hikes.js risponde 422 invece di 400 (stesso
-    schema gia' in uso per la data mancante di un .gpx, punto 32), il
-    client mostra un riquadro con SOLO i due numeri mancanti (mai la
-    distanza) tenendo il progetto collegato. Nuovo campo
-    routeSource.dislivelloManuale (booleano) su models/Hike.js - la prova
-    che quei due numeri sono dichiarati, non calcolati. Chiuso nello
-    stesso intervento anche il difetto laterale gia' trovato
-    (motivoDislivello ignorato, messaggio identico per "fonte giu'" e
-    "percorso troppo lungo" - necessario per scrivere il testo giusto nel
-    riquadro). Due decisioni di Denis: tempo previsto normale con una nota
-    ("... - dislivello indicato da chi organizza"); avviso esplicito se poi
-    la fonte torna su e i numeri calcolati sostituiscono quelli scritti a
-    mano. VERIFICATO: prove/prova-punto93.js (28 controlli, funzioni +
-    HTTP su creazione E modifica, controprova sul codice di prima),
-    regressione completa verde, E verificato VISIVAMENTE nel browser
-    (account demo, riquadro comparso col messaggio giusto, pubblicazione
-    riuscita, nota corretta sulla card). Dettaglio completo in
-    cose_da_fare.txt punto 93.
-
-    >>> PUNTO 94, PROGETTATO (18/08/2026), NESSUN CODICE SCRITTO: Denis
-    ha chiesto di valutare un'app Android (.apk) per Camoscio - chiarito
-    che lo scopo vero e' sbloccare il tracciamento GPS a schermo spento
-    (impossibile via browser, rimandato l'8/08 a "quando penseremo a
-    un'app dal sito"), non solo un'icona sul telefono. Chiesto SOLO il
-    piano in questa sessione - il lavoro vero parte in una sessione
-    futura, quando Denis lo decide.
-    Piano completo (Explore+Plan, non l'agente architect - e'
-    infrastruttura/packaging): Capacitor "hosted/remote app" (l'app
-    carica le pagine vere di Render, eredita la sessione via cookie,
-    ZERO modifiche al backend). Plugin @capgo/background-geolocation
-    (MPL-2.0), scartato quello di transistorsoft (a pagamento in
-    release, contro il vincolo open source). Il punto delicato non e'
-    catturare il GPS ma consegnarlo al JS esistente - il bridge
-    nativo->JS di Capacitor si blocca dopo 5 minuti in background, si
-    risolve con useLegacyBridge:true - con questo, ZERO riscrittura
-    della coda/flush/endpoint gia' in public/js/tracking.js, solo
-    beginWatchingPosition()/stopWatchingPosition() guadagnano un ramo
-    nativo. 8 passi ordinati, ognuno verificabile (ambiente Android
-    Studio -> Capacitor minimo -> plugin isolato -> collegamento vero,
-    testato con un cammino REALE fuori casa -> permessi/testi onesti ->
-    produzione -> pulizia -> .apk firmato). Dettaglio completo con le
-    parole di Denis in cose_da_fare.txt punto 94, decisioni tecniche in
-    ../camoscio memoria/03-Decisioni-Architetturali.md.
-
-    >>> PUNTO 95, CHIUSO PER INTERO (18/08/2026 notte): "Invita a
-    Gita" sceglieva l'escursione da invitare a caso (stato UI di
-    tutt'altro scopo, o la prima del database) - aveva gia' invitato
-    la squadra di Denis a un'escursione chiusa, e il bug aveva gia'
-    toccato tre account reali (ripulito, via libera di Denis). Ora
-    apre un riquadro di scelta vero. Indagando e' emerso e corretto
-    anche un buco di sicurezza separato: un non-creatore che invita
-    altri scavalcava manualApproval dell'organizzatore. Progettato con
-    l'architect, provato dal test-engineer (295 controlli verdi) e dal
-    vivo nel browser, revisionato dal code-reviewer: un difetto vero
-    corretto subito, DUE lasciati per la sessione successiva -
-    entrambi corretti prima del commit (approveParticipant/
-    declineParticipant ora rileggono lo stato con refreshState() prima
-    di scrivere; la notifica di routes/hikes.js non fa piu' fallire la
-    risposta se la scrittura vera e' gia' riuscita), insieme a quattro
-    cose minori (colore .text-warning, guardia su data assente,
-    elenco ordinato per data, doppio clic bloccato). Verificato con la
-    regressione completa e dal vivo nel browser (colore confermato via
-    getComputedStyle, doppio clic testato intercettando fetch: una
-    sola PUT vera). Committato e pushato.
-
-    >>> PUNTO 96, CHIUSO PER INTERO, COMMITTATO E PUSHATO
-    (18/08/2026 sera): icona vera alle sei cime gia' nel catalogo,
-    Rifugio Bruno Pomilio sostituito da Bivacco Carlo Fusco (stampId
-    nuovo, coordinate confermate su escursionismo.it, quota dalla
-    fonte ufficiale del parco), Rifugio Pino Ciuffarella tolto senza
-    sostituzione (11 -> 10 badge). Nessun account reale aveva gia'
-    preso i due badge toccati. Verificato dal vivo nel browser.
-    Commit camoscio 7ffb6ef, vault 1038d14.
-
-    >>> PUNTO 97, CHIUSO PER INTERO, COMMITTATO E PUSHATO
-    (18/08/2026 notte): altri undici badge - otto cime/bivacco del
-    Gran Sasso e dei Simbruini (Bivacco Ju Busciu, Corno Piccolo,
-    Monte Brancastello, Monte Camicia, Monte Corvo, Monte Prena,
-    Pizzo Intermesoli, Monte Viglio) e tre rifugi nuovi (Rifugio
-    Garibaldi, Rifugio Nicola D'Arcangelo, Rifugio Massimo Rinaldi).
-    Coordinate/quote verificate su OSM/Overpass PRIMA di scrivere nel
-    catalogo: dieci su undici identiche a quelle date da Denis.
-    Trovato un errore vero: "D'Archangelo" (come scritto da Denis) non
-    e' il nome reale, e' "D'Arcangelo" (senza H, confermato su
-    OSM/CAI) - corretto su conferma esplicita di Denis, insieme alla
-    quota vera (1655 m, non i 2235 m decorativi sull'icona). Catalogo
-    ora a 21 voci. Verificato dal vivo nel browser E DA DENIS DI
-    PERSONA ("ho controllato io i badge, tutto apposto"). Commit
-    camoscio 46ca5aa, vault 57bd49b.
-
-    >>> DEBITO TECNICO SEGNALATO DA DENIS (18/08/2026 notte, non
-    urgente): l'icona di Rifugio Nicola D'Arcangelo disegna 2235 m,
-    quota sbagliata - il catalogo ha gia' il numero vero (1655 m),
-    solo il disegno mente. Da correggere in futuro con un'icona nuova
-    che porti la quota giusta - annotato in
-    ../camoscio memoria/04-Da-Fare.md, sezione "Debito tecnico noto".
-    Nessun codice da toccare finche' non arriva l'immagine nuova.
-
-    >>> RIPARTIRE DA: nessun punto pronto in coda. Il punto 94
-    resta SOLO quando Denis lo decide lui, dal passo 1 (installare
-    Android Studio) - non riproporlo di sua iniziativa. Restano
-    aperte, non urgenti: i "livelli" ORIGINALI del punto 63b (quanti
-    gradini per la ZONA dichiarata a mano, es. "Monti Lucretili" in
-    quanto tale, non le singole cime - DIVERSI dai livelli gia' fatti
-    del punto 86) e il calcolo automatico del raggio (punto 42a) -
-    Denis deve ancora pensarci, non richiederlo - e il dominio email
-    (rimandato da lui). Facoltativa, non legata a nessun punto: pulizia
-    delle ~30 notifiche demo orfane trovate per caso (comando pronto in
-    prove/LEGGIMI-PROVE.txt).
-
->>> COSE FUORI SCOPE, NON RIPROPORLE finche' non torna Denis sull'argomento:
-    - Tracciamento GPS a pagina chiusa (impossibile via browser, non difficile
-      - serve un'app vera; rimandato da Denis stesso l'08/08).
-    - Galleria di foto della squadra e altre funzioni social (rimandate
-      insieme al tracciamento, "quando penseremo a un'app vera e propria").
-    - Raggio della "zona di competenza" (punto 42a) e il suo nuovo nome
-      (punto 63b): Denis ci deve ancora pensare.
-
->>> TRE COSE DA SAPERE PRIMA DI TOCCARE public/index.html o un componente
-    condiviso tra piu' pagine (trovate il 07/08 e l'08/08/2026, non ovvie a
-    prima vista):
-      - create-hike-modal e complete-group-modal vivono FUORI da
-        .page-container (vicino a generic-modal), non dentro una
-        .page-section: un modale raggiungibile da piu' di una pagina deve
-        stare li' con loro, altrimenti resta invisibile aprendolo dalla
-        sezione "sbagliata".
-      - un modulo che si collega SOLO da dentro initApp() (dopo
-        await refreshState()) rischia la finestra "pulsante visibile ma
-        senza listener" (gia' successo due volte: navigazione 26/07,
-        profilo 06/08) - se un pulsante sembra rotto senza errori in
-        console, controllare prima QUANDO si e' agganciato il suo
-        ascoltatore, non se il codice del gestore e' giusto.
-      - TUTTE le .page-section restano nel DOM insieme (navigateTo aggiunge/
-        toglie solo la classe "active", non smonta nulla): un componente
-        JS pensato per vivere dentro piu' di una pagina (es. chatpanel.js
-        punto 55, le schede di buildHikeCard punto 69) non deve MAI usare id
-        fissi per i propri elementi interni - due copie con lo stesso id
-        (una visibile, una nascosta) fanno scrivere document.getElementById
-        nel posto sbagliato, senza nessun errore in console. Sempre
-        box.querySelector(...) scoped al contenitore, o - per una card che
-        si apre/chiude da sola - il fratello nel DOM (nextElementSibling),
-        mai un id.
-
->>> LEZIONE OPERATIVA: dopo qualunque interruzione di sessione non
-    volontaria, controllare SEMPRE `git log origin/master..HEAD` in
-    entrambi i repository (camoscio e vault) prima di fidarsi dell'ultima
-    riga scritta qui - una volta le note sono rimaste indietro rispetto a
-    un push gia' avvenuto per davvero. Il 09/08/2026 e' successo ANCHE il
-    contrario, dopo lo spegnimento a meta' del PC: `git status` diceva 2
-    commit locali non ancora pushati, ma era un ref locale non aggiornato -
-    il push era gia' riuscito per davvero. Un secondo ref rotto
-    (refs/heads/master-Denis, creato o scritto proprio nell'istante dello
-    spegnimento) bloccava anche `git fetch` col repository intatto. Dettaglio
-    completo, come si riconosce e come si e' risolto in
-    ../camoscio memoria/07-Trappole-Tecniche.md.
+>>> LEZIONI OPERATIVE (git dopo un'interruzione, moduli che si collegano
+    tardi, componenti condivisi fra piu' pagine): tutte in
+    ../camoscio memoria/07-Trappole-Tecniche.md, non ripetute qui - quella e'
+    la sede dove si guarda prima di toccare codice a rischio.
