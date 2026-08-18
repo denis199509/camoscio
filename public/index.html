@@ -1070,13 +1070,13 @@
                         <div class="carpool-column">
                             <div class="glass-card carpool-calc-card">
                                 <h4><i data-lucide="calculator"></i> Split Spese Viaggio</h4>
-                                <p class="small text-muted">Calcola e dividi equamente i costi di benzina, autostrada e rifugio per la tua escursione.</p>
-                                
+                                <p class="small text-muted">Inserisci solo i dati di andata: il ritorno lo calcola da solo, sugli stessi numeri.</p>
+
                                 <form id="carpool-calc-form">
                                     <div class="form-row">
                                         <div class="form-group">
-                                            <label for="calc-dist">Distanza A/R (km):</label>
-                                            <input type="number" id="calc-dist" value="120" min="1" required>
+                                            <label for="calc-dist">Distanza Andata (km):</label>
+                                            <input type="number" id="calc-dist" value="60" min="1" required>
                                         </div>
                                         <div class="form-group">
                                             <label for="calc-consumption">Consumo (L/100km):</label>
@@ -1089,8 +1089,8 @@
                                             <input type="number" id="calc-fuel-price" value="1.82" step="0.01" required>
                                         </div>
                                         <div class="form-group">
-                                            <label for="calc-toll">Autostrada / Pedaggio (€):</label>
-                                            <input type="number" id="calc-toll" value="12.40" step="0.1" required>
+                                            <label for="calc-toll">Pedaggio Andata (€):</label>
+                                            <input type="number" id="calc-toll" value="6.20" step="0.1" required>
                                         </div>
                                     </div>
                                     <div class="form-group">
@@ -1110,7 +1110,7 @@
                                         <strong id="res-fuel-cost">€ 14.19</strong>
                                     </div>
                                     <div class="result-row">
-                                        <span>Costo Totale Viaggio:</span>
+                                        <span>Costo Totale Viaggio (andata e ritorno):</span>
                                         <strong id="res-total-cost">€ 26.59</strong>
                                     </div>
                                     <div class="result-row highlight">

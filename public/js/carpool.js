@@ -167,18 +167,25 @@ function populateHikeSelects() {
     });
 }
 
-// Ricalcolo spese viaggio del pannello generico
+// Ricalcolo spese viaggio del pannello generico. Punto 98/C: prima si chiedeva la distanza
+// e il pedaggio gia' di andata E ritorno, lasciando all'utente il conto di raddoppiarli a
+// mano (parole di Denis: "l'utente deve calcolare da solo... il costo del pedaggio piu'
+// quello del ritorno"). Ora i due campi sono di sola andata, raddoppiati qui - il consumo
+// (L/100km) resta un tasso, non va raddoppiato.
 function calculateGenericExpenses() {
-    const dist = parseFloat(document.getElementById("calc-dist").value) || 0;
+    const distAndata = parseFloat(document.getElementById("calc-dist").value) || 0;
     const cons = parseFloat(document.getElementById("calc-consumption").value) || 0;
     const price = parseFloat(document.getElementById("calc-fuel-price").value) || 0;
-    const toll = parseFloat(document.getElementById("calc-toll").value) || 0;
+    const tollAndata = parseFloat(document.getElementById("calc-toll").value) || 0;
     const extra = parseFloat(document.getElementById("calc-extra").value) || 0;
     const pass = parseInt(document.getElementById("calc-passengers").value) || 1;
 
+    const distTotale = distAndata * 2;
+    const tollTotale = tollAndata * 2;
+
     // Calcolo: (km / 100) * Consumo * PrezzoCarburante
-    const fuelCost = (dist / 100) * cons * price;
-    const totalCost = fuelCost + toll + extra;
+    const fuelCost = (distTotale / 100) * cons * price;
+    const totalCost = fuelCost + tollTotale + extra;
     const costPerPerson = totalCost / pass;
 
     document.getElementById("res-fuel-cost").textContent = `€ ${fuelCost.toFixed(2)}`;
