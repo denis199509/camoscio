@@ -4719,6 +4719,36 @@ schermo spento ancora."
    la verifica, nessuna scrittura sul database. Committato e pushato
    (b894f39).
 
+   PUNTO C FATTO E VERIFICATO, COMMITTATO E PUSHATO (18/08/2026
+   notte, stessa sessione di A) - ripreso subito dopo A su richiesta
+   di Denis. Causa: il pannello "Split Spese Viaggio" (colonna
+   sinistra di Carpooling, public/index.html + calculateGenericExpenses
+   in public/js/carpool.js) chiedeva distanza e pedaggio gia' andata+
+   ritorno - esattamente quello che Denis descriveva, l'utente doveva
+   calcolarsi da solo il ritorno e raddoppiare. Corretto: i due campi
+   (calc-dist, calc-toll) sono ora di sola andata, il calcolo li
+   raddoppia da solo prima di sommare il costo totale - il consumo
+   (L/100km) resta un tasso, non va raddoppiato. Valori di default
+   dimezzati apposta (60 km, 6,20 EUR) cosi' a schermo compaiono gli
+   stessi identici totali di prima (14,19/26,59/6,65 EUR), nessuna
+   sorpresa per chi gia' conosceva quel pannello. VERIFICATO dal vivo
+   nel browser: ricalcolo coi valori di default confermato identico,
+   poi un caso nuovo a mano (50 km e 5 EUR di sola andata) ha dato
+   21,83 EUR di totale e 5,46 EUR a persona, corretto secondo il
+   calcolo raddoppiato. Committato e pushato (e54406f).
+
+   TROVATO MENTRE SI ESPLORAVA IL CODICE PER IL PUNTO C, NON
+   RICHIESTO DA DENIS: driverSchema (models/Hike.js) non ha mai
+   dichiarato un campo "passengers" - controllato sul database vero,
+   nessuna auto gia' offerta nel carpooling ha mai salvato un
+   passeggero. Il bottone "Sali a Bordo" sembra funzionare (si
+   aggiorna a video) ma il server scarta il campo alla scrittura
+   perche' non e' nello schema: il passeggero sparisce al primo
+   refreshState(). Segnalato a Denis con una domanda esplicita su
+   come procedere - ha scelto di registrarlo per dopo invece di
+   deviare dall'ordine dato per il punto 98. Non corretto, annotato
+   nel vault (04-Da-Fare.md, sezione del punto 98).
+
    PUNTO B FATTO E VERIFICATO (18/08/2026 notte) - fermato qui su
    richiesta di Denis di salvare, non ancora committato quando questa
    nota e' stata scritta (vedi leggimi.txt per lo stato vero del

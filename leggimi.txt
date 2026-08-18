@@ -1,7 +1,7 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-18 notte (punti 83-93 e 95-97 chiusi; punto 98/A
-e 98/B chiusi, verificati, committati e pushati; punto 94
+Aggiornato: 2026-08-18 notte (punti 83-93 e 95-97 chiusi; punto
+98/A, 98/B e 98/C chiusi, verificati, committati e pushati; punto 94
 PROGETTATO, nessun codice scritto - vedi RIPARTIRE DA in fondo)
 ===================================================================
 
@@ -109,14 +109,29 @@ o ne arriva uno nuovo.
     account demo nella stessa situazione di Denis. Committato e
     pushato (b894f39).
 
-    >>> RIPARTIRE DA: punto 98/C (split spese viaggio, solo andata da
-    inserire), poi D (match obiettivi comuni), E (progetto percorso,
-    sentieri/strade sterrate). F (diario di viaggio collaborativo)
-    resta FUORI ordine, Denis stesso dice di non avere ancora chiaro
-    come deve funzionare, non riproporla come pronta. Dettaglio
-    completo, con le parole di Denis, in cose_da_fare.txt punto 98.
-    Pulizia delle ~30 notifiche demo orfane gia' fatta e committata
-    (vedi sopra).
+    >>> PUNTO 98/C, CHIUSO PER INTERO (18/08/2026 notte, stessa
+    sessione di A): il pannello "Split Spese Viaggio" (Carpooling)
+    chiedeva distanza e pedaggio gia' andata+ritorno - l'utente
+    doveva raddoppiarli a mano da solo. Ora i due campi sono di sola
+    andata, il calcolo raddoppia da solo per il totale (il consumo
+    L/100km resta un tasso, non va raddoppiato). Verificato dal vivo
+    nel browser: default invariati, e un caso nuovo confermato a
+    mano. Committato e pushato (e54406f).
+
+    >>> TROVATO PER STRADA, NON RICHIESTO: driverSchema
+    (models/Hike.js) non ha mai avuto un campo "passengers" - nessuna
+    auto gia' offerta ha mai salvato un passeggero sul database, "Sali
+    a Bordo" funziona solo a video. Segnalato a Denis, che ha scelto
+    di registrarlo per dopo invece di deviare dall'ordine - dettaglio
+    in ../camoscio memoria/04-Da-Fare.md, non ancora corretto.
+
+    >>> RIPARTIRE DA: punto 98/D (match obiettivi comuni, niente
+    riscontro per chi sceglie), poi E (progetto percorso, sentieri/
+    strade sterrate). F (diario di viaggio collaborativo) resta FUORI
+    ordine, Denis stesso dice di non avere ancora chiaro come deve
+    funzionare, non riproporla come pronta. Dettaglio completo, con
+    le parole di Denis, in cose_da_fare.txt punto 98. Pulizia delle
+    ~30 notifiche demo orfane gia' fatta e committata (vedi sopra).
 
     >>> Il punto 94 (app Android
     per il tracciamento a schermo spento, PROGETTATO ma nessun codice
