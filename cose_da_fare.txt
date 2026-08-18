@@ -4606,5 +4606,17 @@ schermo spento ancora."
    Alpinista): 21 schede sul passaporto, tutte e 21 le immagini
    caricate senza errori (nessun 404), contatore Dashboard passato da
    "2 badge su 10" a "2 badge su 21", nessun errore in console.
-   PUNTO 97 CHIUSO PER INTERO - in attesa del via libera di Denis per
-   commit e push.
+   Via libera di Denis, COMMITTATO E PUSHATO (camoscio 46ca5aa, vault
+   57bd49b). PUNTO 97 CHIUSO PER INTERO.
+   SEGNALATO DA DENIS SUBITO DOPO, parole sue: "segna che l'immagine
+   del rifugio nicola d'arcangelo segna 2235 m sbagliato, in futuro da
+   correggere con un'immagine che segna la quota giusta. ho controllato
+   io i badge tutto apposto." Confermato: l'icona
+   (rifugio-nicola-darcangelo.png) disegna 2235 m, il catalogo ha
+   gia' il numero vero (1655 m, verificato su OSM in fase di
+   progettazione del punto 97) - solo il disegno mente, nessun dato
+   sbagliato salvato da nessuna parte. Annotato come debito tecnico
+   non urgente in
+   ../camoscio memoria/04-Da-Fare.md (sezione "Debito tecnico noto") -
+   da riprendere quando arriva un'icona nuova con la quota corretta,
+   nessun codice da toccare nel frattempo.

@@ -1,9 +1,9 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-18 notte (punti 83-93, 95 e 96 TUTTI chiusi,
-committati e pushati; punto 97 CODICE SCRITTO E VERIFICATO, NON
-COMMITTATO - in attesa del via libera di Denis; punto 94 PROGETTATO,
-nessun codice scritto - vedi RIPARTIRE DA in fondo)
+Aggiornato: 2026-08-18 notte (punti 83-93 e 95-97 TUTTI chiusi,
+committati e pushati, badge verificati anche da Denis di persona;
+punto 94 PROGETTATO, nessun codice scritto - nessun punto pronto in
+coda, vedi RIPARTIRE DA in fondo)
 ===================================================================
 
 QUESTO FILE DICE SOLO UNA COSA: a che punto siamo adesso e da dove si ricomincia.
@@ -180,27 +180,31 @@ o ne arriva uno nuovo.
     preso i due badge toccati. Verificato dal vivo nel browser.
     Commit camoscio 7ffb6ef, vault 1038d14.
 
-    >>> PUNTO 97, CODICE SCRITTO E VERIFICATO, NON COMMITTATO
-    (18/08/2026 notte): Denis ha chiesto altri undici badge - otto
-    cime/bivacco del Gran Sasso e dei Simbruini (Bivacco Ju Busciu,
-    Corno Piccolo, Monte Brancastello, Monte Camicia, Monte Corvo,
-    Monte Prena, Pizzo Intermesoli, Monte Viglio) e tre rifugi nuovi
-    (Rifugio Garibaldi, Rifugio Nicola D'Arcangelo, Rifugio Massimo
-    Rinaldi). Coordinate/quote verificate su OSM/Overpass PRIMA di
-    scrivere nel catalogo: dieci su undici identiche a quelle date da
-    Denis. Trovato un errore vero: "D'Archangelo" (come scritto da
-    Denis) non e' il nome reale, e' "D'Arcangelo" (senza H, confermato
-    su OSM/CAI) - corretto su conferma esplicita di Denis, insieme
-    alla quota vera (1655 m, non i 2235 m decorativi sull'icona).
-    Bivacco Ju Busciu: uniche coordinate non confermabili in modo
-    indipendente (Overpass non ha il punto, l'unica fonte trovata era
-    ~730 m di distanza e forse un luogo diverso) - Denis ha confermato
-    di usare le sue. Catalogo ora a 21 voci. Verificato dal vivo nel
-    browser: 21 schede, tutte le immagini caricate senza 404, contatore
-    Dashboard "su 21", nessun errore in console.
+    >>> PUNTO 97, CHIUSO PER INTERO, COMMITTATO E PUSHATO
+    (18/08/2026 notte): altri undici badge - otto cime/bivacco del
+    Gran Sasso e dei Simbruini (Bivacco Ju Busciu, Corno Piccolo,
+    Monte Brancastello, Monte Camicia, Monte Corvo, Monte Prena,
+    Pizzo Intermesoli, Monte Viglio) e tre rifugi nuovi (Rifugio
+    Garibaldi, Rifugio Nicola D'Arcangelo, Rifugio Massimo Rinaldi).
+    Coordinate/quote verificate su OSM/Overpass PRIMA di scrivere nel
+    catalogo: dieci su undici identiche a quelle date da Denis.
+    Trovato un errore vero: "D'Archangelo" (come scritto da Denis) non
+    e' il nome reale, e' "D'Arcangelo" (senza H, confermato su
+    OSM/CAI) - corretto su conferma esplicita di Denis, insieme alla
+    quota vera (1655 m, non i 2235 m decorativi sull'icona). Catalogo
+    ora a 21 voci. Verificato dal vivo nel browser E DA DENIS DI
+    PERSONA ("ho controllato io i badge, tutto apposto"). Commit
+    camoscio 46ca5aa, vault 57bd49b.
 
-    >>> RIPARTIRE DA: punto 97 - chiedere a Denis il via libera per
-    commit e push (fatto tutto, non ancora committato). Il punto 94
+    >>> DEBITO TECNICO SEGNALATO DA DENIS (18/08/2026 notte, non
+    urgente): l'icona di Rifugio Nicola D'Arcangelo disegna 2235 m,
+    quota sbagliata - il catalogo ha gia' il numero vero (1655 m),
+    solo il disegno mente. Da correggere in futuro con un'icona nuova
+    che porti la quota giusta - annotato in
+    ../camoscio memoria/04-Da-Fare.md, sezione "Debito tecnico noto".
+    Nessun codice da toccare finche' non arriva l'immagine nuova.
+
+    >>> RIPARTIRE DA: nessun punto pronto in coda. Il punto 94
     resta SOLO quando Denis lo decide lui, dal passo 1 (installare
     Android Studio) - non riproporlo di sua iniziativa. Restano
     aperte, non urgenti: i "livelli" ORIGINALI del punto 63b (quanti
