@@ -4697,6 +4697,28 @@ schermo spento ancora."
    prima di cambiare un filtro che decide quali strade sono
    ammesse. F resta fuori dall'ordine, non e' una richiesta pronta.
 
+   PUNTO A FATTO E VERIFICATO, COMMITTATO E PUSHATO (18/08/2026
+   notte, sessione successiva) - ripreso chiedendo a Denis conferma
+   di quale fosse "l'ultimo punto rimasto" (98/A, non 98/E). Causa:
+   in public/js/social.js, renderSquadsList() faceva comparire il
+   bottone "Invita a Gita" solo se squad.creatorId === currentUser.id
+   - chi era stato solo accettato come membro (come Denis su "I
+   Camosci della Val Brembana", di cui e' membro ma non creatore) non
+   lo vedeva mai, nemmeno sulle proprie escursioni. Controllato prima
+   il resto del flusso (confermaInvitoSquadra, rigaInvitoSquadra): il
+   permesso vero lo decide gia' il creatore dell'ESCURSIONE (aggiunta
+   diretta se organizzo io, proposta in pendingApproval altrimenti),
+   non il creatore della squadra - nessuna ragione tecnica per la
+   restrizione. Tolta: il bottone ora compare per ogni membro, col
+   badge "Membro" mantenuto accanto per chi non e' il creatore.
+   VERIFICATO dal vivo nel browser (server locale, account demo Luca
+   TrailRunner - membro non creatore di "I Camosci della Val
+   Brembana", stessa identica situazione di Denis): bottone e badge
+   insieme, modale d'invito aperto correttamente sulla propria
+   escursione con i membri da aggiungere. Solo richieste GET durante
+   la verifica, nessuna scrittura sul database. Committato e pushato
+   (b894f39).
+
    PUNTO B FATTO E VERIFICATO (18/08/2026 notte) - fermato qui su
    richiesta di Denis di salvare, non ancora committato quando questa
    nota e' stata scritta (vedi leggimi.txt per lo stato vero del

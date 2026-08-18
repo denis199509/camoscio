@@ -1,8 +1,7 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-18 notte (punti 83-93 e 95-97 chiusi, committati
-e pushati; punto 98/B FATTO E VERIFICATO, COMMITTATO E PUSHATO su
-richiesta di Denis di salvare tutto in sicurezza; punto 94
+Aggiornato: 2026-08-18 notte (punti 83-93 e 95-97 chiusi; punto 98/A
+e 98/B chiusi, verificati, committati e pushati; punto 94
 PROGETTATO, nessun codice scritto - vedi RIPARTIRE DA in fondo)
 ===================================================================
 
@@ -99,15 +98,25 @@ o ne arriva uno nuovo.
     "gia' recensita") e dal vivo nel browser, nessun errore in console.
     Dettaglio completo in cose_da_fare.txt punto 98 (dentro il punto B).
 
-    >>> RIPARTIRE DA: punto 98/A (invito squadra incompleto per
-    l'account di Denis) - prossimo nell'ordine dato: A, poi C
-    (split spese viaggio), D (match obiettivi comuni), E (progetto
-    percorso, sentieri/strade sterrate). F (diario di viaggio
-    collaborativo) resta FUORI ordine, Denis stesso dice di non avere
-    ancora chiaro come deve funzionare, non riproporla come pronta.
-    Dettaglio completo, con le parole di Denis, in cose_da_fare.txt
-    punto 98. Pulizia delle ~30 notifiche demo orfane gia' fatta e
-    committata (vedi sopra).
+    >>> PUNTO 98/A, CHIUSO PER INTERO (18/08/2026 notte, sessione
+    successiva): in public/js/social.js, renderSquadsList() mostrava
+    "Invita a Gita" solo al creatore della squadra - chi era solo
+    membro accettato (caso reale di Denis su "I Camosci della Val
+    Brembana") non lo vedeva mai. Il permesso vero lo decide gia'
+    confermaInvitoSquadra guardando il creatore dell'ESCURSIONE, non
+    della squadra: restrizione tolta, badge "Membro" mantenuto
+    accanto al bottone. Verificato dal vivo nel browser con un
+    account demo nella stessa situazione di Denis. Committato e
+    pushato (b894f39).
+
+    >>> RIPARTIRE DA: punto 98/C (split spese viaggio, solo andata da
+    inserire), poi D (match obiettivi comuni), E (progetto percorso,
+    sentieri/strade sterrate). F (diario di viaggio collaborativo)
+    resta FUORI ordine, Denis stesso dice di non avere ancora chiaro
+    come deve funzionare, non riproporla come pronta. Dettaglio
+    completo, con le parole di Denis, in cose_da_fare.txt punto 98.
+    Pulizia delle ~30 notifiche demo orfane gia' fatta e committata
+    (vedi sopra).
 
     >>> Il punto 94 (app Android
     per il tracciamento a schermo spento, PROGETTATO ma nessun codice
