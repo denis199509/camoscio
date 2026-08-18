@@ -4536,3 +4536,40 @@ schermo spento ancora."
    -> una sola PUT vera, stato del database confermato invariato dopo
    refreshState()); nessun errore in console. PUNTO 95 CHIUSO PER
    INTERO.
+
+96. [18/08/2026, sera] Denis, parole sue: "adesso cambiamo delle icone
+   dei badge" - file Corno Grande/Monte Amaro/Monte Vettore/Monte
+   Gorzano/Monte Terminillo/Monte Miletto per le sei cime gia' nel
+   catalogo, "il badge del Rifugio Bruno Pomilio lo cambiamo con il
+   Bivacco Carlo Fusco file Bivacco Carlo Fusco" ed "eliminiamo il
+   badge rifugio pino ciuffarella". File forniti in
+   C:\Users\lenovo\OneDrive\Desktop\Badge per Camoscio.
+   VERIFICATO PRIMA DI TOCCARE IL CATALOGO: nessun account reale aveva
+   ancora preso badge_pomilio o badge_ciuffarella (query sul database,
+   0 risultati) - la sostituzione e la cancellazione non fanno sparire
+   nessun timbro gia' guadagnato da qualcuno.
+   Icone aggiunte alle sei cime (icona: in public/js/badge-points.js,
+   stesso meccanismo del punto 91 per i rifugi - schedaBadge/
+   renderDashboardStamps gia' generici, nessun CSS nuovo servito).
+   Nessuna quota/coordinata toccata: i numeri disegnati sulle icone
+   sono decorativi (illustrazioni), non fonti verificate - controllato
+   che coincidessero comunque con quelle gia' in catalogo (tutte
+   uguali tranne Terminillo, 2216 sull'icona contro 2217 nel catalogo,
+   1 metro di scarto irrilevante, non toccato).
+   Bivacco Carlo Fusco: stampId NUOVO (badge_fusco), non badge_pomilio
+   riusato - sono due luoghi diversi, e lo stampId e' la chiave con
+   cui i timbri stanno sul database (regola in cima a
+   badge-points.js). Coordinate date da Denis (42.115190, 14.121388),
+   confermate identiche su escursionismo.it - non prese per fede,
+   incrociate comunque. Quota 2455 m dalla fonte ufficiale del parco
+   (parcomajella.it), 2450 m su escursionismo.it - scarto di 5 m,
+   usata quella ufficiale. Regione confermata Abruzzo con
+   lib/regions.js. Rifugio Pino Ciuffarella tolto senza sostituzione,
+   il totale badge scende di uno (11 -> 10).
+   VERIFICATO dal vivo nel browser (server locale, account demo Marco
+   Alpinista): 10 schede sul passaporto, tutte e dieci le immagini
+   caricate senza errori (naturalWidth confermato per ognuna, nessun
+   404), Bivacco Carlo Fusco presente, Rifugio Pino Ciuffarella
+   assente, contatore Dashboard passato da "2 badge su 11" a "2 badge
+   su 10", nessun errore in console. PUNTO 96 CHIUSO PER INTERO -
+   in attesa del via libera di Denis per commit e push.

@@ -60,12 +60,17 @@
         // Che i luoghi previsti fossero quelli giusti lo conferma la quota: 2912, 2476 e
         // 2433 metri coincidono esattamente con quelle di OSM. Erano sbagliate solo le
         // posizioni. Gli stampId NON sono stati toccati (vedi punto 1 in cima al file).
-        { stampId: 'stamp_gemelli',     nome: 'Corno Grande',             tipo: 'cima',    quota: 2912, lat: 42.46930, lng: 13.56550, zona: 'Gran Sasso',       regione: 'Abruzzo', emoji: '⛺'  },
-        { stampId: 'stamp_margherita',  nome: 'Monte Vettore',            tipo: 'cima',    quota: 2476, lat: 42.82441, lng: 13.27497, zona: 'Monti Sibillini',  regione: 'Marche',  emoji: '👑'  },
-        { stampId: 'badge_amaro',       nome: 'Monte Amaro',              tipo: 'cima',    quota: 2793, lat: 42.08633, lng: 14.08591, zona: 'Maiella',          regione: 'Abruzzo', emoji: '🗻'  },
-        { stampId: 'badge_gorzano',     nome: 'Monte Gorzano',            tipo: 'cima',    quota: 2458, lat: 42.61822, lng: 13.39560, zona: 'Monti della Laga', regione: 'Abruzzo', emoji: '⛰️' },
-        { stampId: 'badge_terminillo',  nome: 'Monte Terminillo',         tipo: 'cima',    quota: 2217, lat: 42.47330, lng: 12.99736, zona: 'Terminillo',       regione: 'Lazio',   emoji: '🏔️' },
-        { stampId: 'badge_miletto',     nome: 'Monte Miletto',            tipo: 'cima',    quota: 2050, lat: 41.44962, lng: 14.37209, zona: 'Matese',           regione: 'Molise',  emoji: '🌄'  },
+        // Icone (18/08/2026, stesso meccanismo del punto 91 per i rifugi): sei file forniti
+        // da Denis in public/img/badge-luoghi/, emoji lasciata com'era - resta il ripiego se
+        // l'immagine manca o non carica (schedaBadge in badges.js). Nessuna coordinata o
+        // quota toccata: le cifre disegnate sulle icone sono decorative (illustrazioni, non
+        // fonti verificate), non la base per un numero del catalogo.
+        { stampId: 'stamp_gemelli',     nome: 'Corno Grande',             tipo: 'cima',    quota: 2912, lat: 42.46930, lng: 13.56550, zona: 'Gran Sasso',       regione: 'Abruzzo', emoji: '⛺',  icona: 'img/badge-luoghi/corno-grande.png' },
+        { stampId: 'stamp_margherita',  nome: 'Monte Vettore',            tipo: 'cima',    quota: 2476, lat: 42.82441, lng: 13.27497, zona: 'Monti Sibillini',  regione: 'Marche',  emoji: '👑',  icona: 'img/badge-luoghi/monte-vettore.png' },
+        { stampId: 'badge_amaro',       nome: 'Monte Amaro',              tipo: 'cima',    quota: 2793, lat: 42.08633, lng: 14.08591, zona: 'Maiella',          regione: 'Abruzzo', emoji: '🗻',  icona: 'img/badge-luoghi/monte-amaro.png' },
+        { stampId: 'badge_gorzano',     nome: 'Monte Gorzano',            tipo: 'cima',    quota: 2458, lat: 42.61822, lng: 13.39560, zona: 'Monti della Laga', regione: 'Abruzzo', emoji: '⛰️', icona: 'img/badge-luoghi/monte-gorzano.png' },
+        { stampId: 'badge_terminillo',  nome: 'Monte Terminillo',         tipo: 'cima',    quota: 2217, lat: 42.47330, lng: 12.99736, zona: 'Terminillo',       regione: 'Lazio',   emoji: '🏔️', icona: 'img/badge-luoghi/monte-terminillo.png' },
+        { stampId: 'badge_miletto',     nome: 'Monte Miletto',            tipo: 'cima',    quota: 2050, lat: 41.44962, lng: 14.37209, zona: 'Matese',           regione: 'Molise',  emoji: '🌄',  icona: 'img/badge-luoghi/monte-miletto.png' },
 
         // --- RIFUGI ---
         // Anche queste due corrette il 2026-07-27, vedi la nota sopra. In OSM il secondo
@@ -88,8 +93,22 @@
         // opposta ed e' voluta.
         { stampId: 'stamp_mezzeno',     nome: 'Rifugio Franchetti',       tipo: 'rifugio', quota: 2433, lat: 42.47711, lng: 13.56522, zona: 'Gran Sasso',       regione: 'Abruzzo', emoji: '🧗',  icona: 'img/badge-luoghi/rifugio-franchetti.png' },
         { stampId: 'stamp_gnifetti',    nome: 'Rifugio Zilioli',          tipo: 'rifugio', quota: 2250, lat: 42.81740, lng: 13.26850, zona: 'Monti Sibillini',  regione: 'Marche',  emoji: '❄️', icona: 'img/badge-luoghi/rifugio-zilioli.png' },
-        { stampId: 'badge_pomilio',     nome: 'Rifugio Bruno Pomilio',    tipo: 'rifugio', quota: 1930, lat: 42.16084, lng: 14.13258, zona: 'Maiella',          regione: 'Abruzzo', emoji: '🛖'  },
-        { stampId: 'badge_ciuffarella', nome: 'Rifugio Pino Ciuffarella', tipo: 'rifugio', quota: 1770, lat: 41.79662, lng: 13.50140, zona: 'Monti Ernici',     regione: 'Lazio',   emoji: '🏕️' },
+        // Rifugio Bruno Pomilio TOLTO il 18/08/2026, sostituito da Denis con questo bivacco -
+        // stampId nuovo (badge_fusco), non badge_pomilio riusato: sono due luoghi diversi, e
+        // lo stampId e' la chiave con cui i timbri stanno sul database (vedi punto 1 in cima
+        // al file) - nessun utente reale aveva ancora preso badge_pomilio (verificato sul
+        // database prima di toglierlo), quindi non resta nessun timbro orfano.
+        // Coordinate date da Denis, confermate identiche (fino alla sesta cifra decimale) da
+        // https://www.escursionismo.it/rifugi-bivacchi/fusco-carlo-16068 - non indovinate,
+        // stesso criterio del punto 1 in cima al file. Quota 2455 m dalla fonte ufficiale del
+        // parco (https://www.parcomajella.it/bivacco-fusco-1.htm), 2450 m su escursionismo.it -
+        // scarto di 5 m fra le due fonti, si usa quella ufficiale. Regione confermata con
+        // lib/regions.js (Abruzzo).
+        { stampId: 'badge_fusco',       nome: 'Bivacco Carlo Fusco',      tipo: 'rifugio', quota: 2455, lat: 42.11519,  lng: 14.12139, zona: 'Maiella',          regione: 'Abruzzo', emoji: '🛖',  icona: 'img/badge-luoghi/bivacco-carlo-fusco.png' },
+        // Rifugio Pino Ciuffarella ELIMINATO il 18/08/2026 su richiesta di Denis - stessa
+        // verifica fatta per Pomilio qui sopra, nessun utente reale aveva ancora preso
+        // badge_ciuffarella. Nessuna sostituzione: la voce sparisce e basta, il totale badge
+        // scende di uno.
         // Punto 91: rifugio nuovo nel catalogo, non solo un cambio icona - non c'era
         // nessuna voce precedente ne' nel catalogo fisso ne' fra le vette di un'escursione
         // (verificato sul database prima di aggiungerlo). Coordinate incrociate fra il sito

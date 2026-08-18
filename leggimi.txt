@@ -1,8 +1,9 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
 Aggiornato: 2026-08-18 notte (punti 83-93 e 95 TUTTI chiusi,
-committati e pushati; punto 94 PROGETTATO, nessun codice scritto -
-nessun punto pronto in coda, vedi RIPARTIRE DA in fondo)
+committati e pushati; punto 96 CODICE SCRITTO E VERIFICATO, NON
+COMMITTATO - in attesa del via libera di Denis; punto 94 PROGETTATO,
+nessun codice scritto - vedi RIPARTIRE DA in fondo)
 ===================================================================
 
 QUESTO FILE DICE SOLO UNA COSA: a che punto siamo adesso e da dove si ricomincia.
@@ -170,16 +171,31 @@ o ne arriva uno nuovo.
     getComputedStyle, doppio clic testato intercettando fetch: una
     sola PUT vera). Committato e pushato.
 
-    >>> RIPARTIRE DA: nessun punto pronto in coda. Il punto 94 resta
-    SOLO quando Denis lo decide lui, dal passo 1 (installare Android
-    Studio) - non riproporlo di sua iniziativa. Restano aperte, non
-    urgenti: i "livelli" ORIGINALI del punto 63b (quanti gradini per
-    la ZONA dichiarata a mano, es. "Monti Lucretili" in quanto tale,
-    non le singole cime - DIVERSI dai livelli gia' fatti del punto 86)
-    e il calcolo automatico del raggio (punto 42a) - Denis deve ancora
-    pensarci, non richiederlo - e il dominio email (rimandato da lui).
-    Facoltativa, non legata a nessun punto: pulizia delle ~30
-    notifiche demo orfane trovate per caso (comando pronto in
+    >>> PUNTO 96, CODICE SCRITTO E VERIFICATO, NON COMMITTATO
+    (18/08/2026 sera): Denis ha chiesto di cambiare icone/badge -
+    icona vera alle sei cime gia' nel catalogo (Corno Grande, Monte
+    Amaro, Monte Vettore, Monte Gorzano, Monte Terminillo, Monte
+    Miletto), Rifugio Bruno Pomilio sostituito da Bivacco Carlo Fusco
+    (stampId nuovo, coordinate date da Denis e confermate su
+    escursionismo.it, quota 2455 m dalla fonte ufficiale del parco),
+    Rifugio Pino Ciuffarella tolto senza sostituzione (11 -> 10 badge
+    totali). Verificato PRIMA sul database che nessun account reale
+    avesse gia' preso i due badge toccati (0 risultati - nessun timbro
+    perso). Verificato dal vivo nel browser: 10 schede, tutte le
+    immagini caricate senza 404, contatore Dashboard aggiornato a "su
+    10", nessun errore in console.
+
+    >>> RIPARTIRE DA: punto 96 - chiedere a Denis il via libera per
+    commit e push (fatto tutto, non ancora committato). Il punto 94
+    resta SOLO quando Denis lo decide lui, dal passo 1 (installare
+    Android Studio) - non riproporlo di sua iniziativa. Restano
+    aperte, non urgenti: i "livelli" ORIGINALI del punto 63b (quanti
+    gradini per la ZONA dichiarata a mano, es. "Monti Lucretili" in
+    quanto tale, non le singole cime - DIVERSI dai livelli gia' fatti
+    del punto 86) e il calcolo automatico del raggio (punto 42a) -
+    Denis deve ancora pensarci, non richiederlo - e il dominio email
+    (rimandato da lui). Facoltativa, non legata a nessun punto: pulizia
+    delle ~30 notifiche demo orfane trovate per caso (comando pronto in
     prove/LEGGIMI-PROVE.txt).
 
 >>> COSE FUORI SCOPE, NON RIPROPORLE finche' non torna Denis sull'argomento:
