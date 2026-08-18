@@ -1509,12 +1509,14 @@ function renderSquadsList() {
             return mem ? mem.avatar : "👤";
         }).join(" ");
 
-        // Se sono l'organizzatore, posso fare "Invita a Gita" (automaticamente riempie partecipanti escursione)
-        let actionBtn = "";
-        if (squad.creatorId === currentUser.id) {
-            actionBtn = `<button class="btn btn-sm btn-success" onclick="inviteSquadToHike('${squad.id}')">Invita a Gita</button>`;
-        } else {
-            actionBtn = `<span class="badge badge-primary">Membro</span>`;
+        // Punto 98/A: "Invita a Gita" spetta a QUALUNQUE membro della squadra, non solo a chi
+        // l'ha creata - il permesso vero lo decide confermaInvitoSquadra guardando il creatore
+        // dell'ESCURSIONE (aggiunta diretta se organizzo io, proposta in pendingApproval se
+        // partecipo e basta), non il creatore della squadra. Prima chi era stato solo accettato
+        // come membro non vedeva il bottone su nessuna escursione, nemmeno le proprie.
+        let actionBtn = `<button class="btn btn-sm btn-success" onclick="inviteSquadToHike('${squad.id}')">Invita a Gita</button>`;
+        if (squad.creatorId !== currentUser.id) {
+            actionBtn += ` <span class="badge badge-primary">Membro</span>`;
         }
 
         item.innerHTML = `
