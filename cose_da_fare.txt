@@ -4395,3 +4395,144 @@ schermo spento ancora."
    montagna - serve un dispositivo fisico, fuori casa, non da fermo.
    NESSUN CODICE SCRITTO, NESSUN AMBIENTE TOCCATO. Ripartire dal passo 1
    dell'ordine di lavoro sopra quando Denis vorra' iniziare per davvero.
+
+95) [CODICE SCRITTO E VERIFICATO, NON COMMITTATO - vedi RIPARTIRE DA in
+   fondo] Denis, il giorno dopo aver pubblicato "Monte Terminillo" dal
+   progetto (punto 93): "Invita squadra alla gita, l'escursione non la
+   scelgo io ma parte in automatico. Come fa il sistema a capire quale
+   escursione voglio invitare la squadra. Quando clicco invita gita mi
+   deve fare scegliere quale escursione mandare come richiesta alla
+   squadra tra i miei progetti oppure escursioni a cui partecipo. Anche
+   perche' l'escursione risulta gia' completata (Ascesa corno grande)
+   ma in qualche modo ho invitato la squadra a quest'escursione."
+   TROVATO IL BUG, prima di progettare: public/js/social.js,
+   inviteSquadToHike sceglieva l'escursione con "db.hikes.find(h =>
+   h.id === db.activeHikeId) || db.hikes[0]" - db.activeHikeId e' uno
+   stato UI di tutt'altro scopo (Zaino/Carpooling/Mappa, vedi app.js),
+   e db.hikes[0] e' semplicemente la prima escursione arrivata dal
+   server, di chiunque fosse. Verificato sul database vero di Denis
+   (sola lettura): ha DUE escursioni "Corno Grande" diverse, ENTRAMBE
+   gia' completate in gruppo - qualunque delle due fosse stata scelta,
+   sarebbe stata comunque sbagliata. Stesso identico bug gia' pagato e
+   corretto al punto 23 per lo Zaino (backpack.js) - stessa soluzione
+   di base: riusare classificaMieEscursioni() invece di reinventare.
+   PROGETTATO CON L'AGENTE architect (due passaggi, perche' un primo
+   giro aveva dato per buono "create+partecipo" senza accorgersi che
+   "fatte" in classificaMieEscursioni guarda il MIO Completion, non lo
+   stato dell'escursione - chi viene aggiunto a un'escursione gia'
+   chiusa non ne ha uno, e per lui quella chiusa ricadrebbe comunque in
+   "partecipo"). Verificato di nuovo sul database vero: il bug aveva
+   GIA' lasciato un residuo su tre account reali (DaniWoll, Manu er 5
+   lingue, Matteo Bi - i tre membri della squadra di Denis "Merenderos
+   in Vetta" a parte lui) aggiunti come partecipanti di "Ascesa al
+   Corno Grande" senza avere un Completion, quindi quell'escursione
+   chiusa compariva loro come "a cui partecipano", con accesso alla sua
+   chat. Le recensioni non erano a rischio (serve un Completion su
+   entrambi i lati). RIPULITO, con via libera esplicito di Denis:
+   tolti solo quei tre ID da quella singola escursione (filtrato per
+   _id, nessun altro dato toccato) - prima/dopo verificato via script.
+   TERZA DECISIONE CHIESTA A DENIS, trovata indagando (non il bug
+   segnalato, un problema di sicurezza a parte): un non-creatore che
+   invita altri scavalcava sempre manualApproval dell'organizzatore -
+   li aggiungeva direttamente a participants anche su un'escursione
+   altrui che richiedeva approvazione. Denis ha detto di correggerlo
+   insieme al resto, non di rimandarlo a un punto a se'.
+   DISEGNO (architect, due giri): nuova mieEscursioniAperte() in
+   social.js (create+partecipo di classificaMieEscursioni, ESCLUSE le
+   escursioni con groupCompletedAt E quelle dove sono solo in
+   pendingApproval, non davvero partecipante) - riusata anche dal
+   nuovo modale. "Invita a Gita" apre un riquadro (non solo un default
+   piu' furbo come lo Zaino: Denis ha chiesto esplicitamente di
+   scegliere, e l'azione scrive sui dati di altre persone) con due
+   gruppi ("Organizzate da te" / "A cui partecipi"), titolo+data+
+   organizzatore+quanti membri verrebbero toccati, badge "Richiede
+   approvazione" quando serve - PRIMA del clic, non solo nel messaggio
+   finale. lib canNonCreatorEditParticipation (routes/hikes.js)
+   riscritta: con manualApproval attivo un non-creatore puo' SOLO
+   proporre nomi in pendingApproval (mai iscriverli direttamente), sia
+   per se' sia per altri - il server non si fida che il client scelga
+   il campo giusto. EDIT_LOCKED_FIELDS (punto 76) esteso a
+   participants E pendingApproval: un'escursione gia' completata in
+   gruppo non accetta piu' nessun tocco alla lista partecipanti/
+   richieste, ne' dal creatore ne' da altri (participants soltanto
+   creava un vicolo cieco - una proposta che non si poteva piu' ne'
+   accettare ne' rifiutare - trovato dal test-engineer, corretto subito
+   dopo). complete-group azzera pendingApproval alla chiusura. La
+   notifica al creatore per una nuova richiesta distingue "X ha chiesto
+   di partecipare" (auto-iscrizione) da "Y propone X" (proposta di un
+   terzo) - mai piu' attribuita a chi non ha chiesto niente.
+   VERIFICATO: test-engineer, prove/prova-invito-squadra.js (59
+   controlli nuovi, HTTP vero con cookie, controprova su HEAD - 18
+   controlli cadono col codice di prima) + regressione completa
+   (configurazione/37/45/77/79/92/93) tutta verde, 295 controlli in
+   totale, zero rotture. Trovato e ripulito per strada un difetto
+   preesistente non collegato (prova-punto77.js lasciava notifiche
+   orfane sugli account demo ad ogni lancio - corretto, 30 vecchie
+   restano sul database, comando di pulizia in prove/LEGGIMI-PROVE.txt,
+   non ancora lanciato). VERIFICATO ANCHE DAL VIVO nel browser (server
+   locale, account demo Marco Alpinista, nessuna password inserita -
+   sessione gia' aperta): riquadro aperto su "I Camosci della Val
+   Brembana", "Monte Gennaro" (senza approvazione, organizzata da lui)
+   ha aggiunto i due membri mancanti direttamente; "Monte Vettore -
+   Sibillini" (con approvazione, organizzata da un altro) ha proposto
+   il membro mancante in pendingApproval con la notifica corretta
+   ("Marco Alpinista propone Sofia FotoPasso..."), verificato anche sul
+   database. Dati demo riportati esattamente come prima (participants/
+   pendingApproval/notifica di prova rimossi).
+   REVISIONE FINALE (code-reviewer, dopo la verifica dal vivo): un
+   difetto vero trovato e CORRETTO nella stessa sessione - con zero
+   escursioni aperte, renderInviteSquadHikeList chiudeva il modale e
+   mostrava l'avviso ma inviteSquadToHike lo riapriva comunque subito
+   dopo (un pannello vuoto e morto sopra l'avviso - il caso di chi ha
+   appena creato la sua prima squadra). Corretto facendo tornare
+   true/false alla funzione e controllando il risultato prima di
+   togliere "hidden" - verificato solo con node --check per la sintassi,
+   NON rilanciata la prova automatica ne' la verifica dal vivo (fine
+   sessione). DUE PROBLEMI VERI TROVATI, NON ANCORA CORRETTI:
+   (a) pendingApproval ora ha piu' di uno scrittore (l'invito squadra
+   E le richieste dirette), ma approveParticipant/declineParticipant
+   in social.js non rileggono lo stato con refreshState() prima di
+   scrivere come fa invece confermaInvitoSquadra - un invito e
+   un'approvazione quasi contemporanei possono far sparire in silenzio
+   una terza richiesta in mezzo. La riga in
+   ../camoscio memoria/03-Decisioni-Architetturali.md che dice "con un
+   solo creatore non puo' mai esserci una corsa" non e' piu' vera e va
+   corretta quando si sistema questo; (b) in routes/hikes.js il ciclo
+   che crea le notifiche sta dentro lo stesso try dell'update: se una
+   Notification.create fallisce, il client vede "impossibile inviare
+   l'invito" anche se la scrittura vera e' gia' riuscita. Segnalate
+   anche cose minori (classe CSS text-warning non esiste in styles.css,
+   manca una guardia su una data assente, doppio clic rapido non
+   bloccato, l'elenco del riquadro non e' ordinato per data) - dettaglio
+   completo nel resoconto del code-reviewer di questa sessione, non
+   ancora trascritto altrove.
+   TUTTO CORRETTO IL 18/08/2026, STESSA SESSIONE, PRIMA DEL COMMIT:
+   (a) approveParticipant/declineParticipant (social.js) ora chiamano
+   refreshState() prima di calcolare l'elenco da scrivere, stessa
+   regola gia' in uso in confermaInvitoSquadra - la corsa fra un
+   invito-squadra e un'approvazione quasi contemporanei non puo' piu'
+   far sparire in silenzio una terza richiesta. Nota corretta di
+   conseguenza in
+   ../camoscio memoria/03-Decisioni-Architetturali.md.
+   (b) routes/hikes.js: il ciclo di Notification.create per le nuove
+   richieste ora vive in un try/catch separato da quello della
+   scrittura vera - un errore nell'invio della notifica non fa piu'
+   credere al client che l'iscrizione/proposta sia fallita quando in
+   realta' e' gia' andata a segno.
+   Cose minori, tutte chiuse: aggiunta la classe CSS .text-warning
+   (mancava in styles.css, usata dal contatore "N da proporre");
+   guardia su hike.date assente in rigaInvitoSquadra (mostra "data non
+   indicata" invece di "Invalid Date" - il campo non e' required nello
+   schema); elenco del riquadro ora ordinato per data
+   (renderInviteSquadHikeList); doppio clic rapido su
+   confermaInvitoSquadra bloccato con una guardia (invitoInCorso) che
+   impedisce una seconda PUT mentre la prima e' ancora in volo.
+   VERIFICATO: prove/prova-invito-squadra.js 59/59, regressione
+   completa (configurazione/37/45/77/79/92/93) tutta verde. Dal vivo
+   nel browser (server locale, account demo Marco Alpinista, sessione
+   gia' aperta): colore .text-warning confermato via getComputedStyle
+   (#C1662E, coerente con badge-accent); doppio clic testato
+   intercettando fetch (due chiamate ravvicinate a confermaInvitoSquadra
+   -> una sola PUT vera, stato del database confermato invariato dopo
+   refreshState()); nessun errore in console. PUNTO 95 CHIUSO PER
+   INTERO.

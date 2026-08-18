@@ -60,7 +60,10 @@ function vedeEscursione(risposta, hikeId) {
 
     const partenza = {
         utenti: await mongoose.connection.collection('users').countDocuments(),
-        escursioni: await mongoose.connection.collection('hikes').countDocuments()
+        escursioni: await mongoose.connection.collection('hikes').countDocuments(),
+        // Contata dal 18/08/2026: e' il controllo che avrebbe fatto vedere subito le due
+        // notifiche orfane lasciate a ogni lancio (vedi il cleanup nel finally).
+        notifiche: await mongoose.connection.collection('notifications').countDocuments()
     };
     console.log('Conteggi di partenza:', partenza, '\n');
 
@@ -155,6 +158,16 @@ function vedeEscursione(risposta, hikeId) {
         // Cleanup mirato per id, mai una deleteMany generica.
         if (hikeId) await mongoose.connection.collection('hikes').deleteOne({ _id: new mongoose.Types.ObjectId(hikeId) }).catch(() => {});
 
+        // SECONDO RESIDUO, trovato il 18/08/2026 rilanciando la regressione: creare
+        // un'escursione avvisa i membri delle squadre ricorrenti del creatore (POST /api/hikes,
+        // routes/hikes.js) - e A, primo account demo, ne ha una con dentro gli altri due. Ogni
+        // lancio lasciava due notifiche orfane sugli account demo, e ne erano gia' 30. Stessa
+        // lezione del residuo del punto 81 qui sotto: la prova non deve lasciare l'account demo
+        // peggio di come l'ha trovato. Filtrato sulla MARCA di QUESTO lancio, mai sul solo
+        // "PROVA-77": due lanci in parallelo non devono potersi cancellare i dati a vicenda.
+        await mongoose.connection.collection('notifications')
+            .deleteMany({ text: { $regex: `PROVA-77-${MARCA}` } }).catch(() => {});
+
         // BUG TROVATO IL 11/08/2026 (punto 81): il passo 5 completa l'escursione in gruppo
         // per A, che crea per davvero un Completion (applyHikeCompletionStats,
         // lib/hikeStats.js) e aggiorna completedHikes/averagePaceUp/experienceLevel di A -
@@ -191,11 +204,13 @@ function vedeEscursione(risposta, hikeId) {
 
         const fine = {
             utenti: await mongoose.connection.collection('users').countDocuments(),
-            escursioni: await mongoose.connection.collection('hikes').countDocuments()
+            escursioni: await mongoose.connection.collection('hikes').countDocuments(),
+            notifiche: await mongoose.connection.collection('notifications').countDocuments()
         };
         console.log('\nConteggi finali:', fine);
         ok('nessun utente creato o perso', fine.utenti === partenza.utenti, `${partenza.utenti} -> ${fine.utenti}`);
         ok('nessuna escursione di prova rimasta sul database', fine.escursioni === partenza.escursioni, `${partenza.escursioni} -> ${fine.escursioni}`);
+        ok('nessuna notifica di prova rimasta sul database', fine.notifiche === partenza.notifiche, `${partenza.notifiche} -> ${fine.notifiche}`);
 
         await mongoose.disconnect();
         console.log(`\n=== ${passati} passati, ${falliti} falliti ===`);

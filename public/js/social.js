@@ -233,6 +233,12 @@ function setupSocialEvents() {
         inputCompleteGroupSearch.addEventListener("input", renderCompleteGroupSearch);
     }
 
+    // "Invita a Gita" da una squadra ricorrente
+    const btnCloseInviteSquad = document.getElementById("btn-close-invite-squad-modal");
+    if (btnCloseInviteSquad) {
+        btnCloseInviteSquad.addEventListener("click", closeInviteSquadModal);
+    }
+
     // Form creazione squadra ricorrente
     const btnOpenSquadForm = document.getElementById("btn-open-create-squad");
     const btnCloseSquadForm = document.getElementById("btn-close-squad-form");
@@ -411,6 +417,28 @@ function classificaMieEscursioni(lista) {
 
     return { create, partecipo, fatte };
 }
+
+// "Aperte" = si puo' ancora agire su di esse (usata da "Invita a Gita", punto nuovo). Due
+// condizioni, per due motivi diversi:
+//  1) !groupCompletedAt - il gruppo "fatte" di classificaMieEscursioni guarda il MIO
+//     Completion, non lo stato dell'escursione: chi e' stato aggiunto a un'escursione gia'
+//     chiusa non ne ha nessuno, e per lui la chiusa ricadrebbe comunque in "partecipo";
+//  2) partecipante VERO, non solo in attesa - "partecipo" unisce sonoIscritto e inAttesa, ma
+//     su un'escursione dove sono solo in pendingApproval il server rifiuta qualunque modifica
+//     alla lista partecipanti (wasParticipant falso, routes/hikes.js): sarebbe un bersaglio
+//     che risponde sempre 403.
+// Nessun filtro sulla data, di proposito: un'escursione passata ma non ancora chiusa resta un
+// bersaglio legittimo, e confrontare una data senza ora con "adesso" e' la trappola del punto 58.
+function mieEscursioniAperte() {
+    const db = window.CamoscioState;
+    const me = db.currentUser ? db.currentUser.id : null;
+    if (!me) return [];
+    const { create, partecipo } = classificaMieEscursioni();
+    return create.concat(partecipo).filter(h =>
+        !h.groupCompletedAt && (h.creatorId === me || (h.participants || []).includes(me))
+    );
+}
+window.mieEscursioniAperte = mieEscursioniAperte;
 
 function riempiGruppo(idContenitore, escursioni, messaggioVuoto) {
     const box = document.getElementById(idContenitore);
@@ -620,9 +648,12 @@ function buildHikeCard(hike) {
         actionBtnHtml = `<button class="btn btn-sm btn-primary" onclick="joinHikeRequest('${hike.id}', ${eligibility.eligible})">Iscriviti</button>`;
     }
 
-    // Pannello Veto del Capogruppo (solo per l'organizzatore)
+    // Pannello Veto del Capogruppo (solo per l'organizzatore). Guardia groupCompletedAt: senza,
+    // "Accetta"/"Rifiuta" chiamerebbe una PUT che il server ora rifiuta sempre con 409 su
+    // un'escursione chiusa (complete-group azzera comunque pendingApproval alla chiusura, quindi
+    // in teoria la lista e' gia' vuota - questa resta una seconda difesa, non superflua).
     let vetoSectionHtml = "";
-    if (isCreatorMe && hike.pendingApproval && hike.pendingApproval.length > 0) {
+    if (isCreatorMe && !hike.groupCompletedAt && hike.pendingApproval && hike.pendingApproval.length > 0) {
         const pendingItemsHtml = hike.pendingApproval.map(pendingId => {
             const pendingUser = db.users.find(u => u.id === pendingId);
             if (!pendingUser) return "";
@@ -841,26 +872,31 @@ async function notifyParticipantDecision(userId, text) {
 
 // Accetta partecipante (Veto Capogruppo)
 window.approveParticipant = async function(hikeId, userId) {
+    // Stato riletto PRIMA di calcolare qualunque cosa, stessa regola di confermaInvitoSquadra:
+    // pendingApproval ora ha piu' di uno scrittore (richieste dirette E invito squadra), uno
+    // stato vecchio in pagina puo' far sparire in silenzio una terza richiesta arrivata nel
+    // frattempo (la PUT manda l'elenco intero, non un diff).
+    await refreshState();
     const db = window.CamoscioState;
     const hike = db.hikes.find(h => h.id === hikeId);
     if (!hike) return;
 
-    hike.pendingApproval = hike.pendingApproval.filter(id => id !== userId);
-    if (!hike.participants.includes(userId)) {
-        hike.participants.push(userId);
-    }
+    const pendingApproval = hike.pendingApproval.filter(id => id !== userId);
+    const participants = hike.participants.includes(userId)
+        ? hike.participants
+        : hike.participants.concat(userId);
 
     try {
         await fetch(`/api/hikes/${hikeId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                participants: hike.participants,
-                pendingApproval: hike.pendingApproval
-            })
+            body: JSON.stringify({ participants, pendingApproval })
         });
 
-        await notifyParticipantDecision(userId, `La tua richiesta per "${hike.title}" è stata accettata! Sei ufficialmente tra i partecipanti.`);
+        // Testo neutro apposta: da quando l'aggiunta a pendingApproval puo' arrivare anche da un
+        // invito squadra (non solo da una richiesta propria), "la tua richiesta" sarebbe falso
+        // per chi non ha mai chiesto niente.
+        await notifyParticipantDecision(userId, `Sei tra i partecipanti di "${hike.title}".`);
 
         await refreshState();
         renderHikesList();
@@ -871,22 +907,23 @@ window.approveParticipant = async function(hikeId, userId) {
 
 // Rifiuta partecipante (Veto Capogruppo)
 window.declineParticipant = async function(hikeId, userId) {
+    // Stessa regola di approveParticipant qui sopra: stato riletto prima di calcolare.
+    await refreshState();
     const db = window.CamoscioState;
     const hike = db.hikes.find(h => h.id === hikeId);
     if (!hike) return;
 
-    hike.pendingApproval = hike.pendingApproval.filter(id => id !== userId);
+    const pendingApproval = hike.pendingApproval.filter(id => id !== userId);
 
     try {
         await fetch(`/api/hikes/${hikeId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                pendingApproval: hike.pendingApproval
-            })
+            body: JSON.stringify({ pendingApproval })
         });
 
-        await notifyParticipantDecision(userId, `La tua richiesta per "${hike.title}" non è stata accettata dal capogruppo questa volta.`);
+        // Stesso motivo del testo neutro in approveParticipant qui sopra.
+        await notifyParticipantDecision(userId, `Non sei stato inserito tra i partecipanti di "${hike.title}".`);
 
         await refreshState();
         renderHikesList();
@@ -1667,34 +1704,210 @@ async function submitCreateSquad() {
     }
 }
 
-// Invita tutta la squadra all'escursione attiva (Lago Gemelli)
-window.inviteSquadToHike = async function(squadId) {
+// Invita una squadra a un'escursione - prima sceglieva l'escursione da solo (db.activeHikeId,
+// che appartiene a Zaino/Carpooling/Mappa - vedi app.js - o la prima del database, qualunque
+// fosse) e ha davvero invitato una squadra a un'escursione gia' completata (bug segnalato da
+// Denis). Ora apre un riquadro con le escursioni ancora aperte fra le proprie
+// (mieEscursioniAperte, sopra) e lascia scegliere.
+let invitoSquadId = null;
+// Guardia contro il doppio clic rapido: confermaInvitoSquadra e' async e la prima await
+// (refreshState) lascia una finestra in cui un secondo clic rientrerebbe nella funzione e
+// manderebbe una seconda PUT con lo stesso elenco - due inviti invece di uno.
+let invitoInCorso = false;
+
+window.inviteSquadToHike = function(squadId) {
     const db = window.CamoscioState;
     const squad = db.squads.find(s => s.id === squadId);
-    const hike = db.hikes.find(h => h.id === db.activeHikeId) || db.hikes[0]; // Escursione attiva, o la prima disponibile
+    if (!squad) return;
 
-    if (!squad || !hike) return;
+    invitoSquadId = squadId;
+    const nameEl = document.getElementById("invite-squad-name");
+    if (nameEl) nameEl.textContent = squad.name;
 
-    // Aggiungi tutti i membri della squadra all'escursione
-    squad.members.forEach(mId => {
-        if (!hike.participants.includes(mId)) {
-            hike.participants.push(mId);
-        }
-    });
+    // Trovato dal code-reviewer: senza controllare il risultato, il riquadro-lista-vuota
+    // chiude il modale e mostra l'avviso, ma questa funzione lo riapriva comunque subito dopo
+    // - un pannello vuoto e morto sopra l'avviso, per chi ha una squadra senza nessuna
+    // escursione aperta (es. appena creata).
+    if (!renderInviteSquadHikeList()) return;
+    document.getElementById("invite-squad-modal").classList.remove("hidden");
+    if (window.lucide) window.lucide.createIcons();
+};
+
+function closeInviteSquadModal() {
+    document.getElementById("invite-squad-modal").classList.add("hidden");
+    invitoSquadId = null;
+}
+
+// Una riga per escursione candidata: titolo/data/organizzatore, e quanti membri della squadra
+// verrebbero davvero toccati (esclusi quelli gia' dentro, in participants O in pendingApproval).
+// "Richiede approvazione" quando non sono io il creatore e l'escursione ha manualApproval: in
+// quel caso l'invito propone, non iscrive (vedi confermaInvitoSquadra) - va detto PRIMA del
+// click, non solo nel messaggio finale.
+function rigaInvitoSquadra(hike, squad, me) {
+    const db = window.CamoscioState;
+    const isCreatorMe = hike.creatorId === me;
+    const richiedeApprovazione = !isCreatorMe && !!hike.manualApproval;
+
+    const giaDentro = new Set([...(hike.participants || []), ...(hike.pendingApproval || [])]);
+    const daAggiungere = squad.members.filter(id => !giaDentro.has(id));
+    const inAttesa = squad.members.some(id => (hike.pendingApproval || []).includes(id));
+
+    const organizzatore = isCreatorMe ? "te" : (() => {
+        const u = db.users.find(u => u.id === hike.creatorId);
+        return escapeHtml(u ? u.username : "un altro utente");
+    })();
+    // hike.date non e' required nello schema (models/Hike.js) - senza guardia un'escursione
+    // senza data darebbe "Invalid Date" nel riquadro invece di dire semplicemente che manca.
+    const dataFmt = hike.date
+        ? new Date(hike.date + 'T12:00:00').toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })
+        : 'data non indicata';
+    const badge = richiedeApprovazione ? ` <span class="badge badge-primary">Richiede approvazione</span>` : "";
+
+    const disabilitata = daAggiungere.length === 0;
+    const contatore = disabilitata
+        ? (inAttesa ? "Tutti i membri sono già iscritti o in attesa" : "Tutti i membri sono già iscritti")
+        : (richiedeApprovazione
+            ? `${daAggiungere.length} da proporre`
+            : `${daAggiungere.length} ${daAggiungere.length === 1 ? 'membro da aggiungere' : 'membri da aggiungere'}`);
+
+    return `
+        <div class="carpool-group-item" style="display:flex; justify-content:space-between; align-items:center; gap:12px; ${disabilitata ? 'opacity:0.6;' : 'cursor:pointer;'}" ${disabilitata ? '' : `onclick="confermaInvitoSquadra('${hike.id}')"`}>
+            <div>
+                <b>${escapeHtml(hike.title)}</b> · ${dataFmt}<br>
+                <span class="small text-muted">Organizzata da ${organizzatore}${badge}</span>
+            </div>
+            <span class="small ${richiedeApprovazione && !disabilitata ? 'text-warning' : 'text-muted'}">${contatore}</span>
+        </div>
+    `;
+}
+
+// Torna false quando non c'e' niente da mostrare (e il modale va tenuto chiuso), true quando
+// il riquadro ha davvero del contenuto - chi chiama da inviteSquadToHike deve saperlo per non
+// riaprire un pannello vuoto sopra l'avviso che questa stessa funzione fa comparire.
+function renderInviteSquadHikeList() {
+    const box = document.getElementById("invite-squad-hike-list");
+    if (!box) return false;
+
+    const db = window.CamoscioState;
+    const squad = db.squads.find(s => s.id === invitoSquadId);
+    if (!squad) { box.innerHTML = ""; return false; }
+
+    const candidate = mieEscursioniAperte();
+    if (candidate.length === 0) {
+        const nomeSquadra = squad.name;
+        closeInviteSquadModal();
+        window.showAlertModal(`Non hai nessuna escursione aperta a cui invitare "${nomeSquadra}": le escursioni già completate non si possono più modificare. Creane una nuova dalla sezione Escursioni.`);
+        return false;
+    }
+
+    // Ordinate per data (formato "YYYY-MM-DD", confrontabile come stringa) - una senza data
+    // (vedi la guardia in rigaInvitoSquadra) va in coda, non mescolata a caso fra le altre.
+    const perData = (a, b) => (a.date || '9999-99-99').localeCompare(b.date || '9999-99-99');
+    const me = db.currentUser.id;
+    const mie = candidate.filter(h => h.creatorId === me).sort(perData);
+    const altrui = candidate.filter(h => h.creatorId !== me).sort(perData);
+
+    let html = "";
+    if (mie.length) {
+        html += `<div class="small font-bold text-muted">Organizzate da te</div>`;
+        html += mie.map(h => rigaInvitoSquadra(h, squad, me)).join("");
+    }
+    if (altrui.length) {
+        html += `<div class="small font-bold text-muted" style="margin-top:8px;">A cui partecipi</div>`;
+        html += altrui.map(h => rigaInvitoSquadra(h, squad, me)).join("");
+    }
+    box.innerHTML = html;
+    if (window.lucide) window.lucide.createIcons();
+    return true;
+}
+
+// Esegue davvero l'invito, su UNA escursione scelta dal riquadro sopra.
+window.confermaInvitoSquadra = async function(hikeId) {
+    if (!invitoSquadId || invitoInCorso) return;
+    invitoInCorso = true;
+    const squadIdAlMomento = invitoSquadId;
 
     try {
-        await fetch(`/api/hikes/${hike.id}`, {
+    // Lo stato va riletto PRIMA di calcolare qualunque cosa: la PUT manda l'elenco intero, e
+    // con uno stato vecchio in pagina il creatore cancellerebbe in silenzio chi si e' iscritto
+    // nel frattempo (per lui il server non vieta le rimozioni - solo un non-creatore le ha
+    // sempre vietate, vedi canNonCreatorEditParticipation).
+    await refreshState();
+
+    const db = window.CamoscioState;
+    const squad = db.squads.find(s => s.id === squadIdAlMomento);
+    const hike = db.hikes.find(h => h.id === hikeId);
+    if (!squad || !hike) {
+        window.showToast("Squadra o escursione non più disponibile.", "error");
+        closeInviteSquadModal();
+        return;
+    }
+
+    // Stessa condizione che decide cosa mostrare nel riquadro (mieEscursioniAperte): se nel
+    // frattempo l'escursione si e' chiusa, o non ne faccio piu' parte, non e' piu' un bersaglio
+    // valido - non si scopre solo dal 403 del server, si ridisegna la lista con lo stato vero.
+    const me = db.currentUser.id;
+    const ancoraValida = mieEscursioniAperte().some(h => h.id === hikeId);
+    if (!ancoraValida) {
+        window.showToast(`"${hike.title}" non è più disponibile per un invito.`, "error");
+        renderInviteSquadHikeList();
+        return;
+    }
+
+    const isCreatorMe = hike.creatorId === me;
+    // Con l'approvazione manuale attiva, chi non e' il creatore puo' solo PROPORRE nomi
+    // (pendingApproval), mai iscriverli direttamente - il server rifiuta comunque il campo
+    // sbagliato (canNonCreatorEditParticipation), questo sceglie subito quello giusto.
+    const campo = (!isCreatorMe && hike.manualApproval) ? 'pendingApproval' : 'participants';
+
+    const giaDentro = new Set([...(hike.participants || []), ...(hike.pendingApproval || [])]);
+    const daAggiungere = squad.members.filter(id => !giaDentro.has(id));
+
+    if (daAggiungere.length === 0) {
+        window.showToast(`Tutti i membri di "${squad.name}" sono già iscritti (o in attesa) su "${hike.title}".`, "info");
+        closeInviteSquadModal();
+        return;
+    }
+
+    // UN SOLO campo nel body, mai anche l'altro invariato: il server calcola il diff contro
+    // il proprio stato attuale, e mandare anche il campo che non cambia e' puro rischio se
+    // quello in pagina fosse di qualche minuto vecchio.
+    const nuovoElenco = (hike[campo] || []).concat(daAggiungere);
+
+    try {
+        const response = await fetch(`/api/hikes/${hikeId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ participants: hike.participants })
+            body: JSON.stringify({ [campo]: nuovoElenco })
         });
 
-        window.showToast(`Squadra "${squad.name}" invitata correttamente alla gita "${hike.title}"!`, "success");
-        
+        if (!response.ok) {
+            const body = await response.json().catch(() => ({}));
+            window.showToast(body.error || "Non è stato possibile inviare l'invito.", "error");
+            await refreshState();
+            renderInviteSquadHikeList();
+            return;
+        }
+
         await refreshState();
+
+        const n = daAggiungere.length;
+        // Mai la parola "invitata" nel caso proposta, e "solo se" non "solo quando": "quando"
+        // darebbe per scontata un'approvazione che potrebbe non arrivare.
+        const messaggio = campo === 'participants'
+            ? `"${squad.name}" aggiunta a "${hike.title}": ${n} ${n === 1 ? 'nuovo partecipante' : 'nuovi partecipanti'}.`
+            : `Richiesta inviata per ${n} ${n === 1 ? 'membro' : 'membri'} di "${squad.name}": ${n === 1 ? 'entrerà' : 'entreranno'} in "${hike.title}" solo se l'organizzatore la approva.`;
+        window.showToast(messaggio, "success");
+
+        closeInviteSquadModal();
+        renderSquadsList();
         renderHikesList();
-    } catch(e) {
+    } catch (e) {
         console.error("Errore invito squadra:", e);
+        window.showToast("Non è stato possibile inviare l'invito.", "error");
+    }
+    } finally {
+        invitoInCorso = false;
     }
 };
 

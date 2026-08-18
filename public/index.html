@@ -2010,6 +2010,21 @@
         </div>
     </div>
 
+    <!-- "Invita a Gita" da una squadra ricorrente: prima sceglieva l'escursione da solo (la
+         "attiva" di Zaino/Carpooling/Mappa, o la prima del database) e ha davvero invitato una
+         squadra a un'escursione gia' completata - qui fuori da .page-container per lo stesso
+         motivo di create-hike-modal/complete-group-modal qui sopra. -->
+    <div id="invite-squad-modal" class="modal hidden">
+        <div class="modal-content glass-card">
+            <div class="modal-header">
+                <h4>Invita <span id="invite-squad-name"></span> a un'escursione</h4>
+                <button class="close-modal-btn" id="btn-close-invite-squad-modal">&times;</button>
+            </div>
+            <p class="small text-muted">Scegli l'escursione: i membri verranno aggiunti tra i partecipanti, o proposti all'organizzatore se l'escursione richiede approvazione.</p>
+            <div id="invite-squad-hike-list" class="hike-carpools-list"></div>
+        </div>
+    </div>
+
     <!-- Modal generico per conferme e richieste testuali (sostituisce confirm()/prompt() nativi) -->
     <div id="generic-modal" class="modal hidden">
         <div class="modal-content glass-card generic-modal-content">

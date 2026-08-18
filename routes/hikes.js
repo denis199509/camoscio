@@ -40,10 +40,16 @@ function diffIdLists(oldList, newList) {
     };
 }
 
-// Un utente normale puo': iscriversi/ritirarsi da solo (rispettando manualApproval), ritirare una
-// propria richiesta in sospeso, o invitare altri (es. la propria squadra) SOLO se e' gia' lui
-// stesso un partecipante. Spostare/rimuovere l'ID di un ALTRO (approvare o rifiutare una
-// richiesta, "Veto Capogruppo") resta riservato al creatore.
+// Un utente normale puo': iscriversi/ritirarsi da solo (RISPETTANDO manualApproval, vedi
+// sotto), ritirare una propria richiesta in sospeso, o invitare altri (es. la propria
+// squadra) SOLO se e' gia' lui stesso un partecipante. Spostare/rimuovere l'ID di un ALTRO
+// (approvare o rifiutare una richiesta, "Veto Capogruppo") resta riservato al creatore.
+//
+// manualApproval non era MAI stato controllato qui: la regola viveva solo nel client
+// (joinHikeRequest, public/js/social.js) e bastava una chiamata diretta a questa rotta per
+// scavalcarla - sia iscrivendo altri (successo davvero: invito squadra su un'escursione
+// altrui con manualApproval a vero), sia iscrivendo se stessi, sia approvandosi da soli
+// spostandosi da pendingApproval a participants.
 function canNonCreatorEditParticipation(hike, userId, body) {
     const userIdStr = String(userId);
     const pDiff = diffIdLists(hike.participants, body.participants !== undefined ? body.participants : hike.participants);
@@ -54,11 +60,31 @@ function canNonCreatorEditParticipation(hike, userId, body) {
 
     const touchesOnlySelf = onlySelfOrEmpty(pDiff.added) && onlySelfOrEmpty(pDiff.removed) &&
         onlySelfOrEmpty(pendDiff.added) && onlySelfOrEmpty(pendDiff.removed);
-    if (touchesOnlySelf) return true;
+    if (touchesOnlySelf) {
+        // Dentro questo ramo l'unico id in pDiff.added puo' essere solo il proprio (lo
+        // garantisce onlySelfOrEmpty qui sopra): se l'escursione richiede l'approvazione,
+        // iscriversi vuol dire CHIEDERE, mai entrare direttamente. Blocca anche
+        // l'auto-approvazione di chi e' gia' in pendingApproval e si sposta da solo fra i
+        // partecipanti. Restano liberi: chiedere (pendDiff.added), ritirarsi (pDiff.removed)
+        // e ritirare la propria richiesta (pendDiff.removed) - nessuno dei tre scavalca niente.
+        if (hike.manualApproval && pDiff.added.length > 0) return false;
+        return true;
+    }
 
-    // Invito di altri (es. "invita la mia squadra"): solo aggiunte a participants, mai rimozioni
-    // ne' tocchi alle richieste in sospeso, e solo da parte di chi e' gia' un partecipante.
-    return wasParticipant && pDiff.removed.length === 0 && pendDiff.added.length === 0 && pendDiff.removed.length === 0;
+    // --- Invito di altri (es. "invita la mia squadra") ---
+    // Solo da parte di chi e' gia' un partecipante, e mai rimozioni: togliere l'id di un
+    // altro da participants o da pendingApproval significherebbe cacciare qualcuno o
+    // rifiutarne la richiesta al posto dell'organizzatore. Vale in ENTRAMBI i rami sotto.
+    if (!wasParticipant) return false;
+    if (pDiff.removed.length !== 0 || pendDiff.removed.length !== 0) return false;
+
+    return hike.manualApproval
+        // Approvazione manuale: si possono solo PROPORRE nomi, mai iscriverli - il server
+        // non si fida che il client scelga il campo giusto.
+        ? pDiff.added.length === 0
+        // Iscrizione libera: si aggiunge direttamente ai partecipanti (comportamento di
+        // sempre), e non si tocca la lista delle richieste in sospeso.
+        : pendDiff.added.length === 0;
 }
 
 // Un utente normale puo' creare/modificare/rimuovere SOLO la propria offerta come autista, e
@@ -243,9 +269,17 @@ router.put('/:id', requireAuth, async (req, res) => {
         // Punto 76: un'escursione completata in gruppo non si modifica piu'. Stesso segnale
         // gia' usato per nascondere "Completa escursione" (punto 64, hike.groupCompletedAt),
         // mai la sola data prevista - confrontare con "adesso" avrebbe la stessa trappola gia'
-        // pagata al punto 58 (una data senza ora mente sempre a favore del passato). Non blocca
-        // partecipanti/carpooling/zaino: quelli restano un'altra cosa, non richiesta qui.
-        const EDIT_LOCKED_FIELDS = [...CREATOR_ONLY_FIELDS, 'trailhead', 'routeSource'];
+        // pagata al punto 58 (una data senza ora mente sempre a favore del passato).
+        // 'participants' e' entrato nell'elenco dopo un bug reale (invito squadra finito su
+        // un'escursione gia' chiusa, mai richiesto e privo di senso): carpooling/zaino restano
+        // fuori, quelli sono un'altra cosa. 'pendingApproval' e' entrato insieme: complete-group
+        // lo azzera gia' alla chiusura (scrivendo sul documento, non via questa PUT - non e'
+        // quello il caso da bloccare), ma senza il blocco esplicito qui si poteva ancora
+        // PROPORRE un nome nuovo su un'escursione chiusa (canNonCreatorEditParticipation non
+        // guarda groupCompletedAt) - una richiesta che poi non si puo' ne' accettare ne'
+        // rifiutare, perche' il pannello Veto e' nascosto e participants e' gia' bloccato sopra.
+        // Trovato dal test-engineer, non a mano.
+        const EDIT_LOCKED_FIELDS = [...CREATOR_ONLY_FIELDS, 'trailhead', 'routeSource', 'participants', 'pendingApproval'];
         if (hike.groupCompletedAt && EDIT_LOCKED_FIELDS.some(field => body[field] !== undefined)) {
             return res.status(409).json({ error: 'Un\'escursione già completata non può più essere modificata' });
         }
@@ -332,13 +366,29 @@ router.put('/:id', requireAuth, async (req, res) => {
 
         const updated = await Hike.findByIdAndUpdate(req.params.id, update, { new: true, runValidators: true });
 
-        for (const requesterId of newPendingRequesterIds) {
-            const requester = await User.findById(requesterId);
-            await Notification.create({
-                userId: hike.creatorId,
-                text: `${requester ? requester.username : 'Un utente'} ha chiesto di partecipare alla tua escursione "${hike.title}"`,
-                read: false
-            });
+        // La richiesta puo' ora arrivare anche da un terzo (invito squadra su un'escursione ad
+        // approvazione manuale, canNonCreatorEditParticipation sopra) - dire "ha chiesto di
+        // partecipare" di chi non ha chiesto niente sarebbe fuorviante proprio verso chi deve
+        // decidere. Il nome di chi propone si legge una volta sola, e solo se serve davvero.
+        // Try separato dall'update sopra: prima Notification.create rientrava nello stesso try
+        // della scrittura vera (trovato dal code-reviewer) - se falliva, il client vedeva
+        // "impossibile aggiornare l'escursione" anche se l'iscrizione/proposta era gia' andata
+        // a segno. La notifica e' un avviso, non deve poter mentire sull'esito della scrittura.
+        try {
+            const propostiDaAltri = newPendingRequesterIds.some(id => id !== String(userId));
+            const chiPropone = propostiDaAltri ? await User.findById(userId) : null;
+            const nomeChiPropone = chiPropone ? chiPropone.username : 'Un altro partecipante';
+
+            for (const requesterId of newPendingRequesterIds) {
+                const requester = await User.findById(requesterId);
+                const nome = requester ? requester.username : 'Un utente';
+                const text = requesterId === String(userId)
+                    ? `${nome} ha chiesto di partecipare alla tua escursione "${hike.title}"`
+                    : `${nomeChiPropone} propone ${nome} per la tua escursione "${hike.title}"`;
+                await Notification.create({ userId: hike.creatorId, text, read: false });
+            }
+        } catch (notifErr) {
+            console.error('Errore invio notifica richiesta partecipazione:', notifErr);
         }
 
         res.json(updated);
@@ -471,6 +521,11 @@ router.post('/:id/complete-group', requireAuth, async (req, res) => {
         }
 
         hike.participants = confirmedUserIds;
+        // Una richiesta di iscrizione a un'escursione appena chiusa non significa piu' niente
+        // (e PUT /:id ora rifiuta comunque qualunque tocco a participants/pendingApproval su
+        // un'escursione completata, vedi EDIT_LOCKED_FIELDS sopra): si azzera qui cosi' il
+        // pannello Veto del creatore non resta a proporre "accetta/rifiuta" su un fantasma.
+        hike.pendingApproval = [];
         hike.groupCompletedAt = new Date();
         await hike.save();
 

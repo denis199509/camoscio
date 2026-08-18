@@ -96,6 +96,38 @@ puo' calcolare - fonte delle quote giu', o percorso oltre i 25 km):
     riquadro comparso col messaggio giusto su un progetto apposta troppo lungo, pubblicazione
     riuscita con la nota "... - dislivello indicato da chi organizza" sulla card.
 
+La prova dell'INVITO A UNA SQUADRA (il bug segnalato da Denis: "Invita a Gita" sceglieva
+l'escursione da sola e ha invitato una squadra a un'escursione GIA' COMPLETATA) e
+dell'APPROVAZIONE MANUALE che si poteva scavalcare:
+
+    node prove/prova-invito-squadra.js              59 controlli  (ne avvia uno suo, sulla 3109)
+
+    DUE SEZIONI, perche' i due difetti vivono in due punti diversi.
+    La sezione A non vuole ne' server ne' database: carica public/js/social.js dentro un
+    contesto finto (vm) e prova le due funzioni che DECIDONO - mieEscursioniAperte (quali
+    escursioni sono un bersaglio legittimo) e confermaInvitoSquadra (su quale campo si
+    scrive). Il server non potrebbe provarlo: la scelta sbagliata avveniva PRIMA della
+    richiesta HTTP. Trucco che tiene la prova stabile: document.getElementById risponde solo
+    per i tre id del riquadro di invito e null per tutti gli altri, cosi'
+    renderHikesList/renderMyHikes/renderSquadsList escono subito da sole (lo fanno gia'
+    quando il loro contenitore non c'e') invece di pretendere mezza pagina in un finto DOM.
+    La sezione B parla col server vero, con quattro account demo e cookie veri: chi puo'
+    toccare la lista partecipanti e quando. Sorveglia che un non creatore non possa piu'
+    iscrivere altri (ne' se stesso, ne' approvarsi da solo) su un'escursione ad approvazione
+    manuale (403), che possa invece PROPORLI (200, in pendingApproval), che senza
+    approvazione manuale l'invito diretto continui a funzionare come sempre, che la chiusura
+    di gruppo azzeri le richieste in sospeso, e che su un'escursione conclusa la lista
+    partecipanti non si tocchi piu' (409, nemmeno dal creatore).
+    CONTROPROVA fatta il 18/08/2026 (git worktree su HEAD + NODE_PATH sui node_modules del
+    progetto): col codice di prima cadono 18 controlli della sezione B e la sezione A non
+    parte nemmeno (le due funzioni non esistevano). La prova guarda davvero quello che dice.
+    UN DIFETTO TROVATO DA QUESTA PROVA, lo stesso giorno e poi corretto: su un'escursione
+    conclusa si potevano ancora PROPORRE nomi nuovi (pendingApproval non era in
+    EDIT_LOCKED_FIELDS, che bloccava solo participants) - una richiesta che nessuno poteva
+    piu' ne' accettare ne' rifiutare. Non era preesistente: la facolta' di proporre era nata
+    quel giorno stesso. I tre controlli B11 lo presidiano, e pretendono 409 e non un 403
+    qualunque: deve fermarsi perche' l'escursione e' CHIUSA, non per un caso dei permessi.
+
 La prova del PUNTO 35 vuole anche Puppeteer (vedi sotto), ma non legge il log:
 
     PUPPETEER_PATH=... node prove/prova-punto35.js  16 controlli
@@ -210,3 +242,12 @@ E UNA REGOLA NUOVA, dalla prova del punto 35:
    per un attimo il codice VECCHIO e si verifica che fallisca davvero. Sulla prova del
    punto 35: 6 controlli su 16 cadono col codice di prima. Senza questo passaggio non si
    sa se sta guardando quello che dice di guardare.
+
+
+RESIDUI VECCHI ANCORA SUL DATABASE
+-----------------------------------
+ - 30 notifiche orfane sugli account demo, lasciate da 15 lanci di prova-punto77.js prima che
+   il suo cleanup imparasse a toglierle (corretto il 18/08/2026, i lanci nuovi non ne
+   lasciano piu'). Quelle vecchie sono ancora li' e si tolgono cosi', filtrate sul testo
+   finto che nessun dato vero puo' avere:
+       db.notifications.deleteMany({ text: /ha una nuova escursione: "PROVA-77-\d+"/ })

@@ -660,6 +660,10 @@ h1, h2, h3, h4, h5, h6 {
     color: var(--color-text-secondary);
 }
 
+.text-warning {
+    color: var(--accent-orange);
+}
+
 .small {
     font-size: 0.8rem;
 }

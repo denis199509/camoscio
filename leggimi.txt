@@ -1,8 +1,8 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-18 (punti 83-93 TUTTI chiusi; punto 94 PROGETTATO,
-nessun codice scritto, parte solo quando Denis vuole - vedi RIPARTIRE
-DA in fondo)
+Aggiornato: 2026-08-18 notte (punti 83-93 e 95 TUTTI chiusi,
+committati e pushati; punto 94 PROGETTATO, nessun codice scritto -
+nessun punto pronto in coda, vedi RIPARTIRE DA in fondo)
 ===================================================================
 
 QUESTO FILE DICE SOLO UNA COSA: a che punto siamo adesso e da dove si ricomincia.
@@ -149,19 +149,38 @@ o ne arriva uno nuovo.
     parole di Denis in cose_da_fare.txt punto 94, decisioni tecniche in
     ../camoscio memoria/03-Decisioni-Architetturali.md.
 
-    >>> RIPARTIRE DA: nessun punto tecnico urgente. Il punto 94 (sopra)
-    parte SOLO quando Denis lo decide lui, dal passo 1 (installare
-    Android Studio) - non riproporlo di sua iniziativa. Nell'immediato
-    resta solo un'azione che PUO' FARE SOLO DENIS (non richiederla, e'
-    sua): ricaricare le 7 tracce esistenti per ottenere il tempo di
-    movimento vero (decisione 1 del punto 92) - ora puo' farle tutte e 7
-    in una volta sola (tetto personale 10 fino a fine agosto, vedi sopra).
-    Restano anche aperti - non toccati da nessuno dei punti sopra - i "livelli"
-    ORIGINALI del punto 63b (quanti gradini per la ZONA dichiarata a
-    mano, es. "Monti Lucretili" in quanto tale, non le singole cime -
-    DIVERSI dai livelli gia' fatti del punto 86) e il calcolo automatico
-    del raggio (punto 42a) - Denis deve ancora pensarci, non richiederlo
-    - e il dominio email (rimandato da lui).
+    >>> PUNTO 95, CHIUSO PER INTERO (18/08/2026 notte): "Invita a
+    Gita" sceglieva l'escursione da invitare a caso (stato UI di
+    tutt'altro scopo, o la prima del database) - aveva gia' invitato
+    la squadra di Denis a un'escursione chiusa, e il bug aveva gia'
+    toccato tre account reali (ripulito, via libera di Denis). Ora
+    apre un riquadro di scelta vero. Indagando e' emerso e corretto
+    anche un buco di sicurezza separato: un non-creatore che invita
+    altri scavalcava manualApproval dell'organizzatore. Progettato con
+    l'architect, provato dal test-engineer (295 controlli verdi) e dal
+    vivo nel browser, revisionato dal code-reviewer: un difetto vero
+    corretto subito, DUE lasciati per la sessione successiva -
+    entrambi corretti prima del commit (approveParticipant/
+    declineParticipant ora rileggono lo stato con refreshState() prima
+    di scrivere; la notifica di routes/hikes.js non fa piu' fallire la
+    risposta se la scrittura vera e' gia' riuscita), insieme a quattro
+    cose minori (colore .text-warning, guardia su data assente,
+    elenco ordinato per data, doppio clic bloccato). Verificato con la
+    regressione completa e dal vivo nel browser (colore confermato via
+    getComputedStyle, doppio clic testato intercettando fetch: una
+    sola PUT vera). Committato e pushato.
+
+    >>> RIPARTIRE DA: nessun punto pronto in coda. Il punto 94 resta
+    SOLO quando Denis lo decide lui, dal passo 1 (installare Android
+    Studio) - non riproporlo di sua iniziativa. Restano aperte, non
+    urgenti: i "livelli" ORIGINALI del punto 63b (quanti gradini per
+    la ZONA dichiarata a mano, es. "Monti Lucretili" in quanto tale,
+    non le singole cime - DIVERSI dai livelli gia' fatti del punto 86)
+    e il calcolo automatico del raggio (punto 42a) - Denis deve ancora
+    pensarci, non richiederlo - e il dominio email (rimandato da lui).
+    Facoltativa, non legata a nessun punto: pulizia delle ~30
+    notifiche demo orfane trovate per caso (comando pronto in
+    prove/LEGGIMI-PROVE.txt).
 
 >>> COSE FUORI SCOPE, NON RIPROPORLE finche' non torna Denis sull'argomento:
     - Tracciamento GPS a pagina chiusa (impossibile via browser, non difficile
