@@ -1,8 +1,16 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-18 notte (punti 83-93 e 95-97 chiusi; punto
-98/A, 98/B e 98/C chiusi, verificati, committati e pushati; punto 94
-PROGETTATO, nessun codice scritto - vedi RIPARTIRE DA in fondo)
+Aggiornato: 2026-08-19, sessione successiva (punto 94, PASSO 6:
+config puntata alla produzione, poi una camminata vera ha trovato
+un buco NUOVO - la pagina puo' ricaricarsi da sola a schermo spento
+senza uccidere il processo, perdendo il tracciamento in silenzio
+anche col GPS nativo ancora acceso. Diagnosticato con adb logcat,
+corretto in tracking.js (committato e pushato DA SOLO, 7656a13),
+MA NON ANCORA RIVERIFICATO - prova rimandata da Denis a domani
+(20/08/2026). Dettaglio completo in ../camoscio memoria/
+06-Cronologia-Sessioni.md, le decisioni tecniche in
+03-Decisioni-Architetturali.md. RIPARTIRE DALLA VERIFICA DAL VIVO,
+poi passo 7. Punto 98/D e E restano aperti, non toccati oggi)
 ===================================================================
 
 QUESTO FILE DICE SOLO UNA COSA: a che punto siamo adesso e da dove si ricomincia.
@@ -133,11 +141,57 @@ o ne arriva uno nuovo.
     le parole di Denis, in cose_da_fare.txt punto 98. Pulizia delle
     ~30 notifiche demo orfane gia' fatta e committata (vedi sopra).
 
-    >>> Il punto 94 (app Android
-    per il tracciamento a schermo spento, PROGETTATO ma nessun codice
-    scritto) resta SOLO quando Denis lo decide lui, dal passo 1 (installare
-    Android Studio) - non riproporlo di sua iniziativa. Restano aperte, non
-    urgenti (dettaglio in ../camoscio memoria/04-Da-Fare.md): i "livelli"
+    >>> PUNTO 94 (app Android per il tracciamento a schermo spento):
+    PASSI 1-5 chiusi e verificati dal vivo (Android Studio,
+    Capacitor nel repo vero, plugin GPS collegato a tracking.js,
+    flusso di consenso onesto, promemoria orario contro un
+    tracciamento dimenticato attivo) - dettaglio in cose_da_fare.txt
+    punto 94 e ../camoscio memoria/06-Cronologia-Sessioni.md,
+    decisioni tecniche in 03-Decisioni-Architetturali.md.
+
+    PASSO 6 (produzione) - config puntata a
+    https://camoscio.onrender.com, installato e verificato sul
+    telefono. Una camminata vera ha pero' trovato un buco NUOVO: la
+    pagina puo' ricaricarsi da sola a schermo spento per pressione di
+    memoria di Android, SENZA uccidere ne' il processo dell'app ne'
+    quello del WebView (verificato nei log di sistema) - il GPS
+    nativo restava vivo ma la pagina ricaricata perdeva lo stato del
+    tracciamento, e un secondo avvio veniva rifiutato dal plugin
+    (gia' in corso). Risultato osservato: 0,1 km/2 min salvati di
+    almeno 8 registrati. Diagnosticato con adb logcat, progettato con
+    l'agente architect (diagnosi corretta e approfondita: i fix
+    morivano lato Java per un ricaricamento di pagina, non solo per
+    una guardia lato JavaScript). Denis ha chiesto anche che un
+    ricaricamento SENZA rete (frequente in montagna) non perda la
+    registrazione, non solo quello con rete - "altrimenti il lavoro
+    diventa inutile" (parole sue).
+    CORRETTO in tracking.js: stop() sempre prima di ogni avvio nativo
+    (un solo percorso per avvio/ripresa/recupero), badge onesto
+    "registrazione interrotta - tocca per riprovare" se il riaggancio
+    fallisce, nuovo specchio in localStorage (solo identita' della
+    sessione, mai i punti) per riprendere a registrare "alla cieca"
+    anche senza rete - si mette in pari da solo al ritorno del
+    segnale, 404/409 sull'invio non fanno piu' ritentare in eterno su
+    una sessione ormai morta. Dettaglio tecnico completo, con le
+    alternative scartate, in ../camoscio memoria/
+    03-Decisioni-Architetturali.md; la trappola (ricaricamento senza
+    uccisione di processo) in 07-Trappole-Tecniche.md.
+    COMMITTATO E PUSHATO SOLO tracking.js (7656a13), con permesso
+    esplicito di Denis - android/, capacitor-shell/,
+    capacitor.config.json e package*.json restano ancora NON
+    committati, rimandati al passo 7 come da piano.
+    NON ANCORA VERIFICATO DAL VIVO: prova concordata con Denis per
+    domani (20/08/2026) - modalita' aereo attivata prima di spegnere
+    lo schermo, riaccensione ancora in modalita' aereo, per forzare
+    apposta il caso "ricaricamento senza rete".
+    RIPARTIRE DA: quella verifica dal vivo. Solo dopo la conferma,
+    PASSO 7 (.gitignore esteso - keystore MAI nel repo pubblico -
+    poi commit di android/+capacitor.config.json) e PASSO 8 (.apk di
+    release firmato, sideload) - entrambi spiegati a Denis ma non
+    ancora iniziati.
+
+    >>> ANCORA APERTE, non urgenti (dettaglio in
+    ../camoscio memoria/04-Da-Fare.md): i "livelli"
     ORIGINALI del punto 63b (quanti gradini per la ZONA dichiarata a mano,
     DIVERSI dai livelli gia' fatti del punto 86) e il calcolo automatico del
     raggio (punto 42a) - Denis deve ancora pensarci, non richiederlo - e il

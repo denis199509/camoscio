@@ -4314,8 +4314,9 @@ schermo spento ancora."
    organizza" sulla card. Dati di prova cancellati subito dopo.
    PUNTO 93 CHIUSO PER INTERO.
 
-94) [PROGETTATO 2026-08-18, NESSUN CODICE SCRITTO - Denis ha chiesto
-   solo il piano, il lavoro vero parte in una sessione futura] Denis:
+94) [PROGETTATO 2026-08-18; PASSI 1-5 FATTI E VERIFICATI (19/08/2026),
+   NESSUN COMMIT ANCORA (di proposito, vedi nota in
+   fondo) - vedi RIPARTIRE DA in leggimi.txt] Denis:
    "possiamo valutare di creare un'app? sempre riguardo il progetto
    camoscio. serve un file .apk in modo da poter installare l'app sul
    telefono android." Chiesto subito qual era la spinta vera (un'icona
@@ -4395,6 +4396,201 @@ schermo spento ancora."
    montagna - serve un dispositivo fisico, fuori casa, non da fermo.
    NESSUN CODICE SCRITTO, NESSUN AMBIENTE TOCCATO. Ripartire dal passo 1
    dell'ordine di lavoro sopra quando Denis vorra' iniziare per davvero.
+
+   AGGIORNAMENTO 2026-08-19: Denis e' tornato da solo sul punto
+   ("abbiamo ancora da chiudere il punto 94, quello che riguarda
+   l'app") e ha lavorato dal vivo i primi due passi, con conferma
+   passo per passo (screenshot del telefono/Android Studio a ogni
+   intoppo). PASSO 1 fatto: Android Studio installato via winget,
+   progetto Android vuoto buildato e avviato sul Redmi Note (MIUI)
+   di Denis via USB - due impostazioni MIUI non ovvie hanno rallentato
+   l'attivazione del debug USB (Opzioni sviluppatore nascosta,
+   "Installazione tramite USB" separata da "Debug USB"). PASSO 2
+   fatto: Capacitor aggiunto al repo vero (capacitor.config.json,
+   appId com.camoscio.app, webDir capacitor-shell/ - non public/,
+   per non gonfiare l'app con badge fino a 1,5 MB l'uno), android/
+   generato. Trovato e risolto un problema d'ambiente non previsto
+   dal piano: il repo vive dentro OneDrive, che sincronizzava
+   node_modules/cache Gradle - spostate fuori con junction NTFS
+   verso C:\devcache\camoscio\. Verificato dal vivo sul telefono di
+   Denis: sito vero aperto dentro l'app, login riuscito (sessione
+   ereditata via cookie, backend invariato come previsto), mappa
+   Leaflet visibile. Dettaglio tecnico completo (compresi gli
+   intoppi MIUI/OneDrive/WiFi e come sono stati risolti) in
+   ../camoscio memoria/07-Trappole-Tecniche.md; le scelte
+   appId/webDir in ../camoscio memoria/03-Decisioni-Architetturali.md.
+   NESSUN COMMIT: il piano rimanda il commit di android/+config al
+   passo 7. Denis ha chiesto di fermarsi qui dopo il passo 2.
+   RIPARTIRE DAL PASSO 3 (plugin GPS isolato, verifica a schermo
+   spento 10+ minuti) - ambiente e progetto Android Studio gia'
+   pronti, non rifare i passi 1-2.
+
+   AGGIORNAMENTO 2026-08-19 (sessione successiva): PASSO 3 fatto e
+   verificato (plugin GPS isolato, 11 minuti a schermo spento, 859
+   fix, mai un buco sopra 30s - batteria MIUI del Redmi gia' su
+   "Nessuna restrizione"). PASSO 4 scritto e collegato a
+   tracking.js, prima camminata vera (18 minuti, coperchio chiuso
+   nello zaino) ambigua - confuso il sonno del portatile con un
+   sospetto di pagina web in pausa in background. Sessione fermata
+   li' su richiesta di Denis.
+
+   AGGIORNAMENTO 2026-08-19 (sessione successiva ancora): PASSO 4
+   CHIUSO. Ripresa la camminata dopo aver chiesto e ottenuto il via
+   libera di Denis a impedire il sonno del PC. Trovato pero' che su
+   questo portatile (Standby Moderno) ne' l'azione del coperchio ne'
+   il timer di inattivita' impediscono sempre lo standby - dettaglio
+   in ../camoscio memoria/07-Trappole-Tecniche.md. Denis ha proposto
+   lui stesso una soluzione migliore: coperchio alzato, telefono
+   collegato via USB, niente piu' bisogno che il portatile si
+   sposti. Tre prove brevi in giardino hanno mostrato lo stesso
+   disegno "a buchi" della camminata lunga - un log diretto nel
+   callback nativo (adb logcat) e' sembrato confermarlo (zero fix
+   per diversi minuti), ma solo perche' il filtro cercava il tag
+   sbagliato (Capacitor invece di Capacitor/Console per i log
+   JavaScript - i punti nel frattempo arrivavano comunque sul
+   server, prova che il filtro era il problema, non il codice). Col
+   tag giusto: fix continui una volta al secondo, zero buchi, anche
+   a schermo spento. Il disegno "a buchi" delle prove era
+   simplifyTrack() che elimina quasi tutti i punti quando ci si
+   muove pochissimo - confermato dall'ultima prova con un vero
+   spostamento (zero buchi sopra 60 secondi). Codice gia' scritto
+   verificato per davvero, non ancora committato. Corretto anche un
+   mio errore di fuso orario a meta' diagnosi (Denis se n'e' accorto
+   da solo confrontando gli orari). RIPARTIRE DAL PASSO 5 (flusso di
+   consenso in due passaggi + testi onesti). Dettaglio completo con
+   tutti i numeri in ../camoscio memoria/06-Cronologia-Sessioni.md.
+
+   AGGIORNAMENTO 2026-08-19 (sessione successiva): Denis e' tornato
+   per il PASSO 5. Prima di scrivere codice, riletta la scoperta gia'
+   fatta al passo 3 (il permesso "sempre" non serve, il plugin non lo
+   chiede mai) - confermato di nuovo leggendo il manifest del plugin,
+   che infatti non lo dichiara: Android offre solo "durante l'uso"/
+   nega, mai "sempre". Il "flusso in due passaggi" del piano originale
+   (pensato per un redirect alle Impostazioni) non serviva piu' -
+   ridisegnato come una spiegazione in-app una tantum, un solo bottone
+   "ho capito", prima del popup vero. Testi proposti a Denis e
+   approvati ("va benissimo cosi, prosegui pure") prima di scriverli.
+
+   Provando dal vivo, Denis ha trovato in sequenza (mai uno a
+   tavolino): il messaggio "avviato" compariva anche negando il
+   permesso; poi, corretto quello, il messaggio onesto di rifiuto
+   ancora non compariva - diagnosticato con adb logcat in tempo reale
+   (telefono ricollegato apposta) che start() del plugin e' un metodo
+   "a callback continuo": la sua Promise si risolve subito, l'esito
+   vero (incluso un rifiuto) arriva sempre e solo dal callback,
+   300-400ms dopo - riscritto per aspettare quello. Poi un TypeError
+   imprevisto ("plugin.start(...).catch is not a function" - il tipo
+   dichiarato dal plugin non corrisponde al valore vero a runtime) ha
+   lasciato il tasto bloccato su "Termina registrazione" con un
+   tracciamento mai partito (Denis: "il tasto era rimasto in
+   tracciamento, ho dovuto fermare la traccia, diceva tutto zero") -
+   corretto, e aggiunta una rete di sicurezza contro qualunque
+   eccezione futura dello stesso tipo. Poi, ancora, il pulsante restava
+   su "Termina" anche col messaggio onesto giusto: la sessione creata
+   sul server un attimo prima restava "attiva" - aggiunta la chiusura
+   + cancellazione automatica di una sessione mai davvero partita.
+   Infine il testo delle notifiche ("Hai negato...") corretto in "Le
+   notifiche risultano disattivate...", perche' Denis ha fatto notare
+   di non essere stato interpellato in quel momento - era una
+   decisione presa ai passi precedenti, non un'azione di adesso.
+
+   A passo 5 gia' verificato, Denis ha chiesto un'aggiunta non nel
+   piano: "un semplice utente puo' dimenticare che ha avviato la
+   registrazione... rischiamo che qualcuno fa partire la traccia e non
+   la spenge mai" (la notifica del plugin GPS, gia' permanente nel
+   codice, si e' rivelata rimovibile con uno swipe su MIUI). Costruito
+   un promemoria NOSTRO e separato (nuova dipendenza
+   @capacitor/local-notifications, MIT): una notifica oraria con ID
+   fisso che, per come si comportano di default le notifiche Android,
+   si aggiorna in silenzio se non toccata (resta una sola) e ne
+   compare una fresca se rimossa - esattamente quello chiesto da
+   Denis ("se viene cancellata... altrimenti resta quella"), senza
+   dover rilevare noi stessi l'evento di rimozione. Verificato dal
+   vivo con l'intervallo accelerato a un minuto invece di un'ora (tre
+   comportamenti confermati, incluso un'ultima correzione: la notifica
+   gia' visibile non spariva da sola a fine tracciamento finche' non
+   aggiunta anche removeDeliveredNotificationsById, non solo cancel).
+   Intervallo rimesso a un'ora a verifica completata. PASSO 5 CHIUSO E
+   VERIFICATO su ogni ramo. RIPARTIRE DAL PASSO 6 (produzione).
+   Dettaglio completo in ../camoscio memoria/06-Cronologia-Sessioni.md,
+   le decisioni tecniche in 03-Decisioni-Architetturali.md.
+
+   AGGIORNAMENTO 2026-08-19 (sessione successiva): Denis e' tornato
+   per il PASSO 6 ("possiamo continuare con il punto 94 parte 6 la
+   produzione se ricordo bene"). server.url in capacitor.config.json
+   puntato a https://camoscio.onrender.com (tolto cleartext, non
+   serve piu' con HTTPS), sincronizzato e installato sul telefono
+   (cap sync + gradlew installDebug, verificato che la copia dentro
+   l'APK avesse davvero la nuova config, non solo l'output di Gradle).
+
+   La prima camminata vera in produzione ha pero' trovato un buco
+   nuovo. Parole di Denis dopo il rientro: "sono partito a schermo
+   accesso poi mi sono ricordato di spegnere lo schermo. Quando sono
+   ritornato a casa e ho acceso il telefono ho visto una linea retta
+   dal punto in cui ho chiuso il telefono a quando lo riaperto" - poi
+   "neanche la notifica mi era comparsa" (chiarito con una domanda
+   mirata che il turno era durato meno di un'ora: la notifica oraria
+   non era ancora dovuta, non provava nulla da sola). Guardando il
+   riepilogo della traccia: "sto guardando adesso la traccia appena
+   registrata 0,1 km (probabile) 423 m di dislivello (impossibile) 2
+   min (ho registrato minimo 8)" - il dislivello impossibile era pero'
+   lo stesso rumore del sensore gia' noto dal passo 4, non un problema
+   nuovo.
+
+   DIAGNOSI con adb logcat (dump completo del buffer, telefono
+   ricollegato apposta): ne' il processo dell'app ne' quello del
+   WebView erano mai stati uccisi e riavviati - ma un controllo
+   permessi della geolocalizzazione del BROWSER, che non dovrebbe mai
+   scattare durante un tracciamento nativo, ha rivelato che lo stato
+   JavaScript della pagina si era comunque azzerato: Android puo'
+   scaricare il contenuto del WebView per pressione di memoria a
+   schermo spento SENZA uccidere il processo che lo ospita.
+
+   Denis ha chiarito una priorita' che ha allargato la correzione,
+   rispondendo a una domanda su cosa succede quando il ricaricamento
+   capita senza segnale: "pero ho perso i dati nel fra tempo che non
+   ce rete? in montagna capita spesso che non ce rete. Proprio per
+   questo serve l'app che registra la traccia sia a schermo spento
+   sia senza rete. Quando ritorna il segnale vorrei avere la traccia
+   completa non a pezzi dove ce segnale, altrimenti il lavoro diventa
+   inutile."
+
+   Progettato con l'agente architect (diagnosi confermata e corretta
+   in un punto decisivo, verificato nel sorgente Java del plugin: i
+   fix venivano scartati prima ancora di arrivare al JavaScript,
+   perche' Capacitor butta via i callback nativi a ogni ricaricamento
+   di pagina - un secondo avvio del GPS veniva rifiutato dal plugin
+   perche' il vecchio servizio risultava ancora "in corso"). Corretto
+   in tracking.js: fermato sempre il GPS nativo prima di ogni riavvio
+   (un solo percorso per avvio/ripresa/recupero); badge onesto
+   "registrazione interrotta" se il riaggancio fallisce comunque;
+   nuovo specchio in localStorage che permette di riprendere a
+   registrare anche senza poter chiedere conferma al server,
+   mettendosi in pari da solo al ritorno del segnale; gli invii che
+   scoprono una sessione ormai chiusa sul server non ritentano piu'
+   all'infinito. Decisioni tecniche complete in ../camoscio memoria/
+   03-Decisioni-Architetturali.md, la trappola tecnica in
+   07-Trappole-Tecniche.md.
+
+   Verificato prima di committare (sintassi, rilettura intera del
+   file, nessuna funzione duplicata). COMMITTATO E PUSHATO SOLO
+   public/js/tracking.js (7656a13), con permesso esplicito chiesto e
+   ottenuto da Denis - il resto del lavoro Capacitor (android/,
+   capacitor-shell/, capacitor.config.json, package*.json) resta
+   ancora fuori, rimandato al passo 7 come da piano originale.
+   Confermato che il sito in produzione servisse davvero il nuovo
+   codice prima di chiudere la sessione.
+
+   NON ANCORA VERIFICATO DAL VIVO: Denis ha rimandato la prova a
+   domani. Concordato un test con modalita' aereo attivata prima
+   dello schermo spento (per forzare apposta il caso "ricaricamento
+   senza rete" invece di aspettare di trovarsi per caso senza campo).
+   Spiegati a Denis anche i passi 7 e 8 su sua domanda esplicita ("i
+   passi 7 e 8 in cosa consistono?") - nessun codice toccato per
+   questi due, solo spiegazione.
+
+   RIPARTIRE DA: la verifica dal vivo della correzione del passo 6,
+   poi passo 7 solo dopo la conferma.
 
 95) [CODICE SCRITTO E VERIFICATO, NON COMMITTATO - vedi RIPARTIRE DA in
    fondo] Denis, il giorno dopo aver pubblicato "Monte Terminillo" dal
