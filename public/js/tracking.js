@@ -41,6 +41,45 @@ let isFlushInProgress = false;
 // ogni sincronizzazione (vedi flushPendingPoints). null = non ancora richiesti.
 let nearbyTrailSegments = null;
 
+// --- Specchio locale della sessione (sopravvive a un ricaricamento di pagina) ---
+//
+// Punto 94/passo 6 - trovato il 19/08/2026 con una camminata vera in produzione: la pagina
+// dentro l'app puo' ricaricarsi da sola a schermo spento (Android libera memoria del
+// WebView senza uccidere ne' l'app ne' il servizio GPS nativo - vedi 07-Trappole-Tecniche
+// nel vault), e checkForResumableSession() normalmente si riprende chiedendo al server
+// "c'e' una sessione aperta?". Ma se in quel momento non c'e' rete (frequente in montagna,
+// non un'eccezione), quella domanda non ha risposta: senza una copia locale, la
+// registrazione resterebbe persa fino al ritorno del segnale - proprio il caso per cui
+// serve un'app che tracci anche senza campo. Qui si salva SOLO l'identita' della sessione,
+// mai i punti (quelli sono gia' in IndexedDB, gia' per sessionId - vedi idb.js).
+const CHIAVE_SPECCHIO_LOCALE = 'camoscio.tracciamento';
+
+function salvaSpecchioLocale() {
+    try {
+        localStorage.setItem(CHIAVE_SPECCHIO_LOCALE, JSON.stringify({
+            sessionId: trackingState.sessionId,
+            hikeId: trackingState.hikeId,
+            startedAtMs: trackingState.startedAtMs,
+            status: trackingState.status
+        }));
+    } catch (e) {
+        console.error("Impossibile salvare lo specchio locale del tracciamento:", e);
+    }
+}
+
+function leggiSpecchioLocale() {
+    try {
+        const raw = localStorage.getItem(CHIAVE_SPECCHIO_LOCALE);
+        return raw ? JSON.parse(raw) : null;
+    } catch (e) {
+        return null;
+    }
+}
+
+function pulisciSpecchioLocale() {
+    try { localStorage.removeItem(CHIAVE_SPECCHIO_LOCALE); } catch (e) { /* niente da fare */ }
+}
+
 // --- Ciclo di vita della sessione ---
 
 function applySessionState(session) {
@@ -54,6 +93,7 @@ function applySessionState(session) {
     trackingState.activeResumedAtMs = session.status === 'active' ? Date.now() : null;
     resetLocalStats();
     nearbyTrailSegments = null; // ogni escursione puo' essere in una zona diversa, si riscarica da capo
+    salvaSpecchioLocale();
 }
 
 async function startTracking() {
@@ -92,11 +132,30 @@ async function startTracking() {
         // seguire. Senza questo la mappa resta a zoom 9, dove un'ora di cammino si
         // sposta di pochi pixel e il segnaposto sembra bloccato.
         if (window.beginLiveGpsView) window.beginLiveGpsView();
-        beginWatchingPosition();
+        // Punto 94/passo 5 - atteso apposta: sul ramo nativo beginWatchingPosition() ora
+        // puo' fallire davvero (permesso negato), a differenza del ramo browser che
+        // "riesce" sempre a registrarsi qui (l'eventuale rifiuto arriva dopo, in modo
+        // asincrono, via onPositionError). Senza questo await il messaggio di successo
+        // compariva ANCHE quando il GPS nativo falliva un attimo dopo - bug trovato da
+        // Denis provando il passo 5 dal vivo (negava il permesso e vedeva comunque
+        // "avviato", col segnaposto fermo sull'ultima posizione nota).
+        const gpsAvviato = await beginWatchingPosition();
+        if (gpsAvviato === false) {
+            // Punto 94/passo 5 - trovato da Denis provando dal vivo: senza questo, la sessione
+            // creata pochi istanti prima da /start restava "attiva" sul server (il tasto
+            // diceva "Termina registrazione" nonostante il messaggio onesto appena mostrato
+            // da beginWatchingPositionNative() dicesse il contrario) - qui si chiude e si
+            // cancella subito quella sessione fantasma, invece di lasciarla a zero punti
+            // finche' qualcuno non la termina a mano e si ritrova un riepilogo che non
+            // riepiloga nulla.
+            await annullaTracciamentoNonPartito();
+            return;
+        }
         startUiTimer();
         startFlushTimer();
         renderTrackingUi();
         updateMapRecordButton();
+        avviaPromemoriaTracciamento();
         window.showToast("Tracciamento GPS avviato: buona escursione! 🥾", "success");
     } catch (e) {
         console.error("Errore avvio tracciamento:", e);
@@ -104,6 +163,72 @@ async function startTracking() {
     } finally {
         if (btnStart) btnStart.disabled = false;
     }
+}
+
+// Punto 94/passo 5 - il GPS nativo puo' fallire SUBITO (permesso negato, GPS spento), ma la
+// sessione server esiste gia' (creata da /start un attimo prima) e senza mai un punto vero.
+// Chiuderla come una fine escursione normale (endTracking) mostrerebbe un riepilogo a zero -
+// qui invece si chiude E si cancella subito (sequenza obbligata dal server: DELETE rifiuta
+// una sessione non ancora 'ended'), cosi' non resta una traccia fantasma da ripulire a mano,
+// e si torna allo stato "pronto per avviare" invece che a un riepilogo che non riepiloga nulla.
+async function annullaTracciamentoNonPartito() {
+    const sessionId = trackingState.sessionId;
+    trackingState.status = 'idle';
+    trackingState.sessionId = null;
+    pulisciSpecchioLocale();
+    if (window.endLiveGpsView) window.endLiveGpsView();
+    renderTrackingUi();
+    updateMapRecordButton();
+
+    if (!sessionId) return;
+    try {
+        await fetch(`/api/tracking/${sessionId}/end`, { method: 'POST' });
+        await fetch(`/api/tracking/sessions/${sessionId}`, { method: 'DELETE' });
+    } catch (e) {
+        console.error("Errore chiudendo la sessione di tracciamento mai partita davvero:", e);
+    }
+}
+
+// Punto 94/passo 5 - richiesta di Denis (19/08): senza un avviso attivo, uno "scarpone
+// dimenticato" (schermo spento per ore, notifica del plugin GPS eliminabile su MIUI e
+// simili - vedi sopra) puo' restare a registrare per sempre senza che nessuno se ne accorga.
+// Un ID fisso e riusato SEMPRE per la stessa notifica sfrutta il comportamento standard di
+// Android: se l'utente non la tocca, la ricorrenza successiva la aggiorna silenziosamente
+// (resta una sola, non si accumula); se la rimuove, alla ricorrenza dopo ne compare una
+// fresca - esattamente il "ogni ora se cancellata, altrimenti resta quella" chiesto da
+// Denis, senza dover rilevare noi stessi l'evento di cancellazione (fragile/non garantito
+// da questo plugin). isExactNotification:false apposta: un promemoria approssimato non ha
+// bisogno di un secondo permesso di sistema invasivo (Android 12+ altrimenti aprirebbe le
+// impostazioni "Allarmi e promemoria" al primo avvio) - qualche minuto di scarto va bene.
+const ID_PROMEMORIA_TRACCIAMENTO = 94001;
+
+function avviaPromemoriaTracciamento() {
+    if (!window.Capacitor || !window.Capacitor.isNativePlatform()) return;
+    const plugin = window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications;
+    if (!plugin) return;
+    plugin.schedule({
+        notifications: [{
+            id: ID_PROMEMORIA_TRACCIAMENTO,
+            title: 'Camoscio',
+            body: "Il tracciamento GPS è ancora attivo. Se hai finito, apri l'app e premi Termina.",
+            schedule: { every: 'hour', allowWhileIdle: true },
+            isExactNotification: false
+        }]
+    }).catch((e) => console.error("Errore programmando il promemoria di tracciamento:", e));
+}
+
+function fermaPromemoriaTracciamento() {
+    if (!window.Capacitor || !window.Capacitor.isNativePlatform()) return;
+    const plugin = window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications;
+    if (!plugin) return;
+    // cancel() ferma solo le ricorrenze future ("pending" - verificato nel .d.ts del
+    // plugin): senza anche removeDeliveredNotificationsById(), una notifica gia' visibile
+    // in quel momento sarebbe rimasta a dire "ancora attivo" anche dopo aver premuto
+    // Termina - trovato chiedendolo Denis prima di dare per scontato il comportamento.
+    plugin.cancel({ notifications: [{ id: ID_PROMEMORIA_TRACCIAMENTO }] })
+        .catch((e) => console.error("Errore fermando il promemoria di tracciamento:", e));
+    plugin.removeDeliveredNotificationsById({ ids: [ID_PROMEMORIA_TRACCIAMENTO] })
+        .catch((e) => console.error("Errore rimuovendo la notifica di promemoria gia' mostrata:", e));
 }
 
 async function pauseTracking() {
@@ -114,6 +239,7 @@ async function pauseTracking() {
     stopWatchingPosition();
     stopUiTimer();
     trackingState.status = 'paused';
+    salvaSpecchioLocale();
     updatePanelButtonsForStatus();
     renderTrackingStats();
 
@@ -139,10 +265,20 @@ async function resumeTracking() {
     // farebbe divergere i due conti, ed e' proprio il genere di differenza che poi si vede a
     // schermo come un numero che cambia da solo.
     lastLocalPoint = null;
-    beginWatchingPosition();
+    salvaSpecchioLocale();
+
+    // Punto 94/passo 6 - stesso principio del passo 5 in startTracking(): si aspetta
+    // l'esito vero del GPS nativo invece di darlo per scontato, cosi' un permesso revocato
+    // durante la pausa (raro ma possibile) produce un avviso invece di un tasto "in
+    // registrazione" che non registra piu' niente in silenzio.
+    const ripreso = await beginWatchingPosition();
+    updatePanelButtonsForStatus();
+    renderTrackingUi();
+    updateMapRecordButton();
+    if (ripreso === false) return; // messaggio d'errore gia' mostrato da beginWatchingPosition/Native
+
     startUiTimer();
     startFlushTimer();
-    updatePanelButtonsForStatus();
 
     try {
         await fetch(`/api/tracking/${trackingState.sessionId}/resume`, { method: 'POST' });
@@ -174,8 +310,10 @@ async function endTracking() {
     }
 
     trackingState.status = 'ended';
+    pulisciSpecchioLocale();
     if (window.endLiveGpsView) window.endLiveGpsView();
     updateMapRecordButton();
+    fermaPromemoriaTracciamento();
     renderSummary(finalSession);
 }
 
@@ -209,7 +347,7 @@ async function completeLinkedHike(durationSeconds) {
 // --- Geolocalizzazione ---
 
 function beginWatchingPosition() {
-    if (trackingState.watchId !== null) return;
+    if (trackingState.watchId !== null) return Promise.resolve(true);
 
     // Punto 26 - da qui in poi il GPS lo tiene acceso il tracciamento, e il puntino blu si
     // limita a consumare i fix che arrivano di qua (vedi onPositionUpdate). Senza questa
@@ -217,22 +355,233 @@ function beginWatchingPosition() {
     // momento in cui la batteria conta di piu'.
     if (window.CamoscioGeo) window.CamoscioGeo.usaFonteEsterna(true);
 
+    // Punto 94/passo 4 - dentro l'app Android navigator.geolocation si ferma a schermo
+    // spento (limite del browser, non del sito): si passa al plugin nativo, un servizio in
+    // primo piano indipendente dalla pagina. 'native' fa da segnaposto per watchId, valido
+    // quanto un id numerico sia per il controllo qui sopra sia per sapere come fermarsi in
+    // stopWatchingPosition() - non serve un secondo flag. Punto 94/passo 5 - si ritorna la
+    // promise del plugin cosi' chi chiama (startTracking) puo' sapere se e' partito
+    // davvero, invece di dare per scontato il successo come fa gia' il ramo browser sotto.
+    if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+        trackingState.watchId = 'native';
+        // Rete di sicurezza (19/08, terza prova dal vivo): un'eccezione imprevista uscita da
+        // beginWatchingPositionNative() lasciava watchId='native' per sempre (scritto qui
+        // sopra, mai riportato a null perche' la funzione non arrivava alle sue righe di
+        // pulizia) - il tasto restava bloccato su "in tracciamento" con un riepilogo finale a
+        // zero, un vero tracciamento mai iniziato. Qualunque causa futura, non solo quella gia'
+        // trovata e corretta oggi, deve comunque riportare lo stato a "non sto tracciando".
+        return beginWatchingPositionNative().catch((e) => {
+            console.error("Errore imprevisto avviando il GPS nativo:", e);
+            window.showToast("Impossibile avviare il GPS in background. Riprova.", "error");
+            trackingState.watchId = null;
+            if (window.CamoscioGeo) window.CamoscioGeo.usaFonteEsterna(false);
+            return false;
+        });
+    }
+
     trackingState.watchId = navigator.geolocation.watchPosition(onPositionUpdate, onPositionError, {
         enableHighAccuracy: true,
         maximumAge: 5000,
         timeout: 20000
     });
+    return Promise.resolve(true);
 }
 
 function stopWatchingPosition() {
     if (trackingState.watchId !== null) {
-        navigator.geolocation.clearWatch(trackingState.watchId);
+        if (trackingState.watchId === 'native') {
+            stopWatchingPositionNative();
+        } else {
+            navigator.geolocation.clearWatch(trackingState.watchId);
+        }
         trackingState.watchId = null;
     }
     // L'altra meta' della transizione: il puntino torna a procurarsi i fix da solo. Va fatto
     // SEMPRE, anche se il watch era gia' chiuso, altrimenti una pausa seguita da uno stop
     // lascerebbe il puntino in attesa di fix da una fonte che non c'e' piu'.
     if (window.CamoscioGeo) window.CamoscioGeo.usaFonteEsterna(false);
+}
+
+function nativeGeoPlugin() {
+    return (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.BackgroundGeolocation) || null;
+}
+
+// Punto 94/passo 4 - @capgo/background-geolocation e' un servizio globale unico (nessun id
+// per fermarlo, a differenza di watchPosition/clearWatch del browser). android.useLegacyBridge
+// in capacitor.config.json tiene vivo il canale nativo->JS anche oltre i ~5 minuti in
+// background in cui si bloccherebbe di default (vedi 03-Decisioni-Architetturali.md nel
+// vault): il suo callback richiama onPositionUpdate esattamente come fa oggi watchPosition
+// del browser, quindi coda IndexedDB/flushPendingPoints/formato a tupla restano identici,
+// zero duplicazione della logica di tracciamento.
+//
+// Punto 94/passo 5 - il permesso "sempre" (ACCESS_BACKGROUND_LOCATION) non serve (verificato
+// al passo 3 nel sorgente del plugin, e di nuovo qui nel suo AndroidManifest.xml: non lo
+// dichiara) - Android offrira' solo "durante l'uso"/nega, mai "sempre", e basta "durante
+// l'uso" perche' il servizio in primo piano tiene il GPS acceso a schermo spento. La
+// spiegazione sotto compare quindi una volta sola (solo se il permesso non e' gia' concesso),
+// PRIMA del popup di sistema - un solo bottone "ho capito", non un blocco si'/no: la scelta
+// vera resta al popup Android, questo e' solo onestà preventiva (vincolo hard 7).
+//
+// CORREZIONE (19/08, dopo una prova dal vivo con Denis seguita in diretta con adb logcat):
+// start() e' un metodo Capacitor "a callback continuo" (RETURN_CALLBACK lato plugin) - la sua
+// Promise si risolve in 1-2ms, ben PRIMA che il popup di sistema sia anche solo apparso.
+// Confermato nel log: "Sending plugin error" per un permesso negato arriva 300-400ms DOPO che
+// "await plugin.start()" si era gia' risolto con successo. Un permesso negato quindi NON fa
+// mai rigettare quella await (il vecchio try/catch qui sotto non lo intercettava mai): arriva
+// sempre come "error" nel PRIMO richiamo del callback stesso, insieme a {message, code} -
+// stessa forma gia' prevista, solo agganciata nel posto sbagliato. Bisogna aspettare quel
+// primo evento, non la Promise di start(), per sapere se e' andata bene davvero - altrimenti
+// (bug trovato da Denis provando dal vivo) il messaggio di successo e il controllo notifiche
+// partivano sempre, anche negando, e il permesso negato non produceva mai un avviso visibile.
+async function beginWatchingPositionNative() {
+    const plugin = nativeGeoPlugin();
+    if (!plugin) {
+        console.error("Plugin BackgroundGeolocation non trovato in app nativa.");
+        window.showToast("GPS in background non disponibile su questo dispositivo.", "error");
+        trackingState.watchId = null;
+        if (window.CamoscioGeo) window.CamoscioGeo.usaFonteEsterna(false);
+        return false;
+    }
+
+    try {
+        const statoIniziale = await plugin.checkPermissions();
+        if (statoIniziale.location !== 'granted') {
+            await showGenericModal(
+                "Per continuare a registrare il percorso anche a schermo spento, Camoscio sta per chiedere ad Android il permesso di posizione. Va bene qualunque opzione proponga Android, anche 'solo durante l'uso': il tracciamento resta attivo a schermo spento grazie al servizio con notifica permanente. Se subito dopo chiede anche il permesso di notifiche, puoi consentirlo o no: il tracciamento parte comunque.",
+                { confirmLabel: "Ho capito, continua", showCancel: false }
+            );
+        }
+    } catch (e) {
+        console.error("Errore controllo permessi GPS nativo:", e);
+    }
+
+    // Punto 94/passo 6 - SEMPRE fermare prima di far ripartire, incondizionatamente. Il
+    // plugin rifiuta un secondo start() mentre un servizio precedente risulta ancora in
+    // piedi (errore "ALREADY_STARTED", verificato nel sorgente Java del plugin) - capita
+    // non solo riavviando a mano, ma OGNI volta che la pagina si ricarica da sola mentre il
+    // tracciamento e' attivo: Android puo' scaricare il contenuto del WebView per liberare
+    // memoria a schermo spento senza uccidere ne' l'app ne' il servizio GPS gia' avviato
+    // (trovato il 19/08/2026 con una camminata vera in produzione, log di sistema alla
+    // mano - vedi 07-Trappole-Tecniche nel vault). stop() risolve subito quando non c'e'
+    // nulla da fermare (verificato nello stesso sorgente), quindi qui non costa
+    // praticamente nulla nel caso normale e risolve quello raro - un solo percorso per
+    // avvio, ripresa dopo pausa e recupero dopo ricaricamento, invece di un ramo a parte
+    // per il caso che non si riesce a provare a comando.
+    await stopWatchingPositionNative();
+
+    let primoEventoGestito = false;
+    const esitoPrimoEvento = new Promise((resolve) => {
+        // CORREZIONE (19/08, seconda prova dal vivo): la definizione TypeScript del plugin
+        // dichiara "start(): Promise<void>", ma a runtime il valore restituito NON e' una
+        // vera Promise con .catch - verificato dal vivo (TypeError: plugin.start(...).catch
+        // is not a function, propagato fino al messaggio generico di startTracking perche'
+        // nessun try/catch lo intercettava). Il valore di ritorno non serve comunque: l'esito
+        // vero arriva SEMPRE dal callback, mai da li' - un try/catch sincrono qui basta solo
+        // come difesa contro un'eccezione immediata nella chiamata stessa.
+        try {
+            plugin.start({
+                backgroundTitle: 'Camoscio',
+                backgroundMessage: "Registrazione GPS dell'escursione in corso",
+                requestPermissions: true,
+                stale: false,
+                distanceFilter: 0
+            }, (location, error) => {
+                // stop() e' asincrono: un fix puo' arrivare mentre e' gia' partito ma non
+                // ancora concluso. trackingState.watchId torna null in stopWatchingPosition()
+                // PRIMA di chiamarlo, quindi questo controllo scarta un fix in ritardo
+                // esattamente come clearWatch() lo scarterebbe per il ramo browser.
+                if (trackingState.watchId !== 'native') return;
+                if (!primoEventoGestito) {
+                    primoEventoGestito = true;
+                    // Il primo errore lo gestisce il blocco sotto con un messaggio specifico -
+                    // qui si esce senza passare da onPositionError, altrimenti sarebbe doppio.
+                    resolve(error ? { ok: false, error } : { ok: true });
+                    if (error) return;
+                }
+                if (error) {
+                    onPositionError(error);
+                    return;
+                }
+                if (location) onPositionUpdate(wrapNativeLocation(location));
+            });
+        } catch (e) {
+            if (!primoEventoGestito) {
+                primoEventoGestito = true;
+                resolve({ ok: false, error: e });
+            }
+        }
+    });
+
+    const esito = await esitoPrimoEvento;
+    if (!esito.ok) {
+        // "Location services disabled." e permesso negato condividono lo stesso e.code
+        // ("NOT_AUTHORIZED") nel plugin - solo il testo del messaggio li distingue (verificato
+        // nel sorgente). Fragile a un cambio di wording del plugin: in quel caso resta il
+        // messaggio generico sotto, mai l'inglese del plugin a schermo.
+        const e = esito.error || {};
+        console.error("Errore avvio GPS nativo in background:", e);
+        const msg = e.message || '';
+        if (msg.indexOf('Location services disabled') !== -1) {
+            window.showToast("Il GPS del telefono è spento. Accendilo dalle impostazioni rapide di Android e riprova.", "error");
+        } else if (e.code === 'NOT_AUTHORIZED') {
+            window.showToast("Camoscio non può tracciare senza il permesso di posizione. Riprova: te lo richiederà di nuovo.", "error");
+        } else if (e.code === 'FOREGROUND_SERVICE_START_NOT_ALLOWED') {
+            // Punto 94/passo 6 - Android 12+ rifiuta di (ri)avviare un servizio in primo
+            // piano se l'app e' in secondo piano in quel momento: puo' succedere proprio
+            // riagganciando dopo un ricaricamento avvenuto a schermo spento. Messaggio
+            // diverso apposta dagli altri: qui la soluzione e' riaprire l'app, non
+            // riaccendere il GPS o dare di nuovo il permesso.
+            window.showToast("Android ha bloccato la ripresa del GPS perché l'app era in secondo piano. Apri Camoscio e riprova.", "error");
+        } else {
+            window.showToast("Impossibile avviare il GPS in background. Riprova.", "error");
+        }
+        trackingState.watchId = null;
+        if (window.CamoscioGeo) window.CamoscioGeo.usaFonteEsterna(false);
+        return false;
+    }
+
+    // Il permesso di notifiche non blocca l'avvio (verificato nel sorgente del plugin: la
+    // promozione a servizio in primo piano ignora ogni eccezione li'), quindi un problema qui
+    // non deve mai far sembrare fallito un tracciamento gia' partito bene sopra - solo un
+    // avviso, mai trackingState toccato. Ora parte solo DOPO il primo fix vero, non piu' 1ms
+    // dopo start() come prima della correzione.
+    try {
+        const statoFinale = await plugin.checkPermissions();
+        if (statoFinale.notification && statoFinale.notification !== 'granted') {
+            // "Hai negato" (invece di "risulta negato") confondeva Denis provando dal vivo:
+            // suonava come un'azione appena fatta, ma Android chiede il permesso una volta
+            // sola - qui si legge quasi sempre uno stato deciso prima (spesso ai passi
+            // precedenti), non una scelta di questo istante.
+            window.showToast("Le notifiche risultano disattivate per Camoscio: il tracciamento funziona lo stesso, ma non vedrai la notifica permanente di Android che lo segnala. Per attivarle: Impostazioni → App → Camoscio → Notifiche.", "info");
+        }
+    } catch (e) {
+        console.error("Errore controllo permesso notifiche dopo l'avvio:", e);
+    }
+    return true;
+}
+
+async function stopWatchingPositionNative() {
+    const plugin = nativeGeoPlugin();
+    if (!plugin) return;
+    try {
+        await plugin.stop();
+    } catch (e) {
+        console.error("Errore fermando il GPS nativo in background:", e);
+    }
+}
+
+// Il plugin da' un oggetto piatto (latitude/altitude/accuracy...) mentre onPositionUpdate si
+// aspetta la forma di GeolocationPosition del browser (pos.coords.*): solo un adattamento di
+// forma, nessuna logica duplicata.
+function wrapNativeLocation(location) {
+    return {
+        coords: {
+            latitude: location.latitude,
+            longitude: location.longitude,
+            altitude: location.altitude,
+            accuracy: location.accuracy
+        }
+    };
 }
 
 async function onPositionUpdate(pos) {
@@ -339,7 +688,11 @@ function quickSnapToNearbyTrail(lng, lat, accuracyM) {
 
 function onPositionError(err) {
     console.warn("Errore geolocalizzazione:", err.message);
-    if (err.code === err.PERMISSION_DENIED) {
+    // Punto 94/passo 5 - err.PERMISSION_DENIED e' una costante del browser (GeolocationPositionError),
+    // sempre undefined per un errore del plugin nativo: senza il secondo confronto, un permesso
+    // revocato a meta' sessione (raro: il primo fix era andato a buon fine) passava in silenzio,
+    // zero avviso a schermo.
+    if (err.code === err.PERMISSION_DENIED || err.code === 'NOT_AUTHORIZED') {
         window.showToast("Permesso di geolocalizzazione negato: il tracciamento non può registrare la posizione reale.", "error");
         renderGpsQuality(true);
     }
@@ -416,6 +769,21 @@ async function flushPendingPoints() {
             await idbDeleteQueuedPoints(records.map(r => r.localId));
             setSyncBadge('synced');
             renderTrackingStats();
+        } else if (res.status === 404 || res.status === 409) {
+            // Punto 94/passo 6 - la sessione non esiste piu' per noi (404: utente/sessione
+            // diversi, es. stantia da un ripristino alla cieca; 409: gia' terminata,
+            // probabilmente da un altro dispositivo). Riprovare all'infinito non serve: i
+            // punti ancora in coda non hanno piu' una sessione viva a cui appartenere.
+            // Si ferma tutto e si dice, invece di continuare a mostrare "in registrazione"
+            // su qualcosa che sul server non esiste piu'.
+            console.error(`Sessione di tracciamento non piu' valida (HTTP ${res.status}): fermo la registrazione su questo telefono.`);
+            stopWatchingPosition();
+            stopUiTimer();
+            stopFlushTimer();
+            fermaPromemoriaTracciamento();
+            setSyncBadge('offline');
+            resetToIdleUi();
+            window.showToast("Il tracciamento risulta chiuso sul server (forse da un altro dispositivo): la registrazione su questo telefono si è fermata qui.", "error");
         } else {
             setSyncBadge('offline');
         }
@@ -498,10 +866,19 @@ function renderTrackingStats() {
     setText('tracking-mini-distance', distText);
 }
 
-function renderGpsQuality(denied = false) {
+function renderGpsQuality(denied = false, interrotto = false) {
     const badge = document.getElementById('tracking-gps-quality');
     if (!badge) return;
 
+    // Punto 94/passo 6 - "interrotto" e' diverso da "in attesa del segnale": il server (o
+    // lo specchio locale) dice che la registrazione dovrebbe essere attiva, ma il GPS
+    // nativo non e' agganciato - senza questo badge il tasto direbbe "Termina
+    // registrazione" mentre in realta' non registra piu' nulla, in silenzio.
+    if (interrotto) {
+        badge.textContent = 'GPS: registrazione interrotta — tocca per riprovare';
+        badge.className = 'badge badge-red';
+        return;
+    }
     if (denied) {
         badge.textContent = 'GPS: permesso negato';
         badge.className = 'badge badge-red';
@@ -644,7 +1021,7 @@ function renderTrackingUi() {
         miniBar.classList.remove('hidden');
         updatePanelButtonsForStatus();
         renderTrackingStats();
-        renderGpsQuality();
+        renderGpsQuality(false, trackingState.status === 'active' && trackingState.watchId === null);
     } else if (trackingState.status === 'idle') {
         active.classList.add('hidden');
         summary.classList.add('hidden');
@@ -697,6 +1074,7 @@ function hidePanel() {
 function resetToIdleUi() {
     trackingState.status = 'idle';
     trackingState.sessionId = null;
+    pulisciSpecchioLocale();
     trackingState.hikeId = null;
     trackingState.distanceKm = 0;
     trackingState.elevationGainM = 0;
@@ -768,43 +1146,165 @@ async function handleDownloadOfflineMap() {
 
 // --- Ripresa dopo un ricaricamento della pagina ---
 
+// Sotto questa soglia si dice solo "ripreso", sopra si dice per quanti minuti manca un
+// pezzo di traccia - proposta dell'agente architect, valore scelto per non trasformare
+// ogni micro-ricaricamento in un allarme ne' tacere su un buco vero.
+const SOGLIA_AVVISO_BUCO_SEC = 90;
+
 async function checkForResumableSession() {
+    let res;
     try {
-        const res = await fetch('/api/tracking/active');
-        if (!res.ok) return;
-        const session = await res.json();
-        if (!session) return;
+        res = await fetch('/api/tracking/active');
+    } catch (e) {
+        // Punto 94/passo 6 - niente rete proprio ora (frequente in montagna): non e' detto
+        // che non ci fosse una registrazione in corso, solo che non possiamo chiederlo al
+        // server. Si prova a riprendere dallo specchio locale invece di arrendersi.
+        console.error("Impossibile verificare un tracciamento GPS in corso (offline):", e);
+        await ripristinoAllaCieca();
+        return;
+    }
+    if (!res.ok) {
+        await ripristinoAllaCieca();
+        return;
+    }
 
-        applySessionState(session);
+    let session;
+    try {
+        session = await res.json();
+    } catch (e) {
+        console.error("Risposta non valida controllando un tracciamento in corso:", e);
+        return;
+    }
 
-        if (window.resetLiveTrackPolyline) window.resetLiveTrackPolyline();
-        (session.points || []).forEach(p => {
-            if (window.addLiveTrackPoint) window.addLiveTrackPoint(p[1], p[0]);
-        });
-        if (session.points && session.points.length > 0 && window.updateLiveGpsPosition) {
-            const last = session.points[session.points.length - 1];
-            window.updateLiveGpsPosition(last[1], last[0], true);
-        }
+    if (!session) {
+        // Il server e' stato chiaro: nessuna sessione aperta. Se lo specchio locale diceva
+        // il contrario (es. terminata nel frattempo da un altro dispositivo) e' superato.
+        pulisciSpecchioLocale();
+        return;
+    }
 
-        if (session.status === 'active') {
-            // Anche riprendendo dopo un ricaricamento della pagina la mappa deve tornare
-            // a inseguire la posizione reale (punto 11), non restare sulla panoramica.
-            if (window.beginLiveGpsView) {
-                const last = (session.points || [])[(session.points || []).length - 1];
-                if (last) window.beginLiveGpsView(last[1], last[0]);
-                else window.beginLiveGpsView();
-            }
-            beginWatchingPosition();
-            startUiTimer();
-            startFlushTimer();
-        }
+    applySessionState(session);
 
+    if (window.resetLiveTrackPolyline) window.resetLiveTrackPolyline();
+    (session.points || []).forEach(p => {
+        if (window.addLiveTrackPoint) window.addLiveTrackPoint(p[1], p[0]);
+    });
+    if (session.points && session.points.length > 0 && window.updateLiveGpsPosition) {
+        const last = session.points[session.points.length - 1];
+        window.updateLiveGpsPosition(last[1], last[0], true);
+    }
+
+    if (session.status !== 'active') {
         renderTrackingUi();
         updateMapRecordButton();
-        window.showToast("Tracciamento GPS ripreso da dove eri rimasto.", "info");
-    } catch (e) {
-        console.error("Impossibile verificare un tracciamento GPS in corso:", e);
+        return;
     }
+
+    // Anche riprendendo dopo un ricaricamento della pagina la mappa deve tornare a
+    // inseguire la posizione reale (punto 11), non restare sulla panoramica.
+    if (window.beginLiveGpsView) {
+        const last = (session.points || [])[(session.points || []).length - 1];
+        if (last) window.beginLiveGpsView(last[1], last[0]);
+        else window.beginLiveGpsView();
+    }
+
+    // Punto 94/passo 6 - si aspetta l'esito vero (prima non si aspettava affatto): il
+    // server conferma la sessione aperta, ma il GPS nativo potrebbe comunque non
+    // riagganciarsi (es. Android rifiuta di riavviare il servizio da app in background).
+    // Senza questo await/controllo il tasto tornava a dire "Termina registrazione" anche
+    // quando in realta' non stava piu' registrando nulla - lo stesso buco di stanotte, in
+    // una forma piu' subdola perche' il server risponde comunque.
+    const ripreso = await beginWatchingPosition();
+    renderTrackingUi();
+    updateMapRecordButton();
+    if (ripreso === false) return; // messaggio d'errore gia' mostrato da beginWatchingPosition/Native
+
+    startUiTimer();
+    startFlushTimer();
+    avviaPromemoriaTracciamento();
+
+    const puntiSessione = session.points || [];
+    const ultimoPunto = puntiSessione[puntiSessione.length - 1];
+    const gapSec = ultimoPunto
+        ? (Date.now() - (trackingState.startedAtMs + ultimoPunto[3] * 1000)) / 1000
+        : null;
+
+    if (gapSec !== null && gapSec > SOGLIA_AVVISO_BUCO_SEC) {
+        const minuti = Math.max(1, Math.round(gapSec / 60));
+        window.showToast(
+            `Tracciamento ripreso. Per circa ${minuti} minut${minuti === 1 ? 'o' : 'i'} il percorso non è stato registrato: quel tratto mancherà dalla traccia.`,
+            "info"
+        );
+    } else {
+        window.showToast("Tracciamento GPS ripreso da dove eri rimasto.", "info");
+    }
+}
+
+// Punto 94/passo 6 - checkForResumableSession() non e' riuscito nemmeno a chiedere al
+// server (vedi sopra): l'unica fonte rimasta e' lo specchio locale. Il GPS nativo non ha
+// mai avuto bisogno di rete per raccogliere fix, quindi si riparte "alla cieca" - i punti
+// si accodano in IndexedDB come sempre con lo stesso sessionId, e la spedizione al server
+// (flushPendingPoints, gia' esistente, gia' chiamata dal timer e dall'evento 'online') si
+// mette in pari da sola quando torna il segnale. La sola cosa che qui non si puo' fare
+// onestamente e' calcolare un buco preciso: senza aver parlato col server non si sa cosa
+// sia successo nel frattempo, quindi si dice solo che il recupero non e' confermato, mai
+// un numero inventato (vincolo hard: mai promettere a schermo cio' che non si puo' mantenere).
+async function ripristinoAllaCieca() {
+    const specchio = leggiSpecchioLocale();
+    if (!specchio || !specchio.sessionId || specchio.status === 'idle' || specchio.status === 'ended') return;
+
+    trackingState.sessionId = specchio.sessionId;
+    trackingState.hikeId = specchio.hikeId || null;
+    trackingState.startedAtMs = specchio.startedAtMs;
+    trackingState.status = specchio.status;
+    // Stima onesta ma imprecisa (non conosce eventuali pause passate): meglio di un
+    // cronometro che riparte da zero come se la registrazione fosse appena cominciata. Si
+    // corregge da sola al primo invio riuscito (flushPendingPoints riallinea sempre ai
+    // totali autorevoli del server).
+    trackingState.baselineSeconds = specchio.startedAtMs
+        ? Math.max(0, Math.round((Date.now() - specchio.startedAtMs) / 1000))
+        : 0;
+    trackingState.activeResumedAtMs = specchio.status === 'active' ? Date.now() : null;
+    resetLocalStats();
+    nearbyTrailSegments = null;
+
+    if (specchio.status !== 'active') {
+        // Sessione salvata in pausa: si ridisegna cosi', ma non si riaccende il GPS da
+        // soli - una ripresa resta una scelta dell'utente, esattamente come oggi da rete.
+        renderTrackingUi();
+        updateMapRecordButton();
+        return;
+    }
+
+    if (window.beginLiveGpsView) window.beginLiveGpsView();
+
+    const ripreso = await beginWatchingPosition();
+    renderTrackingUi();
+    updateMapRecordButton();
+    if (!ripreso) return; // messaggio d'errore gia' mostrato da beginWatchingPosition/Native
+
+    startUiTimer();
+    startFlushTimer();
+    avviaPromemoriaTracciamento();
+    window.showToast(
+        "Tracciamento ripreso senza conferma dal server (nessuna rete in questo momento): continuo a registrare, si mette in pari da solo quando torna la connessione.",
+        "info"
+    );
+}
+
+// Punto 94/passo 6 - stesso riaggancio usato dopo un ricaricamento, richiamabile a mano
+// toccando il badge "registrazione interrotta" (vedi renderGpsQuality) o da soli al
+// ritorno della rete (vedi l'evento 'online' in initTrackingModule).
+async function riprovaRiaggancioGps() {
+    if (!window.CamoscioTrackingIsRecording() || trackingState.watchId !== null) return;
+    const ripreso = await beginWatchingPosition();
+    if (ripreso) {
+        startUiTimer();
+        startFlushTimer();
+        window.showToast("Tracciamento GPS ripreso.", "success");
+    }
+    renderTrackingUi();
+    updateMapRecordButton();
 }
 
 // --- Inizializzazione modulo ---
@@ -840,8 +1340,16 @@ function initTrackingModule() {
     });
     updateMapRecordButton();
 
+    // Punto 94/passo 6 - il badge diventa un tasto quando dice "registrazione interrotta"
+    // (vedi renderGpsQuality/riprovaRiaggancioGps); negli altri stati il tocco non fa
+    // nulla di pericoloso, la guardia e' dentro riprovaRiaggancioGps stesso.
+    const gpsQualityBadge = document.getElementById('tracking-gps-quality');
+    if (gpsQualityBadge) gpsQualityBadge.addEventListener('click', riprovaRiaggancioGps);
+
     window.addEventListener('online', () => {
-        if (trackingState.sessionId && trackingState.status === 'active') flushPendingPoints();
+        if (!trackingState.sessionId || trackingState.status !== 'active') return;
+        flushPendingPoints();
+        if (trackingState.watchId === null) riprovaRiaggancioGps();
     });
 
     checkForResumableSession();
