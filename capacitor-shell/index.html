@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Camoscio - prova GPS passo 3</title>
+<style>
+  body { font-family: sans-serif; margin: 16px; background: #111; color: #eee; }
+  h1 { font-size: 18px; }
+  p.avviso { color: #f0a; font-size: 13px; }
+  button { font-size: 16px; padding: 10px 16px; margin: 4px 4px 4px 0; }
+  #stato { white-space: pre-wrap; background: #222; padding: 8px; border-radius: 6px; font-size: 13px; }
+  #contatore { font-size: 28px; font-weight: bold; }
+  #log { list-style: none; padding: 0; font-size: 12px; }
+  #log li { border-bottom: 1px solid #333; padding: 4px 0; }
+</style>
+</head>
+<body>
+
+<p class="avviso">QUESTO FILE NON E' IL SITO VERO. Serve solo per la prova isolata del passo 3
+del punto 94 (plugin @capgo/background-geolocation, non ancora collegato a tracking.js).
+Viene mostrato solo perche' capacitor.config.json punta qui invece che a server.url,
+temporaneamente, per questa prova.</p>
+
+<h1>Prova GPS in background</h1>
+
+<div id="stato">in attesa...</div>
+
+<p>
+  <button id="btn-permessi">Controlla permessi</button>
+  <button id="btn-avvia">Avvia GPS di prova</button>
+  <button id="btn-ferma">Ferma</button>
+  <button id="btn-svuota">Svuota registro</button>
+</p>
+
+<p>Fix ricevuti: <span id="contatore">0</span></p>
+<ul id="log"></ul>
+
+<script>
+const CHIAVE_LOG = 'camoscio_prova94_log';
+const elStato = document.getElementById('stato');
+const elContatore = document.getElementById('contatore');
+const elLog = document.getElementById('log');
+
+function scrivi(msg) {
+  const riga = new Date().toLocaleTimeString('it-IT') + ' - ' + msg;
+  console.log('[prova94]', riga);
+  elStato.textContent = riga + '\n' + elStato.textContent;
+}
+
+function caricaRegistro() {
+  try {
+    return JSON.parse(localStorage.getItem(CHIAVE_LOG) || '[]');
+  } catch (e) {
+    return [];
+  }
+}
+
+function salvaFix(fix) {
+  const registro = caricaRegistro();
+  registro.push(fix);
+  localStorage.setItem(CHIAVE_LOG, JSON.stringify(registro));
+  disegnaRegistro(registro);
+}
+
+function disegnaRegistro(registro) {
+  elContatore.textContent = registro.length;
+  elLog.innerHTML = registro.slice().reverse().map(f =>
+    '<li>' + f.ora + ' - lat ' + f.latitude.toFixed(5) + ', lng ' + f.longitude.toFixed(5) +
+    ', precisione ' + Math.round(f.accuracy) + 'm</li>'
+  ).join('');
+}
+
+disegnaRegistro(caricaRegistro());
+
+function plugin() {
+  if (!window.Capacitor || !window.Capacitor.Plugins || !window.Capacitor.Plugins.BackgroundGeolocation) {
+    scrivi('ERRORE: window.Capacitor.Plugins.BackgroundGeolocation non trovato - plugin non registrato o non in app nativa');
+    return null;
+  }
+  return window.Capacitor.Plugins.BackgroundGeolocation;
+}
+
+window.addEventListener('DOMContentLoaded', async () => {
+  scrivi('pagina di prova caricata. nativa=' + (window.Capacitor ? window.Capacitor.isNativePlatform() : 'Capacitor assente'));
+  const bg = plugin();
+  if (bg) {
+    try {
+      const v = await bg.getPluginVersion();
+      scrivi('plugin versione ' + v.version);
+    } catch (e) {
+      scrivi('errore leggendo versione plugin: ' + e.message);
+    }
+  }
+});
+
+document.getElementById('btn-permessi').addEventListener('click', async () => {
+  const bg = plugin();
+  if (!bg) return;
+  try {
+    const stato = await bg.checkPermissions();
+    scrivi('permessi: location=' + stato.location + ', notification=' + stato.notification + ', backgroundLocation=' + stato.backgroundLocation);
+  } catch (e) {
+    scrivi('errore controllo permessi: ' + e.message);
+  }
+});
+
+document.getElementById('btn-avvia').addEventListener('click', async () => {
+  const bg = plugin();
+  if (!bg) return;
+  try {
+    await bg.start({
+      backgroundTitle: 'Camoscio - prova tracciamento',
+      backgroundMessage: 'Prova passo 3: registrazione posizione anche a schermo spento',
+      requestPermissions: true,
+      stale: false,
+      distanceFilter: 0
+    }, (posizione, errore) => {
+      if (errore) {
+        scrivi('ERRORE fix: ' + errore.message + (errore.code ? ' (' + errore.code + ')' : ''));
+        return;
+      }
+      if (posizione) {
+        const fix = {
+          ora: new Date().toLocaleTimeString('it-IT'),
+          latitude: posizione.latitude,
+          longitude: posizione.longitude,
+          accuracy: posizione.accuracy
+        };
+        scrivi('fix: ' + fix.latitude.toFixed(5) + ',' + fix.longitude.toFixed(5) + ' (+/-' + Math.round(fix.accuracy) + 'm)');
+        salvaFix(fix);
+      }
+    });
+    scrivi('avviato, in attesa di fix...');
+  } catch (e) {
+    scrivi('errore avvio: ' + e.message);
+  }
+});
+
+document.getElementById('btn-ferma').addEventListener('click', async () => {
+  const bg = plugin();
+  if (!bg) return;
+  try {
+    await bg.stop();
+    scrivi('fermato');
+  } catch (e) {
+    scrivi('errore stop: ' + e.message);
+  }
+});
+
+document.getElementById('btn-svuota').addEventListener('click', () => {
+  localStorage.removeItem(CHIAVE_LOG);
+  disegnaRegistro([]);
+  scrivi('registro svuotato');
+});
+</script>
+
+</body>
+</html>

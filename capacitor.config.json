@@ -1,0 +1,11 @@
+{
+  "appId": "com.camoscio.app",
+  "appName": "Camoscio",
+  "webDir": "capacitor-shell",
+  "server": {
+    "url": "https://camoscio.onrender.com"
+  },
+  "android": {
+    "useLegacyBridge": true
+  }
+}
