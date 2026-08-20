@@ -9,10 +9,10 @@ la prova lunga di domani 21/08 (vedi sotto nel dettaglio del punto
 telefono) chiusi e PUSHATI (f802fed): keystore generato con password
 casuale vera - password unica perche' il formato PKCS12 moderno non
 separa keystore e chiave nonostante ne fossero state generate due,
-dettaglio in 03-Decisioni-Architetturali.md. Password data a Denis
-in chat per salvarla in una nota Bitwarden, NON ANCORA CONFERMATO
-che l'abbia fatto - controllare/ricordarglielo alla prossima
-sessione se non se n'e' parlato. Build di release firmata verificata
+dettaglio in 03-Decisioni-Architetturali.md. Password salvata da
+Denis in una nota sicura su Bitwarden (CONFERMATO, stessa sera),
+con "richiedi password per visualizzare" attivata di sua iniziativa
+come protezione in piu'. Build di release firmata verificata
 in locale con apksigner (firma v2 valida) ma MAI ANCORA installata
 sul telefono vero. RIPARTIRE DA: la prova lunga del passo 6 (domani),
 poi il sideload dell'apk sul telefono per chiudere il punto 94 per
@@ -236,8 +236,9 @@ o ne arriva uno nuovo.
     firma v2 valida col certificato giusto (stesso fingerprint SHA-256
     del keystore). La password e' stata data a Denis in chat (mai
     scritta su un file del repo o del vault) per salvarla in una nota
-    Bitwarden - NON ANCORA CONFERMATO che l'abbia fatto, chiedere alla
-    prossima occasione se non se n'e' gia' parlato. Il file del
+    Bitwarden come nota sicura - CONFERMATO salvata (stessa sera),
+    con "richiedi password per visualizzare" attivata da Denis di
+    sua iniziativa come protezione in piu'. Il file del
     keystore vive per ora dentro android/ (fuori da git, ma dentro la
     cartella sincronizzata da OneDrive - quindi gia' con una copia
     cloud incidentale, diversa dalle cache di build che sono junction
