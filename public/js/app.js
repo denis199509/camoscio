@@ -133,6 +133,49 @@ window.showAlertModal = function(message, confirmLabel = "Ho capito") {
     return showGenericModal(message, { showInput: false, showCancel: false, confirmLabel });
 };
 
+// Ingrandimento immagine badge (chiesto da Denis il 20/08/2026, non in cose_da_fare.txt):
+// dopo aver personalizzato le icone dei badge voleva che i dettagli si vedessero bene, non
+// solo nel cerchio piccolo ritagliato (object-fit:cover) della scheda.
+// Delegazione su document invece di un ascoltatore per scheda: le .page-section restano
+// tutte nel DOM insieme (vedi 07-Trappole-Tecniche.md del vault), quindi un solo
+// ascoltatore copre badge propri (Badge), badge di un altro utente (profilo) e il badge
+// personale (Dashboard/profilo) senza dover toccare badges.js/userprofile.js.
+window.openImageLightbox = function(src, alt, grayscale) {
+    const modal = document.getElementById("image-lightbox");
+    const img = document.getElementById("image-lightbox-img");
+    if (!modal || !img || !src) return;
+    img.src = src;
+    img.alt = alt || "";
+    // Un badge non ancora conquistato resta grigio anche ingrandito - stesso motivo del
+    // grayscale piccolo sulla scheda, non ha senso svelarlo a colori prima di averlo preso.
+    img.classList.toggle("image-lightbox-grayscale", !!grayscale);
+    modal.classList.remove("hidden");
+};
+
+window.closeImageLightbox = function() {
+    const modal = document.getElementById("image-lightbox");
+    if (!modal) return;
+    modal.classList.add("hidden");
+    // Svuotato alla chiusura: non tiene in memoria un'immagine grande per una finestra chiusa.
+    const img = document.getElementById("image-lightbox-img");
+    if (img) img.src = "";
+};
+
+document.addEventListener("click", (e) => {
+    const img = e.target.closest(".badge-card-icon-img, .personal-badge-illustration");
+    if (!img) return;
+    // .badge-card-icon-img vive dentro una .badge-card che ha "unlocked" solo se conquistata
+    // (badges.js, schedaBadge); .personal-badge-illustration non ha questo concetto (i badge
+    // personali sono sempre a colori, assegnati a mano) - card resta null e bloccato resta false.
+    const card = img.closest(".badge-card");
+    const bloccato = !!(card && !card.classList.contains("unlocked"));
+    window.openImageLightbox(img.src, img.alt, bloccato);
+});
+
+document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") window.closeImageLightbox();
+});
+
 // Main routing and initialization
 document.addEventListener("DOMContentLoaded", async () => {
     // Verifica se c'e' gia' una sessione valida (login o demo-login): se no, mostra

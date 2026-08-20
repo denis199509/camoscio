@@ -4985,3 +4985,38 @@ schermo spento ancora."
    con tutte le coppie gia' consumate, e una coppia finta non ancora
    recensita (mai scritta sul database, solo in memoria) confermata
    visibile nel menu. Nessun errore in console.
+
+=====================================================================
+
+99. [20/08/2026, sera] Denis, parole sue: "possiamo fare che cliccando
+   sul badge magari con una finestra pop up si apre l'immagine piu
+   grande per visualizzare bene l'imagine del badge? tipo il badge
+   mio Monte Gorzano, cliccando sul icona voglio vedere l'icona del
+   badge piu grande per vedere bene l'imagine. mi sono impegnato per
+   cambiare le icone, mi sembrano bellissime, voglio che pure gli
+   altri riescano a vederle bene."
+
+   FATTO E VERIFICATO STESSA SERA. Nuovo modale "image-lightbox"
+   (index.html, vicino a generic-modal - raggiungibile da piu' pagine:
+   Badge, profilo di un altro utente, Dashboard, stessa regola dei
+   modali condivisi gia' seguita per create-hike-modal/complete-group-
+   modal). Aperto con un solo ascoltatore delegato su document
+   (app.js) invece di uno per scheda - le .page-section restano tutte
+   nel DOM insieme, un solo ascoltatore copre badge propri, badge di
+   un altro utente e il badge personale senza dover toccare
+   badges.js/userprofile.js ogni volta che se ne aggiunge uno nuovo.
+   L'immagine si apre INTERA (object-fit:contain, non il ritaglio a
+   cerchio object-fit:cover della scheda piccola) - quello che Denis
+   voleva vedere davvero.
+   TROVATO PROVANDO DAL VIVO, non richiesto esplicitamente: un badge
+   non ancora conquistato (griggio in scheda, .badge-card senza la
+   classe unlocked) si apriva ingrandito A COLORI - avrebbe svelato
+   badge mai guadagnati, contro il senso stesso del grayscale sulla
+   scheda. Corretto: lo stato sbloccato/bloccato passa nel modale,
+   stesso trattamento grayscale della scheda piccola.
+   VERIFICATO dal vivo nel browser (server locale, account demo Marco
+   Alpinista): badge sbloccato (Corno Grande) si apre a colori, badge
+   bloccato (Monte Amaro) si apre in grigio, badge personale (aperto
+   sul profilo di Camilla) si apre a colori - chiusura testata con la
+   X, con un click fuori dall'immagine e col tasto Escape, tutte e tre
+   funzionanti. Nessun errore in console. PUNTO 99 CHIUSO PER INTERO.

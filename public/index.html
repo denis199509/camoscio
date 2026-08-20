@@ -2035,6 +2035,16 @@
         </div>
     </div>
 
+    <!-- Ingrandimento immagine badge: vive vicino a generic-modal perche' e' raggiungibile
+         da piu' pagine (Badge, profilo di un altro utente, Dashboard) - vedi la regola sui
+         modali condivisi in 07-Trappole-Tecniche.md del vault. -->
+    <div id="image-lightbox" class="modal hidden" onclick="if (event.target === this) closeImageLightbox()">
+        <div class="image-lightbox-content">
+            <button type="button" class="image-lightbox-close" onclick="closeImageLightbox()" aria-label="Chiudi">&times;</button>
+            <img id="image-lightbox-img" src="" alt="">
+        </div>
+    </div>
+
     <!-- Punto 8: mappa a schermo intero per scegliere un punto con un dito, invece di
          procurarsi latitudine e longitudine da soli. Vive fuori dal form (come tutte le
          finestre) per non finire dentro un contenitore che scorre.

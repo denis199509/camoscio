@@ -3929,6 +3929,60 @@ option {
     object-fit: cover;
 }
 
+/* Cliccabili per aprire l'immagine ingrandita (public/js/app.js, delegazione su document) -
+   object-fit:cover qui sopra ritaglia l'icona in un cerchio, quindi vale la pena vedere
+   l'immagine vera intera, non solo il ritaglio piccolo della scheda. */
+.badge-card-icon-img,
+.personal-badge-illustration {
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+}
+
+.badge-card-icon-img:hover,
+.personal-badge-illustration:hover {
+    opacity: 0.8;
+}
+
+.image-lightbox-content {
+    position: relative;
+    max-width: 92vw;
+    max-height: 92vh;
+    display: flex;
+}
+
+.image-lightbox-content img {
+    max-width: 92vw;
+    max-height: 92vh;
+    border-radius: 12px;
+    /* contain, non cover: qui si vuole vedere l'immagine INTERA, non un altro ritaglio */
+    object-fit: contain;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+/* Stesso trattamento grigio della scheda piccola per un badge non ancora conquistato -
+   vedi ".badge-card .badge-card-icon" più sopra in questo file. */
+.image-lightbox-grayscale {
+    filter: grayscale(1);
+}
+
+.image-lightbox-close {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.6);
+    border: none;
+    color: #fff;
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .badge-card-name {
     font-size: 0.85rem;
     font-weight: 600;
