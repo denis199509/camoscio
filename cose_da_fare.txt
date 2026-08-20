@@ -5110,3 +5110,8 @@ schermo spento ancora."
    account demo), conferma-email.html, reimposta-password.html.
    Corrette tutte e tre con la stessa immagine/stile. Verificato dal
    vivo nel browser su tutte e tre, nessun errore in console.
+
+   INSTALLATO E CONFERMATO DA DENIS SUL TELEFONO VERO (20/08/2026,
+   stessa notte) - PUNTO 100 CHIUSO PER INTERO: aggiornamento sopra
+   la versione gia' installata (stessa firma, nessun permesso richiesto
+   di nuovo). Parole di Denis: "verificato dal vivo, bellissimo."
