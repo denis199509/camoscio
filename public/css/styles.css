@@ -3931,14 +3931,17 @@ option {
 
 /* Cliccabili per aprire l'immagine ingrandita (public/js/app.js, delegazione su document) -
    object-fit:cover qui sopra ritaglia l'icona in un cerchio, quindi vale la pena vedere
-   l'immagine vera intera, non solo il ritaglio piccolo della scheda. */
+   l'immagine vera intera, non solo il ritaglio piccolo della scheda. Vale anche per
+   .stamp-icon-img, l'anteprima Passaporto in Dashboard - stessa icona, componente diverso. */
 .badge-card-icon-img,
+.stamp-icon-img,
 .personal-badge-illustration {
     cursor: pointer;
     transition: opacity 0.15s ease;
 }
 
 .badge-card-icon-img:hover,
+.stamp-icon-img:hover,
 .personal-badge-illustration:hover {
     opacity: 0.8;
 }

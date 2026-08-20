@@ -5020,3 +5020,13 @@ schermo spento ancora."
    sul profilo di Camilla) si apre a colori - chiusura testata con la
    X, con un click fuori dall'immagine e col tasto Escape, tutte e tre
    funzionanti. Nessun errore in console. PUNTO 99 CHIUSO PER INTERO.
+
+   TROVATO SUBITO DOPO, provando anche l'anteprima "Passaporto" in
+   Dashboard: quella scheda e' un componente A PARTE (renderDashboardStamps,
+   classe stamp-icon-img), non passa da schedaBadge/badge-card-icon-img
+   come la pagina Badge - il clic li' non apriva l'ingrandimento. Esteso
+   lo stesso ascoltatore anche a stamp-icon-img (e allo stato bloccato/
+   sbloccato di .stamp-slot), verificato dal vivo che ora funzioni anche
+   li' (aspettando il caricamento vero dei dati, non un tempo fisso -
+   al primo tentativo il clic e' arrivato prima che initApp() avesse
+   popolato la scheda). Nessun errore in console.

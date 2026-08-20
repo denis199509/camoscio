@@ -162,12 +162,17 @@ window.closeImageLightbox = function() {
 };
 
 document.addEventListener("click", (e) => {
-    const img = e.target.closest(".badge-card-icon-img, .personal-badge-illustration");
+    // .badge-card-icon-img (pagina Badge/profilo) e .stamp-icon-img (anteprima Passaporto
+    // in Dashboard, renderDashboardStamps in questo stesso file) sono due componenti
+    // diversi sugli stessi dati (badges.js: schedaBadge/anteprima) - stessa icona, nomi di
+    // classe diversi, quindi vanno cercati entrambi qui.
+    const img = e.target.closest(".badge-card-icon-img, .stamp-icon-img, .personal-badge-illustration");
     if (!img) return;
-    // .badge-card-icon-img vive dentro una .badge-card che ha "unlocked" solo se conquistata
-    // (badges.js, schedaBadge); .personal-badge-illustration non ha questo concetto (i badge
-    // personali sono sempre a colori, assegnati a mano) - card resta null e bloccato resta false.
-    const card = img.closest(".badge-card");
+    // "unlocked" sta su .badge-card (pagina Badge/profilo) o su .stamp-slot (anteprima
+    // Dashboard) a seconda del componente; .personal-badge-illustration non ha questo
+    // concetto (i badge personali sono sempre a colori, assegnati a mano) - nessuno dei due
+    // antenati esiste, bloccato resta false.
+    const card = img.closest(".badge-card, .stamp-slot");
     const bloccato = !!(card && !card.classList.contains("unlocked"));
     window.openImageLightbox(img.src, img.alt, bloccato);
 });
