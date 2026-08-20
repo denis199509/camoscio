@@ -1,21 +1,22 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-20 (punto 94, PASSO 6: prima verifica dal vivo
-fatta da Denis - guida di 5 min/3,5 km, modalita' aereo per quasi
-tutto il tragitto. Traccia sul database senza segni del buco
-(nessun segmento a linea retta, distanza accumulata dal vivo
-coerente con la traccia finale) - MA il giro era troppo corto per
-essere certi che la pagina si sia davvero ricaricata (il buco di
-ieri e' comparso solo dopo 8+ min a schermo spento). Denis ha
-deciso di proseguire comunque, rimandando una prova piu' lunga coi
-criteri giusti (istruzioni gia' date per domani, non ancora fatta).
-PASSO 7 chiuso nel frattempo (indipendente dalla riprova): android/,
-capacitor-shell/, capacitor.config.json e le dipendenze committati
-(5688627), gitignore corretto perche' il keystore del passo 8 non
-finisca mai tracciato - NON ANCORA PUSHATO, chiedere prima.
-RIPARTIRE DA: la prova lunga del passo 6 quando Denis la fa, oppure
-PASSO 8 (apk di release firmato) se si preferisce andare avanti nel
-frattempo. Punto 98/D e E restano aperti, non toccati oggi)
+Aggiornato: 2026-08-20, tardo serale (punto 94: PASSO 6 ha avuto una
+prima verifica NON conclusiva - guida di 5 min/3,5 km di Denis in
+aereo, traccia senza segni del buco ma giro troppo corto per essere
+certi che la pagina si sia ricaricata davvero. Piano CONFERMATO per
+la prova lunga di domani 21/08 (vedi sotto nel dettaglio del punto
+94). PASSO 7 e PASSO 8 (solo la firma, non ancora il sideload sul
+telefono) chiusi e PUSHATI (f802fed): keystore generato con password
+casuale vera - password unica perche' il formato PKCS12 moderno non
+separa keystore e chiave nonostante ne fossero state generate due,
+dettaglio in 03-Decisioni-Architetturali.md. Password data a Denis
+in chat per salvarla in una nota Bitwarden, NON ANCORA CONFERMATO
+che l'abbia fatto - controllare/ricordarglielo alla prossima
+sessione se non se n'e' parlato. Build di release firmata verificata
+in locale con apksigner (firma v2 valida) ma MAI ANCORA installata
+sul telefono vero. RIPARTIRE DA: la prova lunga del passo 6 (domani),
+poi il sideload dell'apk sul telefono per chiudere il punto 94 per
+intero. Punto 98/D e E restano aperti, non toccati oggi)
 ===================================================================
 
 QUESTO FILE DICE SOLO UNA COSA: a che punto siamo adesso e da dove si ricomincia.
@@ -215,13 +216,44 @@ o ne arriva uno nuovo.
     sensibile (local.properties, cartelle build/.gradle/.cxx,
     keystore) fosse fra quelli aggiunti. Committati android/,
     capacitor-shell/, capacitor.config.json e le dipendenze Capacitor
-    di package.json/package-lock.json (5688627) - NON ANCORA
-    PUSHATO, serve il permesso esplicito di Denis.
-    RIPARTIRE DA: la prova lunga del passo 6 (quando Denis la fa) o
-    PASSO 8 (.apk di release firmato, sideload - niente Play Store
-    per ora, costa 25$ una tantum solo se si vorra' pubblicarla) se
-    si preferisce andare avanti nel frattempo - spiegato a Denis ma
-    non ancora iniziato.
+    di package.json/package-lock.json (5688627) - PUSHATO.
+
+    PASSO 8 (SOLO LA FIRMA, 20/08/2026), pushato (f802fed): generato
+    camoscio-release.keystore con keytool (JDK 21 pinnato in
+    gradle.properties), validita' 10.000 giorni (fino al 05/01/2054).
+    Scoperta a caldo: keytool oggi crea keystore PKCS12 di default,
+    che NON supporta password diverse per keystore e per la singola
+    chiave - il -keypass passato in piu' e' stato ignorato in
+    silenzio (avviso di keytool, non un errore), quindi keystore.
+    properties usa la STESSA password casuale per entrambi i campi,
+    generata con crypto.randomInt (Node), 32 caratteri alfanumerici.
+    android/app/build.gradle legge keystore.properties (root del
+    progetto Android, MAI nel repo - vedi android/.gitignore) e
+    applica il signingConfig solo se il file esiste, cosi' un clone
+    nuovo del repo compila comunque in debug senza quel file.
+    Verificato per intero con una build vera: `gradlew assembleRelease`
+    riuscita, poi `apksigner verify --verbose --print-certs` conferma
+    firma v2 valida col certificato giusto (stesso fingerprint SHA-256
+    del keystore). La password e' stata data a Denis in chat (mai
+    scritta su un file del repo o del vault) per salvarla in una nota
+    Bitwarden - NON ANCORA CONFERMATO che l'abbia fatto, chiedere alla
+    prossima occasione se non se n'e' gia' parlato. Il file del
+    keystore vive per ora dentro android/ (fuori da git, ma dentro la
+    cartella sincronizzata da OneDrive - quindi gia' con una copia
+    cloud incidentale, diversa dalle cache di build che sono junction
+    verso C:\devcache\ apposta per non farle sincronizzare).
+
+    ANCORA MANCANTE DEL PASSO 8: il "sideload" vero e proprio - non
+    e' mai stato installato sul telefono di Denis, solo generato e
+    verificato sul PC. Serve il telefono collegato (stessa disciplina
+    dei passi 4-6: cavo + adb, oppure trasferire il file
+    android/app/build/outputs/apk/release/app-release.apk e aprirlo
+    da un file manager sul telefono).
+
+    RIPARTIRE DA: la prova lunga del passo 6 (domani 21/08, piano
+    confermato sopra), poi il sideload sul telefono per chiudere il
+    punto 94 per intero. Niente Play Store per ora (costerebbe 25$
+    una tantum solo se un giorno si vorra' pubblicarla).
 
     >>> ANCORA APERTE, non urgenti (dettaglio in
     ../camoscio memoria/04-Da-Fare.md): i "livelli"
