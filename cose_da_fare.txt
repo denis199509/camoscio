@@ -5102,3 +5102,11 @@ schermo spento ancora."
    (stessa firma di sempre, si installa sopra quella gia' sul
    telefono senza disinstallare) ma NON ANCORA installato sul
    telefono vero - proposto a Denis, in attesa di conferma.
+
+   TROVATO SUBITO DOPO, cercando l'emoji in TUTTI i file .html di
+   public/ (non solo index.html): altre tre pagine indipendenti
+   avevano lo stesso emoji montagna, mai considerate perche' sono
+   file a parte, non sezioni di index.html - demo.html (scelta
+   account demo), conferma-email.html, reimposta-password.html.
+   Corrette tutte e tre con la stessa immagine/stile. Verificato dal
+   vivo nel browser su tutte e tre, nessun errore in console.
