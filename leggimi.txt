@@ -12,11 +12,13 @@ separa keystore e chiave nonostante ne fossero state generate due,
 dettaglio in 03-Decisioni-Architetturali.md. Password salvata da
 Denis in una nota sicura su Bitwarden (CONFERMATO, stessa sera),
 con "richiedi password per visualizzare" attivata di sua iniziativa
-come protezione in piu'. Build di release firmata verificata
-in locale con apksigner (firma v2 valida) ma MAI ANCORA installata
-sul telefono vero. RIPARTIRE DA: la prova lunga del passo 6 (domani),
-poi il sideload dell'apk sul telefono per chiudere il punto 94 per
-intero. Punto 98/D e E restano aperti, non toccati oggi)
+come protezione in piu'. Build di release firmata, installata SUL
+TELEFONO VERO (sideload via Download, non adb install - bloccato di
+nuovo da MIUI) e verificata (fingerprint della firma installata
+combacia col keystore) - PASSO 8 chiuso per intero. RIPARTIRE DA:
+solo la prova lunga del passo 6 (domani 21/08) resta aperta per
+chiudere il punto 94 per intero. Punto 98/D e E restano aperti, non
+toccati oggi)
 ===================================================================
 
 QUESTO FILE DICE SOLO UNA COSA: a che punto siamo adesso e da dove si ricomincia.
@@ -244,16 +246,33 @@ o ne arriva uno nuovo.
     cloud incidentale, diversa dalle cache di build che sono junction
     verso C:\devcache\ apposta per non farle sincronizzare).
 
-    ANCORA MANCANTE DEL PASSO 8: il "sideload" vero e proprio - non
-    e' mai stato installato sul telefono di Denis, solo generato e
-    verificato sul PC. Serve il telefono collegato (stessa disciplina
-    dei passi 4-6: cavo + adb, oppure trasferire il file
-    android/app/build/outputs/apk/release/app-release.apk e aprirlo
-    da un file manager sul telefono).
+    SIDELOAD FATTO E VERIFICATO (20/08/2026, stessa sera) - PASSO 8
+    CHIUSO PER INTERO: `adb install` diretto ha dato di nuovo
+    INSTALL_FAILED_USER_RESTRICTED (stessa restrizione MIUI gia' nota
+    di "Installazione tramite USB"). Invece di rincorrere quel
+    permesso, aggirato installando come farebbe chiunque non-sviluppatore:
+    `adb push` del file su /sdcard/Download (occhio, path del
+    TELEFONO - va lanciato con MSYS_NO_PATHCONV=1 da Git Bash, altrimenti
+    MSYS lo confonde per un percorso Windows e lo riscrive in
+    "C:/Program Files/Git/sdcard/..." in silenzio, fallendo sul
+    device con un errore che sembra dire un'altra cosa - trappola
+    nuova, da aggiungere a 07-Trappole-Tecniche.md), poi Denis ha
+    aperto il file da Gestione File e installato a mano, superando
+    l'avviso normale di Play Protect ("app non riconosciuta" +
+    "rischiosa", entrambi attesi per un apk fuori Play Store, saltati
+    con "Installa comunque"/"salta scansione" con cognizione di causa
+    visto che l'apk era stato generato e verificato in questa stessa
+    sessione). VERIFICATO DAVVERO, non solo "installato senza errori":
+    `adb pull` dell'apk installato sul telefono + `apksigner verify`
+    conferma lo stesso identico fingerprint SHA-256 del keystore
+    generato stasera - e' la build firmata vera, non piu' la debug.
+    Utile per il futuro: questo metodo (push su Download + installo a
+    mano) e' anche quello giusto per far provare l'app a un amico,
+    vedi discussione con Denis su questo in chat.
 
-    RIPARTIRE DA: la prova lunga del passo 6 (domani 21/08, piano
-    confermato sopra), poi il sideload sul telefono per chiudere il
-    punto 94 per intero. Niente Play Store per ora (costerebbe 25$
+    RIPARTIRE DA: solo la prova lunga del passo 6 resta aperta (domani
+    21/08, piano confermato sopra) - fatto tutto il resto del punto
+    94, sideload compreso. Niente Play Store per ora (costerebbe 25$
     una tantum solo se un giorno si vorra' pubblicarla).
 
     >>> ANCORA APERTE, non urgenti (dettaglio in
