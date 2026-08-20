@@ -1,16 +1,21 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-19, sessione successiva (punto 94, PASSO 6:
-config puntata alla produzione, poi una camminata vera ha trovato
-un buco NUOVO - la pagina puo' ricaricarsi da sola a schermo spento
-senza uccidere il processo, perdendo il tracciamento in silenzio
-anche col GPS nativo ancora acceso. Diagnosticato con adb logcat,
-corretto in tracking.js (committato e pushato DA SOLO, 7656a13),
-MA NON ANCORA RIVERIFICATO - prova rimandata da Denis a domani
-(20/08/2026). Dettaglio completo in ../camoscio memoria/
-06-Cronologia-Sessioni.md, le decisioni tecniche in
-03-Decisioni-Architetturali.md. RIPARTIRE DALLA VERIFICA DAL VIVO,
-poi passo 7. Punto 98/D e E restano aperti, non toccati oggi)
+Aggiornato: 2026-08-20 (punto 94, PASSO 6: prima verifica dal vivo
+fatta da Denis - guida di 5 min/3,5 km, modalita' aereo per quasi
+tutto il tragitto. Traccia sul database senza segni del buco
+(nessun segmento a linea retta, distanza accumulata dal vivo
+coerente con la traccia finale) - MA il giro era troppo corto per
+essere certi che la pagina si sia davvero ricaricata (il buco di
+ieri e' comparso solo dopo 8+ min a schermo spento). Denis ha
+deciso di proseguire comunque, rimandando una prova piu' lunga coi
+criteri giusti (istruzioni gia' date per domani, non ancora fatta).
+PASSO 7 chiuso nel frattempo (indipendente dalla riprova): android/,
+capacitor-shell/, capacitor.config.json e le dipendenze committati
+(5688627), gitignore corretto perche' il keystore del passo 8 non
+finisca mai tracciato - NON ANCORA PUSHATO, chiedere prima.
+RIPARTIRE DA: la prova lunga del passo 6 quando Denis la fa, oppure
+PASSO 8 (apk di release firmato) se si preferisce andare avanti nel
+frattempo. Punto 98/D e E restano aperti, non toccati oggi)
 ===================================================================
 
 QUESTO FILE DICE SOLO UNA COSA: a che punto siamo adesso e da dove si ricomincia.
@@ -180,15 +185,43 @@ o ne arriva uno nuovo.
     esplicito di Denis - android/, capacitor-shell/,
     capacitor.config.json e package*.json restano ancora NON
     committati, rimandati al passo 7 come da piano.
-    NON ANCORA VERIFICATO DAL VIVO: prova concordata con Denis per
-    domani (20/08/2026) - modalita' aereo attivata prima di spegnere
-    lo schermo, riaccensione ancora in modalita' aereo, per forzare
-    apposta il caso "ricaricamento senza rete".
-    RIPARTIRE DA: quella verifica dal vivo. Solo dopo la conferma,
-    PASSO 7 (.gitignore esteso - keystore MAI nel repo pubblico -
-    poi commit di android/+capacitor.config.json) e PASSO 8 (.apk di
-    release firmato, sideload) - entrambi spiegati a Denis ma non
-    ancora iniziati.
+    PRIMA VERIFICA FATTA (20/08/2026), NON CONCLUSIVA: Denis ha
+    guidato 5 minuti (3,46 km, 25 m dislivello - lui aveva scritto
+    "35 km" per una virgola persa scrivendo di fretta), aereo attivo
+    per quasi tutto il tragitto. Controllata la traccia vera sul
+    database (script diagnostico usa e getta, non salvato): 11
+    punti, nessun salto a velocita' implicita assurda fra un punto e
+    il successivo, distanza accumulata dal vivo (3,462 km) coerente
+    con la somma dei segmenti della traccia finale (3,45 km) - nessun
+    segno del buco. Ma 5 minuti sono pochi: ieri il ricaricamento e'
+    scattato solo dopo 8+ minuti a schermo spento, quindi questo giro
+    potrebbe non averlo nemmeno provocato. Buona notizia per la coda
+    offline, non ancora una prova del recupero dal ricaricamento.
+    Denis ha scelto di andare avanti comunque invece di bloccarsi
+    qui, rimandando una prova piu' lunga. PIANO CONFERMATO per domani
+    (21/08/2026): avvio tracciamento -> dopo 3 min aereo ON -> dopo
+    altri 2 min schermo OFF per 12 min -> riaccensione ancora in
+    aereo (controllare se compare "registrazione interrotta - tocca
+    per riprovare": se non compare nulla ha gia' recuperato da solo,
+    se compare va toccato per far ripartire) -> dopo 3 min aereo OFF
+    -> dopo 2 min stop tracciamento. Percorso con piu' curve possibili
+    apposta, per distinguere un vero buco da una strada dritta.
+
+    PASSO 7 CHIUSO (20/08/2026), indipendente dalla riprova sopra:
+    android/.gitignore aveva le righe del keystore commentate di
+    default (template Android Studio) - tolto il commento, cosi' il
+    keystore di firma del passo 8 non potra' mai finire tracciato.
+    Verificato con `git status --porcelain -uall` che nessun file
+    sensibile (local.properties, cartelle build/.gradle/.cxx,
+    keystore) fosse fra quelli aggiunti. Committati android/,
+    capacitor-shell/, capacitor.config.json e le dipendenze Capacitor
+    di package.json/package-lock.json (5688627) - NON ANCORA
+    PUSHATO, serve il permesso esplicito di Denis.
+    RIPARTIRE DA: la prova lunga del passo 6 (quando Denis la fa) o
+    PASSO 8 (.apk di release firmato, sideload - niente Play Store
+    per ora, costa 25$ una tantum solo se si vorra' pubblicarla) se
+    si preferisce andare avanti nel frattempo - spiegato a Denis ma
+    non ancora iniziato.
 
     >>> ANCORA APERTE, non urgenti (dettaglio in
     ../camoscio memoria/04-Da-Fare.md): i "livelli"
