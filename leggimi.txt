@@ -1,32 +1,16 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-20, tardo serale (punto 94: PASSO 6 ha avuto una
-prima verifica NON conclusiva - guida di 5 min/3,5 km di Denis in
-aereo, traccia senza segni del buco ma giro troppo corto per essere
-certi che la pagina si sia ricaricata davvero. Piano CONFERMATO per
-la prova lunga di domani 21/08 (vedi sotto nel dettaglio del punto
-94). PASSO 7 e PASSO 8 (solo la firma, non ancora il sideload sul
-telefono) chiusi e PUSHATI (f802fed): keystore generato con password
-casuale vera - password unica perche' il formato PKCS12 moderno non
-separa keystore e chiave nonostante ne fossero state generate due,
-dettaglio in 03-Decisioni-Architetturali.md. Password salvata da
-Denis in una nota sicura su Bitwarden (CONFERMATO, stessa sera),
-con "richiedi password per visualizzare" attivata di sua iniziativa
-come protezione in piu'. Build di release firmata, installata SUL
-TELEFONO VERO (sideload via Download, non adb install - bloccato di
-nuovo da MIUI) e verificata (fingerprint della firma installata
-combacia col keystore) - PASSO 8 chiuso per intero. RIPARTIRE DA:
-solo la prova lunga del passo 6 (domani 21/08) resta aperta per
-chiudere il punto 94 per intero. Punto 98/D e E restano aperti, non
-toccati oggi)
+Aggiornato: 2026-08-20, fine sessione. Sfoltito (stessa cura gia'
+fatta il 18/08 per gli 83-97): i punti chiusi oggi (94/passi 6-8,
+99, 100) sono compressi all'indice qui sotto - nessuna informazione
+persa, e' gia' tutta per esteso in cose_da_fare.txt e nel vault.
+RIPARTIRE DA DUE COSE SOLE: punto 94/passo 6 (la prova lunga di
+domani 21/08, protocollo esatto piu' sotto) e punto 98/D-E.
 ===================================================================
 
 QUESTO FILE DICE SOLO UNA COSA: a che punto siamo adesso e da dove si ricomincia.
 Si legge in cinque minuti, e va tenuto corto. Se cresce oltre un paio di pagine vuol
-dire che ci e' finito dentro qualcosa che appartiene a un altro file. Sfoltito il
-18/08/2026 (16 KB -> questo file): i punti chiusi erano narrati per esteso invece che
-in una riga sola come gia' si faceva per gli 83-91 qui sotto - stessa cosa gia' scritta
-uguale in cose_da_fare.txt e nel vault, nessuna informazione persa comprimendola.
+dire che ci e' finito dentro qualcosa che appartiene a un altro file.
 
 DOVE STA IL RESTO, in ordine di lettura:
 
@@ -37,22 +21,21 @@ DOVE STA IL RESTO, in ordine di lettura:
     vedi 04-Da-Fare.md del vault).
  2. cose_da_fare.txt      — le richieste di Denis CON LE SUE PAROLE, e il ragionamento
     di ogni punto chiuso. E' l'archivio: cresce, e va bene cosi'.
- 3. cronologia.txt        — l'ex leggimi. Il racconto disteso di ogni lavoro fatto,
-    con le misure. Ci si va quando serve il dettaglio di qualcosa di gia' fatto.
+ 3. cronologia.txt        — congelato dal 6/08/2026: da quella data il racconto
+    disteso di ogni sessione vive solo in ../camoscio memoria/06-Cronologia-Sessioni.md,
+    non qui. Utile solo per il dettaglio di lavoro PRIMA di quella data.
  4. prove/LEGGIMI-PROVE.txt — come si lanciano le prove automatiche.
 
 REGOLA DI FINE SESSIONE: si aggiornano il vault e questo file SEMPRE; cronologia.txt
-solo se c'e' un lavoro nuovo da raccontare; cose_da_fare.txt quando un punto si chiude
-o ne arriva uno nuovo.
+MAI piu' (congelato); cose_da_fare.txt quando un punto si chiude o ne arriva uno nuovo.
 
 
 
->>> STATO ATTUALE (18/08/2026): sessione lunga dal 16/08, tutti i punti sotto
-    chiusi, committati e pushati - quelli che si potevano provare dal vivo sono
-    stati confermati da Denis di persona, non solo costruiti. Dettaglio completo
-    di ognuno, con le parole di Denis e il ragionamento, in cose_da_fare.txt
-    (cercare il numero) e in ../camoscio memoria/06-Cronologia-Sessioni.md - qui
-    solo l'elenco:
+>>> STATO ATTUALE (20/08/2026): punti chiusi, committati e pushati - quelli che si
+    potevano provare dal vivo sono stati confermati da Denis di persona, non solo
+    costruiti. Dettaglio completo di ognuno, con le parole di Denis e il
+    ragionamento, in cose_da_fare.txt (cercare il numero) e nel vault - qui solo
+    l'elenco:
 
       83. Badge personali a Nicolo97 e Scheldon.
       84. Tolto il telefono dai contatti di emergenza.
@@ -83,8 +66,26 @@ o ne arriva uno nuovo.
       97. Altri undici badge (otto cime/bivacco del Gran Sasso e dei
           Simbruini, tre rifugi nuovi) - corretto per strada il nome del
           Rifugio Nicola D'Arcangelo (non "D'Archangelo"), quota vera 1655 m
-          contro i 2235 m decorativi sull'icona. Catalogo a 21 badge totali,
-          verificati anche da Denis di persona.
+          contro i 2235 m decorativi sull'icona. Catalogo a 21 badge totali.
+      98/A. "Invita a Gita" mancava a chi era solo membro (non creatore) di
+          una squadra - restrizione tolta, il permesso vero lo decide gia'
+          il creatore dell'escursione (b894f39).
+      98/B. Menu recensioni non toglieva le coppie escursione+persona gia'
+          recensite - nuova rotta di sola lettura, anonimato rispettato;
+          tolto anche il campo commento, mai letto da nessuna pagina.
+      98/C. Split Spese Viaggio chiedeva gia' andata+ritorno - ora solo
+          andata, il calcolo raddoppia da solo (e54406f).
+      99. Click su un'icona badge (propria, di un altro utente, personale,
+          o nell'anteprima Passaporto di Dashboard) apre l'immagine intera
+          in un modale; un badge non ancora conquistato resta grigio anche
+          ingrandito - non richiesto esplicitamente, trovato provando dal
+          vivo (f089780+ca16e38).
+     100. Logo vero (stambecco su cima, generato con AI dopo aver scartato
+          una prima foto stock senza licenza adatta) al posto dell'emoji
+          montagna, incoerente fra sito e app - su tutte e 5 le pagine
+          HTML che lo mostravano. Icona Android rigenerata in tutte le
+          densita', installata sul telefono vero e confermata da Denis
+          ("verificato dal vivo, bellissimo").
 
     Anche una pulizia dati: cancellata una traccia vuota (0 km, 0 dislivello)
     del 24/07/2026 sull'account reale di Denis.
@@ -96,194 +97,69 @@ o ne arriva uno nuovo.
     annotato in ../camoscio memoria/04-Da-Fare.md, sezione "Debito tecnico
     noto". Nessun codice da toccare finche' non arriva l'immagine nuova.
 
-    >>> PUNTO 98/B, CHIUSO PER INTERO (18/08/2026 notte): il menu
-    recensioni (populateReviewTargets, social.js) non toglieva mai le
-    coppie escursione+persona gia' recensite - restavano selezionabili
-    per sempre, fallendo con un 409 confuso. Il blocco server era gia'
-    corretto (per terna recensore+recensito+escursione, non per sola
-    coppia di persone). Progettato con l'agente architect rispettando
-    l'anonimato (Review.js non salva mai chi scrive): nuova rotta
-    POST /api/reviews/gia-recensite (sola lettura, risponde solo per
-    la sessione di chi chiama), helper condiviso lib/reviewLock.js per
-    l'hash. Subito dopo, Denis ha chiesto di togliere anche il campo
-    commento del form recensioni: le recensioni ricevute non sono mai
-    mostrate da nessuna parte del sito (solo la reputazione aggregata),
-    quindi il commento era scritto ma letto da nessuno - tolto da
-    schema, rotta, form e invio. Verificato via API (due escursioni
-    distinte, recensita una sola, confermato che solo quella risulta
-    "gia' recensita") e dal vivo nel browser, nessun errore in console.
-    Dettaglio completo in cose_da_fare.txt punto 98 (dentro il punto B).
-
-    >>> PUNTO 98/A, CHIUSO PER INTERO (18/08/2026 notte, sessione
-    successiva): in public/js/social.js, renderSquadsList() mostrava
-    "Invita a Gita" solo al creatore della squadra - chi era solo
-    membro accettato (caso reale di Denis su "I Camosci della Val
-    Brembana") non lo vedeva mai. Il permesso vero lo decide gia'
-    confermaInvitoSquadra guardando il creatore dell'ESCURSIONE, non
-    della squadra: restrizione tolta, badge "Membro" mantenuto
-    accanto al bottone. Verificato dal vivo nel browser con un
-    account demo nella stessa situazione di Denis. Committato e
-    pushato (b894f39).
-
-    >>> PUNTO 98/C, CHIUSO PER INTERO (18/08/2026 notte, stessa
-    sessione di A): il pannello "Split Spese Viaggio" (Carpooling)
-    chiedeva distanza e pedaggio gia' andata+ritorno - l'utente
-    doveva raddoppiarli a mano da solo. Ora i due campi sono di sola
-    andata, il calcolo raddoppia da solo per il totale (il consumo
-    L/100km resta un tasso, non va raddoppiato). Verificato dal vivo
-    nel browser: default invariati, e un caso nuovo confermato a
-    mano. Committato e pushato (e54406f).
-
-    >>> TROVATO PER STRADA, NON RICHIESTO: driverSchema
+    >>> TROVATO PER STRADA AL PUNTO 98/C, NON RICHIESTO: driverSchema
     (models/Hike.js) non ha mai avuto un campo "passengers" - nessuna
     auto gia' offerta ha mai salvato un passeggero sul database, "Sali
     a Bordo" funziona solo a video. Segnalato a Denis, che ha scelto
     di registrarlo per dopo invece di deviare dall'ordine - dettaglio
     in ../camoscio memoria/04-Da-Fare.md, non ancora corretto.
 
-    >>> RIPARTIRE DA: punto 98/D (match obiettivi comuni, niente
-    riscontro per chi sceglie), poi E (progetto percorso, sentieri/
-    strade sterrate). F (diario di viaggio collaborativo) resta FUORI
-    ordine, Denis stesso dice di non avere ancora chiaro come deve
-    funzionare, non riproporla come pronta. Dettaglio completo, con
-    le parole di Denis, in cose_da_fare.txt punto 98. Pulizia delle
-    ~30 notifiche demo orfane gia' fatta e committata (vedi sopra).
+    >>> RIPARTIRE DA: punto 98/D (match obiettivi comuni: una volta scelto un
+    obiettivo comune tipo "Monte Bianco", non compare il proprio fra chi lo
+    condivide), poi E (progetto percorso: filtro troppo stretto, solo sentieri,
+    a volte servirebbero anche strade sterrate). F (diario di viaggio
+    collaborativo) resta FUORI ordine, Denis stesso dice di non avere ancora
+    chiaro come deve funzionare, non riproporla come pronta. Dettaglio
+    completo, con le parole di Denis, in cose_da_fare.txt punto 98.
 
-    >>> PUNTO 94 (app Android per il tracciamento a schermo spento):
-    PASSI 1-5 chiusi e verificati dal vivo (Android Studio,
-    Capacitor nel repo vero, plugin GPS collegato a tracking.js,
-    flusso di consenso onesto, promemoria orario contro un
-    tracciamento dimenticato attivo) - dettaglio in cose_da_fare.txt
-    punto 94 e ../camoscio memoria/06-Cronologia-Sessioni.md,
-    decisioni tecniche in 03-Decisioni-Architetturali.md.
+    >>> PUNTO 94 (app Android per il tracciamento a schermo spento) — TUTTI
+    E 8 I PASSI CHIUSI, resta solo una riprova. Riassunto (dettaglio
+    completo, con tutte le decisioni tecniche e le trappole trovate, in
+    cose_da_fare.txt punto 94 e nel vault - 03-Decisioni-Architetturali.md
+    e 07-Trappole-Tecniche.md):
+      1-5. Android Studio, Capacitor nel repo vero, plugin GPS collegato a
+           tracking.js, flusso di consenso onesto, promemoria orario contro
+           un tracciamento dimenticato attivo.
+      6.   Config puntata alla produzione (camoscio.onrender.com). Una
+           camminata vera ha trovato un buco: il WebView puo' ricaricarsi
+           da solo per pressione di memoria a schermo spento, perdendo lo
+           stato del tracciamento pur senza uccidere il processo. Corretto
+           in tracking.js: stop() sempre prima di ogni avvio nativo, uno
+           specchio in localStorage per riprendere "alla cieca" anche senza
+           rete, badge onesto se il riaggancio fallisce. Prima verifica dal
+           vivo (20/08, guida di 5 min/3,5 km in aereo) senza segni del
+           buco, ma il giro era troppo corto per essere conclusiva - vedi
+           "RIPARTIRE DA" sotto per la prova vera di domani.
+      7.   android/, capacitor-shell/, capacitor.config.json e le
+           dipendenze committati; gitignore corretto perche' il keystore
+           non finisca mai tracciato (le righe erano commentate di
+           default nel template Android Studio).
+      8.   Keystore generato (password unica: PKCS12 non supporta password
+           diverse per keystore e chiave, scoperto a caldo), salvata da
+           Denis in una nota sicura Bitwarden. Apk di release firmato,
+           installato sul telefono vero via sideload (adb install bloccato
+           da MIUI, aggirato con adb push su Download + installo a mano -
+           stesso metodo giusto per far provare l'app a un amico) e
+           verificato con apksigner (fingerprint combacia col keystore).
 
-    PASSO 6 (produzione) - config puntata a
-    https://camoscio.onrender.com, installato e verificato sul
-    telefono. Una camminata vera ha pero' trovato un buco NUOVO: la
-    pagina puo' ricaricarsi da sola a schermo spento per pressione di
-    memoria di Android, SENZA uccidere ne' il processo dell'app ne'
-    quello del WebView (verificato nei log di sistema) - il GPS
-    nativo restava vivo ma la pagina ricaricata perdeva lo stato del
-    tracciamento, e un secondo avvio veniva rifiutato dal plugin
-    (gia' in corso). Risultato osservato: 0,1 km/2 min salvati di
-    almeno 8 registrati. Diagnosticato con adb logcat, progettato con
-    l'agente architect (diagnosi corretta e approfondita: i fix
-    morivano lato Java per un ricaricamento di pagina, non solo per
-    una guardia lato JavaScript). Denis ha chiesto anche che un
-    ricaricamento SENZA rete (frequente in montagna) non perda la
-    registrazione, non solo quello con rete - "altrimenti il lavoro
-    diventa inutile" (parole sue).
-    CORRETTO in tracking.js: stop() sempre prima di ogni avvio nativo
-    (un solo percorso per avvio/ripresa/recupero), badge onesto
-    "registrazione interrotta - tocca per riprovare" se il riaggancio
-    fallisce, nuovo specchio in localStorage (solo identita' della
-    sessione, mai i punti) per riprendere a registrare "alla cieca"
-    anche senza rete - si mette in pari da solo al ritorno del
-    segnale, 404/409 sull'invio non fanno piu' ritentare in eterno su
-    una sessione ormai morta. Dettaglio tecnico completo, con le
-    alternative scartate, in ../camoscio memoria/
-    03-Decisioni-Architetturali.md; la trappola (ricaricamento senza
-    uccisione di processo) in 07-Trappole-Tecniche.md.
-    COMMITTATO E PUSHATO SOLO tracking.js (7656a13), con permesso
-    esplicito di Denis - android/, capacitor-shell/,
-    capacitor.config.json e package*.json restano ancora NON
-    committati, rimandati al passo 7 come da piano.
-    PRIMA VERIFICA FATTA (20/08/2026), NON CONCLUSIVA: Denis ha
-    guidato 5 minuti (3,46 km, 25 m dislivello - lui aveva scritto
-    "35 km" per una virgola persa scrivendo di fretta), aereo attivo
-    per quasi tutto il tragitto. Controllata la traccia vera sul
-    database (script diagnostico usa e getta, non salvato): 11
-    punti, nessun salto a velocita' implicita assurda fra un punto e
-    il successivo, distanza accumulata dal vivo (3,462 km) coerente
-    con la somma dei segmenti della traccia finale (3,45 km) - nessun
-    segno del buco. Ma 5 minuti sono pochi: ieri il ricaricamento e'
-    scattato solo dopo 8+ minuti a schermo spento, quindi questo giro
-    potrebbe non averlo nemmeno provocato. Buona notizia per la coda
-    offline, non ancora una prova del recupero dal ricaricamento.
-    Denis ha scelto di andare avanti comunque invece di bloccarsi
-    qui, rimandando una prova piu' lunga. PIANO CONFERMATO per domani
-    (21/08/2026): avvio tracciamento -> dopo 3 min aereo ON -> dopo
-    altri 2 min schermo OFF per 12 min -> riaccensione ancora in
-    aereo (controllare se compare "registrazione interrotta - tocca
-    per riprovare": se non compare nulla ha gia' recuperato da solo,
-    se compare va toccato per far ripartire) -> dopo 3 min aereo OFF
-    -> dopo 2 min stop tracciamento. Percorso con piu' curve possibili
-    apposta, per distinguere un vero buco da una strada dritta.
-
-    PASSO 7 CHIUSO (20/08/2026), indipendente dalla riprova sopra:
-    android/.gitignore aveva le righe del keystore commentate di
-    default (template Android Studio) - tolto il commento, cosi' il
-    keystore di firma del passo 8 non potra' mai finire tracciato.
-    Verificato con `git status --porcelain -uall` che nessun file
-    sensibile (local.properties, cartelle build/.gradle/.cxx,
-    keystore) fosse fra quelli aggiunti. Committati android/,
-    capacitor-shell/, capacitor.config.json e le dipendenze Capacitor
-    di package.json/package-lock.json (5688627) - PUSHATO.
-
-    PASSO 8 (SOLO LA FIRMA, 20/08/2026), pushato (f802fed): generato
-    camoscio-release.keystore con keytool (JDK 21 pinnato in
-    gradle.properties), validita' 10.000 giorni (fino al 05/01/2054).
-    Scoperta a caldo: keytool oggi crea keystore PKCS12 di default,
-    che NON supporta password diverse per keystore e per la singola
-    chiave - il -keypass passato in piu' e' stato ignorato in
-    silenzio (avviso di keytool, non un errore), quindi keystore.
-    properties usa la STESSA password casuale per entrambi i campi,
-    generata con crypto.randomInt (Node), 32 caratteri alfanumerici.
-    android/app/build.gradle legge keystore.properties (root del
-    progetto Android, MAI nel repo - vedi android/.gitignore) e
-    applica il signingConfig solo se il file esiste, cosi' un clone
-    nuovo del repo compila comunque in debug senza quel file.
-    Verificato per intero con una build vera: `gradlew assembleRelease`
-    riuscita, poi `apksigner verify --verbose --print-certs` conferma
-    firma v2 valida col certificato giusto (stesso fingerprint SHA-256
-    del keystore). La password e' stata data a Denis in chat (mai
-    scritta su un file del repo o del vault) per salvarla in una nota
-    Bitwarden come nota sicura - CONFERMATO salvata (stessa sera),
-    con "richiedi password per visualizzare" attivata da Denis di
-    sua iniziativa come protezione in piu'. Il file del
-    keystore vive per ora dentro android/ (fuori da git, ma dentro la
-    cartella sincronizzata da OneDrive - quindi gia' con una copia
-    cloud incidentale, diversa dalle cache di build che sono junction
-    verso C:\devcache\ apposta per non farle sincronizzare).
-
-    SIDELOAD FATTO E VERIFICATO (20/08/2026, stessa sera) - PASSO 8
-    CHIUSO PER INTERO: `adb install` diretto ha dato di nuovo
-    INSTALL_FAILED_USER_RESTRICTED (stessa restrizione MIUI gia' nota
-    di "Installazione tramite USB"). Invece di rincorrere quel
-    permesso, aggirato installando come farebbe chiunque non-sviluppatore:
-    `adb push` del file su /sdcard/Download (occhio, path del
-    TELEFONO - va lanciato con MSYS_NO_PATHCONV=1 da Git Bash, altrimenti
-    MSYS lo confonde per un percorso Windows e lo riscrive in
-    "C:/Program Files/Git/sdcard/..." in silenzio, fallendo sul
-    device con un errore che sembra dire un'altra cosa - trappola
-    nuova, da aggiungere a 07-Trappole-Tecniche.md), poi Denis ha
-    aperto il file da Gestione File e installato a mano, superando
-    l'avviso normale di Play Protect ("app non riconosciuta" +
-    "rischiosa", entrambi attesi per un apk fuori Play Store, saltati
-    con "Installa comunque"/"salta scansione" con cognizione di causa
-    visto che l'apk era stato generato e verificato in questa stessa
-    sessione). VERIFICATO DAVVERO, non solo "installato senza errori":
-    `adb pull` dell'apk installato sul telefono + `apksigner verify`
-    conferma lo stesso identico fingerprint SHA-256 del keystore
-    generato stasera - e' la build firmata vera, non piu' la debug.
-    Utile per il futuro: questo metodo (push su Download + installo a
-    mano) e' anche quello giusto per far provare l'app a un amico,
-    vedi discussione con Denis su questo in chat.
-
-    RIPARTIRE DA: solo la prova lunga del passo 6 resta aperta (domani
-    21/08, piano confermato sopra) - fatto tutto il resto del punto
-    94, sideload compreso. Niente Play Store per ora (costerebbe 25$
-    una tantum solo se un giorno si vorra' pubblicarla).
+    RIPARTIRE DA: la prova lunga del passo 6, PIANO CONFERMATO per domani
+    21/08/2026: avvio tracciamento -> dopo 3 min aereo ON -> dopo altri 2
+    min schermo OFF per 12 min -> riaccensione ancora in aereo (controllare
+    se compare "registrazione interrotta - tocca per riprovare": se non
+    compare nulla ha gia' recuperato da solo, se compare va toccato per far
+    ripartire) -> dopo 3 min aereo OFF -> dopo 2 min stop tracciamento.
+    Percorso con piu' curve possibili apposta, per distinguere un vero buco
+    da una strada dritta. Solo dopo questa conferma il punto 94 e' chiuso
+    per intero (niente altro resta: passo 7 e 8 gia' fatti).
 
     >>> ANCORA APERTE, non urgenti (dettaglio in
     ../camoscio memoria/04-Da-Fare.md): i "livelli"
     ORIGINALI del punto 63b (quanti gradini per la ZONA dichiarata a mano,
     DIVERSI dai livelli gia' fatti del punto 86) e il calcolo automatico del
     raggio (punto 42a) - Denis deve ancora pensarci, non richiederlo - e il
-    dominio email (rimandato da lui). Pulite (18/08/2026) le ~30 notifiche
-    demo orfane trovate per caso al punto 95 - vedi prove/LEGGIMI-PROVE.txt.
+    dominio email (rimandato da lui).
 
 >>> LEZIONI OPERATIVE (git dopo un'interruzione, moduli che si collegano
-    tardi, componenti condivisi fra piu' pagine): tutte in
-    ../camoscio memoria/07-Trappole-Tecniche.md, non ripetute qui - quella e'
-    la sede dove si guarda prima di toccare codice a rischio.
+    tardi, componenti condivisi fra piu' pagine, trappole Android/Gradle):
+    tutte in ../camoscio memoria/07-Trappole-Tecniche.md, non ripetute qui -
+    quella e' la sede dove si guarda prima di toccare codice a rischio.
