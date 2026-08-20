@@ -5030,3 +5030,75 @@ schermo spento ancora."
    li' (aspettando il caricamento vero dei dati, non un tempo fisso -
    al primo tentativo il clic e' arrivato prima che initApp() avesse
    popolato la scheda). Nessun errore in console.
+
+=====================================================================
+
+100. [20/08/2026, notte] Denis, parole sue: "vorrei pure cambiare
+   l'icona dell'app di camoscio (il logo), e' pure sul app/sito in
+   alto a sinistra al posto del emoji della montagna. sul sito vedo
+   la montagna marone sul app la montagna con neve. [...] lo voglio
+   sempre su sfondo bianco ma con gli angoli arrotondati."
+
+   SPIEGAZIONE DELL'INCOERENZA SEGNALATA: sito e app mostravano lo
+   STESSO carattere unicode (l'emoji montagna innevata), ma il
+   font/rendering di Chrome desktop e quello Android differiscono -
+   marrone su un lato, bianca sull'altro. Cambiare in un'immagine
+   vera risolve la causa, non solo il sintomo.
+
+   TROVATO PRIMA DI PROCEDERE: il primo file dato da Denis
+   (camosciologo.jpg) aveva nei metadati EXIF/IPTC un credito Getty
+   Images/iStockphoto (autrice Oksana Vainrub) con URL di licenza -
+   una foto stock, non sua. Segnalato a Denis: per un badge isolato
+   passa, ma come icona PERMANENTE dell'app (distribuita anche ad
+   amici) e logo del sito pubblico e' un uso di marchio che una
+   licenza iStock standard di solito non copre. Denis ha confermato
+   di non avere la licenza e ha generato un logo nuovo con AI
+   (camosciologo.png, stesso soggetto - stambecco su cima di
+   montagna - ma senza nessun metadato di provenienza).
+
+   FATTO E VERIFICATO STESSA NOTTE:
+   - Ritagliato lo stemma capra+montagna dal logo AI (che includeva
+     anche la scritta "CAMOSCIO" sotto, gia' ripetuta a fianco come
+     testo separato sia nel sito che qui - tenuta fuori dal ritaglio
+     per non duplicarla nell'icona).
+   - Installato @capacitor/assets (MIT, ufficiale Ionic) per generare
+     tutte le densita' Android dell'icona adattiva partendo da un
+     unico file - scoperta importante durante l'uso: applica GIA' un
+     inset di sicurezza del 16.7% per layer (lo standard Android
+     "safe zone" 66/108dp) - un primo tentativo con l'emblema gia'
+     imbustato al 64% ha prodotto una capra minuscola nell'icona
+     vera, verificato simulando il rendering reale (quadrato E
+     ritaglio a cerchio) prima di accorgersene - corretto rigenerando
+     il livello "foreground" quasi a tutta tela (94%), lasciando fare
+     il margine allo strumento.
+   - Icona Android rigenerata in tutte le densita' (ldpi-xxxhdpi,
+     legacy + adattiva), verificata leggibile anche alla dimensione
+     piu' piccola (48px mdpi). android/.gitignore gia' escludeva solo
+     il keystore, non l'icona - nessuna modifica li' necessaria.
+   - Sito: le 4 occorrenze dell'emoji montagna (login, recupero
+     password, registrazione, sidebar) sostituite con la stessa
+     immagine, sfondo bianco e angoli arrotondati via CSS
+     (.logo-icon-img) - richiesta esplicita di Denis. NON toccate le
+     due emoji montagna nei placeholder foto profilo (photo-preview-
+     circle): e' un'icona diversa, non l'icona dell'app.
+   - Build vera fatta due volte per verificare (gradlew assembleDebug
+     poi assembleRelease, firma ricontrollata con apksigner) - non
+     solo generazione dei file, anche compilazione riuscita.
+
+   TRAPPOLA NUOVA TROVATA: dopo aver cancellato a mano (rm, fuori da
+   Gradle) le vecchie drawable vettoriali ormai orfane, assembleRelease
+   ha iniziato a fallire su un errore fuorviante ("impossibile
+   cancellare una cartella" che pero' non esisteva piu' sul disco) -
+   la cache incrementale di Gradle si era disallineata. gradlew clean
+   non ha funzionato (fallisce a cancellare la junction NTFS di
+   android/build). Risolto svuotando a mano, passando per il vero
+   percorso in C:\devcache\ (non per la junction), la cartella
+   C:\devcache\camoscio\android-app-build - dettaglio completo in
+   ../camoscio memoria/07-Trappole-Tecniche.md.
+
+   VERIFICATO dal vivo nel browser (server locale): logo visibile e
+   nitido sia nella sidebar sia nella schermata di login, nessun
+   errore in console. L'apk di release con l'icona nuova e' pronto
+   (stessa firma di sempre, si installa sopra quella gia' sul
+   telefono senza disinstallare) ma NON ANCORA installato sul
+   telefono vero - proposto a Denis, in attesa di conferma.

@@ -133,6 +133,21 @@ h1, h2, h3, h4, h5, h6 {
     filter: drop-shadow(0 0 10px var(--accent-orange-glow));
 }
 
+/* Punto 100: logo vero al posto dell'emoji montagna, che su siti/telefoni diversi
+   renderizzava in modo incoerente (marrone sul sito, bianco sull'app - stesso carattere
+   unicode, font diversi). Sempre su sfondo bianco con angoli arrotondati, richiesta
+   esplicita di Denis. public/img/logo.png e' gia' quadrato (stemma capra+montagna
+   imbustato su tela bianca) - object-fit:cover resta comunque una rete di sicurezza
+   se in futuro cambia con un file di proporzioni diverse. */
+.logo-icon-img {
+    width: 1.8rem;
+    height: 1.8rem;
+    object-fit: cover;
+    background: #fff;
+    border-radius: 8px;
+    filter: none;
+}
+
 .logo-text {
     font-size: 1.4rem;
     font-weight: 800;
@@ -2885,6 +2900,11 @@ option {
 
 .auth-brand .logo-icon {
     font-size: 2rem;
+}
+
+.auth-brand .logo-icon-img {
+    width: 2rem;
+    height: 2rem;
 }
 
 .auth-brand h1 {
