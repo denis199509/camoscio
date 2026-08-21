@@ -6,7 +6,6 @@ window.CamoscioState = {
     reports: [],
     stamps: [],
     squads: [],
-    diaries: [],
     bookmarks: [],
     completions: [], // Escursioni già segnate come completate dall'utente corrente
     notifications: [], // Notifiche dell'utente corrente (nuove escursioni di squadra, esiti iscrizioni)
@@ -330,11 +329,10 @@ async function refreshState() {
     };
 
     try {
-        const [users, hikes, reports, diaries, squads, bookmarks] = await Promise.all([
+        const [users, hikes, reports, squads, bookmarks] = await Promise.all([
             fetchApi('/api/users'),
             fetchApi('/api/hikes'),
             fetchApi('/api/reports'),
-            fetchApi('/api/diaries'),
             fetchApi('/api/squads'),
             fetchApi('/api/bookmarks')
         ]);
@@ -342,7 +340,6 @@ async function refreshState() {
         window.CamoscioState.users = users;
         window.CamoscioState.hikes = hikes;
         window.CamoscioState.reports = reports;
-        window.CamoscioState.diaries = diaries;
         window.CamoscioState.squads = squads;
         window.CamoscioState.bookmarks = bookmarks;
 

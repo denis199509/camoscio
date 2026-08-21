@@ -147,23 +147,16 @@ window.deleteMyCarpoolOffer = async function(hikeId) {
 // Popola la select delle escursioni disponibili per cui offrire/cercare passaggi
 function populateHikeSelects() {
     const select = document.getElementById("offer-hike-select");
-    const diarySelect = document.getElementById("diary-hike-select");
     if (!select) return;
 
     const db = window.CamoscioState;
     select.innerHTML = "";
-    if (diarySelect) diarySelect.innerHTML = "";
 
     db.hikes.forEach(h => {
         const opt = document.createElement("option");
         opt.value = h.id;
         opt.textContent = `${h.title} (${new Date(h.date).toLocaleDateString()})`;
         select.appendChild(opt);
-
-        if (diarySelect) {
-            const optD = opt.cloneNode(true);
-            diarySelect.appendChild(optD);
-        }
     });
 }
 

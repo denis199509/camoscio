@@ -93,7 +93,7 @@ async function aspetta(page, fn, descrizione, timeout = 20000) {
         const prima = await page.evaluate(() => {
             const s = window.CamoscioState;
             const tipi = {};
-            for (const c of ['users', 'hikes', 'reports', 'diaries', 'squads', 'bookmarks', 'stamps', 'completions', 'notifications']) {
+            for (const c of ['users', 'hikes', 'reports', 'squads', 'bookmarks', 'stamps', 'completions', 'notifications']) {
                 tipi[c] = Array.isArray(s[c]) ? `array(${s[c].length})` : typeof s[c];
             }
             return { tipi, utente: s.currentUser && s.currentUser.username };
@@ -124,7 +124,7 @@ async function aspetta(page, fn, descrizione, timeout = 20000) {
         const dopo = await page.evaluate(() => {
             const s = window.CamoscioState;
             const tipi = {};
-            for (const c of ['users', 'hikes', 'reports', 'diaries', 'squads', 'bookmarks', 'stamps', 'completions', 'notifications']) {
+            for (const c of ['users', 'hikes', 'reports', 'squads', 'bookmarks', 'stamps', 'completions', 'notifications']) {
                 tipi[c] = Array.isArray(s[c]) ? `array(${s[c].length})` : typeof s[c];
             }
             return { tipi };

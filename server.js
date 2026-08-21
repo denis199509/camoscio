@@ -4,18 +4,15 @@ const express = require('express');
 const http = require('http');
 const WebSocket = require('ws');
 const path = require('path');
-const fs = require('fs');
 const session = require('express-session');
 const { sessionStore } = require('./db/sessionStore');
 const { connectMongo } = require('./db/mongo');
 const { loadTrailIndex } = require('./lib/trailIndex');
-const { requireAuth } = require('./middleware/auth');
 
 const authRouter = require('./routes/auth');
 const usersRouter = require('./routes/users');
 const hikesRouter = require('./routes/hikes');
 const reportsRouter = require('./routes/reports');
-const diariesRouter = require('./routes/diaries');
 const stampsRouter = require('./routes/stamps');
 const completionsRouter = require('./routes/completions');
 const notificationsRouter = require('./routes/notifications');
@@ -38,7 +35,7 @@ const port = process.env.PORT || 3000;
 // impedendo qualunque login di funzionare una volta online.
 app.set('trust proxy', 1);
 
-app.use(express.json({ limit: '10mb' })); // limite alzato per le note vocali del diario e le foto profilo (base64)
+app.use(express.json({ limit: '10mb' })); // limite alzato per le foto profilo (base64)
 
 // Tenuta come variabile a parte (non solo dentro app.use) perche' la riusa anche il WebSocket
 // del mesh networking piu' sotto, per riconoscere chi si connette senza duplicare la logica di
@@ -80,12 +77,6 @@ app.get('/conferma-email', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'conferma-email.html'));
 });
 
-// Creazione della cartella per le note vocali del diario se non esiste
-const uploadsPath = path.join(__dirname, 'public', 'uploads');
-if (!fs.existsSync(uploadsPath)) {
-    fs.mkdirSync(uploadsPath);
-}
-
 // --- REST API ENDPOINTS ---
 
 app.use('/api/auth', authRouter);
@@ -95,7 +86,6 @@ app.use('/api', usersRouter);
 
 app.use('/api/hikes', hikesRouter);
 app.use('/api/reports', reportsRouter);
-app.use('/api/diaries', diariesRouter);
 app.use('/api/stamps', stampsRouter);
 app.use('/api/completions', completionsRouter);
 app.use('/api/notifications', notificationsRouter);
@@ -107,29 +97,6 @@ app.use('/api/regions', regionsRouter);
 app.use('/api/geocoding', geocodingRouter);
 app.use('/api/routing', routingRouter);
 app.use('/api/safety', safetyRouter);
-
-// Carica una nota vocale del diario (base64 in JSON, nessuna dipendenza aggiuntiva).
-// Salva su disco, non nel database: resta qui perche' non riguarda MongoDB. requireAuth
-// aggiunto in Fase H (caccia ai bug generale): mancava del tutto, chiunque - anche senza
-// account - poteva scrivere file arbitrari sul disco del server senza limite di quantita'.
-app.post('/api/uploads/audio', requireAuth, (req, res) => {
-    const { audioBase64, mimeType } = req.body;
-    if (!audioBase64) {
-        return res.status(400).json({ error: 'Nessun audio ricevuto' });
-    }
-
-    const extension = mimeType && mimeType.includes('mp4') ? 'mp4' : 'webm';
-    const fileName = `voicenote_${Date.now()}.${extension}`;
-    const filePath = path.join(uploadsPath, fileName);
-
-    try {
-        fs.writeFileSync(filePath, Buffer.from(audioBase64, 'base64'));
-        res.json({ url: `/uploads/${fileName}` });
-    } catch (e) {
-        console.error('Errore nel salvataggio della nota vocale:', e);
-        res.status(500).json({ error: 'Impossibile salvare la nota vocale' });
-    }
-});
 
 // --- SERVER HTTP & WEBSOCKET SETUP ---
 

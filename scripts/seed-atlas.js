@@ -14,7 +14,6 @@ const Squad = require('../models/Squad');
 const RouteBookmark = require('../models/RouteBookmark');
 const Completion = require('../models/Completion');
 const Notification = require('../models/Notification');
-const Diary = require('../models/Diary');
 
 async function migrate() {
     await connectMongo();
@@ -113,17 +112,6 @@ async function migrate() {
         const { id, userId, createdAt, ...rest } = oldNotification;
         await Notification.create({ ...rest, userId: userIdMap.get(userId) });
     }
-
-    // --- Diario di viaggio ---
-    for (const oldDiary of seedData.diaries || []) {
-        const { id, hikeId, userId, timestamp, ...rest } = oldDiary;
-        await Diary.create({
-            ...rest,
-            hikeId: hikeIdMap.get(hikeId),
-            userId: userIdMap.get(userId)
-        });
-    }
-    console.log(`Creati ${(seedData.diaries || []).length} appunti di diario.`);
 
     console.log('Migrazione completata con successo.');
     await mongoose.disconnect();

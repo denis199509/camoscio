@@ -1480,7 +1480,7 @@
                             </div>
                         </div>
 
-                        <!-- Colonna Destra: Diario e Recensioni Anonime -->
+                        <!-- Colonna Destra: Recensioni Anonime -->
                         <div class="social-column">
                             <!-- Recensioni Anonime Post-Escursione -->
                             <div class="glass-card review-card">
@@ -1512,57 +1512,6 @@
                                 </form>
                             </div>
 
-                            <!-- Diario di Viaggio Collaborativo -->
-                            <div class="glass-card diary-card">
-                                <h4><i data-lucide="book-open"></i> Diario di Viaggio Collaborativo</h4>
-                                <p class="small text-muted">Aggiungi foto, pensieri o tracce audio geolocalizzate durante l'uscita. A fine giornata verrà generato un "Reel" interattivo della timeline del viaggio.</p>
-                                
-                                <form id="add-diary-form">
-                                    <div class="form-group">
-                                        <label for="diary-hike-select">Escursione associata:</label>
-                                        <select id="diary-hike-select" class="form-control" required>
-                                            <!-- Popolato da JS -->
-                                        </select>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="diary-text">Racconta un momento dell'escursione:</label>
-                                        <textarea id="diary-text" required placeholder="Es. Sosta per il pranzo al sacco davanti a un panorama mozzafiato..."></textarea>
-                                    </div>
-                                    <div class="form-row">
-                                        <div class="form-group">
-                                            <label for="diary-img">Link Foto (Unsplash o file):</label>
-                                            <input type="text" id="diary-img" placeholder="https://images.unsplash.com/..." value="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=600&q=80">
-                                        </div>
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Nota vocale (facoltativa):</label>
-                                        <div class="diary-voice-recorder">
-                                            <button type="button" class="btn btn-sm btn-secondary" id="btn-record-voice-note">
-                                                <i data-lucide="mic"></i> Registra nota vocale
-                                            </button>
-                                            <span class="small text-muted" id="voice-note-status"></span>
-                                        </div>
-                                    </div>
-                                    <div class="form-row">
-                                        <div class="form-group">
-                                            <label for="diary-lat">Latitudine Foto:</label>
-                                            <input type="number" id="diary-lat" step="0.0001" value="42.4691" required>
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="diary-lng">Longitudine Foto:</label>
-                                            <input type="number" id="diary-lng" step="0.0001" value="13.5595" required>
-                                        </div>
-                                    </div>
-                                    <button type="submit" class="btn btn-success btn-block">Aggiungi al Diario di Viaggio</button>
-                                </form>
-
-                                <div class="timeline-reel-section">
-                                    <h5>Timeline / Reel Interattivo:</h5>
-                                    <div class="diary-timeline" id="diary-timeline-container">
-                                        <!-- Renderizzato da JS -->
-                                    </div>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </section>
