@@ -1,9 +1,11 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
 Aggiornato: 2026-08-21. Chiuso anche il punto 98/D (obiettivo di
-allenamento ora mostrato anche fuori dal campo, non solo nell'elenco
-dei compagni). Committato (d7eecf1), non ancora pushato. RIPARTIRE
-DA UNA SOLA COSA ORA: punto 98/E.
+allenamento ora mostrato anche fuori dal campo) e il punto 98/F,
+fuori ordine su richiesta di Denis: "Diario di Viaggio Collaborativo"
+cancellato per intero, codice e le due voci vere sul database
+(committato d7eecf1 e 36d3e66, non ancora pushati). RIPARTIRE DA UNA
+SOLA COSA ORA: punto 98/E.
 ===================================================================
 
 QUESTO FILE DICE SOLO UNA COSA: a che punto siamo adesso e da dove si ricomincia.
@@ -77,6 +79,12 @@ MAI piu' (congelato); cose_da_fare.txt quando un punto si chiude o ne arriva uno
           nessuna conferma visibile (l'elenco mostrava solo i
           compagni, mai il proprio). Aggiunto un riquadro sotto il
           form (d7eecf1).
+      98/F. "Diario di Viaggio Collaborativo" cancellato per intero
+          (codice + le due voci vere sul database), fuori ordine su
+          decisione di Denis: non un rinvio ma una cancellazione,
+          nessuna idea per come dovrebbe funzionare. Voce reale di
+          DaniWoll mostrata per intero prima di cancellarla, la sua
+          escursione non toccata (36d3e66).
       99. Click su un'icona badge (propria, di un altro utente, personale,
           o nell'anteprima Passaporto di Dashboard) apre l'immagine intera
           in un modale; un badge non ancora conquistato resta grigio anche
@@ -127,10 +135,9 @@ MAI piu' (congelato); cose_da_fare.txt quando un punto si chiude o ne arriva uno
     in ../camoscio memoria/04-Da-Fare.md, non ancora corretto.
 
     >>> RIPARTIRE DA: punto 98/E (progetto percorso: filtro troppo stretto,
-    solo sentieri, a volte servirebbero anche strade sterrate). F (diario di viaggio
-    collaborativo) resta FUORI ordine, Denis stesso dice di non avere ancora
-    chiaro come deve funzionare, non riproporla come pronta. Dettaglio
-    completo, con le parole di Denis, in cose_da_fare.txt punto 98.
+    solo sentieri, a volte servirebbero anche strade sterrate) - ultimo punto
+    aperto del 98, F cancellato per intero il 21/08. Dettaglio completo, con
+    le parole di Denis, in cose_da_fare.txt punto 98.
 
     >>> ANCORA APERTE, non urgenti (dettaglio in
     ../camoscio memoria/04-Da-Fare.md): i "livelli"

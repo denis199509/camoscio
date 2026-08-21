@@ -5052,6 +5052,43 @@ schermo spento ancora."
    "Monte Rosa" per non lasciare dati di prova sull'account demo
    condiviso. Committato (d7eecf1), non ancora pushato.
 
+   PUNTO F CANCELLATO PER INTERO (21/08/2026, sessione successiva),
+   fuori dall'ordine originale (era il punto piu' vago, "non pronto
+   per essere costruito" - vedi sopra) su decisione di Denis, non
+   piu' un rinvio ma una cancellazione: "sto pensando di cancellare
+   totalmente 'Diario di Viaggio Collaborativo' al momento nessuna
+   idea, se in futuro avro' qualche idea ti parlo io. al momento
+   niente". Chiesto prima se cancellare anche il codice o solo
+   nascondere il pannello: confermato "Cancella tutto adesso".
+   Tolti modello (models/Diary.js), rotta (routes/diaries.js),
+   endpoint di upload note vocali e creazione cartella public/uploads
+   in server.js, pannello e funzioni JS collegate (social.js:
+   renderDiaryTimeline, setupVoiceRecorder, blobToBase64,
+   setupDiaryForm; carpool.js: meta' di populateHikeSelects che
+   popolava anche la select del diario; app.js: chiave "diaries"
+   dello stato globale), CSS dedicato (styles.css), riferimento nel
+   vecchio script di migrazione (scripts/seed-atlas.js) e la
+   collezione controllata da prove/prova-punto35.js (altrimenti
+   sarebbe caduta da sola, "diaries" non piu' un array nello stato).
+   PRIMA di cancellare dati: controllato sul database di produzione
+   quante voci esistessero davvero - solo 2, una demo (Sofia
+   FotoPasso) e una vera di un utente reale non-demo (DaniWoll, sulla
+   sua escursione conclusa "Pizzo Cefalone e Cima Wotija da piana Le
+   Fontari"). Mostrato il testo completo a Denis prima di toccarla
+   (non una cancellazione a scatola chiusa) e chiesto esplicitamente
+   cosa farne: prima risposta "lasciamo sul database", poi corretta
+   subito dopo in "anzi scusami cancella tutto" - cancellate entrambe
+   (filtrate per i due _id esatti, mai una deleteMany larga), NON
+   toccata l'escursione ne' nessun altro dato di DaniWoll (confermato
+   esplicitamente a Denis, che aveva chiesto rassicurazione). Anche
+   un file orfano su disco (public/uploads/voicenote_...webm, 42
+   byte, mai collegato a nessuna delle due voci cancellate, risalente
+   al 17/07/2026) tolto insieme alla cartella ormai vuota.
+   VERIFICATO dal vivo nel browser (server locale, account demo):
+   nessun errore in console, nessuna chiamata a /api/diaries,
+   Carpooling e Tribu&Squadre (compreso il riquadro del punto 98/D)
+   invariati. Committato (36d3e66), non ancora pushato.
+
 =====================================================================
 
 99. [20/08/2026, sera] Denis, parole sue: "possiamo fare che cliccando
