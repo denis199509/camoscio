@@ -13,7 +13,13 @@ const driverSchema = new mongoose.Schema({
     seats: Number,
     departureCity: String,
     distanceKm: Number,
-    pricePerPassenger: Number
+    pricePerPassenger: Number,
+    // Trovato per strada al punto 98/C (non richiesto all'epoca, annotato per dopo): il
+    // frontend ("Sali a Bordo", joinCarpoolGroup in public/js/carpool.js) scrive gia' su
+    // questo campo, e canNonCreatorEditCarpool (routes/hikes.js) gestisce gia' i permessi
+    // giusti (solo se stesso) - ma senza dichiararlo qui Mongoose lo scartava in silenzio a
+    // ogni salvataggio, quindi il passeggero spariva al primo refreshState().
+    passengers: { type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], default: undefined }
 }, { _id: false });
 
 const backpackItemSchema = new mongoose.Schema({
