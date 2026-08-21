@@ -5207,6 +5207,53 @@ schermo spento ancora."
    finita a fine sessione. NON RIPROPORLO DI INIZIATIVA se non
    confermato: aspettare che lui riprovi e dica com'e' andata.
 
+   RIAPERTO UNA TERZA VOLTA (21/08/2026, sessione successiva): Denis
+   ha riprovato dopo il crash improvviso del PC a inizio sessione e ha
+   riferito, parole sue: "ho fatto il test a val granara, sulla strada
+   residenziale passa, ma appena arriva sulla sp30 fa il giro enorme
+   intorno". BUONA NOTIZIA PRIMA: il tratto residential ora passa
+   davvero, la correzione precedente ha tenuto - quella parte del
+   punto e' confermata chiusa.
+
+   CAUSA NUOVA, stesso schema di prima ma tag diverso: interrogato di
+   nuovo Overpass sulle stesse coordinate vere di Valle Granara
+   (41.9086/13.3541, mai indovinate) per tutte le highway nella zona:
+   la SP30 (e la SP63 poco distante, "Simbriuna") risultano taggate
+   highway=secondary - un tag mai incluso nel filtro del livello i
+   (path/track/bridleway/unclassified/service/residential), esattamente
+   come residential prima di essere aggiunto: nessuna soglia di
+   distanza l'avrebbe mai presa, il dato non viene proprio scaricato
+   da Overpass per quel tag. Confrontato con un nuovo screenshot di
+   Denis (punti 2 e 3, il tornante della SP30): combacia - il percorso
+   scende bene lungo il sentiero della valle ma per raggiungere il
+   punto 3 non ha nessun arco della provinciale da usare, quindi
+   scende nella conca e risale, il giro visibile nella foto.
+
+   DIFFERENZA DAL CASO RESIDENTIAL: quello era isolato (4 strade
+   vicino a un solo casolare). Le provinciali invece sono spesso
+   proprio come si arriva ai punti di partenza in montagna - segnalato
+   a Denis che questo probabilmente non e' un caso raro, si ripresentera'
+   altrove.
+
+   Proposto di misurare l'impatto di secondary sulle 4 regioni prima
+   di deciderne l'aggiunta (stesso metodo di sola lettura di
+   scripts/misura-residential.js, ~2 ore) - segnalato che lo spazio
+   libero nel frattempo e' sceso a 330 MB (era 425 quando si decise la
+   soglia originale del punto 13), e che le strade secondarie
+   potrebbero pesare in modo diverso dal residenziale (rete piu' rada
+   ma molto piu' estesa territorialmente).
+
+   Denis, parole sue: "no no lascia stare, altre due ore non posso
+   aspettare, ci pensiamo nella prossima sessione... per oggi va bene
+   cosi". Rimandato per il TEMPO, non per disinteresse: a differenza
+   del diario di viaggio (98/F), qui lui stesso vuole riprendere il
+   punto alla prossima sessione - proporre di nuovo la misura
+   all'inizio, non aspettare che la richieda lui.
+
+   NESSUN CODICE NE' DATABASE TOCCATI in questa parte: solo una query
+   Overpass di sola lettura per la diagnosi, nessun filtro modificato,
+   nessuna estrazione lanciata. Punto 98/E resta APERTO.
+
 =====================================================================
 
 99. [20/08/2026, sera] Denis, parole sue: "possiamo fare che cliccando
