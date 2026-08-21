@@ -10,14 +10,27 @@
 //   - e lascia meta' delle reti spezzate (211 pezzi invece di 434 sull'area di prova).
 //
 // Alzata a 800 m il 2026-08-21 (punto 98/E): Denis ha trovato un caso vero (Valle Granara,
-// Gerano/Terminillo) dove il collegamento sulla SP30 misura ~660 m, oltre la soglia
-// originale - il percorso progettato girava largo lungo il sentiero della valle invece di
-// tagliare per la strada. 800 m e non 1000: margine sopra i 660 m misurati senza avvicinarsi
-// troppo alla soglia oltre la quale il rischio (non di spazio: gia' misurato che il tetto
-// resta sotto i 103 MB stimati per "tutte le strade", su 425 MB liberi) e' tirare dentro
-// pezzi di rete stradale di paese vicino ai punti di partenza - lo stesso motivo per cui fu
-// scartato il filtro senza limiti nel 2026-07-27. NON e' un incremento generico "per stare
-// tranquilli": resta un multiplo misurato del caso reale trovato, non un tetto arbitrario.
+// Gerano/Terminillo) dove il collegamento misura ~660 m, oltre la soglia originale - il
+// percorso progettato girava largo lungo il sentiero della valle invece di tagliare per la
+// strada. 800 m e non 1000: margine sopra i 660 m misurati senza avvicinarsi troppo alla
+// soglia oltre la quale il rischio (non di spazio: gia' misurato che il tetto resta sotto i
+// 103 MB stimati per "tutte le strade", su 425 MB liberi) e' tirare dentro pezzi di rete
+// stradale di paese vicino ai punti di partenza - lo stesso motivo per cui fu scartato il
+// filtro senza limiti nel 2026-07-27. NON e' un incremento generico "per stare tranquilli":
+// resta un multiplo misurato del caso reale trovato, non un tetto arbitrario.
+//
+// 'residential' aggiunto lo stesso giorno, in un secondo momento (punto 98/E riaperto): il
+// giro largo c'era ANCORA dopo l'alzata a 800 m, perche' la strada vera vicino Valle Granara
+// e' taggata highway=residential - un tag mai incluso qui, escluso apposta dai sette filtri
+// del 27/07 per lo stesso motivo "reti di paese". Nessuna soglia di distanza l'avrebbe mai
+// presa: il dato non veniva proprio scaricato da Overpass. Prima di aggiungerlo si e' quindi
+// misurato quanto pesa (scripts/misura-residential.js, sola lettura, sulle 4 regioni): circa
+// il 34% di documenti in piu' rispetto al livello i di allora, di cui una parte reale sono
+// interi paesi (un solo riquadro ha restituito 16.428 way residential in un colpo). Denis ha
+// confermato che il caso vero misura comunque ~660 m come l'altro (quindi un raggio piu'
+// stretto non lo avrebbe risolto) e ha accettato il costo in cambio della soglia unica da
+// 800 m gia' in uso - vedi viaTag in models/Trail.js per come si torna indietro SOLO su
+// questo tag, se in futuro pesasse piu' del previsto sui percorsi proposti.
 //
 // COSA FA, in concreto: per ogni riquadro scarica i way percorribili, tiene solo quelli che
 // passano entro 800 m da un sentiero GIA' sul database, e li salva con routingOnly: true.
@@ -69,7 +82,7 @@ function scriviProgresso(p) {
 
 async function scarica(riquadro) {
     const q = `[out:json][timeout:170];
-way["highway"~"^(path|track|bridleway|unclassified|service)$"](${riquadro.sud.toFixed(4)},${riquadro.ovest.toFixed(4)},${riquadro.nord.toFixed(4)},${riquadro.est.toFixed(4)});
+way["highway"~"^(path|track|bridleway|unclassified|service|residential)$"](${riquadro.sud.toFixed(4)},${riquadro.ovest.toFixed(4)},${riquadro.nord.toFixed(4)},${riquadro.est.toFixed(4)});
 out geom;`;
     for (let giro = 1; giro <= 2; giro++) {
         for (const url of SERVER) {
@@ -157,6 +170,12 @@ out geom;`;
             // Vincolo delle 4 regioni, come per tutto il resto del progetto.
             const regione = regionForPoint(punti[0][0], punti[0][1]) || regionForPoint(punti[punti.length - 1][0], punti[punti.length - 1][1]);
             if (!regione) { saltati++; continue; }
+
+            // viaTag SOLO per residential (vedi models/Trail.js): i cinque tag originali
+            // non lo scrivono, undefined resta il default e non costa spazio.
+            const setOnInsert = { routingOnly: true, sacScale: null };
+            if (w.tags && w.tags.highway === 'residential') setOnInsert.viaTag = 'residential';
+
             daSalvare.push({
                 updateOne: {
                     filter: { wayId: w.id },
@@ -164,7 +183,7 @@ out geom;`;
                         $set: { region: regione, name: (w.tags && w.tags.name) || null, coordinates: punti, cells: celleDiLinea(punti) },
                         // routingOnly SOLO all'inserimento: se un domani questo way diventasse
                         // un sentiero conosciuto, un rilancio non deve declassarlo.
-                        $setOnInsert: { routingOnly: true, sacScale: null }
+                        $setOnInsert: setOnInsert
                     },
                     upsert: true
                 }

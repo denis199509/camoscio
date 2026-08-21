@@ -37,6 +37,20 @@ const trailSchema = new mongoose.Schema({
     // correttamente sia i documenti vecchi sia quelli nuovi.
     routingOnly: { type: Boolean, default: undefined },
 
+    // Quale tag OSM ha fatto entrare QUESTO tratto nel livello i, ma SOLO quando non e'
+    // uno dei cinque originali (path/track/bridleway/unclassified/service) - punto 98/E,
+    // seconda riapertura, 2026-08-21: 'residential' aggiunto al filtro dopo una misura
+    // dedicata (scripts/misura-residential.js) che ha trovato ~34% di documenti in piu' a
+    // parita' di raggio, in parte reti stradali di paesi veri, non solo scorciatoie isolate
+    // come il caso reale che ha portato alla richiesta (Valle Granara). default: undefined
+    // apposta, stesso principio di routingOnly: i tratti dei cinque tag originali (e i
+    // 181.197 gia' sul database) non lo scrivono, quindi non costa spazio dove non serve.
+    // Serve a UNA cosa sola: poter tornare indietro in modo pulito
+    // (Trail.deleteMany({viaTag:'residential'})) se in futuro si scopre che il tag pesa
+    // troppo sui percorsi proposti, senza dover reinterrogare Overpass per capire quali
+    // documenti erano suoi.
+    viaTag: { type: String, default: undefined },
+
     // Celle di una griglia da 0,1 gradi attraversate dal sentiero, come
     // latIdx * 10000 + lngIdx. Serve a leggere da MongoDB i sentieri di un riquadro:
     // senza, sulla collezione non c'e' NESSUN indice geografico (solo wayId) e la

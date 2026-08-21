@@ -5162,9 +5162,50 @@ schermo spento ancora."
    Proposte tre strade a Denis (misurare prima su tutte le regioni /
    aggiungere "residential" ma con un raggio piu' stretto solo per
    quel tag / lasciare stare) - scelto "lascia stare per ora ci
-   pensiamo nella prossima sessione". NON RIPROPORLO DI INIZIATIVA,
-   aspettare che torni lui. Nessun codice toccato per questa parte,
-   nessun'altra estrazione lanciata.
+   pensiamo nella prossima sessione". Nessun codice toccato per questa
+   parte, nessun'altra estrazione lanciata.
+
+   RIPRESO E CHIUSO PER DAVVERO (21/08/2026, sessione successiva):
+   Denis ha chiesto di misurare prima. Scritto uno script di sola
+   lettura (scripts/misura-residential.js, stessa griglia a celle del
+   filtro vero) che ha interrogato Overpass sulle 4 regioni: 148.205
+   way "residential" vicino a sentieri conosciuti, il 41% (61.288)
+   entro 800 m - non un'eccezione rara come i 4 casi di Valle Granara,
+   una fetta enorme (un riquadro da solo ha restituito 16.428 way,
+   quasi certamente un paese intero). Tempo di misura ~1h53, molto piu'
+   lento del previsto - le stime iniziali sono state sbagliate piu'
+   volte in entrambe le direzioni prima di stabilizzarsi.
+
+   Chiesto se un raggio piu' stretto (invece della parita' a 800 m)
+   potesse limitare il danno: Denis ha chiarito che il caso vero di
+   Valle Granara misura comunque ~660 m, la stessa distanza che aveva
+   gia' portato ad alzare la soglia generale da 200 a 800 m - quindi
+   nessun raggio sotto gli 800 m lo avrebbe risolto comunque. Accettato
+   il costo misurato in cambio della soglia unica gia' in uso.
+
+   Implementato: "residential" aggiunto al filtro di
+   scripts/fetch-trails-nearby.js (stessa soglia 800 m, commento di
+   testa aggiornato). Nuovo campo viaTag su models/Trail.js (stringa,
+   default: undefined, solo sui tratti residential) per poter tornare
+   indietro in modo pulito (Trail.deleteMany({viaTag:'residential'}))
+   senza reinterrogare Overpass, se in futuro il tag pesasse troppo sui
+   percorsi proposti. Verificato su 3 riquadri prima del lancio
+   completo (+1.355 documenti coerenti con la misura, viaTag scritto
+   solo sui nuovi, i documenti originali intatti), poi re-estrazione
+   completa (--daccapo, necessaria perche' il progresso segnava gia'
+   tutti i riquadri come fatti col vecchio filtro): 84 minuti, zero
+   riquadri falliti.
+
+   RISULTATO REALE: +60.762 documenti "residential" (Lazio 29.063,
+   Abruzzo 16.215, Marche 12.145, Molise 3.339) - scarto <1% dalla
+   stima di sola lettura. Database totale passato da 152,67 a 181,70 MB
+   su 512 (330 liberi). Committato, non ancora pushato.
+
+   ANCORA DA FARE: Denis deve confermare dal vivo che il progetto
+   percorso vicino Valle Granara ora tagli per la strada giusta invece
+   di girare largo - non verificato in questa sessione, l'estrazione e'
+   finita a fine sessione. NON RIPROPORLO DI INIZIATIVA se non
+   confermato: aspettare che lui riprovi e dica com'e' andata.
 
 =====================================================================
 

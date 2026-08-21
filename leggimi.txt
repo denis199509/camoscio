@@ -9,16 +9,26 @@ oggi, il passeggero di un carpooling ora si salva davvero (mancava un
 campo nello schema, i permessi lato server c'erano gia'). Tutto
 committato e pushato (vedi elenco hash piu' sotto).
 
->>> APERTO PER LA PROSSIMA SESSIONE: Denis ha riprovato il progetto
-percorso (screenshot dopo l'estrazione) e il giro largo c'e' ancora
-fra due punti vicinissimi (Valle Granara). Causa vera trovata: NON e'
-distanza, e' il tag OSM - la strada che serve li' e' `highway=
-residential` (strada di paese), mai incluso nel filtro del livello i
-(nemmeno nei 7 filtri del 27/07). Denis ha detto "lascia stare per
-ora ci pensiamo nella prossima sessione" - non riproporlo di
-iniziativa, aspettare che torni lui. Dettaglio completo (incluso il
-rischio di tirare dentro paesi veri se si aggiunge `residential` senza
-misurare prima) in ../camoscio memoria/04-Da-Fare.md.
+>>> APERTO PER LA PROSSIMA SESSIONE: punto 98/E chiuso per davvero
+(21/08/2026, sessione successiva). Misurato prima (script dedicato di
+sola lettura, ~1h53 sulle 4 regioni): il 41% dei way `residential`
+vicino ai sentieri cade entro 800 m (61.288 su 148.205) - non
+un'eccezione rara, un riquadro da solo ne aveva 16.428 (un paese
+intero). Denis ha confermato che il caso vero di Valle Granara misura
+comunque ~660 m come l'altro, quindi un raggio piu' stretto non
+l'avrebbe risolto comunque - accettato il costo, `residential`
+aggiunto al filtro con la stessa soglia da 800 m. Nuovo campo `viaTag`
+su models/Trail.js per tornare indietro in modo pulito solo su questo
+tag, se servisse. Re-estrazione completa fatta e verificata: +60.762
+documenti, database a 181,70 MB su 512 (330 liberi). Committato, non
+ancora pushato.
+
+MANCA SOLO la conferma dal vivo di Denis che il progetto percorso
+vicino Valle Granara ora tagli per la strada giusta - non verificato
+in questa sessione (l'estrazione e' finita a fine sessione). Non
+riproporlo di iniziativa: aspettare che lui riprovi e dica com'e'
+andata. Dettaglio completo in ../camoscio memoria/04-Da-Fare.md e
+03-Decisioni-Architetturali.md.
 ===================================================================
 
 QUESTO FILE DICE SOLO UNA COSA: a che punto siamo adesso e da dove si ricomincia.
