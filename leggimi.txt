@@ -152,8 +152,9 @@ MAI piu' (congelato); cose_da_fare.txt quando un punto si chiude o ne arriva uno
            stesso metodo giusto per far provare l'app a un amico) e
            verificato con apksigner (fingerprint combacia col keystore).
 
-    RIPARTIRE DA: la prova lunga del passo 6, PIANO CONFERMATO per domani
-    21/08/2026: avvio tracciamento -> dopo 3 min aereo ON -> dopo altri 2
+    RIPARTIRE DA: la prova lunga del passo 6, PIANO GIA' CONFERMATO (non
+    ancora eseguita in nessuna sessione successiva a questa nota): avvio
+    tracciamento -> dopo 3 min aereo ON -> dopo altri 2
     min schermo OFF per 12 min -> riaccensione ancora in aereo (controllare
     se compare "registrazione interrotta - tocca per riprovare": se non
     compare nulla ha gia' recuperato da solo, se compare va toccato per far
