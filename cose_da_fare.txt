@@ -4988,6 +4988,19 @@ schermo spento ancora."
    deviare dall'ordine dato per il punto 98. Non corretto, annotato
    nel vault (04-Da-Fare.md, sezione del punto 98).
 
+   CORRETTO IL 21/08/2026 (Denis: "vediamo il punto 98/C", ripreso
+   mentre si aspettava l'estrazione del punto 98/E): controllato prima
+   routes/hikes.js - canNonCreatorEditCarpool gestiva gia' i permessi
+   giusti su "passengers" (solo se stesso puo' salire/scendere), era
+   pronta da prima. Bastava dichiarare il campo nello schema
+   (default: undefined, stesso principio di shareable/covers per il
+   vincolo spazio). CONTROPROVA vera fatta (due account demo: Marco
+   offre un passaggio, Luca sale a bordo, rilettura da zero come fa
+   il client) - senza la correzione il campo sparisce gia' al primo
+   salvataggio (non solo al refresh), con la correzione resta.
+   Committato (65d859b), non ancora pushato quando scritto qui (vedi
+   leggimi.txt per lo stato vero del push).
+
    PUNTO B FATTO E VERIFICATO (18/08/2026 notte) - fermato qui su
    richiesta di Denis di salvare, non ancora committato quando questa
    nota e' stata scritta (vedi leggimi.txt per lo stato vero del
@@ -5088,6 +5101,41 @@ schermo spento ancora."
    nessun errore in console, nessuna chiamata a /api/diaries,
    Carpooling e Tribu&Squadre (compreso il riquadro del punto 98/D)
    invariati. Committato (36d3e66), non ancora pushato.
+
+   PUNTO E CHIUSO (21/08/2026, stessa sessione), ultimo punto del 98:
+   Denis ha provato a fare un progetto vero sul sito e mandato uno
+   screenshot (Valle Granara/Passo Serra Sant'Antonio, zona Filettino) -
+   il percorso girava largo sul sentiero della valle invece di tagliare
+   per la SP30. Prima di toccare qualunque filtro, controllato che il
+   "livello i" (carrarecce/stradine entro una soglia dai sentieri
+   conosciuti, punto 13, gia' esistente dal 27/07) fosse completo su
+   tutte e 4 le regioni - lo era (91.340 tratti, estrazione 173/173
+   riquadri) - quindi il caso cadeva davvero oltre la vecchia soglia di
+   200 m. Denis ha misurato lui stesso il tratto vero sulla SP30: ~660 m.
+   Proposto di alzare a 1000 m per stare tranquilli; consigliato invece
+   800 m (margine sopra i 660 m misurati senza avvicinarsi troppo alla
+   soglia oltre cui si rischia di tirare dentro reti stradali di paese,
+   lo stesso motivo per cui a suo tempo fu scartato il filtro "tutte le
+   strade") - accettato.
+   Rilanciata l'estrazione (scripts/fetch-trails-nearby.js --daccapo):
+   interrotta a meta' (103/173 riquadri) da un mio errore - un
+   `taskkill //F //IM node.exe` per riavviare il server locale (per
+   verificare il punto 98/C in parallelo) ha ammazzato per sbaglio anche
+   il processo dell'estrazione, scambiato per un processo qualunque.
+   Nessun dato perso (lo script salva il progresso riquadro per
+   riquadro): ripresa SENZA --daccapo, ha ripreso da dove si era
+   fermata. Segnalato l'errore a Denis subito, non nascosto. Tempo
+   totale ~53 minuti (server Overpass pubblico piu' lento del solito
+   quel giorno, nessun errore/fallimento).
+   RISULTATO: 205.872 tratti totali sul database (181.197 livello i,
+   invariati i 24.675 sentieri veri) - piu' del previsto (la stima
+   iniziale di ~103 MB si e' rivelata ottimistica, il dato vero e'
+   152,67 MB su 512 MB), ma ampiamente dentro il budget (359 MB
+   liberi). Zero impatto sulla RAM di Render: il livello i resta escluso
+   dall'indice caricato in memoria (routingOnly:{$ne:true} in
+   lib/trailIndex.js), la ricerca del percorso legge da MongoDB a ogni
+   richiesta - quindi il dato e' gia' live sul sito vero, nessun deploy
+   richiesto. Committato (611e97e).
 
 =====================================================================
 

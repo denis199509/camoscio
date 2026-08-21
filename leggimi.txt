@@ -1,11 +1,14 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-21. Chiuso anche il punto 98/D (obiettivo di
-allenamento ora mostrato anche fuori dal campo) e il punto 98/F,
-fuori ordine su richiesta di Denis: "Diario di Viaggio Collaborativo"
-cancellato per intero, codice e le due voci vere sul database
-(committato d7eecf1 e 36d3e66, non ancora pushati). RIPARTIRE DA UNA
-SOLA COSA ORA: punto 98/E.
+Aggiornato: 2026-08-21. PUNTO 98 CHIUSO PER INTERO (A/B/C/D/E/F, sei
+richieste di Denis registrate insieme il 18/08). Ultimi due: 98/E,
+soglia del livello i del progetto percorso alzata da 200 a 800 m dopo
+un caso reale trovato da Denis (dato gia' live sul sito, nessun
+deploy richiesto); 98/C, debito trovato per strada l'11/08 e ripreso
+oggi, il passeggero di un carpooling ora si salva davvero (mancava un
+campo nello schema, i permessi lato server c'erano gia'). Tutto
+committato e pushato (vedi elenco hash piu' sotto). NESSUN PUNTO
+APERTO IN QUESTO MOMENTO: aspettare la prossima richiesta di Denis.
 ===================================================================
 
 QUESTO FILE DICE SOLO UNA COSA: a che punto siamo adesso e da dove si ricomincia.
@@ -79,6 +82,12 @@ MAI piu' (congelato); cose_da_fare.txt quando un punto si chiude o ne arriva uno
           nessuna conferma visibile (l'elenco mostrava solo i
           compagni, mai il proprio). Aggiunto un riquadro sotto il
           form (d7eecf1).
+      98/E. Progetto percorso girava largo sul sentiero invece di
+          tagliare per una strada sterrata vicina (caso vero trovato
+          da Denis, screenshot alla mano) - soglia del "livello i"
+          alzata da 200 a 800 m, dato gia' live sul sito senza deploy
+          (611e97e). Interruzione a meta' causata da un mio taskkill
+          troppo largo, nessun dato perso (script ripartibile).
       98/F. "Diario di Viaggio Collaborativo" cancellato per intero
           (codice + le due voci vere sul database), fuori ordine su
           decisione di Denis: non un rinvio ma una cancellazione,
@@ -127,17 +136,19 @@ MAI piu' (congelato); cose_da_fare.txt quando un punto si chiude o ne arriva uno
     annotato in ../camoscio memoria/04-Da-Fare.md, sezione "Debito tecnico
     noto". Nessun codice da toccare finche' non arriva l'immagine nuova.
 
-    >>> TROVATO PER STRADA AL PUNTO 98/C, NON RICHIESTO: driverSchema
-    (models/Hike.js) non ha mai avuto un campo "passengers" - nessuna
-    auto gia' offerta ha mai salvato un passeggero sul database, "Sali
-    a Bordo" funziona solo a video. Segnalato a Denis, che ha scelto
-    di registrarlo per dopo invece di deviare dall'ordine - dettaglio
-    in ../camoscio memoria/04-Da-Fare.md, non ancora corretto.
+    >>> CORRETTO IL 21/08/2026 (era il debito trovato per strada al punto
+    98/C, l'11/08): driverSchema (models/Hike.js) non dichiarava mai il
+    campo "passengers" - Mongoose lo scartava in silenzio a ogni
+    salvataggio, "Sali a Bordo" funzionava solo a video. I permessi lato
+    server (routes/hikes.js) c'erano gia' pronti da prima, bastava
+    dichiarare il campo. Controprova vera fatta (senza la correzione il
+    campo sparisce gia' al primo salvataggio, con la correzione resta).
+    Committato (65d859b).
 
-    >>> RIPARTIRE DA: punto 98/E (progetto percorso: filtro troppo stretto,
-    solo sentieri, a volte servirebbero anche strade sterrate) - ultimo punto
-    aperto del 98, F cancellato per intero il 21/08. Dettaglio completo, con
-    le parole di Denis, in cose_da_fare.txt punto 98.
+    >>> PUNTO 98 CHIUSO PER INTERO (A/B/C/D/E/F). NESSUN PUNTO APERTO IN
+    QUESTO MOMENTO: aspettare la prossima richiesta di Denis. Dettaglio
+    completo di ogni sotto-punto, con le parole di Denis, in
+    cose_da_fare.txt punto 98.
 
     >>> ANCORA APERTE, non urgenti (dettaglio in
     ../camoscio memoria/04-Da-Fare.md): i "livelli"
