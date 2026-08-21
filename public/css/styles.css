@@ -2708,6 +2708,15 @@ option {
     text-align: center;
 }
 
+.current-goal-display {
+    margin-top: 12px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: var(--accent-orange-glow);
+    border: 1px solid rgba(193, 102, 46, 0.3);
+    font-size: 0.85rem;
+}
+
 /* Goal matches list */
 .goal-matches-list {
     display: flex;

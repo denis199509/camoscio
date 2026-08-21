@@ -299,6 +299,18 @@ function renderSocialModule() {
     // Carica l'obiettivo di allenamento dell'utente
     document.getElementById("user-training-goal").value = usr.trainingGoal || "";
 
+    // Punto 98/D: mostra l'obiettivo salvato anche fuori dal campo modificabile,
+    // altrimenti non c'e' nessun riscontro visibile dopo il salvataggio
+    const goalDisplay = document.getElementById("current-goal-display");
+    if (goalDisplay) {
+        if (usr.trainingGoal) {
+            goalDisplay.innerHTML = `Il tuo obiettivo attuale: <strong style="color:var(--accent-orange)">${escapeHtml(usr.trainingGoal)}</strong>`;
+            goalDisplay.classList.remove("hidden");
+        } else {
+            goalDisplay.classList.add("hidden");
+        }
+    }
+
     // Calcola e disegna i match sugli obiettivi
     renderGoalMatches(usr);
 
