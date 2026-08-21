@@ -5115,3 +5115,68 @@ schermo spento ancora."
    stessa notte) - PUNTO 100 CHIUSO PER INTERO: aggiornamento sopra
    la versione gia' installata (stessa firma, nessun permesso richiesto
    di nuovo). Parole di Denis: "verificato dal vivo, bellissimo."
+
+=====================================================================
+
+101. [21/08/2026] Denis, parole sue: "tutte le registrazioni fatte il
+   19 agosto per prova risultano ancora sul mio profilo. se entro
+   nelle mie escursioni ho una del 19 agosto e una del 20 aosto, le
+   altre le ho eliminate con il tasto del cestino. ma sono comunque
+   visibili se clicco sulla mia foto profilo (il tuo profilo) 13
+   escursioni del 19 e una del 20. ho eliminato pure le ultime due
+   (del 19 e 20 agosto) ma sul mio profilo vedo ancora 12
+   registrazioni del 19 agosto"
+
+   CAUSA VERA: non era un problema di cancellazione - DELETE
+   /api/completions/:id e DELETE /api/tracking/sessions/:id
+   funzionavano gia' bene, verificato sul database (ogni cancellazione
+   fatta da Denis aveva davvero tolto il documento giusto). "Le mie
+   escursioni" (storico.js, renderCompletate) applica gia' due pulizie
+   alle sessioni di tracciamento prima di disegnarle: scarta quelle
+   senza nemmeno un punto GPS vero (distanceKm<=0.05 - avvii annullati
+   o prove finite subito, punto 15), e non mostra una sessione a parte
+   quando la stessa camminata e' gia' rappresentata da un'escursione
+   "completata" con lo stesso hikeId (evitare il doppione, punto
+   80/B). Il profilo (renderProfileHikes, public/js/userprofile.js)
+   non applicava NESSUNA delle due regole: mostrava ogni sessione,
+   comprese quelle da 0 km. Testando dal vivo il tracciamento del
+   punto 94 il 19/08, Denis aveva generato 11 avvii-fantasma da ~0 km
+   piu' 1 sessione vera (0,695 km, agganciata a un'escursione gia'
+   completata a parte, "Ascesa al Corno Grande") - "Le mie escursioni"
+   non li ha mai mostrati (quindi nessun cestino li raggiungeva da
+   li'), ma il profilo si', tutti quanti: da qui i "13 del 19 e 1 del
+   20" iniziali, e i "12 del 19" rimasti dopo che Denis aveva
+   cancellato l'unica coppia di schede che riusciva davvero a vedere
+   (e quindi toccare) in "Le mie escursioni".
+
+   CORRETTO in public/js/userprofile.js e public/js/storico.js: le due
+   regole spostate in un'unica funzione condivisa (usciteVisibili,
+   esportata come window.CamoscioUsciteVisibili), usata da entrambi i
+   file - non due copie della stessa logica che possono divergere in
+   silenzio (stessa lezione gia' presa al punto 98/B).
+
+   VERIFICATO non solo sul database ma rifacendo la stessa identica
+   chiamata del browser vero: login come account demo (Marco
+   Alpinista), le stesse due rotte HTTP che chiama renderProfileHikes
+   (/api/completions/:userId, /api/tracking/sessions/:userId), dati
+   veri dell'account di Denis, la funzione vera appena scritta -
+   risultato 0 voci datate 19-20/08 dopo la correzione (erano 12
+   prima). L'estensione Chrome non era collegata in questa sessione,
+   quindi non e' stata una prova nel browser vero e proprio - detto
+   esplicitamente a Denis invece di lasciarlo credere il contrario.
+
+   PULIZIA DATI, richiesta esplicita di Denis dopo aver visto la
+   diagnosi: cancellate le 11 sessioni-fantasma da 0 km (query di
+   verifica PRIMA della cancellazione: filtro per userId di Denis +
+   status ended + distanceKm<=0.05 + startedAt sul 19/08, contate una
+   per una, corrispondenza esatta con le 11 attese prima di
+   procedere) e, su richiesta separata successiva, anche l'unica
+   sessione vera rimasta del 19/08 (0,695 km). Nessuna delle due aveva
+   un movingTimeSec misurato (verificato incrociando l'elenco delle
+   sessioni rimaste con tempo di movimento, tutte datate 2025): il
+   passo personale di Denis (oggi "non misurato", nessun default
+   finto) non e' stato toccato da questa pulizia, nessun ricalcolo
+   necessario.
+
+   Commit e push fatti su richiesta esplicita di Denis (9c085bf).
+   PUNTO 101 CHIUSO PER INTERO.

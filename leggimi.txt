@@ -1,11 +1,10 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-20, fine sessione. Sfoltito (stessa cura gia'
-fatta il 18/08 per gli 83-97): i punti chiusi oggi (94/passi 6-8,
-99, 100) sono compressi all'indice qui sotto - nessuna informazione
-persa, e' gia' tutta per esteso in cose_da_fare.txt e nel vault.
-RIPARTIRE DA DUE COSE SOLE: punto 94/passo 6 (la prova lunga di
-domani 21/08, protocollo esatto piu' sotto) e punto 98/D-E.
+Aggiornato: 2026-08-21. Chiuso anche il punto 101 (profilo mostrava
+sessioni-spazzatura e doppioni che "Le mie escursioni" gia' filtrava
+da tempo - dettaglio in cose_da_fare.txt). RIPARTIRE DA DUE COSE
+SOLE, INVARIATE dalla sessione precedente: punto 94/passo 6 (la
+prova lunga, protocollo esatto piu' sotto) e punto 98/D-E.
 ===================================================================
 
 QUESTO FILE DICE SOLO UNA COSA: a che punto siamo adesso e da dove si ricomincia.
@@ -31,7 +30,7 @@ MAI piu' (congelato); cose_da_fare.txt quando un punto si chiude o ne arriva uno
 
 
 
->>> STATO ATTUALE (20/08/2026): punti chiusi, committati e pushati - quelli che si
+>>> STATO ATTUALE (20-21/08/2026): punti chiusi, committati e pushati - quelli che si
     potevano provare dal vivo sono stati confermati da Denis di persona, non solo
     costruiti. Dettaglio completo di ognuno, con le parole di Denis e il
     ragionamento, in cose_da_fare.txt (cercare il numero) e nel vault - qui solo
@@ -87,8 +86,19 @@ MAI piu' (congelato); cose_da_fare.txt quando un punto si chiude o ne arriva uno
           densita', installata sul telefono vero e confermata da Denis
           ("verificato dal vivo, bellissimo").
 
-    Anche una pulizia dati: cancellata una traccia vuota (0 km, 0 dislivello)
-    del 24/07/2026 sull'account reale di Denis.
+     101. Profilo (renderProfileHikes) mostrava sessioni di tracciamento che
+          "Le mie escursioni" filtra gia' da tempo (avvii annullati da ~0 km,
+          e doppioni di una sessione gia' rappresentata da un'escursione
+          completata) - trovato da Denis sul proprio account dopo le prove
+          dal vivo del punto 94. Le due regole spostate in una funzione
+          condivisa fra i due file, mai due copie che possono divergere
+          in silenzio (9c085bf).
+
+    Anche due pulizie dati: cancellata una traccia vuota (0 km, 0 dislivello)
+    del 24/07/2026 sull'account reale di Denis; cancellate 12 sessioni del
+    19/08/2026 (11 avvii-fantasma da ~0 km piu' l'unica sessione vera rimasta),
+    tutte prove del tracciamento del punto 94, su richiesta esplicita di Denis
+    dopo la diagnosi del punto 101.
 
     >>> DEBITO TECNICO SEGNALATO DA DENIS (18/08/2026 notte, non urgente):
     l'icona di Rifugio Nicola D'Arcangelo disegna 2235 m, quota sbagliata - il
