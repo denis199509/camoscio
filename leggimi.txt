@@ -1,10 +1,9 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-21. Chiusi anche il punto 101 (profilo mostrava
-sessioni-spazzatura gia' filtrate altrove) e il punto 94 per intero
-(app Android: la riprova lunga del passo 6 confermata da Denis di
-persona, "chiuso per intero"). RIPARTIRE DA UNA SOLA COSA ORA:
-punto 98/D-E.
+Aggiornato: 2026-08-21. Chiuso anche il punto 98/D (obiettivo di
+allenamento ora mostrato anche fuori dal campo, non solo nell'elenco
+dei compagni). Committato (d7eecf1), non ancora pushato. RIPARTIRE
+DA UNA SOLA COSA ORA: punto 98/E.
 ===================================================================
 
 QUESTO FILE DICE SOLO UNA COSA: a che punto siamo adesso e da dove si ricomincia.
@@ -74,6 +73,10 @@ MAI piu' (congelato); cose_da_fare.txt quando un punto si chiude o ne arriva uno
           tolto anche il campo commento, mai letto da nessuna pagina.
       98/C. Split Spese Viaggio chiedeva gia' andata+ritorno - ora solo
           andata, il calcolo raddoppia da solo (e54406f).
+      98/D. Obiettivo di allenamento: dopo il salvataggio non c'era
+          nessuna conferma visibile (l'elenco mostrava solo i
+          compagni, mai il proprio). Aggiunto un riquadro sotto il
+          form (d7eecf1).
       99. Click su un'icona badge (propria, di un altro utente, personale,
           o nell'anteprima Passaporto di Dashboard) apre l'immagine intera
           in un modale; un badge non ancora conquistato resta grigio anche
@@ -123,10 +126,8 @@ MAI piu' (congelato); cose_da_fare.txt quando un punto si chiude o ne arriva uno
     di registrarlo per dopo invece di deviare dall'ordine - dettaglio
     in ../camoscio memoria/04-Da-Fare.md, non ancora corretto.
 
-    >>> RIPARTIRE DA: punto 98/D (match obiettivi comuni: una volta scelto un
-    obiettivo comune tipo "Monte Bianco", non compare il proprio fra chi lo
-    condivide), poi E (progetto percorso: filtro troppo stretto, solo sentieri,
-    a volte servirebbero anche strade sterrate). F (diario di viaggio
+    >>> RIPARTIRE DA: punto 98/E (progetto percorso: filtro troppo stretto,
+    solo sentieri, a volte servirebbero anche strade sterrate). F (diario di viaggio
     collaborativo) resta FUORI ordine, Denis stesso dice di non avere ancora
     chiaro come deve funzionare, non riproporla come pronta. Dettaglio
     completo, con le parole di Denis, in cose_da_fare.txt punto 98.

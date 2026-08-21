@@ -5029,6 +5029,29 @@ schermo spento ancora."
    recensita (mai scritta sul database, solo in memoria) confermata
    visibile nel menu. Nessun errore in console.
 
+   PUNTO D FATTO E VERIFICATO, COMMITTATO (21/08/2026, sessione
+   successiva) - ripreso con "possiamo continuare il punto 98".
+   Causa, trovata leggendo renderGoalMatches e renderSocialModule in
+   social.js: il filtro che esclude l'utente stesso dall'elenco dei
+   compagni (u.id !== currentUser.id) era corretto - non e' un bug di
+   match, e' che il proprio obiettivo non veniva mostrato da nessuna
+   parte una volta salvato. Il campo restava valorizzato (lo si
+   rileggeva riaprendo la pagina) ma senza nessuna conferma visibile
+   dopo il salvataggio, esattamente come descritto da Denis ("dove ho
+   scritto Monte Bianco e' rimasto tutto uguale"). Aggiunto un
+   riquadro sotto il form (#current-goal-display, index.html) che
+   mostra "Il tuo obiettivo attuale: X", popolato in
+   renderSocialModule() ogni volta che si ricarica il modulo -
+   compare/sparisce insieme al campo, coerente col caso "nessun
+   obiettivo ancora impostato". VERIFICATO dal vivo nel browser
+   (server locale, due account demo): Marco Alpinista con "Monte
+   Bianco" gia' impostato mostrava gia' il riquadro corretto appena
+   entrato; su Giulia Escursionista (obiettivo "Monte Rosa") provato
+   anche il salvataggio di un obiettivo nuovo ("Gran Sasso TEST"),
+   riquadro aggiornato subito dopo il salvataggio - poi ripristinato
+   "Monte Rosa" per non lasciare dati di prova sull'account demo
+   condiviso. Committato (d7eecf1), non ancora pushato.
+
 =====================================================================
 
 99. [20/08/2026, sera] Denis, parole sue: "possiamo fare che cliccando
