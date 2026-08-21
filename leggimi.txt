@@ -7,8 +7,18 @@ un caso reale trovato da Denis (dato gia' live sul sito, nessun
 deploy richiesto); 98/C, debito trovato per strada l'11/08 e ripreso
 oggi, il passeggero di un carpooling ora si salva davvero (mancava un
 campo nello schema, i permessi lato server c'erano gia'). Tutto
-committato e pushato (vedi elenco hash piu' sotto). NESSUN PUNTO
-APERTO IN QUESTO MOMENTO: aspettare la prossima richiesta di Denis.
+committato e pushato (vedi elenco hash piu' sotto).
+
+>>> APERTO PER LA PROSSIMA SESSIONE: Denis ha riprovato il progetto
+percorso (screenshot dopo l'estrazione) e il giro largo c'e' ancora
+fra due punti vicinissimi (Valle Granara). Causa vera trovata: NON e'
+distanza, e' il tag OSM - la strada che serve li' e' `highway=
+residential` (strada di paese), mai incluso nel filtro del livello i
+(nemmeno nei 7 filtri del 27/07). Denis ha detto "lascia stare per
+ora ci pensiamo nella prossima sessione" - non riproporlo di
+iniziativa, aspettare che torni lui. Dettaglio completo (incluso il
+rischio di tirare dentro paesi veri se si aggiunge `residential` senza
+misurare prima) in ../camoscio memoria/04-Da-Fare.md.
 ===================================================================
 
 QUESTO FILE DICE SOLO UNA COSA: a che punto siamo adesso e da dove si ricomincia.

@@ -5137,6 +5137,35 @@ schermo spento ancora."
    richiesta - quindi il dato e' gia' live sul sito vero, nessun deploy
    richiesto. Committato (611e97e).
 
+   RIAPERTO LO STESSO GIORNO: Denis ha riprovato un progetto vero DOPO
+   la fine dell'estrazione e mandato un nuovo screenshot (foto dello
+   schermo, punti 2 e 3 vicinissimi vicino a Valle Granara) - il giro
+   largo c'era ancora, parole sue: "pur avendo il punto 2 e 3 vicini
+   tra loro il sistema fa sempre un giro enorme intorno evitando la
+   strada" e poi "la strada bianca che vedi e dove dovrebbe passare,
+   guarda dove passa invece (blu)".
+   CAUSA VERA TROVATA, diversa da quella del giro precedente:
+   NON e' la distanza. Interrogato OpenStreetMap (Overpass) intorno
+   alle coordinate vere di Valle Granara (geocodificate via Nominatim,
+   41.9086/13.3541): la strada che Denis vede nello screenshot e'
+   taggata highway=residential (strada di paese/casolare) - un tag
+   MAI incluso nel filtro del livello i, nemmeno nei 7 filtri misurati
+   il 27/07 (controllato nel vault, 03-Decisioni-Architetturali.md).
+   Quindi nessuna soglia di distanza, per quanto alta, l'avrebbe mai
+   presa: il dato non viene proprio scaricato da Overpass per quel tag.
+   Trovate 4 strade "residential" entro 600 m da Valle Granara (contro
+   altre "path"/"unclassified"/"service" gia' presenti) - un casolare
+   isolato, non un paese vero, ma senza aver misurato lo stesso tag su
+   tutte e 4 le regioni non si sa quanto pesi altrove (rischio di
+   tirare dentro reti stradali di paesi veri - lo stesso motivo per
+   cui "residential" non era mai stato incluso).
+   Proposte tre strade a Denis (misurare prima su tutte le regioni /
+   aggiungere "residential" ma con un raggio piu' stretto solo per
+   quel tag / lasciare stare) - scelto "lascia stare per ora ci
+   pensiamo nella prossima sessione". NON RIPROPORLO DI INIZIATIVA,
+   aspettare che torni lui. Nessun codice toccato per questa parte,
+   nessun'altra estrazione lanciata.
+
 =====================================================================
 
 99. [20/08/2026, sera] Denis, parole sue: "possiamo fare che cliccando
