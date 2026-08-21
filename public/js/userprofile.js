@@ -188,6 +188,32 @@ function schedaUscitaProfilo(s, { azioniHtml = '' } = {}) {
 // (profilo, sempre sola lettura). Un'unica formula per card, mai una copia per file.
 window.CamoscioSchedeCompatte = { escursione: schedaEscursioneCompletata, uscita: schedaUscitaProfilo };
 
+// Bugfix 21/08/2026, segnalato da Denis: "Le mie escursioni" (storico.js) applica gia' due
+// pulizie alle sessioni di tracciamento prima di mostrarle - qui in renderProfileHikes
+// mancavano ENTRAMBE, e il profilo (proprio e di chiunque altro) mostrava quello che
+// storico.js nasconde apposta:
+//  1) sessioni senza nemmeno un punto GPS vero (avvii annullati o prove finite subito -
+//     se ne sono accumulate a dozzine testando dal vivo il tracciamento del punto 94), che
+//     restavano visibili PER SEMPRE: "Le mie escursioni" non le mostra mai, quindi nessun
+//     cestino le raggiunge da li';
+//  2) una sessione GPS reale ma gia' rappresentata da un'escursione "completata" collegata
+//     allo stesso hikeId, mostrata una seconda volta come uscita separata invece di essere
+//     riconosciuta come la stessa camminata.
+// Soglia e regola condivise qui una volta sola - storico.js le riusa da qui, mai due copie
+// della stessa logica che possono divergere in silenzio (stessa lezione del punto 98/B).
+function usciteVisibili(sessioni, hikeIdGiaRappresentati) {
+    return sessioni
+        .filter(s => (s.distanceKm || 0) > 0.05)
+        .filter(s => {
+            if (s.hikeId && hikeIdGiaRappresentati.has(s.hikeId)) {
+                hikeIdGiaRappresentati.delete(s.hikeId); // al massimo una per hikeId
+                return false;
+            }
+            return true;
+        });
+}
+window.CamoscioUsciteVisibili = usciteVisibili;
+
 async function renderProfileHikes(userId, container) {
     if (!container) return;
     container.innerHTML = `<p class="text-muted small">Caricamento...</p>`;
@@ -209,11 +235,13 @@ async function renderProfileHikes(userId, container) {
     const vociHike = completions
         .map(c => {
             const h = (db.hikes || []).find(h => h.id === c.hikeId);
-            return h ? { tipo: 'hike', data: h.date, html: schedaEscursioneCompletata(h, c) } : null;
+            return h ? { tipo: 'hike', data: h.date, html: schedaEscursioneCompletata(h, c), hikeIdCollegato: h.id } : null;
         })
         .filter(Boolean);
 
-    const vociUscita = sessioni.map(s => ({ tipo: 'uscita', data: s.startedAt, html: schedaUscitaProfilo(s) }));
+    const hikeIdGiaRappresentati = new Set(vociHike.map(v => v.hikeIdCollegato));
+    const vociUscita = usciteVisibili(sessioni, hikeIdGiaRappresentati)
+        .map(s => ({ tipo: 'uscita', data: s.startedAt, html: schedaUscitaProfilo(s) }));
 
     const tutte = [...vociHike, ...vociUscita].sort((a, b) => String(b.data || '').localeCompare(String(a.data || '')));
 

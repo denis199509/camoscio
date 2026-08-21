@@ -117,15 +117,11 @@
         // telefono). In un elenco di uscite fatte direbbero solo "0 km, 0 min".
         // IL CONTATORE CONTA QUELLO CHE SI VEDE, non tutte le sessioni (punto 15, stessa
         // regola di sempre - vedi la spiegazione storica lasciata più sotto in questo file).
-        const vere = sessioni.filter(s => (s.distanceKm || 0) > 0.05);
-        const vociUscita = vere
-            .filter(s => {
-                if (s.hikeId && hikeIdGiaRappresentati.has(s.hikeId)) {
-                    hikeIdGiaRappresentati.delete(s.hikeId); // al massimo una per hikeId, vedi sopra
-                    return false;
-                }
-                return true;
-            })
+        // Soglia e deduplicazione condivise con userprofile.js (bugfix 21/08/2026,
+        // usciteVisibili li' - il profilo mostrava sia le sessioni-spazzatura sia i
+        // duplicati che questa funzione toglie qui da sempre): mai due copie della stessa
+        // regola che possono divergere in silenzio.
+        const vociUscita = window.CamoscioUsciteVisibili(sessioni, hikeIdGiaRappresentati)
             .map(s => ({
                 ordinamento: Date.parse(s.startedAt) || 0,
                 html: window.CamoscioSchedeCompatte.uscita(s, {
