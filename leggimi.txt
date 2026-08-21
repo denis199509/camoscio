@@ -1,10 +1,10 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-21. Chiuso anche il punto 101 (profilo mostrava
-sessioni-spazzatura e doppioni che "Le mie escursioni" gia' filtrava
-da tempo - dettaglio in cose_da_fare.txt). RIPARTIRE DA DUE COSE
-SOLE, INVARIATE dalla sessione precedente: punto 94/passo 6 (la
-prova lunga, protocollo esatto piu' sotto) e punto 98/D-E.
+Aggiornato: 2026-08-21. Chiusi anche il punto 101 (profilo mostrava
+sessioni-spazzatura gia' filtrate altrove) e il punto 94 per intero
+(app Android: la riprova lunga del passo 6 confermata da Denis di
+persona, "chiuso per intero"). RIPARTIRE DA UNA SOLA COSA ORA:
+punto 98/D-E.
 ===================================================================
 
 QUESTO FILE DICE SOLO UNA COSA: a che punto siamo adesso e da dove si ricomincia.
@@ -94,6 +94,15 @@ MAI piu' (congelato); cose_da_fare.txt quando un punto si chiude o ne arriva uno
           condivisa fra i due file, mai due copie che possono divergere
           in silenzio (9c085bf).
 
+      94. App Android (Capacitor) per il tracciamento GPS a schermo spento -
+          tutti e 8 i passi chiusi. La riprova lunga del passo 6 (25 min,
+          12 a schermo spento in modalita' aereo) confermata da Denis di
+          persona ("si, direi che punto 94 chiuso per intero"): nessun
+          badge di interruzione, nessun recupero manuale necessario -
+          verificato anche sul database (sessione unica, nessun salto di
+          velocita' impossibile). Dettaglio completo in cose_da_fare.txt
+          punto 94 e nel vault.
+
     Anche due pulizie dati: cancellata una traccia vuota (0 km, 0 dislivello)
     del 24/07/2026 sull'account reale di Denis; cancellate 12 sessioni del
     19/08/2026 (11 avvii-fantasma da ~0 km piu' l'unica sessione vera rimasta),
@@ -121,47 +130,6 @@ MAI piu' (congelato); cose_da_fare.txt quando un punto si chiude o ne arriva uno
     collaborativo) resta FUORI ordine, Denis stesso dice di non avere ancora
     chiaro come deve funzionare, non riproporla come pronta. Dettaglio
     completo, con le parole di Denis, in cose_da_fare.txt punto 98.
-
-    >>> PUNTO 94 (app Android per il tracciamento a schermo spento) — TUTTI
-    E 8 I PASSI CHIUSI, resta solo una riprova. Riassunto (dettaglio
-    completo, con tutte le decisioni tecniche e le trappole trovate, in
-    cose_da_fare.txt punto 94 e nel vault - 03-Decisioni-Architetturali.md
-    e 07-Trappole-Tecniche.md):
-      1-5. Android Studio, Capacitor nel repo vero, plugin GPS collegato a
-           tracking.js, flusso di consenso onesto, promemoria orario contro
-           un tracciamento dimenticato attivo.
-      6.   Config puntata alla produzione (camoscio.onrender.com). Una
-           camminata vera ha trovato un buco: il WebView puo' ricaricarsi
-           da solo per pressione di memoria a schermo spento, perdendo lo
-           stato del tracciamento pur senza uccidere il processo. Corretto
-           in tracking.js: stop() sempre prima di ogni avvio nativo, uno
-           specchio in localStorage per riprendere "alla cieca" anche senza
-           rete, badge onesto se il riaggancio fallisce. Prima verifica dal
-           vivo (20/08, guida di 5 min/3,5 km in aereo) senza segni del
-           buco, ma il giro era troppo corto per essere conclusiva - vedi
-           "RIPARTIRE DA" sotto per la prova vera di domani.
-      7.   android/, capacitor-shell/, capacitor.config.json e le
-           dipendenze committati; gitignore corretto perche' il keystore
-           non finisca mai tracciato (le righe erano commentate di
-           default nel template Android Studio).
-      8.   Keystore generato (password unica: PKCS12 non supporta password
-           diverse per keystore e chiave, scoperto a caldo), salvata da
-           Denis in una nota sicura Bitwarden. Apk di release firmato,
-           installato sul telefono vero via sideload (adb install bloccato
-           da MIUI, aggirato con adb push su Download + installo a mano -
-           stesso metodo giusto per far provare l'app a un amico) e
-           verificato con apksigner (fingerprint combacia col keystore).
-
-    RIPARTIRE DA: la prova lunga del passo 6, PIANO GIA' CONFERMATO (non
-    ancora eseguita in nessuna sessione successiva a questa nota): avvio
-    tracciamento -> dopo 3 min aereo ON -> dopo altri 2
-    min schermo OFF per 12 min -> riaccensione ancora in aereo (controllare
-    se compare "registrazione interrotta - tocca per riprovare": se non
-    compare nulla ha gia' recuperato da solo, se compare va toccato per far
-    ripartire) -> dopo 3 min aereo OFF -> dopo 2 min stop tracciamento.
-    Percorso con piu' curve possibili apposta, per distinguere un vero buco
-    da una strada dritta. Solo dopo questa conferma il punto 94 e' chiuso
-    per intero (niente altro resta: passo 7 e 8 gia' fatti).
 
     >>> ANCORA APERTE, non urgenti (dettaglio in
     ../camoscio memoria/04-Da-Fare.md): i "livelli"

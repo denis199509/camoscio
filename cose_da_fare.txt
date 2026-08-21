@@ -4592,6 +4592,49 @@ schermo spento ancora."
    RIPARTIRE DA: la verifica dal vivo della correzione del passo 6,
    poi passo 7 solo dopo la conferma.
 
+   AGGIORNAMENTO 2026-08-20/21: passi 7 e 8 chiusi il 20/08 (dettaglio
+   per esteso, mai scritto qui, in ../camoscio memoria/06-Cronologia-
+   Sessioni.md - .gitignore del keystore corretto, android/+dipendenze
+   committati, keystore generato con keytool - password unica, PKCS12
+   non supporta password diverse per keystore e chiave, scoperto a
+   caldo - apk di release firmato e installato sul telefono vero via
+   sideload, verificato con apksigner). Restava solo la riprova lunga
+   del passo 6, fatta il 21/08: Denis ha rifatto il percorso concordato
+   con l'aereo attivato PRIMA dello schermo spento, stavolta per 12
+   minuti pieni invece degli 8 del giro inconclusivo del 20/08. Parole
+   sue al ritorno: "Ho fatto la registrazione prova come concordato: 1.
+   Cominciato la registrazione per 3 min 2. Entrato in modalita' aereo
+   per 2 min 3. Schermo spento per 12 min 4. Acceso lo schermo per 3
+   min 5. Tolto la modalita' aereo e continuato per 4 min. Totale tempo
+   registrazione 25 min" - poi, alla domanda se fosse comparso il badge
+   "registrazione interrotta": "non ho trovato nessun errore e non ho
+   fatto niente di piu di quello che ho scritto prima".
+
+   VERIFICATO sul database, non solo sulla parola di Denis (stessa
+   disciplina della prova inconclusiva del 20/08): sessione unica
+   (6a8820eb51a0f8fcddfde88a, nessuna sessione duplicata o orfana -
+   segno che un eventuale ricaricamento si e' riagganciato alla
+   sessione giusta), 1520 secondi = 25,3 min (combacia col totale di
+   Denis), 15 punti distribuiti su tutta la finestra compreso il
+   tratto a schermo spento, nessuna velocita' implicita impossibile fra
+   due punti consecutivi (massimo ~6 km/h, un passo normale) - nessun
+   segno della "linea retta" del buco trovato la prima volta il 19/08.
+
+   TROVATO E CORRETTO PER STRADA, non un difetto del punto 94: gli
+   orari mostrati a Denis durante l'analisi erano in UTC grezzo
+   ("10:22") invece che convertiti in ora locale (12:22, +2h in agosto)
+   - stessa identica trappola gia' pagata il 19/08 durante la diagnosi
+   del passo 4 (gia' in ../camoscio memoria/07-Trappole-Tecniche.md),
+   con le stesse identiche parole di Denis entrambe le volte ("hai gli
+   orari sballati"). Corretto subito, rinforzata la nota nel vault con
+   la data di oggi perche' non ricapiti una terza volta.
+
+   PUNTO 94 CHIUSO PER INTERO (21/08/2026), confermato da Denis di
+   persona: "si, direi che punto 94 chiuso per intero". Tutti e 8 i
+   passi fatti e verificati dal vivo dove possibile - nessun passo
+   resta aperto. Niente Play Store per ora (costa 25$ una tantum solo
+   se un giorno si vorra' pubblicarla).
+
 95) [CODICE SCRITTO E VERIFICATO, NON COMMITTATO - vedi RIPARTIRE DA in
    fondo] Denis, il giorno dopo aver pubblicato "Monte Terminillo" dal
    progetto (punto 93): "Invita squadra alla gita, l'escursione non la
