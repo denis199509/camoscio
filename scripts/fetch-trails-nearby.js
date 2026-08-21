@@ -1,15 +1,26 @@
-// PUNTO 13 - Estrazione dei dati del LIVELLO i: tutto cio' che si cammina entro 200 m
+// PUNTO 13 - Estrazione dei dati del LIVELLO i: tutto cio' che si cammina entro 800 m
 // dalla rete dei sentieri gia' conosciuti.
 //
-// Scelto dall'utente il 2026-07-27 dopo le misure, fra sette filtri provati. Perche' questo:
+// La soglia originale (200 m) fu scelta dall'utente il 2026-07-27 dopo le misure, fra sette
+// filtri provati. Perche' quella:
 //   - dove un percorso sui sentieri oggi esiste nel 74,9% dei casi, col livello i esiste
 //     nel 95,7%;
 //   - costa meno della meta' del filtro "prendi tutte le strade" (65 MB contro 103 stimati
 //     sulle 4 regioni) a parita' di risultato, perche' non si tira dentro la citta';
 //   - e lascia meta' delle reti spezzate (211 pezzi invece di 434 sull'area di prova).
 //
+// Alzata a 800 m il 2026-08-21 (punto 98/E): Denis ha trovato un caso vero (Valle Granara,
+// Gerano/Terminillo) dove il collegamento sulla SP30 misura ~660 m, oltre la soglia
+// originale - il percorso progettato girava largo lungo il sentiero della valle invece di
+// tagliare per la strada. 800 m e non 1000: margine sopra i 660 m misurati senza avvicinarsi
+// troppo alla soglia oltre la quale il rischio (non di spazio: gia' misurato che il tetto
+// resta sotto i 103 MB stimati per "tutte le strade", su 425 MB liberi) e' tirare dentro
+// pezzi di rete stradale di paese vicino ai punti di partenza - lo stesso motivo per cui fu
+// scartato il filtro senza limiti nel 2026-07-27. NON e' un incremento generico "per stare
+// tranquilli": resta un multiplo misurato del caso reale trovato, non un tetto arbitrario.
+//
 // COSA FA, in concreto: per ogni riquadro scarica i way percorribili, tiene solo quelli che
-// passano entro 200 m da un sentiero GIA' sul database, e li salva con routingOnly: true.
+// passano entro 800 m da un sentiero GIA' sul database, e li salva con routingOnly: true.
 //
 // PERCHE' routingOnly SU TUTTI I NUOVI, anche su quelli che sono sentieri veri (un path
 // senza sac_scale E' un sentiero): perche' l'indice in RAM deve restare quello di oggi, che
@@ -31,7 +42,7 @@ const { regionForPoint } = require('../lib/regions');
 
 const LATO = 0.2;            // gradi. Misurato: ~6s e ~5 MB a riquadro. A 0,5 va pure, ma un
                              // fallimento costerebbe 34 MB da riscaricare, e Overpass fallisce spesso.
-const VICINANZA_M = 200;     // "vicino a un sentiero": due minuti a piedi, la scala di un raccordo
+const VICINANZA_M = 800;     // "vicino a un sentiero": punto 98/E, 2026-08-21 (era 200 m)
 const TIMEOUT_MS = 180000;
 const PAUSA_MS = 1500;
 const UA = 'Camoscio-App/1.0 (sito escursionismo Marche-Lazio-Abruzzo-Molise; contatto: denis1995.09@gmail.com)';

@@ -17,8 +17,9 @@ const trailSchema = new mongoose.Schema({
     // --- Punto 13: progettazione di un percorso su piu' punti ---
 
     // TRUE solo sui tratti aggiunti per la RICERCA DEL PERCORSO e che NON sono sentieri
-    // veri: le carrarecce e le stradine di servizio entro 200 m dalla rete conosciuta
-    // (livello i, scelto dall'utente il 2026-07-27 dopo le misure).
+    // veri: le carrarecce e le stradine di servizio entro 800 m dalla rete conosciuta
+    // (livello i, scelto dall'utente il 2026-07-27 dopo le misure, soglia alzata da 200 a
+    // 800 m il 2026-08-21, punto 98/E - vedi scripts/fetch-trails-nearby.js).
     //
     // SERVE A UNA COSA SOLA, ED E' LA PIU' IMPORTANTE DI TUTTO IL PUNTO 13: tenerli
     // FUORI dall'indice in RAM (lib/trailIndex.js). In Fase G l'indice in memoria ha
