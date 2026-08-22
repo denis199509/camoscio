@@ -299,6 +299,48 @@ h1, h2, h3, h4, h5, h6 {
     height: 18px;
 }
 
+/* Selettore lingua IT/EN, prova sulla pagina Badge (22/08/2026) - stesso
+   contenitore .user-status-widget del bottone notifiche qui sopra. */
+.lang-switcher {
+    display: flex;
+    gap: 2px;
+    padding: 3px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+}
+
+.lang-flag-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    border-radius: 7px;
+    cursor: pointer;
+    opacity: 0.45;
+    transition: opacity 0.15s ease, background 0.15s ease;
+}
+
+.lang-flag-btn svg {
+    width: 20px;
+    height: 14px;
+    border-radius: 2px;
+    display: block;
+}
+
+.lang-flag-btn:hover {
+    opacity: 0.8;
+}
+
+.lang-flag-btn.active {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.08);
+}
+
 .notification-count-badge {
     position: absolute;
     top: -4px;

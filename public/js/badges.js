@@ -32,6 +32,13 @@
 // ==========================================================================
 
 (function () {
+    // Traduzione inglese (prova 22/08/2026, solo interfaccia - vedi i18n.js per
+    // l'ambito e il perche'). Se il file non fosse caricato T('...') non
+    // esiste: il ripiego e' sempre il "|| 'testo italiano'" al punto di
+    // chiamata, stessa filosofia del CATALOGO_FISSO qui sotto - meglio restare
+    // in italiano che rompere la pagina.
+    const T = (window.CamoscioI18n && window.CamoscioI18n.t) || function () { return null; };
+
     // L'elenco NON sta piu' qui. Dal 2026-07-27 e' in public/js/badge-points.js, perche'
     // serve anche al SERVER: importando una traccia .gpx i badge conquistati vengono
     // assegnati da solo, e quel conto lo fa il server. Una copia sola, letta da entrambi -
@@ -152,12 +159,14 @@
     // somma muta.
     function testoAscesa(a) {
         if (a.recognizedCount > 0 && a.siteCount > 0) {
-            return `${a.recognizedCount} riconosciut${a.recognizedCount === 1 ? 'a' : 'e'} + ${a.siteCount} registrat${a.siteCount === 1 ? 'a' : 'e'}`;
+            return T('badges.ascesa.entrambe', a.recognizedCount, a.siteCount)
+                || `${a.recognizedCount} riconosciut${a.recognizedCount === 1 ? 'a' : 'e'} + ${a.siteCount} registrat${a.siteCount === 1 ? 'a' : 'e'}`;
         }
         if (a.recognizedCount > 0) {
-            return `${a.recognizedCount} riconosciut${a.recognizedCount === 1 ? 'a' : 'e'}`;
+            return T('badges.ascesa.soloRiconosciute', a.recognizedCount)
+                || `${a.recognizedCount} riconosciut${a.recognizedCount === 1 ? 'a' : 'e'}`;
         }
-        return `${a.siteCount} volte registrate dal sito`;
+        return T('badges.ascesa.soloSito', a.siteCount) || `${a.siteCount} volte registrate dal sito`;
     }
 
     // Livelli di frequentazione di una cima, decisi da Denis il 17/08/2026: soglie sul
@@ -166,13 +175,16 @@
     // cime: i nomi parlano sempre di "cima"/"vetta"/"montagna", su un rifugio visitato
     // piu' volte suonerebbero fuori posto. Ordinata dalla soglia piu' alta: il primo
     // elemento che total soddisfa e' il livello giusto.
+    // "id" aggiunto il 22/08/2026 per la traduzione inglese (T('badges.livello.' +
+    // id + '.titolo'), vedi livelloAscesa/schedaBadge piu' sotto): si tiene stabile
+    // anche se la soglia numerica dovesse cambiare in futuro.
     const LIVELLI_ASCESA = [
-        { soglia: 30, titolo: 'Esperto della Cima', descrizione: 'Il livello massimo: la vetta è diventata la tua seconda casa.' },
-        { soglia: 25, titolo: 'Colonna della Montagna', descrizione: 'Sei un punto di riferimento per chiunque incontri sul percorso.' },
-        { soglia: 20, titolo: 'Veterano della Vetta', descrizione: 'Hai affrontato la salita con ogni meteo e stagionalità.' },
-        { soglia: 15, titolo: 'Custode del Sentiero', descrizione: 'Conosci ogni svolta, sasso e cambio di pendenza.' },
-        { soglia: 10, titolo: 'Habitué della Cima', descrizione: 'Riconosci i punti di sosta, i panorami e il ritmo giusto.' },
-        { soglia: 5, titolo: 'Frequentatore', descrizione: 'Hai preso la mano e la salita non ha più segreti iniziali.' }
+        { id: 'espertoCima', soglia: 30, titolo: 'Esperto della Cima', descrizione: 'Il livello massimo: la vetta è diventata la tua seconda casa.' },
+        { id: 'colonnaMontagna', soglia: 25, titolo: 'Colonna della Montagna', descrizione: 'Sei un punto di riferimento per chiunque incontri sul percorso.' },
+        { id: 'veteranoVetta', soglia: 20, titolo: 'Veterano della Vetta', descrizione: 'Hai affrontato la salita con ogni meteo e stagionalità.' },
+        { id: 'custodeSentiero', soglia: 15, titolo: 'Custode del Sentiero', descrizione: 'Conosci ogni svolta, sasso e cambio di pendenza.' },
+        { id: 'habitueCima', soglia: 10, titolo: 'Habitué della Cima', descrizione: 'Riconosci i punti di sosta, i panorami e il ritmo giusto.' },
+        { id: 'frequentatore', soglia: 5, titolo: 'Frequentatore', descrizione: 'Hai preso la mano e la salita non ha più segreti iniziali.' }
     ];
 
     function livelloAscesa(b) {
@@ -207,8 +219,8 @@
         ].filter(Boolean).map(esc).join(' · ');
 
         const stato = b.sbloccato
-            ? `<span class="badge-card-state won"><i data-lucide="award"></i> Conquistato il ${esc(dataItaliana(b.data) || '—')}</span>`
-            : `<span class="badge-card-state"><i data-lucide="lock"></i> Non ancora conquistato</span>`;
+            ? `<span class="badge-card-state won"><i data-lucide="award"></i> ${esc(T('badges.stato.conquistatoIl', dataItaliana(b.data) || '—') || `Conquistato il ${dataItaliana(b.data) || '—'}`)}</span>`
+            : `<span class="badge-card-state"><i data-lucide="lock"></i> ${esc(T('badges.stato.nonConquistato') || 'Non ancora conquistato')}</span>`;
 
         const ascesa = b.ascesa
             ? `<span class="badge-card-count">${esc(testoAscesa(b.ascesa))}</span>`
@@ -224,8 +236,8 @@
         const livello = livelloAscesa(b);
         const livelloHtml = livello ? `
             <div class="badge-card-tier">
-                <span class="badge-card-tier-title">${esc(livello.titolo)}</span>
-                <span class="badge-card-tier-desc">${esc(livello.descrizione)}</span>
+                <span class="badge-card-tier-title">${esc(T('badges.livello.' + livello.id + '.titolo') || livello.titolo)}</span>
+                <span class="badge-card-tier-desc">${esc(T('badges.livello.' + livello.id + '.descrizione') || livello.descrizione)}</span>
             </div>
         ` : '';
 
@@ -275,6 +287,10 @@
         if (!window.CamoscioState || !window.CamoscioState.currentUser) return;
 
         const tutti = statoBadge();
+        // Serve sia al riquadro del badge personale sia al riepilogo qui sotto -
+        // dichiarata una volta sola all'inizio della funzione (22/08/2026, prima
+        // viveva solo dentro l'if del badge personale e il riepilogo non la vedeva).
+        const esc = window.escapeHtml;
         // Dalla piu' alta alla piu' bassa dentro ogni gruppo: e' l'ordine con cui si
         // guarda una collezione di montagne. Lo stato preso/non preso si vede dal
         // colore della scheda, non serve separarli anche nell'ordine.
@@ -283,16 +299,15 @@
         const rifugi = tutti.filter(b => b.tipo === 'rifugio').sort(perQuota);
 
         riempiGruppo('badges-cime', 'count-badges-cime', cime,
-            'Nessuna cima in elenco.');
+            T('badges.vuoto.cime') || 'Nessuna cima in elenco.');
         riempiGruppo('badges-rifugi', 'count-badges-rifugi', rifugi,
-            'Nessun rifugio in elenco.');
+            T('badges.vuoto.rifugi') || 'Nessun rifugio in elenco.');
 
         // Punto 57: stesso riquadro gia' costruito per la pagina profilo (punto 50),
         // qui per l'utente collegato invece che per un altro - CamoscioPersonalBadges
         // e' lo stesso catalogo unico, non ce n'e' una seconda copia da tenere allineata.
         const boxPersonale = document.getElementById('badges-personal-badge');
         if (boxPersonale) {
-            const esc = window.escapeHtml;
             const personale = window.CamoscioPersonalBadges
                 ? window.CamoscioPersonalBadges.get(window.CamoscioState.currentUser.id)
                 : null;
@@ -302,7 +317,7 @@
                     <div>
                         <h4>${esc(personale.titolo)}</h4>
                         <p>${esc(personale.descrizione)}</p>
-                        <p class="small text-muted">Distintivo assegnato a mano dal team di Camoscio: non si guadagna, è un riconoscimento personale.</p>
+                        <p class="small text-muted">${esc(T('badges.personale.nota') || 'Distintivo assegnato a mano dal team di Camoscio: non si guadagna, è un riconoscimento personale.')}</p>
                     </div>
                 </div>
             ` : "";
@@ -314,15 +329,18 @@
 
         const riepilogo = document.getElementById('badges-summary');
         if (riepilogo) {
+            const ariaLabel = window.CamoscioI18n && window.CamoscioI18n.getLang() === 'en'
+                ? `${presi} badges earned out of ${totale}`
+                : `${presi} badge conquistati su ${totale}`;
             riepilogo.innerHTML = `
                 <div class="glass-card badges-counter">
                     <div class="badges-counter-numbers">
-                        <div><strong>${presi}</strong><span>conquistati</span></div>
-                        <div><strong>${totale - presi}</strong><span>da conquistare</span></div>
-                        <div><strong>${percentuale}%</strong><span>completato</span></div>
+                        <div><strong>${presi}</strong><span>${esc(T('badges.summary.conquistati') || 'conquistati')}</span></div>
+                        <div><strong>${totale - presi}</strong><span>${esc(T('badges.summary.daConquistare') || 'da conquistare')}</span></div>
+                        <div><strong>${percentuale}%</strong><span>${esc(T('badges.summary.completato') || 'completato')}</span></div>
                     </div>
                     <div class="badge-progress-track" role="img"
-                         aria-label="${presi} badge conquistati su ${totale}">
+                         aria-label="${esc(ariaLabel)}">
                         <div class="badge-progress-bar" style="width: ${percentuale}%"></div>
                     </div>
                 </div>`;
@@ -333,4 +351,10 @@
 
     window.CamoscioBadges = { catalogo, puntiTimbrabili, statoBadge, statoBadgePer, schedaBadge, anteprima, dataItaliana, montagneEsperienza, render: renderBadges };
     window.renderBadges = renderBadges;
+
+    // Il cambio lingua (i18n.js) ricostruisce l'HTML della pagina invece di
+    // fare uno swap di testContent: renderBadges gia' cancella e ridisegna
+    // tutto a ogni chiamata, quindi basta ri-agganciarsi qui invece di
+    // inventare un secondo percorso di aggiornamento.
+    if (window.CamoscioI18n) window.CamoscioI18n.onChange(renderBadges);
 })();

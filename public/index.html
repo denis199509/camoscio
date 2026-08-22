@@ -367,6 +367,22 @@
                 
                 <!-- Profilo Utente Corrente (sessione reale, Fase C) -->
                 <div class="user-status-widget">
+                    <!-- Selettore lingua IT/EN, prova sulla sola pagina Badge (22/08/2026) -
+                         vedi public/js/i18n.js per l'ambito e il perche' delle scelte. -->
+                    <!-- SVG inline invece di emoji 🇮🇹/🇬🇧: su Windows/Chrome le bandiere emoji
+                         non hanno il glifo a colori nel font di sistema e cadono sulla sigla
+                         testuale ("IT"/"GB") - trovato provando dal vivo. SVG rende identico
+                         ovunque, zero richieste esterne, stessa logica di vendor/leaflet e
+                         vendor/chartjs qui sotto. -->
+                    <div class="lang-switcher" role="group" aria-label="Lingua / Language">
+                        <button type="button" class="lang-flag-btn" data-lang="it" title="Italiano" aria-label="Italiano" aria-pressed="true">
+                            <svg viewBox="0 0 3 2" aria-hidden="true"><rect width="1" height="2" fill="#009246"/><rect width="1" height="2" x="1" fill="#fff"/><rect width="1" height="2" x="2" fill="#ce2b37"/></svg>
+                        </button>
+                        <button type="button" class="lang-flag-btn" data-lang="en" title="English" aria-label="English" aria-pressed="false">
+                            <svg viewBox="0 0 60 30" aria-hidden="true"><rect width="60" height="30" fill="#00247d"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" stroke-width="6"/><path d="M30,0 V30 M0,15 H60" stroke="#fff" stroke-width="10"/><path d="M30,0 V30 M0,15 H60" stroke="#cf142b" stroke-width="6"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#cf142b" stroke-width="2"/></svg>
+                        </button>
+                    </div>
+
                     <button class="btn btn-sm btn-secondary" id="btn-logout" title="Esci dall'account">
                         <i data-lucide="log-out"></i> Esci
                     </button>
@@ -761,26 +777,26 @@
                          della frase invece che dentro. Si vedeva solo su schermo stretto. -->
                     <p class="small text-muted badges-howto">
                         <i data-lucide="info"></i>
-                        <span>I badge si conquistano sul posto: apri la <b>Mappa</b> con la
+                        <span data-i18n-html="badges.howto">I badge si conquistano sul posto: apri la <b>Mappa</b> con la
                         posizione attiva e avvicinati a meno di 150 metri dal punto. Ogni badge
                         si prende una volta sola e resta per sempre.</span>
                     </p>
 
                     <div class="badges-group">
                         <h3 class="badges-group-title">
-                            <i data-lucide="mountain"></i> Cime
+                            <i data-lucide="mountain"></i> <span data-i18n="badges.cime.titolo">Cime</span>
                             <span class="badge badge-accent" id="count-badges-cime">0/0</span>
                         </h3>
-                        <p class="small text-muted">Le vette delle quattro regioni: Marche, Lazio, Abruzzo e Molise.</p>
+                        <p class="small text-muted" data-i18n="badges.cime.sottotitolo">Le vette delle quattro regioni: Marche, Lazio, Abruzzo e Molise.</p>
                         <div class="badges-grid" id="badges-cime"></div>
                     </div>
 
                     <div class="badges-group">
                         <h3 class="badges-group-title">
-                            <i data-lucide="tent"></i> Rifugi
+                            <i data-lucide="tent"></i> <span data-i18n="badges.rifugi.titolo">Rifugi</span>
                             <span class="badge badge-green" id="count-badges-rifugi">0/0</span>
                         </h3>
-                        <p class="small text-muted">Rifugi e punti di appoggio lungo i percorsi.</p>
+                        <p class="small text-muted" data-i18n="badges.rifugi.sottotitolo">Rifugi e punti di appoggio lungo i percorsi.</p>
                         <div class="badges-grid" id="badges-rifugi"></div>
                     </div>
                 </section>
@@ -2188,6 +2204,9 @@
     <script src="vendor/chartjs/chart.umd.js"></script>
 
     <!-- Moduli Applicativi Client -->
+    <!-- i18n.js per primo: non dipende da nessun altro modulo, e badges.js si
+         registra su CamoscioI18n.onChange gia' al proprio avvio. -->
+    <script src="js/i18n.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/safety.js"></script>
     <!-- cai-tempi.js va PRIMA di profile.js: contiene la formula CAI che profile.js legge

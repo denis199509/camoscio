@@ -408,6 +408,33 @@ function setupNavigation() {
     const sections = document.querySelectorAll(".page-section");
     const sectionTitle = document.getElementById("section-title");
 
+    // Mappa sectionId -> titolo italiano, scritta un'unica volta: la usano sia
+    // la navigazione (sotto) sia il cambio lingua (i18n.js, per rimettere a
+    // posto il titolo quando si cambia lingua senza navigare altrove).
+    const prettyNames = {
+        "dashboard": "Dashboard",
+        "hikes": "Escursioni",
+        "my-hikes": "Le mie escursioni",
+        "badges": "I tuoi Badge",
+        "map-section": "Mappa & Sentieri",
+        "carpool": "Carpooling & Spese Viaggio",
+        "backpack": "Zaino Intelligente Checklist",
+        "safety": "Sicurezza & Mesh Simulator",
+        "social": "Tribù, Recensioni & Squadre",
+        "people-search": "Cerca Persone",
+        "user-profile": "Profilo"
+    };
+
+    // Estratta da navigateTo il 22/08/2026 perche' serve anche a i18n.js: se
+    // si cambia lingua stando gia' sulla pagina Badge, il titolo deve
+    // aggiornarsi senza aspettare una nuova navigazione.
+    function updateSectionTitle(targetId) {
+        if (!sectionTitle) return;
+        const tradotto = window.CamoscioI18n && window.CamoscioI18n.t("sectionTitle." + targetId);
+        sectionTitle.textContent = tradotto || prettyNames[targetId] || "Camoscio";
+    }
+    window.CamoscioUpdateSectionTitle = updateSectionTitle;
+
     function navigateTo(targetId) {
         sections.forEach(sec => {
             if (sec.id === targetId) {
@@ -427,22 +454,7 @@ function setupNavigation() {
         });
 
         // Aggiorna il titolo dell'header
-        if (sectionTitle) {
-            const prettyNames = {
-                "dashboard": "Dashboard",
-                "hikes": "Escursioni",
-                "my-hikes": "Le mie escursioni",
-                "badges": "I tuoi Badge",
-                "map-section": "Mappa & Sentieri",
-                "carpool": "Carpooling & Spese Viaggio",
-                "backpack": "Zaino Intelligente Checklist",
-                "safety": "Sicurezza & Mesh Simulator",
-                "social": "Tribù, Recensioni & Squadre",
-                "people-search": "Cerca Persone",
-                "user-profile": "Profilo"
-            };
-            sectionTitle.textContent = prettyNames[targetId] || "Camoscio";
-        }
+        updateSectionTitle(targetId);
 
         // Trigger di ridimensionamento mappa se si apre la sezione mappa
         if (targetId === "map-section" && window.mapInstance) {
