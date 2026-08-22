@@ -1,35 +1,35 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-21 (sessione successiva). PUNTO 98: A/B/C/D/F
-chiusi per intero. 98/E RIAPERTO UNA TERZA VOLTA - la correzione
-`residential` ha tenuto (confermato dal vivo da Denis: il tratto
-residenziale vicino Valle Granara ora passa), ma appena il progetto
-percorso arriva sulla SP30 fa ancora un giro enorme.
+Aggiornato: 2026-08-22 (sessione successiva). PUNTO 98: A/B/C/D/F
+chiusi per intero. 98/E, terza riapertura: causa (highway=secondary
+sulla SP30/SP63) misurata, decisione presa, `secondary` aggiunto al
+livello i e verificato sul database - lato codice fatto, manca solo
+la prova dal vivo.
 
->>> APERTO PER LA PROSSIMA SESSIONE: causa nuova gia' trovata e
-confermata (Overpass, sola lettura, stesse coordinate vere di Valle
-Granara 41.9086/13.3541): la SP30 (e la SP63 vicina) sono taggate
-highway=secondary, un tag mai incluso nel filtro del livello i
-(path/track/bridleway/unclassified/service/residential) - stesso
-identico schema del caso residential (nessuna soglia di distanza
-l'avrebbe mai presa), ma un tag diverso. A differenza del casolare
-residential (isolato, 4 strade entro 600 m), le provinciali sono
-spesso proprio come si arriva ai punti di partenza: probabile che il
-problema si ripresenti altrove, non un caso raro.
+>>> APERTO PER LA PROSSIMA SESSIONE: Denis deve riprovare il progetto
+percorso su Valle Granara (screenshot alla mano, come le due volte
+precedenti) e confermare se ora la SP30 viene presa invece del giro
+largo. Se conferma, punto 98/E chiuso per intero - sarebbe la quarta
+volta che si riapre per lo stesso posto, quindi se nota ancora
+qualcosa di simile altrove vale un controllo un po' piu' ampio, non
+solo quel punto. Nessuna azione di codice prevista finche' non arriva
+la conferma (o un nuovo caso).
 
-PRIMA DI TOCCARE IL FILTRO: misurare l'impatto di `secondary` sulle 4
-regioni (stesso metodo di sola lettura di
-scripts/misura-residential.js, ~2 ore). Proposto a Denis, rimandato
-per TEMPO ("altre due ore non posso aspettare... ci pensiamo nella
-prossima sessione" - PC spento all'improvviso a inizio sessione), non
-per disinteresse: RIPROPORRE la misura all'inizio della prossima
-sessione, diverso dal caso del diario di viaggio (98/F) dove invece si
-aspettava tornasse lui. Spazio libero nel frattempo sceso a 330 MB
-(era 425 alla soglia originale del punto 13) - da tenere presente
-nella misura. Nessun codice ne' database toccati in questa sessione su
-questo punto: solo una query Overpass di diagnosi, nessuna scrittura.
-Dettaglio completo, coi way Overpass trovati, in cose_da_fare.txt
-punto 98 e in ../camoscio memoria/04-Da-Fare.md +
+Riassunto di come si e' arrivati qui (22/08/2026): misurato l'impatto
+di `secondary` sulle 4 regioni (scripts/misura-secondary.js, sola
+lettura, deduplicato per wayId - le secondary sono strade lunghe,
+Overpass le ripete su piu' riquadri, a differenza delle residential)
+- 29.043 way unici, 10.814 entro la soglia da 800 m gia' in uso, circa
+1/5,6 del costo di `residential`. Denis aveva delegato in anticipo
+anche la decisione se aggiungerlo ("se secondo te vanno aggiunte
+prosegui pure"): costo ben sotto qualunque soglia di rischio per il
+vincolo hard dei 512 MB, proceduto. Implementato con lo stesso schema
+di `residential` (viaTag, stessa soglia 800 m), verificato su 3
+riquadri poi re-estrazione completa (68 minuti, zero riquadri
+falliti): +10.801 documenti reali, scarto minimo dalla misura.
+Database passato da 181,70 a 190,09 MB (321,91 MB liberi su 512). Dato
+gia' live sul sito, nessun deploy richiesto. Dettaglio completo in
+cose_da_fare.txt punto 98 e in ../camoscio memoria/04-Da-Fare.md +
 03-Decisioni-Architetturali.md.
 ===================================================================
 
@@ -110,10 +110,10 @@ MAI piu' (congelato); cose_da_fare.txt quando un punto si chiude o ne arriva uno
           alzata da 200 a 800 m, dato gia' live sul sito senza deploy
           (611e97e). Interruzione a meta' causata da un mio taskkill
           troppo largo, nessun dato perso (script ripartibile).
-          RIAPERTO due volte dopo: prima per il tag `residential`
+          RIAPERTO tre volte dopo: prima per il tag `residential`
           (aggiunto e confermato dal vivo), poi per `secondary`
-          (SP30/SP63) - vedi blocco in cima a questo file, ancora
-          aperto.
+          (SP30/SP63, misurato e aggiunto il 22/08 - 1a9c60a) - manca
+          solo la prova dal vivo, vedi blocco in cima a questo file.
       98/F. "Diario di Viaggio Collaborativo" cancellato per intero
           (codice + le due voci vere sul database), fuori ordine su
           decisione di Denis: non un rinvio ma una cancellazione,
@@ -171,10 +171,11 @@ MAI piu' (congelato); cose_da_fare.txt quando un punto si chiude o ne arriva uno
     campo sparisce gia' al primo salvataggio, con la correzione resta).
     Committato (65d859b).
 
-    >>> PUNTO 98: A/B/C/D/F chiusi per intero, E ANCORA APERTO (terza
-    riapertura, causa SP30/`secondary` - vedi blocco in cima a questo
-    file). Dettaglio completo di ogni sotto-punto, con le parole di
-    Denis, in cose_da_fare.txt punto 98.
+    >>> PUNTO 98: A/B/C/D/F chiusi per intero, E ANCORA APERTO solo per
+    la prova dal vivo (terza riapertura, SP30/`secondary` misurato e
+    implementato il 22/08 - vedi blocco in cima a questo file).
+    Dettaglio completo di ogni sotto-punto, con le parole di Denis, in
+    cose_da_fare.txt punto 98.
 
     >>> ANCORA APERTE, non urgenti (dettaglio in
     ../camoscio memoria/04-Da-Fare.md): i "livelli"

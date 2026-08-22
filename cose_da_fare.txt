@@ -5254,6 +5254,48 @@ schermo spento ancora."
    Overpass di sola lettura per la diagnosi, nessun filtro modificato,
    nessuna estrazione lanciata. Punto 98/E resta APERTO.
 
+   RIPRESO IL 22/08/2026 (sessione successiva): Denis ha aperto la
+   sessione chiedendo di misurare secondary, e ha delegato in anticipo
+   anche la decisione se aggiungerlo, parole sue: "Fai una valutazione,
+   se secondo te vanno aggiunte prosegui pure, hai il mio permesso...
+   finche non trovi un vincolo per definizione non negoziabile prosegui
+   fino alla fine". Ha chiesto anche di lasciare la prova dal vivo alla
+   prossima sessione ("dovro' fare la prova che invece lasceremo nella
+   prossima sessione") e di fare commit e push di tutto a fine lavoro.
+
+   MISURA: scripts/misura-secondary.js, stesso metodo di
+   misura-residential.js. Una prova su 3 riquadri ha dato un numero
+   sospettosamente alto (532 way in un riquadro solo) - controllato
+   prima di fidarsene: le secondary sono strade lunghe, Overpass le
+   ripete per intero su ogni riquadro da 0,2 gradi attraversato (le
+   residential, corte, quasi mai). Aggiunta una deduplica per wayId
+   prima di lanciare la misura vera sulle 4 regioni: 29.043 way
+   secondary unici vicino a sentieri noti, di cui 10.814 entro la
+   soglia da 800 m gia' in uso - molto meno del temuto, circa 1/5,6 del
+   costo di residential (60.762), perche' il 63% dei way trovati cade
+   comunque oltre la soglia e viene scartato.
+
+   DECISIONE: costo ben sotto qualunque soglia di rischio per il
+   vincolo hard dei 512 MB (330 liberi all'epoca) - proceduto senza
+   fermarsi, nessun vincolo hard toccato.
+
+   IMPLEMENTAZIONE: secondary aggiunto a scripts/fetch-trails-nearby.js
+   e models/Trail.js con lo stesso schema di residential (viaTag,
+   stessa soglia 800 m). Prova su 3 riquadri (548 documenti, contro 549
+   previsti dalla misura sugli stessi riquadri). Re-estrazione
+   completa: 68 minuti, zero riquadri falliti. RISULTATO REALE: +10.801
+   documenti (Lazio 4.307, Marche 2.728, Abruzzo 2.990 - esatto, Molise
+   776 - esatto). Database passato da 181,70 a 190,09 MB (321,91 MB
+   liberi su 512). Dato gia' live sul sito, nessun deploy richiesto.
+   Committato (1a9c60a).
+
+   ANCORA DA FARE, lasciato apposta per la prossima sessione: la prova
+   dal vivo su Valle Granara/SP30, come richiesto esplicitamente da
+   Denis prima di cominciare. Se conferma, sarebbe la quarta riapertura
+   dello stesso punto per lo stesso posto - vale un controllo un po'
+   piu' ampio, non solo Valle Granara, se lui nota ancora qualcosa di
+   simile altrove. Punto 98/E resta APERTO fino a quella conferma.
+
 =====================================================================
 
 99. [20/08/2026, sera] Denis, parole sue: "possiamo fare che cliccando
