@@ -5490,3 +5490,78 @@ schermo spento ancora."
 
    Commit e push fatti su richiesta esplicita di Denis (9c085bf).
    PUNTO 101 CHIUSO PER INTERO.
+
+=====================================================================
+
+102. [22/08/2026] Denis, parole sue: "Possiamo mettere pure una
+   versione in inglese del sito/app? Se capita di usare l'app a
+   qualcuno che non e' abbastanza familiare con la lingua italiana,
+   vorrei poter tradurre il sito/app in inglese. Sto pensando in alto
+   a destra prima del tasto esci di inserire due bandiere. Una
+   italiana e una inglese. Cosi se qualcuno capisce male l'italiano
+   puo tradurre tutto quanto in inglese. Si puo fare? e tanto come
+   lavoro?" Dopo la mia proposta di limitare l'ambito, Denis: "traduciamo
+   solo l'interfaccia, i testi scritti dagli utenti rimangono cosi come
+   sono. Vogliamo fare solo la pagina dei badge inizialmente per prova?"
+
+   AMBITO DECISO CON DENIS: solo l'interfaccia (testo nostro - bottoni,
+   etichette, messaggi) si traduce. I testi scritti dagli utenti
+   (descrizioni escursioni, chat, nomi squadre) MAI tradotti, restano
+   sempre in italiano - nessuna traduzione automatica, nessun servizio
+   a pagamento (vincolo open source, vedi 02-Vincoli-Hard.md del
+   vault). I nomi propri di luogo (cime, rifugi - badge-points.js)
+   trattati come testo utente anche se scritti da noi: non si
+   traducono. Stesso trattamento per titolo/descrizione del badge
+   personale (assegnati a mano da Denis persona per persona, punti
+   82/83) - solo la frase fissa di spiegazione intorno si traduce.
+
+   PRIMA PROVA, SOLO PAGINA BADGE: nuovo file public/js/i18n.js -
+   dizionario SOLO inglese (l'italiano resta nell'HTML/JS esistente,
+   mai duplicato in un secondo posto), funzione t(chiave) che torna
+   null se manca una voce (lingua italiana, o chiave non ancora
+   tradotta) e chi chiama tiene il proprio testo italiano come ripiego
+   - mai un buco a schermo. Due bandiere nell'header condiviso (visibile
+   su ogni pagina, la preferenza di lingua e' per forza globale) prima
+   del bottone Esci, preferenza salvata in localStorage (zero campi
+   nuovi su MongoDB, zero costo RAM/Render). Testo statico marcato con
+   data-i18n/data-i18n-html nell'HTML; badges.js (che ricostruisce le
+   card via innerHTML, non un semplice swap di testo) si registra su
+   CamoscioI18n.onChange per ridisegnarsi da solo a ogni cambio lingua
+   - stesso meccanismo riusabile dalle pagine future. Bandiera scelta
+   apposta 🇬🇧 e non 🇺🇸: stesso formato data GG/MM/AAAA dell'italiano,
+   zero conversioni necessarie.
+
+   TROVATO E CORRETTO PROVANDO DAL VIVO, prima di dichiarare fatto:
+   le bandiere emoji non hanno il glifo a colori su Windows/Chrome,
+   cadono sulla sigla testuale "IT"/"GB" - sostituite con due piccole
+   icone SVG scritte a mano (stesso principio delle risorse
+   vendorizzate in locale di Leaflet/Chart.js: zero richieste esterne,
+   rendono identiche ovunque). Un errore vero (`esc is not defined`)
+   che rompeva silenziosamente sia la pagina Badge sia il riquadro
+   "Passaporto delle Vette" della Dashboard (che richiama la stessa
+   renderBadges) - una costante serviva a due blocchi di renderBadges()
+   ma era dichiarata solo dentro il piu' interno, spostata all'inizio
+   della funzione. Verificato in console dopo la correzione: zero
+   errori, su entrambe le pagine, in entrambe le lingue.
+
+   L'agente architect era stato girato per progettare il meccanismo
+   prima di scrivere codice (aveva gia' letto vault e codice, trovato
+   "nessuna decisione architetturale precedente sulla lingua" - non in
+   contraddizione con nulla), ma ha esaurito il limite settimanale a
+   meta' (reset alle 19 circa, Europe/Rome) senza consegnare il piano -
+   proseguito da solo per non bruciare altro limite su un retry
+   probabilmente destinato a fallire di nuovo. Le scelte ambigue sono
+   documentate nei commenti di testa di public/js/i18n.js.
+
+   VERIFICATO DA DENIS IN LOCALE (22/08/2026, stessa sessione), parole
+   sue: "ottimo, fatto la prova in local tutto funziona". Committato
+   (camoscio, `1a1bddb`) E PUSHATO su richiesta esplicita di Denis
+   ("commit e push su tutto pure").
+
+   APERTO PER LA PROSSIMA SESSIONE: decidere con Denis se estendere la
+   traduzione al resto del sito (index.html e' 2233 righe, altri 27
+   file JS per ~13.000 - un lavoro di giorni, non ore, stimato quando
+   Denis ha fatto la domanda iniziale) o lasciarla cosi' com'e' per
+   ora. Il resto del sito resta tutto in italiano anche a bandiera
+   inglese attiva, per scelta - era la prova, non il rollout.
+   PUNTO 102 (prova) CHIUSO, ROLLOUT COMPLETO ANCORA DA DECIDERE.

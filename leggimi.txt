@@ -1,36 +1,32 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-22 (sessione successiva). PUNTO 98: A/B/C/D/F
-chiusi per intero. 98/E, terza riapertura: causa (highway=secondary
-sulla SP30/SP63) misurata, decisione presa, `secondary` aggiunto al
-livello i e verificato sul database - lato codice fatto, manca solo
-la prova dal vivo.
+Aggiornato: 2026-08-22 (terza sessione). Due filoni aperti,
+indipendenti fra loro - vedi sotto.
 
->>> APERTO PER LA PROSSIMA SESSIONE: Denis deve riprovare il progetto
-percorso su Valle Granara (screenshot alla mano, come le due volte
-precedenti) e confermare se ora la SP30 viene presa invece del giro
-largo. Se conferma, punto 98/E chiuso per intero - sarebbe la quarta
-volta che si riapre per lo stesso posto, quindi se nota ancora
-qualcosa di simile altrove vale un controllo un po' piu' ampio, non
-solo quel punto. Nessuna azione di codice prevista finche' non arriva
-la conferma (o un nuovo caso).
+>>> APERTO PER LA PROSSIMA SESSIONE (1/2) - PUNTO 98/E, quarta volta:
+Denis deve ANCORA riprovare il progetto percorso su Valle Granara
+(screenshot alla mano, come le tre volte precedenti) e confermare se
+ora la SP30 viene presa invece del giro largo. `secondary` e' stato
+misurato, deciso e aggiunto il 22/08 (dettaglio in cose_da_fare.txt
+punto 98 e nel vault) - lato codice fatto, ma la conferma dal vivo
+non e' ancora arrivata: questa sessione e' stata assorbita dal punto
+102 sotto invece di tornarci sopra. Se Denis conferma, 98/E chiuso
+per intero - sarebbe la quarta volta che si riapre per lo stesso
+posto, quindi se nota ancora qualcosa di simile altrove vale un
+controllo un po' piu' ampio, non solo quel punto. Nessuna azione di
+codice prevista finche' non arriva la conferma (o un nuovo caso).
 
-Riassunto di come si e' arrivati qui (22/08/2026): misurato l'impatto
-di `secondary` sulle 4 regioni (scripts/misura-secondary.js, sola
-lettura, deduplicato per wayId - le secondary sono strade lunghe,
-Overpass le ripete su piu' riquadri, a differenza delle residential)
-- 29.043 way unici, 10.814 entro la soglia da 800 m gia' in uso, circa
-1/5,6 del costo di `residential`. Denis aveva delegato in anticipo
-anche la decisione se aggiungerlo ("se secondo te vanno aggiunte
-prosegui pure"): costo ben sotto qualunque soglia di rischio per il
-vincolo hard dei 512 MB, proceduto. Implementato con lo stesso schema
-di `residential` (viaTag, stessa soglia 800 m), verificato su 3
-riquadri poi re-estrazione completa (68 minuti, zero riquadri
-falliti): +10.801 documenti reali, scarto minimo dalla misura.
-Database passato da 181,70 a 190,09 MB (321,91 MB liberi su 512). Dato
-gia' live sul sito, nessun deploy richiesto. Dettaglio completo in
-cose_da_fare.txt punto 98 e in ../camoscio memoria/04-Da-Fare.md +
-03-Decisioni-Architetturali.md.
+>>> APERTO PER LA PROSSIMA SESSIONE (2/2) - PUNTO 102, decisione da
+prendere: la prova di traduzione IT/EN sulla sola pagina Badge e'
+chiusa e confermata da Denis in locale (due bandiere in alto a
+destra prima di "Esci", solo interfaccia - testi utente e nomi propri
+di luogo mai tradotti). Committata e pushata (`1a1bddb`). Resta da
+decidere CON Denis se estendere la traduzione al resto del sito
+(stimato un lavoro di giorni, non ore: index.html e' 2233 righe,
+altri 27 file JS per ~13.000) o lasciarla cosi' com'e' per ora - non
+riproporlo da soli, aspettare che sia lui a deciderlo. Dettaglio
+completo in cose_da_fare.txt punto 102 e nel vault (04-Da-Fare.md,
+03-Decisioni-Architetturali.md, 07-Trappole-Tecniche.md).
 ===================================================================
 
 QUESTO FILE DICE SOLO UNA COSA: a che punto siamo adesso e da dove si ricomincia.
@@ -148,6 +144,16 @@ MAI piu' (congelato); cose_da_fare.txt quando un punto si chiude o ne arriva uno
           verificato anche sul database (sessione unica, nessun salto di
           velocita' impossibile). Dettaglio completo in cose_da_fare.txt
           punto 94 e nel vault.
+
+     102. Prova traduzione IT/EN, solo pagina Badge: due bandiere
+          nell'header (prima di "Esci"), solo interfaccia - testi
+          utente e nomi propri di luogo mai tradotti. Dizionario
+          inglese in un file nuovo (public/js/i18n.js), l'italiano
+          resta dov'era gia', mai duplicato. Bandiere in SVG inline
+          invece di emoji (su Windows/Chrome il glifo a colori manca).
+          Confermata da Denis in locale - vedi blocco in cima a questo
+          file per cosa resta aperto (decidere il rollout sul resto
+          del sito).
 
     Anche due pulizie dati: cancellata una traccia vuota (0 km, 0 dislivello)
     del 24/07/2026 sull'account reale di Denis; cancellate 12 sessioni del
