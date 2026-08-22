@@ -5719,11 +5719,13 @@ schermo spento ancora."
    esplicita (camoscio, `d4a599f`). SECONDO LOTTO DEL ROLLOUT (punto
    102) CHIUSO PER INTERO.
 
-   RIPARTIRE DA: concordare con Denis il lotto successivo (proposto:
-   profilo proprio/Dashboard, poi sicurezza/sociale, poi carpooling/
-   zaino, poi moderazione, poi la Mappa, infine login/registrazione e
-   le pagine HTML autonome - stesso elenco di prima, non ancora
-   confermato).
+   TERZO LOTTO CONFERMATO DA DENIS, stessa sessione, subito dopo la
+   chiusura: "confermo il terzo lotto, quello proposto" - Dashboard +
+   Profilo proprio. RIPARTIRE DA: iniziare direttamente il terzo
+   lotto, l'ordine non va richiesto di nuovo. Dopo questo restano da
+   confermare, quando si arriva li': sicurezza/sociale, carpooling/
+   zaino, moderazione, la Mappa, infine login/registrazione e le
+   pagine HTML autonome.
 
 =====================================================================
 

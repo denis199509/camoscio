@@ -16,16 +16,13 @@ lingua del BROWSER, non quella del sito - limite di Chrome, non
 risolvibile da qui, nessun effetto sui dati. Denis ha confermato di
 lasciarlo cosi'.
 
->>> APERTO PER LA PROSSIMA SESSIONE - PUNTO 102: concordare CON DENIS
-il lotto successivo (proposto in 04-Da-Fare.md del vault: Dashboard/
-Profilo proprio, poi Sicurezza/Sociale, poi Carpooling/Zaino, poi
-Moderazione, poi la Mappa - la piu' grande -, infine il gate di
-login/registrazione e le pagine HTML autonome - non ancora
-confermato). Non proseguire da soli senza fermarsi: Denis preferisce
-un pezzo alla volta anche per un batch grande come questo, salvo un
-suo via libera esplicito per l'intero blocco - vale anche quando è
-lui a dire "continuiamo", l'ORDINE va comunque concordato lotto per
-lotto.
+>>> APERTO PER LA PROSSIMA SESSIONE - PUNTO 102: TERZO LOTTO GIA'
+CONFERMATO DA DENIS ("confermo il terzo lotto, quello proposto") -
+Dashboard + Profilo proprio. Si puo' iniziare direttamente, l'ordine
+non va richiesto di nuovo. Dopo questo: Sicurezza/Sociale, poi
+Carpooling/Zaino, poi Moderazione, poi la Mappa - la piu' grande -,
+infine il gate di login/registrazione e le pagine HTML autonome -
+questi restano da confermare quando si arriva li'.
 Dettaglio completo in cose_da_fare.txt punto 102 e nel vault
 (04-Da-Fare.md, 03-Decisioni-Architetturali.md, 07-Trappole-
 Tecniche.md).
