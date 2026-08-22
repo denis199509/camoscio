@@ -5712,17 +5712,18 @@ schermo spento ancora."
    entrambe le pagine, i due modali (aperti senza confermare/salvare
    nulla - "Completa: Monte Gennaro" chiuso con la X, non con
    "Confirm completion", per non toccare dati veri), in entrambe le
-   lingue. Console pulita, zero errori. NON ANCORA VERIFICATO DA DENIS
-   IN LOCALE - dichiarato per esteso, stessa regola del punto 101/102.
-   Non ancora committato: si aspetta la sua conferma prima, stessa
-   sequenza gia' seguita per il primo lotto.
+   lingue. Console pulita, zero errori.
 
-   RIPARTIRE DA: far riverificare a Denis questo lotto in locale: se
-   conferma, committare e chiedere se pushare; poi concordare il lotto
-   successivo (proposto: profilo proprio/Dashboard, poi sicurezza/
-   sociale, poi carpooling/zaino, poi moderazione, poi la Mappa,
-   infine login/registrazione e le pagine HTML autonome - stesso
-   elenco di prima, non ancora confermato).
+   CONFERMATO DA DENIS IN LOCALE, parole sue: "verificato in locale,
+   tutto apposto, vai con il push". Committato e pushato su richiesta
+   esplicita (camoscio, `d4a599f`). SECONDO LOTTO DEL ROLLOUT (punto
+   102) CHIUSO PER INTERO.
+
+   RIPARTIRE DA: concordare con Denis il lotto successivo (proposto:
+   profilo proprio/Dashboard, poi sicurezza/sociale, poi carpooling/
+   zaino, poi moderazione, poi la Mappa, infine login/registrazione e
+   le pagine HTML autonome - stesso elenco di prima, non ancora
+   confermato).
 
 =====================================================================
 

@@ -1,13 +1,13 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-22 (quinta sessione). PUNTO 102, SECONDO LOTTO:
-Escursioni + Le mie escursioni (condividono buildHikeCard) + i due
-modali crea/completa escursione - ordine confermato CON Denis prima
-di iniziare (chiesto esplicitamente, come richiesto dalla nota
-lasciata la sessione scorsa). Costruito, verificato con l'estensione
-Chrome in entrambe le lingue, console pulita. NON ANCORA VERIFICATO
-DA DENIS IN LOCALE, NON ANCORA COMMITTATO - stessa sequenza gia'
-seguita per il primo lotto: si aspetta la sua conferma prima.
+Aggiornato: 2026-08-22 (quinta sessione, CHIUSA IN SICUREZZA). PUNTO
+102, SECONDO LOTTO: Escursioni + Le mie escursioni (condividono
+buildHikeCard) + i due modali crea/completa escursione - ordine
+confermato CON Denis prima di iniziare. Costruito, verificato con
+l'estensione Chrome in entrambe le lingue, console pulita, POI
+CONFERMATO DA DENIS IN LOCALE ("verificato in locale, tutto apposto,
+vai con il push"). Committato e pushato su richiesta esplicita di
+Denis (camoscio `d4a599f`). SECONDO LOTTO CHIUSO PER INTERO.
 
 Un limite trovato provando dal vivo (segnalato anche da Denis in
 chat nello stesso momento, indipendentemente): il segnaposto di
@@ -16,18 +16,16 @@ lingua del BROWSER, non quella del sito - limite di Chrome, non
 risolvibile da qui, nessun effetto sui dati. Denis ha confermato di
 lasciarlo cosi'.
 
->>> APERTO PER LA PROSSIMA SESSIONE - PUNTO 102: far riverificare a
-Denis questo lotto in locale; se conferma, committare (repo camoscio)
-e chiedere se pushare - il vault invece si committa/pusha comunque a
-fine sessione. Poi concordare CON DENIS il lotto successivo (proposto
-in 04-Da-Fare.md del vault: Dashboard/Profilo proprio, poi Sicurezza/
-Sociale, poi Carpooling/Zaino, poi Moderazione, poi la Mappa - la piu'
-grande -, infine il gate di login/registrazione e le pagine HTML
-autonome - non ancora confermato). Non proseguire da soli senza
-fermarsi: Denis preferisce un pezzo alla volta anche per un batch
-grande come questo, salvo un suo via libera esplicito per l'intero
-blocco - vale anche quando è lui a dire "continuiamo", l'ORDINE va
-comunque concordato lotto per lotto.
+>>> APERTO PER LA PROSSIMA SESSIONE - PUNTO 102: concordare CON DENIS
+il lotto successivo (proposto in 04-Da-Fare.md del vault: Dashboard/
+Profilo proprio, poi Sicurezza/Sociale, poi Carpooling/Zaino, poi
+Moderazione, poi la Mappa - la piu' grande -, infine il gate di
+login/registrazione e le pagine HTML autonome - non ancora
+confermato). Non proseguire da soli senza fermarsi: Denis preferisce
+un pezzo alla volta anche per un batch grande come questo, salvo un
+suo via libera esplicito per l'intero blocco - vale anche quando è
+lui a dire "continuiamo", l'ORDINE va comunque concordato lotto per
+lotto.
 Dettaglio completo in cose_da_fare.txt punto 102 e nel vault
 (04-Da-Fare.md, 03-Decisioni-Architetturali.md, 07-Trappole-
 Tecniche.md).
@@ -168,9 +166,12 @@ MAI piu' (congelato); cose_da_fare.txt quando un punto si chiude o ne arriva uno
           richiesta esplicita di Denis (`10c137f`). PRIMO LOTTO
           CHIUSO PER INTERO. SECONDO LOTTO (Escursioni + Le mie
           escursioni + i due modali collegati), stessa giornata,
-          sessione successiva: costruito e verificato con
-          l'estensione Chrome, NON ANCORA da Denis in locale, NON
-          ANCORA committato - vedi blocco in cima a questo file.
+          sessione successiva: costruito, verificato con
+          l'estensione Chrome, CONFERMATO DA DENIS IN LOCALE
+          ("verificato in locale, tutto apposto, vai con il push").
+          Committato e pushato (`d4a599f`). SECONDO LOTTO CHIUSO
+          PER INTERO - vedi blocco in cima a questo file per il
+          prossimo.
 
      103. [22/08/2026, trovato durante il punto 102] Il titolo di
           un'escursione importata da GPX sul profilo di DaniWoll
