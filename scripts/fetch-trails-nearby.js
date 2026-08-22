@@ -32,6 +32,23 @@
 // 800 m gia' in uso - vedi viaTag in models/Trail.js per come si torna indietro SOLO su
 // questo tag, se in futuro pesasse piu' del previsto sui percorsi proposti.
 //
+// 'secondary' aggiunto il 22/08/2026 (punto 98/E, terza riapertura): dopo 'residential' il
+// tratto vicino Valle Granara passava, ma il giro largo restava appena il percorso avrebbe
+// dovuto prendere la SP30 (e la SP63 vicina, "Simbriuna") - taggate highway=secondary, mai
+// incluso qui per lo stesso motivo "reti di paese/citta'", stavolta piu' fondato perche' le
+// provinciali collegano centri abitati veri, non un casolare isolato. Misurato prima con lo
+// stesso metodo di misura-residential.js (scripts/misura-secondary.js, sola lettura, sulle 4
+// regioni, deduplicato per wayId - le secondary sono lunghe e attraversano piu' riquadri da
+// 0,2 gradi, a differenza delle residential): 29.043 way unici vicino a sentieri conosciuti,
+// di cui 10.814 entro 800 m - la fascia che verrebbe davvero aggiunta. Molto meno del temuto:
+// circa 1/5,6 del costo di residential (60.762 documenti), perche' il 63% dei way trovati
+// (18.229 su 29.043) cade OLTRE la soglia degli 800 m e viene scartato lo stesso - il filtro
+// di vicinanza gia' in uso protegge dal rischio "rete stradale intera" anche su questo tag.
+// Decisione presa da Claude su delega esplicita di Denis ("se secondo te vanno aggiunte
+// prosegui pure"), senza bisogno di un nuovo raggio: stessa soglia da 800 m, nessun parametro
+// arbitrario nuovo. Stesso viaTag di models/Trail.js per tornare indietro SOLO su questo tag,
+// se necessario.
+//
 // COSA FA, in concreto: per ogni riquadro scarica i way percorribili, tiene solo quelli che
 // passano entro 800 m da un sentiero GIA' sul database, e li salva con routingOnly: true.
 //
@@ -56,6 +73,7 @@ const { regionForPoint } = require('../lib/regions');
 const LATO = 0.2;            // gradi. Misurato: ~6s e ~5 MB a riquadro. A 0,5 va pure, ma un
                              // fallimento costerebbe 34 MB da riscaricare, e Overpass fallisce spesso.
 const VICINANZA_M = 800;     // "vicino a un sentiero": punto 98/E, 2026-08-21 (era 200 m)
+const VIA_TAG = new Set(['residential', 'secondary']); // tag oltre ai 5 originali: scrivono viaTag (vedi models/Trail.js)
 const TIMEOUT_MS = 180000;
 const PAUSA_MS = 1500;
 const UA = 'Camoscio-App/1.0 (sito escursionismo Marche-Lazio-Abruzzo-Molise; contatto: denis1995.09@gmail.com)';
@@ -82,7 +100,7 @@ function scriviProgresso(p) {
 
 async function scarica(riquadro) {
     const q = `[out:json][timeout:170];
-way["highway"~"^(path|track|bridleway|unclassified|service|residential)$"](${riquadro.sud.toFixed(4)},${riquadro.ovest.toFixed(4)},${riquadro.nord.toFixed(4)},${riquadro.est.toFixed(4)});
+way["highway"~"^(path|track|bridleway|unclassified|service|residential|secondary)$"](${riquadro.sud.toFixed(4)},${riquadro.ovest.toFixed(4)},${riquadro.nord.toFixed(4)},${riquadro.est.toFixed(4)});
 out geom;`;
     for (let giro = 1; giro <= 2; giro++) {
         for (const url of SERVER) {
@@ -171,10 +189,10 @@ out geom;`;
             const regione = regionForPoint(punti[0][0], punti[0][1]) || regionForPoint(punti[punti.length - 1][0], punti[punti.length - 1][1]);
             if (!regione) { saltati++; continue; }
 
-            // viaTag SOLO per residential (vedi models/Trail.js): i cinque tag originali
-            // non lo scrivono, undefined resta il default e non costa spazio.
+            // viaTag SOLO per residential/secondary (vedi models/Trail.js): i cinque tag
+            // originali non lo scrivono, undefined resta il default e non costa spazio.
             const setOnInsert = { routingOnly: true, sacScale: null };
-            if (w.tags && w.tags.highway === 'residential') setOnInsert.viaTag = 'residential';
+            if (w.tags && VIA_TAG.has(w.tags.highway)) setOnInsert.viaTag = w.tags.highway;
 
             daSalvare.push({
                 updateOne: {

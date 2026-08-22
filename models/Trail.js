@@ -42,13 +42,19 @@ const trailSchema = new mongoose.Schema({
     // seconda riapertura, 2026-08-21: 'residential' aggiunto al filtro dopo una misura
     // dedicata (scripts/misura-residential.js) che ha trovato ~34% di documenti in piu' a
     // parita' di raggio, in parte reti stradali di paesi veri, non solo scorciatoie isolate
-    // come il caso reale che ha portato alla richiesta (Valle Granara). default: undefined
-    // apposta, stesso principio di routingOnly: i tratti dei cinque tag originali (e i
-    // 181.197 gia' sul database) non lo scrivono, quindi non costa spazio dove non serve.
-    // Serve a UNA cosa sola: poter tornare indietro in modo pulito
-    // (Trail.deleteMany({viaTag:'residential'})) se in futuro si scopre che il tag pesa
-    // troppo sui percorsi proposti, senza dover reinterrogare Overpass per capire quali
-    // documenti erano suoi.
+    // come il caso reale che ha portato alla richiesta (Valle Granara).
+    // Terza riapertura, 22/08/2026: 'secondary' aggiunto con lo stesso metodo
+    // (scripts/misura-secondary.js) per lo stesso caso reale (Valle Granara, ma sulla SP30
+    // stavolta) - misurato ~10.814 documenti in piu' sulle 4 regioni, molto meno di
+    // residential perche' il filtro di vicinanza da 800 m scarta gia' il 63% dei way
+    // secondary trovati vicino a sentieri noti.
+    // default: undefined apposta, stesso principio di routingOnly: i tratti dei cinque tag
+    // originali (e i 181.197 gia' sul database prima di questo punto) non lo scrivono,
+    // quindi non costa spazio dove non serve.
+    // Serve a UNA cosa sola: poter tornare indietro in modo pulito e SOLO su un tag
+    // (Trail.deleteMany({viaTag:'residential'}), o {viaTag:'secondary'}) se in futuro si
+    // scopre che pesa troppo sui percorsi proposti, senza dover reinterrogare Overpass per
+    // capire quali documenti erano suoi.
     viaTag: { type: String, default: undefined },
 
     // Celle di una griglia da 0,1 gradi attraversate dal sentiero, come

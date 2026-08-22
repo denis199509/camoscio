@@ -25,6 +25,10 @@ data/estrazione-progresso.json
 data/misura-residential-progresso.json
 data/misura-residential-report.json
 
+# Progresso e report della misura highway=secondary (punto 98/E, terza riapertura): idem
+data/misura-secondary-progresso.json
+data/misura-secondary-report.json
+
 # Prodotti delle prove automatiche (cartella prove/): si rigenerano ad ogni esecuzione.
 # Gli SCRIPT invece si salvano, sono loro il lavoro.
 prove/*.log
