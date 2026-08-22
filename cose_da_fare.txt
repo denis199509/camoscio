@@ -5618,8 +5618,10 @@ schermo spento ancora."
    VERIFICATO CON L'ESTENSIONE CHROME (login demo Marco Alpinista,
    dati veri: DaniWoll, "I Camosci della Val Brembana", "Merenderos in
    Vetta", l'escursione "Monte Gennaro"), in entrambe le lingue,
-   console pulita in ogni pagina. NON ANCORA verificato da Denis in
-   locale, NON ANCORA COMMITTATO - in attesa che sia lui a chiederlo.
+   console pulita in ogni pagina. CONFERMATO DA DENIS IN LOCALE,
+   parole sue: "visto la pagina in local, tutto apposto". Committato
+   e pushato su richiesta esplicita di Denis (camoscio, `10c137f`).
+   PRIMO LOTTO DEL ROLLOUT (punto 102) CHIUSO PER INTERO.
 
    SEGNALATO DA DENIS IN CHAT, con uno screenshot dal telefono: le
    etichette della barra laterale (Dashboard, Escursioni, Le mie
@@ -5681,7 +5683,6 @@ schermo spento ancora."
    sessione, controprova a 0 rimaste. Riverificato dal vivo - il
    titolo su DaniWoll ora si vede pulito.
 
-   NON ANCORA COMMITTATO (il codice di lib/gpx.js) - in attesa che sia
-   Denis a chiederlo, come sempre. La correzione sul database invece
-   e' gia' definitiva (non e' una modifica di codice, non c'e' niente
-   da committare per quella parte).
+   Committato e pushato insieme al punto 102, su richiesta esplicita
+   di Denis (camoscio, `10c137f`). La correzione sul database e'
+   separata e gia' definitiva (non e' una modifica di codice).

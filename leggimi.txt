@@ -1,27 +1,29 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-22 (quarta sessione, ANCORA APERTA). PUNTO 102:
-Denis ha approvato di tradurre tutto il sito, primo lotto di 4 pagine
-fatto e verificato. PUNTO 103: bug vero nel parser GPX (titolo di
+Aggiornato: 2026-08-22 (quarta sessione, CHIUSA IN SICUREZZA). PUNTO
+102: Denis ha approvato di tradurre tutto il sito, primo lotto di 4
+pagine (Cerca Persone, Profilo, Pagina Squadra, Pagina Escursione) +
+etichette della barra laterale, fatto, verificato con l'estensione
+Chrome E CONFERMATO DA DENIS IN LOCALE ("visto la pagina in local,
+tutto apposto"). PUNTO 103: bug vero nel parser GPX (titolo di
 un'escursione importata mostrava il codice XML grezzo) trovato durante
-la verifica, spiegato e RISOLTO su richiesta di Denis - codice
+la verifica, spiegato e risolto su richiesta di Denis - codice
 corretto e anche il dato gia' sbagliato sul database (scrittura
-confermata esplicitamente da lui). Anche le etichette della barra
-laterale, segnalate da Denis in chat, sono state tradotte.
+confermata esplicitamente da lui). Committato e pushato tutto su
+richiesta esplicita di Denis (camoscio `10c137f`, vault `a7f998a`).
 
->>> APERTO PER LA PROSSIMA SESSIONE (o per il resto di questa) -
-PUNTO 102: primo lotto di 4 pagine tradotto e verificato con
-l'estensione Chrome (zero errori console, entrambe le lingue) E LE
-ETICHETTE DELLA BARRA LATERALE, NON ANCORA da Denis in locale e NON
-ANCORA COMMITTATO - aspettare che sia lui a chiederlo. Fargli
-riverificare "Cerca Persone" (il caso che ha segnalato lui stesso -
-titolo in alto, ora corretto) e il profilo di DaniWoll (titolo
-dell'escursione importata, ora senza il codice XML). Poi concordare
-CON LUI l'ordine dei lotti successivi (proposto in 04-Da-Fare.md del
-vault, non confermato) - non proseguire da soli senza fermarsi, stessa
-regola di sempre anche per un batch grande come questo. Dettaglio
-completo in cose_da_fare.txt punti 102/103 e nel vault (04-Da-Fare.md,
-03-Decisioni-Architetturali.md, 07-Trappole-Tecniche.md).
+>>> APERTO PER LA PROSSIMA SESSIONE - PUNTO 102: concordare CON DENIS
+l'ordine dei lotti successivi (proposto in 04-Da-Fare.md del vault:
+Escursioni + Le mie escursioni insieme perche' condividono
+buildHikeCard, poi Dashboard/Profilo proprio, poi Sicurezza/Sociale,
+poi Carpooling/Zaino, poi Moderazione, poi la Mappa - la piu' grande -
+infine il gate di login/registrazione e le pagine HTML autonome - non
+ancora confermato da Denis). Non proseguire da soli senza fermarsi:
+Denis preferisce un pezzo alla volta anche per un batch grande come
+questo, salvo un suo via libera esplicito per l'intero blocco.
+Dettaglio completo in cose_da_fare.txt punti 102/103 e nel vault
+(04-Da-Fare.md, 03-Decisioni-Architetturali.md, 07-Trappole-
+Tecniche.md).
 ===================================================================
 
 QUESTO FILE DICE SOLO UNA COSA: a che punto siamo adesso e da dove si ricomincia.
@@ -150,12 +152,15 @@ MAI piu' (congelato); cose_da_fare.txt quando un punto si chiude o ne arriva uno
           RESTO DEL SITO (22/08/2026, stessa giornata/sessione
           successiva): primo lotto di 4 pagine (Cerca Persone,
           Profilo, Pagina Squadra, Pagina Escursione) fatto e
-          verificato con l'estensione Chrome - non ancora da Denis in
-          locale, non ancora committato. Trovato e corretto un bug
-          vero durante la verifica (il titolo in alto non seguiva il
-          cambio lingua sulle pagine con un titolo dinamico), poi
-          anche le etichette della barra laterale (segnalate da
-          Denis) - vedi blocco in cima a questo file.
+          verificato con l'estensione Chrome, poi CONFERMATO DA DENIS
+          IN LOCALE ("visto la pagina in local, tutto apposto").
+          Trovato e corretto un bug vero durante la verifica (il
+          titolo in alto non seguiva il cambio lingua sulle pagine
+          con un titolo dinamico), poi anche le etichette della barra
+          laterale (segnalate da Denis). Committato e pushato su
+          richiesta esplicita di Denis (`10c137f`). PRIMO LOTTO
+          CHIUSO PER INTERO - vedi blocco in cima a questo file per
+          il prossimo.
 
      103. [22/08/2026, trovato durante il punto 102] Il titolo di
           un'escursione importata da GPX sul profilo di DaniWoll
@@ -166,7 +171,10 @@ MAI piu' (congelato); cose_da_fare.txt quando un punto si chiude o ne arriva uno
           tolti). Corretto il parser (risolve i FUTURI import) e,
           con conferma esplicita di Denis, anche la sessione gia'
           sbagliata sul database (script mirato, 1 trovata e corretta,
-          controprova a 0 rimaste). Riverificato dal vivo.
+          controprova a 0 rimaste). Riverificato dal vivo. Codice
+          committato e pushato insieme al punto 102 (`10c137f`); la
+          correzione sul database non è una modifica di codice, è
+          già definitiva da sola.
 
     Anche due pulizie dati: cancellata una traccia vuota (0 km, 0 dislivello)
     del 24/07/2026 sull'account reale di Denis; cancellate 12 sessioni del
