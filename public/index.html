@@ -312,23 +312,23 @@
             <nav class="nav-menu">
                 <button class="nav-btn active" data-target="dashboard" id="btn-nav-dashboard">
                     <i data-lucide="layout-dashboard"></i>
-                    <span>Dashboard</span>
+                    <span data-i18n="nav.dashboard">Dashboard</span>
                 </button>
                 <button class="nav-btn" data-target="hikes" id="btn-nav-hikes">
                     <i data-lucide="compass"></i>
-                    <span>Escursioni</span>
+                    <span data-i18n="nav.hikes">Escursioni</span>
                 </button>
                 <button class="nav-btn" data-target="my-hikes" id="btn-nav-my-hikes">
                     <i data-lucide="footprints"></i>
-                    <span>Le mie escursioni</span>
+                    <span data-i18n="nav.myHikes">Le mie escursioni</span>
                 </button>
                 <button class="nav-btn" data-target="badges" id="btn-nav-badges">
                     <i data-lucide="award"></i>
-                    <span>Badge</span>
+                    <span data-i18n="nav.badges">Badge</span>
                 </button>
                 <button class="nav-btn" data-target="map-section" id="btn-nav-map">
                     <i data-lucide="map"></i>
-                    <span>Mappa & Sentieri</span>
+                    <span data-i18n="nav.map">Mappa & Sentieri</span>
                 </button>
                 <button class="nav-btn" data-target="carpool" id="btn-nav-carpool">
                     <i data-lucide="car"></i>
@@ -336,19 +336,19 @@
                 </button>
                 <button class="nav-btn" data-target="backpack" id="btn-nav-backpack">
                     <i data-lucide="backpack"></i>
-                    <span>Zaino Intelligente</span>
+                    <span data-i18n="nav.backpack">Zaino Intelligente</span>
                 </button>
                 <button class="nav-btn" data-target="safety" id="btn-nav-safety">
                     <i data-lucide="shield-alert"></i>
-                    <span>Sicurezza & Mesh</span>
+                    <span data-i18n="nav.safety">Sicurezza & Mesh</span>
                 </button>
                 <button class="nav-btn" data-target="social" id="btn-nav-social">
                     <i data-lucide="users"></i>
-                    <span>Tribù & Squadre</span>
+                    <span data-i18n="nav.social">Tribù & Squadre</span>
                 </button>
                 <button class="nav-btn" data-target="people-search" id="btn-nav-people-search">
                     <i data-lucide="search"></i>
-                    <span>Cerca Persone</span>
+                    <span data-i18n="nav.peopleSearch">Cerca Persone</span>
                 </button>
             </nav>
 
@@ -1539,12 +1539,12 @@
                      esempio "Dani" -> "DaniWoll"). -->
                 <section id="people-search" class="page-section">
                     <div class="glass-card">
-                        <h4><i data-lucide="search"></i> Cerca Persone</h4>
-                        <p class="small text-muted">Scrivi il nome utente di una persona (es. DaniWoll).</p>
+                        <h4><i data-lucide="search"></i> <span data-i18n="peopleSearch.titolo">Cerca Persone</span></h4>
+                        <p class="small text-muted" data-i18n="peopleSearch.sottotitolo">Scrivi il nome utente di una persona (es. DaniWoll).</p>
                         <div class="trailhead-search-row">
                             <div class="trailhead-search-field">
                                 <i data-lucide="search"></i>
-                                <input type="text" id="people-search-input" autocomplete="off" maxlength="60" placeholder="Es. DaniWoll">
+                                <input type="text" id="people-search-input" autocomplete="off" maxlength="60" placeholder="Es. DaniWoll" data-i18n-placeholder="peopleSearch.placeholder">
                             </div>
                         </div>
                         <div id="people-search-results" class="hike-carpools-list"></div>
@@ -1582,7 +1582,7 @@
                          un solo elenco da renderProfileHikes() in userprofile.js. -->
                     <div class="profile-hikes-group">
                         <h3 class="badges-group-title">
-                            <i data-lucide="footprints"></i> Escursioni
+                            <i data-lucide="footprints"></i> <span data-i18n="profile.escursioni">Escursioni</span>
                         </h3>
                         <div id="user-profile-hikes"></div>
                     </div>
@@ -1593,14 +1593,14 @@
                          fetch: vedi renderProfileBookmarks in userprofile.js. -->
                     <div class="profile-hikes-group">
                         <h3 class="badges-group-title">
-                            <i data-lucide="bookmark"></i> Sentieri preferiti 🐐
+                            <i data-lucide="bookmark"></i> <span data-i18n="profile.sentieriPreferiti">Sentieri preferiti 🐐</span>
                         </h3>
                         <div id="user-profile-bookmarks"></div>
                     </div>
 
                     <div class="badges-group">
                         <h3 class="badges-group-title">
-                            <i data-lucide="award"></i> Badge guadagnati
+                            <i data-lucide="award"></i> <span data-i18n="profile.badgeGuadagnati">Badge guadagnati</span>
                         </h3>
                         <div class="badges-grid" id="user-profile-badges"></div>
                     </div>
@@ -1685,7 +1685,7 @@
                          stessa funzione condivisa renderProfileHikes(). -->
                     <div class="profile-hikes-group">
                         <h3 class="badges-group-title">
-                            <i data-lucide="footprints"></i> Escursioni
+                            <i data-lucide="footprints"></i> <span data-i18n="profile.escursioni">Escursioni</span>
                         </h3>
                         <div id="my-profile-hikes"></div>
                     </div>
@@ -1694,14 +1694,14 @@
                          riempito dalla stessa funzione condivisa renderProfileBookmarks(). -->
                     <div class="profile-hikes-group">
                         <h3 class="badges-group-title">
-                            <i data-lucide="bookmark"></i> Sentieri preferiti 🐐
+                            <i data-lucide="bookmark"></i> <span data-i18n="profile.sentieriPreferiti">Sentieri preferiti 🐐</span>
                         </h3>
                         <div id="my-profile-bookmarks"></div>
                     </div>
 
                     <div class="badges-group">
                         <h3 class="badges-group-title">
-                            <i data-lucide="award"></i> Badge guadagnati
+                            <i data-lucide="award"></i> <span data-i18n="profile.badgeGuadagnati">Badge guadagnati</span>
                         </h3>
                         <div class="badges-grid" id="my-profile-badges"></div>
                     </div>

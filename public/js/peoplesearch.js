@@ -7,6 +7,11 @@
 
 const SOGLIA_RICERCA_PERSONE = 4; // "DaniWoll" - la ricerca parte gia' da "Dani" (confermato con Denis)
 
+// Rollout traduzione punto 102 (22/08/2026). "var", non "const": vedi la nota in
+// cima a i18n.js sul perche' (piu' file <script> classici che condividono lo
+// stesso scope globale, "const T" ripetuto in due file darebbe SyntaxError).
+var T = (window.CamoscioI18n && window.CamoscioI18n.t) || function () { return null; };
+
 function initPeopleSearchModule() {
     const input = document.getElementById("people-search-input");
     if (input) input.addEventListener("input", renderPeopleSearchModule);
@@ -22,7 +27,8 @@ function renderPeopleSearchModule() {
     results.innerHTML = "";
 
     if (query.length < SOGLIA_RICERCA_PERSONE) {
-        results.innerHTML = `<p class="small text-muted">Scrivi almeno ${SOGLIA_RICERCA_PERSONE} lettere per avviare la ricerca.</p>`;
+        const testo = T('peopleSearch.minLettere', SOGLIA_RICERCA_PERSONE) || `Scrivi almeno ${SOGLIA_RICERCA_PERSONE} lettere per avviare la ricerca.`;
+        results.innerHTML = `<p class="small text-muted">${window.escapeHtml(testo)}</p>`;
         return;
     }
 
@@ -35,7 +41,7 @@ function renderPeopleSearchModule() {
     );
 
     if (trovati.length === 0) {
-        results.innerHTML = `<p class="small text-muted">Nessuna persona trovata.</p>`;
+        results.innerHTML = `<p class="small text-muted">${window.escapeHtml(T('peopleSearch.nessunRisultato') || 'Nessuna persona trovata.')}</p>`;
         return;
     }
 
@@ -54,3 +60,8 @@ function renderPeopleSearchModule() {
 
 window.initPeopleSearchModule = initPeopleSearchModule;
 window.renderPeopleSearchModule = renderPeopleSearchModule;
+
+// Cambio lingua: nessun fetch qui dentro (db.users e' gia' in cache), quindi
+// ridisegnare ad ogni cambio costa zero - stesso principio di badges.js. La
+// funzione stessa gia' esce subito se l'input non esiste (pagina non aperta).
+if (window.CamoscioI18n) window.CamoscioI18n.onChange(renderPeopleSearchModule);

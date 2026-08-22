@@ -9,6 +9,16 @@
 // filtro privacy (serializeUserForViewer in routes/users.js) per gli altri campi -
 // se profilePhoto sparisce per via della privacy dell'altro, si torna alla sua emoji,
 // non e' un difetto di questo file.
+// Rollout traduzione punto 102 (22/08/2026). "var", non "const": vedi la nota in
+// cima a i18n.js sul perche' (piu' file <script> classici che condividono lo
+// stesso scope globale, "const T" ripetuto in due file darebbe SyntaxError).
+var T = (window.CamoscioI18n && window.CamoscioI18n.t) || function () { return null; };
+
+// Ultimo profilo aperto, SOLO per rimettere a posto #section-title a un cambio
+// lingua (vedi CamoscioI18n.onChange in fondo al file) - non per un re-render
+// completo, vedi la nota li' sotto sul perche'.
+var profiloUserIdAperto = null;
+
 async function showUserProfile(userId) {
     if (!userId) return;
     if (window.navigateTo) window.navigateTo("user-profile");
@@ -25,13 +35,15 @@ function renderProfileIdentity(utente, timbri, els, ascese) {
 
     if (els.header) {
         const avatarHtml = utente.profilePhoto
-            ? `<img src="${esc(utente.profilePhoto)}" alt="Foto profilo" class="avatar-photo">`
+            ? `<img src="${esc(utente.profilePhoto)}" alt="${esc(T('profile.fotoProfilo') || 'Foto profilo')}" class="avatar-photo">`
             : esc(utente.avatar);
+        const livelloTesto = T('profile.livelloReputazione', esc(utente.experienceLevel), utente.reputation)
+            || `Livello: ${esc(utente.experienceLevel)} · Reputazione: ${utente.reputation}%`;
         els.header.innerHTML = `
             <span class="user-profile-avatar">${avatarHtml}</span>
             <div class="user-details">
                 <h3 class="font-bold">${esc(utente.username)}</h3>
-                <p class="small text-muted">Livello: ${esc(utente.experienceLevel)} · Reputazione: ${utente.reputation}%</p>
+                <p class="small text-muted">${livelloTesto}</p>
             </div>
         `;
     }
@@ -44,7 +56,7 @@ function renderProfileIdentity(utente, timbri, els, ascese) {
                 <div>
                     <h4>${esc(personale.titolo)}</h4>
                     <p>${esc(personale.descrizione)}</p>
-                    <p class="small text-muted">Distintivo assegnato a mano dal team di Camoscio: non si guadagna, è un riconoscimento personale.</p>
+                    <p class="small text-muted">${esc(T('badges.personale.nota') || 'Distintivo assegnato a mano dal team di Camoscio: non si guadagna, è un riconoscimento personale.')}</p>
                 </div>
             </div>
         ` : "";
@@ -56,7 +68,7 @@ function renderProfileIdentity(utente, timbri, els, ascese) {
         const presi = stato.filter(b => b.sbloccato)
             .sort((a, b) => String(b.data || '').localeCompare(String(a.data || '')));
         if (presi.length === 0) {
-            els.badgesGrid.innerHTML = `<div class="glass-card text-center py-4 text-muted">Nessun badge conquistato per ora.</div>`;
+            els.badgesGrid.innerHTML = `<div class="glass-card text-center py-4 text-muted">${esc(T('profile.nessunBadge') || 'Nessun badge conquistato per ora.')}</div>`;
         } else {
             presi.forEach(b => els.badgesGrid.appendChild(window.CamoscioBadges.schedaBadge(b)));
         }
@@ -92,10 +104,17 @@ window.CamoscioProfileIdentity = { render: renderProfileIdentity };
 // escursioni" (punto 80/B, public/js/storico.js) - qui invece SENZA azioniHtml: restano
 // sola lettura, perche' questa funzione disegna anche il profilo di un ALTRO utente e
 // cancellare una propria escursione/uscita ha senso solo dalla propria pagina.
+// Nome del mese per esteso ("15 giugno 2026"): a differenza di dataItaliana in
+// badges.js (solo numeri, GG/MM/AAAA - identica in italiano e inglese, vedi la
+// nota in cima a i18n.js) qui il nome del mese e' scritto per intero, quindi VA
+// scelto il locale giusto - altrimenti una card in inglese mostrerebbe comunque
+// "giugno" invece di "June". 'en-GB' e non 'en-US': stesso ordine giorno/mese
+// gia' scelto per la bandiera 🇬🇧, coerente col resto del sito.
 function formattaDataItaliana(iso) {
     const d = new Date(iso);
     if (isNaN(d)) return '';
-    return d.toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' });
+    const lang = window.CamoscioI18n && window.CamoscioI18n.getLang() === 'en' ? 'en-GB' : 'it-IT';
+    return d.toLocaleDateString(lang, { day: '2-digit', month: 'long', year: 'numeric' });
 }
 
 function formattaDurata(secondi) {
@@ -103,6 +122,16 @@ function formattaDurata(secondi) {
     const ore = Math.floor(secondi / 3600);
     const minuti = Math.round((secondi % 3600) / 60);
     return ore > 0 ? `${ore}h ${minuti}min` : `${minuti} min`;
+}
+
+// Virgola italiana o punto inglese per i decimali (km/dislivello sulle card):
+// la lingua CAMBIA il separatore, a differenza delle date sopra che restano
+// identiche. Usata dalle tre card compatte qui sotto invece di ripetere
+// ".toFixed(1).replace('.', ',')" tre volte con lo stesso bug potenziale.
+function formattaDecimale(n) {
+    const testo = (n || 0).toFixed(1);
+    const lang = window.CamoscioI18n && window.CamoscioI18n.getLang();
+    return lang === 'en' ? testo : testo.replace('.', ',');
 }
 
 // Punto 80/B: azioniHtml è iniettato dal chiamante, mai deciso qui dentro con un
@@ -127,8 +156,11 @@ function schedaEscursioneCompletata(hike, completion, { azioniHtml = '' } = {}) 
         const pauseOre = completion.actualTimeHours
             ? Math.max(0, completion.actualTimeHours - completion.movingTimeHours)
             : 0;
-        const pausaText = pauseOre > (1 / 60) ? ` (+ ${window.formatHoursToMin(pauseOre)} di pause)` : '';
-        tempoRealeHtml = `<p class="small text-muted rp-nota-dislivello"><i data-lucide="footprints"></i><span>Cammino: <b>${window.formatHoursToMin(completion.movingTimeHours)}</b>${pausaText} · CAI: <b>${window.formatHoursToMin(caiOre)}</b></span></p>`;
+        const pausaText = pauseOre > (1 / 60)
+            ? (T('profile.diPause', window.formatHoursToMin(pauseOre)) || ` (+ ${window.formatHoursToMin(pauseOre)} di pause)`)
+            : '';
+        const camminoLabel = esc(T('profile.cammino') || 'Cammino');
+        tempoRealeHtml = `<p class="small text-muted rp-nota-dislivello"><i data-lucide="footprints"></i><span>${camminoLabel}: <b>${window.formatHoursToMin(completion.movingTimeHours)}</b>${pausaText} · CAI: <b>${window.formatHoursToMin(caiOre)}</b></span></p>`;
     }
 
     // Titolo su una riga TUTTA sua, fuori da .outing-card-head: quella e' una riga flex
@@ -142,14 +174,14 @@ function schedaEscursioneCompletata(hike, completion, { azioniHtml = '' } = {}) 
             <div class="outing-card-head" style="margin-top: 4px;">
                 <span class="badge badge-primary outing-tag">${esc(hike.difficulty)}</span>
                 ${hike.groupCompletedAt
-                    ? `<span class="badge badge-green outing-tag" title="Completata insieme al gruppo"><i data-lucide="users"></i> in gruppo</span>`
+                    ? `<span class="badge badge-green outing-tag" title="${esc(T('profile.completataGruppoTitle') || 'Completata insieme al gruppo')}"><i data-lucide="users"></i> ${esc(T('profile.inGruppo') || 'in gruppo')}</span>`
                     : ''}
             </div>
             <span class="outing-card-sub">${formattaDataItaliana(hike.date)}</span>
             <div class="outing-card-stats">
-                <div><strong>${(hike.distanceKm || 0).toFixed(1).replace('.', ',')}</strong><span>km</span></div>
-                <div><strong>${Math.round(hike.elevationGain || 0)}</strong><span>m disliv.</span></div>
-                <div><strong>${Math.round(hike.maxAltitude || 0)}</strong><span>quota max</span></div>
+                <div><strong>${formattaDecimale(hike.distanceKm)}</strong><span>km</span></div>
+                <div><strong>${Math.round(hike.elevationGain || 0)}</strong><span>${esc(T('profile.mDisliv') || 'm disliv.')}</span></div>
+                <div><strong>${Math.round(hike.maxAltitude || 0)}</strong><span>${esc(T('profile.quotaMax') || 'quota max')}</span></div>
             </div>
             ${tempoRealeHtml}
             ${azioniHtml ? `<div class="outing-card-actions">${azioniHtml}</div>` : ''}
@@ -169,16 +201,16 @@ function schedaUscitaProfilo(s, { azioniHtml = '' } = {}) {
             <div class="outing-card-head">
                 <span class="outing-card-title">${titolo}</span>
                 ${importata
-                    ? `<span class="badge badge-accent outing-tag" title="Traccia caricata da un file .gpx, non registrata dal sito"><i data-lucide="upload"></i> importata</span>`
-                    : `<span class="badge badge-green outing-tag" title="Registrata col GPS durante l'escursione"><i data-lucide="satellite-dish"></i> registrata</span>`}
+                    ? `<span class="badge badge-accent outing-tag" title="${esc(T('profile.tracciaImportataTitle') || 'Traccia caricata da un file .gpx, non registrata dal sito')}"><i data-lucide="upload"></i> ${esc(T('profile.importata') || 'importata')}</span>`
+                    : `<span class="badge badge-green outing-tag" title="${esc(T('profile.tracciaRegistrataTitle') || "Registrata col GPS durante l'escursione")}"><i data-lucide="satellite-dish"></i> ${esc(T('profile.registrata') || 'registrata')}</span>`}
             </div>
             ${sottotitolo ? `<span class="outing-card-sub">${sottotitolo}</span>` : ''}
             <div class="outing-card-stats">
-                <div><strong>${(s.distanceKm || 0).toFixed(1).replace('.', ',')}</strong><span>km</span></div>
-                <div><strong>${Math.round(s.elevationGainM || 0)}</strong><span>m disliv.</span></div>
+                <div><strong>${formattaDecimale(s.distanceKm)}</strong><span>km</span></div>
+                <div><strong>${Math.round(s.elevationGainM || 0)}</strong><span>${esc(T('profile.mDisliv') || 'm disliv.')}</span></div>
                 ${s.durationUnknown
-                    ? `<div title="Il file .gpx non conteneva gli orari dei punti: durata non disponibile."><strong>—</strong><span>durata ignota</span></div>`
-                    : `<div><strong>${formattaDurata(s.durationSeconds)}</strong><span>durata</span></div>`}
+                    ? `<div title="${esc(T('profile.durataIgnotaTitle') || 'Il file .gpx non conteneva gli orari dei punti: durata non disponibile.')}"><strong>—</strong><span>${esc(T('profile.durataIgnota') || 'durata ignota')}</span></div>`
+                    : `<div><strong>${formattaDurata(s.durationSeconds)}</strong><span>${esc(T('profile.durata') || 'durata')}</span></div>`}
             </div>
             ${azioniHtml ? `<div class="outing-card-actions">${azioniHtml}</div>` : ''}
         </div>`;
@@ -216,7 +248,7 @@ window.CamoscioUsciteVisibili = usciteVisibili;
 
 async function renderProfileHikes(userId, container) {
     if (!container) return;
-    container.innerHTML = `<p class="text-muted small">Caricamento...</p>`;
+    container.innerHTML = `<p class="text-muted small">${window.escapeHtml(T('profile.caricamento') || 'Caricamento...')}</p>`;
 
     let completions = [];
     let sessioni = [];
@@ -227,7 +259,7 @@ async function renderProfileHikes(userId, container) {
         ]);
     } catch (e) {
         console.error("Errore nel caricamento delle escursioni del profilo:", e);
-        container.innerHTML = `<p class="text-muted small">Non è stato possibile caricare le escursioni.</p>`;
+        container.innerHTML = `<p class="text-muted small">${window.escapeHtml(T('profile.erroreCaricamentoEscursioni') || 'Non è stato possibile caricare le escursioni.')}</p>`;
         return;
     }
 
@@ -247,7 +279,7 @@ async function renderProfileHikes(userId, container) {
 
     container.innerHTML = tutte.length
         ? `<div class="outings-grid">${tutte.map(v => v.html).join('')}</div>`
-        : `<div class="glass-card text-center py-4 text-muted">Nessuna escursione da mostrare per ora.</div>`;
+        : `<div class="glass-card text-center py-4 text-muted">${window.escapeHtml(T('profile.nessunaEscursione') || 'Nessuna escursione da mostrare per ora.')}</div>`;
 
     if (window.lucide) window.lucide.createIcons();
 }
@@ -264,9 +296,10 @@ window.CamoscioProfileHikes = { render: renderProfileHikes };
 // preferito mentre si guarda la pagina di qualcun altro, senza che sia ovvio perche'.
 function schedaSentieroPreferito(hike, isOwnProfile, containerId) {
     const esc = window.escapeHtml;
+    const togliLabel = esc(T('profile.togliPreferiti') || 'Togli dai preferiti');
     const rimuoviBtn = isOwnProfile ? `
         <button class="outing-card-del" onclick="removeProfileBookmark('${esc(hike.id)}', '${esc(containerId)}')"
-                title="Togli dai preferiti" aria-label="Togli dai preferiti">🐐</button>
+                title="${togliLabel}" aria-label="${togliLabel}">🐐</button>
     ` : '';
     return `
         <div class="outing-card">
@@ -276,9 +309,9 @@ function schedaSentieroPreferito(hike, isOwnProfile, containerId) {
             </div>
             <span class="outing-card-sub">${formattaDataItaliana(hike.date)}</span>
             <div class="outing-card-stats">
-                <div><strong>${(hike.distanceKm || 0).toFixed(1).replace('.', ',')}</strong><span>km</span></div>
-                <div><strong>${Math.round(hike.elevationGain || 0)}</strong><span>m disliv.</span></div>
-                <div><strong>${Math.round(hike.maxAltitude || 0)}</strong><span>quota max</span></div>
+                <div><strong>${formattaDecimale(hike.distanceKm)}</strong><span>km</span></div>
+                <div><strong>${Math.round(hike.elevationGain || 0)}</strong><span>${esc(T('profile.mDisliv') || 'm disliv.')}</span></div>
+                <div><strong>${Math.round(hike.maxAltitude || 0)}</strong><span>${esc(T('profile.quotaMax') || 'quota max')}</span></div>
             </div>
         </div>`;
 }
@@ -296,7 +329,7 @@ function renderProfileBookmarks(userId, container) {
 
     container.innerHTML = hikes.length
         ? `<div class="outings-grid">${hikes.map(h => schedaSentieroPreferito(h, isOwnProfile, container.id)).join('')}</div>`
-        : `<div class="glass-card text-center py-4 text-muted">Nessun sentiero nei preferiti per ora.</div>`;
+        : `<div class="glass-card text-center py-4 text-muted">${window.escapeHtml(T('profile.nessunSentieroPreferito') || 'Nessun sentiero nei preferiti per ora.')}</div>`;
 
     if (window.lucide) window.lucide.createIcons();
 }
@@ -310,12 +343,13 @@ window.removeProfileBookmark = async function(hikeId, containerId) {
 };
 
 async function renderUserProfile(userId) {
+    profiloUserIdAperto = userId;
     const header = document.getElementById("user-profile-header");
     const badgeBox = document.getElementById("user-profile-personal-badge");
     const badgesGrid = document.getElementById("user-profile-badges");
     if (!header || !badgesGrid) return;
 
-    header.innerHTML = `<p class="text-muted">Caricamento...</p>`;
+    header.innerHTML = `<p class="text-muted">${window.escapeHtml(T('profile.caricamento') || 'Caricamento...')}</p>`;
     badgeBox.innerHTML = "";
     badgesGrid.innerHTML = "";
 
@@ -334,12 +368,12 @@ async function renderUserProfile(userId) {
         asceseArray.forEach(a => { ascese[a.stampId] = a; });
     } catch (e) {
         console.error("Errore nel caricamento del profilo:", e);
-        header.innerHTML = `<p class="text-muted">Non è stato possibile caricare questo profilo. Riprova più tardi.</p>`;
+        header.innerHTML = `<p class="text-muted">${window.escapeHtml(T('profile.erroreCaricamento') || 'Non è stato possibile caricare questo profilo. Riprova più tardi.')}</p>`;
         return;
     }
 
     if (!utente) {
-        header.innerHTML = `<p class="text-muted">Profilo non trovato.</p>`;
+        header.innerHTML = `<p class="text-muted">${window.escapeHtml(T('profile.nonTrovato') || 'Profilo non trovato.')}</p>`;
         return;
     }
 
@@ -357,7 +391,7 @@ async function renderUserProfile(userId) {
     const localExpertBox = document.getElementById("user-profile-local-expert");
     if (localExpertBox) {
         localExpertBox.innerHTML = (utente.localExpert && utente.localExpert.active)
-            ? `<p class="local-expert-line"><i data-lucide="star"></i> Esperto locale: <b>${esc(utente.localExpert.area)}</b></p>`
+            ? `<p class="local-expert-line"><i data-lucide="star"></i> ${esc(T('profile.espertoLocale') || 'Esperto locale')}: <b>${esc(utente.localExpert.area)}</b></p>`
             : "";
     }
 
@@ -367,3 +401,26 @@ async function renderUserProfile(userId) {
 }
 
 window.showUserProfile = showUserProfile;
+
+// NESSUN re-render completo qui al cambio lingua, di proposito (a differenza di
+// badges.js): renderUserProfile fa tre fetch veri (users/stamps/peak-ascents)
+// ogni volta che viene chiamata. Ridisegnare tutto a ogni cambio lingua avrebbe
+// voluto dire tre richieste di rete in piu' e uno "Caricamento..." che cancella
+// per un istante un profilo gia' a schermo, solo per ridipingere del testo -
+// peggio di lasciare la pagina cosi' com'e'. Residuo onesto: cambiando lingua
+// MENTRE si guarda un profilo, il corpo della pagina (card badge/escursioni/
+// preferiti) resta nella lingua di prima finche' non si riapre la pagina (un
+// altro click sullo stesso profilo la ridisegna gia' nella lingua giusta).
+//
+// SOLO IL TITOLO in alto (#section-title) si aggiorna comunque, trovato provando
+// dal vivo: updateSectionTitle (app.js) lo sovrascrive ad ogni cambio lingua con
+// prettyNames['user-profile'] ("Profilo"/"Profile"), cancellando lo username vero
+// che renderUserProfile ci aveva scritto - db.users ce l'ha gia' in cache, zero
+// fetch per rimetterlo a posto.
+if (window.CamoscioI18n) window.CamoscioI18n.onChange(function () {
+    const section = document.getElementById('user-profile');
+    if (!section || !section.classList.contains('active') || !profiloUserIdAperto) return;
+    const utente = (window.CamoscioState.users || []).find(u => u.id === profiloUserIdAperto);
+    const sectionTitle = document.getElementById('section-title');
+    if (utente && sectionTitle) sectionTitle.textContent = utente.username;
+});

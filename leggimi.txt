@@ -1,20 +1,26 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-22 (terza sessione, chiusa in sicurezza). PUNTO 98
-chiuso per intero (tutti e sei i sotto-punti, A-F) - E confermato dal
-vivo da Denis su Valle Granara/SP30 dopo la quarta riapertura: "ok,
-fatto la prova a val granara, fuziona, tutto a posto".
+Aggiornato: 2026-08-22 (quarta sessione, ANCORA APERTA). PUNTO 102:
+Denis ha approvato di tradurre tutto il sito, primo lotto di 4 pagine
+fatto e verificato. PUNTO 103: bug vero nel parser GPX (titolo di
+un'escursione importata mostrava il codice XML grezzo) trovato durante
+la verifica, spiegato e RISOLTO su richiesta di Denis - codice
+corretto e anche il dato gia' sbagliato sul database (scrittura
+confermata esplicitamente da lui). Anche le etichette della barra
+laterale, segnalate da Denis in chat, sono state tradotte.
 
->>> APERTO PER LA PROSSIMA SESSIONE - PUNTO 102, decisione da
-prendere: la prova di traduzione IT/EN sulla sola pagina Badge e'
-chiusa e confermata da Denis in locale (due bandiere in alto a
-destra prima di "Esci", solo interfaccia - testi utente e nomi propri
-di luogo mai tradotti). Committata e pushata (`1a1bddb`). Resta da
-decidere CON Denis se estendere la traduzione al resto del sito
-(stimato un lavoro di giorni, non ore: index.html e' 2233 righe,
-altri 27 file JS per ~13.000) o lasciarla cosi' com'e' per ora - non
-riproporlo da soli, aspettare che sia lui a deciderlo. Dettaglio
-completo in cose_da_fare.txt punto 102 e nel vault (04-Da-Fare.md,
+>>> APERTO PER LA PROSSIMA SESSIONE (o per il resto di questa) -
+PUNTO 102: primo lotto di 4 pagine tradotto e verificato con
+l'estensione Chrome (zero errori console, entrambe le lingue) E LE
+ETICHETTE DELLA BARRA LATERALE, NON ANCORA da Denis in locale e NON
+ANCORA COMMITTATO - aspettare che sia lui a chiederlo. Fargli
+riverificare "Cerca Persone" (il caso che ha segnalato lui stesso -
+titolo in alto, ora corretto) e il profilo di DaniWoll (titolo
+dell'escursione importata, ora senza il codice XML). Poi concordare
+CON LUI l'ordine dei lotti successivi (proposto in 04-Da-Fare.md del
+vault, non confermato) - non proseguire da soli senza fermarsi, stessa
+regola di sempre anche per un batch grande come questo. Dettaglio
+completo in cose_da_fare.txt punti 102/103 e nel vault (04-Da-Fare.md,
 03-Decisioni-Architetturali.md, 07-Trappole-Tecniche.md).
 ===================================================================
 
@@ -134,15 +140,33 @@ MAI piu' (congelato); cose_da_fare.txt quando un punto si chiude o ne arriva uno
           velocita' impossibile). Dettaglio completo in cose_da_fare.txt
           punto 94 e nel vault.
 
-     102. Prova traduzione IT/EN, solo pagina Badge: due bandiere
+     102. Traduzione IT/EN, prova sulla pagina Badge: due bandiere
           nell'header (prima di "Esci"), solo interfaccia - testi
           utente e nomi propri di luogo mai tradotti. Dizionario
           inglese in un file nuovo (public/js/i18n.js), l'italiano
           resta dov'era gia', mai duplicato. Bandiere in SVG inline
           invece di emoji (su Windows/Chrome il glifo a colori manca).
-          Confermata da Denis in locale - vedi blocco in cima a questo
-          file per cosa resta aperto (decidere il rollout sul resto
-          del sito).
+          Confermata da Denis in locale, poi APPROVATO IL ROLLOUT AL
+          RESTO DEL SITO (22/08/2026, stessa giornata/sessione
+          successiva): primo lotto di 4 pagine (Cerca Persone,
+          Profilo, Pagina Squadra, Pagina Escursione) fatto e
+          verificato con l'estensione Chrome - non ancora da Denis in
+          locale, non ancora committato. Trovato e corretto un bug
+          vero durante la verifica (il titolo in alto non seguiva il
+          cambio lingua sulle pagine con un titolo dinamico), poi
+          anche le etichette della barra laterale (segnalate da
+          Denis) - vedi blocco in cima a questo file.
+
+     103. [22/08/2026, trovato durante il punto 102] Il titolo di
+          un'escursione importata da GPX sul profilo di DaniWoll
+          mostrava il codice XML grezzo (<![CDATA[...]]>) invece del
+          testo pulito - un dialetto GPX (CDATA attorno al <name>)
+          non fra i 20 gia' testati per lib/gpx.js. NON un problema di
+          sicurezza (nessuna entita' risolta, solo delimitatori
+          tolti). Corretto il parser (risolve i FUTURI import) e,
+          con conferma esplicita di Denis, anche la sessione gia'
+          sbagliata sul database (script mirato, 1 trovata e corretta,
+          controprova a 0 rimaste). Riverificato dal vivo.
 
     Anche due pulizie dati: cancellata una traccia vuota (0 km, 0 dislivello)
     del 24/07/2026 sull'account reale di Denis; cancellate 12 sessioni del

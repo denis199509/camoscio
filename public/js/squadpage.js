@@ -6,6 +6,18 @@
 //
 // La chat (punto 48, poi condivisa col punto 55) vive in public/js/chatpanel.js.
 
+// Rollout traduzione punto 102 (22/08/2026). "var", non "const": vedi la nota in
+// cima a i18n.js sul perche' (piu' file <script> classici che condividono lo
+// stesso scope globale, "const T" ripetuto in due file darebbe SyntaxError).
+var T = (window.CamoscioI18n && window.CamoscioI18n.t) || function () { return null; };
+
+// Ultima squadra aperta, per poter aggiornare SOLO intestazione/membri/richieste
+// a un cambio lingua (vedi CamoscioI18n.onChange in fondo al file) senza toccare
+// la chat: chatpanel.js ha un suo giro di polling avviato che perderebbe la
+// posizione di scroll se richiamato di nuovo (stessa lezione gia' scritta per
+// refreshSquadHeaderAndMembers, qui applicata anche al cambio lingua).
+var squadIdAperta = null;
+
 function isSquadAdminClient(squad, userId) {
     return squad.creatorId === userId || (squad.admins || []).includes(userId);
 }
@@ -21,6 +33,7 @@ async function showSquadPage(squadId) {
 }
 
 async function renderSquadPage(squadId) {
+    squadIdAperta = squadId;
     const db = window.CamoscioState;
     const squad = db.squads.find(s => s.id === squadId);
     const headerBox = document.getElementById("squad-page-header");
@@ -30,7 +43,7 @@ async function renderSquadPage(squadId) {
     if (!headerBox || !membersBox || !chatBox) return;
 
     if (!squad) {
-        headerBox.innerHTML = `<p class="text-muted">Squadra non trovata.</p>`;
+        headerBox.innerHTML = `<p class="text-muted">${window.escapeHtml(T('squadPage.nonTrovata') || 'Squadra non trovata.')}</p>`;
         if (joinBox) { joinBox.innerHTML = ""; joinBox.classList.add("hidden"); }
         membersBox.innerHTML = "";
         chatBox.innerHTML = "";
@@ -52,7 +65,7 @@ async function renderSquadPage(squadId) {
     // GET /:id/messages risponde 403 a un non membro e chatpanel.js non lo segnala a schermo.
     if (isMember) {
         chatBox.classList.remove("hidden");
-        window.CamoscioChatPanel.render({ box: chatBox, apiBase: `/api/squads/${squad.id}`, title: 'Chat di Squadra' });
+        window.CamoscioChatPanel.render({ box: chatBox, apiBase: `/api/squads/${squad.id}`, title: T('squadPage.chatTitolo') || 'Chat di Squadra' });
     } else {
         chatBox.classList.add("hidden");
         chatBox.innerHTML = "";
@@ -69,6 +82,13 @@ function refreshSquadHeaderAndMembers(squadId) {
     const db = window.CamoscioState;
     const squad = db.squads.find(s => s.id === squadId);
     if (!squad) return;
+    // Punto 102, trovato provando dal vivo: updateSectionTitle (app.js) sovrascrive
+    // #section-title a ogni cambio lingua usando prettyNames[id] - che per
+    // "squad-page" non esiste, quindi tornerebbe a "Camoscio" invece del nome vero
+    // della squadra. Va rimesso qui ogni volta (innocuo quando la chiamata arriva
+    // da un'azione admin: squad.name non cambia da quelle azioni).
+    const sectionTitle = document.getElementById("section-title");
+    if (sectionTitle) sectionTitle.textContent = squad.name;
     const isMember = isSquadMemberClient(squad, db.currentUser.id);
     const canManage = isSquadAdminClient(squad, db.currentUser.id);
     renderSquadHeader(squad, canManage, document.getElementById("squad-page-header"));
@@ -96,21 +116,21 @@ function renderSquadJoinBox(squad, isMember, canManage, box) {
         // partecipazione a un'escursione (social.js) - stesse classi, stesso principio.
         const righe = pending.map(id => {
             const u = db.users.find(u => u.id === id);
-            const nome = u ? esc(u.username) : "Utente";
+            const nome = u ? esc(u.username) : esc(T('common.utente') || 'Utente');
             const avatar = u ? esc(u.avatar) : "👤";
             return `
                 <div class="veto-request-item">
                     <span>${avatar} <b>${nome}</b></span>
                     <div class="veto-actions">
-                        <button class="btn btn-sm btn-success" style="padding:2px 6px;" onclick="approveSquadRequest('${squad.id}','${id}')">Accetta</button>
-                        <button class="btn btn-sm btn-danger" style="padding:2px 6px;" onclick="declineSquadRequest('${squad.id}','${id}')">Rifiuta</button>
+                        <button class="btn btn-sm btn-success" style="padding:2px 6px;" onclick="approveSquadRequest('${squad.id}','${id}')">${esc(T('squadPage.accetta') || 'Accetta')}</button>
+                        <button class="btn btn-sm btn-danger" style="padding:2px 6px;" onclick="declineSquadRequest('${squad.id}','${id}')">${esc(T('squadPage.rifiuta') || 'Rifiuta')}</button>
                     </div>
                 </div>
             `;
         }).join("");
         box.innerHTML = `
             <div class="veto-management-box">
-                <span class="small font-bold text-warning" style="display:block; margin-bottom:6px;"><i data-lucide="shield-alert"></i> Richieste di partecipazione:</span>
+                <span class="small font-bold text-warning" style="display:block; margin-bottom:6px;"><i data-lucide="shield-alert"></i> ${esc(T('squadPage.richiestePartecipazione') || 'Richieste di partecipazione:')}</span>
                 ${righe}
             </div>
         `;
@@ -126,10 +146,10 @@ function renderSquadJoinBox(squad, isMember, canManage, box) {
     box.classList.remove("hidden");
     const giaRichiesta = (squad.pendingRequests || []).includes(db.currentUser.id);
     box.innerHTML = giaRichiesta
-        ? `<p class="small text-muted"><i data-lucide="clock"></i> Richiesta di partecipazione inviata: aspetta la conferma di un amministratore.</p>`
+        ? `<p class="small text-muted"><i data-lucide="clock"></i> ${esc(T('squadPage.richiestaInviata') || 'Richiesta di partecipazione inviata: aspetta la conferma di un amministratore.')}</p>`
         : `<div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
-               <p class="small text-muted" style="margin:0;">Non fai ancora parte di questa squadra.</p>
-               <button class="btn btn-sm btn-primary" onclick="requestJoinSquad('${squad.id}')">Richiesta Partecipazione</button>
+               <p class="small text-muted" style="margin:0;">${esc(T('squadPage.nonMembro') || 'Non fai ancora parte di questa squadra.')}</p>
+               <button class="btn btn-sm btn-primary" onclick="requestJoinSquad('${squad.id}')">${esc(T('squadPage.richiediPartecipazione') || 'Richiesta Partecipazione')}</button>
            </div>`;
 }
 
@@ -143,11 +163,11 @@ async function approveSquadRequest(squadId, userId) {
             if (window.renderSquadsList) window.renderSquadsList();
         } else {
             const err = await response.json().catch(() => ({}));
-            window.showToast(err.error || "Impossibile approvare la richiesta.", "error");
+            window.showToast(err.error || T('squadPage.erroreApprovazione') || "Impossibile approvare la richiesta.", "error");
         }
     } catch (e) {
         console.error("Errore approvazione richiesta squadra:", e);
-        window.showToast("Impossibile approvare la richiesta.", "error");
+        window.showToast(T('squadPage.erroreApprovazione') || "Impossibile approvare la richiesta.", "error");
     }
 }
 
@@ -159,18 +179,18 @@ async function declineSquadRequest(squadId, userId) {
             refreshSquadHeaderAndMembers(squadId);
         } else {
             const err = await response.json().catch(() => ({}));
-            window.showToast(err.error || "Impossibile rifiutare la richiesta.", "error");
+            window.showToast(err.error || T('squadPage.erroreRifiuto') || "Impossibile rifiutare la richiesta.", "error");
         }
     } catch (e) {
         console.error("Errore rifiuto richiesta squadra:", e);
-        window.showToast("Impossibile rifiutare la richiesta.", "error");
+        window.showToast(T('squadPage.erroreRifiuto') || "Impossibile rifiutare la richiesta.", "error");
     }
 }
 
 function renderSquadHeader(squad, canManage, box) {
     const esc = window.escapeHtml;
     const photoHtml = squad.photo
-        ? `<img src="${esc(squad.photo)}" alt="Foto squadra">`
+        ? `<img src="${esc(squad.photo)}" alt="${esc(T('squadPage.fotoAlt') || 'Foto squadra')}">`
         : "👥";
 
     box.innerHTML = `
@@ -180,7 +200,7 @@ function renderSquadHeader(squad, canManage, box) {
         </div>
         ${canManage ? `
             <div class="form-group">
-                <label for="squad-photo-input" class="small text-muted">Cambia foto squadra (solo amministratori):</label>
+                <label for="squad-photo-input" class="small text-muted">${esc(T('squadPage.cambiaFoto') || 'Cambia foto squadra (solo amministratori):')}</label>
                 <input type="file" id="squad-photo-input" accept="image/*">
             </div>
         ` : ""}
@@ -197,7 +217,7 @@ function handleSquadPhotoChange(e, squadId) {
     // Stesso tetto lato client della foto profilo utente (public/js/profile.js):
     // il server valida i byte decodificati (MAX_PHOTO_LENGTH in routes/squads.js).
     if (file.size > 1.5 * 1024 * 1024) {
-        window.showToast("Foto troppo grande, scegline una più piccola (max ~1.5MB).", "error");
+        window.showToast(T('squadPage.fotoTroppoGrande') || "Foto troppo grande, scegline una più piccola (max ~1.5MB).", "error");
         e.target.value = "";
         return;
     }
@@ -216,14 +236,14 @@ async function saveSquadPhoto(squadId, dataUrl) {
         if (response.ok) {
             updateLocalSquad(await response.json());
             refreshSquadHeaderAndMembers(squadId);
-            window.showToast("Foto della squadra aggiornata.", "success");
+            window.showToast(T('squadPage.fotoAggiornata') || "Foto della squadra aggiornata.", "success");
         } else {
             const err = await response.json().catch(() => ({}));
-            window.showToast(err.error || "Impossibile cambiare la foto della squadra.", "error");
+            window.showToast(err.error || T('squadPage.erroreFoto') || "Impossibile cambiare la foto della squadra.", "error");
         }
     } catch (e) {
         console.error("Errore cambio foto squadra:", e);
-        window.showToast("Impossibile cambiare la foto della squadra.", "error");
+        window.showToast(T('squadPage.erroreFoto') || "Impossibile cambiare la foto della squadra.", "error");
     }
 }
 
@@ -233,7 +253,7 @@ function renderSquadMembers(squad, canManage, box) {
 
     const rows = squad.members.map(memberId => {
         const mem = db.users.find(u => u.id === memberId);
-        const nome = mem ? esc(mem.username) : "Utente";
+        const nome = mem ? esc(mem.username) : esc(T('common.utente') || 'Utente');
         const avatar = mem ? esc(mem.avatar) : "👤";
         const isAdmin = isSquadAdminClient(squad, memberId);
         const isCreator = squad.creatorId === memberId;
@@ -241,8 +261,8 @@ function renderSquadMembers(squad, canManage, box) {
         let actionHtml = isAdmin ? `<span class="badge badge-accent">Admin</span>` : "";
         if (canManage && !isCreator) {
             actionHtml += isAdmin
-                ? ` <button class="btn btn-sm btn-secondary" onclick="demoteSquadMember('${squad.id}','${memberId}')">Rimuovi admin</button>`
-                : ` <button class="btn btn-sm btn-secondary" onclick="promoteSquadMember('${squad.id}','${memberId}')">Rendi admin</button>`;
+                ? ` <button class="btn btn-sm btn-secondary" onclick="demoteSquadMember('${squad.id}','${memberId}')">${esc(T('squadPage.rimuoviAdmin') || 'Rimuovi admin')}</button>`
+                : ` <button class="btn btn-sm btn-secondary" onclick="promoteSquadMember('${squad.id}','${memberId}')">${esc(T('squadPage.rendiAdmin') || 'Rendi admin')}</button>`;
         }
 
         return `
@@ -254,7 +274,7 @@ function renderSquadMembers(squad, canManage, box) {
     }).join("");
 
     box.innerHTML = `
-        <h4><i data-lucide="users"></i> Membri</h4>
+        <h4><i data-lucide="users"></i> ${esc(T('squadPage.membri') || 'Membri')}</h4>
         <div class="squads-list">${rows}</div>
     `;
 }
@@ -267,11 +287,11 @@ async function promoteSquadMember(squadId, userId) {
             refreshSquadHeaderAndMembers(squadId);
         } else {
             const err = await response.json().catch(() => ({}));
-            window.showToast(err.error || "Impossibile promuovere il membro.", "error");
+            window.showToast(err.error || T('squadPage.errorePromozione') || "Impossibile promuovere il membro.", "error");
         }
     } catch (e) {
         console.error("Errore promozione admin squadra:", e);
-        window.showToast("Impossibile promuovere il membro.", "error");
+        window.showToast(T('squadPage.errorePromozione') || "Impossibile promuovere il membro.", "error");
     }
 }
 
@@ -283,11 +303,11 @@ async function demoteSquadMember(squadId, userId) {
             refreshSquadHeaderAndMembers(squadId);
         } else {
             const err = await response.json().catch(() => ({}));
-            window.showToast(err.error || "Impossibile rimuovere l'amministratore.", "error");
+            window.showToast(err.error || T('squadPage.erroreRimozioneAdmin') || "Impossibile rimuovere l'amministratore.", "error");
         }
     } catch (e) {
         console.error("Errore rimozione admin squadra:", e);
-        window.showToast("Impossibile rimuovere l'amministratore.", "error");
+        window.showToast(T('squadPage.erroreRimozioneAdmin') || "Impossibile rimuovere l'amministratore.", "error");
     }
 }
 
@@ -305,3 +325,13 @@ window.approveSquadRequest = approveSquadRequest;
 window.declineSquadRequest = declineSquadRequest;
 window.updateLocalSquad = updateLocalSquad;
 window.refreshSquadHeaderAndMembers = refreshSquadHeaderAndMembers;
+
+// Cambio lingua: solo intestazione/richieste/membri, MAI la chat (vedi la nota
+// su squadIdAperta piu' sopra) - dati gia' in window.CamoscioState, zero fetch,
+// zero costo. Non fa nulla se la pagina squadra non e' quella aperta al momento.
+if (window.CamoscioI18n) window.CamoscioI18n.onChange(function () {
+    const section = document.getElementById('squad-page');
+    if (section && section.classList.contains('active') && squadIdAperta) {
+        refreshSquadHeaderAndMembers(squadIdAperta);
+    }
+});

@@ -5575,3 +5575,113 @@ schermo spento ancora."
    ora. Il resto del sito resta tutto in italiano anche a bandiera
    inglese attiva, per scelta - era la prova, non il rollout.
    PUNTO 102 (prova) CHIUSO, ROLLOUT COMPLETO ANCORA DA DECIDERE.
+
+   ---------------------------------------------------------------
+
+   ROLLOUT AL RESTO DEL SITO [22/08/2026, sessione successiva].
+   Denis, parole sue: "stavamo traducendo il sito in inglese, abbiamo
+   fatto la pagina badge di prova. Approvato, possiamo cominciare con
+   tutto il sito."
+
+   Data la mole gia' stimata (giorni, non ore), e la sua preferenza
+   gia' nota di procedere un pezzo alla volta anche sui blocchi grandi
+   (vedi punti 67-77 e 98), proposto un ordine a lotti e cominciato dal
+   piu' piccolo: PRIMO LOTTO, le quattro pagine senza voce in barra
+   laterale - Cerca Persone, Profilo (funzioni condivise fra profilo
+   altrui e proprio), Pagina Squadra, Pagina Escursione. Meccanismo
+   riusato identico (dizionario in i18n.js, data-i18n sull'HTML, nuovo
+   data-i18n-placeholder per i campi di input, T('chiave') || 'testo
+   italiano' nel JS, CamoscioI18n.onChange dove il ridisegno costa
+   zero). Dettaglio completo delle scelte nuove (var invece di const
+   per evitare una collisione fra script, il titolo in alto da
+   rimettere a posto a mano, quali pagine si ridisegnano da sole e
+   quali no, date/decimali che cambiano con la lingua) in
+   03-Decisioni-Architetturali.md e 07-Trappole-Tecniche.md del vault.
+
+   TROVATO E CORRETTO PROVANDO DAL VIVO: cambiando lingua, il titolo in
+   alto (#section-title) tornava al nome generico della sezione invece
+   di restare il nome vero (username/squadra/escursione) - su Pagina
+   Squadra ed Escursione sarebbe tornato addirittura "Camoscio". Trovato
+   da me sul profilo di DaniWoll, E SEGNALATO INDIPENDENTEMENTE DA
+   DENIS in chat con uno screenshot dal telefono sul caso piu' semplice
+   (Cerca Persone, rimasto "Cerca Persone" in alto a pagina gia'
+   tradotta) - mentre ero gia' a meta' della correzione dello stesso
+   difetto sulle altre tre pagine. Corretto su tutte e quattro,
+   riverificato dopo la correzione: il titolo resta quello vero
+   attraverso un cambio lingua fatto restando sulla pagina.
+
+   TROVATO DURANTE LA VERIFICA, poi risolto (vedi punto 103 qui sotto):
+   il nome di un'escursione importata da GPX sul profilo di DaniWoll
+   mostrava il wrapper XML grezzo (<![CDATA[...]]>) invece del titolo
+   pulito.
+
+   VERIFICATO CON L'ESTENSIONE CHROME (login demo Marco Alpinista,
+   dati veri: DaniWoll, "I Camosci della Val Brembana", "Merenderos in
+   Vetta", l'escursione "Monte Gennaro"), in entrambe le lingue,
+   console pulita in ogni pagina. NON ANCORA verificato da Denis in
+   locale, NON ANCORA COMMITTATO - in attesa che sia lui a chiederlo.
+
+   SEGNALATO DA DENIS IN CHAT, con uno screenshot dal telefono: le
+   etichette della barra laterale (Dashboard, Escursioni, Le mie
+   escursioni, ecc.) restavano in italiano anche a pagina di contenuto
+   gia' tradotta - non erano mai state marcate, nemmeno nella prova
+   originale sulla pagina Badge. Aggiunte 9 chiavi nuove (nav.*,
+   tenute separate da sectionTitle.* perche' sono due elementi diversi
+   - alcune coppie gia' divergono in italiano stesso, es. "Carpooling"
+   nel menu contro "Carpooling & Spese Viaggio" nel titolo pagina).
+   "Carpooling" lasciato senza chiave apposta: e' gia' una parola
+   inglese identica in entrambe le lingue. Verificato dal vivo su
+   tutte e 9 le voci.
+
+   RIPARTIRE DA: far riverificare a Denis il primo lotto (in
+   particolare "Cerca Persone" e le etichette della barra laterale,
+   che ha segnalato lui stesso - ora corretti), decidere insieme
+   l'ordine dei lotti successivi (proposto in 04-Da-Fare.md del vault:
+   escursioni/le mie escursioni insieme perche' condividono
+   buildHikeCard, poi profilo proprio/dashboard, poi sicurezza/
+   sociale, poi carpooling/zaino, poi moderazione, poi la Mappa - la
+   piu' grande - infine il gate di login/registrazione e le pagine
+   HTML autonome).
+
+=====================================================================
+
+103. [22/08/2026, trovato durante il punto 102, non richiesto] Denis,
+   parole sue: "'Trovato ma non toccato, fuori tema: sul profilo di
+   DaniWoll, il nome di un'escursione importata da GPX mostra il
+   codice XML grezzo invece del titolo pulito - e' un bug del parser
+   GPX, non della traduzione. Te lo segnalo per quando vorrai
+   occupartene.' Spiega meglio questo punto è risolviamo subito."
+
+   CAUSA VERA: lib/gpx.js, funzione elemento() (legge il contenuto di
+   un tag come <name>) prendeva tutto cio' che trovava fra apertura e
+   chiusura del tag, involucro CDATA compreso. Alcuni programmi di
+   esportazione GPX avvolgono il testo libero in <![CDATA[...]]> anche
+   senza bisogno (lecito per lo standard XML) - un 21esimo dialetto
+   GPX non fra i 20 gia' testati per questo parser. Il titolo di
+   DaniWoll era salvato letteralmente come "<![CDATA[Pizzo Cefalone,
+   Cima Giovanni Paolo II e Passo della Portella da Campo
+   Imperatore]]>".
+
+   SPIEGATO A DENIS PERCHE' NON E' UN PROBLEMA DI SICUREZZA: il file
+   vieta la risoluzione di entita' XML apposta (previene XXE e
+   "billion laughs", vedi l'intestazione di lib/gpx.js) - togliere un
+   involucro CDATA e' l'opposto: CDATA dice "non interpretare come
+   markup", i delimitatori tolti non fanno analizzare nulla in piu'.
+
+   CORRETTO IN DUE PARTI. 1) lib/gpx.js: elemento() ora toglie
+   l'involucro CDATA se presente - testato con un file finto (con e
+   senza CDATA), entrambi corretti. Risolve i FUTURI import. 2) La
+   sessione di DaniWoll era gia' salvata sul database col valore
+   sbagliato, il fix del codice da solo non la toccava: proposto uno
+   script mirato (cerca importedName che iniziano per <![CDATA[,
+   stampa prima/dopo, corregge) - L'AMBIENTE HA BLOCCATO IN AUTOMATICO
+   il primo tentativo (scrittura diretta sul database vero, nessuno di
+   prova per questo progetto). Chiesto a Denis, confermato ("confermo,
+   puoi lanciare"). Lanciato: trovata e corretta esattamente 1
+   sessione, controprova a 0 rimaste. Riverificato dal vivo - il
+   titolo su DaniWoll ora si vede pulito.
+
+   NON ANCORA COMMITTATO (il codice di lib/gpx.js) - in attesa che sia
+   Denis a chiederlo, come sempre. La correzione sul database invece
+   e' gia' definitiva (non e' una modifica di codice, non c'e' niente
+   da committare per quella parte).
