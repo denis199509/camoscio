@@ -204,7 +204,250 @@
             // Pagina escursione (public/js/hikepage.js)
             'hikePage.nonTrovata': 'Hike not found.',
             'hikePage.partecipanti': 'Participants',
-            'hikePage.chatTitolo': 'Hike Chat'
+            'hikePage.chatTitolo': 'Hike Chat',
+
+            // ==================================================================
+            // Rollout punto 102, secondo lotto (22/08/2026): Escursioni + Le mie
+            // escursioni - condividono buildHikeCard (public/js/social.js), quindi
+            // un solo lotto per entrambe le pagine (vedi 04-Da-Fare.md del vault).
+            //
+            // Tre scelte non ovvie emerse scendendo in queste due pagine:
+            // 1) Difficolta' (Principiante/Intermedio/Esperto) e Tag Tribu' (Passo
+            //    Fotografico, Trail Runners...) sono vocabolario fisso definito da
+            //    noi (come i livelli badge), non testo utente ne' un nome proprio:
+            //    tradotti SOLO per la visualizzazione - il valore salvato sul
+            //    database resta sempre la stringa italiana (vedi difficulty.*/
+            //    tribeTag.* sotto, usati come T('...'+valore) con l'italiano
+            //    invariato come ripiego, mai per filtrare o salvare).
+            // 2) I due messaggi di notifica mandati all'ALTRO utente quando lo si
+            //    accetta/rifiuta (notifyParticipantDecision, social.js) NON sono
+            //    stati tradotti apposta: il testo viene scritto una volta sola sul
+            //    server nella lingua di CHI approva, non di chi lo legge dopo -
+            //    tradurlo avrebbe fatto vedere l'inglese a un utente che preferisce
+            //    l'italiano (o viceversa) a seconda della lingua di chi ha
+            //    approvato, invece di seguire sempre la lingua di chi guarda.
+            //    Restano in italiano fisso, come prima di questo lotto.
+            // 3) I messaggi d'errore che arrivano dal SERVER (dati.error/body.error
+            //    nelle risposte delle rotte) restano sempre in italiano: il
+            //    dizionario qui e' solo lato client. Tradotto solo il testo di
+            //    ripiego per quando il server non manda un messaggio proprio.
+            'sectionTitle.hikes': 'Hikes',
+            'sectionTitle.my-hikes': 'My Hikes',
+
+            // Condivise fra piu' file di questo lotto (e riusabili da lotti futuri)
+            'common.e': ' and ',
+            'common.elimina': 'Delete',
+            'common.cancella': 'Cancel',
+            'common.erroreServer': 'Could not reach the server.',
+            'common.copia': 'Copy',
+
+            // Vocabolario fisso, vedi nota (1) qui sopra - il VALORE salvato resta
+            // sempre la stringa italiana usata come chiave.
+            'difficulty.Principiante': 'Beginner',
+            'difficulty.Intermedio': 'Intermediate',
+            'difficulty.Esperto': 'Expert',
+            'tribeTag.Passo Fotografico': 'Photography Pace',
+            'tribeTag.Trail Runners': 'Trail Runners',
+            'tribeTag.Passo Svelto': 'Brisk Pace',
+            'tribeTag.Dog Friendly': 'Dog Friendly',
+            'tribeTag.Generazione Alpha': 'Generation Alpha',
+            'tribeTag.Generazione Z': 'Generation Z',
+            'tribeTag.Millennials': 'Millennials',
+
+            // Badge idoneita' sulla card escursione (public/js/profile.js,
+            // getEligibilityBadge) - funzione piccola e autonoma, tradotta ora
+            // anche se il resto di profile.js (Dashboard) e' un lotto futuro,
+            // perche' il suo output compare su ogni card di questo lotto.
+            'eligibility.idoneo': 'Fit (Pace OK)',
+            'eligibility.richiestoPassoSuperiore': 'Requires a Higher Pace',
+
+            // --- ESCURSIONI (public/index.html #hikes, public/js/social.js) ---
+            'hikes.esplora': 'Explore Group Hikes',
+            'hikes.cercaTitoloLabel': 'Search by title:',
+            'hikes.cercaTitoloPlaceholder': 'E.g. Alba Corno Grande...',
+            'hikes.filtriTitolo': 'Filters and Matching Algorithms',
+            'hikes.difficoltaLabel': 'Difficulty:',
+            'hikes.tutteDifficolta': 'All difficulties',
+            'hikes.tribuLabel': 'Tribe (Lifestyle) — select one or more:',
+            'hikes.disponibiliTitolo': 'Open to Join',
+            'hikes.partecipiTitolo': "You're Joining",
+            'hikes.completateTitolo': 'Completed',
+            'hikes.nessunFiltro': 'No hikes found with the selected filters.',
+            'hikes.nonPartecipiAlcuna': "You're not joining any upcoming hike.",
+            'hikes.nessunaCompletata': 'No completed hikes.',
+
+            // --- LE MIE ESCURSIONI (public/index.html #my-hikes, social.js +
+            // storico.js) ---
+            'myHikes.organizzateTitolo': 'Organized by Me',
+            'myHikes.organizzateDesc': 'Hikes you created. Here you approve or decline join requests.',
+            'myHikes.partecipoTitolo': 'Joining',
+            'myHikes.partecipoDesc': "Upcoming hikes you've joined, plus those awaiting approval.",
+            'myHikes.completateTitolo': 'Completed Hikes',
+            'myHikes.completateDesc': 'Hikes you completed on the site, and routes you recorded via GPS or uploaded from a file.',
+            'myHikes.gpxUploadTitolo': 'Upload a .gpx file',
+            'myHikes.gpxUploadDesc': 'Do you have tracks from hikes you did before using Camoscio? Upload them here to add them to your history and totals.',
+            'myHikes.gpxSceglieFile': 'Choose file',
+            'myHikes.progettiTitolo': 'My Projects',
+            'myHikes.progettiDesc': 'Routes you designed on the map and saved. Open one to find it again on the Map, with sun exposure along the track.',
+            'myHikes.nessunaOrganizzata': "You haven't organized any hike yet. You can create one from the Hikes section.",
+            'myHikes.nonIscrittoAlcuna': "You're not joining any upcoming hike. Check out other people's in the Hikes section.",
+            'myHikes.riepilogoVuoto': "Your hikes will show up here: the ones you organize, the ones you join, and the ones you've already done.",
+            'myHikes.organizzateLabel': 'organized',
+            'myHikes.programmaLabel': 'planned',
+            'myHikes.completateLabel': 'completed',
+            'myHikes.completateVuoto': "No completed hikes yet. After a hike, remember to mark it as completed, or upload a .gpx file of a hike you've already done using the button above.",
+            'myHikes.erroreCaricaUscite': 'Completed hikes are up to date; the GPS-recorded hikes could not be loaded. Try again later.',
+
+            // --- Modale crea/modifica escursione (#create-hike-modal, social.js) ---
+            'hikeModal.creaNuova': 'Create New Hike',
+            'hikeModal.titoloLabel': 'Hike Title:',
+            'hikeModal.titoloPlaceholder': 'E.g. Three Peaks Loop',
+            'hikeModal.descLabel': 'Trail and meeting point description:',
+            'hikeModal.descPlaceholder': 'Give details about the trail...',
+            'hikeModal.difficoltaLabel': 'Technical Difficulty:',
+            'hikeModal.diffPrincipiante': 'Beginner (Low elevation gain, wide trail)',
+            'hikeModal.diffIntermedio': 'Intermediate (Up to 1000m gain, steep sections)',
+            'hikeModal.diffEsperto': 'Expert (Over 1000m gain, technical/exposed terrain)',
+            'hikeModal.dataLabel': 'Hike Date:',
+            'hikeModal.routeSourceLabel': 'Max altitude, elevation gain and distance:',
+            'hikeModal.routeManuale': "I'll enter them myself",
+            'hikeModal.routeDraft': 'Calculate from an existing project',
+            'hikeModal.routeGpx': 'Calculate by importing a track (.gpx)',
+            'hikeModal.qualeProgetto': 'Which project:',
+            'hikeModal.fileGpxLabel': '.gpx File:',
+            'hikeModal.quotaMassima': 'Max altitude (meters):',
+            'hikeModal.dislivelloPositivo': 'Elevation gain (D+ meters):',
+            'hikeModal.distanzaTotale': 'Total Distance (km):',
+            'hikeModal.puntoRitrovoLabel': 'Meeting point:',
+            'hikeModal.cercaLuogoPlaceholder': 'Search a place, e.g. Campo Imperatore',
+            'hikeModal.sceglisiMappaTitle': 'Choose the point directly on the map',
+            'hikeModal.sceglisiMappaBtn': 'Choose on map',
+            'hikeModal.copiaCoordTitle': 'Copy coordinates (e.g. to paste into Google Maps)',
+            'hikeModal.comeChiamareLabel': 'What to call the meeting point (editable):',
+            'hikeModal.trailheadNamePlaceholder': 'E.g. Rifugio Franchetti',
+            'hikeModal.tagTribuLabel': 'Select Tribe Tags (lifestyle):',
+            'hikeModal.modalitaIscrizioneLabel': 'Sign-up Mode:',
+            'hikeModal.iscrizioneManuale': 'Manual (Leader Veto - I approve members)',
+            'hikeModal.iscrizioneAutomatica': 'Automatic (Anyone can join freely)',
+            'hikeModal.pubblicaBtn': 'Publish Hike',
+            'hikeModal.modificaTitolo': 'Edit Hike',
+            'hikeModal.salvaModificheBtn': 'Save Changes',
+            'hikeModal.quoteManualiNota': 'Enter the max altitude and elevation gain yourself: the project stays linked.',
+            'hikeModal.nessunProgetto': "You don't have any saved projects yet",
+            'hikeModal.erroreCaricaProgetti': 'Could not load the projects',
+
+            // --- Modale completamento di gruppo (#complete-group-modal, social.js) ---
+            'completeGroupModal.completaPrefix': 'Complete:',
+            'completeGroupModal.confermaDesc': 'Confirm who really took part. Anyone left checked will show as present on their profile and yours.',
+            'completeGroupModal.aggiungiLabel': "Add someone who wasn't on the sign-up list:",
+            'completeGroupModal.cercaPlaceholder': 'Search by username...',
+            'completeGroupModal.gpxLabel': ".gpx track (optional, for the hike's real data):",
+            'completeGroupModal.confermaBtn': 'Confirm completion',
+            'completeGroupModal.aggiungiBtn': 'Add',
+            'completeGroupModal.confermaAlmeno': 'Confirm at least one person present.',
+            'completeGroupModal.gpxNonLetto': 'Could not read the .gpx file.',
+            'completeGroupModal.completataSuccesso': 'Hike completed for the group!',
+            'completeGroupModal.erroreCompletamento': 'Could not complete the group.',
+            'completeGroupModal.erroreReteCompletamento': 'Network error: the completion was not saved.',
+
+            // --- Card escursione (buildHikeCard, social.js) ---
+            'hikeCard.escursionistaFallback': 'Hiker',
+            'hikeCard.organizzatore': 'Organizer',
+            'hikeCard.partecipiCheck': 'Joined ✓',
+            'hikeCard.inAttesaApprovazione': 'Awaiting approval...',
+            'hikeCard.iscrivitiBtn': 'Join',
+            'hikeCard.organizzatoDa': 'Organized by:',
+            'hikeCard.dislivelloDLabel': 'Elevation gain D+',
+            'hikeCard.quotaMaxLabel': 'Max Altitude',
+            'hikeCard.distanzaLabel': 'Distance',
+            'hikeCard.tempoPrevistoLabel': 'Estimated time:',
+            'hikeCard.caiStandard': '(CAI standard)',
+            'hikeCard.sulTuoPasso': 'at your pace',
+            'hikeCard.percorsoLabel': 'Route:',
+            'hikeCard.dislivelloIndicato': ' - elevation gain as entered by the organizer',
+            'hikeCard.tempoNonDisponibile': "Estimated time not available: no real route has been chosen yet for this hike, so we can't know how long it will actually take. The elevation gain and distance above are those entered by the organizer.",
+            'hikeCard.tempoMisuratoLabel': 'Your measured walking time:',
+            'hikeCard.caiPercorsoLabel': 'CAI for this route:',
+            'hikeCard.trailMatch': function (names, singolare) { return 'Also ' + names + (singolare ? ' has' : ' have') + ' added this trail to favorites.'; },
+            'hikeCard.caricaGpxTitle': 'Upload a .gpx file to get the real time for this hike',
+            'hikeCard.cancellaGiaFattaTitle': "Remove this hike from your 'done' list",
+            'hikeCard.vediMappaTitle': 'View trail on the map',
+            'hikeCard.mappaBtn': 'Map',
+            'hikeCard.rimuoviPreferitiTitle': 'Remove from favorites',
+            'hikeCard.aggiungiPreferitiTitle': 'Add to favorites',
+            'hikeCard.chatTitle': 'Chat between participants',
+            'hikeCard.chatBtn': 'Chat',
+            'hikeCard.richiestePendenti': 'Pending Requests (Veto):',
+            'hikeCard.accettaBtn': 'Accept',
+            'hikeCard.rifiutaBtn': 'Decline',
+            'hikeCard.completataGruppo': 'Completed as a group ✓',
+            'hikeCard.completaBtn': 'Complete hike',
+            'hikeCard.opzioniTitle': 'Hike options',
+            'hikeCard.modificaBtn': 'Edit',
+            'hikeCard.partecipantiLabel': function (n) { return 'Participants (' + n + '):'; },
+
+            // --- Messaggi/conferme azioni escursione (social.js) ---
+            'hikeToast.scegliProgetto': 'Choose a project from the list.',
+            'hikeToast.scegliGpx': 'Choose a .gpx file to import.',
+            'hikeToast.fileNonLetto': 'Could not read the file.',
+            'hikeToast.scegliRitrovo': 'Choose the meeting point first: search by name or pick it on the map.',
+            'hikeToast.fuoriRegione': 'The meeting point you entered is outside the current geographic scope of the demo (Lazio, Molise, Abruzzo, Marche). Enter coordinates within these regions.',
+            'hikeToast.quoteRicalcolate': function (alt, gain) { return 'The elevation source responded: max altitude and elevation gain were calculated from the route (' + alt + ' m, ' + gain + ' m D+), not the ones you entered.'; },
+            'hikeToast.escursioneAggiornata': 'Hike updated!',
+            'hikeToast.escursionePubblicata': 'Hike published!',
+            'hikeToast.erroreSalvaModifiche': 'Could not save the changes. Check the entered data.',
+            'hikeToast.errorePubblica': 'Could not publish the hike. Check the entered data.',
+            'hikeToast.erroreReteModifiche': 'Network error: the changes were not saved.',
+            'hikeToast.erroreRetePubblica': 'Network error: the hike was not published.',
+            'hikeConfirm.avvisoIdoneita': '⚠️ WARNING: This hike requires a pace above your current recorded history.\n\nDo you still want to send a request to the leader and discuss it in chat?',
+            'hikeConfirm.questaEscursione': 'this hike',
+            'hikeConfirm.cancellaTitolo': function (t) { return 'Delete "' + t + '" from your completed hikes?'; },
+            'hikeConfirm.cancellaPassoRicalcolato': 'Your personal pace will be recalculated without this hike.',
+            'hikeConfirm.cancellaNoRecensioni': 'You will no longer be able to write or receive reviews for this hike.',
+            'hikeConfirm.cancellaBadgeRestano': "Badges you've earned stay in your passport.",
+            'hikeConfirm.cancellaTracciaSeparata': 'If you had also recorded the route via GPS, that track stays separate in your history.',
+            'hikeToast.erroreCancellaEscursione': 'Could not delete this hike.',
+            'hikeToast.escursioneCancellata': 'Hike removed from your "completed" list.',
+            'hikeToast.filePesa': function (mb) { return 'The file is ' + mb + ' MB, over the 10 MB limit.'; },
+            'hikeToast.erroreAggiuntaFile': 'Could not add the file.',
+            'hikeToast.tempoRealeAggiunto': 'Real time added',
+
+            // --- Le mie escursioni: cancellazione uscite tracciate (storico.js) ---
+            'outing.cancellaTitle': 'Delete this hike from your history',
+            'outing.questaUscita': 'this hike',
+            'outing.cancellaTitolo': function (t) { return 'Delete "' + t + '" from your history?'; },
+            'outing.cancellaTotaliSpariscono': 'Its kilometers and elevation gain will disappear from the Dashboard totals.',
+            'outing.cancellaPostoLibero': 'Since it was an imported file, the slot it takes up in the monthly cap becomes free again.',
+            'outing.cancellaRegistrataAttenzione': "Warning: this hike was RECORDED via GPS, so this data was measured on the spot and can't be reloaded from any file.",
+            'outing.cancellaBadgeRestano': "Badges you've earned stay in your passport.",
+            'outing.erroreCancella': 'Could not delete this hike.',
+            'outing.cancellataSuccesso': 'Hike removed from your history.',
+
+            // --- Le mie escursioni: caricamento .gpx (storico.js) ---
+            'gpx.estensioneErrata': function (nome) { return 'The file must have a <b>.gpx</b> extension. You chose "' + nome + '".'; },
+            'gpx.filePesa': function (mb) { return 'The file is ' + mb + ' MB, over the 10 MB limit. A normally-recorded hike is usually under 1 MB.'; },
+            'gpx.stoLeggendo': function (nome) { return 'Reading "' + nome + '"…'; },
+            'gpx.caricamentoAnnullato': "Upload canceled: without the hike's date, the track won't be added to your history.",
+            'gpx.stoImportando': function (nome) { return 'Importing "' + nome + '"…'; },
+            'gpx.importazioneNonRiuscita': 'Import failed.',
+            'gpx.badgeConquistato': 'Badge earned',
+            'gpx.badgeConquistati': 'Badges earned',
+            'gpx.aggiuntiPassaporto': "Added to your passport with the hike's date.",
+            'gpx.uscitaFallback': 'Hike',
+            'gpx.titoloImportata': function (nome, data) { return '<b>' + nome + '</b> from ' + data + ' imported.'; },
+            'gpx.mDislivelloLabel': 'm of elevation gain',
+            'gpx.durataNonDisponibile': ', duration not available',
+            'gpx.puntiSalvatiFrase': function (letti, salvati) { return letti + ' points in the file, ' + salvati + ' saved after simplification (the drawn route stays the same, it just takes up much less space).'; },
+            'gpx.haiCaricato': function (n, max) { return "You've uploaded " + n + ' of ' + max + ' files this month.'; },
+            'gpx.nonContieneOrari': function (nome) { return '"' + nome + '" does not contain point timestamps.'; },
+            'gpx.tracciaBuona': function (km, dislivello) { return 'The track looks good (' + km + ' km, ' + dislivello + " m of elevation gain), but without timestamps the site can't know what day you hiked."; },
+            'gpx.dataNelFile': function (data) { return 'The file contains the date ' + data + ", but that's often the day you EXPORTED the file, not the day of the hike. Double-check it."; },
+            'gpx.nessunaDataNelFile': "The file doesn't contain any date.",
+            'gpx.cheGiornoEra': 'What day was it?',
+            'gpx.importaBtn': 'Import',
+            'gpx.dataNonValida': 'Invalid date: it must be in day/month/year format.',
+            'gpx.neHaiCaricati': function (n, max) { return " You've uploaded " + n + ' of ' + max + ' this month.'; },
+            'gpx.riprova': 'Try again.'
         }
     };
 
@@ -259,6 +502,17 @@
             }
             const tradotto = t(el.getAttribute('data-i18n-placeholder'));
             el.placeholder = tradotto !== null ? tradotto : el.dataset.i18nPlaceholderFallback;
+        });
+        // data-i18n-title: stesso principio, per l'attributo title (tooltip) di un
+        // elemento statico nell'HTML - rollout punto 102, secondo lotto (Escursioni/Le
+        // mie escursioni), primo caso con un title fisso nel markup invece che
+        // costruito da JS (dove basta un T(...) diretto nel template).
+        document.querySelectorAll('[data-i18n-title]').forEach(function (el) {
+            if (el.dataset.i18nTitleFallback === undefined) {
+                el.dataset.i18nTitleFallback = el.title;
+            }
+            const tradotto = t(el.getAttribute('data-i18n-title'));
+            el.title = tradotto !== null ? tradotto : el.dataset.i18nTitleFallback;
         });
     }
 

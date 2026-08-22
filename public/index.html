@@ -592,8 +592,8 @@
                 <!-- 2. ESCURSIONI -->
                 <section id="hikes" class="page-section">
                     <div class="hikes-header-row">
-                        <h3>Esplora Escursioni di Gruppo</h3>
-                        <button class="btn btn-primary" id="btn-open-create-hike"><i data-lucide="plus"></i> Crea Nuova Escursione</button>
+                        <h3 data-i18n="hikes.esplora">Esplora Escursioni di Gruppo</h3>
+                        <button class="btn btn-primary" id="btn-open-create-hike"><i data-lucide="plus"></i> <span data-i18n="hikeModal.creaNuova">Crea Nuova Escursione</span></button>
                     </div>
 
                     <!-- Punto 69: barra di ricerca per titolo - separata dalla filter-card qui sotto
@@ -601,34 +601,34 @@
                          in mezzo ai filtri avanzati che restano un pannello a parte. -->
                     <div class="glass-card hikes-search-card">
                         <div class="filter-group filter-group-search">
-                            <label for="filter-search-hikes"><i data-lucide="search"></i> Cerca per titolo:</label>
-                            <input type="text" id="filter-search-hikes" placeholder="Es. Alba Corno Grande...">
+                            <label for="filter-search-hikes"><i data-lucide="search"></i> <span data-i18n="hikes.cercaTitoloLabel">Cerca per titolo:</span></label>
+                            <input type="text" id="filter-search-hikes" placeholder="Es. Alba Corno Grande..." data-i18n-placeholder="hikes.cercaTitoloPlaceholder">
                         </div>
                     </div>
 
                     <!-- Filtri avanzati (Tribù, Difficoltà, Obiettivo) -->
                     <div class="glass-card filter-card">
-                        <h5><i data-lucide="sliders-horizontal"></i> Filtri e Algoritmi di Corrispondenza</h5>
+                        <h5><i data-lucide="sliders-horizontal"></i> <span data-i18n="hikes.filtriTitolo">Filtri e Algoritmi di Corrispondenza</span></h5>
                         <div class="filter-grid">
                             <div class="filter-group">
-                                <label for="filter-difficulty">Difficoltà:</label>
+                                <label for="filter-difficulty" data-i18n="hikes.difficoltaLabel">Difficoltà:</label>
                                 <select id="filter-difficulty">
-                                    <option value="all">Tutte le difficoltà</option>
-                                    <option value="Principiante">Principiante</option>
-                                    <option value="Intermedio">Intermedio</option>
-                                    <option value="Esperto">Esperto</option>
+                                    <option value="all" data-i18n="hikes.tutteDifficolta">Tutte le difficoltà</option>
+                                    <option value="Principiante" data-i18n="difficulty.Principiante">Principiante</option>
+                                    <option value="Intermedio" data-i18n="difficulty.Intermedio">Intermedio</option>
+                                    <option value="Esperto" data-i18n="difficulty.Esperto">Esperto</option>
                                 </select>
                             </div>
                             <div class="filter-group filter-group-tribe">
-                                <label>Tribù (Stile di Vita) — seleziona una o più:</label>
+                                <label data-i18n="hikes.tribuLabel">Tribù (Stile di Vita) — seleziona una o più:</label>
                                 <div class="checkbox-group" id="filter-tribe-checkboxes">
-                                    <label><input type="checkbox" name="filter-tribe-tag" value="Passo Fotografico"> Passo Fotografico</label>
-                                    <label><input type="checkbox" name="filter-tribe-tag" value="Trail Runners"> Trail Runners</label>
-                                    <label><input type="checkbox" name="filter-tribe-tag" value="Passo Svelto"> Passo Svelto</label>
-                                    <label><input type="checkbox" name="filter-tribe-tag" value="Dog Friendly"> Dog Friendly</label>
-                                    <label><input type="checkbox" name="filter-tribe-tag" value="Generazione Alpha"> Generazione Alpha</label>
-                                    <label><input type="checkbox" name="filter-tribe-tag" value="Generazione Z"> Generazione Z</label>
-                                    <label><input type="checkbox" name="filter-tribe-tag" value="Millennials"> Millennials</label>
+                                    <label><input type="checkbox" name="filter-tribe-tag" value="Passo Fotografico"> <span data-i18n="tribeTag.Passo Fotografico">Passo Fotografico</span></label>
+                                    <label><input type="checkbox" name="filter-tribe-tag" value="Trail Runners"> <span data-i18n="tribeTag.Trail Runners">Trail Runners</span></label>
+                                    <label><input type="checkbox" name="filter-tribe-tag" value="Passo Svelto"> <span data-i18n="tribeTag.Passo Svelto">Passo Svelto</span></label>
+                                    <label><input type="checkbox" name="filter-tribe-tag" value="Dog Friendly"> <span data-i18n="tribeTag.Dog Friendly">Dog Friendly</span></label>
+                                    <label><input type="checkbox" name="filter-tribe-tag" value="Generazione Alpha"> <span data-i18n="tribeTag.Generazione Alpha">Generazione Alpha</span></label>
+                                    <label><input type="checkbox" name="filter-tribe-tag" value="Generazione Z"> <span data-i18n="tribeTag.Generazione Z">Generazione Z</span></label>
+                                    <label><input type="checkbox" name="filter-tribe-tag" value="Millennials"> <span data-i18n="tribeTag.Millennials">Millennials</span></label>
                                 </div>
                             </div>
                         </div>
@@ -640,7 +640,7 @@
                          perche' il punto 77 fa gia' sparire le altre a monte (GET /api/hikes). -->
                     <div class="my-hikes-group">
                         <h3 class="my-hikes-group-title">
-                            <i data-lucide="compass"></i> A cui puoi partecipare
+                            <i data-lucide="compass"></i> <span data-i18n="hikes.disponibiliTitolo">A cui puoi partecipare</span>
                             <span class="badge badge-accent" id="count-hikes-disponibili">0</span>
                         </h3>
                         <div class="hikes-grid" id="hikes-list-disponibili"></div>
@@ -648,7 +648,7 @@
 
                     <div class="my-hikes-group">
                         <h3 class="my-hikes-group-title">
-                            <i data-lucide="users"></i> A cui partecipi
+                            <i data-lucide="users"></i> <span data-i18n="hikes.partecipiTitolo">A cui partecipi</span>
                             <span class="badge badge-green" id="count-hikes-partecipi">0</span>
                         </h3>
                         <div class="hikes-grid" id="hikes-list-partecipi"></div>
@@ -656,7 +656,7 @@
 
                     <div class="my-hikes-group">
                         <h3 class="my-hikes-group-title">
-                            <i data-lucide="circle-check-big"></i> Completate
+                            <i data-lucide="circle-check-big"></i> <span data-i18n="hikes.completateTitolo">Completate</span>
                             <span class="badge badge-primary" id="count-hikes-completate">0</span>
                         </h3>
                         <div class="hikes-grid" id="hikes-list-completate"></div>
@@ -675,19 +675,19 @@
 
                     <div class="my-hikes-group">
                         <h3 class="my-hikes-group-title">
-                            <i data-lucide="flag"></i> Organizzate da me
+                            <i data-lucide="flag"></i> <span data-i18n="myHikes.organizzateTitolo">Organizzate da me</span>
                             <span class="badge badge-accent" id="count-created">0</span>
                         </h3>
-                        <p class="small text-muted">Escursioni che hai creato tu. Qui approvi o rifiuti chi chiede di partecipare.</p>
+                        <p class="small text-muted" data-i18n="myHikes.organizzateDesc">Escursioni che hai creato tu. Qui approvi o rifiuti chi chiede di partecipare.</p>
                         <div class="hikes-grid" id="my-hikes-created"></div>
                     </div>
 
                     <div class="my-hikes-group">
                         <h3 class="my-hikes-group-title">
-                            <i data-lucide="users"></i> A cui partecipo
+                            <i data-lucide="users"></i> <span data-i18n="myHikes.partecipoTitolo">A cui partecipo</span>
                             <span class="badge badge-green" id="count-joined">0</span>
                         </h3>
-                        <p class="small text-muted">Escursioni in programma a cui sei iscritto, più quelle in attesa di approvazione.</p>
+                        <p class="small text-muted" data-i18n="myHikes.partecipoDesc">Escursioni in programma a cui sei iscritto, più quelle in attesa di approvazione.</p>
                         <div class="hikes-grid" id="my-hikes-joined"></div>
                     </div>
 
@@ -700,20 +700,20 @@
                          (punto 74, renderProfileHikes). -->
                     <div class="my-hikes-group">
                         <h3 class="my-hikes-group-title">
-                            <i data-lucide="circle-check-big"></i> Escursioni completate
+                            <i data-lucide="circle-check-big"></i> <span data-i18n="myHikes.completateTitolo">Escursioni completate</span>
                             <span class="badge badge-primary" id="count-completate">0</span>
                         </h3>
-                        <p class="small text-muted">
+                        <p class="small text-muted" data-i18n="myHikes.completateDesc">
                             Le escursioni che hai completato sul sito e i percorsi che hai registrato col GPS o caricato da file.
                         </p>
 
                         <div class="glass-card gpx-import-card">
                             <div class="gpx-import-head">
                                 <div>
-                                    <h4><i data-lucide="upload"></i> Carica un file .gpx</h4>
+                                    <h4><i data-lucide="upload"></i> <span data-i18n="myHikes.gpxUploadTitolo">Carica un file .gpx</span></h4>
                                     <p class="small text-muted">
-                                        Hai le tracce di uscite fatte prima di usare Camoscio? Caricale qui
-                                        per averle nello storico e nei totali.
+                                        <span data-i18n="myHikes.gpxUploadDesc">Hai le tracce di uscite fatte prima di usare Camoscio? Caricale qui
+                                        per averle nello storico e nei totali.</span>
                                         <span id="gpx-quota-note"></span>
                                     </p>
                                 </div>
@@ -722,7 +722,7 @@
                                          che è coerente col resto dei comandi del sito. -->
                                     <input type="file" id="gpx-file-input" accept=".gpx,application/gpx+xml" hidden>
                                     <button class="btn btn-primary" id="btn-gpx-choose">
-                                        <i data-lucide="file-up"></i> Scegli il file
+                                        <i data-lucide="file-up"></i> <span data-i18n="myHikes.gpxSceglieFile">Scegli il file</span>
                                     </button>
                                 </div>
                             </div>
@@ -743,10 +743,10 @@
                          qui, insieme alle proprie escursioni - e' la pagina delle proprie cose. -->
                     <div class="my-hikes-group">
                         <h3 class="my-hikes-group-title">
-                            <i data-lucide="route"></i> I miei progetti
+                            <i data-lucide="route"></i> <span data-i18n="myHikes.progettiTitolo">I miei progetti</span>
                             <span class="badge badge-accent" id="count-projects">0</span>
                         </h3>
-                        <p class="small text-muted">Percorsi che hai disegnato sulla mappa e messo da parte. Aprendone uno lo ritrovi sulla Mappa, con l'esposizione al sole lungo il tracciato.</p>
+                        <p class="small text-muted" data-i18n="myHikes.progettiDesc">Percorsi che hai disegnato sulla mappa e messo da parte. Aprendone uno lo ritrovi sulla Mappa, con l'esposizione al sole lungo il tracciato.</p>
                         <div id="projects-list"></div>
                     </div>
                 </section>
@@ -1783,29 +1783,29 @@
     <div id="create-hike-modal" class="modal hidden">
         <div class="modal-content glass-card">
             <div class="modal-header">
-                <h4>Crea Nuova Escursione</h4>
+                <h4 data-i18n="hikeModal.creaNuova">Crea Nuova Escursione</h4>
                 <button class="close-modal-btn" id="btn-close-hike-modal">&times;</button>
             </div>
             <form id="create-hike-form">
                 <div class="form-group">
-                    <label for="hike-title">Titolo Escursione:</label>
-                    <input type="text" id="hike-title" required placeholder="Es. Giro delle Tre Cime">
+                    <label for="hike-title" data-i18n="hikeModal.titoloLabel">Titolo Escursione:</label>
+                    <input type="text" id="hike-title" required placeholder="Es. Giro delle Tre Cime" data-i18n-placeholder="hikeModal.titoloPlaceholder">
                 </div>
                 <div class="form-group">
-                    <label for="hike-desc">Descrizione percorso e ritrovo:</label>
-                    <textarea id="hike-desc" required placeholder="Fornisci dettagli sul sentiero..."></textarea>
+                    <label for="hike-desc" data-i18n="hikeModal.descLabel">Descrizione percorso e ritrovo:</label>
+                    <textarea id="hike-desc" required placeholder="Fornisci dettagli sul sentiero..." data-i18n-placeholder="hikeModal.descPlaceholder"></textarea>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="hike-diff">Difficoltà Tecnica:</label>
+                        <label for="hike-diff" data-i18n="hikeModal.difficoltaLabel">Difficoltà Tecnica:</label>
                         <select id="hike-diff">
-                            <option value="Principiante">Principiante (Dislivello ridotto, sentiero largo)</option>
-                            <option value="Intermedio">Intermedio (D+ fino a 1000m, tratti ripidi)</option>
-                            <option value="Esperto">Esperto (D+ > 1000m, fondo tecnico/esposto)</option>
+                            <option value="Principiante" data-i18n="hikeModal.diffPrincipiante">Principiante (Dislivello ridotto, sentiero largo)</option>
+                            <option value="Intermedio" data-i18n="hikeModal.diffIntermedio">Intermedio (D+ fino a 1000m, tratti ripidi)</option>
+                            <option value="Esperto" data-i18n="hikeModal.diffEsperto">Esperto (D+ > 1000m, fondo tecnico/esposto)</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="hike-date">Data Uscita:</label>
+                        <label for="hike-date" data-i18n="hikeModal.dataLabel">Data Uscita:</label>
                         <input type="date" id="hike-date" required>
                     </div>
                 </div>
@@ -1814,19 +1814,19 @@
                      gia' fatto sul sito o importare una traccia - in quel caso i tre numeri
                      si calcolano da soli e i campi sotto diventano di sola lettura. -->
                 <div class="form-group">
-                    <label for="hike-route-source">Quota, dislivello e distanza:</label>
+                    <label for="hike-route-source" data-i18n="hikeModal.routeSourceLabel">Quota, dislivello e distanza:</label>
                     <select id="hike-route-source">
-                        <option value="manuale">Li scrivo io</option>
-                        <option value="draft">Li calcolo da un progetto già fatto</option>
-                        <option value="gpx">Li calcolo importando una traccia (.gpx)</option>
+                        <option value="manuale" data-i18n="hikeModal.routeManuale">Li scrivo io</option>
+                        <option value="draft" data-i18n="hikeModal.routeDraft">Li calcolo da un progetto già fatto</option>
+                        <option value="gpx" data-i18n="hikeModal.routeGpx">Li calcolo importando una traccia (.gpx)</option>
                     </select>
                 </div>
                 <div class="form-group hidden" id="hike-route-draft-picker">
-                    <label for="hike-route-draft-select">Quale progetto:</label>
+                    <label for="hike-route-draft-select" data-i18n="hikeModal.qualeProgetto">Quale progetto:</label>
                     <select id="hike-route-draft-select"></select>
                 </div>
                 <div class="form-group hidden" id="hike-route-gpx-picker">
-                    <label for="hike-route-gpx-file">File .gpx:</label>
+                    <label for="hike-route-gpx-file" data-i18n="hikeModal.fileGpxLabel">File .gpx:</label>
                     <input type="file" id="hike-route-gpx-file" accept=".gpx">
                 </div>
                 <p class="small text-muted hidden" id="hike-route-calcolato-nota"></p>
@@ -1841,26 +1841,26 @@
                     <p class="small text-muted" id="hike-route-quote-manuali-nota"></p>
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="hike-quota-manuale">Quota massima (metri):</label>
+                            <label for="hike-quota-manuale" data-i18n="hikeModal.quotaMassima">Quota massima (metri):</label>
                             <input type="number" id="hike-quota-manuale">
                         </div>
                         <div class="form-group">
-                            <label for="hike-dislivello-manuale">Dislivello positivo (D+ metri):</label>
+                            <label for="hike-dislivello-manuale" data-i18n="hikeModal.dislivelloPositivo">Dislivello positivo (D+ metri):</label>
                             <input type="number" id="hike-dislivello-manuale">
                         </div>
                     </div>
                 </div>
                 <div class="form-row" id="hike-route-manual-row">
                     <div class="form-group">
-                        <label for="hike-alt">Quota Massima (metri):</label>
+                        <label for="hike-alt" data-i18n="hikeModal.quotaMassima">Quota Massima (metri):</label>
                         <input type="number" id="hike-alt" required value="1500">
                     </div>
                     <div class="form-group">
-                        <label for="hike-elev">Dislivello Positivo (D+ metri):</label>
+                        <label for="hike-elev" data-i18n="hikeModal.dislivelloPositivo">Dislivello Positivo (D+ metri):</label>
                         <input type="number" id="hike-elev" required value="600">
                     </div>
                     <div class="form-group">
-                        <label for="hike-dist">Distanza Totale (km):</label>
+                        <label for="hike-dist" data-i18n="hikeModal.distanzaTotale">Distanza Totale (km):</label>
                         <input type="number" id="hike-dist" step="0.1" required value="10">
                     </div>
                 </div>
@@ -1871,16 +1871,16 @@
                      mappa. Le coordinate restano (servono al sistema) ma sono un
                      risultato, non piu' qualcosa da procurarsi da soli. -->
                 <div class="form-group trailhead-picker">
-                    <label for="hike-trailhead-search">Punto di ritrovo:</label>
+                    <label for="hike-trailhead-search" data-i18n="hikeModal.puntoRitrovoLabel">Punto di ritrovo:</label>
                     <div class="trailhead-search-row">
                         <div class="trailhead-search-field">
                             <i data-lucide="search"></i>
                             <input type="text" id="hike-trailhead-search" autocomplete="off"
-                                placeholder="Cerca un luogo, es. Campo Imperatore">
+                                placeholder="Cerca un luogo, es. Campo Imperatore" data-i18n-placeholder="hikeModal.cercaLuogoPlaceholder">
                         </div>
                         <button type="button" class="btn btn-secondary" id="btn-open-map-picker"
-                            title="Scegli il punto direttamente sulla mappa">
-                            <i data-lucide="map-pin"></i> Scegli sulla mappa
+                            title="Scegli il punto direttamente sulla mappa" data-i18n-title="hikeModal.sceglisiMappaTitle">
+                            <i data-lucide="map-pin"></i> <span data-i18n="hikeModal.sceglisiMappaBtn">Scegli sulla mappa</span>
                         </button>
                     </div>
                     <div id="trailhead-search-results" class="trailhead-results hidden"></div>
@@ -1897,8 +1897,8 @@
                         <div class="trailhead-chosen-coords">
                             <span id="trailhead-chosen-coords-text">—</span>
                             <button type="button" class="btn btn-sm btn-secondary" id="btn-copy-coords"
-                                title="Copia le coordinate (es. per incollarle su Google Maps)">
-                                <i data-lucide="copy"></i> Copia
+                                title="Copia le coordinate (es. per incollarle su Google Maps)" data-i18n-title="hikeModal.copiaCoordTitle">
+                                <i data-lucide="copy"></i> <span data-i18n="common.copia">Copia</span>
                             </button>
                         </div>
                     </div>
@@ -1906,8 +1906,8 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="hike-trailhead-name">Come chiamare il ritrovo (modificabile):</label>
-                    <input type="text" id="hike-trailhead-name" required placeholder="Es. Rifugio Franchetti">
+                    <label for="hike-trailhead-name" data-i18n="hikeModal.comeChiamareLabel">Come chiamare il ritrovo (modificabile):</label>
+                    <input type="text" id="hike-trailhead-name" required placeholder="Es. Rifugio Franchetti" data-i18n-placeholder="hikeModal.trailheadNamePlaceholder">
                 </div>
 
                 <!-- Le coordinate non si scrivono piu' a mano: le riempie la ricerca
@@ -1916,25 +1916,25 @@
                 <input type="hidden" id="hike-trailhead-lat" value="">
                 <input type="hidden" id="hike-trailhead-lng" value="">
                 <div class="form-group">
-                    <label>Seleziona i Tag Tribù (stile di vita):</label>
+                    <label data-i18n="hikeModal.tagTribuLabel">Seleziona i Tag Tribù (stile di vita):</label>
                     <div class="checkbox-group">
-                        <label><input type="checkbox" name="hike-tags" value="Passo Fotografico"> Passo Fotografico</label>
-                        <label><input type="checkbox" name="hike-tags" value="Trail Runners"> Trail Runners</label>
-                        <label><input type="checkbox" name="hike-tags" value="Passo Svelto"> Passo Svelto</label>
-                        <label><input type="checkbox" name="hike-tags" value="Dog Friendly"> Dog Friendly</label>
-                        <label><input type="checkbox" name="hike-tags" value="Generazione Alpha"> Generazione Alpha</label>
-                        <label><input type="checkbox" name="hike-tags" value="Generazione Z"> Generazione Z</label>
-                        <label><input type="checkbox" name="hike-tags" value="Millennials"> Millennials</label>
+                        <label><input type="checkbox" name="hike-tags" value="Passo Fotografico"> <span data-i18n="tribeTag.Passo Fotografico">Passo Fotografico</span></label>
+                        <label><input type="checkbox" name="hike-tags" value="Trail Runners"> <span data-i18n="tribeTag.Trail Runners">Trail Runners</span></label>
+                        <label><input type="checkbox" name="hike-tags" value="Passo Svelto"> <span data-i18n="tribeTag.Passo Svelto">Passo Svelto</span></label>
+                        <label><input type="checkbox" name="hike-tags" value="Dog Friendly"> <span data-i18n="tribeTag.Dog Friendly">Dog Friendly</span></label>
+                        <label><input type="checkbox" name="hike-tags" value="Generazione Alpha"> <span data-i18n="tribeTag.Generazione Alpha">Generazione Alpha</span></label>
+                        <label><input type="checkbox" name="hike-tags" value="Generazione Z"> <span data-i18n="tribeTag.Generazione Z">Generazione Z</span></label>
+                        <label><input type="checkbox" name="hike-tags" value="Millennials"> <span data-i18n="tribeTag.Millennials">Millennials</span></label>
                     </div>
                 </div>
                 <div class="form-group">
-                    <label for="hike-approval">Modalità di Iscrizione:</label>
+                    <label for="hike-approval" data-i18n="hikeModal.modalitaIscrizioneLabel">Modalità di Iscrizione:</label>
                     <select id="hike-approval">
-                        <option value="true">Manuale (Veto del Capogruppo - Approvo io i membri)</option>
-                        <option value="false">Automatica (Chiunque può iscriversi liberamente)</option>
+                        <option value="true" data-i18n="hikeModal.iscrizioneManuale">Manuale (Veto del Capogruppo - Approvo io i membri)</option>
+                        <option value="false" data-i18n="hikeModal.iscrizioneAutomatica">Automatica (Chiunque può iscriversi liberamente)</option>
                     </select>
                 </div>
-                <button type="submit" class="btn btn-primary btn-block">Pubblica Escursione</button>
+                <button type="submit" class="btn btn-primary btn-block" data-i18n="hikeModal.pubblicaBtn">Pubblica Escursione</button>
             </form>
         </div>
     </div>
@@ -1944,18 +1944,18 @@
     <div id="complete-group-modal" class="modal hidden">
         <div class="modal-content glass-card">
             <div class="modal-header">
-                <h4>Completa: <span id="complete-group-hike-title"></span></h4>
+                <h4><span data-i18n="completeGroupModal.completaPrefix">Completa:</span> <span id="complete-group-hike-title"></span></h4>
                 <button class="close-modal-btn" id="btn-close-complete-group-modal">&times;</button>
             </div>
-            <p class="small text-muted">Conferma chi ha partecipato davvero. Chi resta spuntato risulta presente sul suo profilo e sul tuo.</p>
+            <p class="small text-muted" data-i18n="completeGroupModal.confermaDesc">Conferma chi ha partecipato davvero. Chi resta spuntato risulta presente sul suo profilo e sul tuo.</p>
             <div id="complete-group-checklist" class="checkbox-group"></div>
 
             <div class="form-group" style="margin-top: 16px;">
-                <label for="complete-group-search-input">Aggiungi chi non era tra gli iscritti:</label>
+                <label for="complete-group-search-input" data-i18n="completeGroupModal.aggiungiLabel">Aggiungi chi non era tra gli iscritti:</label>
                 <div class="trailhead-search-row">
                     <div class="trailhead-search-field">
                         <i data-lucide="search"></i>
-                        <input type="text" id="complete-group-search-input" autocomplete="off" maxlength="60" placeholder="Cerca per nome utente...">
+                        <input type="text" id="complete-group-search-input" autocomplete="off" maxlength="60" placeholder="Cerca per nome utente..." data-i18n-placeholder="completeGroupModal.cercaPlaceholder">
                     </div>
                 </div>
                 <div id="complete-group-search-results" class="hike-carpools-list"></div>
@@ -1965,11 +1965,11 @@
                  distanza, durata) sostituiscono quelli scritti a mano alla creazione. Senza,
                  tutto resta come oggi: nessuna domanda su quanto tempo ci si e' messo. -->
             <div class="form-group" style="margin-top: 16px;">
-                <label for="complete-group-gpx-file">Traccia .gpx (facoltativa, per i dati reali dell'escursione):</label>
+                <label for="complete-group-gpx-file" data-i18n="completeGroupModal.gpxLabel">Traccia .gpx (facoltativa, per i dati reali dell'escursione):</label>
                 <input type="file" id="complete-group-gpx-file" accept=".gpx">
             </div>
 
-            <button type="button" class="btn btn-primary btn-block" id="btn-confirm-complete-group" style="margin-top: 16px;">Conferma completamento</button>
+            <button type="button" class="btn btn-primary btn-block" id="btn-confirm-complete-group" style="margin-top: 16px;" data-i18n="completeGroupModal.confermaBtn">Conferma completamento</button>
         </div>
     </div>
 

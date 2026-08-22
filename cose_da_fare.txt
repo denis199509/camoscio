@@ -5645,6 +5645,85 @@ schermo spento ancora."
    piu' grande - infine il gate di login/registrazione e le pagine
    HTML autonome).
 
+   ---------------------------------------------------------------
+
+   SECONDO LOTTO [22/08/2026, sessione successiva]. Denis: "possiamo
+   continuare a tradurre le pagine mancantii". Prima di procedere,
+   chiesto conferma sull'ordine (il vault diceva esplicitamente di
+   concordarlo con lui prima di andare avanti da soli) - confermato
+   Escursioni + Le mie escursioni come da piano proposto, verificato
+   nel codice che condividono davvero buildHikeCard (social.js) prima
+   di iniziare.
+
+   Stesso meccanismo dei lotti precedenti, esteso su due pagine dense
+   di markup dinamico invece di quattro pagine piccole: sezione
+   Escursioni per intera (ricerca, filtri, tre gruppi), sezione Le mie
+   escursioni per intera (quattro gruppi, caricamento .gpx), i due
+   modali che vivono fuori da .page-container (crea/modifica
+   escursione, completamento di gruppo) - questi ultimi in ambito
+   perche' si aprono SOLO da queste due pagine (verificato cercando i
+   loro trigger prima di includerli); il terzo modale li' vicino
+   ("Invita a Gita") escluso apposta, si apre dalla pagina Social/
+   Squadre, un lotto futuro.
+
+   QUATTRO SCELTE NUOVE, non ovvie, emerse scendendo nel dettaglio
+   (ragionamento completo in 03-Decisioni-Architetturali.md del
+   vault):
+   1) Difficolta' (Principiante/Intermedio/Esperto) e Tag Tribu'
+      (Passo Fotografico, Trail Runners...) tradotti SOLO per la
+      visualizzazione - vocabolario fisso nostro, non testo utente:
+      il valore salvato sul database resta sempre la stringa
+      italiana, cambia solo cosa si legge a schermo.
+   2) I due messaggi di notifica mandati all'altro utente quando lo
+      si accetta/rifiuta in un'escursione NON sono stati tradotti: si
+      scrivono una volta sola sul server nella lingua di chi approva,
+      non di chi legge dopo - tradurli avrebbe fatto vedere l'inglese
+      a chi preferisce l'italiano a seconda di chi ha approvato,
+      invece di seguire sempre la lingua di chi guarda. Restano fissi
+      in italiano.
+   3) Nuovo meccanismo data-i18n-title in i18n.js (stesso principio
+      di data-i18n-placeholder, aggiunto nel primo lotto): serviva
+      per due tooltip fissi nell'HTML del modale crea escursione, il
+      primo caso di un title statico nel markup invece che costruito
+      da JS.
+   4) Trovato provando dal vivo (non durante la scrittura): la card
+      compatta di un'escursione completata (schedaEscursioneCompletata,
+      userprofile.js, condivisa con "Le mie escursioni" fin dal primo
+      lotto) non traduceva il badge di difficolta' - la chiave
+      difficulty.* non esisteva ancora quando quella funzione e' stata
+      scritta. Corretto ora che la chiave c'e', un rigo solo.
+
+   TROVATO PROVANDO DAL VIVO, NON CORRETTO PERCHE' NON CORREGGIBILE DA
+   QUI: il campo data del modale crea escursione mostra sempre
+   "gg/mm/aaaa" anche a bandiera inglese attiva. Segnalato da Denis in
+   chat mentre verificavo, stessa cosa che avevo appena notato io. E'
+   il segnaposto NATIVO di <input type="date">: Chrome lo disegna
+   nella lingua del browser stesso, non legge l'attributo lang della
+   pagina (a differenza di Firefox) - la bandiera IT/EN non puo'
+   toccarlo. Nessun effetto sui dati: il valore mandato al server e'
+   sempre AAAA-MM-GG a prescindere da cosa mostra il calendario.
+   Stesso limite sul pulsante "Scegli file"/"Nessun file selezionato"
+   del caricamento .gpx (input file nativo). Denis, parole sue: "ok
+   allora lasciamo cosi, nessun problema" - resta un limite dichiarato,
+   risolvibile solo sostituendo l'input nativo con un selettore fatto
+   a mano (lavoro a parte, non richiesto).
+
+   VERIFICATO CON L'ESTENSIONE CHROME (login demo Marco Alpinista):
+   entrambe le pagine, i due modali (aperti senza confermare/salvare
+   nulla - "Completa: Monte Gennaro" chiuso con la X, non con
+   "Confirm completion", per non toccare dati veri), in entrambe le
+   lingue. Console pulita, zero errori. NON ANCORA VERIFICATO DA DENIS
+   IN LOCALE - dichiarato per esteso, stessa regola del punto 101/102.
+   Non ancora committato: si aspetta la sua conferma prima, stessa
+   sequenza gia' seguita per il primo lotto.
+
+   RIPARTIRE DA: far riverificare a Denis questo lotto in locale: se
+   conferma, committare e chiedere se pushare; poi concordare il lotto
+   successivo (proposto: profilo proprio/Dashboard, poi sicurezza/
+   sociale, poi carpooling/zaino, poi moderazione, poi la Mappa,
+   infine login/registrazione e le pagine HTML autonome - stesso
+   elenco di prima, non ancora confermato).
+
 =====================================================================
 
 103. [22/08/2026, trovato durante il punto 102, non richiesto] Denis,

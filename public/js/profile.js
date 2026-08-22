@@ -1,3 +1,10 @@
+// Rollout traduzione punto 102, secondo lotto (22/08/2026): SOLO getEligibilityBadge
+// qui sotto, non il resto del file (Dashboard/Profilo proprio e' un lotto futuro,
+// vedi 04-Da-Fare.md del vault) - il suo output pero' compare su ogni card
+// escursione (buildHikeCard, social.js), quindi va tradotto insieme a quelle. "var",
+// non "const": vedi la nota in cima a i18n.js sul perche'.
+var T = (window.CamoscioI18n && window.CamoscioI18n.t) || function () { return null; };
+
 function initProfileModule() {
     setupProfileCardEvents();
 }
@@ -304,13 +311,13 @@ function getEligibilityBadge(hike, user) {
         return {
             eligible: true,
             class: "badge-green",
-            text: "Idoneo (Livello Passo Ok)"
+            text: T('eligibility.idoneo') || "Idoneo (Livello Passo Ok)"
         };
     } else {
         return {
             eligible: false,
             class: "badge-red",
-            text: "Richiesto Passo Superiore"
+            text: T('eligibility.richiestoPassoSuperiore') || "Richiesto Passo Superiore"
         };
     }
 }

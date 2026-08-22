@@ -172,7 +172,7 @@ function schedaEscursioneCompletata(hike, completion, { azioniHtml = '' } = {}) 
         <div class="outing-card">
             <span class="outing-card-title">${esc(hike.title)}</span>
             <div class="outing-card-head" style="margin-top: 4px;">
-                <span class="badge badge-primary outing-tag">${esc(hike.difficulty)}</span>
+                <span class="badge badge-primary outing-tag">${esc(T('difficulty.' + hike.difficulty) || hike.difficulty)}</span>
                 ${hike.groupCompletedAt
                     ? `<span class="badge badge-green outing-tag" title="${esc(T('profile.completataGruppoTitle') || 'Completata insieme al gruppo')}"><i data-lucide="users"></i> ${esc(T('profile.inGruppo') || 'in gruppo')}</span>`
                     : ''}

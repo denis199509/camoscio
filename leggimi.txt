@@ -1,27 +1,34 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-22 (quarta sessione, CHIUSA IN SICUREZZA). PUNTO
-102: Denis ha approvato di tradurre tutto il sito, primo lotto di 4
-pagine (Cerca Persone, Profilo, Pagina Squadra, Pagina Escursione) +
-etichette della barra laterale, fatto, verificato con l'estensione
-Chrome E CONFERMATO DA DENIS IN LOCALE ("visto la pagina in local,
-tutto apposto"). PUNTO 103: bug vero nel parser GPX (titolo di
-un'escursione importata mostrava il codice XML grezzo) trovato durante
-la verifica, spiegato e risolto su richiesta di Denis - codice
-corretto e anche il dato gia' sbagliato sul database (scrittura
-confermata esplicitamente da lui). Committato e pushato tutto su
-richiesta esplicita di Denis (camoscio `10c137f`, vault `a7f998a`).
+Aggiornato: 2026-08-22 (quinta sessione). PUNTO 102, SECONDO LOTTO:
+Escursioni + Le mie escursioni (condividono buildHikeCard) + i due
+modali crea/completa escursione - ordine confermato CON Denis prima
+di iniziare (chiesto esplicitamente, come richiesto dalla nota
+lasciata la sessione scorsa). Costruito, verificato con l'estensione
+Chrome in entrambe le lingue, console pulita. NON ANCORA VERIFICATO
+DA DENIS IN LOCALE, NON ANCORA COMMITTATO - stessa sequenza gia'
+seguita per il primo lotto: si aspetta la sua conferma prima.
 
->>> APERTO PER LA PROSSIMA SESSIONE - PUNTO 102: concordare CON DENIS
-l'ordine dei lotti successivi (proposto in 04-Da-Fare.md del vault:
-Escursioni + Le mie escursioni insieme perche' condividono
-buildHikeCard, poi Dashboard/Profilo proprio, poi Sicurezza/Sociale,
-poi Carpooling/Zaino, poi Moderazione, poi la Mappa - la piu' grande -
-infine il gate di login/registrazione e le pagine HTML autonome - non
-ancora confermato da Denis). Non proseguire da soli senza fermarsi:
-Denis preferisce un pezzo alla volta anche per un batch grande come
-questo, salvo un suo via libera esplicito per l'intero blocco.
-Dettaglio completo in cose_da_fare.txt punti 102/103 e nel vault
+Un limite trovato provando dal vivo (segnalato anche da Denis in
+chat nello stesso momento, indipendentemente): il segnaposto di
+<input type="date"> e il testo di <input type="file"> seguono la
+lingua del BROWSER, non quella del sito - limite di Chrome, non
+risolvibile da qui, nessun effetto sui dati. Denis ha confermato di
+lasciarlo cosi'.
+
+>>> APERTO PER LA PROSSIMA SESSIONE - PUNTO 102: far riverificare a
+Denis questo lotto in locale; se conferma, committare (repo camoscio)
+e chiedere se pushare - il vault invece si committa/pusha comunque a
+fine sessione. Poi concordare CON DENIS il lotto successivo (proposto
+in 04-Da-Fare.md del vault: Dashboard/Profilo proprio, poi Sicurezza/
+Sociale, poi Carpooling/Zaino, poi Moderazione, poi la Mappa - la piu'
+grande -, infine il gate di login/registrazione e le pagine HTML
+autonome - non ancora confermato). Non proseguire da soli senza
+fermarsi: Denis preferisce un pezzo alla volta anche per un batch
+grande come questo, salvo un suo via libera esplicito per l'intero
+blocco - vale anche quando è lui a dire "continuiamo", l'ORDINE va
+comunque concordato lotto per lotto.
+Dettaglio completo in cose_da_fare.txt punto 102 e nel vault
 (04-Da-Fare.md, 03-Decisioni-Architetturali.md, 07-Trappole-
 Tecniche.md).
 ===================================================================
@@ -159,8 +166,11 @@ MAI piu' (congelato); cose_da_fare.txt quando un punto si chiude o ne arriva uno
           con un titolo dinamico), poi anche le etichette della barra
           laterale (segnalate da Denis). Committato e pushato su
           richiesta esplicita di Denis (`10c137f`). PRIMO LOTTO
-          CHIUSO PER INTERO - vedi blocco in cima a questo file per
-          il prossimo.
+          CHIUSO PER INTERO. SECONDO LOTTO (Escursioni + Le mie
+          escursioni + i due modali collegati), stessa giornata,
+          sessione successiva: costruito e verificato con
+          l'estensione Chrome, NON ANCORA da Denis in locale, NON
+          ANCORA committato - vedi blocco in cima a questo file.
 
      103. [22/08/2026, trovato durante il punto 102] Il titolo di
           un'escursione importata da GPX sul profilo di DaniWoll

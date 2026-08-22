@@ -1,3 +1,8 @@
+// Rollout traduzione punto 102, secondo lotto (22/08/2026). "var", non "const": vedi
+// la nota in cima a i18n.js sul perche' (piu' file <script> classici che condividono
+// lo stesso scope globale, "const T" ripetuto in due file darebbe SyntaxError).
+var T = (window.CamoscioI18n && window.CamoscioI18n.t) || function () { return null; };
+
 // Punto 54: create-hike-modal e' riusato anche per modificare un'escursione gia'
 // esistente - questo tiene traccia di QUALE, se non null siamo in modalita' modifica.
 let editingHikeId = null;
@@ -7,12 +12,12 @@ function setHikeModalMode(mode, hike) {
     const submitBtn = document.querySelector('#create-hike-form button[type="submit"]');
     if (mode === 'edit') {
         editingHikeId = hike.id;
-        if (titolo) titolo.textContent = 'Modifica Escursione';
-        if (submitBtn) submitBtn.textContent = 'Salva Modifiche';
+        if (titolo) titolo.textContent = T('hikeModal.modificaTitolo') || 'Modifica Escursione';
+        if (submitBtn) submitBtn.textContent = T('hikeModal.salvaModificheBtn') || 'Salva Modifiche';
     } else {
         editingHikeId = null;
-        if (titolo) titolo.textContent = 'Crea Nuova Escursione';
-        if (submitBtn) submitBtn.textContent = 'Pubblica Escursione';
+        if (titolo) titolo.textContent = T('hikeModal.creaNuova') || 'Crea Nuova Escursione';
+        if (submitBtn) submitBtn.textContent = T('hikeModal.pubblicaBtn') || 'Pubblica Escursione';
     }
 }
 
@@ -56,7 +61,7 @@ function mostraQuoteManuali(corpo) {
     const box = document.getElementById('hike-route-quote-manuali');
     const nota = document.getElementById('hike-route-quote-manuali-nota');
     if (!box || !nota) return;
-    nota.textContent = corpo.error || 'Scrivi tu quota massima e dislivello: il progetto resta collegato.';
+    nota.textContent = corpo.error || T('hikeModal.quoteManualiNota') || 'Scrivi tu quota massima e dislivello: il progetto resta collegato.';
     box.classList.remove('hidden');
     const quota = document.getElementById('hike-quota-manuale');
     const disl = document.getElementById('hike-dislivello-manuale');
@@ -70,18 +75,18 @@ function mostraQuoteManuali(corpo) {
 async function popolaBozzePerHike() {
     const sel = document.getElementById('hike-route-draft-select');
     if (!sel) return;
-    sel.innerHTML = '<option>Caricamento...</option>';
+    sel.innerHTML = `<option>${escapeHtml(T('profile.caricamento') || 'Caricamento...')}</option>`;
     try {
         const res = await fetch('/api/routing/drafts');
         const bozze = res.ok ? await res.json() : [];
         if (!bozze.length) {
-            sel.innerHTML = '<option value="">Non hai ancora nessun progetto salvato</option>';
+            sel.innerHTML = `<option value="">${escapeHtml(T('hikeModal.nessunProgetto') || 'Non hai ancora nessun progetto salvato')}</option>`;
             return;
         }
         sel.innerHTML = bozze.map(b => `<option value="${b.id}">${window.escapeHtml(b.nome)}</option>`).join('');
     } catch (e) {
         console.error('Errore nel caricamento dei progetti:', e);
-        sel.innerHTML = '<option value="">Non è stato possibile caricare i progetti</option>';
+        sel.innerHTML = `<option value="">${escapeHtml(T('hikeModal.erroreCaricaProgetti') || 'Non è stato possibile caricare i progetti')}</option>`;
     }
 }
 
@@ -356,11 +361,11 @@ function renderHikesList() {
     document.getElementById("count-hikes-completate").textContent = fatte.length;
 
     riempiGruppo("hikes-list-disponibili", disponibili,
-        "Nessuna escursione trovata con i filtri inseriti.");
+        T('hikes.nessunFiltro') || "Nessuna escursione trovata con i filtri inseriti.");
     riempiGruppo("hikes-list-partecipi", partecipi,
-        "Non partecipi a nessuna escursione in programma.");
+        T('hikes.nonPartecipiAlcuna') || "Non partecipi a nessuna escursione in programma.");
     riempiGruppo("hikes-list-completate", fatte,
-        "Nessuna escursione completata.");
+        T('hikes.nessunaCompletata') || "Nessuna escursione completata.");
 
     if (window.lucide) window.lucide.createIcons();
 
@@ -470,9 +475,9 @@ function renderMyHikes() {
     document.getElementById("count-joined").textContent = partecipo.length;
 
     riempiGruppo("my-hikes-created", create,
-        "Non hai ancora organizzato nessuna escursione. Puoi crearne una dalla sezione Escursioni.");
+        T('myHikes.nessunaOrganizzata') || "Non hai ancora organizzato nessuna escursione. Puoi crearne una dalla sezione Escursioni.");
     riempiGruppo("my-hikes-joined", partecipo,
-        "Non sei iscritto a nessuna escursione in programma. Guarda quelle degli altri nella sezione Escursioni.");
+        T('myHikes.nonIscrittoAlcuna') || "Non sei iscritto a nessuna escursione in programma. Guarda quelle degli altri nella sezione Escursioni.");
 
     // Punto 80/B: "Gia' fatte" e "Uscite registrate" sono ora un'unica lista visiva
     // (public/js/storico.js, renderCompletate) - vive li' perche' e' l'unico file che ha
@@ -488,11 +493,11 @@ function renderMyHikes() {
     if (riepilogo) {
         const totale = create.length + partecipo.length + fatte.length;
         riepilogo.innerHTML = totale === 0
-            ? `<div class="glass-card text-center py-4 text-muted">Qui compariranno le tue escursioni: quelle che organizzi, quelle a cui ti iscrivi e quelle che hai già fatto.</div>`
+            ? `<div class="glass-card text-center py-4 text-muted">${escapeHtml(T('myHikes.riepilogoVuoto') || 'Qui compariranno le tue escursioni: quelle che organizzi, quelle a cui ti iscrivi e quelle che hai già fatto.')}</div>`
             : `<div class="glass-card my-hikes-counters">
-                   <div><strong>${create.length}</strong><span>organizzate</span></div>
-                   <div><strong>${partecipo.length}</strong><span>in programma</span></div>
-                   <div><strong>${fatte.length}</strong><span>completate</span></div>
+                   <div><strong>${create.length}</strong><span>${escapeHtml(T('myHikes.organizzateLabel') || 'organizzate')}</span></div>
+                   <div><strong>${partecipo.length}</strong><span>${escapeHtml(T('myHikes.programmaLabel') || 'in programma')}</span></div>
+                   <div><strong>${fatte.length}</strong><span>${escapeHtml(T('myHikes.completateLabel') || 'completate')}</span></div>
                </div>`;
     }
 
@@ -505,6 +510,13 @@ window.renderMyHikes = renderMyHikes;
 // "mia escursione" finirebbe per voler dire due cose diverse in due punti del sito.
 window.classificaMieEscursioni = classificaMieEscursioni;
 
+// Rollout punto 102, secondo lotto: renderHikesList legge solo window.CamoscioState
+// (mai una fetch diretta) e ricade a cascata su renderMyHikes() e su
+// renderCompletate() (storico.js - quella fa una fetch vera, ma solo se "Le mie
+// escursioni" e' la sezione attiva, stesso schema gia' seguito da ogni altra azione
+// di questa pagina - non un costo nuovo introdotto dal cambio lingua).
+if (window.CamoscioI18n) window.CamoscioI18n.onChange(renderHikesList);
+
 // Costruisce la scheda di UNA escursione. Estratta da renderHikesList (punto 10 di
 // cose_da_fare.txt) per poterla riusare identica anche nella pagina "Le mie escursioni":
 // due elenchi che mostrano le stesse schede devono restare uguali da soli, senza doverle
@@ -514,7 +526,7 @@ function buildHikeCard(hike) {
     const currentUser = db.currentUser;
 
     const creator = db.users.find(u => u.id === hike.creatorId);
-    const creatorName = creator ? creator.username : "Escursionista";
+    const creatorName = creator ? creator.username : (T('hikeCard.escursionistaFallback') || "Escursionista");
 
     // Badge personale (chiesto da Denis in sessione il 01/08/2026, non in
     // cose_da_fare.txt): assegnato a mano, non guadagnato - vedi personal-badges.js.
@@ -540,16 +552,16 @@ function buildHikeCard(hike) {
             // Il tempo CAI standard invece si mostra sempre: e' calcolato sui dati veri del
             // percorso collegato e non dice niente su chi guarda.
             const parteMia = tempi.passoMisurato
-                ? ` · <b>${tempi.customText}</b> sul tuo passo`
+                ? ` · <b>${tempi.customText}</b> ${T('hikeCard.sulTuoPasso') || 'sul tuo passo'}`
                 : '';
             // Punto 93: dislivelloManuale = la distanza e il tracciato sono veri (dal
             // percorso), ma quota massima e dislivello li ha scritti chi organizza perche'
             // la fonte delle quote non rispondeva - lo si dice, invece di far credere che
             // tutti e tre i numeri siano stati misurati allo stesso modo.
-            const notaManuale = hike.routeSource.dislivelloManuale ? ' - dislivello indicato da chi organizza' : '';
-            return `<p class="small text-muted rp-nota-dislivello"><i data-lucide="clock"></i><span>Tempo previsto: <b>${tempi.standardText}</b> (CAI standard)${parteMia}. Percorso: ${escapeHtml(hike.routeSource.nome)}${notaManuale}.</span></p>`;
+            const notaManuale = hike.routeSource.dislivelloManuale ? (T('hikeCard.dislivelloIndicato') || ' - dislivello indicato da chi organizza') : '';
+            return `<p class="small text-muted rp-nota-dislivello"><i data-lucide="clock"></i><span>${escapeHtml(T('hikeCard.tempoPrevistoLabel') || 'Tempo previsto:')} <b>${tempi.standardText}</b> ${escapeHtml(T('hikeCard.caiStandard') || '(CAI standard)')}${parteMia}. ${escapeHtml(T('hikeCard.percorsoLabel') || 'Percorso:')} ${escapeHtml(hike.routeSource.nome)}${notaManuale}.</span></p>`;
         })()
-        : `<p class="small text-muted rp-nota-dislivello"><i data-lucide="info"></i><span>Tempo previsto non disponibile: per questa escursione non è ancora stato scelto un percorso reale, quindi non si può sapere quanto ci vorrà davvero. Dislivello e distanza qui sopra sono quelli indicati da chi l'ha organizzata.</span></p>`;
+        : `<p class="small text-muted rp-nota-dislivello"><i data-lucide="info"></i><span>${escapeHtml(T('hikeCard.tempoNonDisponibile') || "Tempo previsto non disponibile: per questa escursione non è ancora stato scelto un percorso reale, quindi non si può sapere quanto ci vorrà davvero. Dislivello e distanza qui sopra sono quelli indicati da chi l'ha organizzata.")}</span></p>`;
 
     // Punto 79: se l'escursione e' completata e IO ho un tempo di cammino reale misurato da
     // un .gpx (Completion.movingTimeHours, presente solo quando la traccia era abbastanza
@@ -576,9 +588,9 @@ function buildHikeCard(hike) {
             ? Math.max(0, miaCompletion.actualTimeHours - miaCompletion.movingTimeHours)
             : 0;
         const pausaText = pauseOre > (1 / 60) // sotto il minuto non si scrive, formatHoursToMin arrotonderebbe a "0h 0m"
-            ? ` (+ ${window.formatHoursToMin(pauseOre)} di pause)`
+            ? (T('profile.diPause', window.formatHoursToMin(pauseOre)) || ` (+ ${window.formatHoursToMin(pauseOre)} di pause)`)
             : "";
-        tempoRealeHtml = `<p class="small text-muted rp-nota-dislivello"><i data-lucide="footprints"></i><span>Il tuo tempo di cammino misurato: <b>${window.formatHoursToMin(miaCompletion.movingTimeHours)}</b>${pausaText} · CAI per questo percorso: <b>${window.formatHoursToMin(caiOre)}</b>.</span></p>`;
+        tempoRealeHtml = `<p class="small text-muted rp-nota-dislivello"><i data-lucide="footprints"></i><span>${escapeHtml(T('hikeCard.tempoMisuratoLabel') || 'Il tuo tempo di cammino misurato:')} <b>${window.formatHoursToMin(miaCompletion.movingTimeHours)}</b>${pausaText} · ${escapeHtml(T('hikeCard.caiPercorsoLabel') || 'CAI per questo percorso:')} <b>${window.formatHoursToMin(caiOre)}</b>.</span></p>`;
     }
 
     // Punto 80/A: aggiungere un .gpx a un'escursione gia' completata, o cancellarla dallo
@@ -590,10 +602,10 @@ function buildHikeCard(hike) {
     // presa nota in leggimi.txt per chatpanel.js/buildHikeCard - mai un id fisso su un
     // elemento di un componente che vive in piu' copie.
     const completionToolsHtml = miaCompletion ? `
-        <button class="btn btn-sm btn-secondary" style="padding:2px 6px;" onclick="uploadCompletionGpx('${miaCompletion.id}')" title="Carica un file .gpx per avere il tempo reale di questa escursione">
+        <button class="btn btn-sm btn-secondary" style="padding:2px 6px;" onclick="uploadCompletionGpx('${miaCompletion.id}')" title="${escapeHtml(T('hikeCard.caricaGpxTitle') || 'Carica un file .gpx per avere il tempo reale di questa escursione')}">
             <i data-lucide="upload"></i>
         </button>
-        <button class="btn btn-sm btn-secondary" style="padding:2px 6px; color:var(--accent-red);" onclick="deleteCompletion('${miaCompletion.id}', '${hike.id}')" title="Cancella questa escursione dalle tue 'gia' fatte'">
+        <button class="btn btn-sm btn-secondary" style="padding:2px 6px; color:var(--accent-red);" onclick="deleteCompletion('${miaCompletion.id}', '${hike.id}')" title="${escapeHtml(T('hikeCard.cancellaGiaFattaTitle') || "Cancella questa escursione dalle tue 'gia' fatte'")}">
             <i data-lucide="trash-2"></i>
         </button>
     ` : "";
@@ -613,8 +625,8 @@ function buildHikeCard(hike) {
             .map(b => db.users.find(u => u.id === b.userId))
             .filter(Boolean);
         if (otherBookmarkers.length > 0) {
-            const names = otherBookmarkers.map(u => `<b>${escapeHtml(u.username.split(" ")[0])}</b>`).join(" e ");
-            trailMatchHtml = `<div class="trail-match-line small"><i data-lucide="star"></i> Anche ${names} ${otherBookmarkers.length === 1 ? "ha" : "hanno"} messo questo sentiero nei preferiti.</div>`;
+            const names = otherBookmarkers.map(u => `<b>${escapeHtml(u.username.split(" ")[0])}</b>`).join(T('common.e') || " e ");
+            trailMatchHtml = `<div class="trail-match-line small"><i data-lucide="star"></i> ${T('hikeCard.trailMatch', names, otherBookmarkers.length === 1) || `Anche ${names} ${otherBookmarkers.length === 1 ? "ha" : "hanno"} messo questo sentiero nei preferiti.`}</div>`;
         }
     }
 
@@ -646,13 +658,13 @@ function buildHikeCard(hike) {
     const isPending = hike.pendingApproval.includes(currentUser.id);
 
     if (isCreatorMe) {
-        actionBtnHtml = `<span class="badge badge-accent">Organizzatore</span>`;
+        actionBtnHtml = `<span class="badge badge-accent">${escapeHtml(T('hikeCard.organizzatore') || 'Organizzatore')}</span>`;
     } else if (isParticipant) {
-        actionBtnHtml = `<span class="badge badge-green">Partecipi ✓</span>`;
+        actionBtnHtml = `<span class="badge badge-green">${escapeHtml(T('hikeCard.partecipiCheck') || 'Partecipi ✓')}</span>`;
     } else if (isPending) {
-        actionBtnHtml = `<span class="badge badge-primary">In attesa approvazione...</span>`;
+        actionBtnHtml = `<span class="badge badge-primary">${escapeHtml(T('hikeCard.inAttesaApprovazione') || 'In attesa approvazione...')}</span>`;
     } else {
-        actionBtnHtml = `<button class="btn btn-sm btn-primary" onclick="joinHikeRequest('${hike.id}', ${eligibility.eligible})">Iscriviti</button>`;
+        actionBtnHtml = `<button class="btn btn-sm btn-primary" onclick="joinHikeRequest('${hike.id}', ${eligibility.eligible})">${escapeHtml(T('hikeCard.iscrivitiBtn') || 'Iscriviti')}</button>`;
     }
 
     // Pannello Veto del Capogruppo (solo per l'organizzatore). Guardia groupCompletedAt: senza,
@@ -669,8 +681,8 @@ function buildHikeCard(hike) {
                 <div class="veto-request-item">
                     <span>${pendingUser.avatar} <b>${escapeHtml(pendingUser.username)}</b> (Rep: ${pendingUser.reputation}%, ${pendingUser.experienceLevel})</span>
                     <div class="veto-actions">
-                        <button class="btn btn-sm btn-success" style="padding:2px 6px;" onclick="approveParticipant('${hike.id}', '${pendingId}')">Accetta</button>
-                        <button class="btn btn-sm btn-danger" style="padding:2px 6px;" onclick="declineParticipant('${hike.id}', '${pendingId}')">Rifiuta</button>
+                        <button class="btn btn-sm btn-success" style="padding:2px 6px;" onclick="approveParticipant('${hike.id}', '${pendingId}')">${escapeHtml(T('hikeCard.accettaBtn') || 'Accetta')}</button>
+                        <button class="btn btn-sm btn-danger" style="padding:2px 6px;" onclick="declineParticipant('${hike.id}', '${pendingId}')">${escapeHtml(T('hikeCard.rifiutaBtn') || 'Rifiuta')}</button>
                     </div>
                 </div>
             `;
@@ -678,7 +690,7 @@ function buildHikeCard(hike) {
 
         vetoSectionHtml = `
             <div class="veto-management-box">
-                <span class="small font-bold text-warning" style="display:block; margin-bottom:6px;"><i data-lucide="shield-alert"></i> Richieste Pendenti (Veto):</span>
+                <span class="small font-bold text-warning" style="display:block; margin-bottom:6px;"><i data-lucide="shield-alert"></i> ${escapeHtml(T('hikeCard.richiestePendenti') || 'Richieste Pendenti (Veto):')}</span>
                 ${pendingItemsHtml}
             </div>
         `;
@@ -696,9 +708,9 @@ function buildHikeCard(hike) {
         const oggi = new Date();
         const oggiStr = `${oggi.getFullYear()}-${String(oggi.getMonth() + 1).padStart(2, '0')}-${String(oggi.getDate()).padStart(2, '0')}`;
         if (hike.groupCompletedAt) {
-            completeGroupBtnHtml = `<span class="badge badge-green">Completata in gruppo ✓</span>`;
+            completeGroupBtnHtml = `<span class="badge badge-green">${escapeHtml(T('hikeCard.completataGruppo') || 'Completata in gruppo ✓')}</span>`;
         } else if (hike.date <= oggiStr) {
-            completeGroupBtnHtml = `<button class="btn btn-sm btn-success" onclick="openCompleteGroupModal('${hike.id}')">Completa escursione</button>`;
+            completeGroupBtnHtml = `<button class="btn btn-sm btn-success" onclick="openCompleteGroupModal('${hike.id}')">${escapeHtml(T('hikeCard.completaBtn') || 'Completa escursione')}</button>`;
         }
     }
 
@@ -708,12 +720,12 @@ function buildHikeCard(hike) {
     // che contiene, Modifica, non e' piu' permessa (guardia vera lato server in hikes.js).
     const editMenuHtml = (isCreatorMe && !hike.groupCompletedAt) ? `
         <div class="hike-card-menu">
-            <button type="button" class="hike-card-menu-btn" title="Opzioni escursione" aria-label="Opzioni escursione">
+            <button type="button" class="hike-card-menu-btn" title="${escapeHtml(T('hikeCard.opzioniTitle') || 'Opzioni escursione')}" aria-label="${escapeHtml(T('hikeCard.opzioniTitle') || 'Opzioni escursione')}">
                 <i data-lucide="more-vertical"></i>
             </button>
             <div class="hike-card-menu-dropdown hidden">
                 <button type="button" class="hike-card-menu-item" onclick="openEditHikeModal('${hike.id}')">
-                    <i data-lucide="pencil"></i> Modifica
+                    <i data-lucide="pencil"></i> ${escapeHtml(T('hikeCard.modificaBtn') || 'Modifica')}
                 </button>
             </div>
         </div>
@@ -731,24 +743,24 @@ function buildHikeCard(hike) {
         </div>
         <div class="hike-card-body hidden">
             <div class="hike-card-topright">
-                <span class="badge badge-primary hike-difficulty-badge">${hike.difficulty}</span>
+                <span class="badge badge-primary hike-difficulty-badge">${escapeHtml(T('difficulty.' + hike.difficulty) || hike.difficulty)}</span>
                 ${editMenuHtml}
             </div>
-            <p class="small text-muted" style="margin-bottom: 8px;">Organizzato da: <b class="user-link" onclick="showUserProfile('${hike.creatorId}')">${escapeHtml(creatorName)}</b>${creatorBadgeHtml}</p>
+            <p class="small text-muted" style="margin-bottom: 8px;">${escapeHtml(T('hikeCard.organizzatoDa') || 'Organizzato da:')} <b class="user-link" onclick="showUserProfile('${hike.creatorId}')">${escapeHtml(creatorName)}</b>${creatorBadgeHtml}</p>
 
             <p class="small text-secondary" style="line-height:1.4; height: 60px; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(hike.description)}</p>
 
             <div class="hike-meta-row">
                 <div class="hike-meta-item">
-                    <span>Dislivello D+</span>
+                    <span>${escapeHtml(T('hikeCard.dislivelloDLabel') || 'Dislivello D+')}</span>
                     <strong>${hike.elevationGain}m</strong>
                 </div>
                 <div class="hike-meta-item">
-                    <span>Quota Max</span>
+                    <span>${escapeHtml(T('hikeCard.quotaMaxLabel') || 'Quota Max')}</span>
                     <strong>${hike.maxAltitude}m</strong>
                 </div>
                 <div class="hike-meta-item">
-                    <span>Distanza</span>
+                    <span>${escapeHtml(T('hikeCard.distanzaLabel') || 'Distanza')}</span>
                     <strong>${hike.distanceKm} km</strong>
                 </div>
             </div>
@@ -757,19 +769,19 @@ function buildHikeCard(hike) {
             ${tempoRealeHtml}
 
             <div class="tag-list">
-                ${hike.tribeTags.map(t => `<span class="tag">${t}</span>`).join("")}
+                ${hike.tribeTags.map(tag => `<span class="tag">${escapeHtml(T('tribeTag.' + tag) || tag)}</span>`).join("")}
                 <span class="badge ${eligibility.class}">${eligibility.text}</span>
             </div>
 
             <div class="participants-section">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <span class="small text-muted">Partecipanti (${hike.participants.length}):</span>
+                    <span class="small text-muted">${escapeHtml(T('hikeCard.partecipantiLabel', hike.participants.length) || `Partecipanti (${hike.participants.length}):`)}</span>
                     <div style="display:flex; gap:6px;">
-                        <button class="btn btn-sm btn-secondary" style="padding:2px 6px;" onclick="loadHikeOnMapDirectly('${hike.id}')" title="Vedi sentiero sulla mappa">Mappa</button>
-                        <button class="btn btn-sm btn-secondary bookmark-toggle-btn ${isBookmarked ? 'is-bookmarked' : ''}" style="padding:2px 6px;" onclick="toggleBookmark('${hike.id}')" title="${isBookmarked ? 'Rimuovi dai preferiti' : 'Aggiungi ai preferiti'}">
+                        <button class="btn btn-sm btn-secondary" style="padding:2px 6px;" onclick="loadHikeOnMapDirectly('${hike.id}')" title="${escapeHtml(T('hikeCard.vediMappaTitle') || 'Vedi sentiero sulla mappa')}">${escapeHtml(T('hikeCard.mappaBtn') || 'Mappa')}</button>
+                        <button class="btn btn-sm btn-secondary bookmark-toggle-btn ${isBookmarked ? 'is-bookmarked' : ''}" style="padding:2px 6px;" onclick="toggleBookmark('${hike.id}')" title="${isBookmarked ? escapeHtml(T('hikeCard.rimuoviPreferitiTitle') || 'Rimuovi dai preferiti') : escapeHtml(T('hikeCard.aggiungiPreferitiTitle') || 'Aggiungi ai preferiti')}">
                             🐐
                         </button>
-                        ${isParticipant ? `<button class="btn btn-sm btn-secondary" style="padding:2px 6px;" onclick="showHikePage('${hike.id}')" title="Chat tra i partecipanti">Chat</button>` : ""}
+                        ${isParticipant ? `<button class="btn btn-sm btn-secondary" style="padding:2px 6px;" onclick="showHikePage('${hike.id}')" title="${escapeHtml(T('hikeCard.chatTitle') || 'Chat tra i partecipanti')}">${escapeHtml(T('hikeCard.chatBtn') || 'Chat')}</button>` : ""}
                         ${completionToolsHtml}
                     </div>
                 </div>
@@ -832,7 +844,7 @@ window.joinHikeRequest = async function(hikeId, isEligible) {
     if (!hike) return;
 
     if (!isEligible) {
-        const confirmJoin = await window.showConfirmModal("⚠️ ATTENZIONE: Questa escursione richiede un passo superiore al tuo attuale storico rilevato.\n\nVuoi comunque inviare una richiesta al capogruppo e discuterne in chat?");
+        const confirmJoin = await window.showConfirmModal(T('hikeConfirm.avvisoIdoneita') || "⚠️ ATTENZIONE: Questa escursione richiede un passo superiore al tuo attuale storico rilevato.\n\nVuoi comunque inviare una richiesta al capogruppo e discuterne in chat?");
         if (!confirmJoin) return;
     }
 
@@ -996,7 +1008,7 @@ window.uploadCompletionGpx = function(completionId) {
         // Stesso tetto di storico.js (10 MB): dire subito cosa non va e' meglio che far
         // aspettare un invio destinato a fallire.
         if (file.size > 10 * 1024 * 1024) {
-            if (window.showToast) window.showToast(`Il file pesa ${(file.size / 1024 / 1024).toFixed(1)} MB, oltre il limite di 10 MB.`, 'error');
+            if (window.showToast) window.showToast(T('hikeToast.filePesa', (file.size / 1024 / 1024).toFixed(1)) || `Il file pesa ${(file.size / 1024 / 1024).toFixed(1)} MB, oltre il limite di 10 MB.`, 'error');
             return;
         }
 
@@ -1004,7 +1016,7 @@ window.uploadCompletionGpx = function(completionId) {
         try {
             gpxText = await file.text();
         } catch (e) {
-            if (window.showToast) window.showToast('Non è stato possibile leggere il file.', 'error');
+            if (window.showToast) window.showToast(T('hikeToast.fileNonLetto') || 'Non è stato possibile leggere il file.', 'error');
             return;
         }
 
@@ -1016,18 +1028,18 @@ window.uploadCompletionGpx = function(completionId) {
             });
             const dati = await res.json().catch(() => ({}));
             if (!res.ok) {
-                if (window.showToast) window.showToast(dati.error || 'Non è stato possibile aggiungere il file.', 'error');
+                if (window.showToast) window.showToast(dati.error || T('hikeToast.erroreAggiuntaFile') || 'Non è stato possibile aggiungere il file.', 'error');
                 return;
             }
             if (window.showToast) {
                 const avviso = (dati.avvisi || []).length ? ` (${dati.avvisi[0]})` : '';
-                window.showToast(`Tempo reale aggiunto${avviso}.`, 'success');
+                window.showToast(`${T('hikeToast.tempoRealeAggiunto') || 'Tempo reale aggiunto'}${avviso}.`, 'success');
             }
             await refreshState();
             renderHikesList();
         } catch (e) {
             console.error('Errore nel caricare il gpx sul completamento:', e);
-            if (window.showToast) window.showToast('Non è stato possibile contattare il server.', 'error');
+            if (window.showToast) window.showToast(T('common.erroreServer') || 'Non è stato possibile contattare il server.', 'error');
         }
     });
     input.click();
@@ -1043,24 +1055,24 @@ window.uploadCompletionGpx = function(completionId) {
 // stesso principio di ogni altro onclick del progetto (mai testo libero, solo id).
 window.deleteCompletion = async function(completionId, hikeId) {
     const hike = (window.CamoscioState.hikes || []).find(h => h.id === hikeId);
-    const hikeTitle = hike ? hike.title : 'questa escursione';
+    const hikeTitle = hike ? hike.title : (T('hikeConfirm.questaEscursione') || 'questa escursione');
     const righe = [
-        `Cancellare "${hikeTitle}" dalle escursioni fatte?`,
+        T('hikeConfirm.cancellaTitolo', hikeTitle) || `Cancellare "${hikeTitle}" dalle escursioni fatte?`,
         '',
-        'Il tuo passo personale verrà ricalcolato senza questa escursione.',
-        'Non potrai più scrivere né ricevere recensioni per questa escursione.',
+        T('hikeConfirm.cancellaPassoRicalcolato') || 'Il tuo passo personale verrà ricalcolato senza questa escursione.',
+        T('hikeConfirm.cancellaNoRecensioni') || 'Non potrai più scrivere né ricevere recensioni per questa escursione.',
         '',
-        'I badge che hai conquistato restano nel passaporto.',
+        T('hikeConfirm.cancellaBadgeRestano') || 'I badge che hai conquistato restano nel passaporto.',
         // Punto 80/B: se questa escursione aveva anche un tracciamento dal vivo collegato
         // (public/js/tracking.js, completeLinkedHike), quella traccia GPS non viene
         // toccata da questo cestino - resterebbe visibile come voce a parte in questa
         // stessa lista. Riga sempre presente (non si sa qui se il caso ricorre davvero,
         // controllarlo servirebbe una fetch in piu' per un'informazione che non cambia la
         // decisione di procedere) invece di lasciarlo scoprire come sorpresa dopo il click.
-        'Se avevi anche registrato il percorso col GPS, quella traccia resta separata nello storico.'
+        T('hikeConfirm.cancellaTracciaSeparata') || 'Se avevi anche registrato il percorso col GPS, quella traccia resta separata nello storico.'
     ];
     const procedi = window.showConfirmModal
-        ? await window.showConfirmModal(righe.join('\n'), 'Elimina', { cancelLabel: 'Cancella', danger: true })
+        ? await window.showConfirmModal(righe.join('\n'), T('common.elimina') || 'Elimina', { cancelLabel: T('common.cancella') || 'Cancella', danger: true })
         : true;
     if (!procedi) return;
 
@@ -1068,15 +1080,15 @@ window.deleteCompletion = async function(completionId, hikeId) {
         const res = await fetch(`/api/completions/${completionId}`, { method: 'DELETE' });
         const dati = await res.json().catch(() => ({}));
         if (!res.ok) {
-            if (window.showToast) window.showToast(dati.error || 'Non è stato possibile cancellare questa escursione.', 'error');
+            if (window.showToast) window.showToast(dati.error || T('hikeToast.erroreCancellaEscursione') || 'Non è stato possibile cancellare questa escursione.', 'error');
             return;
         }
-        if (window.showToast) window.showToast('Escursione cancellata dalle "già fatte".', 'success');
+        if (window.showToast) window.showToast(T('hikeToast.escursioneCancellata') || 'Escursione cancellata dalle "già fatte".', 'success');
         await refreshState();
         renderHikesList();
     } catch (e) {
         console.error('Errore cancellazione completamento:', e);
-        if (window.showToast) window.showToast('Non è stato possibile contattare il server.', 'error');
+        if (window.showToast) window.showToast(T('common.erroreServer') || 'Non è stato possibile contattare il server.', 'error');
     }
 };
 
@@ -1097,7 +1109,7 @@ async function submitCreateHike() {
     if (fonte === 'draft') {
         const draftId = document.getElementById("hike-route-draft-select").value;
         if (!draftId) {
-            window.showToast("Scegli un progetto dall'elenco.", "error");
+            window.showToast(T('hikeToast.scegliProgetto') || "Scegli un progetto dall'elenco.", "error");
             return;
         }
         routeSource = { kind: 'draft', draftId };
@@ -1116,13 +1128,13 @@ async function submitCreateHike() {
     } else if (fonte === 'gpx') {
         const file = document.getElementById("hike-route-gpx-file").files[0];
         if (!file) {
-            window.showToast("Scegli un file .gpx da importare.", "error");
+            window.showToast(T('hikeToast.scegliGpx') || "Scegli un file .gpx da importare.", "error");
             return;
         }
         try {
             routeSource = { kind: 'gpx', gpxText: await file.text() };
         } catch (e) {
-            window.showToast("Non è stato possibile leggere il file.", "error");
+            window.showToast(T('hikeToast.fileNonLetto') || "Non è stato possibile leggere il file.", "error");
             return;
         }
     } else {
@@ -1142,7 +1154,7 @@ async function submitCreateHike() {
     // saltato: i campi sono nascosti, quindi il browser non puo' segnalarlo da solo con
     // il classico "campo obbligatorio" (su un campo invisibile non funziona).
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-        window.showToast("Scegli prima il punto di ritrovo: cercalo per nome oppure indicalo sulla mappa.", "error");
+        window.showToast(T('hikeToast.scegliRitrovo') || "Scegli prima il punto di ritrovo: cercalo per nome oppure indicalo sulla mappa.", "error");
         const ricerca = document.getElementById("hike-trailhead-search");
         if (ricerca) ricerca.focus();
         return;
@@ -1152,7 +1164,7 @@ async function submitCreateHike() {
     // era solo un rettangolo approssimativo). Ricontrollato comunque lato server in
     // routes/hikes.js: questo e' solo per un messaggio d'errore immediato all'utente.
     if (window.CamoscioIsInRegion && !window.CamoscioIsInRegion(lat, lng)) {
-        window.showToast("Il punto di ritrovo inserito è fuori dall'ambito geografico attuale della demo (Lazio, Molise, Abruzzo, Marche). Inserisci coordinate all'interno di queste regioni.", "error");
+        window.showToast(T('hikeToast.fuoriRegione') || "Il punto di ritrovo inserito è fuori dall'ambito geografico attuale della demo (Lazio, Molise, Abruzzo, Marche). Inserisci coordinate all'interno di queste regioni.", "error");
         return;
     }
 
@@ -1215,11 +1227,12 @@ async function submitCreateHike() {
 
             if (avevamoMandatoQuoteManuali && hikeSalvata && hikeSalvata.routeSource && !hikeSalvata.routeSource.dislivelloManuale) {
                 window.showToast(
+                    T('hikeToast.quoteRicalcolate', hikeSalvata.maxAltitude, hikeSalvata.elevationGain) ||
                     `La fonte delle quote ha risposto: quota massima e dislivello sono stati calcolati dal percorso (${hikeSalvata.maxAltitude} m, ${hikeSalvata.elevationGain} m D+), non quelli che avevi scritto.`,
                     "success"
                 );
             } else {
-                window.showToast(inModifica ? "Escursione aggiornata!" : "Escursione pubblicata!", "success");
+                window.showToast(inModifica ? (T('hikeToast.escursioneAggiornata') || "Escursione aggiornata!") : (T('hikeToast.escursionePubblicata') || "Escursione pubblicata!"), "success");
             }
         } else {
             // Prima non si diceva NIENTE quando il server rifiutava: la finestra restava
@@ -1236,13 +1249,13 @@ async function submitCreateHike() {
             }
 
             const messaggioDefault = inModifica
-                ? "Non è stato possibile salvare le modifiche. Controlla i dati inseriti."
-                : "Non è stato possibile pubblicare l'escursione. Controlla i dati inseriti.";
+                ? (T('hikeToast.erroreSalvaModifiche') || "Non è stato possibile salvare le modifiche. Controlla i dati inseriti.")
+                : (T('hikeToast.errorePubblica') || "Non è stato possibile pubblicare l'escursione. Controlla i dati inseriti.");
             window.showToast(body.error || messaggioDefault, "error");
         }
     } catch(e) {
         console.error("Errore creazione escursione:", e);
-        window.showToast(inModifica ? "Errore di rete: le modifiche non sono state salvate." : "Errore di rete: l'escursione non è stata pubblicata.", "error");
+        window.showToast(inModifica ? (T('hikeToast.erroreReteModifiche') || "Errore di rete: le modifiche non sono state salvate.") : (T('hikeToast.erroreRetePubblica') || "Errore di rete: l'escursione non è stata pubblicata."), "error");
     }
 }
 
@@ -1307,7 +1320,7 @@ function renderCompleteGroupSearch() {
     );
 
     if (!trovati.length) {
-        results.innerHTML = `<p class="small text-muted">Nessuna persona trovata.</p>`;
+        results.innerHTML = `<p class="small text-muted">${escapeHtml(T('peopleSearch.nessunRisultato') || 'Nessuna persona trovata.')}</p>`;
         return;
     }
 
@@ -1319,7 +1332,7 @@ function renderCompleteGroupSearch() {
                 <div class="p-avatar">${u.avatar}</div>
                 <b>${escapeHtml(u.username)}</b>
             </div>
-            <button type="button" class="btn btn-sm btn-secondary" onclick="addToCompleteGroup('${u.id}')">Aggiungi</button>
+            <button type="button" class="btn btn-sm btn-secondary" onclick="addToCompleteGroup('${u.id}')">${escapeHtml(T('completeGroupModal.aggiungiBtn') || 'Aggiungi')}</button>
         `;
         results.appendChild(row);
     });
@@ -1383,7 +1396,7 @@ async function submitCompleteGroup() {
     ).map(cb => cb.value);
 
     if (!confirmedUserIds.length) {
-        window.showToast("Conferma almeno una persona presente.", "error");
+        window.showToast(T('completeGroupModal.confermaAlmeno') || "Conferma almeno una persona presente.", "error");
         return;
     }
 
@@ -1396,7 +1409,7 @@ async function submitCompleteGroup() {
         try {
             gpxText = await gpxFile.text();
         } catch (e) {
-            window.showToast("Non è stato possibile leggere il file .gpx.", "error");
+            window.showToast(T('completeGroupModal.gpxNonLetto') || "Non è stato possibile leggere il file .gpx.", "error");
             return;
         }
     }
@@ -1412,14 +1425,14 @@ async function submitCompleteGroup() {
             closeCompleteGroupModal();
             await refreshState();
             renderHikesList(); // ridisegna anche "Le mie escursioni", vedi commento su renderHikesList
-            window.showToast("Escursione completata per il gruppo!", "success");
+            window.showToast(T('completeGroupModal.completataSuccesso') || "Escursione completata per il gruppo!", "success");
         } else {
             const body = await response.json().catch(() => ({}));
-            window.showToast(body.error || "Non è stato possibile completare il gruppo.", "error");
+            window.showToast(body.error || (T('completeGroupModal.erroreCompletamento') || "Non è stato possibile completare il gruppo."), "error");
         }
     } catch (e) {
         console.error("Errore completamento di gruppo:", e);
-        window.showToast("Errore di rete: il completamento non è stato salvato.", "error");
+        window.showToast(T('completeGroupModal.erroreReteCompletamento') || "Errore di rete: il completamento non è stato salvato.", "error");
     }
 }
 

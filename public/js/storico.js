@@ -18,6 +18,11 @@
 // ==========================================================================
 
 (function () {
+    // Rollout traduzione punto 102, secondo lotto (22/08/2026). "const", non "var":
+    // questo file e' gia' dentro una propria IIFE (vedi la nota su badges.js in cima
+    // a i18n.js sul perche' fa eccezione alla regola "var").
+    const T = (window.CamoscioI18n && window.CamoscioI18n.t) || function () { return null; };
+
     // Lo stesso limite del server (routes/tracking.js). Controllato anche qui per
     // dire subito che il file e' troppo grande, invece di far partire un invio da
     // decine di MB che verrebbe comunque rifiutato.
@@ -25,10 +30,15 @@
 
     function esc(s) { return window.escapeHtml ? window.escapeHtml(s) : String(s == null ? '' : s); }
 
+    // Nome del mese per esteso: cambia locale con la lingua, stessa regola gia'
+    // scelta per formattaDataItaliana in userprofile.js (vedi la nota in cima a
+    // i18n.js) - a differenza del formato solo-cifre di italiana() piu' sotto, che
+    // resta identico in entrambe le lingue.
     function dataItaliana(iso) {
         const d = new Date(iso);
         if (isNaN(d)) return '';
-        return d.toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' });
+        const lang = window.CamoscioI18n && window.CamoscioI18n.getLang() === 'en' ? 'en-GB' : 'it-IT';
+        return d.toLocaleDateString(lang, { day: '2-digit', month: 'long', year: 'numeric' });
     }
 
     function durata(secondi) {
@@ -36,6 +46,21 @@
         const ore = Math.floor(secondi / 3600);
         const minuti = Math.round((secondi % 3600) / 60);
         return ore > 0 ? `${ore}h ${minuti}min` : `${minuti} min`;
+    }
+
+    // Virgola italiana o punto inglese per i decimali - stessa formula di
+    // formattaDecimale in userprofile.js, duplicata qui (piccola, autonoma) invece
+    // di dipendere da una funzione non esportata di un altro file.
+    function formattaDecimale(n) {
+        const testo = (n || 0).toFixed(1);
+        const lang = window.CamoscioI18n && window.CamoscioI18n.getLang();
+        return lang === 'en' ? testo : testo.replace('.', ',');
+    }
+
+    // Separatore delle migliaia sui conteggi punti GPX - stessa lingua del resto.
+    function formattaNumero(n) {
+        const lang = window.CamoscioI18n && window.CamoscioI18n.getLang();
+        return (n || 0).toLocaleString(lang === 'en' ? 'en-GB' : 'it-IT');
     }
 
     // --- ELENCO UNIFICATO "ESCURSIONI COMPLETATE" (punto 80/B) ---
@@ -87,10 +112,10 @@
             const completion = (db.completions || []).find(c => c.hikeId === h.id);
             if (!completion) return null; // non dovrebbe succedere: 'fatte' viene proprio da lì
             const azioni = `
-                <button class="btn btn-sm btn-secondary" style="padding:2px 6px;" onclick="uploadCompletionGpx('${completion.id}')" title="Carica un file .gpx per avere il tempo reale di questa escursione">
+                <button class="btn btn-sm btn-secondary" style="padding:2px 6px;" onclick="uploadCompletionGpx('${completion.id}')" title="${esc(T('hikeCard.caricaGpxTitle') || 'Carica un file .gpx per avere il tempo reale di questa escursione')}">
                     <i data-lucide="upload"></i>
                 </button>
-                <button class="outing-card-del" onclick="deleteCompletion('${completion.id}', '${h.id}')" title="Cancella questa escursione dalle tue 'già fatte'" aria-label="Cancella questa escursione dalle tue 'già fatte'"><i data-lucide="trash-2"></i></button>
+                <button class="outing-card-del" onclick="deleteCompletion('${completion.id}', '${h.id}')" title="${esc(T('hikeCard.cancellaGiaFattaTitle') || "Cancella questa escursione dalle tue 'già fatte'")}" aria-label="${esc(T('hikeCard.cancellaGiaFattaTitle') || "Cancella questa escursione dalle tue 'già fatte'")}"><i data-lucide="trash-2"></i></button>
             `;
             return {
                 ordinamento: Date.parse(h.date) || 0,
@@ -125,7 +150,7 @@
             .map(s => ({
                 ordinamento: Date.parse(s.startedAt) || 0,
                 html: window.CamoscioSchedeCompatte.uscita(s, {
-                    azioniHtml: `<button class="outing-card-del" data-del-outing="${esc(s.id)}" title="Cancella questa uscita dallo storico" aria-label="Cancella questa uscita dallo storico"><i data-lucide="trash-2"></i></button>`
+                    azioniHtml: `<button class="outing-card-del" data-del-outing="${esc(s.id)}" title="${esc(T('outing.cancellaTitle') || 'Cancella questa uscita dallo storico')}" aria-label="${esc(T('outing.cancellaTitle') || 'Cancella questa uscita dallo storico')}"><i data-lucide="trash-2"></i></button>`
                 })
             }));
 
@@ -134,14 +159,13 @@
 
         if (tutte.length === 0 && !erroreSessioni) {
             box.innerHTML = `<div class="glass-card text-center py-4 text-muted">
-                Nessuna escursione completata per ora. Dopo un'uscita ricordati di segnarla
-                come completata, oppure carica qui sopra un file .gpx di un'uscita già fatta.
+                ${esc(T('myHikes.completateVuoto') || "Nessuna escursione completata per ora. Dopo un'uscita ricordati di segnarla come completata, oppure carica qui sopra un file .gpx di un'uscita già fatta.")}
             </div>`;
             return;
         }
 
         const avvisoErrore = erroreSessioni
-            ? `<div class="glass-card text-center py-3 text-muted">Le escursioni completate sono aggiornate; non è stato possibile caricare anche le uscite registrate col GPS. Riprova più tardi.</div>`
+            ? `<div class="glass-card text-center py-3 text-muted">${esc(T('myHikes.erroreCaricaUscite') || "Le escursioni completate sono aggiornate; non è stato possibile caricare anche le uscite registrate col GPS. Riprova più tardi.")}</div>`
             : '';
         box.innerHTML = avvisoErrore + (tutte.length ? `<div class="outings-grid">${tutte.map(v => v.html).join('')}</div>` : '');
 
@@ -164,21 +188,22 @@
     // timbro sia stato preso, quindi revocarlo rischierebbe di togliere un badge vero).
     async function cancellaUscita(id) {
         const scheda = document.querySelector(`.outing-card[data-outing-id="${id}"]`);
-        const titolo = scheda ? (scheda.querySelector('.outing-card-title')?.textContent || 'questa uscita') : 'questa uscita';
+        const fallbackTitolo = T('outing.questaUscita') || 'questa uscita';
+        const titolo = scheda ? (scheda.querySelector('.outing-card-title')?.textContent || fallbackTitolo) : fallbackTitolo;
         const importata = !!(scheda && scheda.querySelector('.outing-tag i[data-lucide="upload"], .outing-tag svg.lucide-upload'));
 
         const righe = [
-            `Cancellare "${titolo}" dallo storico?`,
+            T('outing.cancellaTitolo', titolo) || `Cancellare "${titolo}" dallo storico?`,
             '',
-            'I suoi chilometri e il dislivello spariranno dai totali della Dashboard.',
+            T('outing.cancellaTotaliSpariscono') || 'I suoi chilometri e il dislivello spariranno dai totali della Dashboard.',
             importata
-                ? 'Essendo un file importato, il posto che occupa nel tetto mensile torna libero.'
-                : 'Attenzione: questa uscita e\' stata REGISTRATA col GPS, quindi sono dati misurati sul posto e non si possono ricaricare da nessun file.',
+                ? (T('outing.cancellaPostoLibero') || 'Essendo un file importato, il posto che occupa nel tetto mensile torna libero.')
+                : (T('outing.cancellaRegistrataAttenzione') || 'Attenzione: questa uscita e\' stata REGISTRATA col GPS, quindi sono dati misurati sul posto e non si possono ricaricare da nessun file.'),
             '',
-            'I badge che hai conquistato restano nel passaporto.'
+            T('outing.cancellaBadgeRestano') || 'I badge che hai conquistato restano nel passaporto.'
         ];
         const procedi = window.showConfirmModal
-            ? await window.showConfirmModal(righe.join('\n'), 'Elimina', { cancelLabel: 'Cancella', danger: true })
+            ? await window.showConfirmModal(righe.join('\n'), T('common.elimina') || 'Elimina', { cancelLabel: T('common.cancella') || 'Cancella', danger: true })
             : true;
         if (!procedi) return;
 
@@ -186,10 +211,10 @@
             const res = await fetch(`/api/tracking/sessions/${encodeURIComponent(id)}`, { method: 'DELETE' });
             const dati = await res.json().catch(() => ({}));
             if (!res.ok) {
-                if (window.showToast) window.showToast(dati.error || 'Non è stato possibile cancellare l\'uscita.', 'error');
+                if (window.showToast) window.showToast(dati.error || (T('outing.erroreCancella') || 'Non è stato possibile cancellare l\'uscita.'), 'error');
                 return;
             }
-            if (window.showToast) window.showToast('Uscita cancellata dallo storico.', 'success');
+            if (window.showToast) window.showToast(T('outing.cancellataSuccesso') || 'Uscita cancellata dallo storico.', 'success');
 
             // Punto 80/B: non piu' renderStorico() (la sezione non esiste piu' da sola) -
             // renderMyHikes() ridisegna anche i contatori in cima alla pagina, non solo la
@@ -201,7 +226,7 @@
             aggiornaQuotaDalServer();
         } catch (e) {
             console.error('Cancellazione uscita fallita:', e);
-            if (window.showToast) window.showToast('Non è stato possibile contattare il server.', 'error');
+            if (window.showToast) window.showToast(T('common.erroreServer') || 'Non è stato possibile contattare il server.', 'error');
         }
     }
 
@@ -248,19 +273,19 @@
         // Controlli fatti prima di leggere il file: dire subito cosa non va e' meglio
         // che far aspettare un invio destinato a fallire.
         if (!/\.gpx$/i.test(file.name)) {
-            return mostraEsito(`<i data-lucide="circle-alert"></i> <span>Il file deve avere estensione <b>.gpx</b>. Hai scelto "${esc(file.name)}".</span>`, 'errore');
+            return mostraEsito(`<i data-lucide="circle-alert"></i> <span>${T('gpx.estensioneErrata', esc(file.name)) || `Il file deve avere estensione <b>.gpx</b>. Hai scelto "${esc(file.name)}".`}</span>`, 'errore');
         }
         if (file.size > MAX_BYTE_GPX) {
-            return mostraEsito(`<i data-lucide="circle-alert"></i> <span>Il file pesa ${(file.size / 1024 / 1024).toFixed(1)} MB, oltre il limite di 10 MB. Un'escursione registrata normalmente sta sotto 1 MB.</span>`, 'errore');
+            return mostraEsito(`<i data-lucide="circle-alert"></i> <span>${T('gpx.filePesa', (file.size / 1024 / 1024).toFixed(1)) || `Il file pesa ${(file.size / 1024 / 1024).toFixed(1)} MB, oltre il limite di 10 MB. Un'escursione registrata normalmente sta sotto 1 MB.`}</span>`, 'errore');
         }
 
-        mostraEsito(`<i data-lucide="loader"></i> <span>Sto leggendo "${esc(file.name)}"…</span>`, 'attesa');
+        mostraEsito(`<i data-lucide="loader"></i> <span>${T('gpx.stoLeggendo', esc(file.name)) || `Sto leggendo "${esc(file.name)}"…`}</span>`, 'attesa');
 
         let testo;
         try {
             testo = await file.text();
         } catch (e) {
-            return mostraEsito(`<i data-lucide="circle-alert"></i> <span>Non è stato possibile leggere il file.</span>`, 'errore');
+            return mostraEsito(`<i data-lucide="circle-alert"></i> <span>${T('hikeToast.fileNonLetto') || 'Non è stato possibile leggere il file.'}</span>`, 'errore');
         }
 
         try {
@@ -277,9 +302,9 @@
             if (res.status === 422 && dati.richiedeData) {
                 const esito = await chiediData(file, dati);
                 if (!esito) {
-                    return mostraEsito(`<i data-lucide="circle-alert"></i> <span>Caricamento annullato: senza il giorno dell'escursione la traccia non entra nello storico.</span>`, 'errore');
+                    return mostraEsito(`<i data-lucide="circle-alert"></i> <span>${T('gpx.caricamentoAnnullato') || "Caricamento annullato: senza il giorno dell'escursione la traccia non entra nello storico."}</span>`, 'errore');
                 }
-                mostraEsito(`<i data-lucide="loader"></i> <span>Sto importando "${esc(file.name)}"…</span>`, 'attesa');
+                mostraEsito(`<i data-lucide="loader"></i> <span>${T('gpx.stoImportando', esc(file.name)) || `Sto importando "${esc(file.name)}"…`}</span>`, 'attesa');
                 res = await fetch('/api/tracking/import-gpx', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -291,8 +316,10 @@
             if (!res.ok) {
                 // Il server manda un messaggio gia' scritto per l'utente e che spiega il
                 // motivo vero (file senza orari, traccia fuori regione, tetto mensile...):
-                // si mostra quello invece di un "errore" generico.
-                return mostraEsito(`<i data-lucide="circle-alert"></i> <span>${esc(dati.error || 'Importazione non riuscita.')}</span>`, 'errore');
+                // si mostra quello invece di un "errore" generico. dati.error viene dal
+                // server e resta sempre in italiano (dizionario i18n solo lato client) -
+                // tradotto solo il ripiego per quando il server non manda un messaggio suo.
+                return mostraEsito(`<i data-lucide="circle-alert"></i> <span>${esc(dati.error || (T('gpx.importazioneNonRiuscita') || 'Importazione non riuscita.'))}</span>`, 'errore');
             }
 
             const avvisi = (dati.avvisi || []).length
@@ -304,25 +331,27 @@
             // e' la ricompensa di quello che ha appena fatto.
             const badge = (dati.badge || []).length
                 ? `<div class="gpx-import-badges">
-                       <b>${dati.badge.length === 1 ? 'Badge conquistato' : 'Badge conquistati'}:</b>
+                       <b>${dati.badge.length === 1 ? (T('gpx.badgeConquistato') || 'Badge conquistato') : (T('gpx.badgeConquistati') || 'Badge conquistati')}:</b>
                        ${dati.badge.map(b => `${esc(b.emoji)} ${esc(b.nome)}`).join(' · ')}
-                       <br><span class="small text-muted">Aggiunti al tuo passaporto con la data dell'escursione.</span>
+                       <br><span class="small text-muted">${T('gpx.aggiuntiPassaporto') || "Aggiunti al tuo passaporto con la data dell'escursione."}</span>
                    </div>`
                 : '';
+
+            const kmTxt = formattaDecimale(dati.distanzaKm);
+            const tempoTxt = dati.durataIgnota
+                ? (T('gpx.durataNonDisponibile') || ', durata non disponibile')
+                : `, ${durata(dati.durataSecondi)}`;
 
             mostraEsito(`
                 <i data-lucide="circle-check-big"></i>
                 <span>
-                    <b>${esc(dati.nome || 'Uscita')} del ${dataItaliana(dati.inizio)}</b> importata.
-                    ${(dati.distanzaKm || 0).toFixed(1).replace('.', ',')} km,
-                    ${Math.round(dati.dislivelloM || 0)} m di dislivello${dati.durataIgnota
-                        ? ', durata non disponibile'
-                        : `, ${durata(dati.durataSecondi)}`}.
+                    ${T('gpx.titoloImportata', esc(dati.nome || (T('gpx.uscitaFallback') || 'Uscita')), dataItaliana(dati.inizio)) || `<b>${esc(dati.nome || 'Uscita')} del ${dataItaliana(dati.inizio)}</b> importata.`}
+                    ${kmTxt} km,
+                    ${Math.round(dati.dislivelloM || 0)} ${T('gpx.mDislivelloLabel') || 'm di dislivello'}${tempoTxt}.
                     <br>
                     <span class="small text-muted">
-                        ${dati.puntiLetti.toLocaleString('it-IT')} punti nel file, ${dati.puntiSalvati.toLocaleString('it-IT')} salvati
-                        dopo la semplificazione (il percorso disegnato resta lo stesso, occupa molto meno spazio).
-                        Hai caricato ${dati.caricatiQuestoMese} file su ${dati.massimoAlMese} questo mese.
+                        ${T('gpx.puntiSalvatiFrase', formattaNumero(dati.puntiLetti), formattaNumero(dati.puntiSalvati)) || `${dati.puntiLetti.toLocaleString('it-IT')} punti nel file, ${dati.puntiSalvati.toLocaleString('it-IT')} salvati dopo la semplificazione (il percorso disegnato resta lo stesso, occupa molto meno spazio).`}
+                        ${T('gpx.haiCaricato', dati.caricatiQuestoMese, dati.massimoAlMese) || `Hai caricato ${dati.caricatiQuestoMese} file su ${dati.massimoAlMese} questo mese.`}
                     </span>
                     ${badge}
                     ${avvisi}
@@ -347,7 +376,7 @@
             if (window.renderDashboard) window.renderDashboard();
         } catch (e) {
             console.error('Errore importazione .gpx:', e);
-            mostraEsito(`<i data-lucide="circle-alert"></i> <span>Non è stato possibile contattare il server. Riprova.</span>`, 'errore');
+            mostraEsito(`<i data-lucide="circle-alert"></i> <span>${(T('common.erroreServer') || 'Non è stato possibile contattare il server.') + ' ' + (T('gpx.riprova') || 'Riprova.')}</span>`, 'errore');
         }
     }
 
@@ -360,26 +389,27 @@
     // uno confermerebbe a occhi chiusi una data sbagliata - che e' esattamente quello che
     // e' successo prima che questa finestra esistesse.
     async function chiediData(file, dati) {
-        const km = (dati.distanzaKm || 0).toFixed(1).replace('.', ',');
+        const nomeFile = esc(dati.nome || file.name);
+        const km = formattaDecimale(dati.distanzaKm);
         const righe = [
-            `"${dati.nome || file.name}" non contiene gli orari dei punti.`,
+            T('gpx.nonContieneOrari', nomeFile) || `"${dati.nome || file.name}" non contiene gli orari dei punti.`,
             '',
-            `La traccia è buona (${km} km, ${Math.round(dati.dislivelloM || 0)} m di dislivello), ma senza orari il sito non può sapere che giorno hai camminato.`,
+            T('gpx.tracciaBuona', km, Math.round(dati.dislivelloM || 0)) || `La traccia è buona (${km} km, ${Math.round(dati.dislivelloM || 0)} m di dislivello), ma senza orari il sito non può sapere che giorno hai camminato.`,
             '',
             dati.dataProposta
-                ? `Nel file c'è la data ${italiana(dati.dataProposta)}, ma spesso è il giorno in cui hai ESPORTATO il file, non quello dell'escursione. Controllala.`
-                : 'Nel file non c\'è nessuna data.',
+                ? (T('gpx.dataNelFile', italiana(dati.dataProposta)) || `Nel file c'è la data ${italiana(dati.dataProposta)}, ma spesso è il giorno in cui hai ESPORTATO il file, non quello dell'escursione. Controllala.`)
+                : (T('gpx.nessunaDataNelFile') || 'Nel file non c\'è nessuna data.'),
             '',
-            'Che giorno era?'
+            T('gpx.cheGiornoEra') || 'Che giorno era?'
         ];
         const scelta = window.showDateModal
-            ? await window.showDateModal(righe.join('\n'), dati.dataProposta || '', 'Importa')
+            ? await window.showDateModal(righe.join('\n'), dati.dataProposta || '', T('gpx.importaBtn') || 'Importa')
             : await window.showPromptModal(righe.join('\n'), dati.dataProposta || '');
 
         if (!scelta) return null;
         const pulita = String(scelta).trim();
         if (!/^\d{4}-\d{2}-\d{2}$/.test(pulita)) {
-            if (window.showToast) window.showToast('Data non valida: serve nel formato giorno/mese/anno.', 'error');
+            if (window.showToast) window.showToast(T('gpx.dataNonValida') || 'Data non valida: serve nel formato giorno/mese/anno.', 'error');
             return null;
         }
         return pulita;
@@ -396,7 +426,7 @@
     function aggiornaNotaQuota(caricati, massimo) {
         const nota = document.getElementById('gpx-quota-note');
         if (nota && Number.isFinite(caricati)) {
-            nota.textContent = ` Ne hai caricati ${caricati} su ${massimo} questo mese.`;
+            nota.textContent = T('gpx.neHaiCaricati', caricati, massimo) || ` Ne hai caricati ${caricati} su ${massimo} questo mese.`;
         }
     }
 
