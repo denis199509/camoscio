@@ -1,22 +1,11 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-22 (terza sessione). Due filoni aperti,
-indipendenti fra loro - vedi sotto.
+Aggiornato: 2026-08-22 (terza sessione, chiusa in sicurezza). PUNTO 98
+chiuso per intero (tutti e sei i sotto-punti, A-F) - E confermato dal
+vivo da Denis su Valle Granara/SP30 dopo la quarta riapertura: "ok,
+fatto la prova a val granara, fuziona, tutto a posto".
 
->>> APERTO PER LA PROSSIMA SESSIONE (1/2) - PUNTO 98/E, quarta volta:
-Denis deve ANCORA riprovare il progetto percorso su Valle Granara
-(screenshot alla mano, come le tre volte precedenti) e confermare se
-ora la SP30 viene presa invece del giro largo. `secondary` e' stato
-misurato, deciso e aggiunto il 22/08 (dettaglio in cose_da_fare.txt
-punto 98 e nel vault) - lato codice fatto, ma la conferma dal vivo
-non e' ancora arrivata: questa sessione e' stata assorbita dal punto
-102 sotto invece di tornarci sopra. Se Denis conferma, 98/E chiuso
-per intero - sarebbe la quarta volta che si riapre per lo stesso
-posto, quindi se nota ancora qualcosa di simile altrove vale un
-controllo un po' piu' ampio, non solo quel punto. Nessuna azione di
-codice prevista finche' non arriva la conferma (o un nuovo caso).
-
->>> APERTO PER LA PROSSIMA SESSIONE (2/2) - PUNTO 102, decisione da
+>>> APERTO PER LA PROSSIMA SESSIONE - PUNTO 102, decisione da
 prendere: la prova di traduzione IT/EN sulla sola pagina Badge e'
 chiusa e confermata da Denis in locale (due bandiere in alto a
 destra prima di "Esci", solo interfaccia - testi utente e nomi propri
@@ -106,10 +95,10 @@ MAI piu' (congelato); cose_da_fare.txt quando un punto si chiude o ne arriva uno
           alzata da 200 a 800 m, dato gia' live sul sito senza deploy
           (611e97e). Interruzione a meta' causata da un mio taskkill
           troppo largo, nessun dato perso (script ripartibile).
-          RIAPERTO tre volte dopo: prima per il tag `residential`
-          (aggiunto e confermato dal vivo), poi per `secondary`
-          (SP30/SP63, misurato e aggiunto il 22/08 - 1a9c60a) - manca
-          solo la prova dal vivo, vedi blocco in cima a questo file.
+          RIAPERTO tre volte dopo: prima per il tag `residential`,
+          poi per `secondary` (SP30/SP63, 1a9c60a) - CONFERMATO DAL
+          VIVO il 22/08/2026, quarta riapertura sullo stesso posto
+          risolta per davvero. PUNTO 98 CHIUSO PER INTERO.
       98/F. "Diario di Viaggio Collaborativo" cancellato per intero
           (codice + le due voci vere sul database), fuori ordine su
           decisione di Denis: non un rinvio ma una cancellazione,
@@ -177,11 +166,11 @@ MAI piu' (congelato); cose_da_fare.txt quando un punto si chiude o ne arriva uno
     campo sparisce gia' al primo salvataggio, con la correzione resta).
     Committato (65d859b).
 
-    >>> PUNTO 98: A/B/C/D/F chiusi per intero, E ANCORA APERTO solo per
-    la prova dal vivo (terza riapertura, SP30/`secondary` misurato e
-    implementato il 22/08 - vedi blocco in cima a questo file).
-    Dettaglio completo di ogni sotto-punto, con le parole di Denis, in
-    cose_da_fare.txt punto 98.
+    >>> PUNTO 98: CHIUSO PER INTERO il 22/08/2026 (tutti e sei i
+    sotto-punti A-F) - E confermato dal vivo da Denis su Valle
+    Granara/SP30 dopo la quarta riapertura. Sezione compressa
+    nel vault (04-Da-Fare.md). Dettaglio completo di ogni sotto-punto,
+    con le parole di Denis, in cose_da_fare.txt punto 98.
 
     >>> ANCORA APERTE, non urgenti (dettaglio in
     ../camoscio memoria/04-Da-Fare.md): i "livelli"
