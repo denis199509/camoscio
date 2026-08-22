@@ -1,20 +1,19 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-22 (quinta sessione, CHIUSA IN SICUREZZA). PUNTO
-102, SECONDO LOTTO: Escursioni + Le mie escursioni (condividono
-buildHikeCard) + i due modali crea/completa escursione - ordine
-confermato CON Denis prima di iniziare. Costruito, verificato con
-l'estensione Chrome in entrambe le lingue, console pulita, POI
-CONFERMATO DA DENIS IN LOCALE ("verificato in locale, tutto apposto,
-vai con il push"). Committato e pushato su richiesta esplicita di
-Denis (camoscio `d4a599f`). SECONDO LOTTO CHIUSO PER INTERO.
+Aggiornato: 2026-08-22 (sesta sessione, CHIUSA IN SICUREZZA). Sessione
+aperta da uno spegnimento improvviso del PC mentre Denis cambiava due
+icone badge (non il primo caso) - lavoro ritrovato integro su disco,
+committato e pushato dopo verifica visiva delle immagini (camoscio
+`48362c9`). Icona di Rifugio Nicola D'Arcangelo ora corretta (1655 m):
+CHIUDE il vecchio debito tecnico. Trovato pero' un debito NUOVO sulla
+seconda icona: Bivacco Carlo Fusco disegna 2645 m contro i 2455 m del
+catalogo - annotato, non urgente, nessuna azione richiesta.
 
-Un limite trovato provando dal vivo (segnalato anche da Denis in
-chat nello stesso momento, indipendentemente): il segnaposto di
-<input type="date"> e il testo di <input type="file"> seguono la
-lingua del BROWSER, non quella del sito - limite di Chrome, non
-risolvibile da qui, nessun effetto sui dati. Denis ha confermato di
-lasciarlo cosi'.
+Su richiesta di Denis, impostato un salvataggio automatico: hook
+"Stop" di Claude Code, commit locale (MAI push) a fine di ogni
+risposta se ci sono modifiche non salvate in questo repo. Dettaglio
+in cose_da_fare.txt punto 105 e nel vault (03-Decisioni-
+Architetturali.md).
 
 >>> APERTO PER LA PROSSIMA SESSIONE - PUNTO 102: TERZO LOTTO GIA'
 CONFERMATO DA DENIS ("confermo il terzo lotto, quello proposto") -

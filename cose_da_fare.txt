@@ -5768,3 +5768,62 @@ schermo spento ancora."
    Committato e pushato insieme al punto 102, su richiesta esplicita
    di Denis (camoscio, `10c137f`). La correzione sul database e'
    separata e gia' definitiva (non e' una modifica di codice).
+
+104. [22/08/2026] Lavoro iniziato da Denis prima di questa sessione,
+   interrotto da uno spegnimento improvviso del PC (non la prima
+   volta che succede) - il testo esatto della sua richiesta non e'
+   arrivato in questa chat, ricostruito solo dai file trovati sul
+   disco. Trovate due icone badge gia' sostituite ma non ancora
+   committate: rifugio-nicola-darcangelo.png e
+   bivacco-carlo-fusco.png. Verificato PRIMA di committare che i due
+   file fossero PNG validi e non troncati dal crash (dimensione,
+   firma PNG, marcatore di fine file) - entrambi integri.
+
+   Aperte le immagini per controllo (non solo dimensione file):
+   - rifugio-nicola-darcangelo.png ora disegna "1655 m" (prima
+     2235 m) - RISOLVE il debito tecnico del punto 97 (icona con
+     quota decorativa sbagliata; il catalogo aveva gia' il numero
+     vero). Segnato come chiuso in
+     ../camoscio memoria/04-Da-Fare.md.
+   - bivacco-carlo-fusco.png disegna pero' "2645 m", mentre il
+     catalogo (badge-points.js, punto 96) ha 2455 m (fonte ufficiale
+     parco della Majella) - stesso tipo di errore del punto 97, su
+     un'icona diversa. Segnalato a Denis prima di chiudere la
+     sessione: confermato di annotarlo come NUOVO debito tecnico non
+     urgente invece di rigenerare subito l'icona (stessa scelta gia'
+     fatta per D'Arcangelo).
+
+   Committato e pushato su richiesta esplicita di Denis (camoscio
+   `48362c9`).
+
+105. [22/08/2026] Denis, parole sue: "stavamo cambiando due icone
+   badge quando all'improvviso si e' sento il pc. Non e' la prima
+   volta che succede. Per evitare che succede dobbiamo salvare il
+   lavoro appena fatto. Quindi da oggi in poi appena facciamo un
+   lavoro va salvato tutto in automatico per evitare di perdere
+   qualche dato."
+
+   Chiesto a Denis come intendeva "salvare in automatico" (commit
+   locale, commit+push automatico, o solo un promemoria a voce a
+   fine lavoro) - confermato: SOLO COMMIT LOCALE, mai push
+   automatico (resta la regola di non pushare mai senza che lo
+   chieda lui, eccetto il repo del vault che e' gia' pre-autorizzato
+   da CLAUDE.md).
+
+   Implementato un hook "Stop" di Claude Code
+   (.claude/settings.json - cartella gia' in .gitignore, resta solo
+   locale, mai sul repo pubblico): a fine di ogni risposta, se ci
+   sono modifiche non salvate nella working directory di QUESTO
+   repo (controllato due volte: git rev-parse --show-toplevel deve
+   dare "camoscio" E git status --porcelain deve trovare qualcosa),
+   fa un commit locale col messaggio "Auto-save: salvataggio
+   automatico di sicurezza" + data e ora. Nessun commit se non c'e'
+   nulla da salvare (niente commit vuoti), nessun push automatico.
+   Verificato che il comando funziona davvero: ha commesso per
+   davvero le due icone del punto 104 durante il test (poi
+   rinominato a mano con un messaggio piu' descrittivo, prima del
+   push).
+
+   Decisione tecnica completa (perche' uno Stop hook, perche' niente
+   push, cosa succede se il PC si spegne a meta' di un salvataggio)
+   in ../camoscio memoria/03-Decisioni-Architetturali.md.
