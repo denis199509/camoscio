@@ -1,47 +1,58 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-27 (settima sessione). PUNTO 102, TERZO LOTTO fatto:
-Dashboard + Profilo proprio (#my-profile) tradotti IT/EN, piu' l'header
-condiviso (bottone Esci, campana notifiche, widget utente Reputazione/
-Livello) ripiegato dentro su richiesta di Denis. Verificato con
-l'estensione Chrome (IT+EN, toggle dal vivo, nav via/ritorno, zero errori)
-e con prova-configurazione.js (9/9) e prova-passo-non-misurato.js (28/28).
-Committato e pushato su richiesta esplicita di Denis (camoscio `6474cd9`,
-poi note `2272b96`; vault `49f5cc1`). Verificato anche su finestra stretta
-da telefono (387px reali, iframe stessa-origine): LA TRADUZIONE E' PULITA
-su mobile (ogni stringa EN sta/va a capo come la IT). LA VERIFICA DAL VIVO
-DI DENIS E' ANCORA DA FARE ("la verifica la faccio in un secondo momento")
-- se segnala qualcosa, correggere prima di procedere.
+Aggiornato: 2026-08-28 (ottava sessione). PUNTO 102, QUARTO LOTTO fatto:
+SICUREZZA & MESH - l'INTERA funzione di safety.js tradotta IT/EN (deciso
+con Denis via AskUserQuestion: "Solo Sicurezza & Mesh" + "tutta la funzione
+safety.js"). Coperti: sezione #safety (simulatore mesh, radar, chat mesh,
+registro avvisi), fascia #emergency-banner globale, e form Dead Man's
+Switch + tasto SOS 112 che stanno nella barra laterale della Mappa. NON il
+resto della sezione Mappa (livelli, progetta percorso, meteo, tracciamento)
+- resta al lotto Mappa, da qui il titolo pagina ancora "Mappa & Sentieri"
+accanto al form DMS tradotto (atteso). Nuovo onChange in safety.js: stato
+connessione mesh + menu "chi avvisare" si ridisegnano; registro avvisi e
+chat mesh no (cronologia eventi, come chatpanel.js). Verificato con
+l'estensione Chrome (IT+EN, toggle avanti/indietro, dialogo SOS e ciclo
+timer simulati senza toccare il DB, console pulita) + prova-configurazione
+(9/9), prova-passo-non-misurato (28/28), prova-punto37 / Dead Man's Switch
+(27/27). Committato e pushato su richiesta esplicita di Denis (camoscio
+`106af9d`, hook auto-save rifuso con --amend prima del push). LA VERIFICA
+DAL VIVO DI DENIS E' ANCORA DA FARE - se segnala qualcosa, correggere prima
+di procedere.
 
 Resta valido: hook "Stop" di auto-save (commit locale, MAI push) a fine di
-ogni risposta - ha gia' fatto un commit generico questa sessione, rifuso a
-mano con `git commit --amend` prima del push. Debito icona Bivacco Carlo
-Fusco (2645 m disegnati vs 2455 m del catalogo) sempre aperto, non urgente.
+ogni risposta. Debito icona Bivacco Carlo Fusco (2645 m disegnati vs 2455 m
+del catalogo) sempre aperto, non urgente. PUNTO 106 (due fix responsive
+pre-esistenti di styles.css, giro a parte chiesto da Denis) ANCORA APERTO,
+non toccato in questa sessione - dettaglio in cose_da_fare.txt punto 106.
 
->>> APERTO PER LA PROSSIMA SESSIONE - due cose, in quest'ordine se Denis
-non dice altro:
+>>> APERTO PER LA PROSSIMA SESSIONE, in quest'ordine se Denis non dice
+altro:
 
-1. PUNTO 106 (giro a parte, chiesto da Denis: "sistema entrambi in un giro
-   a parte"). Due difetti responsive PRE-ESISTENTI trovati verificando il
-   terzo lotto su mobile (non regressioni della traduzione, misurati
-   identici IT/EN a 387px):
+1. Verifica dal vivo di Denis del QUARTO LOTTO (Sicurezza & Mesh, gia'
+   pushato). Se segnala qualcosa, correggere prima di procedere.
+
+2. PUNTO 102, LOTTO SUCCESSIVO: SOCIALE (#social, social.js - il file JS
+   piu' grande del progetto, 106 KB, gia' toccato in parte al secondo
+   lotto per buildHikeCard) INSIEME a chatpanel.js (pannello chat
+   condiviso da pagina squadra e pagina escursione, rimasto indietro dal
+   primo lotto, da fare una volta sola - Denis ha gia' confermato di
+   includerlo qui). Da concordare con Denis prima di iniziare, non
+   proseguire da soli sull'ordine. Dopo Sociale, sempre da confermare
+   quando si arriva: Carpooling/Zaino, poi Moderazione, poi la Mappa - la
+   piu' grande -, infine il gate di login/registrazione e le pagine HTML
+   autonome.
+
+3. PUNTO 106 (giro a parte): due difetti responsive PRE-ESISTENTI trovati
+   verificando il terzo lotto su mobile (non regressioni della traduzione,
+   misurati identici IT/EN a 387px):
    a) #my-profile, .photo-upload-row (styles.css ~3087): il bottone
       "Rimuovi foto" esce ~135px oltre il bordo card - l'<input
       type="file"> nativo e' largo ~253px fissi, la riga non fa wrap.
    b) #section-title nell'header troncato a ~44px su schermo stretto
       ("Dashboard" -> "Das..."). C'e' gia' una @media(max-width:700px)
       su .top-header e affini (styles.css ~4480), il fix va li'.
-   Dettaglio completo e idee di fix in cose_da_fare.txt punto 106.
    Verificare a ~387px con l'iframe stessa-origine (resize_window NON
    funziona) senza rompere il desktop.
-
-2. PUNTO 102, LOTTO SUCCESSIVO: Sicurezza/Sociale - MA da concordare con
-   Denis prima di iniziare (non proseguire da soli sull'ordine). Resta
-   aperta anche la decisione se/quando tradurre chatpanel.js (usata da due
-   pagine, da fare una volta sola) - non fatta nel terzo lotto. Dopo
-   Sicurezza/Sociale, sempre da confermare quando si arriva: Carpooling/
-   Zaino, poi Moderazione, poi la Mappa - la piu' grande -, infine il gate
-   di login/registrazione e le pagine HTML autonome.
 
 Dettaglio completo in cose_da_fare.txt punti 102 e 106, e nel vault
 (04-Da-Fare.md, 03-Decisioni-Architetturali.md, 07-Trappole-Tecniche.md).

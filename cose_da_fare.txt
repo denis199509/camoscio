@@ -5789,6 +5789,76 @@ schermo spento ancora."
    Moderazione, la Mappa, infine login/registrazione e le pagine
    HTML autonome.
 
+   ---
+
+   QUARTO LOTTO - ottava sessione, 27-28/08/2026. Denis: "possiamo
+   continuare con la traduzione". Il vault dava Sicurezza/Sociale come
+   prossimo lotto ma diceva esplicitamente di concordare l'ambito con
+   lui prima - due domande con AskUserQuestion: (1) prossimo lotto ->
+   "Solo Sicurezza & Mesh" (Sociale + chatpanel.js slittano al lotto
+   dopo); (2) fin dove arrivo -> "Tutta la funzione safety.js".
+
+   Fatto: l'INTERA interfaccia alimentata da safety.js, che vive in tre
+   punti - la sezione #safety (simulatore mesh, radar, chat mesh,
+   registro avvisi, rimando alla Mappa), la fascia rossa
+   #emergency-banner in cima a ogni pagina, e il form Dead Man's Switch
+   + tasto SOS 112 che dal punto 17 stanno nella barra laterale della
+   Mappa. NON il resto della sezione Mappa (livelli, progetta percorso,
+   meteo, tracciamento): resta al lotto Mappa - da qui il titolo pagina
+   ancora "Mappa & Sentieri" e i comandi mappa in italiano accanto al
+   form DMS tradotto (visibile nello screenshot mandato a Denis, e'
+   atteso). Meccanismo invariato dai lotti precedenti, dizionario
+   +~75 chiavi (safety.*). var T (non const) in testa a safety.js.
+
+   Scelte non ovvie (dettaglio nel vault, 03-Decisioni-Architetturali.md
+   sottosezione "Quarto lotto"):
+   - nuovo onChange in safety.js: ridisegna lo stato connessione mesh
+     e il menu "chi avvisare" + hint (dati in CamoscioState, nessun
+     fetch). Il registro avvisi (#sms-log-entries) e la chat mesh
+     (#mesh-messages-log) NO: sono la cronologia di eventi di una
+     sessione, le voci nuove escono gia' nella lingua attiva - stesso
+     residuo onesto di chatpanel.js;
+   - testo auto del tasto SOS mesh trasmesso agli altri client nella
+     lingua di CHI lo invia, non di chi lo riceve - stessa scelta gia'
+     fatta per notifyParticipantDecision (secondo lotto);
+   - #emergency-banner marcato con data-i18n-html perche' contiene lo
+     <span id="emergency-banner-timer"> che safety.js riscrive ogni
+     secondo: un cambio lingua a timer attivo lo rimette a "00:00" per
+     <1s (il countdown lo ricorregge subito), caso raro, costo accettato
+     per non spezzare il testo in tre pezzi attorno al segnaposto;
+   - orario nel registro avvisi (toLocaleTimeString) col locale
+     en-GB/it-IT, come le date col nome del mese dei lotti precedenti.
+
+   VERIFICATO CON L'ESTENSIONE CHROME (login demo Marco Alpinista):
+   sezione #safety e form DMS/banner/SOS in italiano e inglese, toggle
+   lingua avanti e indietro piu' volte, navigazione safety<->mappa,
+   dialogo SOS 112 completo e ciclo attiva/check-in del timer simulati
+   (fetch a /api/safety/* stubbato per non toccare il DB di Marco,
+   contatto finto solo in memoria e ripristinato), console pulita.
+   Anche prova-configurazione.js (9/9), prova-passo-non-misurato.js
+   (28/28), prova-punto37.js (Dead Man's Switch, 27/27 - conferma anche
+   che i contatti demo sono tornati identici e nessuna notifica di prova
+   e' rimasta). Non lanciate le prove email: modifiche a stringhe con
+   ripiego IT identico + problema noto chiavi Mailjet in locale.
+
+   COMMITTATO E PUSHATO su richiesta esplicita di Denis ("rifondi il
+   commit con un messaggio vero e pusha"), camoscio `106af9d`. L'hook
+   di auto-save aveva gia' fatto un commit locale generico: rifuso con
+   git commit --amend prima del push, stessa procedura dei punti
+   104/105 e del terzo lotto. VERIFICA DAL VIVO DI DENIS ANCORA DA FARE.
+
+   RIPARTIRE DA: verifica dal vivo di Denis del quarto lotto (se segnala
+   qualcosa, correggere prima di procedere). Poi il lotto successivo e'
+   SOCIALE (#social, social.js - il file JS piu' grande del progetto,
+   106 KB, gia' toccato in parte al secondo lotto per buildHikeCard)
+   INSIEME a chatpanel.js (il pannello chat condiviso da pagina squadra
+   e pagina escursione, rimasto indietro dal primo lotto, da fare una
+   volta sola - Denis ha gia' confermato di includerlo qui). Da
+   concordare con Denis prima di iniziare, non proseguire da soli
+   sull'ordine. Dopo Sociale, sempre da confermare: Carpooling/Zaino,
+   Moderazione, la Mappa, infine login/registrazione e le pagine HTML
+   autonome.
+
 =====================================================================
 
 103. [22/08/2026, trovato durante il punto 102, non richiesto] Denis,
