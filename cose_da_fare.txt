@@ -5721,11 +5721,73 @@ schermo spento ancora."
 
    TERZO LOTTO CONFERMATO DA DENIS, stessa sessione, subito dopo la
    chiusura: "confermo il terzo lotto, quello proposto" - Dashboard +
-   Profilo proprio. RIPARTIRE DA: iniziare direttamente il terzo
-   lotto, l'ordine non va richiesto di nuovo. Dopo questo restano da
-   confermare, quando si arriva li': sicurezza/sociale, carpooling/
-   zaino, moderazione, la Mappa, infine login/registrazione e le
-   pagine HTML autonome.
+   Profilo proprio.
+
+   ---
+
+   TERZO LOTTO - settima sessione, 27/08/2026. Denis apre con "a che
+   punto stiamo con la traduzione delle pagine?", poi "partiamo".
+   Fatto: Dashboard (card benvenuto, totali cammino, Passo & Fatica
+   col grafico Chart.js, Passaporto/timbri) e Profilo proprio
+   (#my-profile: foto/bio, esperto locale, cambio password + i toast
+   di profile.js). Meccanismo invariato dai lotti precedenti,
+   dizionario +~55 chiavi (dash.*, myProfile.*, header.*).
+
+   Scelte nuove (dettaglio nel vault, 03-Decisioni-Architetturali.md
+   sottosezione "Terzo lotto"):
+   - #my-profile ha titolo FISSO ("Il Tuo Profilo"), non dinamico
+     come #user-profile (che ci mette lo username): trattato come
+     qualunque pagina a titolo fisso - voce in prettyNames (app.js)
+     + sectionTitle.my-profile nel dizionario, updateSectionTitle lo
+     aggiorna da solo al cambio lingua, NESSUN onChange dedicato;
+   - la Dashboard SI ridisegna al cambio lingua (CamoscioI18n.onChange
+     in app.js), il corpo JS di #my-profile NO (funzioni condivise
+     con #user-profile, fanno un fetch - come li', residuo onesto che
+     si aggiorna alla riapertura). Le etichette statiche di #my-profile
+     si aggiornano comunque;
+   - separatore migliaia dei totali Dashboard scelto per lingua
+     (it-IT / en-GB), come le date col nome del mese.
+
+   HEADER CONDIVISO ripiegato dentro il lotto. Durante la verifica ho
+   segnalato che il bottone "Esci", la campana notifiche e il widget
+   utente in alto a destra ("Reputazione: X% | Livello: Esperto") non
+   erano marcati in nessun lotto, pur essendo su ogni pagina. Denis,
+   parole sue: "piegale dentro questo lotto, vai con commit e push, la
+   verifica la faccio in un secondo momento". Fatto: updateHeaderUserWidget
+   si registra sull'onChange per rimettere nome/reputazione dopo che
+   applyStaticTranslations riporta i data-i18n al testo di partenza.
+   Il valore di experienceLevel ("Esperto") resta invariato, solo
+   l'etichetta "Livello:" si traduce - coerente con la card identita'
+   di profilo (tradurre il valore avrebbe voluto dire toccare anche
+   le due pagine profilo insieme).
+
+   VERIFICATO CON L'ESTENSIONE CHROME (login demo Marco Alpinista):
+   Dashboard e #my-profile in italiano e inglese, toggle lingua dal
+   vivo su entrambe, navigazione via e ritorno (il corpo JS di
+   #my-profile si ridisegna nella lingua giusta), listener errori JS
+   durante un ciclo intensivo dashboard/profilo/escursioni in
+   entrambe le lingue: zero errori. Anche prova-configurazione.js
+   (9/9) e prova-passo-non-misurato.js (28/28). Non lanciate
+   prova-punto7.js/prova-verifica-email.js: le modifiche a codice
+   password sono solo stringhe con ripiego italiano identico, e in
+   locale quelle prove hanno il problema noto delle chiavi Mailjet.
+
+   COMMITTATO E PUSHATO su richiesta esplicita di Denis ("vai con
+   commit e push"), camoscio `6474cd9`. L'hook di auto-save aveva
+   gia' fatto un commit locale generico: rifuso con git commit
+   --amend prima del push, stessa procedura del punto 104.
+   VERIFICA DAL VIVO DI DENIS ANCORA DA FARE ("la faccio in un
+   secondo momento") - se segnala qualcosa, correggere prima di
+   procedere.
+
+   RIPARTIRE DA: se Denis conferma il terzo lotto dal vivo, il lotto
+   successivo e' Sicurezza/Sociale - MA da concordare con lui prima
+   di iniziare, non proseguire da soli sull'ordine. Resta aperta la
+   decisione se/quando tradurre chatpanel.js (usata da due pagine,
+   da fare una volta sola) - non fatta nel terzo lotto. Dopo
+   Sicurezza/Sociale, sempre da confermare: Carpooling/Zaino,
+   Moderazione, la Mappa, infine login/registrazione e le pagine
+   HTML autonome.
 
 =====================================================================
 

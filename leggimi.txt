@@ -1,30 +1,29 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-22 (sesta sessione, CHIUSA IN SICUREZZA). Sessione
-aperta da uno spegnimento improvviso del PC mentre Denis cambiava due
-icone badge (non il primo caso) - lavoro ritrovato integro su disco,
-committato e pushato dopo verifica visiva delle immagini (camoscio
-`48362c9`). Icona di Rifugio Nicola D'Arcangelo ora corretta (1655 m):
-CHIUDE il vecchio debito tecnico. Trovato pero' un debito NUOVO sulla
-seconda icona: Bivacco Carlo Fusco disegna 2645 m contro i 2455 m del
-catalogo - annotato, non urgente, nessuna azione richiesta.
+Aggiornato: 2026-08-27 (settima sessione). PUNTO 102, TERZO LOTTO fatto:
+Dashboard + Profilo proprio (#my-profile) tradotti IT/EN, piu' l'header
+condiviso (bottone Esci, campana notifiche, widget utente Reputazione/
+Livello) ripiegato dentro su richiesta di Denis. Verificato con
+l'estensione Chrome (IT+EN, toggle dal vivo, nav via/ritorno, zero errori)
+e con prova-configurazione.js (9/9) e prova-passo-non-misurato.js (28/28).
+Committato e pushato su richiesta esplicita di Denis (camoscio `6474cd9`).
+LA VERIFICA DAL VIVO DI DENIS E' ANCORA DA FARE ("la verifica la faccio in
+un secondo momento") - se segnala qualcosa, correggere prima di procedere.
 
-Su richiesta di Denis, impostato un salvataggio automatico: hook
-"Stop" di Claude Code, commit locale (MAI push) a fine di ogni
-risposta se ci sono modifiche non salvate in questo repo. Dettaglio
-in cose_da_fare.txt punto 105 e nel vault (03-Decisioni-
-Architetturali.md).
+Resta valido: hook "Stop" di auto-save (commit locale, MAI push) a fine di
+ogni risposta - ha gia' fatto un commit generico questa sessione, rifuso a
+mano con `git commit --amend` prima del push. Debito icona Bivacco Carlo
+Fusco (2645 m disegnati vs 2455 m del catalogo) sempre aperto, non urgente.
 
->>> APERTO PER LA PROSSIMA SESSIONE - PUNTO 102: TERZO LOTTO GIA'
-CONFERMATO DA DENIS ("confermo il terzo lotto, quello proposto") -
-Dashboard + Profilo proprio. Si puo' iniziare direttamente, l'ordine
-non va richiesto di nuovo. Dopo questo: Sicurezza/Sociale, poi
-Carpooling/Zaino, poi Moderazione, poi la Mappa - la piu' grande -,
-infine il gate di login/registrazione e le pagine HTML autonome -
-questi restano da confermare quando si arriva li'.
+>>> APERTO PER LA PROSSIMA SESSIONE - PUNTO 102: LOTTO SUCCESSIVO
+Sicurezza/Sociale - MA da concordare con Denis prima di iniziare (non
+proseguire da soli sull'ordine). Resta aperta anche la decisione se/quando
+tradurre chatpanel.js (usata da due pagine, da fare una volta sola) - non
+fatta nel terzo lotto. Dopo Sicurezza/Sociale, sempre da confermare quando
+si arriva: Carpooling/Zaino, poi Moderazione, poi la Mappa - la piu'
+grande -, infine il gate di login/registrazione e le pagine HTML autonome.
 Dettaglio completo in cose_da_fare.txt punto 102 e nel vault
-(04-Da-Fare.md, 03-Decisioni-Architetturali.md, 07-Trappole-
-Tecniche.md).
+(04-Da-Fare.md, 03-Decisioni-Architetturali.md, 07-Trappole-Tecniche.md).
 ===================================================================
 
 QUESTO FILE DICE SOLO UNA COSA: a che punto siamo adesso e da dove si ricomincia.
@@ -166,8 +165,21 @@ MAI piu' (congelato); cose_da_fare.txt quando un punto si chiude o ne arriva uno
           l'estensione Chrome, CONFERMATO DA DENIS IN LOCALE
           ("verificato in locale, tutto apposto, vai con il push").
           Committato e pushato (`d4a599f`). SECONDO LOTTO CHIUSO
-          PER INTERO - vedi blocco in cima a questo file per il
-          prossimo.
+          PER INTERO. TERZO LOTTO (Dashboard + Profilo proprio
+          #my-profile), settima sessione 27/08/2026: costruito,
+          piu' l'header condiviso (Esci, campana notifiche, widget
+          utente) ripiegato dentro su richiesta di Denis. Titolo
+          fisso di #my-profile trattato via prettyNames +
+          sectionTitle.my-profile (niente onChange dedicato, a
+          differenza di #user-profile); Dashboard e header si
+          ridisegnano al cambio lingua, il corpo JS di #my-profile
+          no (come #user-profile - residuo onesto). Verificato con
+          l'estensione Chrome (IT+EN, toggle dal vivo, zero errori)
+          e con prova-configurazione.js/prova-passo-non-misurato.js.
+          Committato e pushato su richiesta esplicita di Denis
+          (`6474cd9`). VERIFICA DAL VIVO DI DENIS ANCORA DA FARE
+          ("la faccio in un secondo momento") - vedi blocco in cima
+          a questo file per il prossimo lotto.
 
      103. [22/08/2026, trovato durante il punto 102] Il titolo di
           un'escursione importata da GPX sul profilo di DaniWoll
