@@ -5889,3 +5889,50 @@ schermo spento ancora."
    Decisione tecnica completa (perche' uno Stop hook, perche' niente
    push, cosa succede se il PC si spegne a meta' di un salvataggio)
    in ../camoscio memoria/03-Decisioni-Architetturali.md.
+
+=====================================================================
+
+106. [27/08/2026, settima sessione - trovato verificando il punto 102
+   terzo lotto su finestra stretta da telefono, su richiesta di Denis
+   ("verifica la traduzione anche su una finestra stretta da telefono")]
+   Denis, parole sue: "sistema entrambi in un giro a parte, segna nelle
+   cose da fare".
+
+   DUE DIFETTI RESPONSIVE PRE-ESISTENTI - NON regressioni della
+   traduzione: misurati identici in italiano e inglese a 387px reali
+   (iframe stessa-origine, perche' resize_window non ridimensiona
+   davvero - vedi ../camoscio memoria/07-Trappole-Tecniche.md).
+
+   a) Riga foto del Profilo proprio (#my-profile, .photo-upload-row in
+      public/css/styles.css, regola base ~riga 3087). Su schermo
+      stretto il bottone "Rimuovi foto"/"Remove photo" finisce ~135px
+      fuori dal bordo della card (misurato: bordo destro a 522px in IT,
+      521px in EN, viewport 387px). Causa: l'<input type="file"> nativo
+      e' largo ~253px fissi e la riga e' flex, senza wrap. Non crea
+      scroll di pagina (l'eccedenza resta locale alla riga), ma il
+      bottone viene tagliato dal bordo card su un telefono vero.
+      #my-profile non e' mai stato nell'elenco "Responsive FATTO" del
+      vault (eredita markup spostato dalla Dashboard al punto 59).
+      Idea di fix: flex-wrap:wrap sulla riga nella @media mobile,
+      OPPURE nascondere l'input nativo dietro un bottone come gia' fatto
+      per il caricamento .gpx (input type=file hidden + bottone che fa
+      .click()) e per la foto squadra - piu' coerente col resto del
+      sito, ma tocca anche il listener 'change' in profile.js.
+
+   b) Titolo di sezione nell'header (#section-title) troncato a ~44px
+      su schermo stretto: "Dashboard" -> "Das...", "Il Tuo Profilo" ->
+      "Il Tu...". L'header (.top-header) stipa logo + titolo + 2
+      bandiere + Esci + campana + avatar in 387px. C'e' GIA' una @media
+      (max-width:700px) che tocca .top-header / .header-search /
+      .section-title / .user-status-widget (styles.css ~riga 4480) - il
+      fix va fatto li' dentro: dare piu' spazio al titolo, mandarlo a
+      capo, o nasconderlo su mobile (la barra a icone gia' dice dove
+      sei). Vale per ogni pagina, non solo Dashboard/Profilo.
+
+   NON TOCCATO in questa sessione: Denis ha chiesto di fermarsi e
+   sistemarlo in un giro a parte. RIPARTIRE DA: aprire styles.css alle
+   righe indicate, decidere l'approccio per (a) e (b), verificare a
+   ~387px con l'iframe stessa-origine SENZA rompere il desktop
+   (misurare il risultato vero, non solo simulare le regole CSS - vedi
+   07-Trappole-Tecniche). Rilanciare la verifica responsive delle
+   pagine gia' a posto se si tocca CSS condiviso.
