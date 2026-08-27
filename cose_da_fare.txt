@@ -5859,6 +5859,102 @@ schermo spento ancora."
    Moderazione, la Mappa, infine login/registrazione e le pagine HTML
    autonome.
 
+   QUINTO LOTTO - ottava sessione, 28/08/2026. Denis: "andiamo avanti
+   con il prossimo lotto". Il vault dava Sociale + chatpanel.js come
+   prossimo lotto (chatpanel.js gia' concordato al quarto lotto per
+   questo), quindi l'ordine era gia' fissato - nessuna AskUserQuestion,
+   ambito presentato a Denis in chat prima di scrivere e confermato
+   implicitamente dal "andiamo avanti".
+
+   Fatto: la sezione #social (Tribu, Recensioni & Squadre) e le parti di
+   social.js NON gia' tradotte al secondo lotto (buildHikeCard,
+   escursioni, modali crea/completa) - elenco squadre proprie e altrui,
+   creazione squadra, obiettivi di allenamento + match, modale "Invita a
+   Gita" (#invite-squad-modal + rigaInvitoSquadra/renderInviteSquad
+   HikeList/confermaInvitoSquadra), recensioni anonime
+   (populateReviewTargets/submitAnonymousReview). PIU' chatpanel.js per
+   intero: la chat condivisa da pagina squadra e pagina escursione,
+   rimasta indietro dal primo lotto - i chiamanti passavano gia' il
+   titolo tradotto (squadPage.chatTitolo/hikePage.chatTitolo), mancavano
+   le 5 stringhe interne. Verificato prima di iniziare che squadpage.js
+   e hikepage.js fossero gia' completi dal primo lotto (lo erano) e che
+   buildHikeCard e i modali fossero completi dal secondo (lo erano) -
+   il lotto era circoscritto a quanto sopra.
+
+   Meccanismo invariato: data-i18n / data-i18n-placeholder sull'HTML
+   statico, dizionario solo EN in i18n.js, var T (non const) aggiunto a
+   chatpanel.js (non e' in una IIFE). +68 chiavi (sectionTitle.social,
+   blocchi social.* e chat.*), con riuso di chiavi esistenti dove il
+   testo coincideva: common.cancella, squadPage.richiediPartecipazione
+   e .richiestaInviata, peopleSearch.nessunRisultato,
+   completeGroupModal.aggiungiBtn, profile.caricamento e .espertoLocale,
+   common.utente.
+
+   Scelte non ovvie (dettaglio nel vault, 03-Decisioni-Architetturali.md):
+   - cambio lingua: le parti sincrone di #social (elenco squadre, match
+     obiettivi, riquadro "obiettivo attuale") estratte in una funzione
+     nuova renderSocialStaticParts e ridisegnate SEMPRE - letture da
+     CamoscioState, come renderHikesList al secondo lotto. Il <select>
+     delle recensioni (populateReviewTargets, che fa un fetch a
+     /api/reviews/gia-recensite e mette "Caricamento..." nel menu) si
+     ridisegna SOLO se #social e' la sezione aperta - stesso schema di
+     renderCompletate (storico.js) al secondo lotto. Prima scelta era
+     escluderlo del tutto, ma la verifica dal vivo ha mostrato una
+     stringa italiana ferma nel menu dopo un toggle EN: peggio di un
+     flicker sub-secondo in un menu chiuso, quindi rientrato con la
+     condizione "sezione attiva";
+   - chatpanel.js: NESSUN onChange. Il giro di polling perderebbe la
+     posizione di scroll se rilanciato (stessa lezione di
+     refreshSquadHeaderAndMembers), e i messaggi nuovi escono gia' nella
+     lingua attiva - residuo onesto gia' documentato per questa chat;
+   - data col nome del mese in rigaInvitoSquadra (riquadro "Invita a
+     Gita"): locale en-GB/it-IT come per le date estese dei lotti
+     precedenti;
+   - sectionTitle.social ("Tribe, Reviews & Squads") diverso da
+     nav.social ("Tribe & Squads", piu' corto): il caso previsto dal
+     commento di nav.* nel dizionario, menu piu' corto del titolo pagina;
+   - le funzioni-valore del dizionario per i conteggi ("3 members to
+     add", "3 to propose", i due messaggi di conferma invito
+     squadra) - il numero e' un argomento, il plurale lo decide la voce.
+
+   RESIDUO DEL SECONDO LOTTO SISTEMATO QUI perche' trovato lavorando nel
+   file: il tooltip "Esperto locale: <zona>" sugli avatar dei
+   partecipanti in buildHikeCard non era dietro T() - ora riusa
+   profile.espertoLocale (primo lotto). Il badge "Admin" in squadpage.js
+   resta invariato apposta: e' gia' inglese, come "Carpooling".
+
+   VERIFICATO CON L'ESTENSIONE CHROME (login demo Marco Alpinista):
+   #social in italiano e inglese, toggle lingua avanti e indietro
+   restando sulla pagina, modale "Invita a Gita" (titolo col nome vero
+   della squadra, date in en-GB "9 August 2026", plurali "3 members to
+   add" / "3 to propose", "Organized by you" / "Organized by Luca
+   TrailRunner"), <select> recensioni che passa a "You've already
+   reviewed..." al toggle, chat di squadra e chat escursione riaperte in
+   inglese ("Squad Chat" / "Hike Chat" dai chiamanti). Listener error e
+   unhandledrejection piantato a mano per tutto il giro: ZERO errori.
+   Screenshot layout EN pulito. Anche prova-configurazione.js (9/9),
+   prova-passo-non-misurato.js (28/28), prova-invito-squadra.js (59/59 -
+   carica public/js/social.js in un contesto vm ed esercita
+   mieEscursioniAperte/confermaInvitoSquadra/renderHikesList/renderMyHikes
+   /renderSquadsList, quindi copre l'integrita' strutturale del file
+   dopo le modifiche). Non lanciate le prove email: nessuna modifica in
+   quell'area.
+
+   COMMITTATO E PUSHATO su richiesta esplicita di Denis ("commit e
+   push"), camoscio `9c079c1`. L'hook di auto-save aveva gia' fatto un
+   commit locale generico (1b326e1): rifuso con git commit --amend prima
+   del push, stessa procedura dei lotti terzo e quarto. VERIFICA DAL
+   VIVO DI DENIS ANCORA DA FARE - per il quinto lotto, e resta in
+   sospeso anche quella di terzo e quarto.
+
+   RIPARTIRE DA: verifica dal vivo di Denis dei lotti terzo, quarto e
+   quinto (se segnala qualcosa, correggere prima di procedere). Poi il
+   lotto successivo e' CARPOOLING / ZAINO. Da concordare con Denis prima
+   di iniziare, non proseguire da soli sull'ordine. Dopo, sempre da
+   confermare: Moderazione, poi la Mappa (la piu' grande e complessa),
+   infine il gate di login/registrazione e le pagine HTML autonome
+   (demo/conferma-email/reimposta-password).
+
 =====================================================================
 
 103. [22/08/2026, trovato durante il punto 102, non richiesto] Denis,

@@ -1,46 +1,52 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-28 (ottava sessione). PUNTO 102, QUARTO LOTTO fatto:
-SICUREZZA & MESH - l'INTERA funzione di safety.js tradotta IT/EN (deciso
-con Denis via AskUserQuestion: "Solo Sicurezza & Mesh" + "tutta la funzione
-safety.js"). Coperti: sezione #safety (simulatore mesh, radar, chat mesh,
-registro avvisi), fascia #emergency-banner globale, e form Dead Man's
-Switch + tasto SOS 112 che stanno nella barra laterale della Mappa. NON il
-resto della sezione Mappa (livelli, progetta percorso, meteo, tracciamento)
-- resta al lotto Mappa, da qui il titolo pagina ancora "Mappa & Sentieri"
-accanto al form DMS tradotto (atteso). Nuovo onChange in safety.js: stato
-connessione mesh + menu "chi avvisare" si ridisegnano; registro avvisi e
-chat mesh no (cronologia eventi, come chatpanel.js). Verificato con
-l'estensione Chrome (IT+EN, toggle avanti/indietro, dialogo SOS e ciclo
-timer simulati senza toccare il DB, console pulita) + prova-configurazione
-(9/9), prova-passo-non-misurato (28/28), prova-punto37 / Dead Man's Switch
-(27/27). Committato e pushato su richiesta esplicita di Denis (camoscio
-`106af9d`, hook auto-save rifuso con --amend prima del push). LA VERIFICA
-DAL VIVO DI DENIS E' ANCORA DA FARE - se segnala qualcosa, correggere prima
-di procedere.
+Aggiornato: 2026-08-28 (ottava sessione). PUNTO 102, QUINTO LOTTO fatto:
+SOCIALE - la sezione #social (Tribu, Recensioni & Squadre) e le parti di
+social.js non gia' tradotte al secondo lotto: elenco squadre proprie/
+altrui, creazione squadra, obiettivi di allenamento + match, modale
+"Invita a Gita" (#invite-squad-modal + rigaInvitoSquadra/confermaInvito
+Squadra), recensioni anonime. PIU' chatpanel.js per intero (chat condivisa
+da pagina squadra e pagina escursione, rimasta indietro dal primo lotto:
+il titolo lo passavano gia' tradotto i chiamanti, mancavano le stringhe
+interne). Confermato da Denis ("andiamo avanti con il prossimo lotto").
++68 chiavi (sectionTitle.social, blocchi social.* e chat.*), riuso di
+chiavi esistenti dove il testo coincideva. Scelte: le parti sincrone di
+#social (estratte in renderSocialStaticParts) si ridisegnano sempre al
+cambio lingua, il <select> recensioni (fa un fetch) solo se #social e' la
+sezione aperta - come renderCompletate al secondo lotto; chatpanel.js
+nessun onChange (il polling perderebbe lo scroll); data col mese in
+rigaInvitoSquadra col locale en-GB/it-IT. Sistemato un residuo del secondo
+lotto trovato nel file: tooltip "Esperto locale: <zona>" sugli avatar in
+buildHikeCard. Verificato con l'estensione Chrome (login demo Marco
+Alpinista, #social IT+EN con toggle avanti/indietro, modale "Invita a
+Gita" con date en-GB e plurali, chat squadra + chat escursione in EN,
+listener error piantato a mano: zero errori) + prova-configurazione (9/9),
+prova-passo-non-misurato (28/28), prova-invito-squadra (59/59, carica
+social.js in un contesto vm). Committato e pushato su richiesta esplicita
+di Denis (camoscio `9c079c1`, hook auto-save rifuso con --amend prima del
+push). LA VERIFICA DAL VIVO DI DENIS E' ANCORA DA FARE - per il quinto
+lotto, e resta in sospeso anche quella di terzo e quarto.
 
 Resta valido: hook "Stop" di auto-save (commit locale, MAI push) a fine di
 ogni risposta. Debito icona Bivacco Carlo Fusco (2645 m disegnati vs 2455 m
 del catalogo) sempre aperto, non urgente. PUNTO 106 (due fix responsive
 pre-esistenti di styles.css, giro a parte chiesto da Denis) ANCORA APERTO,
-non toccato in questa sessione - dettaglio in cose_da_fare.txt punto 106.
+non toccato - dettaglio in cose_da_fare.txt punto 106.
 
 >>> APERTO PER LA PROSSIMA SESSIONE, in quest'ordine se Denis non dice
 altro:
 
-1. Verifica dal vivo di Denis del QUARTO LOTTO (Sicurezza & Mesh, gia'
-   pushato). Se segnala qualcosa, correggere prima di procedere.
+1. Verifica dal vivo di Denis dei lotti TERZO, QUARTO e QUINTO del punto
+   102 (tutti gia' pushati). Se segnala qualcosa, correggere prima di
+   procedere.
 
-2. PUNTO 102, LOTTO SUCCESSIVO: SOCIALE (#social, social.js - il file JS
-   piu' grande del progetto, 106 KB, gia' toccato in parte al secondo
-   lotto per buildHikeCard) INSIEME a chatpanel.js (pannello chat
-   condiviso da pagina squadra e pagina escursione, rimasto indietro dal
-   primo lotto, da fare una volta sola - Denis ha gia' confermato di
-   includerlo qui). Da concordare con Denis prima di iniziare, non
-   proseguire da soli sull'ordine. Dopo Sociale, sempre da confermare
-   quando si arriva: Carpooling/Zaino, poi Moderazione, poi la Mappa - la
-   piu' grande -, infine il gate di login/registrazione e le pagine HTML
-   autonome.
+2. PUNTO 102, LOTTO SUCCESSIVO: CARPOOLING / ZAINO. Da concordare con
+   Denis prima di iniziare, non proseguire da soli sull'ordine. Dopo,
+   sempre da confermare quando si arriva: Moderazione, poi la Mappa - la
+   piu' grande e complessa -, infine il gate di login/registrazione e le
+   pagine HTML autonome (demo/conferma-email/reimposta-password). Non
+   riproporre "facciamolo tutto insieme": Denis vuole un pezzo alla volta
+   salvo un suo via libera esplicito per l'intero blocco.
 
 3. PUNTO 106 (giro a parte): due difetti responsive PRE-ESISTENTI trovati
    verificando il terzo lotto su mobile (non regressioni della traduzione,
