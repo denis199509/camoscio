@@ -10,6 +10,14 @@
 // leggendo sempre con box.querySelector(...) scoped al contenitore passato, mai
 // document.getElementById su una stringa fissa.
 
+// Rollout traduzione punto 102, quinto lotto (28/08/2026): stringhe interne della chat.
+// Il titolo lo passa gia' tradotto chi chiama render({title}) (squadPage.chatTitolo /
+// hikePage.chatTitolo, primo lotto). NESSUN onChange: il giro di polling perderebbe la
+// posizione di scroll se rilanciato, e i messaggi nuovi escono gia' nella lingua attiva
+// (residuo onesto gia' documentato per questa chat in 07-Trappole-Tecniche.md).
+// "var", non "const": vedi la nota in cima a i18n.js.
+var T = (window.CamoscioI18n && window.CamoscioI18n.t) || function () { return null; };
+
 let chatPollTimer = null;
 
 // { box: elemento dove disegnare, apiBase: es. '/api/squads/ID' o '/api/hikes/ID'
@@ -26,11 +34,11 @@ function renderChatPanel({ box, apiBase, title }) {
         <div class="chat-box">
             <h5><i data-lucide="message-square"></i> ${esc(title)}</h5>
             <div class="chat-messages">
-                <div class="message system">Caricamento messaggi...</div>
+                <div class="message system">${esc(T('chat.loading') || 'Caricamento messaggi...')}</div>
             </div>
             <form class="chat-send-form">
-                <input type="text" placeholder="Scrivi un messaggio..." required maxlength="1000">
-                <button type="submit" class="btn btn-sm btn-primary">Invia</button>
+                <input type="text" placeholder="${esc(T('chat.inputPlaceholder') || 'Scrivi un messaggio...')}" required maxlength="1000">
+                <button type="submit" class="btn btn-sm btn-primary">${esc(T('chat.send') || 'Invia')}</button>
             </form>
         </div>
     `;
@@ -74,11 +82,11 @@ function renderChatMessages(messages, log) {
     const wasAtBottom = (log.scrollHeight - log.scrollTop - log.clientHeight) < 40;
 
     if (messages.length === 0) {
-        log.innerHTML = `<div class="message system">Nessun messaggio, scrivi il primo.</div>`;
+        log.innerHTML = `<div class="message system">${esc(T('chat.empty') || 'Nessun messaggio, scrivi il primo.')}</div>`;
     } else {
         log.innerHTML = messages.map(m => {
             const mittente = db.users.find(u => u.id === m.senderId);
-            const nome = mittente ? esc(mittente.username) : "Utente";
+            const nome = mittente ? esc(mittente.username) : esc(T('common.utente') || "Utente");
             const isMine = m.senderId === db.currentUser.id;
             return `<div class="message ${isMine ? 'sent' : 'received'}">${isMine ? '' : `<b>${nome}:</b> `}${esc(m.text)}</div>`;
         }).join("");
@@ -104,11 +112,11 @@ async function sendChatMessage(box, apiBase) {
             await loadChatMessages(box, apiBase);
         } else {
             const err = await response.json().catch(() => ({}));
-            window.showToast(err.error || "Impossibile inviare il messaggio.", "error");
+            window.showToast(err.error || T('chat.errSend') || "Impossibile inviare il messaggio.", "error");
         }
     } catch (e) {
         console.error("Errore invio messaggio chat:", e);
-        window.showToast("Impossibile inviare il messaggio.", "error");
+        window.showToast(T('chat.errSend') || "Impossibile inviare il messaggio.", "error");
     }
 }
 

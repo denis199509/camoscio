@@ -687,7 +687,137 @@
                     'The real sending is done by the server, within a few minutes and regardless of this page. ' +
                     'If you’re the one reading this and you’re okay, check in right away to stop it. If you’re ' +
                     'reading this on someone else’s behalf, alert the contact above yourself.';
-            }
+            },
+
+            // ==================================================================
+            // Rollout punto 102, QUINTO lotto (28/08/2026): Sociale - la sezione
+            // #social (Tribu, Recensioni & Squadre) e le parti di social.js NON
+            // gia' tradotte al secondo lotto (buildHikeCard/escursioni/modali),
+            // PIU' chatpanel.js (chat condivisa da pagina squadra e pagina
+            // escursione, rimasta indietro dal primo lotto: i suoi chiamanti
+            // traducono gia' il titolo passato a render({title}), mancavano solo
+            // le stringhe interne). Confermato da Denis ("andiamo avanti con il
+            // prossimo lotto"), chatpanel.js gia' concordato per questo lotto.
+            //
+            // Scelte non ovvie:
+            // 1) Le parti SINCRONE di #social (elenco squadre proprie/altrui,
+            //    match obiettivi, riquadro "obiettivo attuale") si ridisegnano
+            //    SEMPRE al cambio lingua - dati gia' in CamoscioState, come
+            //    renderHikesList al secondo lotto. Il <select> delle recensioni
+            //    (populateReviewTargets, che fa un fetch a /api/reviews/gia-recensite)
+            //    si ridisegna solo se #social e' la sezione aperta - stesso schema
+            //    di renderCompletate (storico.js) al secondo lotto: nessun fetch a
+            //    vuoto per una pagina che non si sta guardando, ma nessuna stringa
+            //    nella lingua sbagliata quando la pagina e' davanti agli occhi.
+            // 2) chatpanel.js: nessun onChange. Il giro di polling perderebbe la
+            //    posizione di scroll (stessa lezione di refreshSquadHeaderAndMembers),
+            //    e i messaggi nuovi escono gia' nella lingua attiva.
+            // 3) Data col nome del mese in rigaInvitoSquadra (riquadro "Invita a
+            //    Gita"): locale 'en-GB'/'it-IT' come per le altre date estese.
+            // 4) sectionTitle.social ("Tribe, Reviews & Squads") diverso da
+            //    nav.social ("Tribe & Squads", piu' corto): il caso previsto dal
+            //    commento di nav.* - etichetta di menu piu' corta del titolo pagina.
+            // 5) Un residuo del secondo lotto corretto qui perche' trovato
+            //    lavorando nel file: il tooltip "Esperto locale: <zona>" sugli
+            //    avatar dei partecipanti in buildHikeCard, ora dietro T()
+            //    (riusa profile.espertoLocale del primo lotto). Il badge "Admin"
+            //    su squadpage.js resta invariato: e' gia' inglese, come "Carpooling".
+            'sectionTitle.social': 'Tribe, Reviews & Squads',
+
+            // --- #social: card "Le tue Squadre Ricorrenti" (HTML statico) ---
+            'social.squadsTitle': 'Your Recurring Squads',
+            'social.squadsDesc': 'If a group works well, save it as a fixed squad to create new hikes with one click, inviting everyone automatically.',
+            'social.createSquadBtn': 'Create New Squad',
+            'social.squadNameLabel': 'Squad Name:',
+            'social.squadNamePlaceholder': 'E.g. The Gran Sasso Chamois',
+            'social.addMembersLabel': 'Add members (search by username):',
+            'social.searchUserPlaceholder': 'Search by username...',
+            'social.selectedMembersLabel': 'Selected members:',
+            'social.createSquadConfirm': 'Create Squad',
+
+            // --- #social: card "Altre Squadre" ---
+            'social.otherSquadsTitle': 'Other Squads',
+            'social.otherSquadsDesc': "Other hikers' squads: ask to join, an admin just needs to confirm.",
+
+            // --- #social: card "Match su Obiettivi Comuni" ---
+            'social.goalsTitle': 'Match on Shared Goals',
+            'social.goalsDesc': 'Training for a big mountaineering goal in a few months? Find partners with the same goal to plan focused training hikes.',
+            'social.goalLabel': 'Your long-term mountaineering goal:',
+            'social.goalPlaceholder': 'E.g. Mont Blanc, Matterhorn, Gran Paradiso...',
+            'social.saveGoalBtn': 'Save Goal',
+            'social.compatibleTitle': 'Hikers with compatible goals:',
+
+            // --- #social: card "Recensioni Post-Escursione" ---
+            // reviewsDesc tiene i marcatori **...** identici all'italiano (quel
+            // testo non viene passato per un renderer markdown, gli asterischi si
+            // vedono cosi' come sono gia' oggi in italiano - non e' questo lotto a
+            // cambiarlo).
+            'social.reviewsTitle': 'Post-Hike Reviews (100% Anonymous)',
+            'social.reviewsDesc': 'To keep the group safe and trusting, mutual ratings are mandatory and **strictly anonymous** (scores are only aggregated, never shown individually).',
+            'social.whoToReviewLabel': 'Who do you want to review?',
+            'social.punctualityLabel': 'Punctuality (1-5):',
+            'social.equipmentLabel': 'Adequate Equipment (1-5):',
+            'social.respectLabel': 'Group/Environment Respect (1-5):',
+            'social.sendReviewBtn': 'Send Anonymous Review',
+
+            // --- #social: obiettivi di allenamento (social.js). currentGoal e
+            //     trainsFor sono etichette che precedono uno <strong> costruito in
+            //     JS con il testo (gia' escaped) dell'utente - solo l'etichetta. ---
+            'social.currentGoal': 'Your current goal:',
+            'social.enterGoalHint': 'Enter a goal to find training partners.',
+            'social.noSameGoal': 'No hiker has the same goal right now.',
+            'social.trainsFor': 'is training for:',
+            'social.inviteToSquad': 'Invite to Squad',
+
+            // --- #social: elenco squadre (social.js) ---
+            'social.noFixedSquad': 'No fixed squad created yet.',
+            'social.inviteToHike': 'Invite to Hike',
+            'social.memberBadge': 'Member',
+            'social.noOtherSquads': 'No other squads for now.',
+            'social.requestSent': 'Request sent',
+            'social.errRequestSend': 'Could not send the request.',
+            'social.removeFromSquadTitle': 'Remove from squad',
+            'social.noMembersYet': 'No members added yet (besides you).',
+
+            // --- #social: modale "Invita a Gita" (#invite-squad-modal + social.js) ---
+            'social.inviteModalPre': 'Invite',
+            'social.inviteModalPost': 'to a hike',
+            'social.inviteModalDesc': 'Choose the hike: members will be added as participants, or proposed to the organizer if the hike requires approval.',
+            'social.you': 'you',
+            'social.anotherUser': 'another user',
+            'social.noDate': 'date not set',
+            'social.needsApproval': 'Needs approval',
+            'social.allMembersInOrPending': 'All members are already joined or pending',
+            'social.allMembersIn': 'All members are already joined',
+            'social.toPropose': function (n) { return n + ' to propose'; },
+            'social.toAdd': function (n) { return n + (n === 1 ? ' member to add' : ' members to add'); },
+            'social.organizedBy': function (chi) { return 'Organized by ' + chi; },
+            'social.organizedByYou': 'Organized by you',
+            'social.youreJoining': "You're joining",
+            'social.noOpenHikeForInvite': function (squad) { return 'You have no open hike to invite "' + squad + '" to: completed hikes can no longer be changed. Create a new one from the Hikes section.'; },
+            'social.squadOrHikeGone': 'Squad or hike no longer available.',
+            'social.hikeNotAvailableInvite': function (titolo) { return '"' + titolo + '" is no longer available for an invite.'; },
+            'social.allAlreadyIn': function (squad, hike) { return 'All members of "' + squad + '" are already joined (or pending) on "' + hike + '".'; },
+            'social.errInviteSend': 'Could not send the invite.',
+            'social.squadAdded': function (squad, hike, n) { return '"' + squad + '" added to "' + hike + '": ' + n + (n === 1 ? ' new participant.' : ' new participants.'); },
+            'social.squadProposed': function (squad, hike, n) { return 'Request sent for ' + n + (n === 1 ? ' member' : ' members') + ' of "' + squad + '": they will join "' + hike + '" only if the organizer approves it.'; },
+
+            // --- #social: recensioni anonime (social.js) ---
+            'social.noPastSharedHikes': 'No past shared hikes to review',
+            'social.allReviewed': "You've already reviewed everyone from your completed hikes",
+            'social.reviewSent': 'Feedback sent! The review stays 100% anonymous in the system.',
+            'social.errReviewSend': 'Could not send the review.',
+
+            // ==================================================================
+            // chatpanel.js - chat condivisa pagina squadra / pagina escursione
+            // (punto 55). Il titolo lo passa gia' tradotto chi chiama render()
+            // (squadPage.chatTitolo / hikePage.chatTitolo, primo lotto). "Utente"
+            // riusa common.utente. Nessun onChange, vedi nota 2 sopra.
+            'chat.loading': 'Loading messages...',
+            'chat.inputPlaceholder': 'Write a message...',
+            'chat.send': 'Send',
+            'chat.empty': 'No messages yet, write the first one.',
+            'chat.errSend': 'Could not send the message.'
         }
     };
 

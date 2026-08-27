@@ -1416,43 +1416,43 @@
                         <div class="social-column">
                             <!-- Squadre Ricorrenti -->
                             <div class="glass-card squads-card">
-                                <h4><i data-lucide="users"></i> Le tue Squadre Ricorrenti</h4>
-                                <p class="small text-muted">Se un gruppo funziona bene, salvalo come squadra fissa per creare nuove escursioni con un clic, invitando tutti automaticamente.</p>
-                                
+                                <h4><i data-lucide="users"></i> <span data-i18n="social.squadsTitle">Le tue Squadre Ricorrenti</span></h4>
+                                <p class="small text-muted" data-i18n="social.squadsDesc">Se un gruppo funziona bene, salvalo come squadra fissa per creare nuove escursioni con un clic, invitando tutti automaticamente.</p>
+
                                 <div id="squads-list" class="squads-list">
                                     <!-- Renderizzato da JS -->
                                 </div>
 
-                                <button class="btn btn-primary btn-sm btn-block" id="btn-open-create-squad"><i data-lucide="plus"></i> Crea Nuova Squadra</button>
+                                <button class="btn btn-primary btn-sm btn-block" id="btn-open-create-squad"><i data-lucide="plus"></i> <span data-i18n="social.createSquadBtn">Crea Nuova Squadra</span></button>
                                 
                                 <div id="create-squad-form-box" class="create-squad-form-box hidden">
                                     <form id="create-squad-form">
                                         <div class="form-group">
-                                            <label for="squad-name">Nome Squadra:</label>
-                                            <input type="text" id="squad-name" placeholder="Es. I Camosci del Gran Sasso" required>
+                                            <label for="squad-name" data-i18n="social.squadNameLabel">Nome Squadra:</label>
+                                            <input type="text" id="squad-name" placeholder="Es. I Camosci del Gran Sasso" data-i18n-placeholder="social.squadNamePlaceholder" required>
                                         </div>
                                         <!-- Punto 75: ricerca invece di spuntare tutti gli iscritti al
                                              sito (problema di scala) - stesso schema gia' in uso per
                                              "Completa escursione" (complete-group-modal). -->
                                         <div class="form-group">
-                                            <label for="squad-create-search-input">Aggiungi membri (cerca per nome utente):</label>
+                                            <label for="squad-create-search-input" data-i18n="social.addMembersLabel">Aggiungi membri (cerca per nome utente):</label>
                                             <div class="trailhead-search-row">
                                                 <div class="trailhead-search-field">
                                                     <i data-lucide="search"></i>
-                                                    <input type="text" id="squad-create-search-input" autocomplete="off" maxlength="60" placeholder="Cerca per nome utente...">
+                                                    <input type="text" id="squad-create-search-input" autocomplete="off" maxlength="60" placeholder="Cerca per nome utente..." data-i18n-placeholder="social.searchUserPlaceholder">
                                                 </div>
                                             </div>
                                             <div id="squad-create-search-results" class="hike-carpools-list"></div>
                                         </div>
                                         <div class="form-group">
-                                            <label>Membri selezionati:</label>
+                                            <label data-i18n="social.selectedMembersLabel">Membri selezionati:</label>
                                             <div id="squad-create-selected-members" class="checkbox-group">
                                                 <!-- Popolato da JS -->
                                             </div>
                                         </div>
                                         <div class="form-row-buttons">
-                                            <button type="button" class="btn btn-secondary btn-sm" id="btn-close-squad-form">Annulla</button>
-                                            <button type="submit" class="btn btn-success btn-sm">Crea Squadra</button>
+                                            <button type="button" class="btn btn-secondary btn-sm" id="btn-close-squad-form" data-i18n="common.cancella">Annulla</button>
+                                            <button type="submit" class="btn btn-success btn-sm" data-i18n="social.createSquadConfirm">Crea Squadra</button>
                                         </div>
                                     </form>
                                 </div>
@@ -1463,8 +1463,8 @@
                                  le squadre al client, ma renderSquadsList() mostrava solo le
                                  proprie. Qui il tasto "Richiesta Partecipazione". -->
                             <div class="glass-card squads-card">
-                                <h4><i data-lucide="search"></i> Altre Squadre</h4>
-                                <p class="small text-muted">Squadre di altri escursionisti: richiedi di entrare, basta la conferma di un amministratore.</p>
+                                <h4><i data-lucide="search"></i> <span data-i18n="social.otherSquadsTitle">Altre Squadre</span></h4>
+                                <p class="small text-muted" data-i18n="social.otherSquadsDesc">Squadre di altri escursionisti: richiedi di entrare, basta la conferma di un amministratore.</p>
                                 <div id="other-squads-list" class="squads-list">
                                     <!-- Renderizzato da JS -->
                                 </div>
@@ -1472,15 +1472,15 @@
 
                             <!-- Obiettivi di Allenamento Comuni -->
                             <div class="glass-card training-goals-card">
-                                <h4><i data-lucide="target"></i> Match su Obiettivi Comuni</h4>
-                                <p class="small text-muted">Vuoi allenarti per un traguardo alpinistico importante tra qualche mese? Trova compagni con lo stesso obiettivo per programmare uscite di allenamento mirate.</p>
-                                
+                                <h4><i data-lucide="target"></i> <span data-i18n="social.goalsTitle">Match su Obiettivi Comuni</span></h4>
+                                <p class="small text-muted" data-i18n="social.goalsDesc">Vuoi allenarti per un traguardo alpinistico importante tra qualche mese? Trova compagni con lo stesso obiettivo per programmare uscite di allenamento mirate.</p>
+
                                 <form id="training-goal-form">
                                     <div class="form-group">
-                                        <label for="user-training-goal">Il tuo obiettivo alpinistico a lungo termine:</label>
+                                        <label for="user-training-goal" data-i18n="social.goalLabel">Il tuo obiettivo alpinistico a lungo termine:</label>
                                         <div class="input-with-btn">
-                                            <input type="text" id="user-training-goal" placeholder="Es. Monte Bianco, Cervino, Gran Paradiso..." required>
-                                            <button type="submit" class="btn btn-primary">Salva Obiettivo</button>
+                                            <input type="text" id="user-training-goal" placeholder="Es. Monte Bianco, Cervino, Gran Paradiso..." data-i18n-placeholder="social.goalPlaceholder" required>
+                                            <button type="submit" class="btn btn-primary" data-i18n="social.saveGoalBtn">Salva Obiettivo</button>
                                         </div>
                                     </div>
                                 </form>
@@ -1488,7 +1488,7 @@
                                 <div id="current-goal-display" class="current-goal-display hidden"></div>
 
                                 <div class="goal-matches-section">
-                                    <h5>Escursionisti con obiettivi compatibili:</h5>
+                                    <h5 data-i18n="social.compatibleTitle">Escursionisti con obiettivi compatibili:</h5>
                                     <div id="goal-matches-list" class="goal-matches-list">
                                         <!-- Renderizzato da JS -->
                                     </div>
@@ -1500,31 +1500,31 @@
                         <div class="social-column">
                             <!-- Recensioni Anonime Post-Escursione -->
                             <div class="glass-card review-card">
-                                <h4><i data-lucide="star"></i> Recensioni Post-Escursione (100% Anonime)</h4>
-                                <p class="small text-muted">Per garantire la sicurezza e la fiducia nel gruppo, le valutazioni reciproche sono obbligatorie e **rigorosamente anonime** (i voti vengono solo aggregati, mai mostrati singolarmente).</p>
-                                
+                                <h4><i data-lucide="star"></i> <span data-i18n="social.reviewsTitle">Recensioni Post-Escursione (100% Anonime)</span></h4>
+                                <p class="small text-muted" data-i18n="social.reviewsDesc">Per garantire la sicurezza e la fiducia nel gruppo, le valutazioni reciproche sono obbligatorie e **rigorosamente anonime** (i voti vengono solo aggregati, mai mostrati singolarmente).</p>
+
                                 <form id="peer-review-form">
                                     <div class="form-group">
-                                        <label for="review-target">Chi vuoi recensire?</label>
+                                        <label for="review-target" data-i18n="social.whoToReviewLabel">Chi vuoi recensire?</label>
                                         <select id="review-target" class="form-control" required>
                                             <!-- Popolato da JS con partecipanti delle escursioni passate -->
                                         </select>
                                     </div>
                                     <div class="form-row-ratings">
                                         <div class="rating-group">
-                                            <label for="rate-punctuality">Puntualità (1-5):</label>
+                                            <label for="rate-punctuality" data-i18n="social.punctualityLabel">Puntualità (1-5):</label>
                                             <input type="number" id="rate-punctuality" min="1" max="5" value="5" required>
                                         </div>
                                         <div class="rating-group">
-                                            <label for="rate-equipment">Attrezzatura Adeguata (1-5):</label>
+                                            <label for="rate-equipment" data-i18n="social.equipmentLabel">Attrezzatura Adeguata (1-5):</label>
                                             <input type="number" id="rate-equipment" min="1" max="5" value="5" required>
                                         </div>
                                         <div class="rating-group">
-                                            <label for="rate-respect">Rispetto Gruppo/Ambiente (1-5):</label>
+                                            <label for="rate-respect" data-i18n="social.respectLabel">Rispetto Gruppo/Ambiente (1-5):</label>
                                             <input type="number" id="rate-respect" min="1" max="5" value="5" required>
                                         </div>
                                     </div>
-                                    <button type="submit" class="btn btn-primary btn-block">Invia Recensione Anonima</button>
+                                    <button type="submit" class="btn btn-primary btn-block" data-i18n="social.sendReviewBtn">Invia Recensione Anonima</button>
                                 </form>
                             </div>
 
@@ -1980,10 +1980,10 @@
     <div id="invite-squad-modal" class="modal hidden">
         <div class="modal-content glass-card">
             <div class="modal-header">
-                <h4>Invita <span id="invite-squad-name"></span> a un'escursione</h4>
+                <h4><span data-i18n="social.inviteModalPre">Invita</span> <span id="invite-squad-name"></span> <span data-i18n="social.inviteModalPost">a un'escursione</span></h4>
                 <button class="close-modal-btn" id="btn-close-invite-squad-modal">&times;</button>
             </div>
-            <p class="small text-muted">Scegli l'escursione: i membri verranno aggiunti tra i partecipanti, o proposti all'organizzatore se l'escursione richiede approvazione.</p>
+            <p class="small text-muted" data-i18n="social.inviteModalDesc">Scegli l'escursione: i membri verranno aggiunti tra i partecipanti, o proposti all'organizzatore se l'escursione richiede approvazione.</p>
             <div id="invite-squad-hike-list" class="hike-carpools-list"></div>
         </div>
     </div>

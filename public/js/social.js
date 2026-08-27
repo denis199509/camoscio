@@ -295,6 +295,20 @@ function setupSocialEvents() {
 
 // Renderizza la UI del modulo social
 function renderSocialModule() {
+    renderSocialStaticParts();
+    // Il <select> delle recensioni fa un fetch (/api/reviews/gia-recensite): tenuto FUORI
+    // da renderSocialStaticParts perche' l'onChange del cambio lingua lo richiama solo se
+    // #social e' la sezione aperta (vedi in fondo al file), non a ogni toggle da un'altra
+    // pagina - stesso schema di renderCompletate al secondo lotto.
+    if (window.CamoscioState.currentUser) populateReviewTargets();
+}
+
+// Le parti di #social che disegnano SOLO da window.CamoscioState (nessun fetch):
+// elenco squadre proprie/altrui, match su obiettivi comuni, riquadro "obiettivo
+// attuale". Estratta da renderSocialModule per poter essere ridisegnata gratis al
+// cambio lingua, come renderHikesList al secondo lotto - un'unica copia, mai due che
+// possono divergere.
+function renderSocialStaticParts() {
     const db = window.CamoscioState;
     const usr = db.currentUser;
     if (!usr) return;
@@ -307,7 +321,7 @@ function renderSocialModule() {
     const goalDisplay = document.getElementById("current-goal-display");
     if (goalDisplay) {
         if (usr.trainingGoal) {
-            goalDisplay.innerHTML = `Il tuo obiettivo attuale: <strong style="color:var(--accent-orange)">${escapeHtml(usr.trainingGoal)}</strong>`;
+            goalDisplay.innerHTML = `${escapeHtml(T('social.currentGoal') || 'Il tuo obiettivo attuale:')} <strong style="color:var(--accent-orange)">${escapeHtml(usr.trainingGoal)}</strong>`;
             goalDisplay.classList.remove("hidden");
         } else {
             goalDisplay.classList.add("hidden");
@@ -320,9 +334,6 @@ function renderSocialModule() {
     // Disegna le squadre ricorrenti
     renderSquadsList();
     renderOtherSquadsList();
-
-    // Popola i target delle recensioni (altri utenti escluse se stessi)
-    populateReviewTargets();
 }
 
 // Disegna l'elenco delle escursioni filtrate, diviso in tre categorie (punto 69):
@@ -517,6 +528,20 @@ window.classificaMieEscursioni = classificaMieEscursioni;
 // di questa pagina - non un costo nuovo introdotto dal cambio lingua).
 if (window.CamoscioI18n) window.CamoscioI18n.onChange(renderHikesList);
 
+// Rollout punto 102, quinto lotto. Cambio lingua:
+//  - parti sincrone di #social (squadre, match obiettivi, riquadro "obiettivo
+//    attuale"): sempre, sono letture da CamoscioState, come renderHikesList sopra;
+//  - <select> recensioni (populateReviewTargets, che fa un fetch): solo se #social e'
+//    la sezione aperta - stesso schema di renderCompletate (storico.js) al secondo
+//    lotto, nessun fetch a vuoto per una pagina che non si sta guardando.
+if (window.CamoscioI18n) window.CamoscioI18n.onChange(function () {
+    renderSocialStaticParts();
+    const social = document.getElementById("social");
+    if (social && social.classList.contains("active") && window.CamoscioState.currentUser) {
+        populateReviewTargets();
+    }
+});
+
 // Costruisce la scheda di UNA escursione. Estratta da renderHikesList (punto 10 di
 // cose_da_fare.txt) per poterla riusare identica anche nella pagina "Le mie escursioni":
 // due elenchi che mostrano le stesse schede devono restare uguali da soli, senza doverle
@@ -644,7 +669,7 @@ function buildHikeCard(hike) {
         const pUser = db.users.find(u => u.id === pId);
         if (!pUser) return "";
         const isLocalExpert = pUser.localExpert && pUser.localExpert.active;
-        const expertTitlePart = isLocalExpert ? ` — Esperto locale: ${escapeHtml(pUser.localExpert.area)}` : "";
+        const expertTitlePart = isLocalExpert ? ` — ${T('profile.espertoLocale') || 'Esperto locale'}: ${escapeHtml(pUser.localExpert.area)}` : "";
         return `
             <div class="p-avatar ${isLocalExpert ? 'local-expert' : ''}" title="${escapeHtml(pUser.username)} (Rep: ${pUser.reputation}%)${expertTitlePart}" onclick="showUserProfile('${pId}')">
                 ${pUser.avatar}
@@ -1465,7 +1490,7 @@ function renderGoalMatches(currentUser) {
     const db = window.CamoscioState;
 
     if (!currentUser.trainingGoal) {
-        container.innerHTML = `<div class="text-muted small italic text-center py-2">Inserisci un obiettivo per trovare compagni di allenamento.</div>`;
+        container.innerHTML = `<div class="text-muted small italic text-center py-2">${escapeHtml(T('social.enterGoalHint') || 'Inserisci un obiettivo per trovare compagni di allenamento.')}</div>`;
         return;
     }
 
@@ -1476,7 +1501,7 @@ function renderGoalMatches(currentUser) {
     );
 
     if (matches.length === 0) {
-        container.innerHTML = `<div class="text-muted small italic text-center py-2">Nessun escursionista ha lo stesso obiettivo al momento.</div>`;
+        container.innerHTML = `<div class="text-muted small italic text-center py-2">${escapeHtml(T('social.noSameGoal') || 'Nessun escursionista ha lo stesso obiettivo al momento.')}</div>`;
         return;
     }
 
@@ -1484,8 +1509,8 @@ function renderGoalMatches(currentUser) {
         const item = document.createElement("div");
         item.className = "goal-match-item";
         item.innerHTML = `
-            <span>${m.avatar} <b>${escapeHtml(m.username)}</b> si allena per: <strong style="color:var(--accent-orange)">${escapeHtml(m.trainingGoal)}</strong></span>
-            <button class="btn btn-sm btn-secondary" onclick="inviteToSquadDirectly('${m.id}')">Invita in Squadra</button>
+            <span>${m.avatar} <b>${escapeHtml(m.username)}</b> ${escapeHtml(T('social.trainsFor') || 'si allena per:')} <strong style="color:var(--accent-orange)">${escapeHtml(m.trainingGoal)}</strong></span>
+            <button class="btn btn-sm btn-secondary" onclick="inviteToSquadDirectly('${m.id}')">${escapeHtml(T('social.inviteToSquad') || 'Invita in Squadra')}</button>
         `;
         container.appendChild(item);
     });
@@ -1516,7 +1541,7 @@ function renderSquadsList() {
     const mySquads = db.squads.filter(s => s.creatorId === currentUser.id || s.members.includes(currentUser.id));
 
     if (mySquads.length === 0) {
-        container.innerHTML = `<div class="text-muted small italic text-center py-2">Nessuna squadra fissa creata.</div>`;
+        container.innerHTML = `<div class="text-muted small italic text-center py-2">${escapeHtml(T('social.noFixedSquad') || 'Nessuna squadra fissa creata.')}</div>`;
         return;
     }
 
@@ -1534,9 +1559,9 @@ function renderSquadsList() {
         // dell'ESCURSIONE (aggiunta diretta se organizzo io, proposta in pendingApproval se
         // partecipo e basta), non il creatore della squadra. Prima chi era stato solo accettato
         // come membro non vedeva il bottone su nessuna escursione, nemmeno le proprie.
-        let actionBtn = `<button class="btn btn-sm btn-success" onclick="inviteSquadToHike('${squad.id}')">Invita a Gita</button>`;
+        let actionBtn = `<button class="btn btn-sm btn-success" onclick="inviteSquadToHike('${squad.id}')">${escapeHtml(T('social.inviteToHike') || 'Invita a Gita')}</button>`;
         if (squad.creatorId !== currentUser.id) {
-            actionBtn += ` <span class="badge badge-primary">Membro</span>`;
+            actionBtn += ` <span class="badge badge-primary">${escapeHtml(T('social.memberBadge') || 'Membro')}</span>`;
         }
 
         item.innerHTML = `
@@ -1569,7 +1594,7 @@ function renderOtherSquadsList() {
     );
 
     if (altreSquadre.length === 0) {
-        container.innerHTML = `<div class="text-muted small italic text-center py-2">Nessun'altra squadra per ora.</div>`;
+        container.innerHTML = `<div class="text-muted small italic text-center py-2">${escapeHtml(T('social.noOtherSquads') || "Nessun'altra squadra per ora.")}</div>`;
         return;
     }
 
@@ -1584,8 +1609,8 @@ function renderOtherSquadsList() {
 
         const giaRichiesta = (squad.pendingRequests || []).includes(currentUser.id);
         const actionBtn = giaRichiesta
-            ? `<span class="badge badge-primary">Richiesta inviata</span>`
-            : `<button class="btn btn-sm btn-secondary" onclick="requestJoinSquad('${squad.id}')">Richiesta Partecipazione</button>`;
+            ? `<span class="badge badge-primary">${escapeHtml(T('social.requestSent') || 'Richiesta inviata')}</span>`
+            : `<button class="btn btn-sm btn-secondary" onclick="requestJoinSquad('${squad.id}')">${escapeHtml(T('squadPage.richiediPartecipazione') || 'Richiesta Partecipazione')}</button>`;
 
         item.innerHTML = `
             <div class="squad-item-open" onclick="showSquadPage('${squad.id}')">
@@ -1610,14 +1635,14 @@ window.requestJoinSquad = async function(squadId) {
             if (window.updateLocalSquad) window.updateLocalSquad(squadAggiornata);
             renderOtherSquadsList();
             if (window.refreshSquadHeaderAndMembers) window.refreshSquadHeaderAndMembers(squadId);
-            window.showToast("Richiesta inviata: aspetta la conferma di un amministratore.", "success");
+            window.showToast(T('squadPage.richiestaInviata') || "Richiesta inviata: aspetta la conferma di un amministratore.", "success");
         } else {
             const err = await response.json().catch(() => ({}));
-            window.showToast(err.error || "Impossibile inviare la richiesta.", "error");
+            window.showToast(err.error || T('social.errRequestSend') || "Impossibile inviare la richiesta.", "error");
         }
     } catch (e) {
         console.error("Errore richiesta di partecipazione squadra:", e);
-        window.showToast("Impossibile inviare la richiesta.", "error");
+        window.showToast(T('social.errRequestSend') || "Impossibile inviare la richiesta.", "error");
     }
 };
 
@@ -1645,11 +1670,11 @@ function renderSquadCreateSelectedMembers() {
         return `
             <label>
                 <span>${u.avatar} ${escapeHtml(u.username)}</span>
-                <button type="button" class="btn-inline-remove" onclick="removeFromSquadCreate('${id}')" title="Togli dalla squadra">&times;</button>
+                <button type="button" class="btn-inline-remove" onclick="removeFromSquadCreate('${id}')" title="${escapeHtml(T('social.removeFromSquadTitle') || 'Togli dalla squadra')}">&times;</button>
             </label>
         `;
     }).join("");
-    container.innerHTML = righe || `<p class="small text-muted">Nessun membro aggiunto ancora (oltre a te).</p>`;
+    container.innerHTML = righe || `<p class="small text-muted">${escapeHtml(T('social.noMembersYet') || 'Nessun membro aggiunto ancora (oltre a te).')}</p>`;
 }
 
 window.removeFromSquadCreate = function(userId) {
@@ -1681,7 +1706,7 @@ function renderSquadCreateSearch() {
     const trovati = db.users.filter(u => !giaPresenti.has(u.id) && (u.username || "").toLowerCase().includes(query));
 
     if (!trovati.length) {
-        results.innerHTML = `<p class="small text-muted">Nessuna persona trovata.</p>`;
+        results.innerHTML = `<p class="small text-muted">${escapeHtml(T('peopleSearch.nessunRisultato') || 'Nessuna persona trovata.')}</p>`;
         return;
     }
 
@@ -1693,7 +1718,7 @@ function renderSquadCreateSearch() {
                 <div class="p-avatar">${u.avatar}</div>
                 <b>${escapeHtml(u.username)}</b>
             </div>
-            <button type="button" class="btn btn-sm btn-secondary" onclick="addToSquadCreate('${u.id}')">Aggiungi</button>
+            <button type="button" class="btn btn-sm btn-secondary" onclick="addToSquadCreate('${u.id}')">${escapeHtml(T('completeGroupModal.aggiungiBtn') || 'Aggiungi')}</button>
         `;
         results.appendChild(row);
     });
@@ -1774,29 +1799,33 @@ function rigaInvitoSquadra(hike, squad, me) {
     const daAggiungere = squad.members.filter(id => !giaDentro.has(id));
     const inAttesa = squad.members.some(id => (hike.pendingApproval || []).includes(id));
 
-    const organizzatore = isCreatorMe ? "te" : (() => {
+    const organizzatore = isCreatorMe ? (T('social.you') || 'te') : (() => {
         const u = db.users.find(u => u.id === hike.creatorId);
-        return escapeHtml(u ? u.username : "un altro utente");
+        return escapeHtml(u ? u.username : (T('social.anotherUser') || 'un altro utente'));
     })();
     // hike.date non e' required nello schema (models/Hike.js) - senza guardia un'escursione
     // senza data darebbe "Invalid Date" nel riquadro invece di dire semplicemente che manca.
+    // Locale della data col mese esteso scelto per lingua, come formattaDataItaliana (primo lotto).
+    const dateLocale = (window.CamoscioI18n && window.CamoscioI18n.getLang() === 'en') ? 'en-GB' : 'it-IT';
     const dataFmt = hike.date
-        ? new Date(hike.date + 'T12:00:00').toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })
-        : 'data non indicata';
-    const badge = richiedeApprovazione ? ` <span class="badge badge-primary">Richiede approvazione</span>` : "";
+        ? new Date(hike.date + 'T12:00:00').toLocaleDateString(dateLocale, { day: 'numeric', month: 'long', year: 'numeric' })
+        : (T('social.noDate') || 'data non indicata');
+    const badge = richiedeApprovazione ? ` <span class="badge badge-primary">${escapeHtml(T('social.needsApproval') || 'Richiede approvazione')}</span>` : "";
 
     const disabilitata = daAggiungere.length === 0;
     const contatore = disabilitata
-        ? (inAttesa ? "Tutti i membri sono già iscritti o in attesa" : "Tutti i membri sono già iscritti")
+        ? (inAttesa
+            ? (T('social.allMembersInOrPending') || "Tutti i membri sono già iscritti o in attesa")
+            : (T('social.allMembersIn') || "Tutti i membri sono già iscritti"))
         : (richiedeApprovazione
-            ? `${daAggiungere.length} da proporre`
-            : `${daAggiungere.length} ${daAggiungere.length === 1 ? 'membro da aggiungere' : 'membri da aggiungere'}`);
+            ? (T('social.toPropose', daAggiungere.length) || `${daAggiungere.length} da proporre`)
+            : (T('social.toAdd', daAggiungere.length) || `${daAggiungere.length} ${daAggiungere.length === 1 ? 'membro da aggiungere' : 'membri da aggiungere'}`));
 
     return `
         <div class="carpool-group-item" style="display:flex; justify-content:space-between; align-items:center; gap:12px; ${disabilitata ? 'opacity:0.6;' : 'cursor:pointer;'}" ${disabilitata ? '' : `onclick="confermaInvitoSquadra('${hike.id}')"`}>
             <div>
                 <b>${escapeHtml(hike.title)}</b> · ${dataFmt}<br>
-                <span class="small text-muted">Organizzata da ${organizzatore}${badge}</span>
+                <span class="small text-muted">${T('social.organizedBy', organizzatore) || `Organizzata da ${organizzatore}`}${badge}</span>
             </div>
             <span class="small ${richiedeApprovazione && !disabilitata ? 'text-warning' : 'text-muted'}">${contatore}</span>
         </div>
@@ -1818,7 +1847,7 @@ function renderInviteSquadHikeList() {
     if (candidate.length === 0) {
         const nomeSquadra = squad.name;
         closeInviteSquadModal();
-        window.showAlertModal(`Non hai nessuna escursione aperta a cui invitare "${nomeSquadra}": le escursioni già completate non si possono più modificare. Creane una nuova dalla sezione Escursioni.`);
+        window.showAlertModal(T('social.noOpenHikeForInvite', nomeSquadra) || `Non hai nessuna escursione aperta a cui invitare "${nomeSquadra}": le escursioni già completate non si possono più modificare. Creane una nuova dalla sezione Escursioni.`);
         return false;
     }
 
@@ -1831,11 +1860,11 @@ function renderInviteSquadHikeList() {
 
     let html = "";
     if (mie.length) {
-        html += `<div class="small font-bold text-muted">Organizzate da te</div>`;
+        html += `<div class="small font-bold text-muted">${escapeHtml(T('social.organizedByYou') || 'Organizzate da te')}</div>`;
         html += mie.map(h => rigaInvitoSquadra(h, squad, me)).join("");
     }
     if (altrui.length) {
-        html += `<div class="small font-bold text-muted" style="margin-top:8px;">A cui partecipi</div>`;
+        html += `<div class="small font-bold text-muted" style="margin-top:8px;">${escapeHtml(T('social.youreJoining') || 'A cui partecipi')}</div>`;
         html += altrui.map(h => rigaInvitoSquadra(h, squad, me)).join("");
     }
     box.innerHTML = html;
@@ -1860,7 +1889,7 @@ window.confermaInvitoSquadra = async function(hikeId) {
     const squad = db.squads.find(s => s.id === squadIdAlMomento);
     const hike = db.hikes.find(h => h.id === hikeId);
     if (!squad || !hike) {
-        window.showToast("Squadra o escursione non più disponibile.", "error");
+        window.showToast(T('social.squadOrHikeGone') || "Squadra o escursione non più disponibile.", "error");
         closeInviteSquadModal();
         return;
     }
@@ -1871,7 +1900,7 @@ window.confermaInvitoSquadra = async function(hikeId) {
     const me = db.currentUser.id;
     const ancoraValida = mieEscursioniAperte().some(h => h.id === hikeId);
     if (!ancoraValida) {
-        window.showToast(`"${hike.title}" non è più disponibile per un invito.`, "error");
+        window.showToast(T('social.hikeNotAvailableInvite', hike.title) || `"${hike.title}" non è più disponibile per un invito.`, "error");
         renderInviteSquadHikeList();
         return;
     }
@@ -1886,7 +1915,7 @@ window.confermaInvitoSquadra = async function(hikeId) {
     const daAggiungere = squad.members.filter(id => !giaDentro.has(id));
 
     if (daAggiungere.length === 0) {
-        window.showToast(`Tutti i membri di "${squad.name}" sono già iscritti (o in attesa) su "${hike.title}".`, "info");
+        window.showToast(T('social.allAlreadyIn', squad.name, hike.title) || `Tutti i membri di "${squad.name}" sono già iscritti (o in attesa) su "${hike.title}".`, "info");
         closeInviteSquadModal();
         return;
     }
@@ -1905,7 +1934,7 @@ window.confermaInvitoSquadra = async function(hikeId) {
 
         if (!response.ok) {
             const body = await response.json().catch(() => ({}));
-            window.showToast(body.error || "Non è stato possibile inviare l'invito.", "error");
+            window.showToast(body.error || T('social.errInviteSend') || "Non è stato possibile inviare l'invito.", "error");
             await refreshState();
             renderInviteSquadHikeList();
             return;
@@ -1917,8 +1946,8 @@ window.confermaInvitoSquadra = async function(hikeId) {
         // Mai la parola "invitata" nel caso proposta, e "solo se" non "solo quando": "quando"
         // darebbe per scontata un'approvazione che potrebbe non arrivare.
         const messaggio = campo === 'participants'
-            ? `"${squad.name}" aggiunta a "${hike.title}": ${n} ${n === 1 ? 'nuovo partecipante' : 'nuovi partecipanti'}.`
-            : `Richiesta inviata per ${n} ${n === 1 ? 'membro' : 'membri'} di "${squad.name}": ${n === 1 ? 'entrerà' : 'entreranno'} in "${hike.title}" solo se l'organizzatore la approva.`;
+            ? (T('social.squadAdded', squad.name, hike.title, n) || `"${squad.name}" aggiunta a "${hike.title}": ${n} ${n === 1 ? 'nuovo partecipante' : 'nuovi partecipanti'}.`)
+            : (T('social.squadProposed', squad.name, hike.title, n) || `Richiesta inviata per ${n} ${n === 1 ? 'membro' : 'membri'} di "${squad.name}": ${n === 1 ? 'entrerà' : 'entreranno'} in "${hike.title}" solo se l'organizzatore la approva.`);
         window.showToast(messaggio, "success");
 
         closeInviteSquadModal();
@@ -1926,7 +1955,7 @@ window.confermaInvitoSquadra = async function(hikeId) {
         renderHikesList();
     } catch (e) {
         console.error("Errore invito squadra:", e);
-        window.showToast("Non è stato possibile inviare l'invito.", "error");
+        window.showToast(T('social.errInviteSend') || "Non è stato possibile inviare l'invito.", "error");
     }
     } finally {
         invitoInCorso = false;
@@ -1971,12 +2000,12 @@ async function populateReviewTargets() {
     });
 
     if (options.length === 0) {
-        select.innerHTML = `<option value="" disabled selected>Nessuna escursione passata condivisa da recensire</option>`;
+        select.innerHTML = `<option value="" disabled selected>${escapeHtml(T('social.noPastSharedHikes') || 'Nessuna escursione passata condivisa da recensire')}</option>`;
         return;
     }
 
     const generazione = ++generazioneTendinaRecensioni;
-    select.innerHTML = `<option value="" disabled selected>Caricamento...</option>`;
+    select.innerHTML = `<option value="" disabled selected>${escapeHtml(T('profile.caricamento') || 'Caricamento...')}</option>`;
 
     // Punto 98/B: senza questo filtro una coppia gia' recensita restava per sempre
     // selezionabile - il server la rifiuta (409), ma l'utente non lo sapeva finche' non
@@ -2007,8 +2036,8 @@ async function populateReviewTargets() {
 
     if (disponibili.length === 0) {
         select.innerHTML = options.length === 0
-            ? `<option value="" disabled selected>Nessuna escursione passata condivisa da recensire</option>`
-            : `<option value="" disabled selected>Hai già recensito tutti i compagni delle tue escursioni concluse</option>`;
+            ? `<option value="" disabled selected>${escapeHtml(T('social.noPastSharedHikes') || 'Nessuna escursione passata condivisa da recensire')}</option>`
+            : `<option value="" disabled selected>${escapeHtml(T('social.allReviewed') || 'Hai già recensito tutti i compagni delle tue escursioni concluse')}</option>`;
         return;
     }
 
@@ -2042,14 +2071,14 @@ async function submitAnonymousReview() {
         });
 
         if (response.ok) {
-            window.showToast("Feedback inviato con successo! La recensione rimarrà al 100% anonima nel sistema.", "success");
+            window.showToast(T('social.reviewSent') || "Feedback inviato con successo! La recensione rimarrà al 100% anonima nel sistema.", "success");
             document.getElementById("peer-review-form").reset();
 
             await refreshState();
             renderSocialModule();
         } else {
             const err = await response.json();
-            window.showToast(err.error || "Non è stato possibile inviare la recensione.", "error");
+            window.showToast(err.error || T('social.errReviewSend') || "Non è stato possibile inviare la recensione.", "error");
         }
     } catch(e) {
         console.error("Errore invio recensione:", e);
