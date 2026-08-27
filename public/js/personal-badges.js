@@ -55,6 +55,11 @@
             icon: "sheldon-mishka.png",
             titolo: "Il Passeggero del Rottweiler",
             descrizione: "Non viene in montagna, è il cane che lo porta."
+        },
+        "6a880bb1501b7d0f6026fea8": { // gabriele183
+            icon: "gabriele183-mare.png",
+            titolo: "Il mare lo vede dai 2000 m.",
+            descrizione: "Vive a due passi dalla spiaggia, ma considera l'acqua salata un bell'elemento decorativo da osservare esclusivamente con il cannocchiale e le scarpe da trekking ai piedi."
         }
     };
 
