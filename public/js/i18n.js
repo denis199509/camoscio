@@ -563,7 +563,131 @@
             // Etichetta generica riusata da #my-profile (bottone "Salva" del
             // modulo esperto locale) - come common.elimina/cancella dei lotti
             // precedenti, sta qui per essere riusabile dai lotti futuri.
-            'common.salva': 'Save'
+            'common.salva': 'Save',
+
+            // ==================================================================
+            // Rollout punto 102, QUARTO lotto (27/08/2026): Sicurezza & Mesh -
+            // l'INTERA funzione di safety.js, confermato da Denis ("tutta la
+            // funzione safety.js"): la sezione #safety (simulatore mesh, radar,
+            // chat mesh, registro avvisi), la fascia #emergency-banner in cima a
+            // ogni pagina, e il form Dead Man's Switch + tasto SOS 112 che dal
+            // punto 17 vivono nella barra laterale della Mappa (NON il resto
+            // della sezione Mappa - livelli, progetta percorso, meteo,
+            // tracciamento - che resta al lotto Mappa).
+            //
+            // Scelte non ovvie di questo lotto:
+            // 1) Registro avvisi (#sms-log-entries) e chat mesh (#mesh-messages-log)
+            //    NON si ridisegnano al cambio lingua: sono la cronologia di
+            //    eventi di una sessione, le voci nuove escono gia' nella lingua
+            //    attiva al momento dell'evento - stesso residuo onesto scelto
+            //    per chatpanel.js (07-Trappole-Tecniche.md). I loro segnaposto
+            //    di stato vuoto sono testo statico e si traducono.
+            // 2) Il menu "chi avvisare" e il suo hint SI ridisegnano (safety.js
+            //    -> onChange): dati gia' in CamoscioState, nessun fetch, nessun
+            //    flicker. Le opzioni restano "Nome (relazione)" - dato utente.
+            // 3) Il testo auto del tasto SOS mesh (safety.mesh.sosText) viene
+            //    trasmesso via WebSocket agli altri client e mostrato come
+            //    arriva: chi lo manda lo vede nella propria lingua, chi lo
+            //    riceve nella lingua di chi l'ha mandato - stessa scelta gia'
+            //    fatta per notifyParticipantDecision (secondo lotto).
+            // 4) Orario nel registro avvisi (toLocaleTimeString): locale
+            //    'en-GB'/'it-IT' come per le date col nome del mese.
+            'sectionTitle.safety': 'Safety & Mesh Simulator',
+
+            // --- Fascia rossa #emergency-banner (globale). data-i18n-html: dentro
+            //     c'e' <span id="emergency-banner-timer"> che safety.js aggiorna
+            //     ogni secondo. Un cambio lingua a timer attivo lo rimette a
+            //     "00:00" per <1s (il countdown lo riscrive subito) - caso raro,
+            //     costo accettato per non spezzare il testo attorno al segnaposto.
+            'safety.banner.testo': '<strong>DEAD MAN\'S SWITCH ACTIVE:</strong> <span id="emergency-banner-timer">00:00</span> left until your estimated return. Check in to turn it off.',
+            'safety.banner.checkin': 'Safe check-in',
+
+            // --- Sezione #safety: card "Timer di Sicurezza" (rimando alla Mappa) ---
+            'safety.sez.timerTitolo': 'Safety Timer',
+            'safety.sez.timerDesc': 'The Dead Man\'s Switch is set from the <strong>Map &amp; Trails</strong> section, next to the SOS button: you need it while you\'re on the move, not sitting still.',
+            'safety.sez.vaiAllaMappa': 'Go to the Map',
+            'safety.sez.registroTitolo': 'Emergency alerts log (simulated)',
+            'safety.sez.registroVuoto': 'No messages sent. The system is in a safe state.',
+
+            // --- Sezione #safety: Simulatore Mesh Networking ---
+            'safety.sez.meshTitolo': 'Mesh Networking Simulator (Offline Link)',
+            'safety.sez.meshDesc': 'When there\'s no signal, the app builds a Wi-Fi Direct/Bluetooth network between nearby devices (50-100m) to exchange messages and positions in real time.',
+            'safety.mesh.statoAttivo': 'Active (Connected to Mesh Server)',
+            'safety.mesh.statoOffline': 'Offline (Trying to reconnect...)',
+            'safety.mesh.legendaTu': 'You',
+            'safety.mesh.legendaCompagno': 'Peer on the Network',
+            'safety.mesh.canaleTitolo': 'Local Mesh SOS Channel (100m Range)',
+            'safety.mesh.inAttesa': 'Waiting for network traffic... Open the app in several browser tabs as different users to test the mesh in real time!',
+            'safety.mesh.inputPlaceholder': 'Write a message or SOS...',
+            'safety.mesh.invia': 'Send',
+            'safety.mesh.sosText': 'SOS! IMMEDIATE ASSISTANCE NEEDED / ACCIDENT ON THE TRAIL!',
+
+            // --- Tasto SOS 112 (barra laterale Mappa, safety.js -> chiamaSos) ---
+            'safety.sos.btnTitle': 'Call the 112 emergency number',
+            'safety.sos.staiPerChiamare': 'You\'re about to call 112, the single emergency number.',
+            'safety.sos.leggiCoordinate': 'READ THESE COORDINATES TO THE OPERATOR:',
+            'safety.sos.rilevata': function (quando, metri) { return '(detected ' + quando + ', accurate to within ' + metri + ' meters)'; },
+            'safety.sos.nonHoPosizione': 'I DON\'T HAVE YOUR POSITION.',
+            'safety.sos.senzaPosizione1': 'If you have a moment: close this, press "Where am I" at the top right of the map and try again. Knowing where you are is the first thing they\'ll ask.',
+            'safety.sos.senzaPosizione2': 'If there\'s no time, call anyway and describe out loud where you are.',
+            'safety.sos.notaTecnica': 'The site only opens the phone with the number ready: you make the call. If there\'s no signal and your phone has satellite SOS, it\'s the phone that uses it — not this site.',
+            'safety.sos.chiama112': 'Call 112',
+
+            // --- daQuantoInParole (safety.js): usata nei testi SOS e allarme ---
+            'safety.tempo.adesso': 'just now',
+            'safety.tempo.minutiFa': function (n) { return n + (n === 1 ? ' minute ago' : ' minutes ago'); },
+            'safety.tempo.oreFa': function (n) { return n + (n === 1 ? ' hour ago' : ' hours ago'); },
+
+            // --- Form Dead Man's Switch (barra laterale Mappa): testo statico HTML ---
+            'safety.dms.titolo': 'Safety Timer (Dead Man\'s Switch)',
+            'safety.dms.desc': 'Set the time you expect to be back. If you don\'t check in by then, an alert goes out to your emergency contact.',
+            'safety.dms.chiAvvisare': 'Who to alert:',
+            'safety.dms.nome': 'Name',
+            'safety.dms.nomePlaceholder': 'E.g. Anna',
+            'safety.dms.chiE': 'Relationship',
+            'safety.dms.chiEPlaceholder': 'E.g. sister',
+            'safety.dms.email': 'Email',
+            'safety.dms.emailPlaceholder': 'Used to send them the alert',
+            'safety.dms.salvaContatto': 'Save contact',
+            'safety.dms.salvataggio': 'Saving…',
+            'safety.dms.aggiungiContatto': 'Add a contact',
+            'safety.dms.fraQuanteOre': 'In how many hours you\'ll be back:',
+            'safety.dms.oppureCheOra': 'Or at what time:',
+            'safety.dms.attiva': 'Start the timer',
+            'safety.dms.disattiva': 'I\'m safe (turn off)',
+            'safety.dms.notaOnesta': 'The alert really works, even with the phone off or the page closed: if the timer runs out, within a few minutes a real email goes to the chosen contact. It\'s still not your only safety net: always tell someone where you\'re going.',
+
+            // --- Form Dead Man's Switch: testo generato da JS (safety.js) ---
+            'safety.dms.hintContatto': function (nome, email) { return 'When the timer runs out, the alert would go to ' + nome + '’s email (' + email + ').'; },
+            'safety.dms.nessunContattoSalvato': 'No saved contact',
+            'safety.dms.nessunContattoEmail': 'No contact with an email',
+            'safety.dms.avvisoNessunContatto': 'You have no emergency contact: without one, the timer would have nobody to alert. Add one below.',
+            'safety.dms.avvisoNessunaEmail': 'Your saved contacts have no email, which is needed to send the real alert: add a new one below.',
+            'safety.dms.scegliContatto': 'Choose who to alert before starting the timer.',
+            'safety.dms.campiObbligatori': 'All three fields are needed: name, relationship and email.',
+            'safety.dms.emailNonValida': 'That email doesn\'t look valid.',
+            'safety.dms.contattoSalvato': 'Emergency contact saved.',
+            'safety.dms.erroreContatto': 'I couldn\'t save the contact. Try again.',
+            'safety.dms.timerLocaleNonServer': 'The timer is active on this phone, but I couldn\'t notify the server: if you close the page the automatic alert might not go out. Try again when you have signal.',
+            'safety.dms.checkinNonServer': 'I couldn\'t tell the server you\'re safe. Your emergency contact might still get an alert when the time runs out. Try again as soon as you have signal, or reach out to them directly yourself.',
+
+            // --- Registro avvisi (logSimulatedSms) e allarme scaduto (safety.js) ---
+            'safety.log.sistema': '[SYSTEM]',
+            'safety.log.timerAttivato': function (ora, nome) { return 'Timer started. Expected return: ' + ora + '. To alert: ' + nome + '.'; },
+            'safety.log.checkinOk': 'Check-in completed successfully. Device deactivated. Safe Station.',
+            'safety.log.sosLine': function (a, m) { return 'To: ' + a + ' - MSG: ' + m; },
+            'safety.alarm.nessunContatto': 'no saved contact',
+            'safety.alarm.posRilevata': function (lat, lng, quando) { return lat + ', ' + lng + ' (detected ' + quando + ')'; },
+            'safety.alarm.posSconosciuta': 'unknown - the GPS never provided a position',
+            'safety.alarm.msg': function (posizione) { return 'The hiker did not return by the expected time. Last known position: ' + posizione + '.'; },
+            'safety.alarm.modal': function (msg, aChi) {
+                return '⏰ TIME IS UP\n\n' + msg + '\n\n' +
+                    'You should have alerted: ' + aChi + '\n\n' +
+                    'This on-screen warning doesn’t send anything by itself: it’s only here, on this phone. ' +
+                    'The real sending is done by the server, within a few minutes and regardless of this page. ' +
+                    'If you’re the one reading this and you’re okay, check in right away to stop it. If you’re ' +
+                    'reading this on someone else’s behalf, alert the contact above yourself.';
+            }
         }
     };
 

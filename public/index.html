@@ -433,8 +433,8 @@
             <div id="emergency-banner" class="emergency-banner hidden">
                 <div class="emergency-banner-content">
                     <i data-lucide="alert-triangle" class="blink"></i>
-                    <span><strong>DEAD MAN'S SWITCH ATTIVO:</strong> Mancano <span id="emergency-banner-timer">00:00</span> al rientro stimato. Fai il check-in per disattivarlo.</span>
-                    <button class="btn btn-sm btn-danger" id="btn-banner-checkin">Check-in Sicuro</button>
+                    <span data-i18n-html="safety.banner.testo"><strong>DEAD MAN'S SWITCH ATTIVO:</strong> Mancano <span id="emergency-banner-timer">00:00</span> al rientro stimato. Fai il check-in per disattivarlo.</span>
+                    <button class="btn btn-sm btn-danger" id="btn-banner-checkin" data-i18n="safety.banner.checkin">Check-in Sicuro</button>
                 </div>
             </div>
 
@@ -824,7 +824,7 @@
                                  al centralino, che in montagna e' la cosa piu' utile da dire. Fa
                                  anche da conferma contro il tocco involontario. -->
                             <button type="button" class="map-sos-btn" id="btn-sos-112"
-                                title="Chiama il numero unico di emergenza 112">
+                                title="Chiama il numero unico di emergenza 112" data-i18n-title="safety.sos.btnTitle">
                                 <i data-lucide="phone-call"></i> SOS 112
                             </button>
                             <!-- Punto 26: e' il tasto che si preme aspettandosi di vedere "dove sono",
@@ -909,8 +909,8 @@
                                  Ne esiste una copia sola: averlo in tre schermate avrebbe voluto
                                  dire tre stati da tenere allineati a mano. -->
                             <div class="glass-card dead-man-card">
-                                <h4><i data-lucide="heart-pulse"></i> Timer di Sicurezza (Dead Man's Switch)</h4>
-                                <p class="small text-muted">Imposta l'orario in cui pensi di essere rientrato. Se non fai il check-in entro quell'ora, scatta l'allarme verso il tuo contatto di emergenza.</p>
+                                <h4><i data-lucide="heart-pulse"></i> <span data-i18n="safety.dms.titolo">Timer di Sicurezza (Dead Man's Switch)</span></h4>
+                                <p class="small text-muted" data-i18n="safety.dms.desc">Imposta l'orario in cui pensi di essere rientrato. Se non fai il check-in entro quell'ora, scatta l'allarme verso il tuo contatto di emergenza.</p>
 
                                 <!-- Punto 21 di cose_da_fare.txt: qui c'era una casella di testo
                                      libera, con dentro un numero di esempio scritto a mano, e il
@@ -919,7 +919,7 @@
                                      registrazione e stanno gia' sul database (Fase C): si scelgono
                                      da li'. Riempita da popolaContattiEmergenza() in safety.js. -->
                                 <div class="form-group">
-                                    <label for="safety-contact">Chi avvisare:</label>
+                                    <label for="safety-contact" data-i18n="safety.dms.chiAvvisare">Chi avvisare:</label>
                                     <select id="safety-contact"></select>
                                     <p class="small text-muted" id="safety-contact-hint"></p>
                                 </div>
@@ -935,31 +935,31 @@
                                 <div id="safety-add-contact" class="safety-add-contact hidden">
                                     <div class="form-row">
                                         <div class="form-group">
-                                            <label for="safety-new-name">Nome</label>
-                                            <input type="text" id="safety-new-name" maxlength="60" placeholder="Es. Anna">
+                                            <label for="safety-new-name" data-i18n="safety.dms.nome">Nome</label>
+                                            <input type="text" id="safety-new-name" maxlength="60" placeholder="Es. Anna" data-i18n-placeholder="safety.dms.nomePlaceholder">
                                         </div>
                                         <div class="form-group">
-                                            <label for="safety-new-rel">Chi è</label>
-                                            <input type="text" id="safety-new-rel" maxlength="40" placeholder="Es. sorella">
+                                            <label for="safety-new-rel" data-i18n="safety.dms.chiE">Chi è</label>
+                                            <input type="text" id="safety-new-rel" maxlength="40" placeholder="Es. sorella" data-i18n-placeholder="safety.dms.chiEPlaceholder">
                                         </div>
                                     </div>
                                     <div class="form-group">
-                                        <label for="safety-new-email">Email</label>
-                                        <input type="email" id="safety-new-email" maxlength="120" placeholder="Serve per mandargli l'allarme">
+                                        <label for="safety-new-email" data-i18n="safety.dms.email">Email</label>
+                                        <input type="email" id="safety-new-email" maxlength="120" placeholder="Serve per mandargli l'allarme" data-i18n-placeholder="safety.dms.emailPlaceholder">
                                     </div>
-                                    <button type="button" class="btn btn-secondary btn-sm btn-block" id="btn-save-emergency-contact">Salva il contatto</button>
+                                    <button type="button" class="btn btn-secondary btn-sm btn-block" id="btn-save-emergency-contact" data-i18n="safety.dms.salvaContatto">Salva il contatto</button>
                                 </div>
                                 <button type="button" class="btn btn-sm btn-secondary btn-block" id="btn-toggle-add-contact">
-                                    <i data-lucide="user-plus"></i> Aggiungi un contatto
+                                    <i data-lucide="user-plus"></i> <span data-i18n="safety.dms.aggiungiContatto">Aggiungi un contatto</span>
                                 </button>
 
                                 <div class="form-row">
                                     <div class="form-group">
-                                        <label for="safety-duration">Fra quante ore rientri:</label>
+                                        <label for="safety-duration" data-i18n="safety.dms.fraQuanteOre">Fra quante ore rientri:</label>
                                         <input type="number" id="safety-duration" value="3" min="1" max="24">
                                     </div>
                                     <div class="form-group">
-                                        <label for="safety-time">Oppure a che ora:</label>
+                                        <label for="safety-time" data-i18n="safety.dms.oppureCheOra">Oppure a che ora:</label>
                                         <input type="time" id="safety-time" value="21:00">
                                     </div>
                                 </div>
@@ -972,8 +972,8 @@
                                 <div class="timer-display-large pulse-orange hidden" id="safety-countdown">00:00:00</div>
 
                                 <div class="safety-actions">
-                                    <button class="btn btn-primary" id="btn-activate-switch">Attiva il timer</button>
-                                    <button class="btn btn-danger hidden" id="btn-deactivate-switch">Sono al sicuro (disattiva)</button>
+                                    <button class="btn btn-primary" id="btn-activate-switch" data-i18n="safety.dms.attiva">Attiva il timer</button>
+                                    <button class="btn btn-danger hidden" id="btn-deactivate-switch" data-i18n="safety.dms.disattiva">Sono al sicuro (disattiva)</button>
                                 </div>
 
                                 <!-- Punto 37 chiuso l'08/08/2026: il conto alla rovescia vive sul
@@ -986,10 +986,10 @@
                                      secondo - vincolo hard 7. -->
                                 <p class="small safety-honesty-note is-ok" id="safety-honesty-note">
                                     <i data-lucide="check-circle"></i>
-                                    L'allarme funziona davvero, anche a telefono spento o pagina
+                                    <span data-i18n="safety.dms.notaOnesta">L'allarme funziona davvero, anche a telefono spento o pagina
                                     chiusa: se il timer scade, entro pochi minuti parte un'email
                                     vera al contatto scelto. Non è comunque l'unica sicurezza: dì
-                                    sempre a qualcuno dove vai.
+                                    sempre a qualcuno dove vai.</span>
                                 </p>
                             </div>
 
@@ -1355,15 +1355,15 @@
                              si legge dopo: durante l'escursione serve il comando, non lo storico. -->
                         <div class="safety-column">
                             <div class="glass-card dead-man-card">
-                                <h4><i data-lucide="heart-pulse"></i> Timer di Sicurezza</h4>
-                                <p class="small text-muted">Il Dead Man's Switch si imposta dalla sezione <strong>Mappa &amp; Sentieri</strong>, insieme al tasto SOS: serve mentre sei in cammino, non da fermo.</p>
-                                <button class="btn btn-primary btn-block btn-nav-trigger" data-target="map-section">Vai alla Mappa</button>
+                                <h4><i data-lucide="heart-pulse"></i> <span data-i18n="safety.sez.timerTitolo">Timer di Sicurezza</span></h4>
+                                <p class="small text-muted" data-i18n-html="safety.sez.timerDesc">Il Dead Man's Switch si imposta dalla sezione <strong>Mappa &amp; Sentieri</strong>, insieme al tasto SOS: serve mentre sei in cammino, non da fermo.</p>
+                                <button class="btn btn-primary btn-block btn-nav-trigger" data-target="map-section" data-i18n="safety.sez.vaiAllaMappa">Vai alla Mappa</button>
 
                                 <!-- Log invio SMS simulato -->
                                 <div class="sms-log-box" id="sms-log-box">
-                                    <h5><i data-lucide="send"></i> Registro avvisi di emergenza (simulati)</h5>
+                                    <h5><i data-lucide="send"></i> <span data-i18n="safety.sez.registroTitolo">Registro avvisi di emergenza (simulati)</span></h5>
                                     <div class="sms-log-entries" id="sms-log-entries">
-                                        <div class="text-muted small italic">Nessun messaggio inviato. Il sistema è in stato sicuro.</div>
+                                        <div class="text-muted small italic" data-i18n="safety.sez.registroVuoto">Nessun messaggio inviato. Il sistema è in stato sicuro.</div>
                                     </div>
                                 </div>
                             </div>
@@ -1372,11 +1372,11 @@
                         <!-- Mesh Network Simulator -->
                         <div class="safety-column">
                             <div class="glass-card mesh-card">
-                                <h4><i data-lucide="radio"></i> Simulatore Mesh Networking (Offline Link)</h4>
-                                <p class="small text-muted">In mancanza di campo, l'app crea una rete Wi-Fi Direct/Bluetooth tra dispositivi vicini (50-100m) per scambiarsi messaggi e posizioni in tempo reale.</p>
+                                <h4><i data-lucide="radio"></i> <span data-i18n="safety.sez.meshTitolo">Simulatore Mesh Networking (Offline Link)</span></h4>
+                                <p class="small text-muted" data-i18n="safety.sez.meshDesc">In mancanza di campo, l'app crea una rete Wi-Fi Direct/Bluetooth tra dispositivi vicini (50-100m) per scambiarsi messaggi e posizioni in tempo reale.</p>
                                 
                                 <div class="mesh-simulator-status">
-                                    <span class="status-indicator online" id="mesh-connection-status">Attivo (Connesso al Server Mesh)</span>
+                                    <span class="status-indicator online" id="mesh-connection-status" data-i18n="safety.mesh.statoAttivo">Attivo (Connesso al Server Mesh)</span>
                                 </div>
 
                                 <div class="mesh-radar-container">
@@ -1387,20 +1387,20 @@
                                         <div id="radar-peers"></div>
                                     </div>
                                     <div class="radar-legend">
-                                        <span class="legend-item"><span class="dot-sample me"></span> Tu</span>
-                                        <span class="legend-item"><span class="dot-sample peer"></span> Compagno in Rete</span>
+                                        <span class="legend-item"><span class="dot-sample me"></span> <span data-i18n="safety.mesh.legendaTu">Tu</span></span>
+                                        <span class="legend-item"><span class="dot-sample peer"></span> <span data-i18n="safety.mesh.legendaCompagno">Compagno in Rete</span></span>
                                     </div>
                                 </div>
 
                                 <div class="mesh-chat-box">
-                                    <h5><i data-lucide="message-square"></i> Canale SOS Locale Mesh (Raggio 100m)</h5>
+                                    <h5><i data-lucide="message-square"></i> <span data-i18n="safety.mesh.canaleTitolo">Canale SOS Locale Mesh (Raggio 100m)</span></h5>
                                     <div class="mesh-messages" id="mesh-messages-log">
                                         <!-- Messaggi inviati/ricevuti -->
-                                        <div class="message system">In attesa di traffico di rete... Apri l'app in più schede del browser come utenti diversi per testare il mesh in tempo reale!</div>
+                                        <div class="message system" data-i18n="safety.mesh.inAttesa">In attesa di traffico di rete... Apri l'app in più schede del browser come utenti diversi per testare il mesh in tempo reale!</div>
                                     </div>
                                     <form id="mesh-send-form" class="mesh-send-form">
-                                        <input type="text" id="mesh-input-msg" placeholder="Scrivi un messaggio o SOS..." required>
-                                        <button type="submit" class="btn btn-sm btn-primary">Invia</button>
+                                        <input type="text" id="mesh-input-msg" placeholder="Scrivi un messaggio o SOS..." required data-i18n-placeholder="safety.mesh.inputPlaceholder">
+                                        <button type="submit" class="btn btn-sm btn-primary" data-i18n="safety.mesh.invia">Invia</button>
                                         <button type="button" class="btn btn-sm btn-danger" id="btn-mesh-sos">SOS</button>
                                     </form>
                                 </div>

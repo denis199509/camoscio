@@ -1,3 +1,10 @@
+// Traduzione IT/EN (punto 102, quarto lotto): 'var T' e non 'const', questo file
+// non e' avvolto in una IIFE e condivide lo scope globale con gli altri <script>
+// classici - 'const T' darebbe "Identifier 'T' has already been declared" e
+// bloccherebbe l'intero file (vedi 07-Trappole-Tecniche.md del vault). Ripiego
+// sempre all'italiano gia' scritto qui e nell'HTML: il dizionario ha solo l'EN.
+var T = (window.CamoscioI18n && window.CamoscioI18n.t) || function () { return null; };
+
 let safetyTimerInterval = null;
 let deadManActive = false;
 let returnTimestamp = 0;
@@ -82,7 +89,7 @@ function initMeshWebSocket() {
         socket = new WebSocket(wsUrl);
         
         socket.onopen = () => {
-            document.getElementById("mesh-connection-status").textContent = "Attivo (Connesso al Server Mesh)";
+            document.getElementById("mesh-connection-status").textContent = T('safety.mesh.statoAttivo') || "Attivo (Connesso al Server Mesh)";
             document.getElementById("mesh-connection-status").className = "status-indicator online";
         };
 
@@ -92,7 +99,7 @@ function initMeshWebSocket() {
         };
 
         socket.onclose = () => {
-            document.getElementById("mesh-connection-status").textContent = "Offline (Tentativo riconnessione...)";
+            document.getElementById("mesh-connection-status").textContent = T('safety.mesh.statoOffline') || "Offline (Tentativo riconnessione...)";
             document.getElementById("mesh-connection-status").className = "status-indicator offline";
             // Riconnessione dopo 5 secondi
             setTimeout(initMeshWebSocket, 5000);
@@ -112,37 +119,38 @@ function initMeshWebSocket() {
 // Fa anche da conferma contro il tocco per sbaglio - che e' la ragione per cui l'utente
 // ha chiesto di tenere questo tasto lontano da quello di fine escursione.
 async function chiamaSos() {
-    const righe = ["Stai per chiamare il 112, il numero unico di emergenza.", ""];
+    const righe = [T('safety.sos.staiPerChiamare') || "Stai per chiamare il 112, il numero unico di emergenza.", ""];
 
     // La posizione VERA del GPS (punto 26), non il segnaposto trascinabile: leggere al
     // centralino delle coordinate simulate sarebbe peggio che non darne affatto.
     const p = window.CamoscioGeo && window.CamoscioGeo.ultimaPosizione();
     if (p) {
-        righe.push("LEGGI QUESTE COORDINATE ALL'OPERATORE:");
+        righe.push(T('safety.sos.leggiCoordinate') || "LEGGI QUESTE COORDINATE ALL'OPERATORE:");
         righe.push(`${p.lat.toFixed(5)}   ${p.lng.toFixed(5)}`);
-        righe.push(`(rilevata ${daQuantoInParole(p.quando)}, precisa entro ${Math.round(p.precisioneM || 0)} metri)`);
+        righe.push(T('safety.sos.rilevata', daQuantoInParole(p.quando), Math.round(p.precisioneM || 0))
+            || `(rilevata ${daQuantoInParole(p.quando)}, precisa entro ${Math.round(p.precisioneM || 0)} metri)`);
     } else {
-        righe.push("NON HO LA TUA POSIZIONE.");
-        righe.push("Se hai un momento: chiudi, premi «Dove sono» in alto a destra sulla mappa e riprova. Sapere dove sei è la prima cosa che ti chiederanno.");
-        righe.push("Se non c'è tempo, chiama lo stesso e descrivi a voce dove ti trovi.");
+        righe.push(T('safety.sos.nonHoPosizione') || "NON HO LA TUA POSIZIONE.");
+        righe.push(T('safety.sos.senzaPosizione1') || "Se hai un momento: chiudi, premi «Dove sono» in alto a destra sulla mappa e riprova. Sapere dove sei è la prima cosa che ti chiederanno.");
+        righe.push(T('safety.sos.senzaPosizione2') || "Se non c'è tempo, chiama lo stesso e descrivi a voce dove ti trovi.");
     }
 
     righe.push("");
     // Detto esplicitamente per non promettere quello che il sito non puo' garantire: e' la
     // nota tecnica scritta nel punto 20 di cose_da_fare.txt.
-    righe.push("Il sito apre solo il telefono col numero pronto: la chiamata la fai tu. Se non c'è campo e il tuo telefono ha l'SOS satellitare, sarà il telefono a usarlo — non questo sito.");
+    righe.push(T('safety.sos.notaTecnica') || "Il sito apre solo il telefono col numero pronto: la chiamata la fai tu. Se non c'è campo e il tuo telefono ha l'SOS satellitare, sarà il telefono a usarlo — non questo sito.");
 
-    const procedi = await window.showConfirmModal(righe.join("\n"), "Chiama 112");
+    const procedi = await window.showConfirmModal(righe.join("\n"), T('safety.sos.chiama112') || "Chiama 112");
     if (procedi) window.location.href = "tel:112";
 }
 
 function daQuantoInParole(quando) {
     const secondi = Math.max(0, Math.round((Date.now() - (quando || 0)) / 1000));
-    if (secondi < 60) return "adesso";
+    if (secondi < 60) return T('safety.tempo.adesso') || "adesso";
     const minuti = Math.round(secondi / 60);
-    if (minuti < 60) return `${minuti} minut${minuti === 1 ? 'o' : 'i'} fa`;
+    if (minuti < 60) return T('safety.tempo.minutiFa', minuti) || `${minuti} minut${minuti === 1 ? 'o' : 'i'} fa`;
     const ore = Math.round(minuti / 60);
-    return `${ore} or${ore === 1 ? 'a' : 'e'} fa`;
+    return T('safety.tempo.oreFa', ore) || `${ore} or${ore === 1 ? 'a' : 'e'} fa`;
 }
 
 // --- PUNTO 21: I CONTATTI DI EMERGENZA VERI ---
@@ -182,7 +190,7 @@ function aggiornaHintContatto() {
     // solo sui contatti inseriti prima di allora, e nessuna funzione del sito lo compone -
     // il tasto SOS chiama il 112, mai il contatto personale (vedi chiamaSos qui sopra).
     hint.textContent = c
-        ? `Alla scadenza l'allarme andrebbe all'email di ${c.name} (${c.email}).`
+        ? (T('safety.dms.hintContatto', c.name, c.email) || `Alla scadenza l'allarme andrebbe all'email di ${c.name} (${c.email}).`)
         : "";
 }
 
@@ -200,12 +208,12 @@ function popolaContattiEmergenza() {
     if (!contatti.length) {
         const opt = document.createElement("option");
         opt.value = "";
-        opt.textContent = "Nessun contatto salvato";
+        opt.textContent = T('safety.dms.nessunContattoSalvato') || "Nessun contatto salvato";
         sel.appendChild(opt);
         sel.disabled = true;
         if (btnAttiva) btnAttiva.disabled = true;
         if (hint) {
-            hint.textContent = "Non hai nessun contatto di emergenza: senza, il timer non avrebbe nessuno da avvisare. Aggiungine uno qui sotto.";
+            hint.textContent = T('safety.dms.avvisoNessunContatto') || "Non hai nessun contatto di emergenza: senza, il timer non avrebbe nessuno da avvisare. Aggiungine uno qui sotto.";
         }
         mostraFormContatto(true);
         return;
@@ -220,12 +228,12 @@ function popolaContattiEmergenza() {
     if (!usabili.length) {
         const opt = document.createElement("option");
         opt.value = "";
-        opt.textContent = "Nessun contatto con email";
+        opt.textContent = T('safety.dms.nessunContattoEmail') || "Nessun contatto con email";
         sel.appendChild(opt);
         sel.disabled = true;
         if (btnAttiva) btnAttiva.disabled = true;
         if (hint) {
-            hint.textContent = "I tuoi contatti salvati non hanno un'email, serve per mandare l'allarme vero: aggiungine uno nuovo qui sotto.";
+            hint.textContent = T('safety.dms.avvisoNessunaEmail') || "I tuoi contatti salvati non hanno un'email, serve per mandare l'allarme vero: aggiungine uno nuovo qui sotto.";
         }
         mostraFormContatto(true);
         return;
@@ -265,11 +273,11 @@ async function salvaNuovoContatto() {
     // salvataggio - ma lo e' qui: senza, il contatto verrebbe salvato e basta comparire nel
     // menu "Chi avvisare" senza poter mai ricevere nulla (vedi popolaContattiEmergenza).
     if (!nome || !relazione || !email) {
-        window.showToast("Servono tutti e tre i campi: nome, chi è ed email.", "error");
+        window.showToast(T('safety.dms.campiObbligatori') || "Servono tutti e tre i campi: nome, chi è ed email.", "error");
         return;
     }
     if (!email.includes('@')) {
-        window.showToast("L'email non sembra valida.", "error");
+        window.showToast(T('safety.dms.emailNonValida') || "L'email non sembra valida.", "error");
         return;
     }
 
@@ -279,7 +287,7 @@ async function salvaNuovoContatto() {
     const btn = document.getElementById("btn-save-emergency-contact");
     const etichetta = btn.textContent;
     btn.disabled = true;
-    btn.textContent = "Salvataggio…";
+    btn.textContent = T('safety.dms.salvataggio') || "Salvataggio…";
 
     // Si manda l'elenco COMPLETO e non solo il nuovo: emergencyContacts e' un array e il
     // server lo sostituisce per intero (SELF_EDITABLE_FIELDS in routes/users.js). Mandare
@@ -303,10 +311,10 @@ async function salvaNuovoContatto() {
         const sel = document.getElementById("safety-contact");
         sel.value = String(nuovi.length - 1);
         aggiornaHintContatto();
-        window.showToast("Contatto di emergenza salvato.", "success");
+        window.showToast(T('safety.dms.contattoSalvato') || "Contatto di emergenza salvato.", "success");
     } catch (e) {
         console.error("Salvataggio contatto di emergenza fallito:", e);
-        window.showToast("Non sono riuscito a salvare il contatto. Riprova.", "error");
+        window.showToast(T('safety.dms.erroreContatto') || "Non sono riuscito a salvare il contatto. Riprova.", "error");
     } finally {
         btn.disabled = false;
         btn.textContent = etichetta;
@@ -350,7 +358,7 @@ async function disattivaSulServer() {
 async function activateDeadManSwitch() {
     const contatto = contattoScelto();
     if (!contatto) {
-        window.showToast("Scegli chi avvisare prima di attivare il timer.", "error");
+        window.showToast(T('safety.dms.scegliContatto') || "Scegli chi avvisare prima di attivare il timer.", "error");
         return;
     }
     const durationHours = parseFloat(document.getElementById("safety-duration").value) || 0;
@@ -391,13 +399,18 @@ async function activateDeadManSwitch() {
 
     aggiornaStatoTimer();
 
-    // Registra evento sul log satellitare simulato
-    logSimulatedSms("SYSTEM", `Timer attivato. Rientro atteso: ${new Date(returnTimestamp).toLocaleTimeString()}. Da avvisare: ${escapeHtml(contatto.name)}.`);
+    // Registra evento sul log satellitare simulato. Orario nel locale della
+    // lingua attiva ('en-GB'/'it-IT'), come per le date col nome del mese.
+    const locOra = (window.CamoscioI18n && window.CamoscioI18n.getLang() === 'en') ? 'en-GB' : 'it-IT';
+    const oraRientro = new Date(returnTimestamp).toLocaleTimeString(locOra);
+    logSimulatedSms("SYSTEM", T('safety.log.timerAttivato', oraRientro, escapeHtml(contatto.name))
+        || `Timer attivato. Rientro atteso: ${oraRientro}. Da avvisare: ${escapeHtml(contatto.name)}.`);
 
     if (!armatoSulServer) {
         window.showToast(
-            "Il timer è attivo su questo telefono, ma non sono riuscito ad avvisarne il server: " +
-            "se chiudi la pagina l'allarme automatico potrebbe non partire. Riprova quando hai linea.",
+            T('safety.dms.timerLocaleNonServer') ||
+            ("Il timer è attivo su questo telefono, ma non sono riuscito ad avvisarne il server: " +
+            "se chiudi la pagina l'allarme automatico potrebbe non partire. Riprova quando hai linea."),
             "error"
         );
     }
@@ -419,9 +432,10 @@ async function deactivateDeadManSwitch(isSafeCheckin) {
         const ok = await disattivaSulServer();
         if (!ok) {
             window.showAlertModal(
-                "Non sono riuscito ad avvisare il server che sei al sicuro. Il tuo contatto di " +
+                T('safety.dms.checkinNonServer') ||
+                ("Non sono riuscito ad avvisare il server che sei al sicuro. Il tuo contatto di " +
                 "emergenza potrebbe ricevere comunque un avviso quando scade il tempo. Riprova " +
-                "appena hai linea, oppure avvisalo/a direttamente tu."
+                "appena hai linea, oppure avvisalo/a direttamente tu.")
             );
             return;
         }
@@ -440,7 +454,7 @@ async function deactivateDeadManSwitch(isSafeCheckin) {
     aggiornaStatoTimer();
 
     if (isSafeCheckin) {
-        logSimulatedSms("SAFE", `Check-in completato con successo. Dispositivo disattivato. Stazione Sicura.`);
+        logSimulatedSms("SAFE", T('safety.log.checkinOk') || "Check-in completato con successo. Dispositivo disattivato. Stazione Sicura.");
     }
 
     aggiornaStatoTimer();
@@ -525,7 +539,7 @@ function triggerEmergencyAlarm() {
     const recapito = contatto ? (contatto.phone || contatto.email || "") : "";
     const aChi = contatto
         ? (recapito ? `${contatto.name} (${recapito})` : contatto.name)
-        : "nessun contatto salvato";
+        : (T('safety.alarm.nessunContatto') || "nessun contatto salvato");
 
     // Punto 21 - la posizione VERA del GPS quando c'e' (punto 26). Prima si usava sempre e
     // solo il segnaposto trascinabile, che di norma e' fermo a Campo Imperatore: un allarme
@@ -533,12 +547,15 @@ function triggerEmergencyAlarm() {
     // manderebbe a cercare qualcuno nel posto sbagliato.
     const p = window.CamoscioGeo && window.CamoscioGeo.ultimaPosizione();
     const posizione = p
-        ? `${p.lat.toFixed(5)}, ${p.lng.toFixed(5)} (rilevata ${daQuantoInParole(p.quando)})`
-        : "sconosciuta - il GPS non ha mai dato una posizione";
+        ? (T('safety.alarm.posRilevata', p.lat.toFixed(5), p.lng.toFixed(5), daQuantoInParole(p.quando))
+            || `${p.lat.toFixed(5)}, ${p.lng.toFixed(5)} (rilevata ${daQuantoInParole(p.quando)})`)
+        : (T('safety.alarm.posSconosciuta') || "sconosciuta - il GPS non ha mai dato una posizione");
 
-    const msg = `L'escursionista non è rientrato entro l'ora prevista. Ultima posizione nota: ${posizione}.`;
+    const msg = T('safety.alarm.msg', posizione)
+        || `L'escursionista non è rientrato entro l'ora prevista. Ultima posizione nota: ${posizione}.`;
 
-    logSimulatedSms("SOS", `A: ${escapeHtml(aChi)} - MSG: ${escapeHtml(msg)}`);
+    logSimulatedSms("SOS", T('safety.log.sosLine', escapeHtml(aChi), escapeHtml(msg))
+        || `A: ${escapeHtml(aChi)} - MSG: ${escapeHtml(msg)}`);
 
     // Notifica visiva forte, persistente finché non viene riconosciuta (non un toast auto-dismiss:
     // un allarme di emergenza non deve poter passare inosservato).
@@ -549,12 +566,13 @@ function triggerEmergencyAlarm() {
     // messaggio partiva mai. Ora e' vero, ma non e' QUESTA funzione a farlo partire - dirlo bene
     // evita di far credere che chiudere questa finestra fermi (o non fermi) l'allarme reale.
     window.showAlertModal(
-        `⏰ IL TEMPO È SCADUTO\n\n${msg}\n\n` +
+        T('safety.alarm.modal', msg, aChi) ||
+        (`⏰ IL TEMPO È SCADUTO\n\n${msg}\n\n` +
         `Avresti dovuto avvisare: ${aChi}\n\n` +
         `Questo avviso su schermo non manda niente da solo: è solo qui, su questo telefono. ` +
         `L'invio vero lo fa il server, entro pochi minuti e indipendentemente da questa pagina. ` +
         `Se sei tu a leggerlo e stai bene, fai il check-in subito per fermarlo. Se stai leggendo ` +
-        `questo per conto di qualcun altro, avvisa tu il contatto qui sopra.`
+        `questo per conto di qualcun altro, avvisa tu il contatto qui sopra.`)
     );
 
     deactivateDeadManSwitch(false);
@@ -583,7 +601,7 @@ function logSimulatedSms(type, text) {
         entry.innerHTML = `<strong style="color:var(--accent-red)">[SATELLITE SOS ALERT]</strong> ${text}`;
     } else {
         entry.className = "sms-entry";
-        entry.innerHTML = `<strong>[SISTEMA]</strong> ${text}`;
+        entry.innerHTML = `<strong>${T('safety.log.sistema') || '[SISTEMA]'}</strong> ${text}`;
     }
 
     container.appendChild(entry);
@@ -677,7 +695,10 @@ function renderRadarScreen(userCoords) {
 // Invia un pacchetto chat/SOS sulla rete mesh locale
 function sendMeshChatMessage(isSos) {
     const input = document.getElementById("mesh-input-msg");
-    let text = isSos ? "SOS! RICHIESTA ASSISTENZA IMMEDIATA / INCIDENTE SUL SENTIERO!" : input.value;
+    // Testo auto SOS: trasmesso via WebSocket agli altri client e mostrato come
+    // arriva - chi lo manda lo vede nella propria lingua, chi lo riceve nella
+    // lingua di chi l'ha inviato (stessa scelta di notifyParticipantDecision).
+    let text = isSos ? (T('safety.mesh.sosText') || "SOS! RICHIESTA ASSISTENZA IMMEDIATA / INCIDENTE SUL SENTIERO!") : input.value;
     
     if (!text && !isSos) return;
     if (input) input.value = "";
@@ -771,6 +792,35 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 
     return R * c;
+}
+
+// Cambio lingua (punto 102, quarto lotto): due pezzi di interfaccia di questo
+// modulo hanno testo generato da JS con dati gia' in memoria (nessun fetch,
+// nessun flicker) e si ridisegnano. Il registro avvisi (#sms-log-entries) e la
+// chat mesh (#mesh-messages-log) NO: sono la cronologia di eventi di una
+// sessione, le voci nuove escono gia' nella lingua attiva - stesso residuo
+// onesto scelto per chatpanel.js (vedi 07-Trappole-Tecniche.md del vault).
+if (window.CamoscioI18n && window.CamoscioI18n.onChange) {
+    window.CamoscioI18n.onChange(function () {
+        // 1) Stato connessione mesh: ha un data-i18n statico ("attivo") che
+        //    applyStaticTranslations rimette sempre, ma il valore vero dipende
+        //    dallo stato del socket adesso.
+        const statoEl = document.getElementById("mesh-connection-status");
+        if (statoEl) {
+            const online = socket && socket.readyState === WebSocket.OPEN;
+            statoEl.textContent = online
+                ? (T('safety.mesh.statoAttivo') || "Attivo (Connesso al Server Mesh)")
+                : (T('safety.mesh.statoOffline') || "Offline (Tentativo riconnessione...)");
+        }
+        // 2) Menu "chi avvisare" + hint + messaggi di stato vuoto: testo nostro,
+        //    dati in CamoscioState. popolaContattiEmergenza conserva gia' la
+        //    scelta corrente; aggiornaStatoTimer subito dopo rimette il select
+        //    disabilitato se il conto alla rovescia e' in corso.
+        if (document.getElementById("safety-contact")) {
+            popolaContattiEmergenza();
+            aggiornaStatoTimer();
+        }
+    });
 }
 
 window.initSafetyModule = initSafetyModule;
