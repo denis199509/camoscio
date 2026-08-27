@@ -6102,3 +6102,72 @@ schermo spento ancora."
    (misurare il risultato vero, non solo simulare le regole CSS - vedi
    07-Trappole-Tecniche). Rilanciare la verifica responsive delle
    pagine gia' a posto se si tocca CSS condiviso.
+
+=====================================================================
+
+--- BADGE PERSONALE: GABRIELE183 ---
+
+107. [FATTO 2026-08-28, ottava sessione] Denis, a fine sessione:
+   "aggiungiamo il badge personale di gabriele183. Titolo: Il mare lo
+   vede dai 2000 m. Descrizione: Vive a due passi dalla spiaggia, ma
+   considera l'acqua salata un bell'elemento decorativo da osservare
+   esclusivamente con il cannocchiale e le scarpe da trekking ai piedi.
+   C:\Users\lenovo\OneDrive\Desktop\Badge per Camoscio file 'il mare dai
+   2000'".
+
+   Stesso identico meccanismo dei otto badge gia' presenti
+   (personal-badges.js, catalogo fisso userId -> {icona, titolo,
+   descrizione}, niente su MongoDB). Immagine "il mare dai 2000.png"
+   copiata in public/img/badge-personali/ come gabriele183-mare.png
+   (stessa convenzione <username>-<tema> degli altri; "mare" da solo
+   era gia' preso da manu-mare.png). Verificata prima di committare:
+   firma PNG valida, marcatore IEND presente, 1.051.046 byte (~1,03 MB,
+   in linea con gli altri). UserId vero trovato per username con una
+   query di sola lettura su MongoDB: gabriele183 ->
+   6a880bb1501b7d0f6026fea8 (account reale, isDemoAccount:false).
+   Aggiunta una riga al catalogo, nessun'altra modifica.
+
+   Titolo e descrizione NON tradotti (restano in italiano): stessa
+   scelta del punto 102 (i badge personali sono contenuto assegnato a
+   mano, non interfaccia - solo la frase fissa "Distintivo assegnato a
+   mano dal team di Camoscio: non si guadagna" intorno si traduce).
+
+   VERIFICATO DAL VIVO nel browser (window.showUserProfile
+   sull'userId, account vero senza password nota): il badge compare sul
+   profilo di gabriele183 con l'icona giusta (silhouette di un
+   escursionista in vetta che guarda il mare e il tramonto), titolo e
+   descrizione esatti, la nota "non si guadagna" presente, zero errori
+   in console.
+
+=====================================================================
+
+--- BADGE FARMABILI COL TELETRASPORTO GPS ---
+
+108. [28/08/2026, ottava sessione - segnalato da Denis a fine sessione]
+   Denis, parole sue: "Sulla mappa ho trovato il badge del Monte
+   Viglio. Badge mai conquistato. Ho visto il tasto teletrasporto qui
+   GPS. Cliccando sopra il mio GPS si e' spostato sulla cima del Monte
+   Viglio conquistato cosi' il badge GPS. Da correggere. In questo modo
+   posso conquistare tutti i badge senza alzarmi dal letto. Non va
+   bene".
+
+   In sostanza: il tasto di simulazione della posizione GPS sulla mappa
+   (pensato per DIMOSTRARE il geofencing/badge senza doversi spostare
+   fisicamente - vedi la frase "Use the map to simulate your GPS
+   position!" nella Dashboard) permette di piazzare la propria
+   posizione sulla cima di una vetta del catalogo ed entro la soglia
+   dei 150 m (SOGLIA_TIMBRO_M), il che fa scattare il timbro e sblocca
+   il badge per davvero, senza esserci mai stati. Con quel tasto si
+   possono raccogliere tutti i badge da fermi.
+
+   NON TOCCATO in questa sessione (segnalato a fine sessione, da
+   sistemare in un giro a parte). RIPARTIRE DA: e' prima di tutto una
+   DECISIONE di prodotto, non solo codice - le strade possibili:
+   (a) il teletrasporto GPS resta ma NON fa scattare i timbri (solo il
+   GPS reale del dispositivo li sblocca); (b) il teletrasporto resta
+   pieno solo per gli account demo, disattivato per gli account veri;
+   (c) si toglie del tutto il tasto. Da concordare con Denis quale,
+   prima di scrivere. Codice coinvolto: la simulazione della posizione
+   in public/js/map.js / tracking.js e il geofencing dei timbri
+   (SOGLIA_TIMBRO_M, la stessa soglia usata anche dal conteggio salite
+   del punto 42b - occhio a non spaccare quello).
