@@ -383,17 +383,17 @@
                         </button>
                     </div>
 
-                    <button class="btn btn-sm btn-secondary" id="btn-logout" title="Esci dall'account">
-                        <i data-lucide="log-out"></i> Esci
+                    <button class="btn btn-sm btn-secondary" id="btn-logout" title="Esci dall'account" data-i18n-title="header.esciTitle">
+                        <i data-lucide="log-out"></i> <span data-i18n="header.esci">Esci</span>
                     </button>
 
                     <div class="notification-bell-wrapper">
-                        <button class="notification-bell-btn" id="btn-notification-bell" title="Notifiche">
+                        <button class="notification-bell-btn" id="btn-notification-bell" title="Notifiche" data-i18n-title="header.notifiche">
                             <i data-lucide="bell"></i>
                             <span class="notification-count-badge hidden" id="notification-count-badge">0</span>
                         </button>
                         <div class="notification-dropdown hidden" id="notification-dropdown">
-                            <div class="notification-dropdown-header">Notifiche</div>
+                            <div class="notification-dropdown-header" data-i18n="header.notifiche">Notifiche</div>
                             <div class="notification-dropdown-list" id="notification-dropdown-list">
                                 <!-- Renderizzato da JS -->
                             </div>
@@ -406,21 +406,21 @@
                          vedere questo elemento comparire nel DOM, non solo "vederlo spento"
                          (public/js/pendingreports.js, setupPendingReportsTriangle). -->
                     <div class="notification-bell-wrapper hidden" id="moderation-triangle-wrapper">
-                        <button class="notification-bell-btn" id="btn-moderation-triangle" title="Segnalazioni sentiero da verificare">
+                        <button class="notification-bell-btn" id="btn-moderation-triangle" title="Segnalazioni sentiero da verificare" data-i18n-title="header.moderazioneTitle">
                             <i data-lucide="triangle-alert"></i>
                             <span class="notification-count-badge hidden" id="moderation-count-badge">0</span>
                         </button>
                     </div>
 
-                    <div class="active-user-badge" id="btn-goto-profile" title="Vai al tuo profilo">
+                    <div class="active-user-badge" id="btn-goto-profile" title="Vai al tuo profilo" data-i18n-title="header.profiloTitle">
                         <span id="current-user-avatar" class="avatar-icon">🥾</span>
                         <div class="user-details">
                             <div class="user-name-row">
-                                <span id="current-user-name" class="font-bold">Caricamento...</span>
+                                <span id="current-user-name" class="font-bold" data-i18n="header.caricamento">Caricamento...</span>
                                 <img id="current-user-personal-badge" class="personal-badge-icon hidden" src="" alt="">
                             </div>
                             <div class="user-sub-details">
-                                <span class="reputation-text">Reputazione: <strong id="current-user-reputation">--</strong>%</span>
+                                <span class="reputation-text" data-i18n-html="header.reputazione">Reputazione: <strong id="current-user-reputation">--</strong>%</span>
                                 <span class="divider">|</span>
                                 <span class="experience-text" id="current-user-exp">--</span>
                             </div>
@@ -467,20 +467,20 @@
                         <div class="dash-col">
                             <!-- Card Benvenuto -->
                             <div class="glass-card welcome-card">
-                                <h3>Benvenuto su Camoscio, <span class="highlight-text" id="dash-welcome-name">Utente</span>!</h3>
-                                <p class="text-muted">Il tuo assistente personale per escursioni sicure, organizzazione di carpooling e pianificazione alpina avanzata.</p>
+                                <h3 data-i18n-html="dash.benvenuto">Benvenuto su Camoscio, <span class="highlight-text" id="dash-welcome-name">Utente</span>!</h3>
+                                <p class="text-muted" data-i18n="dash.sottotitolo">Il tuo assistente personale per escursioni sicure, organizzazione di carpooling e pianificazione alpina avanzata.</p>
                                 <div class="quick-stats-row">
                                     <div class="q-stat">
                                         <span class="q-val" id="stat-completed-hikes">0</span>
-                                        <span class="q-lbl">Escursioni Fatte</span>
+                                        <span class="q-lbl" data-i18n="dash.statCompletate">Escursioni Fatte</span>
                                     </div>
                                     <div class="q-stat">
                                         <span class="q-val" id="stat-stamps-count">0</span>
-                                        <span class="q-lbl">Timbri Vette</span>
+                                        <span class="q-lbl" data-i18n="dash.statTimbri">Timbri Vette</span>
                                     </div>
                                     <div class="q-stat">
                                         <span class="q-val" id="stat-reputation">50%</span>
-                                        <span class="q-lbl">Punteggio Reputazione</span>
+                                        <span class="q-lbl" data-i18n="dash.statReputazione">Punteggio Reputazione</span>
                                     </div>
                                 </div>
                             </div>
@@ -488,10 +488,10 @@
                             <!-- Card Passaporto Digitale Vette -->
                             <div class="glass-card passport-card">
                                 <div class="card-header-row">
-                                    <h4><i data-lucide="award"></i> Passaporto delle Vette Digitale</h4>
-                                    <span class="badge badge-accent">Geofencing Attivo</span>
+                                    <h4><i data-lucide="award"></i> <span data-i18n="dash.passaportoTitolo">Passaporto delle Vette Digitale</span></h4>
+                                    <span class="badge badge-accent" data-i18n="dash.geofencingAttivo">Geofencing Attivo</span>
                                 </div>
-                                <p class="small text-muted">Raggiungi le vette e i rifugi per sbloccare i timbri digitali collezionabili. Usa la mappa per simulare la tua posizione GPS!</p>
+                                <p class="small text-muted" data-i18n="dash.passaportoDesc">Raggiungi le vette e i rifugi per sbloccare i timbri digitali collezionabili. Usa la mappa per simulare la tua posizione GPS!</p>
                                 <div class="stamps-grid" id="stamps-collection">
                                     <!-- Stamp sbloccati renderizzati da JS -->
                                 </div>
@@ -503,7 +503,7 @@
                                 <div class="passport-more">
                                     <span class="small text-muted" id="passport-count">—</span>
                                     <button class="btn btn-sm btn-secondary btn-nav-trigger" data-target="badges">
-                                        <i data-lucide="award"></i> Vedi tutti i badge
+                                        <i data-lucide="award"></i> <span data-i18n="dash.vediTuttiBadge">Vedi tutti i badge</span>
                                     </button>
                                 </div>
                                 <!-- Punto 19 di cose_da_fare.txt: qui c'era una sezione "Sfide in
@@ -534,20 +534,20 @@
                                  e dislivello veri dalla Fase F), ma la Dashboard non ne mostrava
                                  mai la somma. Riempiti da renderTrackingTotals in app.js. -->
                             <div class="glass-card totals-card">
-                                <h4><i data-lucide="mountain-snow"></i> Quanto hai camminato</h4>
-                                <p class="small text-muted">Somma di tutte le escursioni che hai registrato con il GPS.</p>
+                                <h4><i data-lucide="mountain-snow"></i> <span data-i18n="dash.totaliTitolo">Quanto hai camminato</span></h4>
+                                <p class="small text-muted" data-i18n="dash.totaliDesc">Somma di tutte le escursioni che hai registrato con il GPS.</p>
                                 <div class="totals-grid" id="dash-totals">
                                     <div class="total-box">
                                         <span class="total-val" id="total-distance">—</span>
-                                        <span class="total-lbl">km percorsi</span>
+                                        <span class="total-lbl" data-i18n="dash.kmPercorsi">km percorsi</span>
                                     </div>
                                     <div class="total-box">
                                         <span class="total-val" id="total-elevation">—</span>
-                                        <span class="total-lbl">m di dislivello</span>
+                                        <span class="total-lbl" data-i18n="dash.mDislivello">m di dislivello</span>
                                     </div>
                                     <div class="total-box">
                                         <span class="total-val" id="total-speed">—</span>
-                                        <span class="total-lbl">km/h di media</span>
+                                        <span class="total-lbl" data-i18n="dash.kmhMedia">km/h di media</span>
                                     </div>
                                 </div>
                                 <p class="small text-muted" id="dash-totals-note"></p>
@@ -555,8 +555,8 @@
 
                             <!-- Card Statistiche Passo Personalizzato -->
                             <div class="glass-card pace-card">
-                                <h4><i data-lucide="activity"></i> Calcolatore Passo & Fatica</h4>
-                                <p class="small text-muted">L'algoritmo impara dalle tue escursioni tracciate per stimare i tempi effettivi di cammino.</p>
+                                <h4><i data-lucide="activity"></i> <span data-i18n="dash.passoTitolo">Calcolatore Passo & Fatica</span></h4>
+                                <p class="small text-muted" data-i18n="dash.passoDesc">L'algoritmo impara dalle tue escursioni tracciate per stimare i tempi effettivi di cammino.</p>
                                 <div class="pace-stats">
                                     <!-- L'unita' di misura sta in uno span suo, non in un
                                          testo libero accanto al numero: quando il passo non e'
@@ -564,16 +564,16 @@
                                          nascosta con lui, altrimenti si leggerebbe "— m/h",
                                          cioe' una misura mancante travestita da misura. -->
                                     <div class="pace-row">
-                                        <span>Velocità Ascesa:</span>
+                                        <span data-i18n="dash.velocitaAscesa">Velocità Ascesa:</span>
                                         <strong><span id="pace-up-val">--</span><span class="pace-unit" id="pace-up-unit"> m/h</span></strong>
                                     </div>
                                     <div class="pace-row">
-                                        <span>Velocità Discesa:</span>
+                                        <span data-i18n="dash.velocitaDiscesa">Velocità Discesa:</span>
                                         <strong><span id="pace-down-val">--</span><span class="pace-unit" id="pace-down-unit"> m/h</span></strong>
                                     </div>
                                     <div class="pace-row">
-                                        <span>Indice Fatica Personalizzato:</span>
-                                        <strong><span id="pace-index-val">--</span><span class="pace-unit" id="pace-index-unit">x rispetto a CAI</span></strong>
+                                        <span data-i18n="dash.indiceFatica">Indice Fatica Personalizzato:</span>
+                                        <strong><span id="pace-index-val">--</span><span class="pace-unit" id="pace-index-unit" data-i18n="dash.rispettoCai">x rispetto a CAI</span></strong>
                                     </div>
                                 </div>
                                 <!-- Riempita da renderDashboard (app.js) solo quando non c'e'
@@ -1624,32 +1624,32 @@
                     <!-- Card Profilo: foto/bio, esperto locale, cambio password - stesso markup
                          che prima stava nella Dashboard (punto 40, punto 41: KYC tolta). -->
                     <div class="glass-card profile-card">
-                        <h4><i data-lucide="user-check"></i> Il Tuo Profilo</h4>
+                        <h4><i data-lucide="user-check"></i> <span data-i18n="myProfile.cardTitolo">Il Tuo Profilo</span></h4>
 
                         <div class="profile-section photo-bio-section">
                             <div class="photo-upload-row">
                                 <div class="photo-preview-circle" id="profile-photo-preview">🏔️</div>
                                 <input type="file" id="profile-photo-input" accept="image/*">
-                                <button type="button" class="btn btn-sm btn-secondary" id="btn-remove-profile-photo">Rimuovi foto</button>
+                                <button type="button" class="btn btn-sm btn-secondary" id="btn-remove-profile-photo" data-i18n="myProfile.rimuoviFoto">Rimuovi foto</button>
                             </div>
                             <div class="form-group">
-                                <label for="profile-bio">Bio (massimo 250 caratteri):</label>
-                                <textarea id="profile-bio" maxlength="250" placeholder="Raccontaci qualcosa di te..."></textarea>
+                                <label for="profile-bio" data-i18n="myProfile.bioLabel">Bio (massimo 250 caratteri):</label>
+                                <textarea id="profile-bio" maxlength="250" placeholder="Raccontaci qualcosa di te..." data-i18n-placeholder="myProfile.bioPlaceholder"></textarea>
                                 <div class="char-counter"><span id="profile-bio-counter">0</span>/250</div>
                             </div>
-                            <button class="btn btn-sm btn-primary" id="btn-save-profile-info">Salva foto e bio</button>
+                            <button class="btn btn-sm btn-primary" id="btn-save-profile-info" data-i18n="myProfile.salvaFotoBio">Salva foto e bio</button>
                         </div>
 
                         <div class="profile-section local-expert-section">
-                            <p class="small text-muted">Se conosci bene una zona, proponiti come esperto locale informale per aiutare chi è meno pratico del posto.</p>
+                            <p class="small text-muted" data-i18n="myProfile.espertoDesc">Se conosci bene una zona, proponiti come esperto locale informale per aiutare chi è meno pratico del posto.</p>
                             <div class="form-group">
-                                <label><input type="checkbox" id="local-expert-toggle"> Sono un esperto locale</label>
+                                <label><input type="checkbox" id="local-expert-toggle"> <span data-i18n="myProfile.sonoEsperto">Sono un esperto locale</span></label>
                             </div>
                             <div class="form-group">
-                                <label for="local-expert-area">Esperto locale:</label>
+                                <label for="local-expert-area" data-i18n="myProfile.espertoZonaLabel">Esperto locale:</label>
                                 <div class="input-with-btn">
-                                    <input type="text" id="local-expert-area" placeholder="Es. Gran Sasso d'Italia, Monti Sibillini...">
-                                    <button class="btn btn-sm btn-primary" id="btn-save-local-expert">Salva</button>
+                                    <input type="text" id="local-expert-area" placeholder="Es. Gran Sasso d'Italia, Monti Sibillini..." data-i18n-placeholder="myProfile.espertoZonaPlaceholder">
+                                    <button class="btn btn-sm btn-primary" id="btn-save-local-expert" data-i18n="common.salva">Salva</button>
                                 </div>
                             </div>
                             <!-- Punto 63b, 17/08/2026: le cime dove ho raggiunto un livello
@@ -1664,20 +1664,20 @@
                              Nascosta per gli account demo (entrano senza password, non ne
                              hanno una da cambiare): la mostra profile.js. -->
                         <div class="profile-section change-password-section hidden" id="change-password-section">
-                            <p class="small text-muted">Cambia la password del tuo account. Serve quella attuale.</p>
+                            <p class="small text-muted" data-i18n="myProfile.cambioPwdDesc">Cambia la password del tuo account. Serve quella attuale.</p>
                             <div class="form-group">
-                                <label for="cp-current">Password attuale:</label>
+                                <label for="cp-current" data-i18n="myProfile.pwdAttuale">Password attuale:</label>
                                 <input type="password" id="cp-current" autocomplete="current-password">
                             </div>
                             <div class="form-group">
-                                <label for="cp-new">Nuova password (minimo 8 caratteri):</label>
+                                <label for="cp-new" data-i18n="myProfile.pwdNuova">Nuova password (minimo 8 caratteri):</label>
                                 <input type="password" id="cp-new" minlength="8" autocomplete="new-password">
                             </div>
                             <div class="form-group">
-                                <label for="cp-confirm">Conferma nuova password:</label>
+                                <label for="cp-confirm" data-i18n="myProfile.pwdConferma">Conferma nuova password:</label>
                                 <input type="password" id="cp-confirm" minlength="8" autocomplete="new-password">
                             </div>
-                            <button class="btn btn-sm btn-primary" id="btn-change-password">Cambia password</button>
+                            <button class="btn btn-sm btn-primary" id="btn-change-password" data-i18n="myProfile.cambiaPwdBtn">Cambia password</button>
                         </div>
                     </div>
 

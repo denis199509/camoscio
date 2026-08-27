@@ -1,8 +1,9 @@
-// Rollout traduzione punto 102, secondo lotto (22/08/2026): SOLO getEligibilityBadge
-// qui sotto, non il resto del file (Dashboard/Profilo proprio e' un lotto futuro,
-// vedi 04-Da-Fare.md del vault) - il suo output pero' compare su ogni card
-// escursione (buildHikeCard, social.js), quindi va tradotto insieme a quelle. "var",
-// non "const": vedi la nota in cima a i18n.js sul perche'.
+// Rollout traduzione punto 102: getEligibilityBadge (secondo lotto, 22/08/2026 - il suo
+// output compare su ogni card escursione, buildHikeCard in social.js) e, dal TERZO lotto
+// (27/08/2026), il Profilo proprio - renderMyProfilePage e i toast di questa pagina.
+// La Dashboard e' in app.js; le funzioni condivise identita'/escursioni/preferiti stanno
+// in userprofile.js (tradotte nel primo lotto, valgono per entrambe le pagine profilo).
+// "var", non "const": vedi la nota in cima a i18n.js sul perche'.
 var T = (window.CamoscioI18n && window.CamoscioI18n.t) || function () { return null; };
 
 function initProfileModule() {
@@ -18,8 +19,11 @@ function renderMyProfilePage() {
     const usr = window.CamoscioState.currentUser;
     if (!usr) return;
 
-    const sectionTitle = document.getElementById("section-title");
-    if (sectionTitle) sectionTitle.textContent = "Il Tuo Profilo";
+    // Titolo di sezione (#section-title): FISSO, non dinamico come #user-profile (che ci
+    // scrive lo username). La mappa id->titolo vive in un solo posto - prettyNames in
+    // app.js, piu' 'sectionTitle.my-profile' nel dizionario per l'inglese: updateSectionTitle
+    // lo rimette a posto da solo anche a ogni cambio lingua, senza un onChange dedicato.
+    if (window.CamoscioUpdateSectionTitle) window.CamoscioUpdateSectionTitle("my-profile");
 
     if (window.CamoscioProfileIdentity) {
         window.CamoscioProfileIdentity.render(usr, window.CamoscioState.stamps, {
@@ -83,7 +87,7 @@ function setupProfileCardEvents() {
             const file = e.target.files[0];
             if (!file) return;
             if (file.size > 1.5 * 1024 * 1024) {
-                window.showToast("Foto troppo grande, scegline una più piccola (max ~1.5MB).", "error");
+                window.showToast(T('myProfile.fotoTroppoGrande') || "Foto troppo grande, scegline una più piccola (max ~1.5MB).", "error");
                 e.target.value = "";
                 return;
             }
@@ -144,17 +148,17 @@ async function saveProfilePhotoAndBio() {
         if (response.ok) {
             newProfilePhotoDataUrl = null;
             removePhotoRequested = false;
-            window.showToast("Profilo aggiornato.", "success");
+            window.showToast(T('myProfile.profiloAggiornato') || "Profilo aggiornato.", "success");
             await refreshState();
             updateHeaderUserWidget();
             renderMyProfilePage();
         } else {
             const dati = await response.json();
-            window.showToast(dati.error || "Non è stato possibile salvare le modifiche.", "error");
+            window.showToast(dati.error || T('myProfile.erroreSalva') || "Non è stato possibile salvare le modifiche.", "error");
         }
     } catch (e) {
         console.error("Errore nel salvataggio di foto/bio:", e);
-        window.showToast("Impossibile contattare il server. Riprova.", "error");
+        window.showToast(T('common.erroreServer') || "Impossibile contattare il server. Riprova.", "error");
     }
 }
 
@@ -171,15 +175,15 @@ async function changePassword() {
     const newPassword = campoNuova.value;
 
     if (!currentPassword) {
-        window.showToast("Scrivi la tua password attuale.", "error");
+        window.showToast(T('myProfile.scriviPwdAttuale') || "Scrivi la tua password attuale.", "error");
         return;
     }
     if (newPassword.length < 8) {
-        window.showToast("La nuova password deve avere almeno 8 caratteri.", "error");
+        window.showToast(T('myProfile.pwdMin8') || "La nuova password deve avere almeno 8 caratteri.", "error");
         return;
     }
     if (newPassword !== campoConferma.value) {
-        window.showToast("Le due nuove password non coincidono.", "error");
+        window.showToast(T('myProfile.pwdNonCoincidono') || "Le due nuove password non coincidono.", "error");
         return;
     }
 
@@ -193,7 +197,7 @@ async function changePassword() {
         const dati = await response.json();
 
         if (!response.ok) {
-            window.showToast(dati.error || "Non è stato possibile cambiare la password.", "error");
+            window.showToast(dati.error || T('myProfile.errorePwd') || "Non è stato possibile cambiare la password.", "error");
             return;
         }
 
@@ -202,10 +206,10 @@ async function changePassword() {
         campoAttuale.value = "";
         campoNuova.value = "";
         campoConferma.value = "";
-        window.showToast("Password cambiata. Resti collegato su questo dispositivo.", "success");
+        window.showToast(T('myProfile.pwdCambiata') || "Password cambiata. Resti collegato su questo dispositivo.", "success");
     } catch (e) {
         console.error("Errore nel cambio password:", e);
-        window.showToast("Impossibile contattare il server. Riprova.", "error");
+        window.showToast(T('common.erroreServer') || "Impossibile contattare il server. Riprova.", "error");
     } finally {
         bottone.disabled = false;
     }
@@ -220,7 +224,7 @@ async function saveLocalExpertStatus() {
     const area = document.getElementById("local-expert-area").value.trim();
 
     if (active && !area) {
-        window.showToast("Indica la zona in cui sei esperto per attivare il layer esperto locale.", "error");
+        window.showToast(T('myProfile.indicaZona') || "Indica la zona in cui sei esperto per attivare il layer esperto locale.", "error");
         return;
     }
 
@@ -232,7 +236,9 @@ async function saveLocalExpertStatus() {
         });
 
         if (response.ok) {
-            window.showToast(active ? "Sei ora un esperto locale per questa zona!" : "Layer esperto locale disattivato.", "success");
+            window.showToast(active
+                ? (T('myProfile.espertoAttivato') || "Sei ora un esperto locale per questa zona!")
+                : (T('myProfile.espertoDisattivato') || "Layer esperto locale disattivato."), "success");
 
             await refreshState();
             renderMyProfilePage();

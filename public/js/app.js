@@ -13,6 +13,13 @@ window.CamoscioState = {
     activeHikeId: null // Escursione attualmente selezionata da Zaino/Carpooling/Mappa; default hikes[0] finché non se ne sceglie una
 };
 
+// Rollout traduzione punto 102, terzo lotto (27/08/2026): il dizionario EN vive in
+// i18n.js, l'italiano resta il testo di ripiego qui sotto (T('chiave') || 'italiano').
+// "var" e non "const": app.js e' un <script> classico che condivide lo scope globale
+// con profile.js/userprofile.js, che dichiarano gia' un "T" - un "const T" darebbe
+// SyntaxError e bloccherebbe l'intero file (vedi la nota in cima a i18n.js).
+var T = (window.CamoscioI18n && window.CamoscioI18n.t) || function () { return null; };
+
 // Escaping di sicurezza per inserire testo scritto da un utente (titoli, bio, nomi, messaggi...)
 // dentro innerHTML: senza questo, chiunque potrebbe eseguire script arbitrario nel browser di chi
 // legge semplicemente scrivendo HTML nei tanti campi di testo libero dell'app (username, titoli
@@ -422,7 +429,12 @@ function setupNavigation() {
         "safety": "Sicurezza & Mesh Simulator",
         "social": "Tribù, Recensioni & Squadre",
         "people-search": "Cerca Persone",
-        "user-profile": "Profilo"
+        "user-profile": "Profilo",
+        // #my-profile ha un titolo FISSO (a differenza di #user-profile, dove
+        // renderUserProfile ci scrive lo username): tenendolo qui, updateSectionTitle
+        // lo rimette a posto da solo a ogni cambio lingua - vedi 'sectionTitle.my-profile'
+        // in i18n.js e renderMyProfilePage in profile.js (rollout punto 102, terzo lotto).
+        "my-profile": "Il Tuo Profilo"
     };
 
     // Estratta da navigateTo il 22/08/2026 perche' serve anche a i18n.js: se
@@ -582,7 +594,9 @@ function updateHeaderUserWidget() {
     }
     document.getElementById("current-user-name").textContent = usr.username;
     document.getElementById("current-user-reputation").textContent = usr.reputation;
-    document.getElementById("current-user-exp").textContent = `Livello: ${usr.experienceLevel}`;
+    // Solo l'etichetta "Livello:" si traduce; il valore (Principiante/Intermedio/
+    // Esperto) resta invariato, coerente con la card identita' di profilo.
+    document.getElementById("current-user-exp").textContent = `${T('header.livelloLabel') || 'Livello:'} ${usr.experienceLevel}`;
 
     // Badge personale (chiesto da Denis in sessione il 01/08/2026): assegnato a
     // mano, non guadagnato - vedi personal-badges.js.
@@ -753,7 +767,7 @@ function renderDashboard() {
     if (notaPasso) {
         notaPasso.textContent = passoMisurato
             ? ""
-            : "Il tuo passo non è ancora stato misurato: completa un'escursione indicando il tempo impiegato (o allegando la traccia .gpx) e questi numeri compariranno.";
+            : (T('dash.passoNotaVuoto') || "Il tuo passo non è ancora stato misurato: completa un'escursione indicando il tempo impiegato (o allegando la traccia .gpx) e questi numeri compariranno.");
     }
 
     // Disegna il grafico del passo
@@ -788,20 +802,25 @@ async function renderTrackingTotals() {
         if (!res.ok) throw new Error('Richiesta fallita');
         const t = await res.json();
 
-        elDistanza.textContent = t.distanzaKm.toLocaleString('it-IT');
-        elDislivello.textContent = t.dislivelloM.toLocaleString('it-IT');
+        // Separatore migliaia: virgola in inglese, punto in italiano - stessa scelta di
+        // locale gia' fatta per le date col nome del mese (formattaDataItaliana in
+        // userprofile.js), rollout punto 102 terzo lotto.
+        const loc = (window.CamoscioI18n && window.CamoscioI18n.getLang() === 'en') ? 'en-GB' : 'it-IT';
+        elDistanza.textContent = t.distanzaKm.toLocaleString(loc);
+        elDislivello.textContent = t.dislivelloM.toLocaleString(loc);
         // La velocita' media a 0 non si scrive "0": senza tempo registrato non e' zero, e'
         // che non si sa ancora. Sono due cose diverse e mostrarle uguali sarebbe una bugia.
-        elVelocita.textContent = t.velocitaMediaKmh > 0 ? t.velocitaMediaKmh.toLocaleString('it-IT') : "—";
+        elVelocita.textContent = t.velocitaMediaKmh > 0 ? t.velocitaMediaKmh.toLocaleString(loc) : "—";
 
         if (nota) {
             if (t.sessioni === 0) {
-                nota.textContent = "Non hai ancora registrato nessuna escursione: avvia il tracciamento GPS dalla mappa e questi numeri cominceranno a salire.";
+                nota.textContent = T('dash.totaliNotaVuoto') || "Non hai ancora registrato nessuna escursione: avvia il tracciamento GPS dalla mappa e questi numeri cominceranno a salire.";
             } else {
                 const ore = Math.floor(t.secondi / 3600);
                 const minuti = Math.round((t.secondi % 3600) / 60);
                 const tempo = ore > 0 ? `${ore}h ${minuti}min` : `${minuti} min`;
-                let testo = `${t.sessioni} ${t.sessioni === 1 ? 'escursione registrata' : 'escursioni registrate'}, ${tempo} di cammino in totale.`;
+                let testo = T('dash.totaliNota', t.sessioni, tempo)
+                    || `${t.sessioni} ${t.sessioni === 1 ? 'escursione registrata' : 'escursioni registrate'}, ${tempo} di cammino in totale.`;
 
                 // Le uscite importate da un file .gpx senza orari hanno km e dislivello veri
                 // ma nessuna durata, quindi restano fuori dal tempo e dalla velocita' media
@@ -810,9 +829,9 @@ async function renderTrackingTotals() {
                 // penserebbe a un errore del sito, e avrebbe ragione a pensarlo.
                 const senza = t.sessioniSenzaDurata || 0;
                 if (senza > 0) {
-                    testo += senza === 1
+                    testo += T('dash.totaliSenzaOrari', senza) || (senza === 1
                         ? " Un'uscita importata è senza orari: i suoi chilometri sono contati, il tempo e la velocità media no."
-                        : ` ${senza} uscite importate sono senza orari: i loro chilometri sono contati, il tempo e la velocità media no.`;
+                        : ` ${senza} uscite importate sono senza orari: i loro chilometri sono contati, il tempo e la velocità media no.`);
                 }
                 nota.textContent = testo;
             }
@@ -821,7 +840,7 @@ async function renderTrackingTotals() {
         console.error("Impossibile calcolare i totali delle escursioni:", e);
         // Meglio lasciare i trattini e dirlo, che mostrare degli zeri: uno zero verrebbe
         // letto come "non hai mai camminato", che e' un'informazione sbagliata.
-        if (nota) nota.textContent = "Non è stato possibile caricare i totali. Riprova più tardi.";
+        if (nota) nota.textContent = T('dash.totaliErrore') || "Non è stato possibile caricare i totali. Riprova più tardi.";
     }
 }
 
@@ -918,7 +937,7 @@ function renderPaceChart(user, passoMisurato) {
     }
 
     const datasetUtente = {
-        label: 'Tuo Passo Rilevato',
+        label: T('dash.chartTuoPasso') || 'Tuo Passo Rilevato',
         data: [Number(user.averagePaceUp), Number(user.averagePaceDown)],
         backgroundColor: 'rgba(76, 126, 144, 0.65)',
         borderColor: '#4C7E90',
@@ -926,7 +945,7 @@ function renderPaceChart(user, passoMisurato) {
         borderRadius: 6
     };
     const datasetCai = {
-        label: 'Standard CAI Alpino',
+        label: T('dash.chartCaiStandard') || 'Standard CAI Alpino',
         data: [400, 600],
         backgroundColor: 'rgba(193, 102, 46, 0.25)',
         borderColor: '#C1662E',
@@ -938,7 +957,7 @@ function renderPaceChart(user, passoMisurato) {
     paceChartInstance = new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: ['Ascesa (m/ora)', 'Discesa (m/ora)'],
+            labels: [T('dash.chartAscesa') || 'Ascesa (m/ora)', T('dash.chartDiscesa') || 'Discesa (m/ora)'],
             datasets: passoMisurato ? [datasetUtente, datasetCai] : [datasetCai]
         },
         options: {
@@ -998,7 +1017,7 @@ function renderDashboardStamps() {
         slot.innerHTML = `
             ${iconaHtml}
             <span class="stamp-name">${escapeHtml(badge.nome)}</span>
-            <span class="stamp-date">${escapeHtml(badge.sbloccato ? window.CamoscioBadges.dataItaliana(badge.data) : "Bloccato")}</span>
+            <span class="stamp-date">${escapeHtml(badge.sbloccato ? window.CamoscioBadges.dataItaliana(badge.data) : (T('dash.timbroBloccato') || "Bloccato"))}</span>
         `;
         container.appendChild(slot);
     });
@@ -1010,7 +1029,7 @@ function renderDashboardStamps() {
     if (contatore && window.CamoscioBadges) {
         const tutti = window.CamoscioBadges.statoBadge();
         const presi = tutti.filter(b => b.sbloccato).length;
-        contatore.textContent = `${presi} badge su ${tutti.length}`;
+        contatore.textContent = T('dash.badgeSuTotale', presi, tutti.length) || `${presi} badge su ${tutti.length}`;
     }
 
     // La pagina Badge mostra gli stessi dati di questa scheda: si ridisegna insieme,
@@ -1023,4 +1042,26 @@ function renderDashboardStamps() {
     // (contava i timbri sbloccati), ma la sfida NO: nessuno l'aveva mai creata o accettata,
     // compariva a chiunque appena registrato, e l'etichetta "(0/2)" accanto era scritta a mano
     // nell'HTML e restava 0 anche dopo aver preso i timbri. Tolta insieme al suo riquadro.
+}
+
+// Rollout traduzione punto 102, terzo lotto (27/08/2026): due ridisegni al cambio lingua.
+//
+// 1) HEADER CONDIVISO (sempre visibile): alcuni pezzi hanno data-i18n che
+//    applyStaticTranslations riporta al testo di partenza ("Caricamento...", il
+//    guscio di "Reputazione: --%"); updateHeaderUserWidget rimette nome/reputazione
+//    e traduce l'etichetta "Livello:". Legge solo currentUser, nessun fetch.
+//
+// 2) DASHBOARD: ridisegno completo solo se e' la sezione aperta. Quasi tutti i suoi
+//    dati sono gia' in CamoscioState: il re-render sincrono e' gratis. renderTrackingTotals
+//    rifa' un fetch di 3 numeri, ma non svuota la card mentre carica - niente flicker, a
+//    differenza del caso userprofile.js dove l'onChange completo e' stato sconsigliato.
+//    Nota: renderDashboardStamps chiama renderBadges, che ha gia' un proprio onChange in
+//    badges.js - a un toggle fatto dalla Dashboard renderBadges gira quindi due volte
+//    (~40 nodi ricostruiti, costo trascurabile, non vale codice per evitarlo).
+if (window.CamoscioI18n) {
+    window.CamoscioI18n.onChange(function () {
+        if (window.CamoscioState.currentUser) updateHeaderUserWidget();
+        const dash = document.getElementById("dashboard");
+        if (dash && dash.classList.contains("active")) renderDashboard();
+    });
 }

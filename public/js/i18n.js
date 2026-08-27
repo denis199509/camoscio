@@ -447,7 +447,123 @@
             'gpx.importaBtn': 'Import',
             'gpx.dataNonValida': 'Invalid date: it must be in day/month/year format.',
             'gpx.neHaiCaricati': function (n, max) { return " You've uploaded " + n + ' of ' + max + ' this month.'; },
-            'gpx.riprova': 'Try again.'
+            'gpx.riprova': 'Try again.',
+
+            // ==================================================================
+            // Rollout punto 102, TERZO lotto (27/08/2026): Dashboard + Profilo
+            // proprio (#my-profile). Confermato da Denis a fine sesta sessione
+            // ("confermo il terzo lotto, quello proposto") - vedi 04-Da-Fare.md.
+            //
+            // Quattro scelte non ovvie di questo lotto:
+            // 1) Il titolo di #my-profile e' FISSO ("Il Tuo Profilo"), non
+            //    dinamico come #user-profile (dove e' lo username). Aggiunto sia
+            //    a prettyNames (app.js) sia qui come 'sectionTitle.my-profile':
+            //    updateSectionTitle lo rimette a posto da solo a ogni cambio
+            //    lingua, nessun onChange dedicato serve (a differenza di
+            //    userprofile.js, che ne tiene uno solo per lo username).
+            // 2) Il CORPO di #my-profile (identita'/escursioni/preferiti) usa le
+            //    stesse funzioni condivise di #user-profile, gia' tradotte nel
+            //    primo lotto e - come li' - NON ridisegnate al cambio lingua
+            //    (renderProfileHikes fa un fetch): stesso residuo onesto,
+            //    coerente fra le due pagine gemelle. Le etichette statiche
+            //    dell'HTML si aggiornano comunque, via applyStaticTranslations.
+            // 3) La Dashboard invece SI ridisegna al cambio lingua
+            //    (CamoscioI18n.onChange in fondo ad app.js): quasi tutti i suoi
+            //    dati sono gia' in CamoscioState, il re-render sincrono e'
+            //    gratis. L'unico fetch (renderTrackingTotals, 3 numeri) non
+            //    svuota la card mentre carica, quindi non da' il flicker che ha
+            //    sconsigliato l'onChange completo su userprofile.js.
+            // 4) I totali in Dashboard (km/dislivello/media) passano da
+            //    toLocaleString: separatore migliaia italiano vs inglese, va
+            //    scelto il locale come per le date col nome del mese (en-GB).
+
+            // --- DASHBOARD: testo statico nell'HTML (#dashboard) ---
+            'dash.benvenuto': 'Welcome to Camoscio, <span class="highlight-text" id="dash-welcome-name">User</span>!',
+            'dash.sottotitolo': 'Your personal assistant for safe hikes, carpooling and advanced alpine planning.',
+            'dash.statCompletate': 'Hikes Done',
+            'dash.statTimbri': 'Peak Stamps',
+            'dash.statReputazione': 'Reputation Score',
+            'dash.passaportoTitolo': 'Digital Peak Passport',
+            'dash.geofencingAttivo': 'Geofencing Active',
+            'dash.passaportoDesc': 'Reach the peaks and huts to unlock collectible digital stamps. Use the map to simulate your GPS position!',
+            'dash.vediTuttiBadge': 'See all badges',
+            'dash.totaliTitolo': "How far you've walked",
+            'dash.totaliDesc': 'Total of all the hikes you recorded with GPS.',
+            'dash.kmPercorsi': 'km covered',
+            'dash.mDislivello': 'm of elevation gain',
+            'dash.kmhMedia': 'km/h average',
+            'dash.passoTitolo': 'Pace & Effort Calculator',
+            'dash.passoDesc': 'The algorithm learns from your tracked hikes to estimate real walking times.',
+            'dash.velocitaAscesa': 'Ascent Speed:',
+            'dash.velocitaDiscesa': 'Descent Speed:',
+            'dash.indiceFatica': 'Personalized Effort Index:',
+            'dash.rispettoCai': 'x vs CAI',
+
+            // --- DASHBOARD: testo generato da JS (app.js) ---
+            'dash.passoNotaVuoto': "Your pace hasn't been measured yet: complete a hike entering the time it took (or attaching the .gpx track) and these numbers will show up.",
+            'dash.totaliNotaVuoto': "You haven't recorded any hikes yet: start GPS tracking from the map and these numbers will start going up.",
+            'dash.totaliNota': function (n, tempo) { return n + (n === 1 ? ' hike recorded' : ' hikes recorded') + ', ' + tempo + ' of walking in total.'; },
+            'dash.totaliSenzaOrari': function (n) { return n === 1 ? " One imported hike has no timestamps: its kilometers are counted, the time and average speed are not." : ' ' + n + ' imported hikes have no timestamps: their kilometers are counted, the time and average speed are not.'; },
+            'dash.totaliErrore': 'Could not load the totals. Try again later.',
+            'dash.timbroBloccato': 'Locked',
+            'dash.badgeSuTotale': function (presi, tot) { return presi + ' of ' + tot + ' badges'; },
+            'dash.chartTuoPasso': 'Your Measured Pace',
+            'dash.chartCaiStandard': 'Alpine CAI Standard',
+            'dash.chartAscesa': 'Ascent (m/hour)',
+            'dash.chartDiscesa': 'Descent (m/hour)',
+
+            // --- PROFILO PROPRIO (#my-profile): testo statico nell'HTML ---
+            'sectionTitle.my-profile': 'Your Profile',
+            'myProfile.cardTitolo': 'Your Profile',
+            'myProfile.rimuoviFoto': 'Remove photo',
+            'myProfile.bioLabel': 'Bio (max 250 characters):',
+            'myProfile.bioPlaceholder': 'Tell us something about yourself...',
+            'myProfile.salvaFotoBio': 'Save photo and bio',
+            'myProfile.espertoDesc': 'If you know an area well, offer yourself as an informal local expert to help those less familiar with the place.',
+            'myProfile.sonoEsperto': "I'm a local expert",
+            'myProfile.espertoZonaLabel': 'Local expert:',
+            'myProfile.espertoZonaPlaceholder': "E.g. Gran Sasso d'Italia, Monti Sibillini...",
+            'myProfile.cambioPwdDesc': "Change your account password. You'll need the current one.",
+            'myProfile.pwdAttuale': 'Current password:',
+            'myProfile.pwdNuova': 'New password (at least 8 characters):',
+            'myProfile.pwdConferma': 'Confirm new password:',
+            'myProfile.cambiaPwdBtn': 'Change password',
+
+            // --- PROFILO PROPRIO: testo generato da JS (profile.js) ---
+            'myProfile.fotoTroppoGrande': 'Photo too big, pick a smaller one (max ~1.5MB).',
+            'myProfile.profiloAggiornato': 'Profile updated.',
+            'myProfile.erroreSalva': 'Could not save the changes.',
+            'myProfile.scriviPwdAttuale': 'Enter your current password.',
+            'myProfile.pwdMin8': 'The new password must be at least 8 characters.',
+            'myProfile.pwdNonCoincidono': "The two new passwords don't match.",
+            'myProfile.errorePwd': 'Could not change the password.',
+            'myProfile.pwdCambiata': 'Password changed. You stay logged in on this device.',
+            'myProfile.indicaZona': "Enter the area you're an expert in to enable the local expert layer.",
+            'myProfile.espertoAttivato': "You're now a local expert for this area!",
+            'myProfile.espertoDisattivato': 'Local expert layer disabled.',
+
+            // --- HEADER CONDIVISO (visibile su ogni pagina): bottone Esci, campana
+            //     notifiche, widget utente in alto a destra. Non erano marcati in
+            //     nessun lotto - segnalato durante la verifica del terzo lotto e
+            //     ripiegato dentro su richiesta di Denis (27/08/2026). Il valore di
+            //     experienceLevel ("Esperto"...) NON si traduce qui, coerente con la
+            //     card identita' di profilo (profile.livelloReputazione, primo lotto):
+            //     solo l'etichetta "Livello:". updateHeaderUserWidget (app.js) si
+            //     registra su onChange per rimettere nome/reputazione/livello dopo che
+            //     applyStaticTranslations ha riportato i data-i18n al testo di partenza.
+            'header.esci': 'Log out',
+            'header.esciTitle': 'Log out of your account',
+            'header.notifiche': 'Notifications',
+            'header.moderazioneTitle': 'Trail reports to review',
+            'header.profiloTitle': 'Go to your profile',
+            'header.caricamento': 'Loading...',
+            'header.reputazione': 'Reputation: <strong id="current-user-reputation">--</strong>%',
+            'header.livelloLabel': 'Level:',
+
+            // Etichetta generica riusata da #my-profile (bottone "Salva" del
+            // modulo esperto locale) - come common.elimina/cancella dei lotti
+            // precedenti, sta qui per essere riusabile dai lotti futuri.
+            'common.salva': 'Save'
         }
     };
 
