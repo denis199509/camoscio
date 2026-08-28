@@ -848,24 +848,24 @@
                                      riquadro resta sempre aperto come prima. Vedi map.js,
                                      setupMapRecordSetupToggle. -->
                                 <button type="button" id="btn-map-record-setup-toggle" class="map-record-setup-toggle">
-                                    <span><i data-lucide="route"></i> Opzioni escursione</span>
+                                    <span><i data-lucide="route"></i> <span data-i18n="track.opzioniEscursione">Opzioni escursione</span></span>
                                     <i data-lucide="chevron-down" class="map-record-setup-toggle-icon"></i>
                                 </button>
                                 <div id="map-record-setup-body">
                                     <div class="form-group">
-                                        <label for="tracking-hike-select">Escursione collegata (facoltativo):</label>
+                                        <label for="tracking-hike-select" data-i18n="track.escursioneCollegata">Escursione collegata (facoltativo):</label>
                                         <select id="tracking-hike-select" class="form-control">
-                                            <option value="">Nessuna - traccia libera</option>
+                                            <option value="" data-i18n="track.nessunaTracciaLibera">Nessuna - traccia libera</option>
                                         </select>
                                     </div>
 
                                     <div id="tracking-geo-consent-alert" class="privacy-alert-box hidden">
                                         <i data-lucide="alert-triangle"></i>
-                                        <span>Il tracciamento userà la posizione GPS reale del telefono. Avevi lasciato il consenso alla geolocalizzazione disattivato in registrazione: verrà attivato ora, se prosegui.</span>
+                                        <span data-i18n="track.consensoAlert">Il tracciamento userà la posizione GPS reale del telefono. Avevi lasciato il consenso alla geolocalizzazione disattivato in registrazione: verrà attivato ora, se prosegui.</span>
                                     </div>
 
                                     <button type="button" id="btn-tracking-download-map" class="btn btn-secondary btn-sm btn-block">
-                                        <i data-lucide="download"></i> Scarica mappa offline per quest'area
+                                        <i data-lucide="download"></i> <span data-i18n="track.scaricaMappaOffline">Scarica mappa offline per quest'area</span>
                                     </button>
                                     <div id="tracking-download-progress" class="tracking-download-progress hidden">
                                         <div class="tracking-download-progress-fill" id="tracking-download-progress-fill"></div>
@@ -878,8 +878,8 @@
                                  registrare il percorso, direttamente sulla mappa (senza dover
                                  passare dal pannello del pulsante a scarpone). -->
                             <div class="map-record-controls">
-                                <button class="btn btn-sm btn-secondary map-recenter-btn hidden" id="btn-map-recenter" title="Torna a seguire la mia posizione GPS">
-                                    <i data-lucide="crosshair"></i> Ricentra su di me
+                                <button class="btn btn-sm btn-secondary map-recenter-btn hidden" id="btn-map-recenter" title="Torna a seguire la mia posizione GPS" data-i18n-title="track.ricentraTitle">
+                                    <i data-lucide="crosshair"></i> <span data-i18n="track.ricentra">Ricentra su di me</span>
                                 </button>
                                 <button class="btn btn-primary map-record-btn" id="btn-map-quick-record" type="button">
                                     <i data-lucide="circle-dot"></i> <span id="map-record-label">Comincia registrazione</span>
@@ -2113,18 +2113,18 @@
         <span id="tracking-mini-icon">🔴</span>
         <span id="tracking-mini-time">00:00:00</span>
         <span id="tracking-mini-distance">0.00 km</span>
-        <span class="tracking-mini-hint">Tocca per i dettagli</span>
+        <span class="tracking-mini-hint" data-i18n="track.toccaDettagli">Tocca per i dettagli</span>
     </div>
 
     <div id="tracking-panel" class="tracking-panel hidden">
         <div class="modal-header">
-            <h3><i data-lucide="footprints"></i> Escursione dal vivo</h3>
+            <h3><i data-lucide="footprints"></i> <span data-i18n="track.panelTitolo">Escursione dal vivo</span></h3>
             <button type="button" class="close-modal-btn" id="tracking-panel-close">&times;</button>
         </div>
 
         <!-- Stato: nessun tracciamento in corso -->
         <div id="tracking-state-idle">
-            <p class="small text-muted" style="margin-bottom:14px;">
+            <p class="small text-muted" style="margin-bottom:14px;" data-i18n="track.idleDesc">
                 Registra il percorso GPS reale della tua escursione: continua ad aggiornarsi anche
                 con poco campo e si sincronizza da solo appena torna segnale.
             </p>
@@ -2136,7 +2136,7 @@
                  non c'era più modo di raggiungerli da qui. #btn-tracking-start resta: non fa
                  male tenerlo, anche se in pratica non lo apre più nessuno. -->
             <button type="button" id="btn-tracking-start" class="btn btn-primary btn-block" style="margin-top:12px;">
-                <i data-lucide="play"></i> Avvia tracciamento GPS
+                <i data-lucide="play"></i> <span data-i18n="track.avviaBtn">Avvia tracciamento GPS</span>
             </button>
         </div>
 
@@ -2144,60 +2144,66 @@
         <div id="tracking-state-active" class="hidden">
             <div class="tracking-stats-grid">
                 <div class="tracking-stat">
-                    <span class="tracking-stat-label">Tempo</span>
+                    <span class="tracking-stat-label" data-i18n="track.statTempo">Tempo</span>
                     <span class="tracking-stat-value" id="tracking-stat-time">00:00:00</span>
                 </div>
                 <div class="tracking-stat">
-                    <span class="tracking-stat-label">Distanza</span>
+                    <span class="tracking-stat-label" data-i18n="track.statDistanza">Distanza</span>
                     <span class="tracking-stat-value" id="tracking-stat-distance">0.00 km</span>
                 </div>
                 <div class="tracking-stat">
-                    <span class="tracking-stat-label">Dislivello D+</span>
+                    <span class="tracking-stat-label" data-i18n="track.statDislivello">Dislivello D+</span>
                     <span class="tracking-stat-value" id="tracking-stat-elevation">0 m</span>
                 </div>
                 <div class="tracking-stat">
-                    <span class="tracking-stat-label">Velocità media</span>
+                    <span class="tracking-stat-label" data-i18n="track.statVelocita">Velocità media</span>
                     <span class="tracking-stat-value" id="tracking-stat-speed">0.0 km/h</span>
                 </div>
             </div>
 
+            <!-- data-i18n = lo STATO DI PARTENZA di questi due badge (in attesa / sincronizzato);
+                 quando JS li porta su un altro stato (renderGpsQuality / setSyncBadge),
+                 applyStaticTranslations li riporterebbe qui al cambio lingua, ma l'onChange di
+                 tracking.js gira subito dopo e li rimette allo stato vero (ultimoStatoSync /
+                 renderTrackingUi). Prima di qualunque azione JS, il testo di partenza tradotto
+                 e' comunque quello giusto. -->
             <div class="tracking-signal-row">
-                <span id="tracking-gps-quality" class="badge badge-primary">GPS: in attesa del segnale...</span>
-                <span id="tracking-sync-status" class="badge badge-green">Sincronizzato</span>
+                <span id="tracking-gps-quality" class="badge badge-primary" data-i18n="track.gps.attesa">GPS: in attesa del segnale...</span>
+                <span id="tracking-sync-status" class="badge badge-green" data-i18n="track.sync.sincronizzato">Sincronizzato</span>
             </div>
 
             <div class="tracking-panel-actions">
-                <button type="button" id="btn-tracking-pause" class="btn btn-secondary"><i data-lucide="pause"></i> Pausa</button>
-                <button type="button" id="btn-tracking-resume" class="btn btn-secondary hidden"><i data-lucide="play"></i> Riprendi</button>
-                <button type="button" id="btn-tracking-end" class="btn btn-danger"><i data-lucide="square"></i> Termina</button>
+                <button type="button" id="btn-tracking-pause" class="btn btn-secondary"><i data-lucide="pause"></i> <span data-i18n="track.pausaBtn">Pausa</span></button>
+                <button type="button" id="btn-tracking-resume" class="btn btn-secondary hidden"><i data-lucide="play"></i> <span data-i18n="track.riprendiBtn">Riprendi</span></button>
+                <button type="button" id="btn-tracking-end" class="btn btn-danger"><i data-lucide="square"></i> <span data-i18n="track.terminaBtn">Termina</span></button>
             </div>
         </div>
 
         <!-- Stato: riepilogo dopo la fine del tracciamento -->
         <div id="tracking-state-summary" class="hidden">
-            <h4 style="margin-bottom:14px;">Escursione conclusa 🎉</h4>
+            <h4 style="margin-bottom:14px;" data-i18n="track.riepilogoTitolo">Escursione conclusa 🎉</h4>
             <div class="tracking-stats-grid">
                 <div class="tracking-stat">
-                    <span class="tracking-stat-label">Durata</span>
+                    <span class="tracking-stat-label" data-i18n="track.statDurata">Durata</span>
                     <span class="tracking-stat-value" id="tracking-summary-time">-</span>
                 </div>
                 <div class="tracking-stat">
-                    <span class="tracking-stat-label">Distanza</span>
+                    <span class="tracking-stat-label" data-i18n="track.statDistanza">Distanza</span>
                     <span class="tracking-stat-value" id="tracking-summary-distance">-</span>
                 </div>
                 <div class="tracking-stat">
-                    <span class="tracking-stat-label">Dislivello D+</span>
+                    <span class="tracking-stat-label" data-i18n="track.statDislivello">Dislivello D+</span>
                     <span class="tracking-stat-value" id="tracking-summary-elevation">-</span>
                 </div>
                 <div class="tracking-stat">
-                    <span class="tracking-stat-label">Velocità media</span>
+                    <span class="tracking-stat-label" data-i18n="track.statVelocita">Velocità media</span>
                     <span class="tracking-stat-value" id="tracking-summary-speed">-</span>
                 </div>
             </div>
-            <button type="button" id="btn-tracking-mark-complete" class="btn btn-success btn-block hidden" style="margin-top:16px;">
+            <button type="button" id="btn-tracking-mark-complete" class="btn btn-success btn-block hidden" style="margin-top:16px;" data-i18n="track.segnaCompletata">
                 Segna l'escursione collegata come completata
             </button>
-            <button type="button" id="btn-tracking-summary-close" class="btn btn-secondary btn-block" style="margin-top:10px;">Chiudi</button>
+            <button type="button" id="btn-tracking-summary-close" class="btn btn-secondary btn-block" style="margin-top:10px;" data-i18n="track.chiudiBtn">Chiudi</button>
         </div>
     </div>
 

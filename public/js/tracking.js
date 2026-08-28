@@ -11,6 +11,26 @@
 //   pulsante flottante sempre raggiungibile + un pannello con numeri grandi, indipendenti
 //   dalla sidebar non responsive del resto dell'app.
 
+// Rollout traduzione punto 102 (lotto Mappa, area 4: Tracciamento GPS + mappa offline).
+// var, non const: questo file non e' avvolto in una IIFE e "const T" in un secondo
+// <script> classico da' SyntaxError (vedi 07-Trappole-Tecniche.md). Ogni file assegna
+// sempre lo stesso valore, e' idempotente.
+var T = (window.CamoscioI18n && window.CamoscioI18n.t) || function () { return null; };
+
+// Virgola in italiano, punto in inglese, come decimaleMeteo (area 3) / formattaEuro
+// (sesto lotto). Nome proprio perche' tracking.js non e' in una IIFE. Prima distanza e
+// velocita' erano toFixed(2)/toFixed(1) fissi col punto anche in italiano.
+function numTracc(n, cifre) {
+    const s = n.toFixed(cifre);
+    return (window.CamoscioI18n && window.CamoscioI18n.getLang() === 'en') ? s : s.replace('.', ',');
+}
+
+// Stato dei due badge (sync / qualita' GPS) e ultima sessione del riepilogo: servono
+// all'onChange in fondo al file per ridisegnarli nella lingua nuova senza rifare fetch
+// (setSyncBadge e renderSummary partono da un argomento).
+let ultimoStatoSync = null;
+let ultimaSessioneRiepilogo;
+
 const trackingState = {
     sessionId: null,
     hikeId: null,
@@ -98,7 +118,7 @@ function applySessionState(session) {
 
 async function startTracking() {
     if (!navigator.geolocation) {
-        window.showToast("Il tuo browser non supporta la geolocalizzazione: impossibile registrare il percorso reale.", "error");
+        window.showToast(T('track.noGeoBrowser') || "Il tuo browser non supporta la geolocalizzazione: impossibile registrare il percorso reale.", "error");
         return;
     }
 
@@ -107,7 +127,7 @@ async function startTracking() {
     // richiesta parte da due posti diversi, e due copie sarebbero finite per divergere.
     if (window.CamoscioGeo) {
         const ok = await window.CamoscioGeo.assicuraConsenso(
-            "Per registrare il percorso GPS dell'escursione serve la posizione reale del telefono. Avevi lasciato il consenso alla geolocalizzazione disattivato in registrazione: vuoi attivarlo ora e continuare?"
+            T('track.consensoTracciamento') || "Per registrare il percorso GPS dell'escursione serve la posizione reale del telefono. Avevi lasciato il consenso alla geolocalizzazione disattivato in registrazione: vuoi attivarlo ora e continuare?"
         );
         if (!ok) return;
     }
@@ -156,10 +176,10 @@ async function startTracking() {
         renderTrackingUi();
         updateMapRecordButton();
         avviaPromemoriaTracciamento();
-        window.showToast("Tracciamento GPS avviato: buona escursione! 🥾", "success");
+        window.showToast(T('track.avviato') || "Tracciamento GPS avviato: buona escursione! 🥾", "success");
     } catch (e) {
         console.error("Errore avvio tracciamento:", e);
-        window.showToast("Impossibile avviare il tracciamento GPS. Riprova.", "error");
+        window.showToast(T('track.erroreAvvio') || "Impossibile avviare il tracciamento GPS. Riprova.", "error");
     } finally {
         if (btnStart) btnStart.disabled = false;
     }
@@ -210,7 +230,7 @@ function avviaPromemoriaTracciamento() {
         notifications: [{
             id: ID_PROMEMORIA_TRACCIAMENTO,
             title: 'Camoscio',
-            body: "Il tracciamento GPS è ancora attivo. Se hai finito, apri l'app e premi Termina.",
+            body: T('track.promemoriaBody') || "Il tracciamento GPS è ancora attivo. Se hai finito, apri l'app e premi Termina.",
             schedule: { every: 'hour', allowWhileIdle: true },
             isExactNotification: false
         }]
@@ -288,7 +308,7 @@ async function resumeTracking() {
 }
 
 async function endTracking() {
-    const confirmed = await window.showConfirmModal("Vuoi terminare il tracciamento di questa escursione? Il riepilogo finale userà i dati raccolti finora.");
+    const confirmed = await window.showConfirmModal(T('track.confermaTermina') || "Vuoi terminare il tracciamento di questa escursione? Il riepilogo finale userà i dati raccolti finora.");
     if (!confirmed) return;
 
     if (trackingState.activeResumedAtMs) {
@@ -328,16 +348,16 @@ async function completeLinkedHike(durationSeconds) {
             body: JSON.stringify({ actualTimeHours })
         });
         if (res.ok) {
-            window.showToast("Escursione segnata come completata con i dati reali del tracciamento!", "success");
+            window.showToast(T('track.completataReale') || "Escursione segnata come completata con i dati reali del tracciamento!", "success");
             await refreshState();
             if (window.renderHikesList) window.renderHikesList();
         } else {
             const body = await res.json().catch(() => ({}));
-            window.showToast(body.error || "Non è stato possibile segnare l'escursione come completata.", "error");
+            window.showToast(body.error || T('track.erroreCompletamento') || "Non è stato possibile segnare l'escursione come completata.", "error");
         }
     } catch (e) {
         console.error("Errore nel completamento automatico:", e);
-        window.showToast("Non è stato possibile segnare l'escursione come completata.", "error");
+        window.showToast(T('track.erroreCompletamento') || "Non è stato possibile segnare l'escursione come completata.", "error");
     }
 
     const btn = document.getElementById('btn-tracking-mark-complete');
@@ -372,7 +392,7 @@ function beginWatchingPosition() {
         // trovata e corretta oggi, deve comunque riportare lo stato a "non sto tracciando".
         return beginWatchingPositionNative().catch((e) => {
             console.error("Errore imprevisto avviando il GPS nativo:", e);
-            window.showToast("Impossibile avviare il GPS in background. Riprova.", "error");
+            window.showToast(T('track.erroreGpsBackground') || "Impossibile avviare il GPS in background. Riprova.", "error");
             trackingState.watchId = null;
             if (window.CamoscioGeo) window.CamoscioGeo.usaFonteEsterna(false);
             return false;
@@ -437,7 +457,7 @@ async function beginWatchingPositionNative() {
     const plugin = nativeGeoPlugin();
     if (!plugin) {
         console.error("Plugin BackgroundGeolocation non trovato in app nativa.");
-        window.showToast("GPS in background non disponibile su questo dispositivo.", "error");
+        window.showToast(T('track.gpsBackgroundNonDisp') || "GPS in background non disponibile su questo dispositivo.", "error");
         trackingState.watchId = null;
         if (window.CamoscioGeo) window.CamoscioGeo.usaFonteEsterna(false);
         return false;
@@ -447,8 +467,8 @@ async function beginWatchingPositionNative() {
         const statoIniziale = await plugin.checkPermissions();
         if (statoIniziale.location !== 'granted') {
             await showGenericModal(
-                "Per continuare a registrare il percorso anche a schermo spento, Camoscio sta per chiedere ad Android il permesso di posizione. Va bene qualunque opzione proponga Android, anche 'solo durante l'uso': il tracciamento resta attivo a schermo spento grazie al servizio con notifica permanente. Se subito dopo chiede anche il permesso di notifiche, puoi consentirlo o no: il tracciamento parte comunque.",
-                { confirmLabel: "Ho capito, continua", showCancel: false }
+                T('track.modalePermessoAndroid') || "Per continuare a registrare il percorso anche a schermo spento, Camoscio sta per chiedere ad Android il permesso di posizione. Va bene qualunque opzione proponga Android, anche 'solo durante l'uso': il tracciamento resta attivo a schermo spento grazie al servizio con notifica permanente. Se subito dopo chiede anche il permesso di notifiche, puoi consentirlo o no: il tracciamento parte comunque.",
+                { confirmLabel: T('track.hoCapitoContinua') || "Ho capito, continua", showCancel: false }
             );
         }
     } catch (e) {
@@ -522,18 +542,18 @@ async function beginWatchingPositionNative() {
         console.error("Errore avvio GPS nativo in background:", e);
         const msg = e.message || '';
         if (msg.indexOf('Location services disabled') !== -1) {
-            window.showToast("Il GPS del telefono è spento. Accendilo dalle impostazioni rapide di Android e riprova.", "error");
+            window.showToast(T('track.gpsSpento') || "Il GPS del telefono è spento. Accendilo dalle impostazioni rapide di Android e riprova.", "error");
         } else if (e.code === 'NOT_AUTHORIZED') {
-            window.showToast("Camoscio non può tracciare senza il permesso di posizione. Riprova: te lo richiederà di nuovo.", "error");
+            window.showToast(T('track.permessoPosizioneNegatoRiprova') || "Camoscio non può tracciare senza il permesso di posizione. Riprova: te lo richiederà di nuovo.", "error");
         } else if (e.code === 'FOREGROUND_SERVICE_START_NOT_ALLOWED') {
             // Punto 94/passo 6 - Android 12+ rifiuta di (ri)avviare un servizio in primo
             // piano se l'app e' in secondo piano in quel momento: puo' succedere proprio
             // riagganciando dopo un ricaricamento avvenuto a schermo spento. Messaggio
             // diverso apposta dagli altri: qui la soluzione e' riaprire l'app, non
             // riaccendere il GPS o dare di nuovo il permesso.
-            window.showToast("Android ha bloccato la ripresa del GPS perché l'app era in secondo piano. Apri Camoscio e riprova.", "error");
+            window.showToast(T('track.appInBackground') || "Android ha bloccato la ripresa del GPS perché l'app era in secondo piano. Apri Camoscio e riprova.", "error");
         } else {
-            window.showToast("Impossibile avviare il GPS in background. Riprova.", "error");
+            window.showToast(T('track.erroreGpsBackground') || "Impossibile avviare il GPS in background. Riprova.", "error");
         }
         trackingState.watchId = null;
         if (window.CamoscioGeo) window.CamoscioGeo.usaFonteEsterna(false);
@@ -552,7 +572,7 @@ async function beginWatchingPositionNative() {
             // suonava come un'azione appena fatta, ma Android chiede il permesso una volta
             // sola - qui si legge quasi sempre uno stato deciso prima (spesso ai passi
             // precedenti), non una scelta di questo istante.
-            window.showToast("Le notifiche risultano disattivate per Camoscio: il tracciamento funziona lo stesso, ma non vedrai la notifica permanente di Android che lo segnala. Per attivarle: Impostazioni → App → Camoscio → Notifiche.", "info");
+            window.showToast(T('track.notificheDisattivate') || "Le notifiche risultano disattivate per Camoscio: il tracciamento funziona lo stesso, ma non vedrai la notifica permanente di Android che lo segnala. Per attivarle: Impostazioni → App → Camoscio → Notifiche.", "info");
         }
     } catch (e) {
         console.error("Errore controllo permesso notifiche dopo l'avvio:", e);
@@ -693,7 +713,7 @@ function onPositionError(err) {
     // revocato a meta' sessione (raro: il primo fix era andato a buon fine) passava in silenzio,
     // zero avviso a schermo.
     if (err.code === err.PERMISSION_DENIED || err.code === 'NOT_AUTHORIZED') {
-        window.showToast("Permesso di geolocalizzazione negato: il tracciamento non può registrare la posizione reale.", "error");
+        window.showToast(T('track.permessoNegato') || "Permesso di geolocalizzazione negato: il tracciamento non può registrare la posizione reale.", "error");
         renderGpsQuality(true);
     }
 }
@@ -783,7 +803,7 @@ async function flushPendingPoints() {
             fermaPromemoriaTracciamento();
             setSyncBadge('offline');
             resetToIdleUi();
-            window.showToast("Il tracciamento risulta chiuso sul server (forse da un altro dispositivo): la registrazione su questo telefono si è fermata qui.", "error");
+            window.showToast(T('track.sessioneChiusaAltrove') || "Il tracciamento risulta chiuso sul server (forse da un altro dispositivo): la registrazione su questo telefono si è fermata qui.", "error");
         } else {
             setSyncBadge('offline');
         }
@@ -853,9 +873,9 @@ function setText(id, text) {
 
 function renderTrackingStats() {
     const timeText = formatDuration(trackingState.durationSeconds);
-    const distText = `${trackingState.distanceKm.toFixed(2)} km`;
+    const distText = `${numTracc(trackingState.distanceKm, 2)} km`;
     const elevText = `${Math.round(trackingState.elevationGainM)} m`;
-    const speedText = `${trackingState.avgSpeedKmh.toFixed(1)} km/h`;
+    const speedText = `${numTracc(trackingState.avgSpeedKmh, 1)} km/h`;
 
     setText('tracking-stat-time', timeText);
     setText('tracking-stat-distance', distText);
@@ -875,43 +895,44 @@ function renderGpsQuality(denied = false, interrotto = false) {
     // nativo non e' agganciato - senza questo badge il tasto direbbe "Termina
     // registrazione" mentre in realta' non registra piu' nulla, in silenzio.
     if (interrotto) {
-        badge.textContent = 'GPS: registrazione interrotta — tocca per riprovare';
+        badge.textContent = T('track.gps.interrotto') || 'GPS: registrazione interrotta — tocca per riprovare';
         badge.className = 'badge badge-red';
         return;
     }
     if (denied) {
-        badge.textContent = 'GPS: permesso negato';
+        badge.textContent = T('track.gps.permessoNegato') || 'GPS: permesso negato';
         badge.className = 'badge badge-red';
         return;
     }
 
     const acc = trackingState.lastAccuracy;
     if (acc == null) {
-        badge.textContent = 'GPS: in attesa del segnale...';
+        badge.textContent = T('track.gps.attesa') || 'GPS: in attesa del segnale...';
         badge.className = 'badge badge-primary';
     } else if (acc <= 15) {
-        badge.textContent = `GPS: ottima precisione (±${acc}m)`;
+        badge.textContent = T('track.gps.ottima', acc) || `GPS: ottima precisione (±${acc}m)`;
         badge.className = 'badge badge-green';
     } else if (acc <= 40) {
-        badge.textContent = `GPS: buona precisione (±${acc}m)`;
+        badge.textContent = T('track.gps.buona', acc) || `GPS: buona precisione (±${acc}m)`;
         badge.className = 'badge badge-primary';
     } else {
-        badge.textContent = `GPS: precisione scarsa (±${acc}m)`;
+        badge.textContent = T('track.gps.scarsa', acc) || `GPS: precisione scarsa (±${acc}m)`;
         badge.className = 'badge badge-red';
     }
 }
 
 function setSyncBadge(state) {
+    ultimoStatoSync = state;
     const badge = document.getElementById('tracking-sync-status');
     if (!badge) return;
     if (state === 'synced') {
-        badge.textContent = 'Sincronizzato';
+        badge.textContent = T('track.sync.sincronizzato') || 'Sincronizzato';
         badge.className = 'badge badge-green';
     } else if (state === 'syncing') {
-        badge.textContent = 'Sincronizzazione...';
+        badge.textContent = T('track.sync.sincronizzazione') || 'Sincronizzazione...';
         badge.className = 'badge badge-primary';
     } else {
-        badge.textContent = 'Offline: dati in coda';
+        badge.textContent = T('track.sync.offline') || 'Offline: dati in coda';
         badge.className = 'badge badge-red';
     }
 }
@@ -938,7 +959,9 @@ function updateMapRecordButton() {
     if (!btn || !label) return;
 
     const recording = window.CamoscioTrackingIsRecording();
-    label.textContent = recording ? 'Termina registrazione' : 'Comincia registrazione';
+    label.textContent = recording
+        ? (T('track.terminaRegistrazione') || 'Termina registrazione')
+        : (T('track.cominciaRegistrazione') || 'Comincia registrazione');
     btn.classList.toggle('btn-danger', recording);
     btn.classList.toggle('btn-primary', !recording);
     btn.classList.toggle('is-recording', recording);
@@ -989,7 +1012,7 @@ function renderHikeSelectOptions() {
     const hikes = db.hikes || [];
     const currentValue = select.value;
 
-    select.innerHTML = '<option value="">Nessuna - traccia libera</option>' +
+    select.innerHTML = `<option value="">${escapeHtml(T('track.nessunaTracciaLibera') || 'Nessuna - traccia libera')}</option>` +
         hikes.map(h => `<option value="${h.id}">${escapeHtml(h.title)}</option>`).join('');
 
     if (currentValue && hikes.some(h => h.id === currentValue)) {
@@ -1033,6 +1056,7 @@ function renderTrackingUi() {
 }
 
 function renderSummary(finalSession) {
+    ultimaSessioneRiepilogo = finalSession;
     document.getElementById('tracking-state-idle').classList.add('hidden');
     document.getElementById('tracking-state-active').classList.add('hidden');
     document.getElementById('tracking-state-summary').classList.remove('hidden');
@@ -1044,9 +1068,9 @@ function renderSummary(finalSession) {
     const avgSpeedKmh = finalSession ? finalSession.avgSpeedKmh : trackingState.avgSpeedKmh;
 
     setText('tracking-summary-time', formatDuration(durationSeconds));
-    setText('tracking-summary-distance', `${distanceKm.toFixed(2)} km`);
+    setText('tracking-summary-distance', `${numTracc(distanceKm, 2)} km`);
     setText('tracking-summary-elevation', `${Math.round(elevationGainM)} m`);
-    setText('tracking-summary-speed', `${avgSpeedKmh.toFixed(1)} km/h`);
+    setText('tracking-summary-speed', `${numTracc(avgSpeedKmh, 1)} km/h`);
 
     const btnComplete = document.getElementById('btn-tracking-mark-complete');
     if (btnComplete) {
@@ -1095,7 +1119,7 @@ function resetToIdleUi() {
 
 async function handleDownloadOfflineMap() {
     if (!window.getHikeBounds || !window.estimateOfflineDownloadSize || !window.downloadOfflineMapForBounds) {
-        window.showToast("Funzione mappa offline non disponibile in questo momento.", "error");
+        window.showToast(T('track.mappaOfflineNonDisp') || "Funzione mappa offline non disponibile in questo momento.", "error");
         return;
     }
 
@@ -1110,12 +1134,13 @@ async function handleDownloadOfflineMap() {
     } else if (window.mapInstance) {
         bounds = window.mapInstance.getBounds();
     } else {
-        window.showToast("Apri prima la sezione Mappa, cosi' posso capire quale area scaricare.", "error");
+        window.showToast(T('track.apriPrimaMappa') || "Apri prima la sezione Mappa, cosi' posso capire quale area scaricare.", "error");
         return;
     }
 
     const estimate = window.estimateOfflineDownloadSize(bounds);
     const confirmed = await window.showConfirmModal(
+        T('track.confermaDownload', estimate.tileCount, estimate.estimatedMb) ||
         `Verranno scaricate circa ${estimate.tileCount} porzioni di mappa (~${estimate.estimatedMb} MB). Continuare? (consigliato con Wi-Fi o comunque buona connessione)`
     );
     if (!confirmed) return;
@@ -1132,12 +1157,16 @@ async function handleDownloadOfflineMap() {
         const result = await window.downloadOfflineMapForBounds(bounds, (done, total, failed) => {
             const pct = Math.round((done / total) * 100);
             if (progressFill) progressFill.style.width = `${pct}%`;
-            if (progressLabel) progressLabel.textContent = `${done}/${total} tile${failed ? ` (${failed} non riuscite)` : ''}`;
+            if (progressLabel) {
+                const base = T('track.progressoTile', done, total) || `${done}/${total} tile`;
+                const ko = failed ? (T('track.tileNonRiuscite', failed) || ` (${failed} non riuscite)`) : '';
+                progressLabel.textContent = base + ko;
+            }
         });
-        window.showToast(`Mappa offline pronta: ${result.total - result.failed}/${result.total} tile salvate sul dispositivo.`, "success");
+        window.showToast(T('track.mappaProntaToast', result.total - result.failed, result.total) || `Mappa offline pronta: ${result.total - result.failed}/${result.total} tile salvate sul dispositivo.`, "success");
     } catch (e) {
         console.error("Errore download mappa offline:", e);
-        window.showToast("Errore durante il download della mappa offline.", "error");
+        window.showToast(T('track.erroreDownloadMappa') || "Errore durante il download della mappa offline.", "error");
     } finally {
         if (btn) btn.disabled = false;
         if (progressBox) setTimeout(() => progressBox.classList.add('hidden'), 3000);
@@ -1232,11 +1261,12 @@ async function checkForResumableSession() {
     if (gapSec !== null && gapSec > SOGLIA_AVVISO_BUCO_SEC) {
         const minuti = Math.max(1, Math.round(gapSec / 60));
         window.showToast(
+            T('track.ripresoConBuco', minuti) ||
             `Tracciamento ripreso. Per circa ${minuti} minut${minuti === 1 ? 'o' : 'i'} il percorso non è stato registrato: quel tratto mancherà dalla traccia.`,
             "info"
         );
     } else {
-        window.showToast("Tracciamento GPS ripreso da dove eri rimasto.", "info");
+        window.showToast(T('track.ripresoDaDoveEriRimasto') || "Tracciamento GPS ripreso da dove eri rimasto.", "info");
     }
 }
 
@@ -1287,6 +1317,7 @@ async function ripristinoAllaCieca() {
     startFlushTimer();
     avviaPromemoriaTracciamento();
     window.showToast(
+        T('track.ripresoAllaCieca') ||
         "Tracciamento ripreso senza conferma dal server (nessuna rete in questo momento): continuo a registrare, si mette in pari da solo quando torna la connessione.",
         "info"
     );
@@ -1301,7 +1332,7 @@ async function riprovaRiaggancioGps() {
     if (ripreso) {
         startUiTimer();
         startFlushTimer();
-        window.showToast("Tracciamento GPS ripreso.", "success");
+        window.showToast(T('track.ripreso') || "Tracciamento GPS ripreso.", "success");
     }
     renderTrackingUi();
     updateMapRecordButton();
@@ -1362,3 +1393,39 @@ window.initTrackingModule = initTrackingModule;
 // soli. Chiamate esplicitamente dal caso "map-section" di triggerSectionRender (app.js).
 window.renderHikeSelectOptions = renderHikeSelectOptions;
 window.toggleGeoConsentAlert = toggleGeoConsentAlert;
+
+// Rollout traduzione punto 102, lotto Mappa area 4: al cambio lingua i pezzi scritti da
+// JS (label del tasto sulla mappa, badge GPS/sync, statistiche col separatore decimale,
+// opzione "Nessuna" del <select>, riepilogo) non li tocca applyStaticTranslations. Si
+// ridisegnano dallo STATO IN MEMORIA, nessun fetch:
+// - updateMapRecordButton sempre (il tasto vive nella barra della Mappa, sempre a video);
+// - se si sta registrando: renderTrackingUi (stats/badge/bottoni da trackingState) +
+//   setSyncBadge(ultimoStatoSync);
+// - il <select> escursione solo se #map-section e' attiva (gate come le aree 1-3);
+// - il riepilogo solo se il suo pannello e' gia' aperto (renderSummary rigioca
+//   ultimaSessioneRiepilogo; showPanel dentro e' un no-op se il pannello e' gia' visibile).
+// Durante una registrazione attiva molti testi si riallineano comunque da soli entro 1s
+// (uiTimer) / al fix successivo: questo handler serve alla reattivita' immediata e agli
+// stati fermi (pausa, riepilogo).
+if (window.CamoscioI18n && window.CamoscioI18n.onChange) {
+    window.CamoscioI18n.onChange(function () {
+        updateMapRecordButton();
+        renderMiniBarIcon();
+
+        const sez = document.getElementById('map-section');
+        if (sez && sez.classList.contains('active') && trackingState.status === 'idle') {
+            renderHikeSelectOptions();
+        }
+
+        if (trackingState.status === 'active' || trackingState.status === 'paused') {
+            renderTrackingUi();
+            if (ultimoStatoSync) setSyncBadge(ultimoStatoSync);
+        }
+
+        const panel = document.getElementById('tracking-panel');
+        const summary = document.getElementById('tracking-state-summary');
+        if (panel && summary && !panel.classList.contains('hidden') && !summary.classList.contains('hidden')) {
+            renderSummary(ultimaSessioneRiepilogo);
+        }
+    });
+}

@@ -1498,7 +1498,139 @@
             'rp.sole.consiglioSud': 'More than half the route faces south: it gets sun for a long time, which helps in winter — the snow melts sooner and the ground is less frozen in the morning.',
             'rp.sole.consiglioNordEstate': 'More than half the route faces north: it stays cooler even in summer, good for the central hours.',
             'rp.sole.consiglioNordInverno': 'More than half the route faces north: in the cold months ice lingers there for a long time even in the sun. Consider micro-spikes.',
-            'rp.sole.consiglioMisto': 'The route changes aspect often, alternating sunny and shaded stretches: no exposure dominates.'
+            'rp.sole.consiglioMisto': 'The route changes aspect often, alternating sunny and shaded stretches: no exposure dominates.',
+
+            // ==================================================================
+            // Rollout punto 102, LOTTO MAPPA - area 4 di 4 (28/08/2026):
+            // "Tracciamento GPS + mappa offline" - l'ULTIMA area. Con questa la
+            // barra laterale della Mappa e' tutta tradotta.
+            //   - tracking.js (1364 righe, NON in una IIFE -> var T): pannello
+            //     #tracking-panel, mini-bar #tracking-mini-bar, tasto
+            //     "Comincia/Termina registrazione" sulla mappa, riquadro
+            //     "Opzioni escursione" (#map-record-setup), download mappa
+            //     offline, badge GPS/sync, riepilogo di fine escursione,
+            //     promemoria nativo Android, tutti i toast.
+            //   - geolocation.js (464 righe, NON in una IIFE -> var T): messaggi
+            //     d'errore posizione, e soprattutto la guida allo sblocco del
+            //     permesso GPS (tre livelli iOS/Android) - testo d'aiuto lungo.
+            //   - offline-map.js: NESSUNA stringa d'interfaccia (solo Error()
+            //     interni mai mostrati) -> non toccato.
+            //
+            // Scelte non ovvie (dettaglio in 03-Decisioni-Architetturali.md,
+            // sottosezione "Lotto Mappa, area 4"):
+            // 1) decimali distanza/velocita' (toFixed(2)/toFixed(1)) ora seguono
+            //    la lingua (virgola IT / punto EN) - helper numTracc locale a
+            //    tracking.js, come decimaleMeteo dell'area 3. Prima erano fissi
+            //    col punto anche in italiano.
+            // 2) onChange in tracking.js: ridisegna dallo stato in memoria (mai
+            //    un fetch) - tasto mappa sempre, pannello/badge se si sta
+            //    registrando, riepilogo se il suo pannello e' aperto. Gate
+            //    #map-section per il <select> escursione. I badge GPS/sync
+            //    hanno il loro stato salvato in una module-var (ultimoStatoSync)
+            //    perche' setSyncBadge/renderGpsQuality partono da un argomento.
+            // 3) il promemoria nativo Android (LocalNotifications, ogni ora) e'
+            //    tradotto con T() al momento della programmazione: se l'utente
+            //    cambia lingua a escursione in corso il testo resta quello di
+            //    partenza fino alla ricorrenza dopo - edge raro, notifica di
+            //    sistema, non DOM (come "Camoscio Safety Alert" dell'area 3).
+            //    title:'Camoscio' invariato (marchio).
+            // 4) i console.error/warn di entrambi i file restano in italiano
+            //    (dizionario = interfaccia). I body.error dal server nei toast
+            //    restano il testo del server, tradotto solo il ripiego.
+            // 5) geolocation.js NON ha onChange: le sue stringhe vivono solo in
+            //    modali/toast creati al momento da un'azione utente, T() le
+            //    risolve fresche ogni volta - nessun DOM persistente.
+
+            // --- #map-record-setup (HTML statico) ---
+            'track.opzioniEscursione': 'Hike options',
+            'track.escursioneCollegata': 'Linked hike (optional):',
+            'track.nessunaTracciaLibera': 'None - free track',
+            'track.consensoAlert': 'Tracking will use the phone’s real GPS position. You left geolocation consent off during sign-up: it will be turned on now if you continue.',
+            'track.scaricaMappaOffline': 'Download offline map for this area',
+
+            // --- #map-record-controls (HTML statico + updateMapRecordButton) ---
+            'track.ricentra': 'Recenter on me',
+            'track.ricentraTitle': 'Go back to following my GPS position',
+            'track.cominciaRegistrazione': 'Start recording',
+            'track.terminaRegistrazione': 'Stop recording',
+
+            // --- #tracking-mini-bar (HTML statico) ---
+            'track.toccaDettagli': 'Tap for details',
+
+            // --- #tracking-panel (HTML statico) ---
+            'track.panelTitolo': 'Live hike',
+            'track.idleDesc': 'Record the real GPS route of your hike: it keeps updating even with weak signal and syncs on its own as soon as signal is back.',
+            'track.avviaBtn': 'Start GPS tracking',
+            'track.statTempo': 'Time',
+            'track.statDistanza': 'Distance',
+            'track.statDislivello': 'Elevation gain D+',
+            'track.statVelocita': 'Average speed',
+            'track.pausaBtn': 'Pause',
+            'track.riprendiBtn': 'Resume',
+            'track.terminaBtn': 'Stop',
+            'track.riepilogoTitolo': 'Hike finished 🎉',
+            'track.statDurata': 'Duration',
+            'track.segnaCompletata': 'Mark the linked hike as completed',
+            'track.chiudiBtn': 'Close',
+
+            // --- tracking.js: badge qualita' GPS (renderGpsQuality) ---
+            'track.gps.interrotto': 'GPS: recording interrupted — tap to retry',
+            'track.gps.permessoNegato': 'GPS: permission denied',
+            'track.gps.attesa': 'GPS: waiting for signal...',
+            'track.gps.ottima': function (acc) { return 'GPS: excellent accuracy (±' + acc + 'm)'; },
+            'track.gps.buona': function (acc) { return 'GPS: good accuracy (±' + acc + 'm)'; },
+            'track.gps.scarsa': function (acc) { return 'GPS: poor accuracy (±' + acc + 'm)'; },
+
+            // --- tracking.js: badge sincronizzazione (setSyncBadge) ---
+            'track.sync.sincronizzato': 'Synced',
+            'track.sync.sincronizzazione': 'Syncing...',
+            'track.sync.offline': 'Offline: data queued',
+
+            // --- tracking.js: toast e modali ---
+            'track.noGeoBrowser': 'Your browser does not support geolocation: the real route cannot be recorded.',
+            'track.consensoTracciamento': 'To record the GPS route of the hike, the phone’s real position is needed. You left geolocation consent off during sign-up: turn it on now and continue?',
+            'track.avviato': 'GPS tracking started: enjoy the hike! 🥾',
+            'track.erroreAvvio': 'Could not start GPS tracking. Try again.',
+            'track.promemoriaBody': 'GPS tracking is still on. If you’re done, open the app and tap Stop.',
+            'track.confermaTermina': 'Do you want to stop tracking this hike? The final summary will use the data collected so far.',
+            'track.completataReale': 'Hike marked as completed with the real tracking data!',
+            'track.erroreCompletamento': 'Could not mark the hike as completed.',
+            'track.erroreGpsBackground': 'Could not start GPS in the background. Try again.',
+            'track.gpsBackgroundNonDisp': 'Background GPS is not available on this device.',
+            'track.modalePermessoAndroid': 'To keep recording the route even with the screen off, Camoscio is about to ask Android for location permission. Any option Android offers is fine, even "only while using the app": tracking stays active with the screen off thanks to the service with a permanent notification. If it then also asks for notification permission, you can allow it or not: tracking starts either way.',
+            'track.hoCapitoContinua': 'Got it, continue',
+            'track.gpsSpento': 'The phone’s GPS is off. Turn it on from Android’s quick settings and try again.',
+            'track.permessoPosizioneNegatoRiprova': 'Camoscio cannot track without location permission. Try again: it will ask you once more.',
+            'track.appInBackground': 'Android blocked resuming GPS because the app was in the background. Open Camoscio and try again.',
+            'track.notificheDisattivate': 'Notifications appear to be off for Camoscio: tracking still works, but you won’t see the permanent Android notification that signals it. To turn them on: Settings → Apps → Camoscio → Notifications.',
+            'track.permessoNegato': 'Geolocation permission denied: tracking cannot record the real position.',
+            'track.sessioneChiusaAltrove': 'Tracking appears to be closed on the server (maybe from another device): recording on this phone has stopped here.',
+            'track.mappaOfflineNonDisp': 'Offline map feature not available right now.',
+            'track.apriPrimaMappa': 'Open the Map section first, so I can tell which area to download.',
+            'track.confermaDownload': function (tileCount, mb) { return 'About ' + tileCount + ' map tiles (~' + mb + ' MB) will be downloaded. Continue? (recommended on Wi-Fi or a good connection)'; },
+            'track.progressoTile': function (done, total) { return done + '/' + total + ' tiles'; },
+            'track.tileNonRiuscite': function (n) { return ' (' + n + ' failed)'; },
+            'track.mappaProntaToast': function (salvate, total) { return 'Offline map ready: ' + salvate + '/' + total + ' tiles saved on the device.'; },
+            'track.erroreDownloadMappa': 'Error while downloading the offline map.',
+            'track.ripresoConBuco': function (minuti) { return 'Tracking resumed. For about ' + minuti + (minuti === 1 ? ' minute' : ' minutes') + ' the route was not recorded: that stretch will be missing from the track.'; },
+            'track.ripresoDaDoveEriRimasto': 'GPS tracking resumed from where you left off.',
+            'track.ripresoAllaCieca': 'Tracking resumed without confirmation from the server (no network right now): I keep recording, it catches up on its own when the connection is back.',
+            'track.ripreso': 'GPS tracking resumed.',
+
+            // --- geolocation.js: messaggi d'errore posizione (descriviErrore) ---
+            'geo.err.generico': 'Could not get your position.',
+            'geo.err.negato': 'Location permission denied.',
+            'geo.err.nonDisponibile': 'The phone gives no position at all. Either the device’s location is off, or you’re indoors and the GPS can’t see the satellites.',
+            'geo.err.timeout': 'The GPS is taking too long. The first fix of the day can take a few minutes outdoors: try again shortly.',
+            'geo.noGeoBrowser': 'Your browser does not support geolocation.',
+            'geo.motivoPredefinito': 'To show your real position on the map, the phone’s GPS is needed. You left geolocation consent off during sign-up: turn it on now?',
+
+            // --- geolocation.js: guida allo sblocco del permesso (mostraGuidaSblocco) ---
+            'geo.insecureContext': 'Location is blocked because this page isn’t on a secure connection (https).\n\nIt’s not a block you set: browsers deny GPS to any page opened over http, and still answer "permission denied".\n\nOpen the site at https://camoscio.onrender.com and location will work.',
+            'geo.guidaSafari': 'iPhone / iPad (Safari) — three levels, you need all three\n1. iOS Settings → Privacy & Security → Location Services: on\n2. On the same screen, further down: Safari → "While Using the App"\n   (this is the most common case, and the site can’t tell it apart from point 3)\n3. On the site: "aA" in the address bar → Website Settings → Location → Allow',
+            'geo.guidaChrome': 'Android (Chrome) — three levels, you need all three\n1. PHONE location: pull down the quick settings and check that\n   "Location" is on (or Android Settings → Location).\n   It’s the one missing most often, and the only one you won’t find by searching "Chrome".\n2. Chrome APP permission: Android Settings → Apps → Chrome → Permissions\n   → Location → allowed, with "precise location" on\n3. SITE permission: tap the padlock next to the address → Permissions\n   → Location → Allow\nIf you see a warning triangle next to the permission, the site is fine and one of\nthe two levels above is closed: tap the triangle and Chrome tells you which.',
+            'geo.guidaIntro': 'Location isn’t coming through, and I can’t unblock it from here: it has to be re-enabled by hand.',
+            'geo.guidaOutro': 'Then reload the page.\n\nIf it still doesn’t work after these steps, open the diagnostics page: it tries your location three different ways and tells you which level is closed.\n\nOpen it now?'
         }
     };
 

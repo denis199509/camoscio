@@ -18,6 +18,13 @@
 //    solleva un'eccezione invece di rispondere. Va sempre avvolta in try/catch, altrimenti su
 //    iPhone si rompe tutto prima ancora di chiedere la posizione.
 
+// Rollout traduzione punto 102 (lotto Mappa, area 4). var, non const: questo file non e'
+// avvolto in una IIFE e "const T" in un secondo <script> classico da' SyntaxError (vedi
+// 07-Trappole-Tecniche.md). Ogni file assegna sempre lo stesso valore, e' idempotente.
+// NB: nessun onChange qui - le stringhe vivono solo in modali/toast creati al momento da
+// un'azione utente, T() le risolve fresche ogni volta, nessun DOM persistente.
+var T = (window.CamoscioI18n && window.CamoscioI18n.t) || function () { return null; };
+
 const geoState = {
     watchId: null,
     ultimaPosizione: null,   // { lat, lng, precisioneM, quando }
@@ -84,10 +91,15 @@ function serveConsenso() {
 // lasciarne due copie avrebbe voluto dire due volte lo stesso salvataggio da tenere allineato
 // a mano. Il messaggio resta un parametro: "ti mostro dove sei" e "registro il tuo percorso"
 // sono richieste diverse e vanno spiegate in modo diverso.
-const MOTIVO_PREDEFINITO =
-    "Per mostrare la tua posizione reale sulla mappa serve il GPS del telefono. Avevi lasciato il consenso alla geolocalizzazione disattivato in registrazione: vuoi attivarlo ora?";
+// Risolto a ogni chiamata (non una const al caricamento del file): cosi' segue la lingua
+// scelta anche se cambiata dopo l'avvio. I default dei parametri in JS si valutano per-chiamata.
+function motivoPredefinito() {
+    return T('geo.motivoPredefinito') ||
+        "Per mostrare la tua posizione reale sulla mappa serve il GPS del telefono. Avevi lasciato il consenso alla geolocalizzazione disattivato in registrazione: vuoi attivarlo ora?";
+}
 
-async function assicuraConsenso(motivo = MOTIVO_PREDEFINITO) {
+async function assicuraConsenso(motivo) {
+    if (motivo === undefined) motivo = motivoPredefinito();
     if (!serveConsenso()) return true;
 
     const procedi = await window.showConfirmModal(motivo);
@@ -115,10 +127,11 @@ async function assicuraConsenso(motivo = MOTIVO_PREDEFINITO) {
 // GPS reale"), che nascondeva la differenza fra "hai bloccato il permesso" e "il GPS non ha
 // ancora agganciato": due situazioni con rimedi opposti.
 function descriviErrore(err) {
-    if (!err) return { negato: false, testo: "Impossibile ottenere la posizione." };
+    const generico = T('geo.err.generico') || "Impossibile ottenere la posizione.";
+    if (!err) return { negato: false, testo: generico };
 
     if (err.code === 1 /* PERMISSION_DENIED */) {
-        return { negato: true, testo: "Permesso di posizione negato." };
+        return { negato: true, testo: T('geo.err.negato') || "Permesso di posizione negato." };
     }
     if (err.code === 2 /* POSITION_UNAVAILABLE */) {
         // Punto 28 - questo messaggio prima diceva SOLO "prova all'aperto", e mandava
@@ -128,16 +141,16 @@ function descriviErrore(err) {
         return {
             negato: false,
             configurazione: true,
-            testo: "Il telefono non dà nessuna posizione. O la localizzazione del dispositivo è spenta, o sei al chiuso e il GPS non vede i satelliti."
+            testo: T('geo.err.nonDisponibile') || "Il telefono non dà nessuna posizione. O la localizzazione del dispositivo è spenta, o sei al chiuso e il GPS non vede i satelliti."
         };
     }
     if (err.code === 3 /* TIMEOUT */) {
         return {
             negato: false,
-            testo: "Il GPS ci sta mettendo troppo. Al primo aggancio della giornata può volerci qualche minuto all'aperto: riprova fra poco."
+            testo: T('geo.err.timeout') || "Il GPS ci sta mettendo troppo. Al primo aggancio della giornata può volerci qualche minuto all'aperto: riprova fra poco."
         };
     }
-    return { negato: false, testo: "Impossibile ottenere la posizione." };
+    return { negato: false, testo: generico };
 }
 
 // Guida allo sblocco. Nomina ENTRAMBI i casi (sito bloccato / localizzazione spenta per il
@@ -157,6 +170,7 @@ async function mostraGuidaSblocco() {
     // trappola in cui e' facilissimo cadere provando il sito senza metterlo online.
     if (!window.isSecureContext) {
         window.showAlertModal(
+            T('geo.insecureContext') ||
             "La posizione è bloccata perché questa pagina non è su una connessione sicura (https).\n\n" +
             "Non è un blocco che hai messo tu: i browser vietano il GPS a qualunque pagina aperta in http, e rispondono comunque \"permesso negato\".\n\n" +
             "Apri il sito su https://camoscio.onrender.com e la posizione funzionerà."
@@ -166,14 +180,14 @@ async function mostraGuidaSblocco() {
 
     const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
 
-    const safari =
+    const safari = T('geo.guidaSafari') ||
         "iPhone / iPad (Safari) — tre livelli, servono tutti e tre\n" +
         "1. Impostazioni iOS → Privacy e sicurezza → Localizzazione: accesa\n" +
         "2. Nella stessa schermata, più in basso: Safari → «Durante l'uso dell'app»\n" +
         "   (è il caso più frequente, e dal sito non si può distinguere dal punto 3)\n" +
         "3. Nel sito: «aA» nella barra dell'indirizzo → Impostazioni sito web → Posizione → Consenti";
 
-    const chrome =
+    const chrome = T('geo.guidaChrome') ||
         "Android (Chrome) — tre livelli, servono tutti e tre\n" +
         "1. Posizione del TELEFONO: scorri in giù la tendina delle impostazioni rapide e\n" +
         "   controlla che «Posizione» sia accesa (o Impostazioni Android → Posizione).\n" +
@@ -185,13 +199,17 @@ async function mostraGuidaSblocco() {
         "Se accanto al permesso vedi un triangolo di avviso, il sito è a posto ed è chiuso\n" +
         "uno dei due livelli sopra: toccando il triangolo Chrome dice quale.";
 
-    const apri = await window.showConfirmModal(
-        "La posizione non arriva, e da qui non posso sbloccarla: va riattivata a mano.\n\n" +
-        (iOS ? safari + "\n\n" + chrome : chrome + "\n\n" + safari) +
-        "\n\nPoi ricarica la pagina.\n\n" +
+    const intro = T('geo.guidaIntro') || "La posizione non arriva, e da qui non posso sbloccarla: va riattivata a mano.";
+    const outro = T('geo.guidaOutro') ||
+        "Poi ricarica la pagina.\n\n" +
         "Se dopo questi passaggi non funziona ancora, apri la pagina di diagnosi: prova la " +
         "posizione in tre modi diversi e dice quale dei livelli è chiuso.\n\n" +
-        "Vuoi aprirla adesso?"
+        "Vuoi aprirla adesso?";
+
+    const apri = await window.showConfirmModal(
+        intro + "\n\n" +
+        (iOS ? safari + "\n\n" + chrome : chrome + "\n\n" + safari) +
+        "\n\n" + outro
     );
     if (apri) window.location.href = PAGINA_DIAGNOSI;
 }
@@ -282,7 +300,7 @@ function fermaWatch() {
 async function accendi(automatico = false) {
     if (!navigator.geolocation) {
         if (!automatico && window.showToast) {
-            window.showToast("Il tuo browser non supporta la geolocalizzazione.", "error");
+            window.showToast(T('geo.noGeoBrowser') || "Il tuo browser non supporta la geolocalizzazione.", "error");
         }
         return false;
     }
