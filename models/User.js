@@ -195,7 +195,16 @@ const userSchema = new mongoose.Schema({
     // Dead Man's Switch sopra - oggi lo avra' un solo utente su tutto il database. Nessuna
     // interfaccia per impostarlo: si scrive con scripts/set-report-moderator.js. Un booleano
     // per utente scala gia' a piu' moderatori futuri senza bisogno di un framework di ruoli.
-    canModerateReports: { type: Boolean, default: undefined }
+    canModerateReports: { type: Boolean, default: undefined },
+
+    // --- 13. Avvisi segnalazioni sentiero (punto 111) ---
+    // A CHI arriva la notifica quando un utente chiede la risoluzione di una segnalazione, o
+    // quando una segnalazione scade. NON e' canModerateReports: quello dice CHI PUO'
+    // decidere (in futuro anche piu' persone), questo dice A CHI SUONA il campanello - oggi
+    // solo Denis, per sua decisione esplicita ("solo al mio account", non "a tutti i
+    // moderatori"). Stessa convenzione di canModerateReports: default undefined, nessuna
+    // interfaccia, si scrive con scripts/set-report-alerts.js.
+    receivesReportAlerts: { type: Boolean, default: undefined }
 });
 
 const User = mongoose.models.User || mongoose.model('User', userSchema);

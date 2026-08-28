@@ -1,8 +1,12 @@
 // PROVA DEL PUNTO 45 (moderazione segnalazioni sentiero + foto): campo canModerateReports, le
 // rotte di moderazione (GET /pending, PATCH /:id/confirm, DELETE /:id), la correzione di
 // sicurezza su GET /api/reports (non deve piu' esporre segnalazioni 'pending' a chiunque sia
-// loggato), la foto (upload, GET /:id/photo, mai nelle liste) e "risolvi" che ora CANCELLA per
-// intero (DELETE /:id/resolve) invece di marcare 'resolved'.
+// loggato), la foto (upload, GET /:id/photo, mai nelle liste) e DELETE /:id/resolve che
+// CANCELLA per intero invece di marcare 'resolved'.
+//
+// Aggiornata per il punto 111 (28/08/2026): DELETE /:id/resolve e' ora gated MODERATORE, e
+// il TTL su createdAt e' stato sostituito da expiresAt + paracadute a 365gg. Il flusso nuovo
+// del "risolvi" utente (POST /:id/resolve-request) e' provato in prove/prova-punto111.js.
 //
 // Usa due account DEMO (login senza password): A resta senza permesso per tutta la prova,
 // B viene elevato a moderatore DIRETTAMENTE sul database - non esiste (e non deve esistere)
@@ -128,11 +132,10 @@ function comeDataUrl(buf) {
         ok('GET /api/reports non contiene la segnalazione pending appena creata',
             Array.isArray(listaPubblicaA.corpo) && !listaPubblicaA.corpo.some(r => r.id === reportId1));
 
-        // --- 4. A (senza permesso) non puo' moderare: 403 su tutte e tre le rotte di
-        //        moderazione. La rotta di risoluzione (DELETE /:id/resolve) invece NON e'
-        //        gated sul permesso - qui deve dare 400 (report ancora pending, non active),
-        //        mai 403: e' proprio la differenza voluta (crowdsourced come "risolvi" di
-        //        sempre, non come confermare/rifiutare). ---
+        // --- 4. A (senza permesso) non puo' moderare: 403 su tutte le rotte di moderazione.
+        //        Punto 111: anche DELETE /:id/resolve e' ora gated moderatore (il "risolvi"
+        //        dell'utente normale e' passato a POST /:id/resolve-request, vedi
+        //        prove/prova-punto111.js) -> A qui prende 403, non piu' 400. ---
         const pendingComeA = await chiama('GET', '/api/reports/pending', null, cookieA);
         ok('GET /pending come A (senza permesso) da 403', pendingComeA.status === 403, `status ${pendingComeA.status}`);
 
@@ -143,8 +146,8 @@ function comeDataUrl(buf) {
         ok('DELETE /:id come A (senza permesso) da 403', rifiutaComeA.status === 403, `status ${rifiutaComeA.status}`);
 
         const risolviPendingComeA = await chiama('DELETE', `/api/reports/${reportId1}/resolve`, null, cookieA);
-        ok('DELETE /:id/resolve su un report ancora pending da 400, non 403 (non e\' gated sul permesso)',
-            risolviPendingComeA.status === 400, `status ${risolviPendingComeA.status}`);
+        ok('DELETE /:id/resolve come A (non moderatore) da 403',
+            risolviPendingComeA.status === 403, `status ${risolviPendingComeA.status}`);
 
         // --- 4b. Senza nessun cookie: 401 su rotte protette (foto e risoluzione comprese) ---
         const fotoSenzaLogin = await scaricaFoto(`/api/reports/${reportId1}/photo`, null);
@@ -228,20 +231,22 @@ function comeDataUrl(buf) {
         ok('nessuna delle due segnalazioni rifiutate e\' stata creata sul database',
             conteggioDopoFotoCattive === conteggioPrimaFotoCattive, `${conteggioPrimaFotoCattive} -> ${conteggioDopoFotoCattive}`);
 
-        // --- 12. "Risolvi" ora CANCELLA per intero (non solo status:'resolved') - resta
-        //         crowdsourced, quindi apribile anche da A (il creatore, non moderatore),
-        //         non solo da B. Idempotente: richiamarla su un id gia' sparito da comunque
-        //         200, non 404 (due persone potrebbero risolvere lo stesso pericolo quasi
-        //         insieme). ---
-        const risolvi = await chiama('DELETE', `/api/reports/${reportId1}/resolve`, null, cookieA);
-        ok('risolvi (A, non moderatore) accettato', risolvi.status === 200, JSON.stringify(risolvi.corpo));
-        ok('risolvi risponde {success:true}', risolvi.corpo && risolvi.corpo.success === true, JSON.stringify(risolvi.corpo));
+        // --- 12. DELETE /:id/resolve cancella per intero una segnalazione ATTIVA (foto
+        //         compresa). Punto 111: ora e' gated MODERATORE - il "risolvi" dell'utente
+        //         normale e' passato a POST /:id/resolve-request (provato in
+        //         prove/prova-punto111.js). Idempotente: su un id gia' sparito da 200. ---
+        const risolviComeA = await chiama('DELETE', `/api/reports/${reportId1}/resolve`, null, cookieA);
+        ok('DELETE /:id/resolve come A (non moderatore) da 403', risolviComeA.status === 403, `status ${risolviComeA.status}`);
+
+        const risolvi = await chiama('DELETE', `/api/reports/${reportId1}/resolve`, null, cookieB);
+        ok('DELETE /:id/resolve come B (moderatore) accettato', risolvi.status === 200, JSON.stringify(risolvi.corpo));
+        ok('risponde {success:true}', risolvi.corpo && risolvi.corpo.success === true, JSON.stringify(risolvi.corpo));
 
         const dopoRisolvi = await Report.findById(reportId1);
-        ok('la segnalazione risolta e\' stata eliminata per davvero (non status:\'resolved\')', dopoRisolvi === null);
+        ok('la segnalazione e\' stata eliminata per davvero (non status:\'resolved\')', dopoRisolvi === null);
 
-        const risolviDiNuovo = await chiama('DELETE', `/api/reports/${reportId1}/resolve`, null, cookieA);
-        ok('richiamare risolvi su un id gia\' sparito da comunque 200 (idempotente)', risolviDiNuovo.status === 200, `status ${risolviDiNuovo.status}`);
+        const risolviDiNuovo = await chiama('DELETE', `/api/reports/${reportId1}/resolve`, null, cookieB);
+        ok('richiamare DELETE /:id/resolve su un id gia\' sparito da comunque 200 (idempotente)', risolviDiNuovo.status === 200, `status ${risolviDiNuovo.status}`);
 
         const fotoDopoRisolvi = await scaricaFoto(`/api/reports/${reportId1}/photo`, cookieA);
         ok('la foto non e\' piu\' raggiungibile dopo la risoluzione', fotoDopoRisolvi.status === 404, `status ${fotoDopoRisolvi.status}`);
@@ -249,13 +254,17 @@ function comeDataUrl(buf) {
         // reportId1 e' gia' stato cancellato per davvero da questo stesso test: non serve
         // piu' ripulirlo a mano nel finally (ma il codice li' e' comunque sicuro se lo fosse).
 
-        // --- 13. Indice TTL su createdAt: MongoDB deve cancellare da solo una segnalazione
-        //         mai risolta dopo 30 giorni - controllo strutturale (non si puo' aspettare
-        //         30 giorni in una prova). ---
+        // --- 13. Punto 111: il TTL su createdAt (punti 45/109) e' stato SOSTITUITO da un
+        //         campo Report.expiresAt spostabile + un paracadute TTL su expiresAt a 365
+        //         giorni. Qui si verifica solo che non sia rimasto il vecchio TTL; i
+        //         controlli veri sugli indici stanno in prove/prova-punto111.js. ---
         const indici = await mongoose.connection.collection('reports').indexes();
-        const indiceTtl = indici.find(i => i.key && i.key.createdAt === 1 && typeof i.expireAfterSeconds === 'number');
-        ok('esiste un indice TTL su createdAt', !!indiceTtl, JSON.stringify(indici));
-        ok('la scadenza dell\'indice TTL e\' 30 giorni', indiceTtl && indiceTtl.expireAfterSeconds === 30 * 24 * 60 * 60, indiceTtl && indiceTtl.expireAfterSeconds);
+        ok('NON c\'e\' piu\' un TTL su createdAt',
+            !indici.some(i => i.key && i.key.createdAt === 1 && typeof i.expireAfterSeconds === 'number'),
+            JSON.stringify(indici.map(i => i.name)));
+        const ttlExpires = indici.find(i => i.key && i.key.expiresAt === 1 && typeof i.expireAfterSeconds === 'number');
+        ok('c\'e\' il paracadute TTL su expiresAt a 365 giorni',
+            ttlExpires && ttlExpires.expireAfterSeconds === 365 * 24 * 60 * 60, ttlExpires && ttlExpires.expireAfterSeconds);
 
     } catch (e) {
         // L'errore si stampa QUI, prima del finally: un process.exit dentro il finally

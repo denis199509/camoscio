@@ -3,6 +3,7 @@ const router = express.Router();
 const Report = require('../models/Report');
 const User = require('../models/User');
 const { requireAuth } = require('../middleware/auth');
+const { notificaRichiestaRisoluzione } = require('../lib/reportAlerts');
 
 // Punto 45 (foto): margine sopra il tetto lato browser (~300-400 KB dopo compressione in
 // imagecompress.js) - il controllo vero e' li', questo e' solo il paracadute lato server
@@ -25,8 +26,14 @@ async function requireReportModerator(req, res, next) {
 // niente (bug di sicurezza trovato introducendo lo stato 'pending', punto 45): un report in
 // attesa di verifica sarebbe stato comunque leggibile via rete da chiunque loggato, anche se
 // il frontend lo nasconde (map.js filtra gia' su status==='active' lato client).
+//
+// Punto 111: si escludono resolutionRequestedBy (CHI ha chiesto la risoluzione - visibile a
+// Denis solo in Moderazione, non a tutti in mappa) e expiryNotifiedAt (interno). Resta
+// invece resolutionRequestedAt: map.js lo usa per mostrare il tasto "risolvi" gia' premuto.
+// E' la trappola 07 al contrario: una GET pubblica non deve esportare da sola i campi nuovi
+// aggiunti a un modello, non basta che il frontend non li mostri.
 router.get('/', requireAuth, async (req, res) => {
-    const reports = await Report.find({ status: 'active' });
+    const reports = await Report.find({ status: 'active' }).select('-resolutionRequestedBy -expiryNotifiedAt');
     res.json(reports);
 });
 
@@ -144,28 +151,86 @@ router.delete('/:id', requireAuth, requireReportModerator, async (req, res) => {
     }
 });
 
-// Punto 45: "risolvi" ora CANCELLA per intero (foto compresa), non imposta piu' uno stato
-// 'resolved' persistente - decisione di Denis ("cancelliamo la foto e la segnalazione una
-// volta che il pericolo non c'e' piu'"), con conferma obbligatoria lato client prima di
-// arrivare qui (un tocco sbagliato ora distrugge l'avviso per sempre, non lo nasconde).
-// Resta crowdsourced (qualunque utente loggato, non gated moderatore), stesso spirito di
-// sempre. Verbo/percorso diversi da DELETE /:id sopra apposta: quella e' il rifiuto di un
-// pending (solo moderatore, guard 'pending') - mescolarle romperebbe la separazione voluta.
-// Idempotente: un documento gia' assente risponde comunque 200, non 404, perche' due persone
-// possono segnalare risolto lo stesso pericolo quasi insieme.
-router.delete('/:id/resolve', requireAuth, async (req, res) => {
+// --- Punto 111: "risolvi" di un utente normale = RICHIESTA di risoluzione, non cancellazione ---
+//
+// Prima DELETE /:id/resolve cancellava subito ed era aperta a chiunque loggato (spirito
+// crowdsourced Waze). Denis: "quando un utente 'risolve' mi deve arrivare la notifica, saro'
+// io a confermare se e' risolta o da tenere ancora". Quindi ora l'utente normale fa una
+// RICHIESTA che NON cancella e NON cambia lo status (la segnalazione resta in mappa: il
+// pericolo potrebbe esserci ancora); la cancellazione la fa il moderatore da "Conferma la
+// risoluzione" (DELETE /:id/resolve piu' sotto, ora gated).
+//
+// Guardia ATOMICA (findOneAndUpdate condizionale), non "leggi-poi-scrivi": il tasto resta
+// premibile da chiunque finche' la segnalazione e' in mappa, quindi lo stesso utente puo'
+// ripremerlo e utenti diversi possono premerlo lo stesso pomeriggio. Chi arriva primo vince
+// e resta; gli altri ricevono 200 con giaRichiesta:true e ZERO notifiche in piu'.
+router.post('/:id/resolve-request', requireAuth, async (req, res) => {
+    try {
+        const vinta = await Report.findOneAndUpdate(
+            { _id: req.params.id, status: 'active', resolutionRequestedAt: { $exists: false } },
+            { $set: { resolutionRequestedAt: new Date(), resolutionRequestedBy: req.session.userId } },
+            { new: true }
+        );
+        if (vinta) {
+            try {
+                await notificaRichiestaRisoluzione(vinta);
+            } catch (e) {
+                // La notifica e' una spinta, non l'unica copia dello stato: la richiesta e'
+                // gia' sul documento e compare in /moderation comunque.
+                console.error('Notifica richiesta risoluzione fallita (segnalazione ' + vinta._id + '):', e.message);
+            }
+            return res.json({ success: true });
+        }
+        // Non ho vinto: capisco perche' e rispondo senza notificare di nuovo. Idempotente
+        // sul documento sparito (200, non 404): due persone possono risolvere quasi insieme.
+        const attuale = await Report.findById(req.params.id).select('status');
+        if (!attuale) return res.json({ success: true, giaRisolta: true });
+        if (attuale.status !== 'active') {
+            return res.status(400).json({ error: 'Puoi segnalare come risolta solo una segnalazione attiva' });
+        }
+        return res.json({ success: true, giaRichiesta: true });
+    } catch (e) {
+        res.status(400).json({ error: 'Impossibile inviare la richiesta di risoluzione' });
+    }
+});
+
+// Punto 111: "Tieni ancora" - il moderatore annulla la richiesta di risoluzione, la
+// segnalazione torna pulitamente attiva e un utente potra' rifare la richiesta (che tornera'
+// a notificare). $unset e non {: null}: default undefined nello schema, vincolo spazio.
+router.delete('/:id/resolve-request', requireAuth, requireReportModerator, async (req, res) => {
+    try {
+        const report = await Report.findByIdAndUpdate(
+            req.params.id,
+            { $unset: { resolutionRequestedAt: 1, resolutionRequestedBy: 1 } },
+            { new: true }
+        );
+        if (!report) return res.status(404).json({ error: 'Segnalazione non trovata' });
+        res.json(report);
+    } catch (e) {
+        res.status(400).json({ error: 'Impossibile annullare la richiesta di risoluzione' });
+    }
+});
+
+// Punto 45 + 111: cancella per intero una segnalazione ATTIVA (foto compresa). Serve a due
+// azioni del moderatore: "Conferma la risoluzione" (dopo la richiesta di un utente) e
+// "Togli" (una segnalazione scaduta ancora attiva). Fino al punto 111 era aperta a chiunque
+// loggato; ora gated moderatore, perche' il "risolvi" dell'utente e' diventato POST
+// /:id/resolve-request qui sopra. Verbo/percorso diversi da DELETE /:id apposta: quella e'
+// il rifiuto di un pending (guard 'pending'). Idempotente sul documento gia' assente (200,
+// non 404): due decisioni quasi simultanee non devono dare errore.
+router.delete('/:id/resolve', requireAuth, requireReportModerator, async (req, res) => {
     try {
         const report = await Report.findById(req.params.id);
         if (!report) {
             return res.json({ success: true });
         }
         if (report.status !== 'active') {
-            return res.status(400).json({ error: 'Puoi segnare come risolta solo una segnalazione attiva' });
+            return res.status(400).json({ error: 'Da qui si elimina solo una segnalazione attiva (per un pending usa il rifiuto)' });
         }
         await Report.findByIdAndDelete(req.params.id);
         res.json({ success: true });
     } catch (e) {
-        res.status(400).json({ error: 'Impossibile segnare la segnalazione come risolta' });
+        res.status(400).json({ error: 'Impossibile eliminare la segnalazione' });
     }
 });
 

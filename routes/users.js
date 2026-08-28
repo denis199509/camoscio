@@ -23,10 +23,12 @@ const MAX_PHOTO_LENGTH = 2 * 1024 * 1024;
 // emergencyContacts, gia' privato per conto suo, ma non ha senso esporlo isolato.
 // Punto 45: canModerateReports non e' un dato sensibile come i contatti di emergenza, ma non
 // c'e' motivo che GET /api/users riveli a chiunque chi sono i moderatori delle segnalazioni.
+// Punto 111: stesso ragionamento per receivesReportAlerts (chi riceve gli avvisi).
 const ALWAYS_PRIVATE_FIELDS = [
     'email', 'emailVerified', 'emergencyContacts', 'birthDate', 'ageRange',
     'geolocationConsent', 'termsAcceptedAt', 'nome', 'cognome',
-    'deadManActive', 'deadManExpiresAt', 'deadManContactIndex', 'canModerateReports'
+    'deadManActive', 'deadManExpiresAt', 'deadManContactIndex', 'canModerateReports',
+    'receivesReportAlerts'
 ];
 // Campi del "profilo pubblico" (sezione 6/9 della registrazione) governati da privacySetting
 const PRIVACY_GATED_FIELDS = ['bio', 'profilePhoto', 'interests', 'hikingLevel', 'preferredDifficulty', 'geoPreferences'];
