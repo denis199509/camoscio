@@ -25,8 +25,15 @@ const reportSchema = new mongoose.Schema({
 
 // Punto 45 (foto): chi non viene mai risolta (confermata poi "risolta" cancella per intero,
 // vedi DELETE /:id/resolve - non esiste piu' uno stato 'resolved' persistente) sparisce da
-// sola dopo 30 giorni. Nessun cron/script a parte: e' Mongo stesso a cancellare il
+// sola dopo 90 giorni. Nessun cron/script a parte: e' Mongo stesso a cancellare il
 // documento in background quando createdAt supera la soglia.
-reportSchema.index({ createdAt: 1 }, { expireAfterSeconds: 30 * 24 * 60 * 60 });
+//
+// Era 30 giorni (scelta di Denis del 16/08/2026), portato a 90 il 28/08/2026: un pericolo in
+// montagna (frana, ostacolo) spesso non viene rimosso entro un mese, e una segnalazione che
+// scade prima che il problema sia risolto e' una brutta sorpresa per chi arriva dopo.
+// ATTENZIONE: cambiare questo numero NON basta - MongoDB non modifica un indice TTL gia'
+// esistente al riavvio (IndexOptionsConflict, ignorato in silenzio). Serve la migrazione
+// una tantum scripts/allunga-ttl-segnalazioni.js (collMod, cambia la soglia sul posto).
+reportSchema.index({ createdAt: 1 }, { expireAfterSeconds: 90 * 24 * 60 * 60 });
 
 module.exports = mongoose.models.Report || mongoose.model('Report', reportSchema);

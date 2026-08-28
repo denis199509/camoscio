@@ -34,6 +34,28 @@ pre-esistenti di styles.css, giro a parte) e PUNTO 108 (teletrasporto GPS
 che farma i badge, giro a parte + decisione di prodotto) ANCORA APERTI,
 non toccati - dettaglio in cose_da_fare.txt punti 106 e 108.
 
+TRE PUNTI NUOVI di questa sessione (nona), fuori dal filo del lotto Mappa:
+PUNTO 109 FATTO - scadenza automatica delle segnalazioni sentiero (Report)
+da 30 a 90 giorni, su richiesta di Denis (in montagna un pericolo spesso
+non si risolve in un mese). models/Report.js + migrazione una tantum
+scripts/allunga-ttl-segnalazioni.js (l'indice TTL gia' creato NON si cambia
+dal solo schema, e collMod e' negato sul nostro utente Atlas: si fa
+dropIndex + createIndex). Applicato su Atlas e verificato. Trappola nel
+vault 07. NB: la parte "MongoDB cancella da solo a 90 giorni" verra'
+SOSTITUITA dal punto 111 (vedi sotto); per ora il TTL resta come paracadute.
+PUNTO 110 IN ATTESA - Denis dice che DaniWoll ha pubblicato per
+sbaglio una traccia GPX fuori dalle regioni; la diagnosi (sola lettura,
+scripts/trova-traccia-fuori-regioni.js) NON l'ha trovata (l'unica traccia
+GPX di DaniWoll e' al Gran Sasso, dentro le regioni). Denis ha chiesto a
+Dani se l'ha cancellata lui e aspetta risposta.
+PUNTO 111 DA FARE (requisiti raccolti, niente codice) - "risolvi" di una
+segnalazione fatto da un utente normale non deve piu' cancellare subito:
+manda una notifica a Denis, che conferma o dice "tienila ancora". Idem
+alla scadenza dei 90 giorni: notifica a Denis, che toglie o rinnova di
+altri 90 giorni. E' multi-modulo (Report, rotte, notifiche, job
+schedulato, UI) -> la prossima sessione PARTE DALL'AGENTE architect per il
+piano. Dettaglio e domande aperte in cose_da_fare.txt punti 109, 110, 111.
+
 >>> APERTO PER LA PROSSIMA SESSIONE, in quest'ordine se Denis non dice
 altro:
 

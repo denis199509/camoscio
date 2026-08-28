@@ -6544,3 +6544,158 @@ schermo spento ancora."
    in public/js/map.js / tracking.js e il geofencing dei timbri
    (SOGLIA_TIMBRO_M, la stessa soglia usata anche dal conteggio salite
    del punto 42b - occhio a non spaccare quello).
+
+=====================================================================
+
+--- SCADENZA SEGNALAZIONI SENTIERO ---
+
+109. [FATTO 2026-08-28, nona sessione] Denis, parole sue: "30 giorni
+   sono pochi, si puo' allungare a 90?" - riferito alla scadenza
+   automatica delle segnalazioni sentiero (Report). Prima nella stessa
+   conversazione aveva chiesto se quelle segnalazioni "hanno un timer di
+   scadenza o rimangono per sempre sulla mappa": risposto che c'e' un
+   indice TTL di MongoDB su createdAt a 30 giorni (models/Report.js),
+   Mongo stesso cancella il documento in background, il timer parte
+   dalla creazione e non si azzera, non esiste piu' uno stato
+   'resolved' persistente (risolvi/rifiuta = cancella subito).
+
+   Motivo di Denis per allungarlo: "spesso in 30 giorni non risolvono
+   il problema in montagna, quindi per evitare brutte sorprese meglio
+   che la segnalazione resti piu' tempo". I 30 giorni erano una sua
+   scelta del 16/08/2026 (punto 45), quindi e' lui che rivede la
+   propria decisione, non un default a caso.
+
+   FATTO in due parti, come previsto:
+   1) models/Report.js: expireAfterSeconds da 30*24*60*60 a 90*24*60*60.
+      Commento aggiornato col motivo e con l'avviso che cambiare il
+      numero da solo NON basta.
+   2) Migrazione una tantum scripts/allunga-ttl-segnalazioni.js: cambiare
+      lo schema non tocca un indice TTL gia' creato (al riavvio Mongoose
+      prova a ricrearlo, Atlas risponde IndexOptionsConflict e tiene la
+      soglia vecchia, in silenzio). La via pulita sarebbe collMod, ma
+      sul nostro utente Atlas quell'azione e' NEGATA (non e' nel ruolo
+      readWrite del piano gratuito): ripiego dropIndex('createdAt_1') +
+      createIndex con expireAfterSeconds nuovo, entrambi nel ruolo.
+      Finestra di pochi secondi senza TTL fra i due comandi, innocua
+      (4 segnalazioni presenti, tutte recenti). Script con dry-run di
+      default, --scrivi per applicare, idempotente.
+
+   Applicato su Atlas e verificato leggendo l'indice vero prima/dopo:
+   createdAt_1 expireAfterSeconds 2592000 -> 7776000 (30 -> 90 giorni),
+   le 4 segnalazioni presenti tutte intatte. Rilanciato lo script a
+   vuoto: riconosce che e' gia' a 90 e non fa nulla. Nessuna prova di
+   prove/ da rilanciare (non tocca accessi/password/email).
+
+   Trappola annotata nel vault (07-Trappole-Tecniche.md, sezione
+   "Cambiare expireAfterSeconds di un indice TTL"): per qualunque
+   modifica futura a un'opzione di un indice gia' creato (TTL, unique,
+   partialFilterExpression, 2dsphere) serve sempre uno script di
+   migrazione, e su questo Atlas e' dropIndex + createIndex, mai collMod.
+
+=====================================================================
+
+--- TRACCIA GPX DI DANIWOLL FUORI DALLE REGIONI ---
+
+110. [28/08/2026, nona sessione - IN ATTESA, nessun lavoro fatto oltre
+   la diagnosi] Denis, parole sue: "ho visto che DaniWoll ha pubblicato
+   per sbaglio una traccia fuori dalle regioni del sito, bisogna
+   cancellarla per non occupare memoria inutilmente". Poi: "dimmi se la
+   trovi prima di procedere". Poi ha precisato: "una traccia gpx
+   importata, ho chiesto a dani se ha cancellato lui la traccia, aspetto
+   risposta".
+
+   DIAGNOSI (sola lettura, scripts/trova-traccia-fuori-regioni.js -
+   controlla ogni punto contro i confini reali di lib/regions.js, gli
+   stessi che il sito usa per validare): NON TROVATA. Tutto quello che
+   DaniWoll ha sul database:
+   - 1 ActiveHikeSession, unica traccia GPX importata: "Pizzo Cefalone,
+     Cima Giovanni Paolo II e Passo della Portella da Campo Imperatore",
+     124 punti, 9,56 km, ~5 KB, bbox lat 42,44-42,45 / lng 13,52-13,56
+     = Campo Imperatore, Gran Sasso, Abruzzo. DENTRO le regioni. E' la
+     traccia del punto 103 (quella col CDATA nel titolo).
+   - 1 Hike ("Pizzo Cefalone e Cima Wotija da piana Le Fontari"),
+     trailhead e location dentro le regioni.
+   - 0 RouteDraft, 0 RouteBookmark, 0 TrailCandidate, 0 Report fuori
+     regione.
+   Sweep esteso a TUTTI gli utenti: 0 ActiveHikeSession e 0 RouteDraft
+   con punti fuori regione in tutto il database; 1 solo Hike fuori
+   ("Monte Vettore - Sibillini" di Luca TrailRunner, utente demo) ma e'
+   un falso positivo dei confini semplificati sul crinale, non di
+   DaniWoll.
+
+   RIPARTIRE DA: aspettare la risposta di Dani a Denis. Se Dani conferma
+   di aver cancellato lui la traccia, il punto si chiude senza fare
+   niente (gia' sparita, spazio gia' liberato). Se invece risulta
+   ancora presente con un altro nome/data, Denis dara' il dettaglio:
+   ritrovarla con lo stesso script di sola lettura e cancellarla mirata
+   per _id, con conferma esplicita di Denis prima di scrivere (nessun
+   database di prova separato per questo progetto, si scrive sul vero).
+
+=====================================================================
+
+--- SEGNALAZIONI SENTIERO: "RISOLVI" E SCADENZA PASSANO DA DENIS ---
+
+111. [28/08/2026, nona sessione - DA FARE, solo raccolta requisiti,
+   nessun codice scritto] Nato da una domanda di Denis a fine sessione:
+   "chi e' che puo risolvere una segnalazione? mi risulta che posso
+   farla pure dal account demo di marco". Risposto che si', e' di
+   proposito (punto 45): DELETE /api/reports/:id/resolve e' gated solo
+   requireAuth, quindi qualunque utente loggato puo' "risolvere" (=
+   cancellare per sempre, foto compresa) qualunque segnalazione attiva -
+   spirito crowdsourced Waze. Le azioni sui pending (confirm / rifiuta)
+   restano solo moderatore.
+
+   Denis, parole sue, la richiesta vera: "Quando un utente 'risolve'
+   una segnalazione mi deve arrivare la notifica (account Denis) nello
+   stesso modo in cui arrivano le nuove segnalazioni. Saro' io poi a
+   confermare se la situazione e' risolta oppure da tenere ancora.
+   Stessa cosa per i 90 giorni. Alla scadenza mi arriva la notifica e
+   saro' io a decidere se toglierla oppure tenerla per altri 90
+   giorni".
+
+   In sostanza cambiano DUE cose, legate:
+   (A) "Risolvi" fatto da un utente normale non cancella piu' subito:
+       diventa una RICHIESTA di risoluzione. Parte una notifica a Denis
+       (stesso canale con cui apprende delle nuove segnalazioni). La
+       segnalazione resta com'e' finche' Denis non decide: conferma
+       (allora si cancella) o "tienila ancora" (resta attiva).
+   (B) La scadenza dei 90 giorni (punto 109) non cancella piu' da sola:
+       alla scadenza parte una notifica a Denis, che decide se togliere
+       la segnalazione o rinnovarla per altri 90 giorni (e cosi' via,
+       a rate di 90 giorni).
+
+   CONSEGUENZA SUL PUNTO 109: la parte "MongoDB cancella da solo a 90
+   giorni" (indice TTL) va SOSTITUITA. Un indice TTL sa solo cancellare,
+   non "avvisare e aspettare". Finche' 111 non e' fatto, il TTL a 90
+   giorni resta come rete di sicurezza; quando si fa 111 va tolto (o
+   allungato molto come solo paracadute) e serve un campo scadenza
+   esplicito (es. expiresAt) che Denis possa spostare avanti di 90
+   giorni, non piu' legato a createdAt.
+
+   RIPARTIRE DA: e' un lavoro su piu' moduli (models/Report.js,
+   routes/reports.js, notifiche, un job schedulato per la scadenza,
+   interfaccia per le decisioni di Denis) -> passare PRIMA dall'agente
+   `architect` per il piano, come da CLAUDE.md. Domande aperte da
+   chiarire nel piano:
+   - come apprende OGGI Denis di una nuova segnalazione? NON c'e' una
+     Notification alla creazione di un Report (verificato: models/
+     Notification.js e' per-utente, testo libero; nessuna notifica in
+     routes/reports.js). Oggi le nuove segnalazioni si vedono solo
+     nella pagina di Moderazione (#pending-reports-page, GET
+     /api/reports/pending, per chi ha canModerateReports). Chiedere a
+     Denis se intende "voglio una notifica vera nella campanella" o
+     "mi bastano nella lista pending" - e se la notifica va al solo
+     account Denis o a tutti i moderatori;
+   - "risolvi" che non cancella piu': nuovo campo (resolutionRequestedAt
+     / resolutionRequestedBy) meglio di un nuovo status, cosi' la
+     segnalazione resta status='active' e continua a comparire in mappa
+     mentre aspetta la decisione di Denis (il pericolo potrebbe esserci
+     ancora);
+   - scadenza: campo expiresAt esplicito + azione "rinnova +90gg" per
+     Denis; job schedulato quotidiano che trova gli expiresAt passati e
+     crea UNA notifica per segnalazione (guardia anti-doppione come
+     relatedHikeId al punto 64). Riusare il pattern cron-job.org gia'
+     usato per il Dead Man's Switch (SAFETY_CRON_SECRET, punto 37) con
+     un endpoint nuovo, oppure un controllo in-process leggero;
+   - dove Denis conferma/rinnova: pagina Moderazione, la notifica
+     stessa, o un pannello nuovo - da decidere col piano.
