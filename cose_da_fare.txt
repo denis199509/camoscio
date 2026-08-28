@@ -6406,13 +6406,99 @@ schermo spento ancora."
    prima del push, stessa procedura delle aree/lotti precedenti. VERIFICA
    DAL VIVO DI DENIS ANCORA DA FARE - per l'area 3, aree 1-2 e i lotti 3-7.
 
-   RIPARTIRE DA: verifica dal vivo di Denis dei lotti 3-7 + aree 1-2-3
-   Mappa. Poi AREA 4/4 (l'ULTIMA): Tracciamento GPS + mappa offline -
-   tracking.js (1364 righe) / geolocation.js (464) / offline-map.js (166)
-   + #map-record-setup / #map-record-controls / #tracking-panel /
-   #tracking-mini-bar in index.html. Alla sua chiusura la barra laterale
-   della Mappa e' tutta tradotta. Concordare con Denis l'inizio. Dopo il
-   lotto Mappa, il gate di login/registrazione e le pagine HTML autonome.
+   ---
+
+   LOTTO MAPPA - AREA 4/4 [FATTA] - nona sessione (seguito 4), 28/08/2026.
+   TRACCIAMENTO GPS + MAPPA OFFLINE. >>> CHIUDE IL LOTTO MAPPA. Denis:
+   "procediamo con l'area 4, lascia stare la verifica, va bene cosi, se
+   trovo qualche problema si risolve dopo adesso proseguiamo". Ambito
+   presentato in chat; verifica dal vivo di Denis esplicitamente rimandata.
+
+   FATTO - ~90 chiavi nuove (track.*, geo.*), 3 file su 4 (offline-map.js
+   no):
+   - tracking.js (1364 righe, NON in una IIFE -> var T). Helper numTracc
+     per i decimali di distanza/velocita' (virgola IT / punto EN - prima
+     .toFixed(2)/.toFixed(1) fissi col punto anche in italiano). ~45
+     stringhe dietro T() || ripiego: pannello #tracking-panel
+     (idle/attivo/pausa/riepilogo), mini-bar, tasto "Comincia/Termina
+     registrazione" sulla mappa, riquadro "Opzioni escursione"
+     (#map-record-setup), download mappa offline (conferma + progresso +
+     toast), badge qualita' GPS + badge sync, promemoria nativo Android
+     (LocalNotifications, title:'Camoscio' invariato), tutti i toast di
+     avvio/errore/ripresa. Nuovo onChange;
+   - geolocation.js (464 righe, NON in una IIFE -> var T). Messaggi
+     d'errore posizione (descriviErrore) + la GUIDA ALLO SBLOCCO del
+     permesso GPS (tre livelli iOS/Android, testo d'aiuto lungo in
+     mostraGuidaSblocco, spezzato in geo.guidaSafari/geo.guidaChrome/
+     geo.guidaIntro/geo.guidaOutro cosi' l'ordine per piattaforma resta
+     logica JS). MOTIVO_PREDEFINITO (const al caricamento) ->
+     motivoPredefinito() (funzione, risolta per-chiamata). NESSUN onChange:
+     le stringhe vivono solo in modali/toast creati al momento;
+   - offline-map.js: NON TOCCATO. Tutte le sue stringhe sono
+     throw new Error(...) interni, sempre catturati e sostituiti con un
+     toast tradotto in tracking.js. Marcarlo sarebbe stato codice morto;
+   - index.html: #map-record-setup / #map-record-controls /
+     #tracking-mini-bar / #tracking-panel marcati. #tracking-gps-quality e
+     #tracking-sync-status hanno data-i18n sullo STATO DI PARTENZA;
+     #map-record-label NON marcato (updateMapRecordButton, due stati).
+
+   SCELTE NON OVVIE (dettaglio nel vault, 03 sottosezione "Lotto Mappa,
+   area 4"):
+   - onChange di tracking.js ridisegna DALLO STATO IN MEMORIA, mai un
+     fetch: tasto mappa sempre; pannello/badge se si sta registrando
+     (renderTrackingUi + setSyncBadge(ultimoStatoSync)); <select>
+     escursione se #map-section attiva; riepilogo SOLO se il suo pannello
+     e' gia' aperto (renderSummary rigioca ultimaSessioneRiepilogo;
+     showPanel dentro e' no-op se gia' visibile -> non riapre un pannello
+     chiuso);
+   - i due badge: applyStaticTranslations li riporta allo stato statico al
+     cambio lingua, ma l'onChange gira SUBITO DOPO (i listener sono chiamati
+     dopo applyStaticTranslations in setLang) e li rimette allo stato vero;
+     setSyncBadge ora salva ultimoStatoSync;
+   - promemoria nativo Android tradotto alla programmazione (edge: cambio
+     lingua a escursione in corso -> testo vecchio fino alla ricorrenza
+     dopo). console.error/warn di entrambi i file restano IT; body.error
+     dal server nei toast resta il testo del server.
+
+   VERIFICATO CON L'ESTENSIONE CHROME (demo Marco Alpinista). Sidebar
+   statica IT<->EN. Poi SESSIONE DI TRACCIAMENTO SIMULATA con stub in
+   memoria (navigator.geolocation.watchPosition -> id fisso senza callback;
+   window.fetch avvolto per /api/tracking/start|points|end|active;
+   showConfirmModal -> true), tutti ripristinati subito: "Start recording"
+   -> pannello attivo; toggle IT<->EN DURANTE la registrazione -> "Stop
+   recording", "Live hike", badge "GPS: waiting for signal..."/"Synced",
+   statistiche 4,24 km / 4,2 km/h (IT) <-> 4.24 km / 4.2 km/h (EN),
+   "Pause"/"Stop"; "Stop recording" -> riepilogo, toggle IT<->EN sul
+   riepilogo -> "Hike finished"/"Escursione conclusa", etichette e decimali
+   seguono la lingua, IL PANNELLO NON SI RIAPRE se era chiuso; chiusura
+   riepilogo -> torna a idle. Listener error/unhandledrejection a mano:
+   ZERO. Una prima passata aveva mostrato #tracking-sync-status fermo su
+   "Sincronizzato" in EN (nessun flush ancora, ultimoStatoSync null):
+   risolto marcando i due badge data-i18n sullo stato di partenza,
+   riverificato OK. node -c OK su tutti. prova-configurazione.js (9/9),
+   prova-passo-non-misurato.js (28/28), prova-invito-squadra.js (59/59).
+
+   COMMITTATO E PUSHATO su richiesta esplicita di Denis ("commit e push"),
+   camoscio `2b310e9`. L'hook di auto-save aveva gia' fatto un commit
+   locale generico (91f7447) coi 4 file: rifuso con git commit --amend
+   prima del push. VERIFICA DAL VIVO DI DENIS ANCORA DA FARE - per tutto il
+   lotto Mappa (aree 1-4) e i lotti 3-7.
+
+   >>> IL LOTTO MAPPA E' CHIUSO. 4 aree, tutte verificate con l'estensione
+   Chrome e pushate una per una: 8988610 (area 1) -> 57c1250 (area 2) ->
+   8a74a5a (area 3) -> 2b310e9 (area 4), piu' i commit-doc 6423476 /
+   5a87563 / 4c0d709 / (questo giro). La barra laterale della Mappa e'
+   tutta tradotta. Restano IT di proposito: i testi/nomi scritti dagli
+   utenti, e il segnaposto nativo di <input type=date>/<input type=file>
+   (limite Chrome, secondo lotto).
+
+   RIPARTIRE DA: (1) COSA RESTA DELLA TRADUZIONE - il gate di
+   login/registrazione (schermata accesso + wizard registrazione a fasi,
+   vive PRIMA di #app) e le 3 pagine HTML autonome in public/ che non
+   passano da index.html: demo.html, conferma-email.html,
+   reimposta-password.html (verificare se caricano gia' i18n.js). Concordare
+   con Denis, un pezzo alla volta; dopo, il punto 102 e' completo. (2)
+   verifica dal vivo di Denis (tutto il lotto Mappa + lotti 3-7).
 
 =====================================================================
 
