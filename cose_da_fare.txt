@@ -7074,3 +7074,83 @@ schermo spento ancora."
      un endpoint nuovo, oppure un controllo in-process leggero;
    - dove Denis conferma/rinnova: pagina Moderazione, la notifica
      stessa, o un pannello nuovo - da decidere col piano.
+
+112. [FATTO 2026-08-28, decima sessione] Denis, parole sue: "dobbiamo
+   aggiungere dei badge nuovi". Poi il dettaglio: tre file in
+   C:\Users\lenovo\OneDrive\Desktop\Badge per Camoscio - "Monte
+   Cafornia", "Monte Velino", "Rifugio Capanna di Sevice", con "ho gia
+   verificato le quote sono giuste". Nello stesso messaggio, una seconda
+   richiesta: "poi ho pensato di mettere delle informazioni sul badge.
+   quando clicchi sul badge si apre l'immagine. stavo pensando in angolo
+   in alto a destra una sorta di 'i' per delle piccole informazioni.
+   appena hai aggiunto i badge nuovi ti do tutte le informazioni da
+   mettere". Poi ha passato 25 testi (uno per ognuno dei 24 badge del
+   catalogo; Franchetti/Zilioli dati come "Carlo Franchetti" / "Tito
+   Zilioli"). "committa e pusha i badge, poi ti mando le info per la
+   'i'" -> poi "hai il mio via libera, commit e push".
+
+   FATTO IN DUE COMMIT.
+
+   (A) Tre badge luoghi nuovi (camoscio c77572e), zona "Sirente-Velino"
+       (prima volta nel catalogo):
+         badge_velino    Monte Velino               2486 m  42.14704 / 13.38166  Abruzzo
+         badge_cafornia  Monte Cafornia             2424 m  42.14306 / 13.39526  Abruzzo
+         badge_sevice    Rifugio Capanna di Sevice  2119 m  42.16080 / 13.36700  Abruzzo
+       Coordinate cercate su Overpass per TAG (natural=peak le due cime,
+       tourism=alpine_hut il rifugio - operator "G.E.V. Magliano de'
+       Marsi"), NON da Nominatim ne' dalle icone. Le quote OSM (ele)
+       2486/2424/2119 coincidono con le cifre disegnate sulle icone.
+       Regione confermata con lib/regions.js (tutte e tre Abruzzo). DB
+       controllato: nessuna escursione ha gia' una vetta con questi nomi
+       (niente card doppia). Catalogo badge 21 -> 24. Icone kebab-case in
+       public/img/badge-luoghi/. Nome OSM esatto "Rifugio Capanna di
+       Sevice" (toponimo "Sevice" confermato da altri 3 oggetti OSM sulla
+       stessa dorsale: Monte di Sevice, Fonte di Sevice, Vallone di
+       Sevice). Icone sorgente spostate in Badge per Camoscio/fatto/ come
+       le precedenti.
+
+   (B) Bottone "i" nel modale immagine del badge (punto 99), camoscio
+       dffdda3. Cliccando un badge si apre gia' l'immagine intera; ora in
+       alto a destra (accanto alla x) compare una "i" quando quel badge
+       ha una scheda -> tap = pannello con nome + testo ancorato al bordo
+       basso dell'immagine, scrollabile; tap di nuovo / Esc / x lo
+       chiudono; all'apertura del modale il pannello riparte sempre
+       chiuso.
+       - Le 24 descrizioni in public/js/badge-info.js (NUOVO): file
+         solo-browser (il server NON lo carica, a differenza di
+         badge-points.js), catalogo fisso indicizzato per stampId,
+         nessun campo MongoDB. Testo in italiano di proposito, come i
+         nomi di luogo - FUORI da i18n.js, stessa scelta del punto 102
+         (e' contenuto, non interfaccia). Un badge senza voce qui non
+         mostra la "i": i badge personali (hanno gia' titolo+descrizione
+         propri in personal-badges.js) e le vette ricavate dalle
+         escursioni non ne hanno.
+       - Lo stampId arriva al click via data-stamp-id, messo su
+         .badge-card (badges.js, schedaBadge) e sullo slot Passaporto
+         della Dashboard (app.js, renderDashboardStamps); l'ascoltatore
+         delegato del modale (app.js) lo legge dalla card antenata.
+         .personal-badge-illustration non ha una card antenata -> stampId
+         resta null -> "i" nascosta (nessun caso speciale da scrivere).
+       - CSS: bottone "i" identico alla x, un posto piu' a sinistra
+         (right:52px); pannello scuro sul fondo dell'immagine, colori
+         fissi come la x (il modale ha lo stesso fondo nei due temi).
+
+   VERIFICATO DAL VIVO (estensione Chrome, account demo Marco, sia IT
+   sia EN): 24 card tutte con data-stamp-id e scheda risolta; pagina
+   Badge + anteprima Passaporto in Dashboard; badge bloccato (icona
+   grigia, "i" comunque presente); badge personale (click sintetico
+   identico a quello vero: "i" resta nascosta); Esc chiude; pannello
+   riparte chiuso alla riapertura; toggle IT<->EN (data-stamp-id
+   sopravvive al ridisegno di renderBadges, testo resta italiano); zero
+   errori in console. Server locale avviato e fermato a fine prova.
+
+   TRE COSE LASCIATE COSI' (segnalate a Denis, "via libera" senza
+   modifiche):
+   - titolo del pannello = nome del catalogo ("Rifugio Franchetti",
+     "Rifugio Zilioli"), non "Carlo Franchetti" / "Tito Zilioli" (quelli
+     restano dentro il testo);
+   - un refuso nella prosa di Denis lasciato tale e quale: Terminillo,
+     "panorami sterminati che spazzano dalla Piana Reatina" (verosimile
+     "spaziano");
+   - aria-label della "i" = "Informazioni sul badge", italiano fisso,
+     come l'aria-label="Chiudi" della x gia' esistente.

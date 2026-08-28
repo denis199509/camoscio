@@ -1,114 +1,84 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-28 (nona sessione, seguito 7). >>> PUNTO 102 CHIUSO
-(tutta l'interfaccia IT/EN). PUNTO 106 (2 fix responsive di styles.css)
-FATTO, VERIFICATO E PUSHATO. Residuo noto (NON in coda): i 4-5 titoli di
-sezione piu' lunghi restano troncati coi "..." su telefono - si riapre
-solo se Denis lo chiede. <<<
+Aggiornato: 2026-08-28 (decima sessione).
 
-Il rollout, in ordine di commit camoscio:
-  10c137f  1o lotto - Cerca Persone / Profilo / Squadra / Escursione
-  d4a599f  2o lotto - Escursioni / Le mie escursioni
-  6474cd9  3o lotto - Dashboard / Profilo proprio / header
-  106af9d  4o lotto - Sicurezza & Mesh
-  9c079c1  5o lotto - Sociale + chatpanel
-  5160c14  6o lotto - Carpooling + Zaino
-  e04d6e2  7o lotto - Moderazione
-  8988610 / 57c1250 / 8a74a5a / 2b310e9  LOTTO MAPPA, aree 1-4
-  8b17376  gate di login/registrazione + 3 pagine HTML autonome
-  c747bdc  diagnostica-gps.html (strumento di debug) - ex ultimo avanzo tecnico
-(+ un commit-doc di chiusura dopo ogni lotto). Tutto pushato su richiesta
-esplicita di Denis ("commit e push"); hook auto-save rifuso ogni volta
-(per diagnostica-gps.html erano 4 auto-save, schiacciati con reset --soft).
+>>> PUNTO 112 FATTO E PUSHATO — due parti:
+  (A) tre badge luoghi nuovi (camoscio c77572e): Monte Velino 2486 m,
+      Monte Cafornia 2424 m, Rifugio Capanna di Sevice 2119 m - tutti
+      Abruzzo, zona nuova "Sirente-Velino". Coordinate da Overpass per
+      tag (natural=peak / tourism=alpine_hut), quote OSM = cifre sulle
+      icone, regione confermata con lib/regions.js, DB controllato
+      (nessuna vetta omonima gia' presente). Catalogo badge 21 -> 24.
+      Icone in public/img/badge-luoghi/, sorgenti in "Badge per
+      Camoscio/fatto/".
+  (B) bottone "i" nel modale immagine del badge (punto 99), camoscio
+      dffdda3: quando il badge ha una scheda compare una "i" accanto
+      alla x -> pannello nome + testo ancorato al fondo dell'immagine.
+      Le 24 descrizioni in public/js/badge-info.js (NUOVO): file
+      SOLO-BROWSER (il server non lo carica, a differenza di
+      badge-points.js), indicizzato per stampId, nessun campo MongoDB,
+      testo IT fuori da i18n come i nomi di luogo (punto 102). Lo
+      stampId arriva al click via data-stamp-id su .badge-card e sullo
+      slot Passaporto; badge personali e vette da escursione non hanno
+      scheda -> niente "i". Verificato dal vivo (estensione Chrome,
+      demo Marco, IT+EN, badge bloccato/personale, Esc, console
+      pulita). Dettaglio: cose_da_fare.txt punto 112, vault 03/04/06.
 
-RESTA ITALIANO DI PROPOSITO: tutto il testo scritto dagli utenti
-(descrizioni, chat, nomi squadre/escursioni), i nomi propri di luogo
-(cime/rifugi/regioni), titolo/descrizione dei badge personali, il
-segnaposto nativo del browser di <input type=date>/<input type=file>
-(limite Chrome). NIENTE PIU' AVANZO TECNICO: diagnostica-gps.html
-(strumento di debug, ci si arriva solo dalla guida allo sblocco GPS)
-TRADOTTA il 28/08 (c747bdc). Dentro quella pagina resta italiano solo
-componiRapporto() - il rapporto tecnico da copiare e incollare per
-assistenza, non e' interfaccia.
-
-VERIFICHE FATTE: ogni lotto (i 7 + lotto Mappa aree 1-4 + gate/3 pagine
-HTML + diagnostica-gps.html) provato con l'estensione Chrome IT<->EN
-(toggle+sweep, listener error/unhandledrejection: ZERO errori) e con le
-prove automatiche (prova-configurazione 9/9, prova-passo-non-misurato 28/28,
-prova-invito-squadra 59/59; per il gate anche prova-punto7 53/53 e
-prova-verifica-email 34/34, le due che CLAUDE.md impone su
-accessi/password/email). Per diagnostica-gps.html: gli 8 rami del verdetto
-(mostraVerdetto) pilotati con uno stub di navigator.geolocation, guida
-sblocco Android+iOS, decimali virgola/punto. In locale da Denis: lotti 1-2
-confermati a suo tempo, lotti 3-7 prova veloce il 28/08 ("per adesso tutto
-bene"); su lotto Mappa / gate / diagnostica-gps.html ha chiuso il punto
-senza riprova ("considera chiuso il punto"). Dettaglio nel vault (03/04/06)
-e in cose_da_fare.txt punto 102.
-
-COME SONO FATTI I LOTTI (data-i18n / data-i18n-html, var T fuori dalle IIFE
-e const T dentro, dizionario SOLO inglese in public/js/i18n.js con
-l'italiano mai duplicato, bandiere SVG inline, onChange solo dove il
-ridisegno costa zero, vocabolario fisso tradotto a video ma valore IT al
-server, nomi propri di luogo/regioni mai tradotti): dettaglio completo nel
-vault 03, sezioni "Punto 102" e "diagnostica-gps.html".
-
-Resta valido: hook "Stop" di auto-save (commit locale, MAI push) a fine di
-ogni risposta. Debito icona Bivacco Carlo Fusco CHIUSO il 28/08 (icona
-nuova a 2455 m in public/img/badge-luoghi/bivacco-carlo-fusco.png).
-Coordinate Rifugio Franchetti / Rifugio Zilioli rifinite su DMS di Denis
-(~13 m ciascuna, quota invariata) - erano le due voci "da verificare a
-mano" del vault. PUNTO 106 (due fix responsive di styles.css) FATTO,
-VERIFICATO a 386px + desktop, E PUSHATO su richiesta di Denis ("commit e
-push"). Residuo noto: i 4-5 titoli di sezione piu' lunghi restano coi
-"..." su telefono (non deciso di sistemarli - dettaglio in cose_da_fare.txt
-punto 106). PUNTO 108 (teletrasporto GPS che farma i badge, giro a parte +
-decisione di prodotto) ANCORA APERTO, non toccato. Dettaglio in
-cose_da_fare.txt punti 106 e 108.
-
-TRE PUNTI NUOVI di questa sessione (nona), fuori dal filo del lotto Mappa:
-PUNTO 109 FATTO - scadenza automatica delle segnalazioni sentiero (Report)
-da 30 a 90 giorni, su richiesta di Denis (in montagna un pericolo spesso
-non si risolve in un mese). models/Report.js + migrazione una tantum
-scripts/allunga-ttl-segnalazioni.js (l'indice TTL gia' creato NON si cambia
-dal solo schema, e collMod e' negato sul nostro utente Atlas: si fa
-dropIndex + createIndex). Applicato su Atlas e verificato. Trappola nel
-vault 07. NB: la parte "MongoDB cancella da solo a 90 giorni" verra'
-SOSTITUITA dal punto 111 (vedi sotto); per ora il TTL resta come paracadute.
-PUNTO 110 CHIUSO (falso allarme) - Denis segnalava una traccia GPX di
-DaniWoll fuori dalle regioni da cancellare; la diagnosi (sola lettura,
-scripts/trova-traccia-fuori-regioni.js) NON ha trovato nulla fuori regione
-in tutto il database, e Dani ha poi riferito che "il sistema non gli ha
-fatto caricare la traccia fuori regione": la validazione l'aveva gia'
-respinta all'import, niente e' mai stato salvato. Niente da fare.
-PUNTO 111 DA FARE (requisiti raccolti, niente codice) - "risolvi" di una
-segnalazione fatto da un utente normale non deve piu' cancellare subito:
-manda una notifica a Denis, che conferma o dice "tienila ancora". Idem
-alla scadenza dei 90 giorni: notifica a Denis, che toglie o rinnova di
-altri 90 giorni. E' multi-modulo (Report, rotte, notifiche, job
-schedulato, UI) -> la prossima sessione PARTE DALL'AGENTE architect per il
-piano. Dettaglio e domande aperte in cose_da_fare.txt punti 109, 110, 111.
+  Tre cose lasciate cosi' (Denis: "via libera" senza modifiche):
+  titolo del pannello = nome del catalogo (non "Carlo Franchetti" /
+  "Tito Zilioli", che restano nel testo); un probabile refuso nella
+  prosa di Denis lasciato tale e quale (Terminillo, "panorami che
+  spazzano dalla Piana Reatina"); aria-label della "i" in italiano
+  fisso, come la x.
 
 >>> APERTO PER LA PROSSIMA SESSIONE, in quest'ordine se Denis non dice
-altro (PUNTI 102 e 106 CHIUSI, fuori da questa lista):
+    altro:
 
-1. PUNTO 108 (giro a parte): il tasto di simulazione della posizione GPS
-   sulla mappa fa scattare i timbri e sblocca i badge per davvero - si
-   possono conquistare tutti i badge da fermi. E' prima una DECISIONE di
-   prodotto (il teletrasporto resta ma non da' timbri? solo per i demo?
-   si toglie?), da concordare con Denis prima di scrivere. Codice:
-   simulazione posizione in map.js/tracking.js + geofencing timbri
-   (SOGLIA_TIMBRO_M, condivisa col conteggio salite del punto 42b).
-   Dettaglio in cose_da_fare.txt punto 108.
+1. PUNTO 108 (giro a parte): il tasto di simulazione della posizione
+   GPS sulla mappa fa scattare i timbri e sblocca i badge PER DAVVERO -
+   si possono conquistare tutti i badge da fermi. E' prima una
+   DECISIONE di prodotto (il teletrasporto resta ma non da' timbri?
+   solo per i demo? si toglie?), da concordare con Denis prima di
+   scrivere. Codice: simulazione posizione in map.js/tracking.js +
+   geofencing timbri (SOGLIA_TIMBRO_M, condivisa col conteggio salite
+   del punto 42b - non spaccarlo). Dettaglio in cose_da_fare.txt
+   punto 108.
 
-2. PUNTO 111 (multi-modulo, PARTE DALL'AGENTE architect): "risolvi" di una
-   segnalazione da utente normale e scadenza a 90 giorni diventano
+2. PUNTO 111 (multi-modulo, PARTE DALL'AGENTE architect): "risolvi" di
+   una segnalazione da utente normale e scadenza a 90 giorni diventano
    entrambi una notifica a Denis che decide (conferma/tieni ancora,
    oppure togli/rinnova +90 gg). L'auto-cancellazione TTL del punto 109
-   verra' sostituita da un campo expiresAt + job schedulato. Requisiti e
-   domande aperte in cose_da_fare.txt punto 111.
+   va sostituita da un campo expiresAt + job schedulato; il TTL a 90 gg
+   resta come paracadute finche' 111 non e' fatto. Requisiti e domande
+   aperte in cose_da_fare.txt punto 111.
 
-Dettaglio completo in cose_da_fare.txt punti 102, 106, 108 e 111, e nel
-vault (04-Da-Fare.md, 03-Decisioni-Architetturali.md, 07-Trappole-Tecniche.md).
+>>> ALTRE APERTE, non urgenti (dettaglio in vault 04-Da-Fare.md):
+    livelli ORIGINALI del punto 63b (gradini per la ZONA dichiarata a
+    mano, DIVERSI dai livelli gia' fatti del punto 86) + calcolo
+    automatico del raggio (punto 42a) - Denis deve ancora pensarci, non
+    richiederlo; dominio email proprio (rimandato da lui, "non ora").
+
+>>> RESTA VALIDO:
+  - Hook "Stop" di auto-save: commit locale (MAI push) a fine di ogni
+    risposta se ci sono modifiche non salvate in questo repo. Va rifuso
+    in un commit vero prima di ogni push (reset --soft se sono piu' di
+    uno).
+  - Traduzione IT/EN (punto 102, CHIUSO): resta ITALIANO di proposito
+    tutto il testo scritto dagli utenti, i nomi propri di luogo
+    (cime/rifugi/regioni), titolo/descrizione dei badge personali, le
+    schede "i" dei badge (punto 112), il segnaposto nativo di
+    <input type=date>/<input type=file>, e componiRapporto() dentro
+    diagnostica-gps.html. Meccanismo dei lotti: vault 03, sezioni
+    "Punto 102" e "diagnostica-gps.html".
+  - Punti 102 e 106 CHIUSI E PUSHATI il 28/08. 106 = due fix responsive
+    di styles.css (rollout 102: 10c137f -> ... -> c747bdc; 106:
+    07ee6ef). Residuo noto del 106, non in coda: i 4-5 titoli di
+    sezione piu' lunghi restano coi "..." su telefono - si riapre solo
+    se Denis lo chiede.
+  - Punti 109 (TTL segnalazioni 30 -> 90 gg, FATTO, sara' sostituito
+    dal 111) e 110 (falso allarme, chiuso senza azione) - vedi
+    cose_da_fare.txt.
+
 ===================================================================
 
 QUESTO FILE DICE SOLO UNA COSA: a che punto siamo adesso e da dove si ricomincia.
@@ -132,195 +102,15 @@ DOVE STA IL RESTO, in ordine di lettura:
 REGOLA DI FINE SESSIONE: si aggiornano il vault e questo file SEMPRE; cronologia.txt
 MAI piu' (congelato); cose_da_fare.txt quando un punto si chiude o ne arriva uno nuovo.
 
-
-
->>> STATO ATTUALE (20-21/08/2026): punti chiusi, committati e pushati - quelli che si
-    potevano provare dal vivo sono stati confermati da Denis di persona, non solo
-    costruiti. Dettaglio completo di ognuno, con le parole di Denis e il
-    ragionamento, in cose_da_fare.txt (cercare il numero) e nel vault - qui solo
-    l'elenco:
-
-      83. Badge personali a Nicolo97 e Scheldon.
-      84. Tolto il telefono dai contatti di emergenza.
-      85. "Passo & Fatica": mai piu' un numero finto per chi non ha ancora un
-          dato vero.
-      86. Livelli di frequentazione di una cima (badge, "Frequentatore" ->
-          "Esperto della Cima") + contatore "×N".
-      87. Le cime con un livello raggiunto compaiono anche come "esperto
-          locale" sul profilo.
-      88. Segnalazione sentiero: chiede prima se sei sul posto o vuoi indicare
-          il punto sulla mappa, invece di usare sempre il GPS.
-      89. Mappa da telefono: riquadro "Escursione collegata" chiuso di default,
-          popup delle segnalazioni sempre leggibile.
-      90. Menu a tendina: le opzioni aperte non erano piu' quasi invisibili.
-      91. Icone vere per Rifugio Franchetti/Zilioli/Duca degli Abruzzi (quota
-          di Zilioli corretta a 2250 m per farla coincidere con l'icona).
-      92. Il passo personale ora legge anche le tracce GPS (non solo i tempi
-          scritti a mano), formula CAI invertita invece di divisa - eccezione
-          al tetto mensile .gpx concessa a Denis fino a fine agosto.
-      93. Ripiego "quote a mano" quando la fonte delle quote non risponde,
-          tenendo il progetto collegato.
-      95. "Invita a Gita" sceglieva l'escursione a caso invece di farla
-          scegliere - corretto anche un buco di sicurezza separato
-          (manualApproval scavalcato per gli inviti di terzi).
-      96. Icona vera alle sei cime gia' nel catalogo; Rifugio Bruno Pomilio
-          sostituito dal Bivacco Carlo Fusco; Rifugio Pino Ciuffarella tolto
-          senza sostituzione (11 -> 10 badge).
-      97. Altri undici badge (otto cime/bivacco del Gran Sasso e dei
-          Simbruini, tre rifugi nuovi) - corretto per strada il nome del
-          Rifugio Nicola D'Arcangelo (non "D'Archangelo"), quota vera 1655 m
-          contro i 2235 m decorativi sull'icona. Catalogo a 21 badge totali.
-      98/A. "Invita a Gita" mancava a chi era solo membro (non creatore) di
-          una squadra - restrizione tolta, il permesso vero lo decide gia'
-          il creatore dell'escursione (b894f39).
-      98/B. Menu recensioni non toglieva le coppie escursione+persona gia'
-          recensite - nuova rotta di sola lettura, anonimato rispettato;
-          tolto anche il campo commento, mai letto da nessuna pagina.
-      98/C. Split Spese Viaggio chiedeva gia' andata+ritorno - ora solo
-          andata, il calcolo raddoppia da solo (e54406f).
-      98/D. Obiettivo di allenamento: dopo il salvataggio non c'era
-          nessuna conferma visibile (l'elenco mostrava solo i
-          compagni, mai il proprio). Aggiunto un riquadro sotto il
-          form (d7eecf1).
-      98/E. Progetto percorso girava largo sul sentiero invece di
-          tagliare per una strada sterrata vicina (caso vero trovato
-          da Denis, screenshot alla mano) - soglia del "livello i"
-          alzata da 200 a 800 m, dato gia' live sul sito senza deploy
-          (611e97e). Interruzione a meta' causata da un mio taskkill
-          troppo largo, nessun dato perso (script ripartibile).
-          RIAPERTO tre volte dopo: prima per il tag `residential`,
-          poi per `secondary` (SP30/SP63, 1a9c60a) - CONFERMATO DAL
-          VIVO il 22/08/2026, quarta riapertura sullo stesso posto
-          risolta per davvero. PUNTO 98 CHIUSO PER INTERO.
-      98/F. "Diario di Viaggio Collaborativo" cancellato per intero
-          (codice + le due voci vere sul database), fuori ordine su
-          decisione di Denis: non un rinvio ma una cancellazione,
-          nessuna idea per come dovrebbe funzionare. Voce reale di
-          DaniWoll mostrata per intero prima di cancellarla, la sua
-          escursione non toccata (36d3e66).
-      99. Click su un'icona badge (propria, di un altro utente, personale,
-          o nell'anteprima Passaporto di Dashboard) apre l'immagine intera
-          in un modale; un badge non ancora conquistato resta grigio anche
-          ingrandito - non richiesto esplicitamente, trovato provando dal
-          vivo (f089780+ca16e38).
-     100. Logo vero (stambecco su cima, generato con AI dopo aver scartato
-          una prima foto stock senza licenza adatta) al posto dell'emoji
-          montagna, incoerente fra sito e app - su tutte e 5 le pagine
-          HTML che lo mostravano. Icona Android rigenerata in tutte le
-          densita', installata sul telefono vero e confermata da Denis
-          ("verificato dal vivo, bellissimo").
-
-     101. Profilo (renderProfileHikes) mostrava sessioni di tracciamento che
-          "Le mie escursioni" filtra gia' da tempo (avvii annullati da ~0 km,
-          e doppioni di una sessione gia' rappresentata da un'escursione
-          completata) - trovato da Denis sul proprio account dopo le prove
-          dal vivo del punto 94. Le due regole spostate in una funzione
-          condivisa fra i due file, mai due copie che possono divergere
-          in silenzio (9c085bf).
-
-      94. App Android (Capacitor) per il tracciamento GPS a schermo spento -
-          tutti e 8 i passi chiusi. La riprova lunga del passo 6 (25 min,
-          12 a schermo spento in modalita' aereo) confermata da Denis di
-          persona ("si, direi che punto 94 chiuso per intero"): nessun
-          badge di interruzione, nessun recupero manuale necessario -
-          verificato anche sul database (sessione unica, nessun salto di
-          velocita' impossibile). Dettaglio completo in cose_da_fare.txt
-          punto 94 e nel vault.
-
-     102. Traduzione IT/EN, prova sulla pagina Badge: due bandiere
-          nell'header (prima di "Esci"), solo interfaccia - testi
-          utente e nomi propri di luogo mai tradotti. Dizionario
-          inglese in un file nuovo (public/js/i18n.js), l'italiano
-          resta dov'era gia', mai duplicato. Bandiere in SVG inline
-          invece di emoji (su Windows/Chrome il glifo a colori manca).
-          Confermata da Denis in locale, poi APPROVATO IL ROLLOUT AL
-          RESTO DEL SITO (22/08/2026, stessa giornata/sessione
-          successiva): primo lotto di 4 pagine (Cerca Persone,
-          Profilo, Pagina Squadra, Pagina Escursione) fatto e
-          verificato con l'estensione Chrome, poi CONFERMATO DA DENIS
-          IN LOCALE ("visto la pagina in local, tutto apposto").
-          Trovato e corretto un bug vero durante la verifica (il
-          titolo in alto non seguiva il cambio lingua sulle pagine
-          con un titolo dinamico), poi anche le etichette della barra
-          laterale (segnalate da Denis). Committato e pushato su
-          richiesta esplicita di Denis (`10c137f`). PRIMO LOTTO
-          CHIUSO PER INTERO. SECONDO LOTTO (Escursioni + Le mie
-          escursioni + i due modali collegati), stessa giornata,
-          sessione successiva: costruito, verificato con
-          l'estensione Chrome, CONFERMATO DA DENIS IN LOCALE
-          ("verificato in locale, tutto apposto, vai con il push").
-          Committato e pushato (`d4a599f`). SECONDO LOTTO CHIUSO
-          PER INTERO. TERZO LOTTO (Dashboard + Profilo proprio
-          #my-profile), settima sessione 27/08/2026: costruito,
-          piu' l'header condiviso (Esci, campana notifiche, widget
-          utente) ripiegato dentro su richiesta di Denis. Titolo
-          fisso di #my-profile trattato via prettyNames +
-          sectionTitle.my-profile (niente onChange dedicato, a
-          differenza di #user-profile); Dashboard e header si
-          ridisegnano al cambio lingua, il corpo JS di #my-profile
-          no (come #user-profile - residuo onesto). Verificato con
-          l'estensione Chrome (IT+EN, toggle dal vivo, zero errori)
-          e con prova-configurazione.js/prova-passo-non-misurato.js.
-          Committato e pushato su richiesta esplicita di Denis
-          (`6474cd9`). Poi lotti 4-7, lotto Mappa (aree 1-4), gate +
-          3 pagine HTML e diagnostica-gps.html - tutti fatti,
-          verificati (estensione Chrome + prove automatiche),
-          committati e pushati entro il 28/08. PUNTO 102 CHIUSO su
-          decisione di Denis ("considera chiuso il punto"), senza sua
-          riprova in locale su Mappa/gate/diagnostica. Dettaglio:
-          blocco in cima a questo file, vault 03/04/06,
-          cose_da_fare.txt punto 102.
-
-     103. [22/08/2026, trovato durante il punto 102] Il titolo di
-          un'escursione importata da GPX sul profilo di DaniWoll
-          mostrava il codice XML grezzo (<![CDATA[...]]>) invece del
-          testo pulito - un dialetto GPX (CDATA attorno al <name>)
-          non fra i 20 gia' testati per lib/gpx.js. NON un problema di
-          sicurezza (nessuna entita' risolta, solo delimitatori
-          tolti). Corretto il parser (risolve i FUTURI import) e,
-          con conferma esplicita di Denis, anche la sessione gia'
-          sbagliata sul database (script mirato, 1 trovata e corretta,
-          controprova a 0 rimaste). Riverificato dal vivo. Codice
-          committato e pushato insieme al punto 102 (`10c137f`); la
-          correzione sul database non è una modifica di codice, è
-          già definitiva da sola.
-
-    Anche due pulizie dati: cancellata una traccia vuota (0 km, 0 dislivello)
-    del 24/07/2026 sull'account reale di Denis; cancellate 12 sessioni del
-    19/08/2026 (11 avvii-fantasma da ~0 km piu' l'unica sessione vera rimasta),
-    tutte prove del tracciamento del punto 94, su richiesta esplicita di Denis
-    dopo la diagnosi del punto 101.
-
-    >>> DEBITO TECNICO SEGNALATO DA DENIS (18/08/2026 notte, non urgente):
-    l'icona di Rifugio Nicola D'Arcangelo disegna 2235 m, quota sbagliata - il
-    catalogo ha gia' il numero vero (1655 m), solo il disegno mente. Da
-    correggere in futuro con un'icona nuova che porti la quota giusta -
-    annotato in ../camoscio memoria/04-Da-Fare.md, sezione "Debito tecnico
-    noto". Nessun codice da toccare finche' non arriva l'immagine nuova.
-
-    >>> CORRETTO IL 21/08/2026 (era il debito trovato per strada al punto
-    98/C, l'11/08): driverSchema (models/Hike.js) non dichiarava mai il
-    campo "passengers" - Mongoose lo scartava in silenzio a ogni
-    salvataggio, "Sali a Bordo" funzionava solo a video. I permessi lato
-    server (routes/hikes.js) c'erano gia' pronti da prima, bastava
-    dichiarare il campo. Controprova vera fatta (senza la correzione il
-    campo sparisce gia' al primo salvataggio, con la correzione resta).
-    Committato (65d859b).
-
-    >>> PUNTO 98: CHIUSO PER INTERO il 22/08/2026 (tutti e sei i
-    sotto-punti A-F) - E confermato dal vivo da Denis su Valle
-    Granara/SP30 dopo la quarta riapertura. Sezione compressa
-    nel vault (04-Da-Fare.md). Dettaglio completo di ogni sotto-punto,
-    con le parole di Denis, in cose_da_fare.txt punto 98.
-
-    >>> ANCORA APERTE, non urgenti (dettaglio in
-    ../camoscio memoria/04-Da-Fare.md): i "livelli"
-    ORIGINALI del punto 63b (quanti gradini per la ZONA dichiarata a mano,
-    DIVERSI dai livelli gia' fatti del punto 86) e il calcolo automatico del
-    raggio (punto 42a) - Denis deve ancora pensarci, non richiederlo - e il
-    dominio email (rimandato da lui).
+>>> I PUNTI CHIUSI FINO AL 103 (piu' 94 e 98) non sono piu' elencati qui: erano
+    diventati un appello di 190 righe, cioe' esattamente "qualcosa che appartiene a
+    un altro file". Tutti chiusi, committati e pushati, molti confermati dal vivo da
+    Denis. Il dettaglio con le sue parole e' in cose_da_fare.txt (cercare il numero);
+    il racconto per sessione in ../camoscio memoria/06-Cronologia-Sessioni.md.
+    Compressione fatta il 28/08/2026, stesso criterio dello sfoltimento del 18/08.
 
 >>> LEZIONI OPERATIVE (git dopo un'interruzione, moduli che si collegano
     tardi, componenti condivisi fra piu' pagine, trappole Android/Gradle):
     tutte in ../camoscio memoria/07-Trappole-Tecniche.md, non ripetute qui -
     quella e' la sede dove si guarda prima di toccare codice a rischio.
+===================================================================
