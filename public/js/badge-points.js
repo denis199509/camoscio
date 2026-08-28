@@ -90,6 +90,14 @@
         { stampId: 'badge_intermesoli',   nome: 'Pizzo Intermesoli',    tipo: 'cima', quota: 2635, lat: 42.47253, lng: 13.52724, zona: 'Gran Sasso', regione: 'Abruzzo', emoji: '🙏',  icona: 'img/badge-luoghi/pizzo-intermesoli.png' },
         { stampId: 'badge_viglio',        nome: 'Monte Viglio',         tipo: 'cima', quota: 2156, lat: 41.88476, lng: 13.37388, zona: 'Monti Simbruini', regione: 'Lazio', emoji: '🕊️', icona: 'img/badge-luoghi/monte-viglio.png' },
 
+        // Due cime nuove (2026-08-28), gruppo del Velino - prime voci del catalogo per la zona
+        // Sirente-Velino. Coordinate e quota da Overpass (natural=peak): node 26863998 Monte
+        // Velino (ele 2486) e node 1911867131 Monte Cafornia (ele 2424), identiche alle cifre
+        // disegnate sulle icone fornite da Denis. Regione confermata con lib/regions.js
+        // (Abruzzo), stesso criterio delle otto voci sopra.
+        { stampId: 'badge_velino',        nome: 'Monte Velino',         tipo: 'cima', quota: 2486, lat: 42.14704, lng: 13.38166, zona: 'Sirente-Velino', regione: 'Abruzzo', emoji: '🏔️', icona: 'img/badge-luoghi/monte-velino.png' },
+        { stampId: 'badge_cafornia',      nome: 'Monte Cafornia',       tipo: 'cima', quota: 2424, lat: 42.14306, lng: 13.39526, zona: 'Sirente-Velino', regione: 'Abruzzo', emoji: '⛰️', icona: 'img/badge-luoghi/monte-cafornia.png' },
+
         // --- RIFUGI ---
         // Anche queste due corrette il 2026-07-27, vedi la nota sopra. In OSM il secondo
         // e' registrato come "Bivacco Tito Zilioli" (wilderness_hut, 2253 m): il nome
@@ -163,6 +171,12 @@
         // dice 1665 m, 10 m di scarto) - molto lontana dai 2235 m decorativi sull'icona,
         // ulteriore conferma che quei numeri non vanno mai presi per buoni da soli.
         { stampId: 'badge_darcangelo',  nome: "Rifugio Nicola D'Arcangelo", tipo: 'rifugio', quota: 1655, lat: 42.45959, lng: 13.59243, zona: 'Gran Sasso', regione: 'Abruzzo', emoji: '🛏️', icona: 'img/badge-luoghi/rifugio-nicola-darcangelo.png' },
-        { stampId: 'badge_rinaldi',     nome: 'Rifugio Massimo Rinaldi',  tipo: 'rifugio', quota: 2108, lat: 42.46736, lng: 12.99001, zona: 'Terminillo',  regione: 'Lazio',   emoji: '📡',  icona: 'img/badge-luoghi/rifugio-massimo-rinaldi.png' }
+        { stampId: 'badge_rinaldi',     nome: 'Rifugio Massimo Rinaldi',  tipo: 'rifugio', quota: 2108, lat: 42.46736, lng: 12.99001, zona: 'Terminillo',  regione: 'Lazio',   emoji: '📡',  icona: 'img/badge-luoghi/rifugio-massimo-rinaldi.png' },
+        // Rifugio Capanna di Sevice (2026-08-28), stesso gruppo del Velino. Overpass way
+        // 528333729 (tourism=alpine_hut, operator "G.E.V. Magliano de' Marsi"), ele 2119 m =
+        // cifra sull'icona. Toponimo "Sevice" confermato da altri tre oggetti OSM sulla stessa
+        // dorsale (Monte di Sevice, Fonte di Sevice, Vallone di Sevice). Regione confermata
+        // con lib/regions.js (Abruzzo).
+        { stampId: 'badge_sevice',      nome: 'Rifugio Capanna di Sevice', tipo: 'rifugio', quota: 2119, lat: 42.16080, lng: 13.36700, zona: 'Sirente-Velino', regione: 'Abruzzo', emoji: '🛖', icona: 'img/badge-luoghi/rifugio-capanna-di-sevice.png' }
     ];
 });
