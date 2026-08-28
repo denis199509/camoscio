@@ -1,61 +1,59 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-28 (ottava sessione). PUNTO 102, QUINTO LOTTO fatto:
-SOCIALE - la sezione #social (Tribu, Recensioni & Squadre) e le parti di
-social.js non gia' tradotte al secondo lotto: elenco squadre proprie/
-altrui, creazione squadra, obiettivi di allenamento + match, modale
-"Invita a Gita" (#invite-squad-modal + rigaInvitoSquadra/confermaInvito
-Squadra), recensioni anonime. PIU' chatpanel.js per intero (chat condivisa
-da pagina squadra e pagina escursione, rimasta indietro dal primo lotto:
-il titolo lo passavano gia' tradotto i chiamanti, mancavano le stringhe
-interne). Confermato da Denis ("andiamo avanti con il prossimo lotto").
-+68 chiavi (sectionTitle.social, blocchi social.* e chat.*), riuso di
-chiavi esistenti dove il testo coincideva. Scelte: le parti sincrone di
-#social (estratte in renderSocialStaticParts) si ridisegnano sempre al
-cambio lingua, il <select> recensioni (fa un fetch) solo se #social e' la
-sezione aperta - come renderCompletate al secondo lotto; chatpanel.js
-nessun onChange (il polling perderebbe lo scroll); data col mese in
-rigaInvitoSquadra col locale en-GB/it-IT. Sistemato un residuo del secondo
-lotto trovato nel file: tooltip "Esperto locale: <zona>" sugli avatar in
-buildHikeCard. Verificato con l'estensione Chrome (login demo Marco
-Alpinista, #social IT+EN con toggle avanti/indietro, modale "Invita a
-Gita" con date en-GB e plurali, chat squadra + chat escursione in EN,
-listener error piantato a mano: zero errori) + prova-configurazione (9/9),
-prova-passo-non-misurato (28/28), prova-invito-squadra (59/59, carica
-social.js in un contesto vm). Committato e pushato su richiesta esplicita
-di Denis (camoscio `9c079c1`, hook auto-save rifuso con --amend prima del
-push). LA VERIFICA DAL VIVO DI DENIS E' ANCORA DA FARE - per il quinto
-lotto, e resta in sospeso anche quella di terzo e quarto.
-
-A fine sessione Denis ha anche chiesto due cose: (1) PUNTO 107 - aggiunto
-il badge personale di gabriele183 ("Il mare lo vede dai 2000 m."),
-immagine in public/img/badge-personali/gabriele183-mare.png + una riga in
-personal-badges.js, userId vero trovato per username, verificato dal vivo
-- FATTO, committato e pushato; (2) PUNTO 108 (APERTO) - il tasto di
-simulazione GPS sulla mappa fa scattare i timbri e sblocca i badge per
-davvero: si possono conquistare tutti i badge da fermi. Da correggere, ma
-e' prima una decisione di prodotto (vedi cose_da_fare.txt punto 108).
+Aggiornato: 2026-08-28 (ottava sessione, seguito). PUNTO 102, SESTO LOTTO
+fatto: CARPOOLING + ZAINO - le due sezioni #carpool e #backpack e i due
+file carpool.js (484 righe) e backpack.js (919) per intero, un solo lotto,
+scelto con AskUserQuestion ("Carpooling + Zaino insieme"). +~130 chiavi
+(carpool.*, backpack.*, sectionTitle.carpool/.backpack, common.modifica/
+.salvataggio), var T in testa a entrambi i file. Scelte:
+- nomi oggetti checklist / categorie / "generi" dello Zaino = vocabolario
+  fisso nostro (come Difficolta'/Tag Tribu' del 2o lotto), tradotti SOLO a
+  video; il valore che raggruppa e la CHIAVE localStorage dello stato
+  spuntato (chiaveSpuntato keya su item.name) restano la stringa italiana:
+  cambiare lingua non fa perdere uno spuntato. Oggetti del template
+  escursione e personali (testo utente) non nel dizionario -> nome
+  originale (in lista "Trekking boots" nostro accanto a "Giacca antivento"
+  del template, che resta IT - voluto);
+- #backpack si ridisegna al cambio lingua SENZA rifare il fetch meteo
+  (applyBackpackRules salva ultimoInputZaino, l'onChange lo rigioca; nota
+  meteo da ultimaNotaPioggia). #carpool si ridisegna tutto +
+  calculateGenericExpenses() per il box "Split Spese";
+- decimali EUR/kg: helper formattaEuro/formattaKg, NON "formattaDecimale"
+  (gia' un global di userprofile.js a 1 decimale, carica dopo e vince -
+  BUG trovato provando dal vivo, importi a "23,3" invece di "23,29").
+Verificato con l'estensione Chrome (login demo Marco Alpinista): #carpool
+e #backpack in IT ed EN con toggle avanti/indietro sulla pagina, toggle
+ripetuti senza duplicazioni, oggetto spuntato che resta spuntato dopo il
+cambio lingua, importi/kg/date nel formato della lingua, listener error
+piantato a mano: ZERO errori. + prova-configurazione (9/9),
+prova-passo-non-misurato (28/28), prova-invito-squadra (59/59).
+COMMITTATO E PUSHATO su richiesta esplicita di Denis ("commit e push",
+camoscio `5160c14`, hook auto-save `7dd8046` rifuso con --amend prima del
+push). LA VERIFICA DAL VIVO DI DENIS E' ANCORA DA FARE - per il sesto
+lotto, e resta in sospeso anche quella di terzo, quarto e quinto (la 5a
+fatta solo "veloce" e sul sito online).
 
 Resta valido: hook "Stop" di auto-save (commit locale, MAI push) a fine di
 ogni risposta. Debito icona Bivacco Carlo Fusco (2645 m disegnati vs 2455 m
 del catalogo) sempre aperto, non urgente. PUNTO 106 (due fix responsive
-pre-esistenti di styles.css, giro a parte chiesto da Denis) ANCORA APERTO,
-non toccato - dettaglio in cose_da_fare.txt punto 106.
+pre-esistenti di styles.css, giro a parte) e PUNTO 108 (teletrasporto GPS
+che farma i badge, giro a parte + decisione di prodotto) ANCORA APERTI,
+non toccati - dettaglio in cose_da_fare.txt punti 106 e 108.
 
 >>> APERTO PER LA PROSSIMA SESSIONE, in quest'ordine se Denis non dice
 altro:
 
-1. Verifica dal vivo di Denis dei lotti TERZO, QUARTO e QUINTO del punto
-   102 (tutti gia' pushati). Se segnala qualcosa, correggere prima di
-   procedere.
+1. Verifica dal vivo di Denis dei lotti TERZO, QUARTO, QUINTO e SESTO del
+   punto 102 (tutti gia' pushati). Se segnala qualcosa, correggere prima
+   di procedere.
 
-2. PUNTO 102, LOTTO SUCCESSIVO: CARPOOLING / ZAINO. Da concordare con
-   Denis prima di iniziare, non proseguire da soli sull'ordine. Dopo,
-   sempre da confermare quando si arriva: Moderazione, poi la Mappa - la
-   piu' grande e complessa -, infine il gate di login/registrazione e le
-   pagine HTML autonome (demo/conferma-email/reimposta-password). Non
-   riproporre "facciamolo tutto insieme": Denis vuole un pezzo alla volta
-   salvo un suo via libera esplicito per l'intero blocco.
+2. PUNTO 102, LOTTO SUCCESSIVO: MODERAZIONE (pendingreports.js, la campana
+   in header, la coda di revisione). Da concordare con Denis prima di
+   iniziare, non proseguire da soli sull'ordine. Dopo, sempre da
+   confermare: la Mappa - la piu' grande e complessa -, infine il gate di
+   login/registrazione e le pagine HTML autonome (demo/conferma-email/
+   reimposta-password). Non riproporre "facciamolo tutto insieme": Denis
+   vuole un pezzo alla volta salvo un suo via libera esplicito.
 
 3. PUNTO 106 (giro a parte): due difetti responsive PRE-ESISTENTI trovati
    verificando il terzo lotto su mobile (non regressioni della traduzione,

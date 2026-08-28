@@ -5955,6 +5955,97 @@ schermo spento ancora."
    infine il gate di login/registrazione e le pagine HTML autonome
    (demo/conferma-email/reimposta-password).
 
+   ---
+
+   SESTO LOTTO - ottava sessione (seguito), 28/08/2026. Denis, dopo la
+   verifica veloce dei lotti 3-5 ("possiamo continuare, se in futuro
+   trovo qualcosa ti avviso, adesso proseguiamo") e la scelta dell'ambito
+   via AskUserQuestion: "Carpooling + Zaino insieme".
+
+   Fatto: le due sezioni #carpool e #backpack e i due file carpool.js
+   (484 righe) e backpack.js (919) per intero, un solo lotto, un solo
+   commit. Nessun modale dedicato a queste due sezioni. +~130 chiavi al
+   dizionario (blocchi carpool.* e backpack.*, sectionTitle.carpool e
+   .backpack, common.modifica e common.salvataggio). Meccanismo invariato
+   dei lotti precedenti (data-i18n / data-i18n-placeholder sull'HTML,
+   dizionario solo EN, CamoscioI18n.onChange dove il ridisegno non fa un
+   fetch). var T in testa a entrambi i file (non sono in una IIFE).
+
+   Scelte non ovvie (dettaglio nel vault, 03-Decisioni-Architetturali.md
+   sottosezione "Sesto lotto"):
+   - sectionTitle.carpool aggiunto anche se la voce di menu "Carpooling"
+     resta invariata (e' gia' inglese): sono i due posti diversi previsti
+     dal commento nav.*, e il titolo di pagina italiano e' piu' lungo
+     ("Carpooling & Spese Viaggio"). nav.backpack esisteva gia' dal primo
+     lotto ("Smart Backpack");
+   - i nomi degli oggetti della checklist generati dalle REGOLE di
+     backpack.js (Scarponi da trekking, Mantella impermeabile...), le
+     categorie (Abbigliamento, Attrezzatura...) e i "generi" (tenda,
+     cucina...) sono vocabolario fisso NOSTRO, come Difficolta'/Tag Tribu'
+     del secondo lotto: tradotti SOLO per la visualizzazione. Il valore
+     che raggruppa e - punto delicato - la CHIAVE localStorage dello
+     stato spuntato (chiaveSpuntato keya su item.name) restano SEMPRE la
+     stringa italiana: cambiare lingua non fa perdere un oggetto gia'
+     spuntato (verificato dal vivo: spunta in IT -> toggle EN -> ancora
+     spuntato, e viceversa). Gli oggetti del template escursione e quelli
+     personali aggiunti a mano (testo dell'utente) non sono nel dizionario
+     -> T() torna null -> ripiego al nome originale (in una lista si vede
+     "Trekking boots" nostro accanto a "Giacca antivento" del template,
+     che resta italiano - voluto);
+   - cambio lingua: #carpool si ridisegna tutto (nessun fetch nel percorso
+     sincrono) PIU' un calculateGenericExpenses() nell'onChange per
+     rimettere i tre importi EUR del box "Split Spese" nel separatore
+     decimale giusto (quel box lo disegna solo il suo bottone, non
+     renderCarpoolModule). #backpack si ridisegna SENZA rifare il fetch
+     meteo di open-meteo: applyBackpackRules (l'unico imbuto sincrono che
+     disegna la lista) salva i suoi ultimi input in ultimoInputZaino,
+     l'onChange li rigioca; la nota meteo si riscrive con l'ultimo valore
+     gia' noto (ultimaNotaPioggia). Entrambi solo se la loro sezione e'
+     attiva (navigateTo li ridisegna comunque all'ingresso), come
+     renderCompletate. Stessa logica della Dashboard al terzo lotto:
+     ridisegna, non rifetch;
+   - decimali: importi EUR (2 cifre) e kg con virgola IT / punto EN.
+     Helper formattaEuro (carpool.js) e formattaKg (backpack.js). NON
+     chiamati "formattaDecimale": quel nome e' gia' un global di
+     userprofile.js (che fa .toFixed(1)) e, caricando DOPO questi due
+     file, vincerebbe - BUG VERO trovato provando dal vivo, gli importi
+     uscivano a "23,3" invece di "23,29" (lezione nel vault,
+     07-Trappole-Tecniche.md);
+   - la conferma di cancellazione di un annuncio auto (showConfirmModal in
+     carpool.js) allineata all'idioma gia' usato dai "cancella una cosa
+     tua" di social.js/storico.js: T('common.elimina') + cancelLabel
+     T('common.cancella') + danger:true. Le altre showConfirmModal del
+     sito (Mappa, tracciamento, moderazione) restano in italiano: lotti
+     futuri.
+
+   VERIFICATO CON L'ESTENSIONE CHROME (login demo Marco Alpinista):
+   #carpool e #backpack in italiano e inglese, toggle lingua avanti e
+   indietro RESTANDO sulla pagina (entrambe le sezioni si ridisegnano),
+   toggle ripetuti 4+ volte senza duplicazioni di categorie/righe,
+   oggetto spuntato che resta spuntato dopo il cambio lingua e dopo il
+   ritorno, importi EUR a 2 cifre col separatore della lingua (23,29 /
+   23.29), kg 0,80 / 0.80, data col mese "10 agosto 2026" / "10 August
+   2026", il box "Split Spese" che segue la lingua. Sweep di navigazione
+   carpool<->backpack<->dashboard con toggle rapidi, listener error e
+   unhandledrejection piantato a mano: ZERO errori. Screenshot dei due
+   layout EN puliti. Anche prova-configurazione.js (9/9),
+   prova-passo-non-misurato.js (28/28), prova-invito-squadra.js (59/59).
+   Non lanciate le prove email: nessuna modifica in quell'area.
+
+   COMMITTATO E PUSHATO su richiesta esplicita di Denis ("commit e
+   push"), camoscio `5160c14`. L'hook di auto-save aveva gia' fatto un
+   commit locale generico (7dd8046): rifuso con git commit --amend prima
+   del push, stessa procedura dei lotti terzo/quarto/quinto. VERIFICA DAL
+   VIVO DI DENIS ANCORA DA FARE - per il sesto lotto, e resta in sospeso
+   anche quella di terzo, quarto e quinto.
+
+   RIPARTIRE DA: verifica dal vivo di Denis dei lotti 3-6 (se segnala
+   qualcosa, correggere prima di procedere). Poi il lotto successivo e'
+   MODERAZIONE, da concordare con Denis prima di iniziare. Dopo, sempre
+   da confermare: la Mappa (la piu' grande e complessa), infine il gate
+   di login/registrazione e le pagine HTML autonome
+   (demo/conferma-email/reimposta-password).
+
 =====================================================================
 
 103. [22/08/2026, trovato durante il punto 102, non richiesto] Denis,
