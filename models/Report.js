@@ -1,4 +1,5 @@
 const { mongoose } = require('../db/mongo');
+const { prossimaScadenza } = require('../lib/scadenzaSegnalazioni');
 
 const reportSchema = new mongoose.Schema({
     type: { type: String, enum: ['frana', 'ghiaccio', 'fontana_secca', 'ostacolo'], required: true },
@@ -20,20 +21,50 @@ const reportSchema = new mongoose.Schema({
     photo: { type: Buffer, select: false },
     // Derivato, scritto solo alla creazione: default: undefined come canModerateReports in
     // User.js (vincolo spazio) - la maggioranza delle segnalazioni non ha foto.
-    hasPhoto: { type: Boolean, default: undefined }
+    hasPhoto: { type: Boolean, default: undefined },
+
+    // --- (A) Richiesta di risoluzione (punto 111) ---
+    // NON e' un nuovo status: la segnalazione resta 'active' e continua a comparire in mappa
+    // mentre aspetta la decisione di Denis (il pericolo potrebbe esserci ancora). "Risolvi"
+    // fatto da un utente normale valorizza questi due campi e manda una notifica; Denis poi
+    // conferma (si cancella) o "tiene ancora" ($unset di entrambi).
+    // default: undefined - la maggioranza delle segnalazioni non ha una richiesta aperta.
+    resolutionRequestedAt: { type: Date, default: undefined },
+    resolutionRequestedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: undefined },
+
+    // --- (B) Scadenza esplicita (punto 111) ---
+    // Sostituisce la dipendenza dall'indice TTL su createdAt (che sapeva solo cancellare):
+    // questo campo si puo' spostare avanti col "Rinnova +90gg". Ha un default VERO e non
+    // `undefined`: OGNI segnalazione ne ha una, e un documento senza expiresAt sarebbe
+    // invisibile sia al controllo scadenze sia al paracadute TTL (Mongo salta i documenti in
+    // cui il campo non e' una data) = immortale in silenzio. Il default a livello di schema
+    // copre anche scripts/seed-atlas.js, che crea Report senza passare dalla rotta.
+    expiresAt: { type: Date, required: true, default: () => prossimaScadenza() },
+
+    // Guardia anti-doppione: il controllo scadenze gira spesso, la notifica di scadenza si
+    // crea UNA volta sola. Il rinnovo lo azzera ($unset), cosi' fra 90 giorni riavvisa.
+    // default: undefined - vale solo dopo che una segnalazione e' scaduta senza decisione.
+    expiryNotifiedAt: { type: Date, default: undefined }
 }, { timestamps: { createdAt: true, updatedAt: false } });
 
-// Punto 45 (foto): chi non viene mai risolta (confermata poi "risolta" cancella per intero,
-// vedi DELETE /:id/resolve - non esiste piu' uno stato 'resolved' persistente) sparisce da
-// sola dopo 90 giorni. Nessun cron/script a parte: e' Mongo stesso a cancellare il
-// documento in background quando createdAt supera la soglia.
+// Punto 111: PARACADUTE, non il meccanismo di scadenza. La scadenza vera e' il campo
+// `expiresAt` qui sopra + la decisione di Denis (rinnova / togli): alla scadenza parte una
+// notifica, non una cancellazione. Fino al 28/08/2026 qui c'era un TTL su `createdAt` (90
+// giorni, punti 45/109) che cancellava e basta.
 //
-// Era 30 giorni (scelta di Denis del 16/08/2026), portato a 90 il 28/08/2026: un pericolo in
-// montagna (frana, ostacolo) spesso non viene rimosso entro un mese, e una segnalazione che
-// scade prima che il problema sia risolto e' una brutta sorpresa per chi arriva dopo.
-// ATTENZIONE: cambiare questo numero NON basta - MongoDB non modifica un indice TTL gia'
-// esistente al riavvio (IndexOptionsConflict, ignorato in silenzio). Serve la migrazione
-// una tantum scripts/allunga-ttl-segnalazioni.js (collMod, cambia la soglia sul posto).
-reportSchema.index({ createdAt: 1 }, { expireAfterSeconds: 90 * 24 * 60 * 60 });
+// Perche' su `expiresAt` e non su `createdAt`: cosi' si sposta insieme ai rinnovi (+90gg),
+// mentre un TTL su `createdAt` ucciderebbe comunque una segnalazione rinnovata 8 volte.
+// A 365 giorni: cancella solo cio' che NESSUNO ha piu' toccato per un anno intero DOPO la
+// scadenza - e' l'unico limite alla crescita della collezione `reports` (le foto pesano,
+// vincolo hard 1). Questo stesso indice serve anche alla query del controllo scadenze
+// (lib/reportAlerts.js), quindi non e' un indice in piu'.
+//
+// SUL DATABASE ESISTENTE la sostituzione (backfill di `expiresAt` + drop di `createdAt_1` +
+// create di `expiresAt_1`) la fa la migrazione una tantum
+// scripts/scadenza-segnalazioni-esplicita.js, da lanciare DOPO che questo file e' in
+// produzione (con `autoIndex` attivo, deployare prima evita che un riavvio ricrei il TTL
+// vecchio). Su questo utente Atlas: dropIndex + createIndex, mai `collMod` (negato) -
+// trappola in ../camoscio memoria/07-Trappole-Tecniche.md.
+reportSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 365 * 24 * 60 * 60 });
 
 module.exports = mongoose.models.Report || mongoose.model('Report', reportSchema);

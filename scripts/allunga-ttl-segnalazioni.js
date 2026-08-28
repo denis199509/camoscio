@@ -1,4 +1,10 @@
-// Migrazione una tantum (28/08/2026): porta la scadenza automatica delle segnalazioni
+// SUPERATO DAL PUNTO 111 (28/08/2026) - tenuto solo come storia, NON rilanciarlo.
+// Il punto 111 ha rimosso del tutto l'indice TTL su `Report.createdAt` (la migrazione
+// scripts/scadenza-segnalazioni-esplicita.js fa il drop): dopo quella, questo script non
+// trova piu' `createdAt_1` e stampa "Niente da fare". Rilanciarlo "per sicurezza"
+// ricreerebbe il TTL a 90 giorni che il punto 111 ha tolto - da cui questa nota.
+//
+// Migrazione una tantum (28/08/2026): portava la scadenza automatica delle segnalazioni
 // sentiero (Report) da 30 a 90 giorni. Vedi il commento in models/Report.js.
 //
 // PERCHE' SERVE UNO SCRIPT: cambiare expireAfterSeconds nello schema non ha effetto su un
