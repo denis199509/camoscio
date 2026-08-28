@@ -6231,12 +6231,102 @@ schermo spento ancora."
    VIVO DI DENIS ANCORA DA FARE - per l'area 1 e per i lotti 3-7.
 
    RIPARTIRE DA: verifica dal vivo di Denis dei lotti 3-7 + area 1 Mappa.
-   Poi AREA 2/4: Progetta un percorso (routeplanner.js). Poi area 3
-   (Meteo + Esposizione Solare - INCLUDE renderSolarExposureAdvice/
-   calculateBearing/bearingToCompassSector e #sun-exposure-card di
-   map.js, oltre a weather.js) e area 4 (Tracciamento GPS + mappa
-   offline). Concordare con Denis l'inizio di ogni area. Dopo il lotto
-   Mappa, il gate di login/registrazione e le pagine HTML autonome.
+   Poi AREA 2/4: Progetta un percorso (routeplanner.js).
+
+   ---
+
+   LOTTO MAPPA - AREA 2/4 - nona sessione (seguito), 28/08/2026. Denis:
+   "continua faccio la prova piu' tardi" (dopo il push dell'area 1). Va
+   avanti con l'area 2, verifica in locale rimandata.
+
+   Fatto: tutto routeplanner.js (690 righe, DENTRO UNA IIFE - quindi
+   const T, come badges.js/storico.js, nessuna collisione) TRANNE la
+   funzione esposizioneSolare() e i suoi helper calculateBearing/
+   bearingToCompassSector (definiti in map.js). Motivo: esposizioneSolare()
+   e' il gemello di renderSolarExposureAdvice di map.js - stessa feature,
+   "esposizione al sole", solo calcolata dalla linea vera del percorso
+   invece che da una direzione. Loro due + bearingToCompassSector (le 8
+   etichette "Nord"/"Nord-Est"... che entrambe interpolano nei loro testi)
+   sono un cluster unico e si traducono insieme all'AREA 3. CONSEGUENZA:
+   l'area 3 tocca TRE file - weather.js + map.js + routeplanner.js. Nel
+   pannello del percorso il riquadro .rp-sole resta italiano fino ad
+   allora (atteso, come renderSolarExposureAdvice lasciato IT in map.js
+   all'area 1).
+
+   Incluso renderProgetti (card "I miei progetti" in "Le mie escursioni",
+   #projects-list): sta in routeplanner.js, era l'ultima isola italiana
+   di quella pagina - l'intestazione e la descrizione della card
+   (myHikes.progetti* -> "My Projects") erano gia' tradotte al secondo
+   lotto, ma il contenuto dinamico (le schede dei progetti) no. Dizionario
+   +~75 chiavi rp.*, <h4> di route-planner-card in index.html.
+
+   Scelte non ovvie (dettaglio nel vault, 03-Decisioni-Architetturali.md
+   sottosezione "Lotto Mappa, area 2"):
+   - metri() (helper interno) ora sceglie il separatore decimale per
+     lingua (punto EN / virgola IT), ma resta LOCALE ALL'IIFE: nessun
+     rischio di collisione fra <script> (la trappola gemella const T /
+     function), quindi non serve un nome proprio - a differenza di
+     formattaEuro/formattaKg del sesto lotto, che erano function
+     top-level. "km"/"m" non si traducono (unita');
+   - onChange in routeplanner.js: aggiornaPannello() DALLO STATO IN
+     MEMORIA - nessun ricalcolo del percorso, ultimoEsito (risposta di
+     /api/routing/plan) e' gia' in mano - se #map-section e' attiva;
+     renderProgetti() (ri-fetch) se #my-hikes e' attiva. Gate su sezione
+     attiva come il <select> recensioni del quinto lotto;
+   - showConfirmModal di cancellaBozza allineato ai "cancella per sempre"
+     (cancelLabel T('common.cancella') + danger:true), che prima non
+     aveva ne' l'uno ne' l'altro. "Non e' stato possibile contattare il
+     server" (x3 nel file) riusa common.erroreServer;
+   - la data suggerita per il nome di una bozza nuova
+     (toLocaleDateString) col locale en-GB/it-IT. Il nome poi lo puo'
+     cambiare l'utente ed e' contenuto suo: si traduce solo il
+     suggerimento;
+   - "bozza" (nel pannello) e "progetto" (in "Le mie escursioni") sono la
+     stessa entita' con due nomi nella UI italiana: in inglese si
+     unificano dove ha senso (rp.cancellaTitle "Delete this route",
+     rp.tappe "stops", rp.salita), restano distinti dove il testo IT lo
+     e' gia' (rp.prog.cancellaTitle "Delete this project").
+
+   VERIFICATO CON L'ESTENSIONE CHROME (login demo Marco Alpinista,
+   IT<->EN). Aggiunte 2 tappe vere via CamoscioRoutePlanner.
+   gestisciClickMappa (attende /api/routing/plan, ~10s). Pannello: intro,
+   modalita' progettazione (tappe, comandi "Back to start"/"Remove the
+   last"/"Clear"/"Close"), "One way - the figures below do NOT include the
+   return to point 1...", totali "6.6 km TOTAL / ON TRAILS / AS THE CROW
+   FLIES" col DECIMALE A PUNTO in EN, "868 m ASCENT / 221 m DESCENT /
+   2104-2773 m ALTITUDE", nota stima quote + "Elevation: Copernicus DEM
+   via Open-Meteo (CC-BY 4.0)", "The whole route follows known trails.".
+   Elenco bozze: "Your saved routes / Monte Gennaro / 7 stops . loop .
+   12.8 km". Card "My Projects" in "My Hikes": "project / loop / 7 stops /
+   12.8 km length / all on trails / Open on the map". Conferma elimina
+   bozza aperta e ANNULLATA (bottoni "Cancel" + "Delete" danger, bozza
+   vera di Marco intatta). .rp-sole (Esposizione al sole) confermato
+   ANCORA ITALIANO - deferito ad area 3. Sweep nav map<->my-hikes +
+   toggle IT<->EN + avvia/chiudi progettista, listener error e
+   unhandledrejection piantato a mano: ZERO errori; elenco bozze e card
+   progetti a 1 voce, nessuna duplicazione. Due timeout CDP + un tab
+   chiuso a meta' dall'ambiente browser, tutti recuperati (ricreare il
+   gruppo / al retry) - trappole gia' note. prova-configurazione.js
+   (9/9), prova-passo-non-misurato.js (28/28), prova-invito-squadra.js
+   (59/59). Server locale lasciato su per la verifica di Denis.
+
+   COMMITTATO E PUSHATO su richiesta esplicita di Denis ("commit e
+   push"), camoscio `57c1250`. L'hook di auto-save aveva gia' fatto un
+   commit locale generico (09470e5) coi tre file (index.html, i18n.js,
+   routeplanner.js): rifuso con git commit --amend prima del push,
+   stessa procedura delle aree/lotti precedenti. VERIFICA DAL VIVO DI
+   DENIS ANCORA DA FARE - per l'area 2, l'area 1 e i lotti 3-7.
+
+   RIPARTIRE DA: verifica dal vivo di Denis dei lotti 3-7 + aree 1-2
+   Mappa. Poi AREA 3/4: Meteo + Esposizione Solare - weather.js (328
+   righe) + #weather-widget-card / #sun-exposure-card in index.html +
+   renderSolarExposureAdvice / calculateBearing / bearingToCompassSector
+   di map.js + esposizioneSolare() di routeplanner.js. Tre file, cluster
+   unico. Poi area 4 (Tracciamento GPS + mappa offline: tracking.js /
+   geolocation.js / offline-map.js + #map-record-setup /
+   #map-record-controls / #tracking-panel / #tracking-mini-bar).
+   Concordare con Denis l'inizio di ogni area. Dopo il lotto Mappa, il
+   gate di login/registrazione e le pagine HTML autonome.
 
 =====================================================================
 

@@ -2,59 +2,30 @@
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
 Aggiornato: 2026-08-28 (nona sessione). PUNTO 102, LOTTO MAPPA - la
 sezione piu' grande del sito (~4.450 righe su 6 file), si fa a 4 AREE
-(Denis via AskUserQuestion: "un'area alla volta"). Ordine: 1) base mappa
-+ Segnalazioni sentiero; 2) Progetta un percorso (routeplanner.js);
-3) Meteo + Esposizione Solare (weather.js + renderSolarExposureAdvice di
-map.js); 4) Tracciamento GPS + mappa offline.
+(Denis via AskUserQuestion: "un'area alla volta"). Ordine e stato:
+  1) base mappa + Segnalazioni sentiero ...... FATTA, camoscio `8988610`
+  2) Progetta un percorso (routeplanner.js) .. FATTA, camoscio `57c1250`
+  3) Meteo + Esposizione Solare .............. da fare (vedi sotto)
+  4) Tracciamento GPS + mappa offline ........ da fare
 
-AREA 1/4 FATTA: BASE MAPPA + SEGNALAZIONI SENTIERO - tutto map.js TRANNE
-l'Esposizione Solare (renderSolarExposureAdvice/calculateBearing/
-bearingToCompassSector + #sun-exposure-card), lasciata all'area 3 col
-Meteo (unica funzione di map.js fuori da "base mappa", solo ~50 righe di
-prosa meteo - l'AREA 3 TOCCHERA' QUINDI DI NUOVO map.js, come il quinto
-lotto tornò su social.js). Tradotti: overlay istruzioni, tasto "Dove
-sono" + tooltip, tooltip segnaposto 🥾, popup geofencing/timbri,
-drawStampablePoints, card "Segnala Stato Sentiero" + form, pannello FAB
-"Segnala un pericolo" (#report-fab/#report-panel, fuori da
-.page-container), renderWazeReportsList, popup marker, "Punto di
-ritrovo". +~65 chiavi map.*, var T in testa a map.js. Scelte:
-- nuovo window.CamoscioReportTypes.titleFor(tipo): l'oggetto e' costruito
-  una volta al load, il titolo del tipo lo risolve titleFor al punto
-  d'uso (map.reportType.*). Il VALORE rep.type salvato/inviato resta il
-  codice (frana/ghiaccio/...) - regola Difficolta'/Tag Tribu' del 2o
-  lotto. pendingreports.js (7o lotto) ora passa da titleFor con guard -
-  era previsto ("lavoro del lotto Mappa");
-- opzioni <select> tipo pericolo: chiavi map.wazeOpt.* (con emoji),
-  diverse dai titoli di titleFor, condivise fra i due <select> identici
-  (#waze-type sidebar / #report-fab-type FAB);
-- onChange di map.js: renderMapMarkers + renderWazeReportsList +
-  aggiornaTastoPosizione SOLO se #map-section e' attiva (gate come 5o/7o
-  lotto; triggerSectionRender ridisegna comunque all'ingresso);
-- sectionTitle.map-section: titolo fisso gia' in prettyNames, lo rimette
-  updateSectionTitle da solo, NESSUN onChange dedicato. nav.map era gia'
-  tradotto dal primo lotto;
-- data "Segnalato il" nel popup con locale esplicito en-GB/it-IT;
-  showConfirmModal di resolveReportDirectly allineato ai "cancella per
-  sempre" (cancelLabel + danger:true).
-VERIFICATO CON L'ESTENSIONE CHROME (login demo Marco Alpinista, IT<->EN):
-titolo "Map & Trails", overlay, "My position" + tooltip, card
-segnalazioni completa, pannello FAB completo, lista sidebar ("Coord:",
-"Resolve report") senza duplicazioni dopo toggle+sweep. Popup marker
-segnalazione: titolo via titleFor ("Ice on Trail" EN / "Presenza
-Ghiaccio" IT), "Reported on: <data>" con locale, descrizione utente
-resta IT. Popup punto timbrabile ("Altitude: 2912m", "Stamp Collected
-✓", "Teleport GPS here"). Geofencing (teleportUserGps a due vette,
-SENZA premere STAMP PASSPORT): "You've already collected this passport
-stamp!" e "🎉 Peak Reached! ... You're just 0m from the summit. STAMP
-PASSPORT". Moderazione via stub in memoria (metodo 4o/7o lotto): tipi ora
-"Landslide / Collapse", tipo ignoto -> "Alert". Sweep nav+toggle+FAB con
-listener error/unhandledrejection a mano: ZERO errori. Console pulita a
-parte un WARNING pre-esistente di geolocation.js (timeout GPS, non c'e'
-GPS in automazione). prova-configurazione (9/9), prova-passo-non-misurato
-(28/28), prova-invito-squadra (59/59). COMMITTATO E PUSHATO su richiesta
-esplicita di Denis ("commit e push", camoscio `8988610`, hook auto-save
-`8f6b9ed` rifuso con --amend prima del push). LA VERIFICA DAL VIVO DI
-DENIS E' ANCORA DA FARE - per l'area 1 e per i lotti 3-7.
+AREE 1-2 FATTE E PUSHATE su richiesta esplicita di Denis ("commit e
+push" per ciascuna; hook auto-save rifuso con --amend prima del push).
+VERIFICATE CON L'ESTENSIONE CHROME (login demo Marco Alpinista, IT<->EN,
+toggle+sweep con listener error/unhandledrejection: ZERO errori;
+prova-configurazione 9/9, prova-passo-non-misurato 28/28,
+prova-invito-squadra 59/59). LA VERIFICA DAL VIVO DI DENIS E' ANCORA DA
+FARE - per le aree 1-2 e per i lotti 3-7. Dettaglio completo nel vault
+(03/04/06) e in cose_da_fare.txt punto 102, blocchi "AREA 1" e "AREA 2".
+
+Due punti da ricordare per l'AREA 3, emersi facendo 1 e 2:
+- l'Esposizione Solare vive sparsa su TRE file e va tradotta tutta
+  insieme: renderSolarExposureAdvice + calculateBearing +
+  bearingToCompassSector + #sun-exposure-card (map.js), esposizioneSolare()
+  (routeplanner.js), piu' weather.js. Cioe' l'area 3 tocca anche map.js e
+  routeplanner.js, non solo weather.js;
+- fino ad allora il riquadro "Esposizione al sole" nel pannello del
+  percorso e la card omonima nella sidebar restano in italiano - atteso,
+  non un buco.
 
 Resta valido: hook "Stop" di auto-save (commit locale, MAI push) a fine di
 ogni risposta. Debito icona Bivacco Carlo Fusco (2645 m disegnati vs 2455 m
@@ -66,20 +37,22 @@ non toccati - dettaglio in cose_da_fare.txt punti 106 e 108.
 >>> APERTO PER LA PROSSIMA SESSIONE, in quest'ordine se Denis non dice
 altro:
 
-1. Verifica dal vivo di Denis dei lotti 3-7 + AREA 1 del lotto Mappa del
-   punto 102 (tutti gia' pushati). Se segnala qualcosa, correggere prima
-   di procedere.
+1. Verifica dal vivo di Denis dei lotti 3-7 + AREE 1-2 del lotto Mappa
+   (tutti gia' pushati). Se segnala qualcosa, correggere prima di
+   procedere.
 
-2. PUNTO 102, LOTTO MAPPA AREA 2/4: PROGETTA UN PERCORSO (routeplanner.js,
-   690 righe + <h4> della card route-planner-card). Poi area 3 (Meteo +
-   Esposizione Solare - INCLUDE renderSolarExposureAdvice/calculateBearing/
-   bearingToCompassSector e #sun-exposure-card di map.js, oltre a
-   weather.js) e area 4 (Tracciamento GPS + mappa offline). Concordare con
-   Denis l'inizio di ogni area, non proseguire da soli sull'ordine. Dopo
-   il lotto Mappa: il gate di login/registrazione e le pagine HTML
-   autonome (demo/conferma-email/reimposta-password). Non riproporre
-   "facciamolo tutto insieme": Denis vuole un pezzo alla volta salvo un
-   suo via libera esplicito.
+2. PUNTO 102, LOTTO MAPPA AREA 3/4: METEO + ESPOSIZIONE SOLARE. weather.js
+   (328 righe) + #weather-widget-card / #sun-exposure-card in index.html +
+   renderSolarExposureAdvice / calculateBearing / bearingToCompassSector
+   di map.js + esposizioneSolare() di routeplanner.js. Tre file, ma
+   cluster unico. Poi area 4 (Tracciamento GPS + mappa offline:
+   tracking.js / geolocation.js / offline-map.js + #map-record-setup /
+   #map-record-controls / #tracking-panel / #tracking-mini-bar).
+   Concordare con Denis l'inizio di ogni area, non proseguire da soli
+   sull'ordine. Dopo il lotto Mappa: il gate di login/registrazione e le
+   pagine HTML autonome (demo/conferma-email/reimposta-password). Non
+   riproporre "facciamolo tutto insieme": Denis vuole un pezzo alla volta
+   salvo un suo via libera esplicito.
 
 3. PUNTO 106 (giro a parte): due difetti responsive PRE-ESISTENTI trovati
    verificando il terzo lotto su mobile (non regressioni della traduzione,
