@@ -1114,7 +1114,143 @@
             'pendingReports.rifiutaConfermaMsg': 'Rejecting this report deletes it permanently, with no way to recover it. Continue?',
             'pendingReports.rifiutaConfermaBtn': 'Reject and delete',
             'pendingReports.rifiutata': 'Report rejected and deleted.',
-            'pendingReports.erroreRifiuto': 'Could not reject the report.'
+            'pendingReports.erroreRifiuto': 'Could not reject the report.',
+
+            // ==================================================================
+            // Rollout punto 102, LOTTO MAPPA - area 1 di 4 (28/08/2026):
+            // "base mappa + Segnalazioni sentiero". La Mappa e' la sezione piu'
+            // grande del sito e si traduce a aree, una alla volta (scelto da
+            // Denis via AskUserQuestion). Quest'area: tutto public/js/map.js
+            // TRANNE l'Esposizione Solare (renderSolarExposureAdvice +
+            // calculateBearing/bearingToCompassSector), che sta in map.js ma va
+            // con l'area 3 (Meteo + Esposizione Solare). Fuori anche progetta
+            // percorso (area 2, routeplanner.js), meteo (area 3, weather.js) e
+            // tracciamento (area 4, tracking.js/geolocation.js): la barra
+            // laterale resta mezza italiana fino ai loro lotti, atteso - come
+            // il form Dead Man's Switch (gia' tradotto al quarto lotto) accanto
+            // ai comandi mappa italiani.
+            //
+            // Scelte non ovvie:
+            // 1) I tipi di segnalazione (Frana/Ghiaccio/...) diventano
+            //    window.CamoscioReportTypes.titleFor(tipo) in map.js: la CHIAVE
+            //    resta il codice (frana/ghiaccio/fontana_secca/ostacolo), il
+            //    valore salvato e inviato al server non cambia MAI - stessa
+            //    regola di Difficolta'/Tag Tribu' al secondo lotto. Li legge
+            //    anche pendingreports.js (settimo lotto), che ora passa da
+            //    titleFor: era gia' previsto ("lavoro del lotto Mappa").
+            // 2) Le opzioni <select> del tipo pericolo (con emoji davanti,
+            //    "Frana / Cedimento" ecc.) hanno un testo diverso dai titoli di
+            //    titleFor ("Presenza Ghiaccio" ecc.) - chiavi separate
+            //    (map.wazeOpt.* vs map.reportType.*), ma condivise fra i due
+            //    <select> identici (#waze-type nella sidebar e #report-fab-type
+            //    nel pannello del FAB).
+            // 3) map.js si ridisegna al cambio lingua SOLO se la Mappa e' la
+            //    sezione attiva (renderMapMarkers + renderWazeReportsList +
+            //    aggiornaTastoPosizione): lista segnalazioni e popup marker sono
+            //    innerHTML, il tasto "Dove sono" ha il testo da JS - roba che
+            //    applyStaticTranslations non tocca. Gate come il <select>
+            //    recensioni del quinto lotto e la lista moderazione del settimo.
+            // 4) Data "Segnalato il" nel popup del marker: toLocaleDateString con
+            //    locale esplicito 'en-GB'/'it-IT' (solo cifre, identica nelle due
+            //    lingue, ma il locale va passato - regola dei lotti 2-4).
+            // 5) Conferma "risolvi segnalazione" allineata agli altri "cancella
+            //    per sempre" (cancelLabel common.cancella + danger:true), come
+            //    la gemella rejectPendingReport del settimo lotto.
+            'sectionTitle.map-section': 'Map & Trails',
+
+            // --- .map-overlay-instructions + tasto "Dove sono" (#btn-use-real-gps) ---
+            'map.overlay.istruzioni': 'Click the map to report hazards or simulate your GPS position to stamp the peak.',
+            'map.gps.doveSono': 'Where am I',
+            'map.gps.laMiaPosizione': 'My position',
+            'map.gps.titleSpento': 'Show your real position on the map',
+            'map.gps.titleAcceso': 'Your position is on the map: tap to recenter, tap again when centered to hide it',
+            'map.gps.localizzazione': 'Locating…',
+            'map.gps.cercoSegnale': 'Still looking for a GPS signal: the dot will appear on its own as soon as it arrives.',
+
+            // --- Tooltip del segnaposto GPS 🥾 (createUserGpsMarker/begin/endLiveGpsView) ---
+            'map.marker.tuTracc': '<b>You (GPS Tracking)</b><br>Drag the marker to move along the trails',
+            'map.marker.tuLive': '<b>You</b><br>Real GPS position, recording in progress',
+
+            // --- Geofencing timbri: popup sul segnaposto (checkGeofencing/unlockStampDirectly).
+            //     Il nome della vetta e la quota NON si traducono (nome proprio). ---
+            'map.geo.giaCollezionato': "You've already collected this passport stamp!",
+            'map.geo.vettaRaggiunta': 'Peak Reached!',
+            'map.geo.aSoliMetri': function (m) { return "You're just " + m + 'm from the summit.'; },
+            'map.geo.timbraBtn': 'STAMP PASSPORT',
+            'map.geo.timbroSbloccato': 'Stamp Unlocked! 🏆',
+            'map.geo.timbratoConSuccesso': function (nome) { return 'The peak passport for <b>' + nome + '</b> was stamped successfully!'; },
+
+            // --- Punti timbrabili disegnati sulla mappa (drawStampablePoints) ---
+            'map.punto.altitudine': function (m) { return 'Altitude: <b>' + m + 'm</b>'; },
+            'map.punto.timbroCollezionato': 'Stamp Collected ✓',
+            'map.punto.timbroNonSbloccato': 'Stamp not Unlocked',
+            'map.punto.teletrasporta': 'Teleport GPS here',
+
+            // --- Card "Segnala Stato Sentiero" nella sidebar (HTML statico + map.js) ---
+            'map.waze.cardTitolo': 'Report Trail Status',
+            'map.waze.cardDesc': 'Help the community by reporting issues in real time. Click the map to place a report.',
+            'map.waze.tipoLabel': 'Hazard Type:',
+            'map.waze.descLabel': 'Description of the issue:',
+            'map.waze.descPlaceholder': 'Describe the hazard...',
+            'map.waze.invia': 'Send Report',
+            'map.waze.nessuna': 'No active trail reports.',
+            'map.waze.coord': 'Coord:',
+            'map.waze.risolviTitle': 'Resolve report',
+            'map.waze.risolviConfermaMsg': 'Do you confirm the reported hazard is gone? The report (photo included) will be permanently deleted, with no way to recover it.',
+            'map.waze.risolviConfermaBtn': 'Mark as resolved',
+            'map.waze.risolta': 'Report resolved and deleted.',
+            'map.waze.erroreRisolvi': 'Could not mark the report as resolved.',
+
+            // --- Opzioni <select> tipo pericolo: condivise da #waze-type e
+            //     #report-fab-type (stesso testo con l'emoji davanti). ---
+            'map.wazeOpt.frana': '⚠️ Landslide / Collapse',
+            'map.wazeOpt.ghiaccio': '❄️ Ice / Snowfield',
+            'map.wazeOpt.fontana_secca': "💧 Dry Spring",
+            'map.wazeOpt.ostacolo': '🌲 Tree / Obstacle',
+
+            // --- window.CamoscioReportTypes.titleFor(tipo): titolo del tipo di
+            //     segnalazione, usato dal popup del marker (map.js) e dalla card
+            //     di moderazione (pendingreports.js). La chiave e' il codice tipo. ---
+            'map.reportType.frana': 'Landslide / Collapse',
+            'map.reportType.ghiaccio': 'Ice on Trail',
+            'map.reportType.fontana_secca': 'Dry Spring',
+            'map.reportType.ostacolo': 'Blocked Trail',
+            'map.reportType.fallback': 'Alert',
+
+            // --- Popup segnalazione sulla mappa (renderMapMarkers). La
+            //     descrizione la scrive l'utente: non si traduce. ---
+            'map.reportPopup.segnalatoIl': function (data) { return 'Reported on: ' + data; },
+
+            // --- Invio segnalazione (submitReport, condiviso form mappa + FAB) ---
+            'map.report.inviata': 'Report sent: it will appear on the map after a review.',
+            'map.report.erroreInvio': 'Could not send the report.',
+
+            // --- Flusso "Indica sulla mappa" del FAB (avviaScegliPuntoSullaMappa ecc.) ---
+            'map.scegliPunto.avviso': 'Tap the spot where the hazard is',
+            'map.scegliPunto.sceltaSullaMappa': 'Position chosen on the map',
+            'map.scegliPunto.cambia': 'Change',
+            'map.scegliPunto.puntoScelto': 'Spot chosen: fill in and send the report.',
+
+            // --- FAB "Segnala un pericolo" (#report-fab / #report-panel: HTML statico + map.js) ---
+            'map.fab.title': 'Report a hazard on the trail',
+            'map.fab.panelTitolo': 'Report a hazard',
+            'map.fab.compariraDopoVerifica': 'It will appear on the map after a review.',
+            'map.fab.doveSiTrova': 'Where is the hazard?',
+            'map.fab.sonoQui': "I'm here now",
+            'map.fab.indicaSullaMappa': 'Point it on the map',
+            'map.fab.fotoLabel': 'Photo (optional):',
+            'map.fab.fotoAnteprima': 'Photo preview',
+            'map.fab.invia': 'Send report',
+            'map.fab.cercoGps': 'Looking for GPS position…',
+            'map.fab.gpsAttuale': 'Current GPS position',
+            'map.fab.gpsNonTrovato': 'Could not find the GPS position: try again, or choose "Point it on the map".',
+            'map.fab.fotoNonElaborata': 'The chosen photo could not be processed.',
+            'map.fab.scegliPosizione': "First choose whether you're on site or want to point it on the map.",
+            'map.fab.consensoGps': "To report a hazard at your current position the phone's GPS is needed. You left geolocation consent off during sign-up: turn it on now?",
+
+            // --- loadActiveHikeOnMap: popup del punto di ritrovo (il nome del
+            //     ritrovo lo scrive chi crea l'escursione, non si traduce). ---
+            'map.ritrovo.titolo': 'Meeting point'
         }
     };
 

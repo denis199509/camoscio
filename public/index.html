@@ -808,7 +808,7 @@
                         <div class="map-container-wrapper">
                             <div id="map"></div>
                             <div class="map-overlay-instructions">
-                                <span class="badge badge-primary"><i data-lucide="info"></i> Clicca sulla mappa per segnalare pericoli o simulare la posizione GPS per timbrare la vetta.</span>
+                                <span class="badge badge-primary"><i data-lucide="info"></i> <span data-i18n="map.overlay.istruzioni">Clicca sulla mappa per segnalare pericoli o simulare la posizione GPS per timbrare la vetta.</span></span>
                             </div>
 
                             <!-- Punto 20 di cose_da_fare.txt: chiamata al 112.
@@ -831,8 +831,8 @@
                                  quindi e' diventato il comando del puntino blu (accendi / ricentra /
                                  nascondi). L'etichetta la riscrive aggiornaTastoPosizione in map.js
                                  a seconda dello stato. -->
-                            <button class="btn btn-sm btn-secondary map-gps-real-btn" id="btn-use-real-gps" title="Mostra la tua posizione reale sulla mappa">
-                                <i data-lucide="locate"></i> Dove sono
+                            <button class="btn btn-sm btn-secondary map-gps-real-btn" id="btn-use-real-gps" title="Mostra la tua posizione reale sulla mappa" data-i18n-title="map.gps.titleSpento">
+                                <i data-lucide="locate"></i> <span data-i18n="map.gps.doveSono">Dove sono</span>
                             </button>
 
                             <!-- Punto 45: escursione collegata e mappa offline, spostate qui
@@ -1044,29 +1044,29 @@
 
                             <!-- Crowdsourcing Waze Segnalazioni -->
                             <div class="glass-card waze-card">
-                                <h4><i data-lucide="alert-octagon"></i> Segnala Stato Sentiero</h4>
-                                <p class="small text-muted">Aiuta la community segnalando criticità in tempo reale. Clicca sulla mappa per collocare una segnalazione.</p>
-                                
+                                <h4><i data-lucide="alert-octagon"></i> <span data-i18n="map.waze.cardTitolo">Segnala Stato Sentiero</span></h4>
+                                <p class="small text-muted" data-i18n="map.waze.cardDesc">Aiuta la community segnalando criticità in tempo reale. Clicca sulla mappa per collocare una segnalazione.</p>
+
                                 <div id="waze-form-container" class="hidden">
                                     <form id="waze-report-form">
                                         <div class="form-row">
                                             <div class="form-group col">
-                                                <label for="waze-type">Tipo Pericolo:</label>
+                                                <label for="waze-type" data-i18n="map.waze.tipoLabel">Tipo Pericolo:</label>
                                                 <select id="waze-type" class="form-control">
-                                                    <option value="frana">⚠️ Frana / Cedimento</option>
-                                                    <option value="ghiaccio">❄️ Ghiaccio / Nevaio</option>
-                                                    <option value="fontana_secca">💧 Fontana Senz'Acqua</option>
-                                                    <option value="ostacolo">🌲 Albero / Ostacolo</option>
+                                                    <option value="frana" data-i18n="map.wazeOpt.frana">⚠️ Frana / Cedimento</option>
+                                                    <option value="ghiaccio" data-i18n="map.wazeOpt.ghiaccio">❄️ Ghiaccio / Nevaio</option>
+                                                    <option value="fontana_secca" data-i18n="map.wazeOpt.fontana_secca">💧 Fontana Senz'Acqua</option>
+                                                    <option value="ostacolo" data-i18n="map.wazeOpt.ostacolo">🌲 Albero / Ostacolo</option>
                                                 </select>
                                             </div>
                                         </div>
                                         <div class="form-group">
-                                            <label for="waze-desc">Descrizione della criticità:</label>
-                                            <input type="text" id="waze-desc" class="form-control" required placeholder="Descrivi il pericolo...">
+                                            <label for="waze-desc" data-i18n="map.waze.descLabel">Descrizione della criticità:</label>
+                                            <input type="text" id="waze-desc" class="form-control" required placeholder="Descrivi il pericolo..." data-i18n-placeholder="map.waze.descPlaceholder">
                                         </div>
                                         <div class="form-row-buttons">
-                                            <button type="button" class="btn btn-secondary btn-sm" id="btn-waze-cancel">Annulla</button>
-                                            <button type="submit" class="btn btn-primary btn-sm">Invia Segnalazione</button>
+                                            <button type="button" class="btn btn-secondary btn-sm" id="btn-waze-cancel" data-i18n="common.cancella">Annulla</button>
+                                            <button type="submit" class="btn btn-primary btn-sm" data-i18n="map.waze.invia">Invia Segnalazione</button>
                                         </div>
                                     </form>
                                 </div>
@@ -2046,7 +2046,7 @@
          tasto dedicato sulla pagina Mappa (#btn-map-quick-record, punto 14). Mai un secondo
          pulsante flottante insieme: .app-fab è la classe di posizionamento generica,
          .report-fab solo il colore/aspetto - vedi styles.css. -->
-    <button id="report-fab" class="app-fab report-fab" title="Segnala un pericolo sul sentiero" type="button">
+    <button id="report-fab" class="app-fab report-fab" title="Segnala un pericolo sul sentiero" data-i18n-title="map.fab.title" type="button">
         ⚠️
     </button>
 
@@ -2056,11 +2056,11 @@
          .tracking-panel (bottom sheet), invio condiviso con l'altro form in map.js. -->
     <div id="report-panel" class="tracking-panel hidden">
         <div class="modal-header">
-            <h3><i data-lucide="alert-octagon"></i> Segnala un pericolo</h3>
+            <h3><i data-lucide="alert-octagon"></i> <span data-i18n="map.fab.panelTitolo">Segnala un pericolo</span></h3>
             <button type="button" class="close-modal-btn" id="report-panel-close">&times;</button>
         </div>
 
-        <p class="small text-muted" style="margin-bottom:10px;">
+        <p class="small text-muted" style="margin-bottom:10px;" data-i18n="map.fab.compariraDopoVerifica">
             Comparirà in mappa dopo una verifica.
         </p>
 
@@ -2070,36 +2070,36 @@
              report-fab-position-status (vedi map.js, mostraSceltaPosizioneReport /
              impostaStatoPosizioneReport). -->
         <div id="report-fab-position" style="margin-bottom:14px;">
-            <p class="small text-muted" style="margin-bottom:8px;">Dove si trova il pericolo?</p>
+            <p class="small text-muted" style="margin-bottom:8px;" data-i18n="map.fab.doveSiTrova">Dove si trova il pericolo?</p>
             <div class="form-row-buttons" id="report-fab-position-choice">
-                <button type="button" class="btn btn-secondary btn-sm" id="btn-report-fab-here"><i data-lucide="locate-fixed"></i> Sono qui ora</button>
-                <button type="button" class="btn btn-secondary btn-sm" id="btn-report-fab-onmap"><i data-lucide="map-pin"></i> Indica sulla mappa</button>
+                <button type="button" class="btn btn-secondary btn-sm" id="btn-report-fab-here"><i data-lucide="locate-fixed"></i> <span data-i18n="map.fab.sonoQui">Sono qui ora</span></button>
+                <button type="button" class="btn btn-secondary btn-sm" id="btn-report-fab-onmap"><i data-lucide="map-pin"></i> <span data-i18n="map.fab.indicaSullaMappa">Indica sulla mappa</span></button>
             </div>
             <p class="small text-muted hidden" id="report-fab-position-status"></p>
         </div>
 
         <form id="report-fab-form">
             <div class="form-group">
-                <label for="report-fab-type">Tipo pericolo:</label>
+                <label for="report-fab-type" data-i18n="map.waze.tipoLabel">Tipo pericolo:</label>
                 <select id="report-fab-type" class="form-control">
-                    <option value="frana">⚠️ Frana / Cedimento</option>
-                    <option value="ghiaccio">❄️ Ghiaccio / Nevaio</option>
-                    <option value="fontana_secca">💧 Fontana Senz'Acqua</option>
-                    <option value="ostacolo">🌲 Albero / Ostacolo</option>
+                    <option value="frana" data-i18n="map.wazeOpt.frana">⚠️ Frana / Cedimento</option>
+                    <option value="ghiaccio" data-i18n="map.wazeOpt.ghiaccio">❄️ Ghiaccio / Nevaio</option>
+                    <option value="fontana_secca" data-i18n="map.wazeOpt.fontana_secca">💧 Fontana Senz'Acqua</option>
+                    <option value="ostacolo" data-i18n="map.wazeOpt.ostacolo">🌲 Albero / Ostacolo</option>
                 </select>
             </div>
             <div class="form-group">
-                <label for="report-fab-desc">Descrizione della criticità:</label>
-                <input type="text" id="report-fab-desc" class="form-control" required maxlength="300" placeholder="Descrivi il pericolo...">
+                <label for="report-fab-desc" data-i18n="map.waze.descLabel">Descrizione della criticità:</label>
+                <input type="text" id="report-fab-desc" class="form-control" required maxlength="300" placeholder="Descrivi il pericolo..." data-i18n-placeholder="map.waze.descPlaceholder">
             </div>
             <div class="form-group">
-                <label for="report-fab-photo">Foto (facoltativa):</label>
+                <label for="report-fab-photo" data-i18n="map.fab.fotoLabel">Foto (facoltativa):</label>
                 <input type="file" id="report-fab-photo" accept="image/*">
                 <div id="report-fab-photo-preview" class="report-photo-preview hidden"></div>
             </div>
             <div class="form-row-buttons">
-                <button type="button" class="btn btn-secondary btn-sm" id="btn-report-fab-cancel">Annulla</button>
-                <button type="submit" class="btn btn-primary btn-sm" id="btn-report-fab-submit">Invia segnalazione</button>
+                <button type="button" class="btn btn-secondary btn-sm" id="btn-report-fab-cancel" data-i18n="common.cancella">Annulla</button>
+                <button type="submit" class="btn btn-primary btn-sm" id="btn-report-fab-submit" data-i18n="map.fab.invia">Invia segnalazione</button>
             </div>
         </form>
     </div>

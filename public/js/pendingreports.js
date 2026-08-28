@@ -107,11 +107,17 @@ function renderPendingReportsListBody(reports) {
     // tipo->emoji/titolo, dopo renderMapMarkers() e renderWazeReportsList() - si fattorizza
     // alla seconda, non si aspetta la terza (stesso principio gia' applicato alla chat
     // condivisa fra pagina squadra ed escursione, punto 55).
+    // Rollout punto 102, lotto Mappa: titleFor(tipo) restituisce il titolo nella lingua
+    // attiva (chiave map.reportType.*), col ripiego italiano di tipi.title - era gia'
+    // previsto che i tipi si traducessero "col lotto Mappa" (settimo lotto). Il guard
+    // tipi.titleFor tiene in piedi la pagina anche se map.js non fosse caricato.
     const tipi = window.CamoscioReportTypes || { emoji: {}, title: {} };
 
     box.innerHTML = reports.map(rep => {
         const emoji = tipi.emoji[rep.type] || '⚠️';
-        const titolo = tipi.title[rep.type] || (T('pendingReports.avvisoFallback') || 'Avviso');
+        const titolo = tipi.titleFor
+            ? tipi.titleFor(rep.type)
+            : (tipi.title[rep.type] || (T('pendingReports.avvisoFallback') || 'Avviso'));
         const reporter = db.users.find(u => u.id === rep.reporterId);
         const nomeReporter = reporter ? esc(reporter.username) : (T('pendingReports.reporterNonDisponibile') || "utente non disponibile");
         const data = new Date(rep.createdAt).toLocaleString(loc, { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });

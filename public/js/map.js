@@ -1,3 +1,8 @@
+// Rollout traduzione punto 102 (lotto Mappa, area 1): var, non const - vedi
+// 07-Trappole-Tecniche.md, "const T in un secondo <script> classico da' SyntaxError
+// e blocca l'intero file". Ogni file assegna sempre lo stesso valore, e' idempotente.
+var T = (window.CamoscioI18n && window.CamoscioI18n.t) || function () { return null; };
+
 // Global map variables
 window.mapInstance = null;
 let userGpsMarker = null;
@@ -12,11 +17,22 @@ let peakMarkersGroup = null;
 // occorrenza, non aspetta la terza (stesso principio della chat condivisa, punto 55).
 window.CamoscioReportTypes = {
     emoji: { frana: '⚠️', ghiaccio: '❄️', fontana_secca: '💧', ostacolo: '🌲' },
+    // Titoli in italiano: restano il ripiego quando la lingua e' IT o manca la chiave.
     title: {
         frana: 'Frana / Cedimento',
         ghiaccio: 'Presenza Ghiaccio',
         fontana_secca: 'Sorgente Senz\'Acqua',
         ostacolo: 'Sentiero Ostruito'
+    },
+    // Titolo del tipo nella lingua attiva (rollout punto 102, lotto Mappa): lo usano
+    // il popup del marker qui sotto e pendingreports.js (settimo lotto). La CHIAVE
+    // resta il codice tipo (frana/ghiaccio/...), il valore salvato/inviato non cambia
+    // mai - stessa regola di Difficolta'/Tag Tribu' al secondo lotto.
+    titleFor: function (type) {
+        return (window.CamoscioI18n && window.CamoscioI18n.t('map.reportType.' + type))
+            || this.title[type]
+            || (window.CamoscioI18n && window.CamoscioI18n.t('map.reportType.fallback'))
+            || 'Avviso';
     }
 };
 let activeHikePath = []; // Array di coordinate per il sentiero attivo
@@ -240,7 +256,7 @@ function createUserGpsMarker() {
         icon: userIcon
     }).addTo(window.mapInstance);
 
-    userGpsMarker.bindTooltip("<b>Tu (Tracciamento GPS)</b><br>Trascina il marker per spostarti sui sentieri", {
+    userGpsMarker.bindTooltip(T('map.marker.tuTracc') || "<b>Tu (Tracciamento GPS)</b><br>Trascina il marker per spostarti sui sentieri", {
         permanent: false,
         direction: 'top'
     });
@@ -319,7 +335,7 @@ function beginLiveGpsView(lat, lng) {
     if (userGpsMarker && userGpsMarker.dragging) userGpsMarker.dragging.disable();
     if (userGpsMarker) {
         userGpsMarker.unbindTooltip();
-        userGpsMarker.bindTooltip("<b>Tu</b><br>Posizione GPS reale, registrazione in corso", {
+        userGpsMarker.bindTooltip(T('map.marker.tuLive') || "<b>Tu</b><br>Posizione GPS reale, registrazione in corso", {
             permanent: false, direction: 'top'
         });
     }
@@ -342,7 +358,7 @@ function endLiveGpsView() {
     if (userGpsMarker && userGpsMarker.dragging) userGpsMarker.dragging.enable();
     if (userGpsMarker) {
         userGpsMarker.unbindTooltip();
-        userGpsMarker.bindTooltip("<b>Tu (Tracciamento GPS)</b><br>Trascina il marker per spostarti sui sentieri", {
+        userGpsMarker.bindTooltip(T('map.marker.tuTracc') || "<b>Tu (Tracciamento GPS)</b><br>Trascina il marker per spostarti sui sentieri", {
             permanent: false, direction: 'top'
         });
     }
@@ -535,16 +551,16 @@ function checkGeofencing(lat, lng) {
             userGpsMarker.bindPopup(`
                 <div style="color: white; font-family: inherit;">
                     <h5 style="margin: 0 0 6px 0;">📍 ${foundNearPeak.name}</h5>
-                    <p style="font-size: 0.8rem; margin: 0;">Hai già collezionato questo timbro del passaporto!</p>
+                    <p style="font-size: 0.8rem; margin: 0;">${T('map.geo.giaCollezionato') || 'Hai già collezionato questo timbro del passaporto!'}</p>
                 </div>
             `).openPopup();
         } else {
             userGpsMarker.bindPopup(`
                 <div style="color: white; font-family: inherit; text-align: center;">
-                    <h4 style="margin: 0 0 4px 0;">🎉 Vetta Raggiunta!</h4>
+                    <h4 style="margin: 0 0 4px 0;">🎉 ${T('map.geo.vettaRaggiunta') || 'Vetta Raggiunta!'}</h4>
                     <h5 style="margin: 0 0 8px 0; color: #C1662E;">${foundNearPeak.name} (${foundNearPeak.altitude}m)</h5>
-                    <p style="font-size: 0.8rem; margin: 0 0 10px 0;">Sei a soli ${Math.round(distance)}m dalla cima.</p>
-                    <button class="btn btn-sm btn-primary" onclick="unlockStampDirectly('${stampId}', '${foundNearPeak.name}')">TIMBRA PASSAPORTO</button>
+                    <p style="font-size: 0.8rem; margin: 0 0 10px 0;">${T('map.geo.aSoliMetri', Math.round(distance)) || ('Sei a soli ' + Math.round(distance) + 'm dalla cima.')}</p>
+                    <button class="btn btn-sm btn-primary" onclick="unlockStampDirectly('${stampId}', '${foundNearPeak.name}')">${T('map.geo.timbraBtn') || 'TIMBRA PASSAPORTO'}</button>
                 </div>
             `).openPopup();
         }
@@ -575,8 +591,8 @@ window.unlockStampDirectly = async function(stampId, peakName) {
             
             userGpsMarker.bindPopup(`
                 <div style="color: white; text-align: center;">
-                    <h4>Timbro Sbloccato! 🏆</h4>
-                    <p style="font-size: 0.8rem; margin-top: 6px;">Il passaporto delle vette per <b>${peakName}</b> è stato timbrato con successo!</p>
+                    <h4>${T('map.geo.timbroSbloccato') || 'Timbro Sbloccato! 🏆'}</h4>
+                    <p style="font-size: 0.8rem; margin-top: 6px;">${T('map.geo.timbratoConSuccesso', peakName) || ('Il passaporto delle vette per <b>' + peakName + '</b> è stato timbrato con successo!')}</p>
                 </div>
             `).openPopup();
 
@@ -655,14 +671,14 @@ async function submitReport({ type, lat, lng, description, photoDataUrl }) {
 
         if (!response.ok) {
             const err = await response.json().catch(() => ({}));
-            window.showToast(err.error || "Impossibile inviare la segnalazione.", "error");
+            window.showToast(err.error || T('map.report.erroreInvio') || "Impossibile inviare la segnalazione.", "error");
             return false;
         }
 
         // Punto 45: non e' piu' pubblicata subito (status 'pending' lato server) - vincolo
         // hard "niente promesse che il sito non puo' mantenere", chi segnala deve saperlo
         // subito, non scoprirlo non vedendola comparire in mappa.
-        window.showToast("Segnalazione inviata: comparirà in mappa dopo una verifica.", "success");
+        window.showToast(T('map.report.inviata') || "Segnalazione inviata: comparirà in mappa dopo una verifica.", "success");
 
         await refreshState();
         renderMapMarkers();
@@ -670,7 +686,7 @@ async function submitReport({ type, lat, lng, description, photoDataUrl }) {
         return true;
     } catch (e) {
         console.error("Errore nell'invio del report:", e);
-        window.showToast("Impossibile inviare la segnalazione.", "error");
+        window.showToast(T('map.report.erroreInvio') || "Impossibile inviare la segnalazione.", "error");
         return false;
     }
 }
@@ -773,7 +789,7 @@ function impostaAvvisoMappaScegliPunto(attivo) {
     if (!overlay) return;
     if (attivo) {
         if (overlayIstruzioniMappaOriginali === null) overlayIstruzioniMappaOriginali = overlay.innerHTML;
-        overlay.innerHTML = `<span class="badge badge-accent"><i data-lucide="map-pin"></i> Tocca il punto dove si trova il pericolo</span> <button type="button" class="btn btn-secondary btn-sm" id="btn-annulla-scegli-punto-report">Annulla</button>`;
+        overlay.innerHTML = `<span class="badge badge-accent"><i data-lucide="map-pin"></i> ${T('map.scegliPunto.avviso') || 'Tocca il punto dove si trova il pericolo'}</span> <button type="button" class="btn btn-secondary btn-sm" id="btn-annulla-scegli-punto-report">${T('common.cancella') || 'Annulla'}</button>`;
     } else if (overlayIstruzioniMappaOriginali !== null) {
         overlay.innerHTML = overlayIstruzioniMappaOriginali;
     }
@@ -800,8 +816,8 @@ function confermaPuntoReportScelto(lat, lng) {
     reportFabPosizione = { lat, lng };
     const panel = document.getElementById('report-panel');
     if (panel) panel.classList.remove('hidden');
-    impostaStatoPosizioneReport(`<i data-lucide="map-pin"></i> Posizione scelta sulla mappa <button type="button" class="btn btn-secondary btn-sm" id="btn-report-fab-change">Cambia</button>`);
-    window.showToast("Punto scelto: completa e invia la segnalazione.", "success");
+    impostaStatoPosizioneReport(`<i data-lucide="map-pin"></i> ${T('map.scegliPunto.sceltaSullaMappa') || 'Posizione scelta sulla mappa'} <button type="button" class="btn btn-secondary btn-sm" id="btn-report-fab-change">${T('map.scegliPunto.cambia') || 'Cambia'}</button>`);
+    window.showToast(T('map.scegliPunto.puntoScelto') || "Punto scelto: completa e invia la segnalazione.", "success");
 }
 
 // L'utente ha premuto "Annulla" sull'avviso sopra la mappa: si riapre il pannello sullo
@@ -838,18 +854,18 @@ function setupReportFab() {
 
             if (btn.id === 'btn-report-fab-here') {
                 const consenso = await window.CamoscioGeo.assicuraConsenso(
-                    "Per segnalare un pericolo nella tua posizione attuale serve il GPS del telefono. Avevi lasciato il consenso alla geolocalizzazione disattivato in registrazione: vuoi attivarlo ora?"
+                    T('map.fab.consensoGps') || "Per segnalare un pericolo nella tua posizione attuale serve il GPS del telefono. Avevi lasciato il consenso alla geolocalizzazione disattivato in registrazione: vuoi attivarlo ora?"
                 );
                 if (!consenso) return;
 
-                impostaStatoPosizioneReport('<i data-lucide="loader"></i> Cerco la posizione GPS...');
+                impostaStatoPosizioneReport(`<i data-lucide="loader"></i> ${T('map.fab.cercoGps') || 'Cerco la posizione GPS...'}`);
                 reportFabPosizione = await window.CamoscioGeo.posizioneSegnalazione();
                 if (!reportFabPosizione) {
-                    window.showToast("Impossibile trovare la posizione GPS: riprova, oppure scegli \"Indica sulla mappa\".", "error");
+                    window.showToast(T('map.fab.gpsNonTrovato') || "Impossibile trovare la posizione GPS: riprova, oppure scegli \"Indica sulla mappa\".", "error");
                     mostraSceltaPosizioneReport();
                     return;
                 }
-                impostaStatoPosizioneReport(`<i data-lucide="locate-fixed"></i> Posizione GPS attuale <button type="button" class="btn btn-secondary btn-sm" id="btn-report-fab-change">Cambia</button>`);
+                impostaStatoPosizioneReport(`<i data-lucide="locate-fixed"></i> ${T('map.fab.gpsAttuale') || 'Posizione GPS attuale'} <button type="button" class="btn btn-secondary btn-sm" id="btn-report-fab-change">${T('map.scegliPunto.cambia') || 'Cambia'}</button>`);
             } else if (btn.id === 'btn-report-fab-onmap') {
                 avviaScegliPuntoSullaMappa();
             } else if (btn.id === 'btn-report-fab-change') {
@@ -881,12 +897,12 @@ function setupReportFab() {
 
             if (!preview) return;
             if (reportFabPhotoDataUrl) {
-                preview.innerHTML = `<img src="${reportFabPhotoDataUrl}" alt="Anteprima foto">`;
+                preview.innerHTML = `<img src="${reportFabPhotoDataUrl}" alt="${T('map.fab.fotoAnteprima') || 'Anteprima foto'}">`;
                 preview.classList.remove('hidden');
             } else {
                 preview.classList.add('hidden');
                 preview.innerHTML = '';
-                window.showToast("Non è stato possibile elaborare la foto scelta.", "error");
+                window.showToast(T('map.fab.fotoNonElaborata') || "Non è stato possibile elaborare la foto scelta.", "error");
             }
         });
     }
@@ -895,7 +911,7 @@ function setupReportFab() {
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             if (!reportFabPosizione) {
-                window.showToast("Scegli prima se ti trovi sul posto oppure vuoi indicarlo sulla mappa.", "error");
+                window.showToast(T('map.fab.scegliPosizione') || "Scegli prima se ti trovi sul posto oppure vuoi indicarlo sulla mappa.", "error");
                 return;
             }
 
@@ -974,7 +990,7 @@ async function useRealGpsPosition() {
 
     const originalLabel = btn.innerHTML;
     btn.disabled = true;
-    btn.innerHTML = `<i data-lucide="loader"></i> Localizzazione in corso...`;
+    btn.innerHTML = `<i data-lucide="loader"></i> ${T('map.gps.localizzazione') || 'Localizzazione in corso...'}`;
     if (window.lucide) window.lucide.createIcons();
 
     // automatico=false: qui l'utente ha chiesto esplicitamente la posizione, quindi si puo'
@@ -1013,7 +1029,7 @@ function attendiPrimoFix() {
     const scadenza = setTimeout(() => {
         if (fatto) return;
         chiudi();
-        window.showToast("Sto ancora cercando il segnale GPS: appena arriva, il puntino comparirà da solo.", "info");
+        window.showToast(T('map.gps.cercoSegnale') || "Sto ancora cercando il segnale GPS: appena arriva, il puntino comparirà da solo.", "info");
     }, 6000);
 
     disiscrivi = window.CamoscioGeo.onPosizione((lat, lng) => {
@@ -1034,11 +1050,11 @@ function aggiornaTastoPosizione(acceso) {
     if (!btn) return;
     btn.classList.toggle("is-active", !!acceso);
     btn.innerHTML = acceso
-        ? `<i data-lucide="locate-fixed"></i> La mia posizione`
-        : `<i data-lucide="locate"></i> Dove sono`;
+        ? `<i data-lucide="locate-fixed"></i> ${T('map.gps.laMiaPosizione') || 'La mia posizione'}`
+        : `<i data-lucide="locate"></i> ${T('map.gps.doveSono') || 'Dove sono'}`;
     btn.title = acceso
-        ? "La tua posizione è sulla mappa: tocca per ricentrarti, tocca di nuovo da centrato per nasconderla"
-        : "Mostra la tua posizione reale sulla mappa";
+        ? (T('map.gps.titleAcceso') || "La tua posizione è sulla mappa: tocca per ricentrarti, tocca di nuovo da centrato per nasconderla")
+        : (T('map.gps.titleSpento') || "Mostra la tua posizione reale sulla mappa");
     if (window.lucide) window.lucide.createIcons();
 }
 
@@ -1084,13 +1100,13 @@ function drawStampablePoints() {
             <div style="color: white; font-family: inherit; text-align: center;">
                 <h5 style="margin: 0 0 4px 0;">📍 ${escapeHtml(peak.name)}</h5>
                 ${Number.isFinite(peak.altitude)
-                    ? `<p style="font-size: 0.8rem; margin: 0 0 6px 0;">Altitudine: <b>${peak.altitude}m</b></p>`
+                    ? `<p style="font-size: 0.8rem; margin: 0 0 6px 0;">${T('map.punto.altitudine', peak.altitude) || ('Altitudine: <b>' + peak.altitude + 'm</b>')}</p>`
                     : ''}
                 <span class="badge ${isUnlocked ? 'badge-green' : 'badge-accent'}">
-                    ${isUnlocked ? 'Timbro Collezionato ✓' : 'Timbro non Sbloccato'}
+                    ${isUnlocked ? (T('map.punto.timbroCollezionato') || 'Timbro Collezionato ✓') : (T('map.punto.timbroNonSbloccato') || 'Timbro non Sbloccato')}
                 </span>
                 <br><br>
-                <button class="btn btn-sm btn-secondary" onclick="teleportUserGps(${peak.lat}, ${peak.lng})">Teletrasporta GPS qui</button>
+                <button class="btn btn-sm btn-secondary" onclick="teleportUserGps(${peak.lat}, ${peak.lng})">${T('map.punto.teletrasporta') || 'Teletrasporta GPS qui'}</button>
             </div>
         `);
 
@@ -1133,12 +1149,16 @@ function renderMapMarkers() {
 
     const db = window.CamoscioState;
 
+    // Data solo-cifre nel popup: identica in it-IT e en-GB, ma il locale va passato
+    // esplicito (regola dei lotti 2-4, mai il default del browser).
+    const loc = (window.CamoscioI18n && window.CamoscioI18n.getLang() === 'en') ? 'en-GB' : 'it-IT';
+
     // Disegna pericoli Waze
     db.reports.forEach(rep => {
         if (rep.status !== 'active') return;
 
         const emoji = window.CamoscioReportTypes.emoji[rep.type] || '⚠️';
-        const title = window.CamoscioReportTypes.title[rep.type] || 'Avviso';
+        const title = window.CamoscioReportTypes.titleFor(rep.type);
 
         const customIcon = L.divIcon({
             className: 'waze-leaflet-marker',
@@ -1157,7 +1177,7 @@ function renderMapMarkers() {
         // moderazione): provato dal vivo, un popup troppo alto finisce tagliato sopra lo
         // schermo perche' Leaflet non sa che sotto la sua mappa c'e' anche una barra fissa.
         const fotoHtml = rep.hasPhoto
-            ? `<img src="/api/reports/${rep.id}/photo" alt="Foto della segnalazione" class="map-popup-photo">`
+            ? `<img src="/api/reports/${rep.id}/photo" alt="${T('pendingReports.fotoAlt') || 'Foto della segnalazione'}" class="map-popup-photo">`
             : '';
 
         // Punto 45c, 17/08/2026: maxHeight NON basta da solo (verificato dal vivo, vedi sotto
@@ -1169,12 +1189,13 @@ function renderMapMarkers() {
         // gia' a meta' altezza non lascia abbastanza margine sopra per un popup di media
         // lunghezza su uno schermo di telefono (misurato: mappa 488px, marker al centro,
         // popup 246px - matematicamente non ci sta anche spostando la mappa al massimo).
+        const dataRep = new Date(rep.createdAt).toLocaleDateString(loc);
         marker.bindPopup(`
             <div style="color: white; font-family: inherit;">
                 <h5 style="margin: 0 0 4px 0; color: #A83B2E;">${title}</h5>
                 <p style="font-size: 0.8rem; margin: 0 0 8px 0;">${escapeHtml(rep.description)}</p>
                 ${fotoHtml}
-                <span class="small text-muted">Segnalato il: ${new Date(rep.createdAt).toLocaleDateString()}</span>
+                <span class="small text-muted">${T('map.reportPopup.segnalatoIl', dataRep) || ('Segnalato il: ' + dataRep)}</span>
             </div>
         `, { maxHeight: 180, autoPan: false });
 
@@ -1208,7 +1229,7 @@ function renderWazeReportsList() {
     const activeReports = db.reports.filter(r => r.status === 'active');
 
     if (activeReports.length === 0) {
-        container.innerHTML = `<div class="text-muted small italic text-center py-2">Nessuna segnalazione attiva sui sentieri.</div>`;
+        container.innerHTML = `<div class="text-muted small italic text-center py-2">${T('map.waze.nessuna') || 'Nessuna segnalazione attiva sui sentieri.'}</div>`;
         return;
     }
 
@@ -1226,9 +1247,9 @@ function renderWazeReportsList() {
             <span>${emoji}</span>
             <div class="waze-item-desc">
                 <strong>${escapeHtml(rep.description)}</strong>
-                <div class="text-muted small">Coord: ${rep.lat.toFixed(3)}, ${rep.lng.toFixed(3)}${fotoFlag}</div>
+                <div class="text-muted small">${T('map.waze.coord') || 'Coord:'} ${rep.lat.toFixed(3)}, ${rep.lng.toFixed(3)}${fotoFlag}</div>
             </div>
-            <button class="waze-item-resolve" onclick="resolveReportDirectly('${rep.id}')" title="Risolvi segnalazione">✓</button>
+            <button class="waze-item-resolve" onclick="resolveReportDirectly('${rep.id}')" title="${T('map.waze.risolviTitle') || 'Risolvi segnalazione'}">✓</button>
         `;
         container.appendChild(item);
     });
@@ -1241,8 +1262,9 @@ function renderWazeReportsList() {
 // stessa funzionalita', decisa nella stessa sessione).
 window.resolveReportDirectly = async function(reportId) {
     const confermato = await window.showConfirmModal(
-        "Confermi che il pericolo segnalato non c'è più? La segnalazione (foto compresa) verrà eliminata per sempre, senza possibilità di recupero.",
-        "Segna come risolta"
+        T('map.waze.risolviConfermaMsg') || "Confermi che il pericolo segnalato non c'è più? La segnalazione (foto compresa) verrà eliminata per sempre, senza possibilità di recupero.",
+        T('map.waze.risolviConfermaBtn') || "Segna come risolta",
+        { cancelLabel: T('common.cancella') || 'Annulla', danger: true }
     );
     if (!confermato) return;
 
@@ -1250,18 +1272,18 @@ window.resolveReportDirectly = async function(reportId) {
         const res = await fetch(`/api/reports/${reportId}/resolve`, { method: 'DELETE' });
         if (!res.ok) {
             const err = await res.json().catch(() => ({}));
-            window.showToast(err.error || "Impossibile segnare la segnalazione come risolta.", "error");
+            window.showToast(err.error || T('map.waze.erroreRisolvi') || "Impossibile segnare la segnalazione come risolta.", "error");
             return;
         }
 
         const db = window.CamoscioState;
         db.reports = db.reports.filter(r => r.id !== reportId);
-        window.showToast("Segnalazione risolta ed eliminata.", "success");
+        window.showToast(T('map.waze.risolta') || "Segnalazione risolta ed eliminata.", "success");
         renderMapMarkers();
         renderWazeReportsList();
     } catch (e) {
         console.error("Errore nel risolvere la segnalazione:", e);
-        window.showToast("Impossibile segnare la segnalazione come risolta.", "error");
+        window.showToast(T('map.waze.erroreRisolvi') || "Impossibile segnare la segnalazione come risolta.", "error");
     }
 };
 
@@ -1302,7 +1324,7 @@ function loadActiveHikeOnMap(hikeId) {
             .addTo(window.mapInstance)
             .bindPopup(`
                 <div style="color: white; font-family: inherit; text-align: center;">
-                    <h5 style="margin: 0 0 4px 0;">📍 Punto di ritrovo</h5>
+                    <h5 style="margin: 0 0 4px 0;">📍 ${T('map.ritrovo.titolo') || 'Punto di ritrovo'}</h5>
                     ${hike.trailhead.name ? `<span>${escapeHtml(hike.trailhead.name)}</span>` : ''}
                 </div>
             `)
@@ -1437,3 +1459,25 @@ window.updateRecenterButton = updateRecenterButton;
 window.rimuoviPuntinoPosizione = rimuoviPuntinoPosizione;
 window.aggiornaTastoPosizione = aggiornaTastoPosizione;
 window.centraSuPuntino = centraSuPuntino;
+
+// Rollout traduzione punto 102, lotto Mappa (area 1): al cambio lingua diversi pezzi
+// di questa sezione non li tocca applyStaticTranslations - la lista segnalazioni e i
+// popup dei marker sono costruiti via innerHTML, il tasto "Dove sono" ha il testo
+// scritto da aggiornaTastoPosizione. Si ridisegnano SOLO se la Mappa e' la sezione
+// attiva (gate come il <select> recensioni del quinto lotto e la lista moderazione
+// del settimo): niente lavoro a vuoto per una pagina che non si sta guardando, e chi
+// riapre la Mappa la ritrova gia' nella lingua giusta (triggerSectionRender in app.js
+// richiama renderWazeReportsList/renderMapMarkers all'ingresso). Il titolo pagina lo
+// rimette da solo updateSectionTitle (prettyNames + sectionTitle.map-section).
+// NON di quest'area e quindi non ridisegnati qui: progetta percorso (routeplanner.js),
+// meteo + esposizione solare (weather.js/renderSolarExposureAdvice) e tracciamento -
+// restano in italiano fino al loro lotto.
+if (window.CamoscioI18n && window.CamoscioI18n.onChange) {
+    window.CamoscioI18n.onChange(function () {
+        const sez = document.getElementById('map-section');
+        if (!sez || !sez.classList.contains('active')) return;
+        renderMapMarkers();
+        renderWazeReportsList();
+        if (window.CamoscioGeo) aggiornaTastoPosizione(window.CamoscioGeo.isAcceso());
+    });
+}
