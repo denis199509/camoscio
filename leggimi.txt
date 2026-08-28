@@ -30,8 +30,12 @@ Due punti da ricordare per l'AREA 3, emersi facendo 1 e 2:
   non un buco.
 
 Resta valido: hook "Stop" di auto-save (commit locale, MAI push) a fine di
-ogni risposta. Debito icona Bivacco Carlo Fusco (2645 m disegnati vs 2455 m
-del catalogo) sempre aperto, non urgente. PUNTO 106 (due fix responsive
+ogni risposta. Debito icona Bivacco Carlo Fusco CHIUSO il 28/08: Denis ha
+fornito l'icona nuova che disegna 2455 m (coincide col catalogo), sostituita
+in public/img/badge-luoghi/bivacco-carlo-fusco.png. Nella stessa occasione
+RIFINITE le coordinate di Rifugio Franchetti e Rifugio Zilioli su lettura
+DMS di Denis (~13 m di spostamento ciascuna, quota invariata) - erano le due
+voci "da verificare a mano" del vault. PUNTO 106 (due fix responsive
 pre-esistenti di styles.css, giro a parte) e PUNTO 108 (teletrasporto GPS
 che farma i badge, giro a parte + decisione di prodotto) ANCORA APERTI,
 non toccati - dettaglio in cose_da_fare.txt punti 106 e 108.

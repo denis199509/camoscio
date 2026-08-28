@@ -109,8 +109,14 @@
         // NON "correggerla" di nuovo a 2253 ricontrollando OSM: e' gia' successo il contrario
         // una volta in questo file (vedi nota in cima), qui la richiesta va nella direzione
         // opposta ed e' voluta.
-        { stampId: 'stamp_mezzeno',     nome: 'Rifugio Franchetti',       tipo: 'rifugio', quota: 2433, lat: 42.47711, lng: 13.56522, zona: 'Gran Sasso',       regione: 'Abruzzo', emoji: '🧗',  icona: 'img/badge-luoghi/rifugio-franchetti.png' },
-        { stampId: 'stamp_gnifetti',    nome: 'Rifugio Zilioli',          tipo: 'rifugio', quota: 2250, lat: 42.81740, lng: 13.26850, zona: 'Monti Sibillini',  regione: 'Marche',  emoji: '❄️', icona: 'img/badge-luoghi/rifugio-zilioli.png' },
+        //
+        // Coordinate di entrambi i rifugi RIFINITE il 2026-08-28 su lettura DMS fornita da
+        // Denis (Franchetti 42°28'37.4"N 13°33'54.3"E -> 42.47706 / 13.56508; Zilioli
+        // 42°49'02.3"N 13°16'06.2"E -> 42.81731 / 13.26839): spostamento ~13 m ciascuna
+        // rispetto ai valori del 2026-07-27, ben dentro i 150 m della soglia per timbrare
+        // sia prima sia dopo. Quota NON toccata.
+        { stampId: 'stamp_mezzeno',     nome: 'Rifugio Franchetti',       tipo: 'rifugio', quota: 2433, lat: 42.47706, lng: 13.56508, zona: 'Gran Sasso',       regione: 'Abruzzo', emoji: '🧗',  icona: 'img/badge-luoghi/rifugio-franchetti.png' },
+        { stampId: 'stamp_gnifetti',    nome: 'Rifugio Zilioli',          tipo: 'rifugio', quota: 2250, lat: 42.81731, lng: 13.26839, zona: 'Monti Sibillini',  regione: 'Marche',  emoji: '❄️', icona: 'img/badge-luoghi/rifugio-zilioli.png' },
         // Rifugio Bruno Pomilio TOLTO il 18/08/2026, sostituito da Denis con questo bivacco -
         // stampId nuovo (badge_fusco), non badge_pomilio riusato: sono due luoghi diversi, e
         // lo stampId e' la chiave con cui i timbri stanno sul database (vedi punto 1 in cima
