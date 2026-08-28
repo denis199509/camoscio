@@ -12,45 +12,56 @@
 </head>
 <body class="demo-page-body">
     <div class="demo-page-card reset-card">
+        <div class="lang-switcher" role="group" aria-label="Lingua / Language" style="justify-content:center;margin-bottom:10px;">
+            <button type="button" class="lang-flag-btn" data-lang="it" title="Italiano" aria-label="Italiano" aria-pressed="true">
+                <svg viewBox="0 0 3 2" aria-hidden="true"><rect width="1" height="2" fill="#009246"/><rect width="1" height="2" x="1" fill="#fff"/><rect width="1" height="2" x="2" fill="#ce2b37"/></svg>
+            </button>
+            <button type="button" class="lang-flag-btn" data-lang="en" title="English" aria-label="English" aria-pressed="false">
+                <svg viewBox="0 0 60 30" aria-hidden="true"><rect width="60" height="30" fill="#00247d"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" stroke-width="6"/><path d="M30,0 V30 M0,15 H60" stroke="#fff" stroke-width="10"/><path d="M30,0 V30 M0,15 H60" stroke="#cf142b" stroke-width="6"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#cf142b" stroke-width="2"/></svg>
+            </button>
+        </div>
         <h2><img src="img/logo.png" alt="Camoscio" class="logo-icon logo-icon-img"> CAMOSCIO</h2>
 
         <!-- Stato 1: si sta confermando. Non c'e' niente da compilare, quindi la pagina
              fa tutto da sola: e' l'unica differenza vera dalla pagina del recupero. -->
         <div id="stato-verifica">
-            <p class="text-muted" style="margin-top:16px;">Sto confermando il tuo indirizzo…</p>
+            <p class="text-muted" style="margin-top:16px;" data-i18n="emailConfirm.verifying">Sto confermando il tuo indirizzo…</p>
         </div>
 
         <!-- Stato 2: confermato. -->
         <div id="stato-fatto" class="hidden">
-            <p class="auth-subtitle" style="margin-top:16px;">✅ Indirizzo confermato.</p>
-            <p class="text-muted small">
+            <p class="auth-subtitle" style="margin-top:16px;" data-i18n="emailConfirm.doneTitle">✅ Indirizzo confermato.</p>
+            <p class="text-muted small" data-i18n="emailConfirm.doneNote">
                 Grazie. Ora, se un giorno dimentichi la password, possiamo mandarti il link
                 per reimpostarla a questo indirizzo.
             </p>
-            <a href="/" class="btn btn-primary btn-block" style="margin-top:18px;">Vai al sito</a>
+            <a href="/" class="btn btn-primary btn-block" style="margin-top:18px;" data-i18n="emailConfirm.goToSite">Vai al sito</a>
         </div>
 
         <!-- Stato 3: link scaduto, gia' usato o inventato. -->
         <div id="stato-scaduto" class="hidden">
-            <p class="auth-subtitle" style="margin-top:16px;">Questo link non è più valido.</p>
-            <p class="text-muted small">
+            <p class="auth-subtitle" style="margin-top:16px;" data-i18n="emailConfirm.expiredTitle">Questo link non è più valido.</p>
+            <p class="text-muted small" data-i18n-html="emailConfirm.expiredNote1">
                 I link di conferma valgono <strong>24 ore</strong> e si possono usare
                 <strong>una volta sola</strong>. Se ne hai chiesto un altro dopo questo,
                 vale solo l'ultimo che ti è arrivato.
             </p>
-            <p class="text-muted small">
+            <p class="text-muted small" data-i18n-html="emailConfirm.expiredNote2">
                 Può anche darsi che tu abbia <strong>già confermato</strong>: in quel caso è
                 tutto a posto e non devi fare niente.
             </p>
-            <p class="text-muted small">
+            <p class="text-muted small" data-i18n="emailConfirm.expiredNote3">
                 Se invece devi ancora farlo, entra nel sito: in cima trovi il pulsante per
                 farti rimandare l'email.
             </p>
-            <a href="/" class="btn btn-primary btn-block" style="margin-top:18px;">Vai al sito</a>
+            <a href="/" class="btn btn-primary btn-block" style="margin-top:18px;" data-i18n="emailConfirm.goToSite">Vai al sito</a>
         </div>
     </div>
 
+    <script src="js/i18n.js"></script>
     <script>
+        var T = (window.CamoscioI18n && window.CamoscioI18n.t) || function () { return null; };
+
         // Il token arriva dall'indirizzo. Si legge subito e poi si toglie dalla barra
         // degli indirizzi, cosi' non resta nella cronologia del browser.
         const token = new URLSearchParams(window.location.search).get('token') || '';
@@ -79,7 +90,7 @@
                 // buttare via un link ancora buono. Si dice cos'e' successo davvero.
                 mostra('stato-scaduto');
                 document.querySelector('#stato-scaduto .auth-subtitle').textContent =
-                    'Non riesco a contattare il server. Controlla la connessione e ricarica la pagina.';
+                    T('emailConfirm.serverError') || 'Non riesco a contattare il server. Controlla la connessione e ricarica la pagina.';
             }
         }
 

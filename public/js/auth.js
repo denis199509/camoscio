@@ -1,6 +1,14 @@
 // Modulo di autenticazione: vista login, wizard di registrazione a 6 passi, logout.
 // Non tocca window.CamoscioState (quello e' gestito da app.js dopo il login).
 
+// Rollout traduzione punto 102 (ultimo pezzo: il gate di login/registrazione). var, non
+// const: questo file non e' avvolto in una IIFE e "const T" in un secondo <script>
+// classico da' SyntaxError (vedi 07-Trappole-Tecniche.md). Il testo statico del gate
+// (index.html #auth-gate) e' marcato data-i18n e lo gestisce applyStaticTranslations;
+// qui si traducono solo i messaggi generati da JS (errori, stati dei bottoni). Le righe
+// contatto-emergenza portano data-i18n nel loro template, quindi non serve un onChange.
+var T = (window.CamoscioI18n && window.CamoscioI18n.t) || function () { return null; };
+
 const TOTAL_WIZARD_STEPS = 6;
 let currentWizardStep = 1;
 let registerPhotoDataUrl = null;
@@ -83,13 +91,13 @@ async function submitForgotPassword(e) {
     const bottone = document.getElementById('btn-forgot-submit');
 
     if (!email || !email.includes('@')) {
-        showAuthError('auth-forgot-error', 'Inserisci un indirizzo email valido.');
+        showAuthError('auth-forgot-error', T('auth.err.invalidEmail') || 'Inserisci un indirizzo email valido.');
         return;
     }
 
     hideAuthError('auth-forgot-error');
     bottone.disabled = true;
-    bottone.textContent = 'Invio…';
+    bottone.textContent = T('auth.sending') || 'Invio…';
 
     try {
         const res = await fetch('/api/auth/forgot-password', {
@@ -114,15 +122,15 @@ async function submitForgotPassword(e) {
         }
 
         document.getElementById('auth-forgot-done-text').textContent =
-            (dati && dati.message) || "Se quell'indirizzo è registrato, ti abbiamo mandato un'email.";
+            (dati && dati.message) || T('auth.forgotDoneFallback') || "Se quell'indirizzo è registrato, ti abbiamo mandato un'email.";
         document.getElementById('auth-forgot-done').classList.remove('hidden');
         document.getElementById('auth-forgot-form').classList.add('hidden');
     } catch (err) {
         console.error('Errore richiesta recupero password:', err);
-        showAuthError('auth-forgot-error', 'Impossibile contattare il server. Riprova.');
+        showAuthError('auth-forgot-error', T('auth.err.serverUnreachable') || 'Impossibile contattare il server. Riprova.');
     } finally {
         bottone.disabled = false;
-        bottone.textContent = 'Mandami il link';
+        bottone.textContent = T('auth.forgotSubmit') || 'Mandami il link';
     }
 }
 
@@ -160,29 +168,29 @@ function validateCurrentStep() {
         const passwordConfirm = document.getElementById('reg-password-confirm').value;
         const ageMode = document.querySelector('input[name="age-mode"]:checked').value;
 
-        if (!nome || !cognome) return 'Inserisci nome e cognome.';
-        if (!email || !email.includes('@')) return 'Inserisci un indirizzo email valido.';
-        if (password.length < 8) return 'La password deve avere almeno 8 caratteri.';
-        if (password !== passwordConfirm) return 'Le due password non coincidono.';
-        if (ageMode === 'date' && !document.getElementById('reg-birthdate').value) return 'Inserisci la data di nascita, oppure scegli "Fascia d\'età".';
-        if (!document.getElementById('reg-terms').checked) return 'Devi accettare i Termini e la Privacy per continuare.';
+        if (!nome || !cognome) return T('auth.err.nameRequired') || 'Inserisci nome e cognome.';
+        if (!email || !email.includes('@')) return T('auth.err.invalidEmail') || 'Inserisci un indirizzo email valido.';
+        if (password.length < 8) return T('auth.err.pwdMin8') || 'La password deve avere almeno 8 caratteri.';
+        if (password !== passwordConfirm) return T('auth.err.pwdMismatch') || 'Le due password non coincidono.';
+        if (ageMode === 'date' && !document.getElementById('reg-birthdate').value) return T('auth.err.birthdateRequired') || 'Inserisci la data di nascita, oppure scegli "Fascia d\'età".';
+        if (!document.getElementById('reg-terms').checked) return T('auth.err.termsRequired') || 'Devi accettare i Termini e la Privacy per continuare.';
         return null;
     }
     if (currentWizardStep === 4) {
-        if (!document.getElementById('reg-username').value.trim()) return 'Scegli uno username.';
+        if (!document.getElementById('reg-username').value.trim()) return T('auth.err.usernameRequired') || 'Scegli uno username.';
         return null;
     }
     if (currentWizardStep === 5) {
         const rows = document.querySelectorAll('.emergency-contact-row');
-        if (rows.length === 0) return 'Serve almeno un contatto di emergenza.';
+        if (rows.length === 0) return T('auth.err.ecRequired') || 'Serve almeno un contatto di emergenza.';
         for (const row of rows) {
             const name = row.querySelector('.ec-name').value.trim();
             const relationship = row.querySelector('.ec-relationship').value.trim();
             const email = row.querySelector('.ec-email').value.trim();
-            if (!name || !relationship || !email) return 'Completa nome, relazione ed email per ogni contatto di emergenza.';
+            if (!name || !relationship || !email) return T('auth.err.ecIncomplete') || 'Completa nome, relazione ed email per ogni contatto di emergenza.';
             // Punto 37: e' il canale scelto per l'allarme vero - stesso controllo leggero
             // gia' usato sopra per l'email dell'account, non la validazione piena del server.
-            if (!email.includes('@')) return 'Inserisci un\'email valida per ogni contatto di emergenza.';
+            if (!email.includes('@')) return T('auth.err.ecInvalidEmail') || 'Inserisci un\'email valida per ogni contatto di emergenza.';
         }
         return null;
     }
@@ -194,28 +202,30 @@ function addEmergencyContactRow() {
     const list = document.getElementById('reg-emergency-contacts-list');
     const row = document.createElement('div');
     row.className = 'emergency-contact-row';
+    // Le etichette portano data-i18n: cosi' un cambio lingua fatto dopo aver aggiunto
+    // righe le traduce via applyStaticTranslations senza perdere quanto gia' scritto.
     row.innerHTML = `
-        <button type="button" class="btn-remove-contact" title="Rimuovi contatto">&times;</button>
+        <button type="button" class="btn-remove-contact" title="${T('auth.ecRemoveTitle') || 'Rimuovi contatto'}" data-i18n-title="auth.ecRemoveTitle">&times;</button>
         <div class="form-row">
             <div class="form-group">
-                <label>Nome:</label>
+                <label data-i18n="auth.ecName">Nome:</label>
                 <input type="text" class="ec-name">
             </div>
             <div class="form-group">
-                <label>Relazione:</label>
-                <input type="text" class="ec-relationship" placeholder="Es. Madre, Amico...">
+                <label data-i18n="auth.ecRelationship">Relazione:</label>
+                <input type="text" class="ec-relationship" placeholder="${T('auth.ecRelationshipPlaceholder') || 'Es. Madre, Amico...'}" data-i18n-placeholder="auth.ecRelationshipPlaceholder">
             </div>
         </div>
         <div class="form-group">
-            <label>Email:</label>
-            <input type="email" class="ec-email" placeholder="Serve per mandargli l'allarme">
+            <label data-i18n="auth.emailLabel">Email:</label>
+            <input type="email" class="ec-email" placeholder="${T('auth.ecEmailPlaceholder') || "Serve per mandargli l'allarme"}" data-i18n-placeholder="auth.ecEmailPlaceholder">
         </div>
     `;
     row.querySelector('.btn-remove-contact').addEventListener('click', () => {
         if (document.querySelectorAll('.emergency-contact-row').length > 1) {
             row.remove();
         } else {
-            window.showToast('Serve almeno un contatto di emergenza.', 'error');
+            window.showToast(T('auth.err.ecRequired') || 'Serve almeno un contatto di emergenza.', 'error');
         }
     });
     list.appendChild(row);
@@ -285,17 +295,17 @@ async function submitRegistration() {
         });
         const data = await res.json();
         if (!res.ok) {
-            showAuthError('auth-register-error', data.error || 'Registrazione non riuscita.');
+            showAuthError('auth-register-error', data.error || T('auth.err.registerFailed') || 'Registrazione non riuscita.');
             return;
         }
         hideAuthError('auth-register-error');
         if (data.scherzoBenvenuto && window.showAlertModal) {
-            await window.showAlertModal(data.scherzoBenvenuto, 'Ho capito');
+            await window.showAlertModal(data.scherzoBenvenuto, T('common.hoCapito') || 'Ho capito');
         }
         if (window.onAuthSuccess) window.onAuthSuccess();
     } catch (e) {
         console.error('Errore registrazione:', e);
-        showAuthError('auth-register-error', 'Impossibile completare la registrazione. Riprova.');
+        showAuthError('auth-register-error', T('auth.err.registerRetry') || 'Impossibile completare la registrazione. Riprova.');
     }
 }
 
@@ -312,14 +322,14 @@ async function submitLogin(e) {
         });
         const data = await res.json();
         if (!res.ok) {
-            showAuthError('auth-login-error', data.error || 'Accesso non riuscito.');
+            showAuthError('auth-login-error', data.error || T('auth.err.loginFailed') || 'Accesso non riuscito.');
             return;
         }
         hideAuthError('auth-login-error');
         if (window.onAuthSuccess) window.onAuthSuccess();
     } catch (e) {
         console.error('Errore login:', e);
-        showAuthError('auth-login-error', 'Impossibile contattare il server. Riprova.');
+        showAuthError('auth-login-error', T('auth.err.serverUnreachable') || 'Impossibile contattare il server. Riprova.');
     }
 }
 
@@ -390,14 +400,14 @@ function setupAuthGate() {
         const file = e.target.files[0];
         if (!file) return;
         if (file.size > 1.5 * 1024 * 1024) {
-            window.showToast('Foto troppo grande, scegline una più piccola (max ~1.5MB).', 'error');
+            window.showToast(T('auth.err.photoTooBig') || 'Foto troppo grande, scegline una più piccola (max ~1.5MB).', 'error');
             e.target.value = '';
             return;
         }
         const reader = new FileReader();
         reader.onload = () => {
             registerPhotoDataUrl = reader.result;
-            document.getElementById('reg-photo-preview').innerHTML = `<img src="${reader.result}" alt="Anteprima">`;
+            document.getElementById('reg-photo-preview').innerHTML = `<img src="${reader.result}" alt="${T('auth.photoPreviewAlt') || 'Anteprima'}">`;
         };
         reader.readAsDataURL(file);
     });

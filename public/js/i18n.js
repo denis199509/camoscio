@@ -1630,7 +1630,207 @@
             'geo.guidaSafari': 'iPhone / iPad (Safari) — three levels, you need all three\n1. iOS Settings → Privacy & Security → Location Services: on\n2. On the same screen, further down: Safari → "While Using the App"\n   (this is the most common case, and the site can’t tell it apart from point 3)\n3. On the site: "aA" in the address bar → Website Settings → Location → Allow',
             'geo.guidaChrome': 'Android (Chrome) — three levels, you need all three\n1. PHONE location: pull down the quick settings and check that\n   "Location" is on (or Android Settings → Location).\n   It’s the one missing most often, and the only one you won’t find by searching "Chrome".\n2. Chrome APP permission: Android Settings → Apps → Chrome → Permissions\n   → Location → allowed, with "precise location" on\n3. SITE permission: tap the padlock next to the address → Permissions\n   → Location → Allow\nIf you see a warning triangle next to the permission, the site is fine and one of\nthe two levels above is closed: tap the triangle and Chrome tells you which.',
             'geo.guidaIntro': 'Location isn’t coming through, and I can’t unblock it from here: it has to be re-enabled by hand.',
-            'geo.guidaOutro': 'Then reload the page.\n\nIf it still doesn’t work after these steps, open the diagnostics page: it tries your location three different ways and tells you which level is closed.\n\nOpen it now?'
+            'geo.guidaOutro': 'Then reload the page.\n\nIf it still doesn’t work after these steps, open the diagnostics page: it tries your location three different ways and tells you which level is closed.\n\nOpen it now?',
+
+            // ==================================================================
+            // Rollout punto 102 - ULTIMO pezzo (28/08/2026): il GATE di
+            // login/registrazione (schermata #auth-gate + public/js/auth.js) e
+            // le 3 PAGINE HTML AUTONOME che non passano da index.html
+            // (demo.html, conferma-email.html, reimposta-password.html). Con
+            // questo il punto 102 e' completo (resta fuori solo
+            // diagnostica-gps.html, strumento di debug, da decidere a parte).
+            //
+            // Scelte:
+            // 1) Il gate vive PRIMA di #main-app-container, dove stanno le
+            //    bandiere - quindi si aggiunge una .lang-switcher in ognuna
+            //    delle 3 viste del gate (dentro .auth-brand) e una in ogni
+            //    pagina autonoma. i18n.js aggancia gia' TUTTE le .lang-flag-btn
+            //    del documento e aggiornaBandiere() marca .active su tutte:
+            //    piu' copie non danno problemi.
+            // 2) Le 3 pagine autonome NON caricavano i18n.js: aggiunto lo
+            //    <script src="js/i18n.js"> subito prima del loro <script> inline
+            //    (a fine <body>, cosi' applyStaticTranslations vede gia' il DOM).
+            //    Il loro JS inline legge window.CamoscioI18n.t.
+            // 3) Vocabolario fisso del wizard (livello escursionistico,
+            //    interessi, difficolta' CAI, privacy) tradotto SOLO a video: il
+            //    data-value / value degli <option>/.choice-btn resta la stringa
+            //    italiana (va al server come hikingLevel/interests/
+            //    preferredDifficulty/privacySetting) - regola di Difficolta'/Tag
+            //    Tribu' del secondo lotto. Marche/Lazio/Abruzzo/Molise NON si
+            //    traducono (nomi propri, come cime/rifugi).
+            // 4) Le righe "contatto di emergenza" (addEmergencyContactRow,
+            //    auth.js) sono innerHTML da JS: le loro etichette portano
+            //    data-i18n NEL TEMPLATE, cosi' applyStaticTranslations le prende
+            //    a un cambio lingua senza perdere quanto gia' scritto - nessun
+            //    onChange serve per il gate.
+            // 5) data.error dal server (login/register falliti) resta il testo
+            //    del server; tradotto solo il ripiego.
+            // 6) I <title> delle pagine restano in italiano (applyStaticTranslations
+            //    non tocca <title>, e non e' testo in pagina).
+
+            // --- Gate: comune a login / forgot / wizard (index.html #auth-gate) ---
+            'auth.emailLabel': 'Email:',
+            'auth.passwordLabel': 'Password:',
+            'auth.loginBtn': 'Log in',
+            'auth.loginLink': 'Log in',
+            'auth.loginSubtitle': 'Log in to your account for hikes, carpooling and mountain safety.',
+            'auth.forgotLink': 'Forgot your password?',
+            'auth.noAccount': "Don't have an account?",
+            'auth.registerLink': 'Sign up',
+            'auth.demoHint': 'Just want to try the site? Log in with a demo account →',
+
+            // --- Gate: vista "Password dimenticata" ---
+            'auth.forgotSubtitle': 'Enter the email you signed up with: we\'ll send you a link to choose a new password.',
+            'auth.forgotDoneStrong': 'Done.',
+            'auth.forgotDoneNote': 'The link is valid for <strong>one hour</strong> and can be used <strong>once</strong>. Until you choose the new password, your current one keeps working.',
+            'auth.forgotSubmit': 'Send me the link',
+            'auth.forgotRemembered': 'Remembered it?',
+            'auth.backToLogin': 'Back to login',
+            'auth.sending': 'Sending…',
+            'auth.forgotDoneFallback': "If that address is registered, we've sent you an email.",
+
+            // --- Gate: wizard di registrazione, testo statico (index.html) ---
+            'auth.step1Title': '1. Basic details',
+            'auth.step1Desc': 'The essential information to create your account.',
+            'auth.firstNameLabel': 'First name:',
+            'auth.lastNameLabel': 'Last name:',
+            'auth.passwordMinLabel': 'Password (at least 8 characters):',
+            'auth.passwordConfirmLabel': 'Confirm password:',
+            'auth.birthOrRange': 'Date of birth or age range:',
+            'auth.birthDateRadio': 'Date of birth',
+            'auth.ageRangeRadio': 'Age range',
+            'auth.ageOpt.1829': '18-29 years',
+            'auth.ageOpt.3039': '30-39 years',
+            'auth.ageOpt.4049': '40-49 years',
+            'auth.ageOpt.5059': '50-59 years',
+            'auth.ageOpt.60': '60+ years',
+            'auth.acceptTerms': 'I accept the Terms of Service and the Privacy Policy',
+            'auth.step2Title': '2. Hiking profile',
+            'auth.step2Desc': 'Helps us suggest the right routes for you (optional but recommended).',
+            'auth.expLevelLabel': 'Stated experience level:',
+            'auth.level.Principiante': 'Beginner',
+            'auth.level.Intermedio': 'Intermediate',
+            'auth.level.Esperto': 'Expert',
+            'auth.level.Alpinista': 'Mountaineer',
+            'auth.interestsLabel': 'Your interests (select as many as you like):',
+            'auth.interest.Passeggiate facili': 'Easy walks',
+            'auth.interest.Trekking giornalieri': 'Day hikes',
+            'auth.interest.Trekking di più giorni': 'Multi-day treks',
+            'auth.interest.Ferrate': 'Via ferrata',
+            'auth.interest.Alpinismo': 'Mountaineering',
+            'auth.interest.Trail running': 'Trail running',
+            'auth.interest.MTB': 'MTB',
+            'auth.interest.Ciaspolate': 'Snowshoeing',
+            'auth.interest.Fotografia': 'Photography',
+            'auth.interest.Natura': 'Nature',
+            'auth.interest.Rifugi': 'Mountain huts',
+            'auth.interest.Laghi': 'Lakes',
+            'auth.interest.Panorami': 'Views',
+            'auth.interest.Vette': 'Peaks',
+            'auth.interest.Borghi': 'Villages',
+            'auth.interest.Tramonti': 'Sunsets',
+            'auth.interest.Alba': 'Sunrise',
+            'auth.step3Title': '3. Difficulty and area',
+            'auth.step3Desc': 'Optional: helps filter the routes best suited to you.',
+            'auth.prefDiffLabel': 'Preferred difficulty (CAI scale):',
+            'auth.noPreference': 'No preference',
+            'auth.cai.T': 'T — Tourist',
+            'auth.cai.E': 'E — Hiking',
+            'auth.cai.EE': 'EE — Experienced Hikers',
+            'auth.cai.EEA': 'EEA — Experienced Hikers with Equipment',
+            'auth.cai.Alpinistica': 'Mountaineering',
+            'auth.prefRegionLabel': 'Preferred region:',
+            'auth.provincesLabel': 'Provinces (comma-separated):',
+            'auth.provincesPlaceholder': 'E.g. AQ, TE',
+            'auth.rangesLabel': 'Mountain ranges (comma-separated):',
+            'auth.rangesPlaceholder': 'E.g. Gran Sasso, Maiella, PNALM',
+            'auth.step4Title': '4. Public profile',
+            'auth.step4Desc': 'How other hikers will see you.',
+            'auth.usernameLabel': 'Username (unique, e.g. MarcoHiker):',
+            'auth.photoLabel': 'Profile photo (optional):',
+            'auth.bioLabel': 'Bio (max 250 characters):',
+            'auth.bioPlaceholder': 'Tell us something about yourself...',
+            'auth.step5Title': '5. Safety',
+            'auth.step5Desc': 'Emergency contacts (mandatory) and geolocation (optional).',
+            'auth.ecPrivacyNote': 'The emergency contact is not public and is used ONLY for emergencies.',
+            'auth.addContactBtn': 'Add another contact',
+            'auth.geoNote': "By accepting geolocation you'll have a better chance of finding people with the same interests.",
+            'auth.geoConsent': 'I consent to the use of my location (to find nearby hikes, record routes, show my position)',
+            'auth.step6Title': '6. Privacy preferences',
+            'auth.step6Desc': 'Who can see your public profile (bio, photo, interests)?',
+            'auth.privacy.Pubblico': 'Public',
+            'auth.privacy.SoloAmici': 'Friends only',
+            'auth.privacy.Privato': 'Private',
+            'auth.privacyNote': '"Friends only" means people who share a squad with you. Sensitive data (email, emergency contacts, date of birth) is never visible to any other user, whatever setting you choose.',
+            'auth.wizardPrev': 'Back',
+            'auth.wizardNext': 'Next',
+            'auth.wizardSubmit': 'Complete Registration',
+            'auth.haveAccount': 'Already have an account?',
+
+            // --- Gate: auth.js, testo generato / righe contatto emergenza ---
+            'auth.ecRemoveTitle': 'Remove contact',
+            'auth.ecName': 'Name:',
+            'auth.ecRelationship': 'Relationship:',
+            'auth.ecRelationshipPlaceholder': 'E.g. Mother, Friend...',
+            'auth.ecEmailPlaceholder': 'Used to send them the alert',
+            'auth.photoPreviewAlt': 'Preview',
+
+            // --- Gate: auth.js, messaggi d'errore / validazione ---
+            'auth.err.invalidEmail': 'Enter a valid email address.',
+            'auth.err.serverUnreachable': 'Could not reach the server. Try again.',
+            'auth.err.nameRequired': 'Enter your first and last name.',
+            'auth.err.pwdMin8': 'The password must be at least 8 characters.',
+            'auth.err.pwdMismatch': 'The two passwords don\'t match.',
+            'auth.err.birthdateRequired': 'Enter your date of birth, or choose "Age range".',
+            'auth.err.termsRequired': 'You must accept the Terms and Privacy Policy to continue.',
+            'auth.err.usernameRequired': 'Choose a username.',
+            'auth.err.ecRequired': 'At least one emergency contact is needed.',
+            'auth.err.ecIncomplete': 'Fill in name, relationship and email for every emergency contact.',
+            'auth.err.ecInvalidEmail': 'Enter a valid email for every emergency contact.',
+            'auth.err.registerFailed': 'Registration failed.',
+            'auth.err.registerRetry': 'Could not complete registration. Try again.',
+            'auth.err.loginFailed': 'Login failed.',
+            'auth.err.photoTooBig': 'Photo too big, pick a smaller one (max ~1.5MB).',
+            'common.hoCapito': 'Got it',
+
+            // --- demo.html ---
+            'demoPage.badge': 'Demo / test mode',
+            'demoPage.intro': 'These 4 accounts exist only to try the site quickly, without signing up. They are not real accounts: any change made here is visible to anyone using the demo.',
+            'demoPage.wantReal': 'Want a real account, all your own?',
+            'demoPage.backToLogin': 'Back to the login/sign-up page',
+            'demoPage.loginError': "Couldn't log in with the demo account",
+            'demoPage.loadError': 'Could not load the demo accounts. Is the server running?',
+
+            // --- conferma-email.html ---
+            'emailConfirm.verifying': 'Confirming your address…',
+            'emailConfirm.doneTitle': '✅ Address confirmed.',
+            'emailConfirm.doneNote': 'Thank you. Now, if you ever forget your password, we can send you the link to reset it to this address.',
+            'emailConfirm.goToSite': 'Go to the site',
+            'emailConfirm.expiredTitle': 'This link is no longer valid.',
+            'emailConfirm.expiredNote1': 'Confirmation links are valid for <strong>24 hours</strong> and can be used <strong>once</strong>. If you requested another one after this, only the last one you received counts.',
+            'emailConfirm.expiredNote2': 'It may also be that you have <strong>already confirmed</strong>: in that case everything is fine and you don\'t need to do anything.',
+            'emailConfirm.expiredNote3': 'If you still need to do it, log into the site: at the top you\'ll find the button to have the email resent.',
+            'emailConfirm.serverError': "I can't reach the server. Check your connection and reload the page.",
+
+            // --- reimposta-password.html ---
+            'pwdReset.verifying': 'Checking the link…',
+            'pwdReset.chooseTitle': 'Choose your new password.',
+            'pwdReset.newPwdLabel': 'New password (at least 8 characters):',
+            'pwdReset.confirmPwdLabel': 'Confirm the new password:',
+            'pwdReset.saveBtn': 'Save the new password',
+            'pwdReset.logoutNote': 'On saving, you\'ll be logged out of every other device where your account was left open.',
+            'pwdReset.backToLogin': 'Back to the login page',
+            'pwdReset.expiredTitle': 'This link is no longer valid.',
+            'pwdReset.expiredNote1': 'Password reset links are valid for <strong>one hour</strong> and can be used <strong>once</strong>. If you requested another one after this, only the last one you received counts.',
+            'pwdReset.expiredNote2': 'Nothing has changed in the meantime: your current password keeps working.',
+            'pwdReset.expiredBtn': 'Back to the site to request another',
+            'pwdReset.doneTitle': '✅ Password updated.',
+            'pwdReset.goToSite': 'Go to the site',
+            'pwdReset.goToLogin': 'Go to the login page',
+            'pwdReset.serverError': "I can't reach the server. Check your connection and reload the page.",
+            'pwdReset.changeFailed': 'Could not change the password.',
+            'pwdReset.doneLoggedIn': "You're already in: you can go back to the site and carry on.",
+            'pwdReset.doneNotLoggedIn': 'You can now log in with the new password.'
         }
     };
 
