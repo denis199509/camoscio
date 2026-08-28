@@ -21,6 +21,11 @@
 // ==========================================================================
 
 (function () {
+    // Rollout traduzione punto 102 (lotto Mappa, area 2). Il file e' dentro una IIFE,
+    // quindi `const T` non collide con nessun altro `<script>` (come badges.js/storico.js).
+    const T = (window.CamoscioI18n && window.CamoscioI18n.t) || function () { return null; };
+    const lingua = () => (window.CamoscioI18n && window.CamoscioI18n.getLang()) || 'it';
+
     // Blu lago della palette di montagna (--accent-blue): il percorso PROGETTATO non deve
     // confondersi con quello REGISTRATO dal vivo, che e' blu chiaro (#7FB5C7, punto 14).
     const COLORE_SENTIERO = '#4C7E90';
@@ -68,7 +73,13 @@
     }
 
     const esc = s => (window.escapeHtml ? window.escapeHtml(s) : String(s == null ? '' : s));
-    const metri = m => m >= 1000 ? `${(m / 1000).toFixed(1).replace('.', ',')} km` : `${Math.round(m)} m`;
+    // "km"/"m" non si traducono; il separatore decimale sì (virgola IT / punto EN),
+    // come formattaDecimale del secondo lotto - ma qui è un helper locale all'IIFE.
+    const metri = m => {
+        if (m < 1000) return `${Math.round(m)} m`;
+        const sep = lingua() === 'en' ? '.' : ',';
+        return `${(m / 1000).toFixed(1).replace('.', sep)} km`;
+    };
 
     // --- disegno sulla mappa ---
 
@@ -103,8 +114,8 @@
             });
             const m = window.L.marker([p[1], p[0]], { icon: icona }).addTo(mappa);
             m.bindTooltip(partenza
-                ? (chiuso ? 'Partenza e arrivo' : 'Partenza')
-                : (!chiuso && numero === punti.length ? 'Arrivo' : `Tappa ${numero}`));
+                ? (chiuso ? (T('rp.partenzaArrivo') || 'Partenza e arrivo') : (T('rp.partenza') || 'Partenza'))
+                : (!chiuso && numero === punti.length ? (T('rp.arrivo') || 'Arrivo') : (T('rp.tappaN', numero) || `Tappa ${numero}`)));
             segnaposti.push(m);
         });
     }
@@ -124,8 +135,8 @@
                 : { color: COLORE_RETTA, weight: 4, opacity: 0.95, dashArray: '8, 8' }
             ).addTo(mappa);
             linea.bindTooltip(t.tipo === 'sentiero'
-                ? `Sui sentieri · ${metri(t.metri)}`
-                : `In linea d'aria · ${metri(t.metri)} — ${esc(t.motivo || 'nessun sentiero collega i due punti')}`);
+                ? (T('rp.suiSentieri', metri(t.metri)) || `Sui sentieri · ${metri(t.metri)}`)
+                : (T('rp.inLineaAria', metri(t.metri), esc(t.motivo || (T('rp.nessunSentieroCollega') || 'nessun sentiero collega i due punti'))) || `In linea d'aria · ${metri(t.metri)} — ${esc(t.motivo || 'nessun sentiero collega i due punti')}`));
             linee.push(linea);
         });
     }
@@ -140,8 +151,8 @@
 
         if (!attivo) {
             box.innerHTML = `
-                <p class="small text-muted">Scegli due o piu' punti sulla mappa e il sito li collega seguendo i sentieri conosciuti. Il percorso si salva come bozza tua, non e' collegato a nessuna escursione.</p>
-                <button class="btn btn-primary btn-sm" id="btn-rp-avvia" type="button"><i data-lucide="route"></i> Comincia a progettare</button>
+                <p class="small text-muted">${T('rp.introTesto') || "Scegli due o piu' punti sulla mappa e il sito li collega seguendo i sentieri conosciuti. Il percorso si salva come bozza tua, non e' collegato a nessuna escursione."}</p>
+                <button class="btn btn-primary btn-sm" id="btn-rp-avvia" type="button"><i data-lucide="route"></i> ${T('rp.cominciaBtn') || 'Comincia a progettare'}</button>
                 <div id="rp-elenco-bozze"></div>`;
             document.getElementById('btn-rp-avvia').addEventListener('click', avvia);
             elencaBozze();
@@ -153,7 +164,7 @@
             <li>
                 <span class="rp-num">${i + 1}</span>
                 <span class="rp-coord">${p[1].toFixed(5)}, ${p[0].toFixed(5)}</span>
-                <button class="rp-del" data-rp-togli="${i}" title="Togli questo punto" aria-label="Togli il punto ${i + 1}"><i data-lucide="x"></i></button>
+                <button class="rp-del" data-rp-togli="${i}" title="${T('rp.togliPuntoTitle') || 'Togli questo punto'}" aria-label="${T('rp.togliPuntoAria', i + 1) || ('Togli il punto ' + (i + 1))}"><i data-lucide="x"></i></button>
             </li>`).join('');
 
         // Il ritorno NON ha un numero e NON ha coordinate proprie: non e' una tappa che si e'
@@ -163,55 +174,56 @@
         const rigaRitorno = chiuso ? `
             <li class="rp-ritorno">
                 <span class="rp-num rp-num-ritorno" aria-hidden="true">&#8629;</span>
-                <span class="rp-coord">Ritorno alla partenza</span>
-                <button class="rp-del" data-rp-riapri title="Togli il ritorno" aria-label="Togli il ritorno alla partenza"><i data-lucide="x"></i></button>
+                <span class="rp-coord">${T('rp.ritornoAllaPartenza') || 'Ritorno alla partenza'}</span>
+                <button class="rp-del" data-rp-riapri title="${T('rp.togliRitornoTitle') || 'Togli il ritorno'}" aria-label="${T('rp.togliRitornoAria') || 'Togli il ritorno alla partenza'}"><i data-lucide="x"></i></button>
             </li>` : '';
 
         let riepilogo = '';
         if (inCalcolo) {
-            riepilogo = `<div class="rp-esito attesa"><i data-lucide="loader"></i> Sto cercando il percorso…</div>`;
+            riepilogo = `<div class="rp-esito attesa"><i data-lucide="loader"></i> ${T('rp.stoCercando') || 'Sto cercando il percorso…'}</div>`;
         } else if (ultimoEsito) {
             const e = ultimoEsito;
             // L'AVVISO SUI TRATTI IN LINEA D'ARIA e' la ragione per cui questo riquadro
             // esiste: e' il momento in cui l'utente capisce che li' il sito non sa guidare.
+            const nTratto = e.tappeInRetta === 1 ? (T('rp.tratto') || 'tratto') : (T('rp.tratti') || 'tratti');
             const avviso = e.tappeInRetta > 0
                 ? `<div class="rp-avviso">
                        <i data-lucide="triangle-alert"></i>
-                       <span><b>${metri(e.metriRetta)} in linea d'aria</b> su ${e.tappeInRetta} ${e.tappeInRetta === 1 ? 'tratto' : 'tratti'}: li' non c'e' nessun sentiero conosciuto che colleghi i punti, quindi la linea rossa tratteggiata NON e' un percorso da seguire. Sul posto valuta tu.</span>
+                       <span>${T('rp.avvisoRetta', metri(e.metriRetta), e.tappeInRetta, nTratto) || `<b>${metri(e.metriRetta)} in linea d'aria</b> su ${e.tappeInRetta} ${nTratto}: li' non c'e' nessun sentiero conosciuto che colleghi i punti, quindi la linea rossa tratteggiata NON e' un percorso da seguire. Sul posto valuta tu.`}</span>
                    </div>`
-                : `<div class="rp-tutto-bene"><i data-lucide="circle-check-big"></i> Tutto il percorso segue sentieri conosciuti.</div>`;
+                : `<div class="rp-tutto-bene"><i data-lucide="circle-check-big"></i> ${T('rp.tuttoBene') || 'Tutto il percorso segue sentieri conosciuti.'}</div>`;
             riepilogo = `
                 <div class="rp-esito">
                     ${tipoPercorso(chiuso)}
                     <div class="rp-totali">
-                        <div><strong>${metri(e.metriTotali)}</strong><span>totali</span></div>
-                        <div><strong>${metri(e.metriSentiero)}</strong><span>sui sentieri</span></div>
-                        <div><strong>${metri(e.metriRetta)}</strong><span>in linea d'aria</span></div>
+                        <div><strong>${metri(e.metriTotali)}</strong><span>${T('rp.totali') || 'totali'}</span></div>
+                        <div><strong>${metri(e.metriSentiero)}</strong><span>${T('rp.suiSentieriLabel') || 'sui sentieri'}</span></div>
+                        <div><strong>${metri(e.metriRetta)}</strong><span>${T('rp.inLineaAriaLabel') || "in linea d'aria"}</span></div>
                     </div>
                     ${dislivello(e)}
                     ${avviso}
                     ${esposizioneSolare(e)}
-                    <button class="btn btn-sm btn-primary" id="btn-rp-salva" type="button"><i data-lucide="save"></i> Salva come bozza</button>
+                    <button class="btn btn-sm btn-primary" id="btn-rp-salva" type="button"><i data-lucide="save"></i> ${T('rp.salvaBozzaBtn') || 'Salva come bozza'}</button>
                 </div>`;
         }
 
         box.innerHTML = `
-            <p class="small text-muted">Tocca la mappa per aggiungere una tappa.</p>
+            <p class="small text-muted">${T('rp.toccaMappa') || 'Tocca la mappa per aggiungere una tappa.'}</p>
             <label class="rp-switch">
                 <input type="checkbox" id="rp-aggancia" ${aggancia ? 'checked' : ''}>
-                <span>Segui i sentieri conosciuti</span>
+                <span>${T('rp.seguiSentieri') || 'Segui i sentieri conosciuti'}</span>
             </label>
-            <p class="small text-muted rp-spiega-switch">Spegnendolo i punti si collegano sempre in linea retta, utile dove non c'e' niente di mappato.</p>
-            ${punti.length ? `<ol class="rp-punti">${righe}${rigaRitorno}</ol>` : '<p class="small text-muted">Nessun punto scelto.</p>'}
-            ${chiuso ? `<p class="small text-muted rp-spiega-anello">Il percorso torna al punto 1, dove hai lasciato la macchina. Il ritorno segue i sentieri come le altre tappe, e i numeri qui sotto comprendono anche lui.</p>` : ''}
+            <p class="small text-muted rp-spiega-switch">${T('rp.spiegaSwitch') || "Spegnendolo i punti si collegano sempre in linea retta, utile dove non c'e' niente di mappato."}</p>
+            ${punti.length ? `<ol class="rp-punti">${righe}${rigaRitorno}</ol>` : `<p class="small text-muted">${T('rp.nessunPunto') || 'Nessun punto scelto.'}</p>`}
+            ${chiuso ? `<p class="small text-muted rp-spiega-anello">${T('rp.spiegaAnello') || 'Il percorso torna al punto 1, dove hai lasciato la macchina. Il ritorno segue i sentieri come le altre tappe, e i numeri qui sotto comprendono anche lui.'}</p>` : ''}
             <div class="rp-comandi">
                 <button class="btn btn-sm ${chiuso ? 'btn-secondary' : 'btn-primary'}" id="btn-rp-anello" type="button" ${punti.length >= 2 ? '' : 'disabled'}
-                        title="${chiuso ? 'Il percorso torna al punto 1: premi per toglierlo' : 'Aggiungi il ritorno al punto 1, dove hai lasciato la macchina'}">
-                    <i data-lucide="${chiuso ? 'undo-dot' : 'rotate-ccw'}"></i> ${chiuso ? 'Togli il ritorno' : "Torna all'inizio"}
+                        title="${chiuso ? (T('rp.togliRitornoBtnTitle') || 'Il percorso torna al punto 1: premi per toglierlo') : (T('rp.tornaInizioBtnTitle') || 'Aggiungi il ritorno al punto 1, dove hai lasciato la macchina')}">
+                    <i data-lucide="${chiuso ? 'undo-dot' : 'rotate-ccw'}"></i> ${chiuso ? (T('rp.togliRitornoBtn') || 'Togli il ritorno') : (T('rp.tornaInizioBtn') || "Torna all'inizio")}
                 </button>
-                <button class="btn btn-sm btn-secondary" id="btn-rp-annulla-ultimo" type="button" ${punti.length ? '' : 'disabled'}><i data-lucide="undo-2"></i> Togli l'ultimo</button>
-                <button class="btn btn-sm btn-secondary" id="btn-rp-svuota" type="button" ${punti.length ? '' : 'disabled'}><i data-lucide="eraser"></i> Svuota</button>
-                <button class="btn btn-sm btn-secondary" id="btn-rp-chiudi" type="button"><i data-lucide="x"></i> Chiudi</button>
+                <button class="btn btn-sm btn-secondary" id="btn-rp-annulla-ultimo" type="button" ${punti.length ? '' : 'disabled'}><i data-lucide="undo-2"></i> ${T('rp.togliUltimo') || "Togli l'ultimo"}</button>
+                <button class="btn btn-sm btn-secondary" id="btn-rp-svuota" type="button" ${punti.length ? '' : 'disabled'}><i data-lucide="eraser"></i> ${T('rp.svuota') || 'Svuota'}</button>
+                <button class="btn btn-sm btn-secondary" id="btn-rp-chiudi" type="button"><i data-lucide="x"></i> ${T('rp.chiudi') || 'Chiudi'}</button>
             </div>
             ${riepilogo}`;
 
@@ -246,11 +258,8 @@
     // macchina, e non e' il sito a saperlo.
     function tipoPercorso(chiuso) {
         return chiuso
-            ? `<p class="small rp-tipo rp-tipo-anello"><i data-lucide="rotate-ccw"></i><span><b>Anello</b> — i
-                   numeri qui sotto comprendono il ritorno al punto&nbsp;1.</span></p>`
-            : `<p class="small rp-tipo"><i data-lucide="move-right"></i><span><b>Sola andata</b> — i numeri
-                   qui sotto NON comprendono il ritorno al punto&nbsp;1. Se torni da dove sei partito, usa
-                   "Torna all'inizio".</span></p>`;
+            ? `<p class="small rp-tipo rp-tipo-anello"><i data-lucide="rotate-ccw"></i><span><b>${T('rp.anello') || 'Anello'}</b> — ${T('rp.anelloSpiega') || 'i numeri qui sotto comprendono il ritorno al punto&nbsp;1.'}</span></p>`
+            : `<p class="small rp-tipo"><i data-lucide="move-right"></i><span><b>${T('rp.solaAndata') || 'Sola andata'}</b> — ${T('rp.solaAndataSpiega') || 'i numeri qui sotto NON comprendono il ritorno al punto&nbsp;1. Se torni da dove sei partito, usa "Torna all\'inizio".'}</span></p>`;
     }
 
     // Il consiglio "togli il ritorno" si da' SOLO se serve davvero, cioe' se la sola andata
@@ -290,21 +299,17 @@
             // falso due volte: la fonte aveva risposto benissimo, e riprovare non serviva a
             // niente perche' il limite e' la lunghezza. Chiudere l'anello raddoppia i
             // chilometri, quindi e' un caso che ora si incontra sul serio.
+            const extraTogli = suggerisciTogliereIlRitorno(e)
+                ? (T('rp.dislivelloTogliRitorno') || ' Se ti serve il numero, togli il ritorno: la sola andata sta nel limite.')
+                : '';
             return e.motivoDislivello === 'troppo lungo'
-                ? `<p class="small text-muted rp-nota-dislivello"><i data-lucide="info"></i><span>Questo
-                    percorso supera i <b>25 km</b>: su una distanza simile le quote non si possono
-                    stimare con abbastanza precisione, quindi il dislivello non viene dato invece di
-                    darlo sbagliato. Distanza e tracciato qui sopra sono comunque corretti.${suggerisciTogliereIlRitorno(e)
-                        ? ' Se ti serve il numero, togli il ritorno: la sola andata sta nel limite.'
-                        : ''}</span></p>`
-                : `<p class="small text-muted rp-nota-dislivello"><i data-lucide="info"></i><span>Il
-                    dislivello non e' disponibile in questo momento: la fonte delle quote non ha risposto.
-                    Il percorso qui sopra e' comunque corretto. Riprova fra poco.</span></p>`;
+                ? `<p class="small text-muted rp-nota-dislivello"><i data-lucide="info"></i><span>${T('rp.dislivelloTroppoLungo', extraTogli) || (`Questo percorso supera i <b>25 km</b>: su una distanza simile le quote non si possono stimare con abbastanza precisione, quindi il dislivello non viene dato invece di darlo sbagliato. Distanza e tracciato qui sopra sono comunque corretti.` + extraTogli)}</span></p>`
+                : `<p class="small text-muted rp-nota-dislivello"><i data-lucide="info"></i><span>${T('rp.dislivelloNonDisp') || "Il dislivello non e' disponibile in questo momento: la fonte delle quote non ha risposto. Il percorso qui sopra e' comunque corretto. Riprova fra poco."}</span></p>`;
         }
 
         // Solo se ce n'e' davvero: su un percorso tutto sui sentieri questa riga non serve.
         const inRetta = e.salitaInRettaM > 0
-            ? ` Di questi, circa <b>${e.salitaInRettaM} m</b> cadono sui tratti in linea d'aria, dove il percorso e' tirato dritto e non segue nessun sentiero.`
+            ? (T('rp.dislivelloInRetta', e.salitaInRettaM) || ` Di questi, circa <b>${e.salitaInRettaM} m</b> cadono sui tratti in linea d'aria, dove il percorso e' tirato dritto e non segue nessun sentiero.`)
             : '';
 
         // ATTENZIONE, trappola gia' pagata al punto 18 e scritta anche nel CSS:
@@ -315,15 +320,12 @@
         return `
             <div class="rp-quote">
                 <div class="rp-totali">
-                    <div><strong>&#9650; ${e.salitaM} m</strong><span>salita</span></div>
-                    <div><strong>&#9660; ${e.discesaM} m</strong><span>discesa</span></div>
-                    <div><strong>${e.quotaMinM}&ndash;${e.quotaMaxM} m</strong><span>quota</span></div>
+                    <div><strong>&#9650; ${e.salitaM} m</strong><span>${T('rp.salita') || 'salita'}</span></div>
+                    <div><strong>&#9660; ${e.discesaM} m</strong><span>${T('rp.discesa') || 'discesa'}</span></div>
+                    <div><strong>${e.quotaMinM}&ndash;${e.quotaMaxM} m</strong><span>${T('rp.quota') || 'quota'}</span></div>
                 </div>
-                <p class="small text-muted rp-nota-dislivello"><i data-lucide="info"></i><span>Salita e
-                    discesa sono <b>stimate da un modello del terreno</b>, non misurate sul posto:
-                    possono sbagliare di circa il 5% (una cinquantina di metri ogni mille di
-                    salita).${inRetta}
-                    <span class="rp-fonte">Quote: Copernicus DEM via Open-Meteo (CC-BY 4.0).</span></span></p>
+                <p class="small text-muted rp-nota-dislivello"><i data-lucide="info"></i><span>${T('rp.notaDislivello', inRetta) || (`Salita e discesa sono <b>stimate da un modello del terreno</b>, non misurate sul posto: possono sbagliare di circa il 5% (una cinquantina di metri ogni mille di salita).` + inRetta)}
+                    <span class="rp-fonte">${T('rp.fonteQuote') || 'Quote: Copernicus DEM via Open-Meteo (CC-BY 4.0).'}</span></span></p>
             </div>`;
     }
 
@@ -445,7 +447,7 @@
                 ultimoEsito = null;
                 pulisciDisegno();
                 aggiornaPannello();
-                if (window.showToast) window.showToast(dati.error || 'Non e stato possibile calcolare il percorso.', 'error');
+                if (window.showToast) window.showToast(dati.error || T('rp.erroreCalcolo') || 'Non e stato possibile calcolare il percorso.', 'error');
                 return;
             }
             ultimoEsito = dati;
@@ -459,7 +461,7 @@
             ultimoEsito = null;
             aggiornaPannello();
             console.error('Calcolo percorso fallito:', e);
-            if (window.showToast) window.showToast('Non è stato possibile contattare il server.', 'error');
+            if (window.showToast) window.showToast(T('common.erroreServer') || 'Non è stato possibile contattare il server.', 'error');
         }
     }
 
@@ -475,7 +477,7 @@
         aggiornaPannello();
         const mappa = document.getElementById('map');
         if (mappa) mappa.classList.add('modalita-progetto');
-        if (window.showToast) window.showToast('Tocca la mappa per aggiungere le tappe del percorso.', 'success');
+        if (window.showToast) window.showToast(T('rp.toccaPerTappe') || 'Tocca la mappa per aggiungere le tappe del percorso.', 'success');
     }
 
     function chiudi() {
@@ -500,8 +502,8 @@
         if (punti.length + (anello ? 1 : 0) >= MAX_PUNTI) {
             if (window.showToast) window.showToast(
                 anello
-                    ? `Un percorso puo' avere al massimo ${MAX_PUNTI - 1} tappe piu' il ritorno alla partenza.`
-                    : `Un percorso puo' avere al massimo ${MAX_PUNTI} tappe.`,
+                    ? (T('rp.maxTappeAnello', MAX_PUNTI - 1) || `Un percorso puo' avere al massimo ${MAX_PUNTI - 1} tappe piu' il ritorno alla partenza.`)
+                    : (T('rp.maxTappe', MAX_PUNTI) || `Un percorso puo' avere al massimo ${MAX_PUNTI} tappe.`),
                 'error');
             return true;
         }
@@ -516,9 +518,11 @@
 
     async function salvaBozza() {
         if (!ultimoEsito || punti.length < 2) return;
+        const dataOggi = new Date().toLocaleDateString(lingua() === 'en' ? 'en-GB' : 'it-IT');
+        const nomeDefault = T('rp.nomeDefault', dataOggi) || `Percorso del ${dataOggi}`;
         const nome = window.showPromptModal
-            ? await window.showPromptModal('Che nome vuoi dare a questo percorso?', `Percorso del ${new Date().toLocaleDateString('it-IT')}`)
-            : `Percorso del ${new Date().toLocaleDateString('it-IT')}`;
+            ? await window.showPromptModal(T('rp.cheNome') || 'Che nome vuoi dare a questo percorso?', nomeDefault)
+            : nomeDefault;
         if (!nome) return;
         try {
             const res = await fetch('/api/routing/drafts', {
@@ -531,13 +535,13 @@
             });
             const dati = await res.json();
             if (!res.ok) {
-                if (window.showToast) window.showToast(dati.error || 'Non e stato possibile salvare la bozza.', 'error');
+                if (window.showToast) window.showToast(dati.error || T('rp.erroreSalvaBozza') || 'Non e stato possibile salvare la bozza.', 'error');
                 return;
             }
-            if (window.showToast) window.showToast('Bozza salvata. La ritrovi qui sotto quando chiudi il progetto.', 'success');
+            if (window.showToast) window.showToast(T('rp.bozzaSalvata') || 'Bozza salvata. La ritrovi qui sotto quando chiudi il progetto.', 'success');
         } catch (e) {
             console.error('Salvataggio bozza fallito:', e);
-            if (window.showToast) window.showToast('Non è stato possibile contattare il server.', 'error');
+            if (window.showToast) window.showToast(T('common.erroreServer') || 'Non è stato possibile contattare il server.', 'error');
         }
     }
 
@@ -550,14 +554,14 @@
             const bozze = await res.json();
             if (!bozze.length) { box.innerHTML = ''; return; }
             box.innerHTML = `
-                <h5 class="rp-titolo-bozze">I tuoi percorsi salvati</h5>
+                <h5 class="rp-titolo-bozze">${T('rp.titoloBozze') || 'I tuoi percorsi salvati'}</h5>
                 <ul class="rp-bozze">${bozze.map(b => `
                     <li>
                         <button class="rp-apri" data-rp-apri="${esc(b.id)}">
                             <span class="rp-bozza-nome">${esc(b.nome)}</span>
-                            <span class="rp-bozza-dati">${b.punti.length} tappe${b.anello ? ' · anello' : ''} · ${metri(b.metriTotali || 0)}${typeof b.salitaM === 'number' ? ` · ▲ ${b.salitaM} m` : ''}${b.metriRetta ? ` · ${metri(b.metriRetta)} in linea d'aria` : ''}</span>
+                            <span class="rp-bozza-dati">${b.punti.length} ${T('rp.tappe') || 'tappe'}${b.anello ? (T('rp.datiAnello') || ' · anello') : ''} · ${metri(b.metriTotali || 0)}${typeof b.salitaM === 'number' ? ` · ▲ ${b.salitaM} m` : ''}${b.metriRetta ? (T('rp.datiInRetta', metri(b.metriRetta)) || ` · ${metri(b.metriRetta)} in linea d'aria`) : ''}</span>
                         </button>
-                        <button class="rp-del" data-rp-cancella="${esc(b.id)}" title="Cancella questa bozza" aria-label="Cancella ${esc(b.nome)}"><i data-lucide="trash-2"></i></button>
+                        <button class="rp-del" data-rp-cancella="${esc(b.id)}" title="${T('rp.cancellaTitle') || 'Cancella questa bozza'}" aria-label="${T('rp.cancellaAria', esc(b.nome)) || ('Cancella ' + esc(b.nome))}"><i data-lucide="trash-2"></i></button>
                     </li>`).join('')}</ul>`;
             box.querySelectorAll('[data-rp-apri]').forEach(b =>
                 b.addEventListener('click', () => apriBozza(bozze.find(x => x.id === b.getAttribute('data-rp-apri')))));
@@ -586,20 +590,23 @@
 
     async function cancellaBozza(id) {
         const procedi = window.showConfirmModal
-            ? await window.showConfirmModal('Cancellare questo percorso salvato?\n\nI punti scelti andranno persi. Le escursioni e le uscite registrate non c\'entrano e non vengono toccate.', 'Cancella')
+            ? await window.showConfirmModal(
+                T('rp.cancellaBozzaMsg') || 'Cancellare questo percorso salvato?\n\nI punti scelti andranno persi. Le escursioni e le uscite registrate non c\'entrano e non vengono toccate.',
+                T('common.elimina') || 'Cancella',
+                { cancelLabel: T('common.cancella') || 'Annulla', danger: true })
             : true;
         if (!procedi) return;
         try {
             const res = await fetch(`/api/routing/drafts/${encodeURIComponent(id)}`, { method: 'DELETE' });
             if (!res.ok) {
                 const d = await res.json().catch(() => ({}));
-                if (window.showToast) window.showToast(d.error || 'Non e stato possibile cancellare.', 'error');
+                if (window.showToast) window.showToast(d.error || T('rp.erroreCancella') || 'Non e stato possibile cancellare.', 'error');
                 return;
             }
-            if (window.showToast) window.showToast('Percorso cancellato.', 'success');
+            if (window.showToast) window.showToast(T('rp.bozzaCancellata') || 'Percorso cancellato.', 'success');
             elencaBozze();
         } catch (e) {
-            if (window.showToast) window.showToast('Non è stato possibile contattare il server.', 'error');
+            if (window.showToast) window.showToast(T('common.erroreServer') || 'Non è stato possibile contattare il server.', 'error');
         }
     }
 
@@ -623,7 +630,7 @@
             if (!res.ok) throw new Error('richiesta fallita');
             bozze = await res.json();
         } catch (e) {
-            box.innerHTML = `<div class="glass-card text-center py-4 text-muted">Non è stato possibile caricare i tuoi progetti. Riprova più tardi.</div>`;
+            box.innerHTML = `<div class="glass-card text-center py-4 text-muted">${T('rp.prog.erroreCarica') || 'Non è stato possibile caricare i tuoi progetti. Riprova più tardi.'}</div>`;
             return;
         }
 
@@ -632,7 +639,7 @@
 
         if (!bozze.length) {
             box.innerHTML = `<div class="glass-card text-center py-4 text-muted">
-                Nessun progetto per ora. Vai su <b>Mappa &amp; Sentieri</b>, apri "Progetta un percorso" e tocca i punti che vuoi collegare.
+                ${T('rp.prog.vuoto') || 'Nessun progetto per ora. Vai su <b>Mappa &amp; Sentieri</b>, apri "Progetta un percorso" e tocca i punti che vuoi collegare.'}
             </div>`;
             return;
         }
@@ -641,30 +648,30 @@
             <div class="outing-card" data-progetto-id="${esc(b.id)}">
                 <div class="outing-card-head">
                     <span class="outing-card-title">${esc(b.nome)}</span>
-                    <span class="badge badge-accent outing-tag" title="Percorso progettato da te, non ancora fatto"><i data-lucide="route"></i> progetto</span>
+                    <span class="badge badge-accent outing-tag" title="${T('rp.prog.tagProgettoTitle') || 'Percorso progettato da te, non ancora fatto'}"><i data-lucide="route"></i> ${T('rp.prog.tagProgetto') || 'progetto'}</span>
                     ${/* Punto 38: senza questo, un anello e una sola andata hanno la stessa scheda,
                           e la lunghezza qui accanto vuol dire due cose diverse. */''}
                     ${b.anello
-                        ? `<span class="badge badge-green outing-tag" title="Il percorso torna al punto di partenza: la lunghezza comprende il ritorno"><i data-lucide="rotate-ccw"></i> anello</span>`
-                        : `<span class="badge outing-tag" title="Il percorso non torna al punto di partenza: la lunghezza NON comprende il ritorno">sola andata</span>`}
-                    <button class="outing-card-del" data-prog-del="${esc(b.id)}" title="Cancella questo progetto" aria-label="Cancella ${esc(b.nome)}"><i data-lucide="trash-2"></i></button>
+                        ? `<span class="badge badge-green outing-tag" title="${T('rp.prog.tagAnelloTitle') || 'Il percorso torna al punto di partenza: la lunghezza comprende il ritorno'}"><i data-lucide="rotate-ccw"></i> ${T('rp.prog.tagAnello') || 'anello'}</span>`
+                        : `<span class="badge outing-tag" title="${T('rp.prog.tagSolaAndataTitle') || 'Il percorso non torna al punto di partenza: la lunghezza NON comprende il ritorno'}">${T('rp.prog.tagSolaAndata') || 'sola andata'}</span>`}
+                    <button class="outing-card-del" data-prog-del="${esc(b.id)}" title="${T('rp.prog.cancellaTitle') || 'Cancella questo progetto'}" aria-label="${T('rp.cancellaAria', esc(b.nome)) || ('Cancella ' + esc(b.nome))}"><i data-lucide="trash-2"></i></button>
                 </div>
                 <div class="outing-card-stats">
-                    <div><strong>${b.punti.length}</strong><span>tappe</span></div>
-                    <div><strong>${metri(b.metriTotali || 0)}</strong><span>lunghezza</span></div>
+                    <div><strong>${b.punti.length}</strong><span>${T('rp.tappe') || 'tappe'}</span></div>
+                    <div><strong>${metri(b.metriTotali || 0)}</strong><span>${T('rp.prog.lunghezza') || 'lunghezza'}</span></div>
                     ${/* Punto 33: si mostra SOLO se la salita e' davvero nota. Il campo manca
                           sulle bozze salvate prima, e su quelle salvate mentre la fonte delle
                           quote non rispondeva: scrivere "0 m" in quei casi direbbe "e' tutto
                           in piano", che e' una bugia proprio sul dato che serve a capire se
                           l'escursione e' alla tua portata. Riaprendola, il numero si calcola. */''}
                     ${typeof b.salitaM === 'number'
-                        ? `<div title="Stimata da un modello del terreno, puo' sbagliare di circa il 5%"><strong>▲ ${b.salitaM} m</strong><span>salita</span></div>`
+                        ? `<div title="${T('rp.prog.salitaTitle') || "Stimata da un modello del terreno, puo' sbagliare di circa il 5%"}"><strong>▲ ${b.salitaM} m</strong><span>${T('rp.salita') || 'salita'}</span></div>`
                         : ''}
                     ${b.metriRetta > 0
-                        ? `<div title="Tratti dove non esiste un sentiero conosciuto che colleghi i punti"><strong>${metri(b.metriRetta)}</strong><span>in linea d'aria</span></div>`
-                        : `<div><strong>✓</strong><span>tutto su sentieri</span></div>`}
+                        ? `<div title="${T('rp.prog.inRettaTitle') || 'Tratti dove non esiste un sentiero conosciuto che colleghi i punti'}"><strong>${metri(b.metriRetta)}</strong><span>${T('rp.inLineaAriaLabel') || "in linea d'aria"}</span></div>`
+                        : `<div><strong>✓</strong><span>${T('rp.prog.tuttoSuSentieri') || 'tutto su sentieri'}</span></div>`}
                 </div>
-                <button class="btn btn-sm btn-secondary rp-apri-mappa" data-prog-apri="${esc(b.id)}"><i data-lucide="map"></i> Apri sulla mappa</button>
+                <button class="btn btn-sm btn-secondary rp-apri-mappa" data-prog-apri="${esc(b.id)}"><i data-lucide="map"></i> ${T('rp.prog.apriSullaMappa') || 'Apri sulla mappa'}</button>
             </div>`).join('')}</div>`;
 
         box.querySelectorAll('[data-prog-apri]').forEach(b => b.addEventListener('click', () => {
@@ -687,4 +694,23 @@
     window.CamoscioRoutePlanner = { gestisciClickMappa, init: initRoutePlanner, renderProgetti };
     window.initRoutePlanner = initRoutePlanner;
     window.renderProgetti = renderProgetti;
+
+    // Rollout traduzione punto 102, lotto Mappa area 2: #route-planner-body e
+    // #projects-list sono interamente innerHTML costruito da JS - applyStaticTranslations
+    // non li tocca. Al cambio lingua si ridisegnano SOLO se la loro sezione e' attiva
+    // (gate come il <select> recensioni del quinto lotto): il pannello dallo stato in
+    // memoria (nessun ricalcolo del percorso - ultimoEsito e' gia' in mano; la sola
+    // fetch e' quella dell'elenco bozze nel ramo "non attivo"), renderProgetti
+    // rifacendo la sua fetch (gia' rifatta a ogni ingresso in "Le mie escursioni").
+    // Il blocco "Esposizione al sole" del pannello (esposizioneSolare) NON e' di
+    // quest'area - resta in italiano fino all'area 3, insieme a
+    // renderSolarExposureAdvice / bearingToCompassSector di map.js.
+    if (window.CamoscioI18n && window.CamoscioI18n.onChange) {
+        window.CamoscioI18n.onChange(function () {
+            const mappa = document.getElementById('map-section');
+            if (mappa && mappa.classList.contains('active')) aggiornaPannello();
+            const mie = document.getElementById('my-hikes');
+            if (mie && mie.classList.contains('active') && typeof renderProgetti === 'function') renderProgetti();
+        });
+    }
 })();

@@ -1250,7 +1250,145 @@
 
             // --- loadActiveHikeOnMap: popup del punto di ritrovo (il nome del
             //     ritrovo lo scrive chi crea l'escursione, non si traduce). ---
-            'map.ritrovo.titolo': 'Meeting point'
+            'map.ritrovo.titolo': 'Meeting point',
+
+            // ==================================================================
+            // Rollout punto 102, LOTTO MAPPA - area 2 di 4 (28/08/2026):
+            // "Progetta un percorso" = tutto `public/js/routeplanner.js` (690
+            // righe, dentro una IIFE quindi `const T`) TRANNE la funzione
+            // `esposizioneSolare()` e i suoi helper `calculateBearing`/
+            // `bearingToCompassSector` (in `map.js`): quel blocco va con l'area 3
+            // (Esposizione Solare) insieme a `renderSolarExposureAdvice` — quindi
+            // l'area 3 tocca anche `routeplanner.js`. Nel pannello del percorso il
+            // riquadro `.rp-sole` resta in italiano fino ad allora (atteso).
+            //
+            // Incluso qui `renderProgetti` (card "I miei progetti" in "Le mie
+            // escursioni"): sta in `routeplanner.js`, era l'ultima isola italiana
+            // di quella pagina (il resto tradotto al secondo lotto). L'intestazione
+            // e la descrizione della card ("My Projects"/`myHikes.progetti*`)
+            // erano gia' fatte al secondo lotto, qui il contenuto dinamico.
+            //
+            // Scelte non ovvie:
+            // 1) `metri()` (helper interno) ora sceglie il separatore decimale per
+            //    lingua (virgola IT / punto EN) come `formattaDecimale` del secondo
+            //    lotto - ma resta un helper locale all'IIFE, nessuna collisione.
+            //    "km"/"m" non si traducono (unita').
+            // 2) `#route-planner-body` e `#projects-list` sono interamente innerHTML
+            //    da JS: `onChange` che ridisegna il pannello (dallo stato in
+            //    memoria, NESSUN ricalcolo del percorso: `ultimoEsito` e' gia' in
+            //    mano) se `#map-section` e' attiva, e `renderProgetti` (ri-fetch)
+            //    se `#my-hikes` e' attiva. Gate come il <select> recensioni del
+            //    quinto lotto.
+            // 3) `showConfirmModal` di `cancellaBozza` allineato ai "cancella per
+            //    sempre" (`cancelLabel` + `danger:true`). "Non e' stato possibile
+            //    contattare il server" (x3 nel file) riusa `common.erroreServer`.
+            // 4) La data suggerita per il nome di una bozza nuova
+            //    (`new Date().toLocaleDateString`) col locale `en-GB`/`it-IT`.
+            //    Il nome poi lo puo' cambiare l'utente ed e' contenuto suo.
+
+            // --- <h4> statico in index.html (route-planner-card) ---
+            'rp.cardTitolo': 'Plan a route',
+
+            // --- Stato iniziale del pannello (aggiornaPannello, non attivo) ---
+            'rp.introTesto': "Pick two or more points on the map and the site links them along known trails. The route is saved as your own draft, not tied to any hike.",
+            'rp.cominciaBtn': 'Start planning',
+            'rp.titoloBozze': 'Your saved routes',
+
+            // --- Pannello in modalita' progettazione (aggiornaPannello, attivo) ---
+            'rp.toccaMappa': 'Tap the map to add a stop.',
+            'rp.seguiSentieri': 'Follow known trails',
+            'rp.spiegaSwitch': 'Turn it off and the points always link in a straight line — useful where nothing is mapped.',
+            'rp.nessunPunto': 'No points chosen.',
+            'rp.spiegaAnello': 'The route goes back to point 1, where you left the car. The return follows trails like the other legs, and the figures below include it too.',
+            'rp.togliPuntoTitle': 'Remove this point',
+            'rp.togliPuntoAria': function (n) { return 'Remove point ' + n; },
+            'rp.ritornoAllaPartenza': 'Return to start',
+            'rp.togliRitornoTitle': 'Remove the return',
+            'rp.togliRitornoAria': 'Remove the return to start',
+            'rp.stoCercando': 'Looking for the route…',
+            'rp.tornaInizioBtn': 'Back to start',
+            'rp.togliRitornoBtn': 'Remove the return',
+            'rp.tornaInizioBtnTitle': 'Add the return to point 1, where you left the car',
+            'rp.togliRitornoBtnTitle': 'The route goes back to point 1: press to remove it',
+            'rp.togliUltimo': 'Remove the last',
+            'rp.svuota': 'Clear',
+            'rp.chiudi': 'Close',
+
+            // --- Tooltip dei marker / delle linee sulla mappa ---
+            'rp.partenzaArrivo': 'Start and finish',
+            'rp.partenza': 'Start',
+            'rp.arrivo': 'Finish',
+            'rp.tappaN': function (n) { return 'Stop ' + n; },
+            'rp.suiSentieri': function (dist) { return 'On trails · ' + dist; },
+            'rp.inLineaAria': function (dist, motivo) { return 'As the crow flies · ' + dist + ' — ' + motivo; },
+            'rp.nessunSentieroCollega': 'no known trail connects the two points',
+
+            // --- Esito del calcolo: totali e avvisi ---
+            'rp.tuttoBene': 'The whole route follows known trails.',
+            'rp.avvisoRetta': function (dist, n, tratto) { return '<b>' + dist + ' as the crow flies</b> over ' + n + ' ' + tratto + ": there's no known trail linking the points there, so the dashed red line is NOT a route to follow. Judge it on the spot."; },
+            'rp.tratto': 'stretch',
+            'rp.tratti': 'stretches',
+            'rp.totali': 'total',
+            'rp.suiSentieriLabel': 'on trails',
+            'rp.inLineaAriaLabel': 'as the crow flies',
+            'rp.salvaBozzaBtn': 'Save as draft',
+
+            // --- tipoPercorso (anello vs sola andata) ---
+            'rp.anello': 'Loop',
+            'rp.anelloSpiega': 'the figures below include the return to point 1.',
+            'rp.solaAndata': 'One way',
+            'rp.solaAndataSpiega': 'the figures below do NOT include the return to point 1. If you go back the way you came, use "Back to start".',
+
+            // --- dislivello (stima quote) ---
+            'rp.dislivelloTroppoLungo': function (extra) { return "This route is over <b>25 km</b>: over a distance like this, elevation can't be estimated accurately enough, so the elevation gain is withheld rather than given wrong. Distance and track above are still correct." + (extra || ''); },
+            'rp.dislivelloTogliRitorno': ' If you need the number, remove the return: the one-way route is within the limit.',
+            'rp.dislivelloNonDisp': "Elevation gain isn't available right now: the elevation source didn't respond. The route above is still correct. Try again shortly.",
+            'rp.dislivelloInRetta': function (m) { return ' Of this, about <b>' + m + ' m</b> falls on the straight-line stretches, where the route is drawn straight and follows no trail.'; },
+            'rp.salita': 'ascent',
+            'rp.discesa': 'descent',
+            'rp.quota': 'altitude',
+            'rp.notaDislivello': function (inRetta) { return 'Ascent and descent are <b>estimated from a terrain model</b>, not measured on site: they can be off by about 5% (some fifty meters per thousand of ascent).' + (inRetta || ''); },
+            'rp.fonteQuote': 'Elevation: Copernicus DEM via Open-Meteo (CC-BY 4.0).',
+
+            // --- calcolo / avvio / limite tappe ---
+            'rp.erroreCalcolo': 'The route could not be calculated.',
+            'rp.toccaPerTappe': 'Tap the map to add the route stops.',
+            'rp.maxTappeAnello': function (max) { return 'A route can have at most ' + max + ' stops plus the return to start.'; },
+            'rp.maxTappe': function (max) { return 'A route can have at most ' + max + ' stops.'; },
+
+            // --- salvataggio bozza ---
+            'rp.cheNome': 'What name do you want to give this route?',
+            'rp.nomeDefault': function (data) { return 'Route from ' + data; },
+            'rp.erroreSalvaBozza': 'The draft could not be saved.',
+            'rp.bozzaSalvata': 'Draft saved. You’ll find it below when you close the planner.',
+
+            // --- riga dati di una bozza (elencaBozze) ---
+            'rp.tappe': 'stops',
+            'rp.datiAnello': ' · loop',
+            'rp.datiInRetta': function (dist) { return ' · ' + dist + ' as the crow flies'; },
+
+            // --- cancellazione bozza / progetto (stessa entita', due nomi nella UI IT) ---
+            'rp.cancellaBozzaMsg': "Delete this saved route?\n\nThe chosen points will be lost. Your hikes and recorded outings are unrelated and won't be touched.",
+            'rp.bozzaCancellata': 'Route deleted.',
+            'rp.erroreCancella': 'Could not delete.',
+            'rp.cancellaTitle': 'Delete this route',
+            'rp.cancellaAria': function (nome) { return 'Delete ' + nome; },
+
+            // --- renderProgetti: card "I miei progetti" (#projects-list in "Le mie escursioni") ---
+            'rp.prog.erroreCarica': 'Your projects could not be loaded. Please try again later.',
+            'rp.prog.vuoto': 'No projects yet. Go to <b>Map &amp; Trails</b>, open "Plan a route" and tap the points you want to link.',
+            'rp.prog.tagProgetto': 'project',
+            'rp.prog.tagProgettoTitle': 'Route you planned, not done yet',
+            'rp.prog.tagAnello': 'loop',
+            'rp.prog.tagAnelloTitle': 'The route goes back to the start: the length includes the return',
+            'rp.prog.tagSolaAndata': 'one way',
+            'rp.prog.tagSolaAndataTitle': "The route doesn't go back to the start: the length does NOT include the return",
+            'rp.prog.cancellaTitle': 'Delete this project',
+            'rp.prog.lunghezza': 'length',
+            'rp.prog.salitaTitle': 'Estimated from a terrain model, can be off by about 5%',
+            'rp.prog.inRettaTitle': 'Stretches where no known trail connects the points',
+            'rp.prog.tuttoSuSentieri': 'all on trails',
+            'rp.prog.apriSullaMappa': 'Open on the map'
         }
     };
 
