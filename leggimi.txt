@@ -1,37 +1,42 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-28 (ottava sessione, seguito). PUNTO 102, SESTO LOTTO
-fatto: CARPOOLING + ZAINO - le due sezioni #carpool e #backpack e i due
-file carpool.js (484 righe) e backpack.js (919) per intero, un solo lotto,
-scelto con AskUserQuestion ("Carpooling + Zaino insieme"). +~130 chiavi
-(carpool.*, backpack.*, sectionTitle.carpool/.backpack, common.modifica/
-.salvataggio), var T in testa a entrambi i file. Scelte:
-- nomi oggetti checklist / categorie / "generi" dello Zaino = vocabolario
-  fisso nostro (come Difficolta'/Tag Tribu' del 2o lotto), tradotti SOLO a
-  video; il valore che raggruppa e la CHIAVE localStorage dello stato
-  spuntato (chiaveSpuntato keya su item.name) restano la stringa italiana:
-  cambiare lingua non fa perdere uno spuntato. Oggetti del template
-  escursione e personali (testo utente) non nel dizionario -> nome
-  originale (in lista "Trekking boots" nostro accanto a "Giacca antivento"
-  del template, che resta IT - voluto);
-- #backpack si ridisegna al cambio lingua SENZA rifare il fetch meteo
-  (applyBackpackRules salva ultimoInputZaino, l'onChange lo rigioca; nota
-  meteo da ultimaNotaPioggia). #carpool si ridisegna tutto +
-  calculateGenericExpenses() per il box "Split Spese";
-- decimali EUR/kg: helper formattaEuro/formattaKg, NON "formattaDecimale"
-  (gia' un global di userprofile.js a 1 decimale, carica dopo e vince -
-  BUG trovato provando dal vivo, importi a "23,3" invece di "23,29").
-Verificato con l'estensione Chrome (login demo Marco Alpinista): #carpool
-e #backpack in IT ed EN con toggle avanti/indietro sulla pagina, toggle
-ripetuti senza duplicazioni, oggetto spuntato che resta spuntato dopo il
-cambio lingua, importi/kg/date nel formato della lingua, listener error
-piantato a mano: ZERO errori. + prova-configurazione (9/9),
-prova-passo-non-misurato (28/28), prova-invito-squadra (59/59).
-COMMITTATO E PUSHATO su richiesta esplicita di Denis ("commit e push",
-camoscio `5160c14`, hook auto-save `7dd8046` rifuso con --amend prima del
-push). LA VERIFICA DAL VIVO DI DENIS E' ANCORA DA FARE - per il sesto
-lotto, e resta in sospeso anche quella di terzo, quarto e quinto (la 5a
-fatta solo "veloce" e sul sito online).
+Aggiornato: 2026-08-28 (ottava sessione, seguito). PUNTO 102, SETTIMO
+LOTTO fatto: MODERAZIONE - la sezione #pending-reports-page e
+pendingreports.js per intero (178 righe). Pagina di moderazione delle
+segnalazioni sentiero (punto 45): nessuna voce in barra, si apre solo dal
+triangolo in header (gia' col data-i18n-title dal terzo lotto), visibile
+solo a chi ha canModerateReports (oggi solo Denis). Denis: "andiamo avanti
+con la moderazione" - ordine gia' fissato dal vault, niente AskUserQuestion.
++18 chiavi (pendingReports.*, sectionTitle.pending-reports-page), var T in
+testa. Scelte:
+- titolo fisso della pagina spostato in prettyNames (app.js) +
+  sectionTitle.pending-reports-page: showPendingReportsPage non lo scrive
+  piu' a mano, ci pensa navigateTo -> updateSectionTitle, come #my-profile
+  al terzo lotto;
+- onChange che ri-chiama showPendingReportsPage (ri-fetch + ridisegno
+  lista) solo se la pagina e' attiva - fa gia' quella fetch a ogni
+  conferma/rifiuto, gate come il <select> recensioni del quinto lotto;
+- i tipi di segnalazione ("Frana"/"Ghiaccio"...) e le emoji vengono da
+  CamoscioReportTypes in map.js: NON tradotti qui, sono del lotto Mappa.
+  In EN il pannello mostra bottoni/etichette tradotti accanto ai tipi in
+  italiano - stesso caso del form DMS accanto ai comandi mappa al quarto
+  lotto. Tradotto solo il ripiego 'Avviso' -> 'Alert';
+- modale conferma-rifiuto allineato agli altri "cancella per sempre"
+  (cancelLabel T('common.cancella') + danger:true).
+VERIFICATO CON L'ESTENSIONE CHROME: login demo Marco Alpinista -> triangolo
+header NASCOSTO (non e' moderatore, corretto). Poi con canModerateReports
+e il fetch /api/reports/pending STUBBATI in memoria (2 segnalazioni finte,
+NESSUN dato vero toccato, tutto ripristinato - stesso metodo del quarto
+lotto per /api/safety/*): pagina in IT ed EN, toggle restando sulla pagina
+-> l'onChange ri-fetcha e ridisegna in EN ("Reports to Review", bottoni
+"Reject"/"Confirm", reporter fallback "user not available", tipo
+sconosciuto -> "Alert"), modale rifiuto tradotto con cancelLabel "Cancel"
+e danger:true, data in ora locale. Listener error piantato a mano: ZERO
+errori. + prova-configurazione (9/9), prova-passo-non-misurato (28/28),
+prova-invito-squadra (59/59). COMMITTATO E PUSHATO su richiesta esplicita
+di Denis ("commit e push", camoscio `e04d6e2`, hook auto-save `e116ba6`
+rifuso con --amend prima del push). LA VERIFICA DAL VIVO DI DENIS E'
+ANCORA DA FARE - per il settimo lotto, e restano in sospeso anche 3-6.
 
 Resta valido: hook "Stop" di auto-save (commit locale, MAI push) a fine di
 ogni risposta. Debito icona Bivacco Carlo Fusco (2645 m disegnati vs 2455 m
@@ -43,17 +48,18 @@ non toccati - dettaglio in cose_da_fare.txt punti 106 e 108.
 >>> APERTO PER LA PROSSIMA SESSIONE, in quest'ordine se Denis non dice
 altro:
 
-1. Verifica dal vivo di Denis dei lotti TERZO, QUARTO, QUINTO e SESTO del
-   punto 102 (tutti gia' pushati). Se segnala qualcosa, correggere prima
-   di procedere.
+1. Verifica dal vivo di Denis dei lotti 3-7 del punto 102 (tutti gia'
+   pushati). Se segnala qualcosa, correggere prima di procedere.
 
-2. PUNTO 102, LOTTO SUCCESSIVO: MODERAZIONE (pendingreports.js, la campana
-   in header, la coda di revisione). Da concordare con Denis prima di
-   iniziare, non proseguire da soli sull'ordine. Dopo, sempre da
-   confermare: la Mappa - la piu' grande e complessa -, infine il gate di
-   login/registrazione e le pagine HTML autonome (demo/conferma-email/
-   reimposta-password). Non riproporre "facciamolo tutto insieme": Denis
-   vuole un pezzo alla volta salvo un suo via libera esplicito.
+2. PUNTO 102, LOTTO SUCCESSIVO: LA MAPPA - la piu' grande e complessa
+   (livelli, progetta percorso, meteo, tracciamento, segnalazioni sulla
+   mappa + CamoscioReportTypes, il resto della barra laterale non ancora
+   tradotto accanto al form DMS gia' fatto al quarto lotto). Da concordare
+   con Denis prima di iniziare, non proseguire da soli sull'ordine. Dopo:
+   il gate di login/registrazione e le pagine HTML autonome
+   (demo/conferma-email/reimposta-password). Non riproporre "facciamolo
+   tutto insieme": Denis vuole un pezzo alla volta salvo un suo via libera
+   esplicito.
 
 3. PUNTO 106 (giro a parte): due difetti responsive PRE-ESISTENTI trovati
    verificando il terzo lotto su mobile (non regressioni della traduzione,

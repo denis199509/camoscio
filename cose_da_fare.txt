@@ -6046,6 +6046,85 @@ schermo spento ancora."
    di login/registrazione e le pagine HTML autonome
    (demo/conferma-email/reimposta-password).
 
+   ---
+
+   SETTIMO LOTTO - ottava sessione (seguito), 28/08/2026. Denis: "andiamo
+   avanti con la moderazione". L'ordine era gia' fissato dal vault, quindi
+   niente AskUserQuestion - ambito presentato in chat prima di scrivere.
+
+   Fatto: la sezione #pending-reports-page e pendingreports.js per intero
+   (178 righe). Pagina di moderazione delle segnalazioni sentiero (punto
+   45): nessuna voce in barra, si apre solo cliccando il triangolo di
+   attenzione nell'header, ed e' visibile solo a chi ha
+   canModerateReports (oggi solo Denis). Il triangolo aveva gia' il
+   data-i18n-title dal terzo lotto. +18 chiavi (pendingReports.*,
+   sectionTitle.pending-reports-page), var T in testa (non e' in una
+   IIFE). Fuori scope: i tipi di segnalazione ("Frana"/"Ghiaccio"...) e
+   le emoji vengono da window.CamoscioReportTypes in map.js - roba del
+   lotto Mappa (le usano anche i marker e la lista waze). In inglese il
+   pannello mostra bottoni ed etichette tradotti accanto ai tipi in
+   italiano - stesso caso del form DMS accanto ai comandi mappa al quarto
+   lotto. Tradotto solo il ripiego 'Avviso' -> 'Alert' per un tipo
+   sconosciuto.
+
+   Scelte non ovvie (dettaglio nel vault, 03-Decisioni-Architetturali.md
+   sottosezione "Settimo lotto"):
+   - titolo fisso della pagina ("Segnalazioni da verificare", piu' corto
+     del titolo della card "Segnalazioni sentiero da verificare"):
+     aggiunto a prettyNames (app.js) E come sectionTitle.pending-reports-
+     page -> updateSectionTitle lo mette e lo rimette da solo a ogni
+     cambio lingua, come #my-profile al terzo lotto. showPendingReportsPage
+     non scrive piu' il titolo a mano (lo fa gia' navigateTo() -> update
+     SectionTitle; resta solo un ripiego se navigateTo non c'e');
+   - onChange in pendingreports.js: se #pending-reports-page e' la sezione
+     attiva, ri-chiama showPendingReportsPage (ri-fetch + ridisegno
+     lista). La pagina fa gia' un fetch a ogni conferma/rifiuto, e il suo
+     corpo via innerHTML sarebbe stantio sotto gli occhi al cambio
+     lingua. Gate su sezione attiva come il <select> recensioni del
+     quinto lotto - nessun fetch a vuoto quando la pagina non e' in vista;
+   - modale di conferma del rifiuto allineato agli altri "cancella per
+     sempre" (carpool/social/storico): cancelLabel T('common.cancella') +
+     danger:true (prima non aveva ne' l'uno ne' l'altro);
+   - err.error dal server resta italiano (dizionario solo lato client),
+     tradotto solo il testo di ripiego dei toast;
+   - data della segnalazione (giorno/mese ora:minuti, solo cifre): locale
+     en-GB/it-IT esplicito invece di toLocaleString([]) che segue il
+     browser.
+
+   VERIFICATO CON L'ESTENSIONE CHROME: login demo Marco Alpinista ->
+   triangolo header NASCOSTO (non e' moderatore, corretto). Poi con
+   canModerateReports messo a true in memoria E il fetch
+   /api/reports/pending STUBBATO (due segnalazioni finte, NESSUN DATO
+   VERO toccato, fetch e flag ripristinati subito dopo, stesso metodo del
+   quarto lotto per /api/safety/*): pagina in italiano e inglese, toggle
+   lingua RESTANDO sulla pagina -> l'onChange ri-fetcha dallo stub e
+   ridisegna la lista in EN (titolo "Reports to Review", card "Trail
+   reports to review", "Reported by ... on 20/08, 11:14 — coord: ...",
+   bottoni "Reject"/"Confirm", reporter fallback "user not available",
+   tipo sconosciuto -> "Alert"). Modale rifiuto intercettato: "Rejecting
+   this report deletes it permanently...", "Reject and delete",
+   cancelLabel "Cancel", danger:true. Data in ora locale (createdAt
+   09:14Z -> 11:14). Toggle back a IT ok. Listener error e
+   unhandledrejection piantato a mano: ZERO errori. Screenshot del
+   layout EN. Anche prova-configurazione.js (9/9),
+   prova-passo-non-misurato.js (28/28), prova-invito-squadra.js (59/59).
+
+   COMMITTATO E PUSHATO su richiesta esplicita di Denis ("commit e
+   push"), camoscio `e04d6e2`. L'hook di auto-save aveva gia' fatto un
+   commit locale generico (e116ba6): rifuso con git commit --amend prima
+   del push, stessa procedura dei lotti precedenti. VERIFICA DAL VIVO DI
+   DENIS ANCORA DA FARE - per il settimo lotto, e restano in sospeso
+   anche 3-6.
+
+   RIPARTIRE DA: verifica dal vivo di Denis dei lotti 3-7 (se segnala
+   qualcosa, correggere prima di procedere). Poi il lotto successivo e'
+   la MAPPA - la piu' grande e complessa (livelli, progetta percorso,
+   meteo, tracciamento, segnalazioni sulla mappa + CamoscioReportTypes,
+   la barra laterale col resto non ancora tradotto accanto al form DMS
+   gia' fatto al quarto lotto). Da concordare con Denis prima di
+   iniziare. Dopo, il gate di login/registrazione e le pagine HTML
+   autonome (demo/conferma-email/reimposta-password).
+
 =====================================================================
 
 103. [22/08/2026, trovato durante il punto 102, non richiesto] Denis,
