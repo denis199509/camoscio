@@ -1830,7 +1830,126 @@
             'pwdReset.serverError': "I can't reach the server. Check your connection and reload the page.",
             'pwdReset.changeFailed': 'Could not change the password.',
             'pwdReset.doneLoggedIn': "You're already in: you can go back to the site and carry on.",
-            'pwdReset.doneNotLoggedIn': 'You can now log in with the new password.'
+            'pwdReset.doneNotLoggedIn': 'You can now log in with the new password.',
+
+            // --- diagnostica-gps.html (strumento di debug GPS) ---
+            //  Pagina autonoma, dipendenze zero: carica i18n.js a fine <body>
+            //  come demo / conferma-email / reimposta-password. Prefisso 'diag.*'.
+            //  1) Testo statico -> data-i18n / data-i18n-html (le 2 note con
+            //     <em>). "Esito" / "Tempo impiegato" / "Messaggio del browser"
+            //     sono identiche nelle card 2 e 3: chiave unica condivisa
+            //     (diag.lbl.*).
+            //  2) <title> resta IT, come le pagine del gate
+            //     (applyStaticTranslations non tocca <title>).
+            //  3) #btn-avvia / #btn-copia: qui la sola etichetta di partenza.
+            //     Gli stati transitori ("Diagnosi in corso…", "Copiato ✓", …) e
+            //     tutte le stringhe generate da JS arrivano da T() nello script
+            //     inline (punto 3 del lavoro). Nessun onChange sulla pagina: un
+            //     cambio lingua a diagnosi in corso rimette l'etichetta di
+            //     partenza, si risistema da sola a fine run - residuo accettato,
+            //     coerente con la pagina ("residuo onesto" come chatpanel.js).
+            'diag.h1': 'GPS Diagnosis',
+            'diag.sub': "Works out <em>why</em> the blue dot won't appear. Open it on the phone that has the problem, and run it outdoors if you can.",
+            'diag.btnAvvia': 'Start the diagnosis',
+            'diag.btnCopia': 'Copy the report',
+            'diag.verdetto.titolo': 'What we found',
+            'diag.card1.titolo': '1. The page',
+            'diag.card1.secure': 'Secure connection (https)',
+            'diag.card1.indirizzo': 'Address',
+            'diag.card1.api': 'Geolocation API',
+            'diag.card1.perm': 'Permission, per the browser',
+            'diag.card2.titolo': '2. High-accuracy position',
+            'diag.card2.nota': 'This is what the app uses for the dot. It asks for real GPS (the satellites).',
+            'diag.lbl.esito': 'Outcome',
+            'diag.lbl.tempo': 'Time taken',
+            'diag.lbl.msgBrowser': 'Browser message',
+            'diag.card3.titolo': '3. Approximate position',
+            'diag.card3.nota': 'Without satellites, estimated from wi-fi and phone masts. If only this one works, the problem is GPS not locking on — not a permission.',
+            'diag.card4.titolo': '4. Continuous tracking (20 s)',
+            'diag.card4.nota': 'This is how the app follows your position as you walk. If you can, move a few steps while it runs.',
+            'diag.card4.ricevute': 'Positions received',
+            'diag.card4.migliorePrec': 'Best accuracy',
+            'diag.card4.errori': 'Errors',
+            'diag.card5.titolo': '5. Phone and browser',
+            'diag.card5.browser': 'Browser',
+            'diag.card5.schermo': 'Screen',
+            'diag.notaPrivacy': "The exact coordinates do NOT appear on this page, nor in the report you copy: for the diagnosis, all that matters is <em>whether</em> a position arrives and how accurate it is, not where you are. It's the same rule that keeps emergency contacts out of the project's files.",
+            'diag.tornaCamoscio': '← Back to Camoscio',
+
+            //  diagnostica-gps.html - stringhe generate da JS nello script inline
+            //  (stati, esiti, etichette dei bottoni durante un run). Ripiego IT
+            //  a fianco nel codice: T('diag.js.x') || "testo italiano".
+            //  I decimali dei secondi passano da numLoc() (virgola IT / punto EN,
+            //  come decimaleMeteo/numTracc). componiRapporto() resta IT: e' il
+            //  testo tecnico da incollare per assistenza, non interfaccia.
+            'diag.js.code1': '1 — PERMISSION_DENIED (permission denied)',
+            'diag.js.code2': '2 — POSITION_UNAVAILABLE (position not computable)',
+            'diag.js.code3': '3 — TIMEOUT (timed out)',
+            'diag.js.apiNonDisp': 'API not available',
+            'diag.js.nessunMsg': '(no message)',
+            'diag.js.btnInCorso': 'Diagnosis running… (about 1 minute)',
+            'diag.js.btnRipeti': 'Run the diagnosis again',
+            'diag.js.si': 'yes',
+            'diag.js.noHttps': 'NO — GPS is blocked without https',
+            'diag.js.presente': 'present',
+            'diag.js.assente': 'ABSENT',
+            'diag.js.permGranted': 'allowed',
+            'diag.js.permDenied': 'DENIED',
+            'diag.js.permPrompt': 'will be asked',
+            'diag.js.permMuto': "the browser won't say (normal on iPhone)",
+            'diag.js.inCorso20': 'running… (up to 20 seconds)',
+            'diag.js.inCorso15': 'running… (up to 15 seconds)',
+            'diag.js.inCorsoWatch': 'running… (20 seconds)',
+            'diag.js.posOttenuta': 'position obtained',
+            'diag.js.precisione': 'accuracy',
+            'diag.js.metri': 'metres',
+            'diag.js.errore': 'error',
+            'diag.js.secondi': 'seconds',
+            'diag.js.posizioniIn20': 'positions in 20 seconds',
+            'diag.js.nessuno': 'none',
+            'diag.js.punti': 'points',
+            'diag.js.codice': 'code',
+            'diag.js.copiato': 'Copied ✓',
+            'diag.js.copiaMano': 'Copy the text below by hand',
+
+            //  Il verdetto (mostraVerdetto): 8 rami, ognuno un blocco HTML con
+            //  <strong>/<code>/<em>/<ol>. Testo istruttivo - resa fedele al
+            //  registro diretto dell'italiano. 'diag.verd.altro' e' una funzione
+            //  (ci incolla i due codici errore). guidaSblocco: 'diag.guida.*'.
+            //  I passaggi delle impostazioni sono le diciture inglesi reali di
+            //  Android/iOS (Location Services, "While Using the App", ecc.).
+            'diag.verd.noSecure': '<p><strong>This page is not on a secure connection.</strong> Browsers block GPS for any page opened over <code>http</code>, and still answer «permission denied». It is not a block you set.</p><p>Open <code>https://camoscio.onrender.com/diagnostica-gps.html</code> and try again.</p>',
+            'diag.verd.noApi': '<p><strong>This browser has no geolocation.</strong> That is very rare: try an up-to-date Chrome or Safari.</p>',
+            'diag.verd.okBase': "<p><strong>The phone has your position.</strong> Permissions are fine: from here on the blue dot should appear.</p>",
+            'diag.verd.okSoloBassa': '<p>Note: only the approximate position worked. That means the <strong>GPS cannot see the satellites</strong> — it happens indoors, under thick tree cover or in a narrow valley. It improves on its own outdoors. The app now falls back to this estimate instead of showing you nothing, and draws the accuracy circle around the dot.</p>',
+            'diag.verd.okEnd': '<p>If the dot still does not show in the app while the position <em>does</em> arrive here, then the fault is in the app: report it along with this report.</p>',
+            'diag.verd.bloccato': '<p><strong>The permission is blocked by the browser</strong> (code 1). Once blocked, a web page can no longer ask for it on its own: it has to be reopened by hand.</p>',
+            'diag.verd.nessunaFonte': '<p><strong>No position source is switched on on the phone</strong> (code 2, and the answer came back at once: the phone did not even try).</p>' +
+                '<p>The site permission may read «allowed» and change nothing: there are two more levels beneath it, and one closed is enough. That is exactly what the <strong>warning triangle</strong> Chrome puts next to the permission means.</p>' +
+                '<ol>' +
+                '<li><strong>Device location</strong> — swipe down the quick-settings panel and check the <em>Location</em> icon is on. Or: Android Settings → Location. <strong>It is the number-one suspect</strong> when the other two are already fine.</li>' +
+                '<li><strong>Chrome app permission</strong> — Settings → Apps → Chrome → Permissions → Location → «Allow only while using the app», and check that <em>Use precise location</em> is on.</li>' +
+                '<li><strong>Battery saver</strong> — if it is on, it turns GPS off on many phones. Turn it off and try again.</li>' +
+                '</ol>' +
+                '<p>Shortcut: tap the warning triangle directly in the padlock panel. Chrome says there what it is missing and opens the right settings.</p>',
+            'diag.verd.timeout': '<p><strong>The permission is there, but no position arrived in time</strong> (code 3 on both tests).</p>' +
+                '<p>On the first fix of the day, standing still and indoors, it can take more than a minute. Redo the test <strong>outdoors with the sky in view</strong>: that is the condition the site is really used in.</p>',
+            'diag.verd.altro': function (ca, cb) {
+                return '<p><strong>The permission does not look blocked, but no position arrives</strong> (code ' +
+                    ca + ' at high accuracy, code ' + cb + ' approximate).</p>' +
+                    '<p>Redo the test outdoors. If it stays like this outside too, check the three levels:</p>';
+            },
+            'diag.guida.android': '<p><strong>Android (Chrome)</strong></p><ol>' +
+                '<li>Quick-settings panel → <em>Location</em> on</li>' +
+                '<li>Android Settings → Apps → Chrome → Permissions → Location → allowed, with <em>precise location</em> on</li>' +
+                '<li>On the site: padlock next to the address → Permissions → Location → Allow</li>' +
+                '</ol>',
+            'diag.guida.ios': '<p><strong>iPhone / iPad (Safari)</strong></p><ol>' +
+                '<li>iOS Settings → Privacy &amp; Security → Location Services: on</li>' +
+                '<li>On the same screen, further down: Safari → «While Using the App» <em>(this is the most common case, and cannot be told apart from the next one from the site)</em></li>' +
+                '<li>On the site: «aA» in the address bar → Website Settings → Location → Allow</li>' +
+                '</ol>',
+            'diag.guida.ricarica': '<p>Then reload the page.</p>'
         }
     };
 

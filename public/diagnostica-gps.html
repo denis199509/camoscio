@@ -115,69 +115,128 @@
     }
     .nota { color: var(--text-dim); font-size: 0.82rem; margin-top: 8px; }
     a { color: var(--info); }
+
+    /* Selettore lingua IT/EN. Questa pagina NON carica styles.css (dipendenze
+       zero, vedi commento in testa), quindi le regole di .lang-switcher /
+       .lang-flag-btn stanno qui - copiate da styles.css, riprendono le stesse
+       --bg-card / --border-color gia' definite sopra. */
+    .lang-switcher {
+        display: inline-flex;
+        gap: 2px;
+        padding: 3px;
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+    }
+    .lang-flag-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 30px;
+        height: 30px;
+        padding: 0;
+        border: none;
+        background: transparent;
+        border-radius: 7px;
+        cursor: pointer;
+        opacity: 0.45;
+        transition: opacity 0.15s ease, background 0.15s ease;
+    }
+    .lang-flag-btn svg { width: 20px; height: 14px; border-radius: 2px; display: block; }
+    .lang-flag-btn:hover { opacity: 0.8; }
+    .lang-flag-btn.active { opacity: 1; background: rgba(255, 255, 255, 0.08); }
 </style>
 </head>
 <body>
 
-<h1>Diagnosi GPS</h1>
-<p class="sub">Serve a capire <em>perché</em> il puntino blu non compare. Aprila dal telefono con cui hai il problema, e falla girare all'aperto se puoi.</p>
+<!-- Bandiere IT/EN: questa pagina vive fuori dall'app (nessun header), quindi
+     porta il proprio selettore, come le altre 3 pagine autonome del gate.
+     i18n.js aggancia da solo tutte le .lang-flag-btn del documento. -->
+<div style="text-align:center;margin-bottom:16px;">
+    <div class="lang-switcher" role="group" aria-label="Lingua / Language">
+        <button type="button" class="lang-flag-btn" data-lang="it" title="Italiano" aria-label="Italiano" aria-pressed="true">
+            <svg viewBox="0 0 3 2" aria-hidden="true"><rect width="1" height="2" fill="#009246"/><rect width="1" height="2" x="1" fill="#fff"/><rect width="1" height="2" x="2" fill="#ce2b37"/></svg>
+        </button>
+        <button type="button" class="lang-flag-btn" data-lang="en" title="English" aria-label="English" aria-pressed="false">
+            <svg viewBox="0 0 60 30" aria-hidden="true"><rect width="60" height="30" fill="#00247d"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" stroke-width="6"/><path d="M30,0 V30 M0,15 H60" stroke="#fff" stroke-width="10"/><path d="M30,0 V30 M0,15 H60" stroke="#cf142b" stroke-width="6"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#cf142b" stroke-width="2"/></svg>
+        </button>
+    </div>
+</div>
 
-<button id="btn-avvia">Avvia la diagnosi</button>
-<button id="btn-copia" class="secondario" style="display:none">Copia il rapporto</button>
+<h1 data-i18n="diag.h1">Diagnosi GPS</h1>
+<p class="sub" data-i18n-html="diag.sub">Serve a capire <em>perché</em> il puntino blu non compare. Aprila dal telefono con cui hai il problema, e falla girare all'aperto se puoi.</p>
+
+<button id="btn-avvia" data-i18n="diag.btnAvvia">Avvia la diagnosi</button>
+<button id="btn-copia" class="secondario" style="display:none" data-i18n="diag.btnCopia">Copia il rapporto</button>
 
 <div class="card" id="verdetto" style="display:none">
-    <h2>Cosa risulta</h2>
+    <h2 data-i18n="diag.verdetto.titolo">Cosa risulta</h2>
     <div id="verdetto-testo"></div>
 </div>
 
 <div class="card">
-    <h2>1. La pagina</h2>
-    <div class="riga"><div class="etichetta">Connessione sicura (https)</div><div class="valore" id="r-secure">—</div></div>
-    <div class="riga"><div class="etichetta">Indirizzo</div><div class="valore" id="r-origin">—</div></div>
-    <div class="riga"><div class="etichetta">API geolocalizzazione</div><div class="valore" id="r-api">—</div></div>
-    <div class="riga"><div class="etichetta">Permesso secondo il browser</div><div class="valore" id="r-perm">—</div></div>
+    <h2 data-i18n="diag.card1.titolo">1. La pagina</h2>
+    <div class="riga"><div class="etichetta" data-i18n="diag.card1.secure">Connessione sicura (https)</div><div class="valore" id="r-secure">—</div></div>
+    <div class="riga"><div class="etichetta" data-i18n="diag.card1.indirizzo">Indirizzo</div><div class="valore" id="r-origin">—</div></div>
+    <div class="riga"><div class="etichetta" data-i18n="diag.card1.api">API geolocalizzazione</div><div class="valore" id="r-api">—</div></div>
+    <div class="riga"><div class="etichetta" data-i18n="diag.card1.perm">Permesso secondo il browser</div><div class="valore" id="r-perm">—</div></div>
 </div>
 
 <div class="card">
-    <h2>2. Posizione ad alta precisione</h2>
-    <p class="nota" style="margin-top:0;margin-bottom:8px">È quella che usa l'app per il puntino. Chiede il GPS vero (i satelliti).</p>
-    <div class="riga"><div class="etichetta">Esito</div><div class="valore" id="r-alta">—</div></div>
-    <div class="riga"><div class="etichetta">Tempo impiegato</div><div class="valore" id="r-alta-tempo">—</div></div>
-    <div class="riga"><div class="etichetta">Messaggio del browser</div><div class="valore" id="r-alta-msg">—</div></div>
+    <h2 data-i18n="diag.card2.titolo">2. Posizione ad alta precisione</h2>
+    <p class="nota" style="margin-top:0;margin-bottom:8px" data-i18n="diag.card2.nota">È quella che usa l'app per il puntino. Chiede il GPS vero (i satelliti).</p>
+    <div class="riga"><div class="etichetta" data-i18n="diag.lbl.esito">Esito</div><div class="valore" id="r-alta">—</div></div>
+    <div class="riga"><div class="etichetta" data-i18n="diag.lbl.tempo">Tempo impiegato</div><div class="valore" id="r-alta-tempo">—</div></div>
+    <div class="riga"><div class="etichetta" data-i18n="diag.lbl.msgBrowser">Messaggio del browser</div><div class="valore" id="r-alta-msg">—</div></div>
 </div>
 
 <div class="card">
-    <h2>3. Posizione approssimativa</h2>
-    <p class="nota" style="margin-top:0;margin-bottom:8px">Senza satelliti, stimata da wi-fi e celle telefoniche. Se funziona solo questa, il problema è il GPS che non aggancia — non un permesso.</p>
-    <div class="riga"><div class="etichetta">Esito</div><div class="valore" id="r-bassa">—</div></div>
-    <div class="riga"><div class="etichetta">Tempo impiegato</div><div class="valore" id="r-bassa-tempo">—</div></div>
-    <div class="riga"><div class="etichetta">Messaggio del browser</div><div class="valore" id="r-bassa-msg">—</div></div>
+    <h2 data-i18n="diag.card3.titolo">3. Posizione approssimativa</h2>
+    <p class="nota" style="margin-top:0;margin-bottom:8px" data-i18n="diag.card3.nota">Senza satelliti, stimata da wi-fi e celle telefoniche. Se funziona solo questa, il problema è il GPS che non aggancia — non un permesso.</p>
+    <div class="riga"><div class="etichetta" data-i18n="diag.lbl.esito">Esito</div><div class="valore" id="r-bassa">—</div></div>
+    <div class="riga"><div class="etichetta" data-i18n="diag.lbl.tempo">Tempo impiegato</div><div class="valore" id="r-bassa-tempo">—</div></div>
+    <div class="riga"><div class="etichetta" data-i18n="diag.lbl.msgBrowser">Messaggio del browser</div><div class="valore" id="r-bassa-msg">—</div></div>
 </div>
 
 <div class="card">
-    <h2>4. Inseguimento continuo (20 s)</h2>
-    <p class="nota" style="margin-top:0;margin-bottom:8px">È il modo in cui l'app segue la posizione mentre cammini. Se puoi, muoviti di qualche passo mentre gira.</p>
-    <div class="riga"><div class="etichetta">Posizioni ricevute</div><div class="valore" id="r-watch">—</div></div>
-    <div class="riga"><div class="etichetta">Precisione migliore</div><div class="valore" id="r-watch-prec">—</div></div>
-    <div class="riga"><div class="etichetta">Errori</div><div class="valore" id="r-watch-err">—</div></div>
+    <h2 data-i18n="diag.card4.titolo">4. Inseguimento continuo (20 s)</h2>
+    <p class="nota" style="margin-top:0;margin-bottom:8px" data-i18n="diag.card4.nota">È il modo in cui l'app segue la posizione mentre cammini. Se puoi, muoviti di qualche passo mentre gira.</p>
+    <div class="riga"><div class="etichetta" data-i18n="diag.card4.ricevute">Posizioni ricevute</div><div class="valore" id="r-watch">—</div></div>
+    <div class="riga"><div class="etichetta" data-i18n="diag.card4.migliorePrec">Precisione migliore</div><div class="valore" id="r-watch-prec">—</div></div>
+    <div class="riga"><div class="etichetta" data-i18n="diag.card4.errori">Errori</div><div class="valore" id="r-watch-err">—</div></div>
 </div>
 
 <div class="card">
-    <h2>5. Telefono e browser</h2>
-    <div class="riga"><div class="etichetta">Browser</div><div class="valore" id="r-ua">—</div></div>
-    <div class="riga"><div class="etichetta">Schermo</div><div class="valore" id="r-schermo">—</div></div>
+    <h2 data-i18n="diag.card5.titolo">5. Telefono e browser</h2>
+    <div class="riga"><div class="etichetta" data-i18n="diag.card5.browser">Browser</div><div class="valore" id="r-ua">—</div></div>
+    <div class="riga"><div class="etichetta" data-i18n="diag.card5.schermo">Schermo</div><div class="valore" id="r-schermo">—</div></div>
 </div>
 
-<p class="nota">
+<p class="nota" data-i18n-html="diag.notaPrivacy">
     Le coordinate esatte NON compaiono in questa pagina né nel rapporto da copiare: per
     la diagnosi conta solo <em>se</em> una posizione arriva e con quanta precisione, non
     dove ti trovi. È la stessa regola per cui i contatti di emergenza non finiscono nei
     file del progetto.
 </p>
-<p class="nota"><a href="/">← Torna a Camoscio</a></p>
+<p class="nota"><a href="/" data-i18n="diag.tornaCamoscio">← Torna a Camoscio</a></p>
 
+<!-- i18n.js PRIMA dello script inline (a fine body, cosi' vede gia' il DOM):
+     stesso schema di demo.html / conferma-email.html / reimposta-password.html. -->
+<script src="js/i18n.js"></script>
 <script>
 "use strict";
+
+// Non e' in una IIFE: var, non const (come le altre pagine autonome).
+// Ripiego a funzione-che-torna-null: se i18n.js non c'e', la pagina resta IT.
+var T = (window.CamoscioI18n && window.CamoscioI18n.t) || function () { return null; };
+
+// Decimali dei secondi: virgola in italiano, punto in inglese - come
+// decimaleMeteo (weather.js) e numTracc (tracking.js) nel resto del punto 102.
+function numLoc(n) {
+    var s = n.toFixed(1);
+    var lang = (window.CamoscioI18n && window.CamoscioI18n.getLang && window.CamoscioI18n.getLang()) || 'it';
+    return lang === 'en' ? s : s.replace('.', ',');
+}
 
 // Raccoglie tutto quello che si scopre, cosi' il pulsante "Copia il rapporto" puo'
 // ricostruire un testo unico da incollare. Senza, l'unica alternativa sarebbe
@@ -202,9 +261,9 @@ function scrivi(id, testo, classePallino) {
 // I codici dell'API sono tre e hanno rimedi OPPOSTI: confonderli e' esattamente
 // l'errore che l'app faceva prima (un solo messaggio per tutti i casi).
 function nomeCodice(code) {
-    if (code === 1) return "1 — PERMISSION_DENIED (permesso negato)";
-    if (code === 2) return "2 — POSITION_UNAVAILABLE (posizione non calcolabile)";
-    if (code === 3) return "3 — TIMEOUT (tempo scaduto)";
+    if (code === 1) return T('diag.js.code1') || "1 — PERMISSION_DENIED (permesso negato)";
+    if (code === 2) return T('diag.js.code2') || "2 — POSITION_UNAVAILABLE (posizione non calcolabile)";
+    if (code === 3) return T('diag.js.code3') || "3 — TIMEOUT (tempo scaduto)";
     return String(code);
 }
 
@@ -212,7 +271,7 @@ function posizioneUnaVolta(opzioni) {
     return new Promise(resolve => {
         const partenza = Date.now();
         if (!navigator.geolocation) {
-            resolve({ ok: false, code: null, message: "API non disponibile", ms: 0 });
+            resolve({ ok: false, code: null, message: T('diag.js.apiNonDisp') || "API non disponibile", ms: 0 });
             return;
         }
         navigator.geolocation.getCurrentPosition(
@@ -225,7 +284,7 @@ function posizioneUnaVolta(opzioni) {
             err => resolve({
                 ok: false,
                 code: err.code,
-                message: err.message || "(nessun messaggio)",
+                message: err.message || T('diag.js.nessunMsg') || "(nessun messaggio)",
                 ms: Date.now() - partenza
             }),
             opzioni
@@ -236,18 +295,19 @@ function posizioneUnaVolta(opzioni) {
 async function diagnosi() {
     const btn = document.getElementById("btn-avvia");
     btn.disabled = true;
-    btn.textContent = "Diagnosi in corso… (circa 1 minuto)";
+    btn.textContent = T('diag.js.btnInCorso') || "Diagnosi in corso… (circa 1 minuto)";
 
     // --- 1. La pagina ---
     esiti.secure = window.isSecureContext;
-    scrivi("r-secure", esiti.secure ? "sì" : "NO — il GPS è vietato senza https",
+    scrivi("r-secure",
+           esiti.secure ? (T('diag.js.si') || "sì") : (T('diag.js.noHttps') || "NO — il GPS è vietato senza https"),
            esiti.secure ? "p-ok" : "p-ko");
 
     esiti.origin = location.origin;
     scrivi("r-origin", esiti.origin);
 
     esiti.api = !!navigator.geolocation;
-    scrivi("r-api", esiti.api ? "presente" : "ASSENTE", esiti.api ? "p-ok" : "p-ko");
+    scrivi("r-api", esiti.api ? (T('diag.js.presente') || "presente") : (T('diag.js.assente') || "ASSENTE"), esiti.api ? "p-ok" : "p-ko");
 
     // Su Safari/iOS query() SOLLEVA un'eccezione invece di rispondere: 'geolocation' non
     // e' un nome valido li'. Va sempre avvolta, altrimenti la diagnosi si pianta proprio
@@ -256,16 +316,20 @@ async function diagnosi() {
         if (navigator.permissions && navigator.permissions.query) {
             const p = await navigator.permissions.query({ name: "geolocation" });
             esiti.permesso = p.state;
-            const etichette = { granted: "consentito", denied: "NEGATO", prompt: "da chiedere" };
+            const etichette = {
+                granted: T('diag.js.permGranted') || "consentito",
+                denied: T('diag.js.permDenied') || "NEGATO",
+                prompt: T('diag.js.permPrompt') || "da chiedere"
+            };
             const pallini = { granted: "p-ok", denied: "p-ko", prompt: "p-warn" };
             scrivi("r-perm", etichette[p.state] || p.state, pallini[p.state] || "p-warn");
         } else {
             esiti.permesso = "non-interrogabile";
-            scrivi("r-perm", "il browser non lo dice (normale su iPhone)", "p-warn");
+            scrivi("r-perm", T('diag.js.permMuto') || "il browser non lo dice (normale su iPhone)", "p-warn");
         }
     } catch (e) {
         esiti.permesso = "non-interrogabile";
-        scrivi("r-perm", "il browser non lo dice (normale su iPhone)", "p-warn");
+        scrivi("r-perm", T('diag.js.permMuto') || "il browser non lo dice (normale su iPhone)", "p-warn");
     }
 
     // --- 2. Alta precisione ---
@@ -273,17 +337,17 @@ async function diagnosi() {
     // e nell'app no, allora il difetto e' nell'app e non nel telefono. maximumAge:0 e'
     // l'unica differenza, ed e' voluta: una posizione riciclata dalla cache direbbe
     // "tutto a posto" anche con il GPS spento un minuto fa.
-    scrivi("r-alta", "in corso… (fino a 20 secondi)", "p-attesa");
+    scrivi("r-alta", T('diag.js.inCorso20') || "in corso… (fino a 20 secondi)", "p-attesa");
     const alta = await posizioneUnaVolta({ enableHighAccuracy: true, maximumAge: 0, timeout: 20000 });
     esiti.alta = alta;
     if (alta.ok) {
-        scrivi("r-alta", "posizione ottenuta", "p-ok");
-        scrivi("r-alta-msg", "precisione " + Math.round(alta.precisione) + " metri");
+        scrivi("r-alta", T('diag.js.posOttenuta') || "posizione ottenuta", "p-ok");
+        scrivi("r-alta-msg", (T('diag.js.precisione') || "precisione") + " " + Math.round(alta.precisione) + " " + (T('diag.js.metri') || "metri"));
     } else {
-        scrivi("r-alta", "errore " + nomeCodice(alta.code), "p-ko");
+        scrivi("r-alta", (T('diag.js.errore') || "errore") + " " + nomeCodice(alta.code), "p-ko");
         scrivi("r-alta-msg", alta.message);
     }
-    scrivi("r-alta-tempo", (alta.ms / 1000).toFixed(1) + " secondi");
+    scrivi("r-alta-tempo", numLoc(alta.ms / 1000) + " " + (T('diag.js.secondi') || "secondi"));
 
     // --- 3. Bassa precisione ---
     // Il discriminante piu' utile di tutta la pagina. Se l'alta fallisce e la bassa
@@ -291,35 +355,35 @@ async function diagnosi() {
     // (al chiuso, sotto il bosco, in valle stretta). Se falliscono ENTRAMBE con il
     // codice 2 e in pochi decimi di secondo, non c'e' nessuna fonte di posizione
     // accesa: e' l'interruttore generale del telefono, non il sito.
-    scrivi("r-bassa", "in corso… (fino a 15 secondi)", "p-attesa");
+    scrivi("r-bassa", T('diag.js.inCorso15') || "in corso… (fino a 15 secondi)", "p-attesa");
     const bassa = await posizioneUnaVolta({ enableHighAccuracy: false, maximumAge: 0, timeout: 15000 });
     esiti.bassa = bassa;
     if (bassa.ok) {
-        scrivi("r-bassa", "posizione ottenuta", "p-ok");
-        scrivi("r-bassa-msg", "precisione " + Math.round(bassa.precisione) + " metri");
+        scrivi("r-bassa", T('diag.js.posOttenuta') || "posizione ottenuta", "p-ok");
+        scrivi("r-bassa-msg", (T('diag.js.precisione') || "precisione") + " " + Math.round(bassa.precisione) + " " + (T('diag.js.metri') || "metri"));
     } else {
-        scrivi("r-bassa", "errore " + nomeCodice(bassa.code), "p-ko");
+        scrivi("r-bassa", (T('diag.js.errore') || "errore") + " " + nomeCodice(bassa.code), "p-ko");
         scrivi("r-bassa-msg", bassa.message);
     }
-    scrivi("r-bassa-tempo", (bassa.ms / 1000).toFixed(1) + " secondi");
+    scrivi("r-bassa-tempo", numLoc(bassa.ms / 1000) + " " + (T('diag.js.secondi') || "secondi"));
 
     // --- 4. Inseguimento continuo ---
-    scrivi("r-watch", "in corso… (20 secondi)", "p-attesa");
+    scrivi("r-watch", T('diag.js.inCorsoWatch') || "in corso… (20 secondi)", "p-attesa");
     const watch = await provaWatch(20000);
     esiti.watch = watch;
-    scrivi("r-watch", watch.fix + " posizioni in 20 secondi", watch.fix > 0 ? "p-ok" : "p-ko");
-    scrivi("r-watch-prec", watch.miglioreP === null ? "—" : Math.round(watch.miglioreP) + " metri");
-    scrivi("r-watch-err", watch.errori.length ? watch.errori.join(" · ") : "nessuno");
+    scrivi("r-watch", watch.fix + " " + (T('diag.js.posizioniIn20') || "posizioni in 20 secondi"), watch.fix > 0 ? "p-ok" : "p-ko");
+    scrivi("r-watch-prec", watch.miglioreP === null ? "—" : Math.round(watch.miglioreP) + " " + (T('diag.js.metri') || "metri"));
+    scrivi("r-watch-err", watch.errori.length ? watch.errori.join(" · ") : (T('diag.js.nessuno') || "nessuno"));
 
     // --- 5. Telefono ---
     esiti.ua = navigator.userAgent;
     scrivi("r-ua", navigator.userAgent);
     esiti.schermo = window.innerWidth + "×" + window.innerHeight;
-    scrivi("r-schermo", esiti.schermo + " punti");
+    scrivi("r-schermo", esiti.schermo + " " + (T('diag.js.punti') || "punti"));
 
     mostraVerdetto();
 
-    btn.textContent = "Ripeti la diagnosi";
+    btn.textContent = T('diag.js.btnRipeti') || "Ripeti la diagnosi";
     btn.disabled = false;
     document.getElementById("btn-copia").style.display = "block";
 }
@@ -337,7 +401,7 @@ function provaWatch(durataMs) {
                 }
             },
             err => {
-                const testo = "codice " + err.code;
+                const testo = (T('diag.js.codice') || "codice") + " " + err.code;
                 // Un errore ripetuto e' lo stesso errore: elencarlo trenta volte
                 // riempirebbe lo schermo senza aggiungere niente.
                 if (!risultato.errori.includes(testo)) risultato.errori.push(testo);
@@ -364,24 +428,30 @@ function mostraVerdetto() {
 
     if (!esiti.secure) {
         classe = "esito-ko";
-        html = "<p><strong>La pagina non è su una connessione sicura.</strong> I browser vietano il GPS a qualunque pagina aperta in <code>http</code>, e rispondono comunque «permesso negato». Non è un blocco che hai messo tu.</p>" +
-               "<p>Apri <code>https://camoscio.onrender.com/diagnostica-gps.html</code> e riprova.</p>";
+        html = T('diag.verd.noSecure') ||
+               ("<p><strong>La pagina non è su una connessione sicura.</strong> I browser vietano il GPS a qualunque pagina aperta in <code>http</code>, e rispondono comunque «permesso negato». Non è un blocco che hai messo tu.</p>" +
+                "<p>Apri <code>https://camoscio.onrender.com/diagnostica-gps.html</code> e riprova.</p>");
     }
     else if (!esiti.api) {
         classe = "esito-ko";
-        html = "<p><strong>Questo browser non ha la geolocalizzazione.</strong> È molto raro: prova con Chrome o Safari aggiornati.</p>";
+        html = T('diag.verd.noApi') ||
+               "<p><strong>Questo browser non ha la geolocalizzazione.</strong> È molto raro: prova con Chrome o Safari aggiornati.</p>";
     }
     else if (alta.ok || bassa.ok) {
         classe = "esito-ok";
-        html = "<p><strong>Il telefono la posizione ce l'ha.</strong> Permessi a posto: da qui in poi il puntino blu deve comparire.</p>";
+        html = T('diag.verd.okBase') ||
+               "<p><strong>Il telefono la posizione ce l'ha.</strong> Permessi a posto: da qui in poi il puntino blu deve comparire.</p>";
         if (!alta.ok && bassa.ok) {
-            html += "<p>Nota: ha funzionato solo la posizione approssimativa. Vuol dire che il <strong>GPS non vede i satelliti</strong> — succede al chiuso, sotto il bosco fitto o in una valle stretta. All'aperto migliora da sola. L'app ora ripiega su questa stima invece di non mostrarti niente, e disegna il cerchio dell'imprecisione attorno al puntino.</p>";
+            html += T('diag.verd.okSoloBassa') ||
+                    "<p>Nota: ha funzionato solo la posizione approssimativa. Vuol dire che il <strong>GPS non vede i satelliti</strong> — succede al chiuso, sotto il bosco fitto o in una valle stretta. All'aperto migliora da sola. L'app ora ripiega su questa stima invece di non mostrarti niente, e disegna il cerchio dell'imprecisione attorno al puntino.</p>";
         }
-        html += "<p>Se nell'app il puntino ancora non si vede mentre <em>qui</em> la posizione arriva, allora il difetto è nell'app: riferiscilo insieme a questo rapporto.</p>";
+        html += T('diag.verd.okEnd') ||
+                "<p>Se nell'app il puntino ancora non si vede mentre <em>qui</em> la posizione arriva, allora il difetto è nell'app: riferiscilo insieme a questo rapporto.</p>";
     }
     else if (alta.code === 1 || bassa.code === 1) {
         classe = "esito-ko";
-        html = "<p><strong>Il permesso è bloccato dal browser</strong> (codice 1). Una pagina web, una volta bloccata, non può più richiederlo da sola: va riaperto a mano.</p>" + guidaSblocco();
+        html = (T('diag.verd.bloccato') ||
+                "<p><strong>Il permesso è bloccato dal browser</strong> (codice 1). Una pagina web, una volta bloccata, non può più richiederlo da sola: va riaperto a mano.</p>") + guidaSblocco();
     }
     else if ((alta.code === 2 && bassa.code === 2) && alta.ms < 3000 && bassa.ms < 3000) {
         // Il caso piu' frequente su Android, e quello che l'app spiegava MALE: diceva
@@ -390,24 +460,28 @@ function mostraVerdetto() {
         // un GPS che ci prova e non ce la fa, e' un telefono che non ha nessuna fonte
         // di posizione accesa da interrogare.
         classe = "esito-ko";
-        html = "<p><strong>Nessuna fonte di posizione è accesa sul telefono</strong> (codice 2, e la risposta è arrivata subito: il telefono non ci ha nemmeno provato).</p>" +
-               "<p>Il permesso del sito può risultare «consentito» e non cambiare niente: sotto ci sono altri due livelli, e ne basta uno chiuso. È esattamente ciò che segnala il <strong>triangolo di avviso</strong> che Chrome mette accanto al permesso.</p>" +
-               "<ol>" +
-               "<li><strong>Posizione del dispositivo</strong> — scorri in giù la tendina delle impostazioni rapide e controlla che l'icona <em>Posizione</em> sia accesa. Oppure: Impostazioni Android → Posizione. <strong>È il sospetto numero uno</strong> quando gli altri due risultano già a posto.</li>" +
-               "<li><strong>Permesso dell'app Chrome</strong> — Impostazioni → App → Chrome → Autorizzazioni → Posizione → «Consenti solo mentre l'app è in uso», e verifica che <em>Usa posizione precisa</em> sia attivo.</li>" +
-               "<li><strong>Risparmio energetico</strong> — se è attivo, su molti telefoni spegne il GPS. Disattivalo e riprova.</li>" +
-               "</ol>" +
-               "<p>Scorciatoia: tocca direttamente il triangolo di avviso nel pannello del lucchetto. Chrome dice lì che cosa gli manca e apre le impostazioni giuste.</p>";
+        html = T('diag.verd.nessunaFonte') ||
+               ("<p><strong>Nessuna fonte di posizione è accesa sul telefono</strong> (codice 2, e la risposta è arrivata subito: il telefono non ci ha nemmeno provato).</p>" +
+                "<p>Il permesso del sito può risultare «consentito» e non cambiare niente: sotto ci sono altri due livelli, e ne basta uno chiuso. È esattamente ciò che segnala il <strong>triangolo di avviso</strong> che Chrome mette accanto al permesso.</p>" +
+                "<ol>" +
+                "<li><strong>Posizione del dispositivo</strong> — scorri in giù la tendina delle impostazioni rapide e controlla che l'icona <em>Posizione</em> sia accesa. Oppure: Impostazioni Android → Posizione. <strong>È il sospetto numero uno</strong> quando gli altri due risultano già a posto.</li>" +
+                "<li><strong>Permesso dell'app Chrome</strong> — Impostazioni → App → Chrome → Autorizzazioni → Posizione → «Consenti solo mentre l'app è in uso», e verifica che <em>Usa posizione precisa</em> sia attivo.</li>" +
+                "<li><strong>Risparmio energetico</strong> — se è attivo, su molti telefoni spegne il GPS. Disattivalo e riprova.</li>" +
+                "</ol>" +
+                "<p>Scorciatoia: tocca direttamente il triangolo di avviso nel pannello del lucchetto. Chrome dice lì che cosa gli manca e apre le impostazioni giuste.</p>");
     }
     else if (alta.code === 3 && bassa.code === 3) {
-        html = "<p><strong>Il permesso c'è, ma nessuna posizione è arrivata in tempo</strong> (codice 3 su entrambe le prove).</p>" +
-               "<p>Al primo aggancio della giornata, da fermo e al chiuso, può volerci più di un minuto. Rifai la prova <strong>all'aperto con il cielo in vista</strong>: è la condizione in cui il sito viene usato davvero.</p>";
+        html = T('diag.verd.timeout') ||
+               ("<p><strong>Il permesso c'è, ma nessuna posizione è arrivata in tempo</strong> (codice 3 su entrambe le prove).</p>" +
+                "<p>Al primo aggancio della giornata, da fermo e al chiuso, può volerci più di un minuto. Rifai la prova <strong>all'aperto con il cielo in vista</strong>: è la condizione in cui il sito viene usato davvero.</p>");
     }
     else {
-        html = "<p><strong>Il permesso non risulta bloccato, ma la posizione non arriva</strong> (codice " +
-               (alta.code !== null && alta.code !== undefined ? alta.code : "?") + " ad alta precisione, codice " +
-               (bassa.code !== null && bassa.code !== undefined ? bassa.code : "?") + " approssimativa).</p>" +
-               "<p>Rifai la prova all'aperto. Se anche fuori resta così, controlla i tre livelli:</p>" + guidaSblocco();
+        const ca = (alta.code !== null && alta.code !== undefined) ? alta.code : "?";
+        const cb = (bassa.code !== null && bassa.code !== undefined) ? bassa.code : "?";
+        html = (T('diag.verd.altro', ca, cb) ||
+                ("<p><strong>Il permesso non risulta bloccato, ma la posizione non arriva</strong> (codice " +
+                 ca + " ad alta precisione, codice " + cb + " approssimativa).</p>" +
+                 "<p>Rifai la prova all'aperto. Se anche fuori resta così, controlla i tre livelli:</p>")) + guidaSblocco();
     }
 
     testo.innerHTML = html;
@@ -421,19 +495,20 @@ function mostraVerdetto() {
 // sono INDISTINGUIBILI, quindi indovinare sarebbe peggio che elencare.
 function guidaSblocco() {
     const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    const android =
-        "<p><strong>Android (Chrome)</strong></p><ol>" +
+    const android = T('diag.guida.android') ||
+        ("<p><strong>Android (Chrome)</strong></p><ol>" +
         "<li>Tendina delle impostazioni rapide → <em>Posizione</em> accesa</li>" +
         "<li>Impostazioni Android → App → Chrome → Autorizzazioni → Posizione → consentita, con <em>posizione precisa</em> attiva</li>" +
         "<li>Nel sito: lucchetto accanto all'indirizzo → Autorizzazioni → Posizione → Consenti</li>" +
-        "</ol>";
-    const ios =
-        "<p><strong>iPhone / iPad (Safari)</strong></p><ol>" +
+        "</ol>");
+    const ios = T('diag.guida.ios') ||
+        ("<p><strong>iPhone / iPad (Safari)</strong></p><ol>" +
         "<li>Impostazioni iOS → Privacy e sicurezza → Localizzazione: accesa</li>" +
         "<li>Nella stessa schermata, in fondo: Safari → «Durante l'uso dell'app» <em>(è il caso più frequente, e dal sito non si può distinguere dal successivo)</em></li>" +
         "<li>Nel sito: «aA» nella barra dell'indirizzo → Impostazioni sito web → Posizione → Consenti</li>" +
-        "</ol>";
-    return (iOS ? ios + android : android + ios) + "<p>Poi ricarica la pagina.</p>";
+        "</ol>");
+    const ricarica = T('diag.guida.ricarica') || "<p>Poi ricarica la pagina.</p>";
+    return (iOS ? ios + android : android + ios) + ricarica;
 }
 
 function componiRapporto() {
@@ -470,7 +545,7 @@ document.getElementById("btn-copia").addEventListener("click", async () => {
     const testo = componiRapporto();
     try {
         await navigator.clipboard.writeText(testo);
-        btn.textContent = "Copiato ✓";
+        btn.textContent = T('diag.js.copiato') || "Copiato ✓";
     } catch (e) {
         // navigator.clipboard non c'e' sempre (serve https, e su qualche browser
         // vecchio manca del tutto): meglio mostrare il testo da selezionare a mano
@@ -480,9 +555,9 @@ document.getElementById("btn-copia").addEventListener("click", async () => {
         area.style.cssText = "width:100%;height:220px;margin-bottom:10px;font-size:0.8rem;background:#14150F;color:#F3EFE6;border:1px solid rgba(243,239,230,0.12);border-radius:8px;padding:8px;";
         btn.parentNode.insertBefore(area, btn.nextSibling);
         area.select();
-        btn.textContent = "Copia a mano il testo qui sotto";
+        btn.textContent = T('diag.js.copiaMano') || "Copia a mano il testo qui sotto";
     }
-    setTimeout(() => { btn.textContent = "Copia il rapporto"; }, 4000);
+    setTimeout(() => { btn.textContent = T('diag.btnCopia') || "Copia il rapporto"; }, 4000);
 });
 </script>
 
