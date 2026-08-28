@@ -1,8 +1,10 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-28 (nona sessione, seguito 6). >>> PUNTO 102 CHIUSO:
-tutta l'interfaccia IT/EN, diagnostica-gps.html inclusa, niente piu' da
-tradurre. Chiuso su decisione di Denis ("considera chiuso il punto"). <<<
+Aggiornato: 2026-08-28 (nona sessione, seguito 7). >>> PUNTO 102 CHIUSO
+(tutta l'interfaccia IT/EN). PUNTO 106 (2 fix responsive di styles.css)
+FATTO, VERIFICATO E PUSHATO. Residuo noto (NON in coda): i 4-5 titoli di
+sezione piu' lunghi restano troncati coi "..." su telefono - si riapre
+solo se Denis lo chiede. <<<
 
 Il rollout, in ordine di commit camoscio:
   10c137f  1o lotto - Cerca Persone / Profilo / Squadra / Escursione
@@ -55,9 +57,12 @@ ogni risposta. Debito icona Bivacco Carlo Fusco CHIUSO il 28/08 (icona
 nuova a 2455 m in public/img/badge-luoghi/bivacco-carlo-fusco.png).
 Coordinate Rifugio Franchetti / Rifugio Zilioli rifinite su DMS di Denis
 (~13 m ciascuna, quota invariata) - erano le due voci "da verificare a
-mano" del vault. PUNTO 106 (due fix responsive pre-esistenti di styles.css,
-giro a parte) e PUNTO 108 (teletrasporto GPS che farma i badge, giro a
-parte + decisione di prodotto) ANCORA APERTI, non toccati - dettaglio in
+mano" del vault. PUNTO 106 (due fix responsive di styles.css) FATTO,
+VERIFICATO a 386px + desktop, E PUSHATO su richiesta di Denis ("commit e
+push"). Residuo noto: i 4-5 titoli di sezione piu' lunghi restano coi
+"..." su telefono (non deciso di sistemarli - dettaglio in cose_da_fare.txt
+punto 106). PUNTO 108 (teletrasporto GPS che farma i badge, giro a parte +
+decisione di prodotto) ANCORA APERTO, non toccato. Dettaglio in
 cose_da_fare.txt punti 106 e 108.
 
 TRE PUNTI NUOVI di questa sessione (nona), fuori dal filo del lotto Mappa:
@@ -84,21 +89,9 @@ schedulato, UI) -> la prossima sessione PARTE DALL'AGENTE architect per il
 piano. Dettaglio e domande aperte in cose_da_fare.txt punti 109, 110, 111.
 
 >>> APERTO PER LA PROSSIMA SESSIONE, in quest'ordine se Denis non dice
-altro (il PUNTO 102 e' CHIUSO, fuori da questa lista):
+altro (PUNTI 102 e 106 CHIUSI, fuori da questa lista):
 
-1. PUNTO 106 (giro a parte): due difetti responsive PRE-ESISTENTI trovati
-   verificando il terzo lotto su mobile (non regressioni della traduzione,
-   misurati identici IT/EN a 387px):
-   a) #my-profile, .photo-upload-row (styles.css ~3087): il bottone
-      "Rimuovi foto" esce ~135px oltre il bordo card - l'<input
-      type="file"> nativo e' largo ~253px fissi, la riga non fa wrap.
-   b) #section-title nell'header troncato a ~44px su schermo stretto
-      ("Dashboard" -> "Das..."). C'e' gia' una @media(max-width:700px)
-      su .top-header e affini (styles.css ~4480), il fix va li'.
-   Verificare a ~387px con l'iframe stessa-origine (resize_window NON
-   funziona) senza rompere il desktop.
-
-2. PUNTO 108 (giro a parte): il tasto di simulazione della posizione GPS
+1. PUNTO 108 (giro a parte): il tasto di simulazione della posizione GPS
    sulla mappa fa scattare i timbri e sblocca i badge per davvero - si
    possono conquistare tutti i badge da fermi. E' prima una DECISIONE di
    prodotto (il teletrasporto resta ma non da' timbri? solo per i demo?
@@ -107,7 +100,7 @@ altro (il PUNTO 102 e' CHIUSO, fuori da questa lista):
    (SOGLIA_TIMBRO_M, condivisa col conteggio salite del punto 42b).
    Dettaglio in cose_da_fare.txt punto 108.
 
-3. PUNTO 111 (multi-modulo, PARTE DALL'AGENTE architect): "risolvi" di una
+2. PUNTO 111 (multi-modulo, PARTE DALL'AGENTE architect): "risolvi" di una
    segnalazione da utente normale e scadenza a 90 giorni diventano
    entrambi una notifica a Denis che decide (conferma/tieni ancora,
    oppure togli/rinnova +90 gg). L'auto-cancellazione TTL del punto 109

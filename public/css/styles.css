@@ -3089,6 +3089,13 @@ option {
     align-items: center;
     gap: 16px;
     margin-bottom: 16px;
+    /* Punto 106a: la riga (cerchio anteprima + <input type=file> nativo ~253px
+       + bottone "Rimuovi foto") non entra nei ~300px di card su un telefono in
+       verticale e il bottone usciva ~135px oltre il bordo. flex-wrap qui e non
+       dentro una @media perche' dipende dalla larghezza del CONTENITORE, non
+       dello schermo (stessa regola di .form-row .form-group). Su desktop la card
+       e' larga a sufficienza e la riga non va mai a capo. */
+    flex-wrap: wrap;
 }
 
 .photo-preview-circle {
@@ -4772,6 +4779,50 @@ option {
 
     .glass-card {
         padding: 16px;
+    }
+
+    /* --- Punto 106a: riga foto del Profilo proprio / registrazione ---
+       flex-wrap (regola base sopra) da solo NON basta: l'<input type=file>
+       nativo non si stringe sotto la sua larghezza intrinseca (~253px) e
+       finirebbe su una riga tutta sua, impilando cerchio / input / bottone su
+       tre righe. Con un flex-basis piccolo l'input divide la prima riga col
+       cerchio anteprima e solo "Rimuovi foto" va a capo. Vale anche per la
+       riga foto della registrazione (#auth-gate), che condivide la classe. */
+    .photo-upload-row > input[type="file"] {
+        flex: 1 1 140px;
+        min-width: 0;
+    }
+
+    /* --- Punto 106b: #section-title nell'header non si schiacci piu' a ~40px ---
+       Con le 2 bandiere lingua aggiunte all'header (punto 102, 3o lotto) il
+       titolo di sezione restava ~40px ("Dashboard" -> "Das..."). Si recupera
+       spazio sul lato destro compattando il gruppo utente: i titoli corti
+       (Dashboard, i due profili, Escursioni) tornano interi; quelli lunghi
+       ("Le mie escursioni", "Mappa & Sentieri") restano troncati coi puntini
+       - gia' previsto dalla @media da 900px - ma con abbastanza testo per
+       orientarsi. Header sempre su UNA riga (non si tocca l'altezza fissa). */
+    .top-header {
+        padding: 0 8px;
+        gap: 6px;
+    }
+
+    .user-status-widget {
+        gap: 4px;
+    }
+
+    .lang-switcher {
+        padding: 2px;
+        gap: 1px;
+    }
+
+    .active-user-badge {
+        padding: 4px;
+    }
+
+    .notification-bell-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
     }
 }
 

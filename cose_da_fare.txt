@@ -6787,13 +6787,62 @@ schermo spento ancora."
       capo, o nasconderlo su mobile (la barra a icone gia' dice dove
       sei). Vale per ogni pagina, non solo Dashboard/Profilo.
 
-   NON TOCCATO in questa sessione: Denis ha chiesto di fermarsi e
-   sistemarlo in un giro a parte. RIPARTIRE DA: aprire styles.css alle
-   righe indicate, decidere l'approccio per (a) e (b), verificare a
-   ~387px con l'iframe stessa-origine SENZA rompere il desktop
-   (misurare il risultato vero, non solo simulare le regole CSS - vedi
-   07-Trappole-Tecniche). Rilanciare la verifica responsive delle
-   pagine gia' a posto se si tocca CSS condiviso.
+   --- FATTO, VERIFICATO (386px + desktop) E PUSHATO il 28/08/2026 (nona
+   sessione, seguito 7). Denis: "ok facciamo il punto 106", poi "commit e
+   push". ---
+
+   Una sola modifica: public/css/styles.css, +51 righe, NIENTE JS.
+
+   (a) .photo-upload-row - "flex-wrap: wrap" aggiunto alla REGOLA BASE
+       (fuori da @media: dipende dalla larghezza della card, non dello
+       schermo - stessa logica di .form-row .form-group). flex-wrap da
+       solo NON basta: l'<input type=file> nativo non si stringe sotto la
+       sua larghezza intrinseca (~253px) nemmeno con min-width:0, e
+       finirebbe su una riga tutta sua (cerchio / input / bottone impilati
+       su 3 righe). Quindi dentro @media(max-width:480px):
+       ".photo-upload-row > input[type=file] { flex: 1 1 140px; min-width:
+       0; }" - cosi' l'input divide la 1a riga col cerchio e solo il
+       bottone "Rimuovi foto" va a capo. Misurato a 386px (iframe
+       stessa-origine, login demo Marco Alpinista, #my-profile): riga
+       senza overflow, bottone 167px DENTRO il bordo card (prima era 151px
+       FUORI), riga alta 120px invece di 72. Desktop 1278px: riga su una
+       sola riga, input a 253px come prima, nessun wrap - invariato.
+       La classe e' condivisa da registrazione (#auth-gate, solo
+       cerchio+input) e pagina squadra (cerchio+<h3>, nessun file input):
+       modifiche innocue per entrambe, su desktop nessuna delle tre cambia.
+
+   (b) #section-title - NUOVO blocco @media(max-width:480px) (l'header
+       finora era toccato solo dalla @media da 900px, non da una piu'
+       stretta). Compattato il gruppo destro: .top-header padding 0 10px
+       -> 0 8px e gap 8 -> 6; .user-status-widget gap 6 -> 4;
+       .lang-switcher padding 3 -> 2 e gap 2 -> 1; .active-user-badge
+       padding 8px 16px -> 4px; .notification-bell-btn 42x42 -> 36x36.
+       Le bandiere restano a 30px (tap target). Risultato: .header-search
+       (che contiene il titolo) passa da ~43px a ~88px, header SEMPRE su
+       una riga (altezza fissa 56px non toccata). Sweep di 9 sezioni a
+       385px, EN: interi Dashboard / Hikes / My Hikes / Map & Trails /
+       Your Profile; troncati coi "..." ma con ~13 char visibili "Safety &
+       Mesh Simulator" / "Tribe, Reviews & Squads" / "Carpooling & Travel
+       Costs" / "Smart Backpack Checklist". Nessun overflow orizzontale di
+       pagina in nessuna sezione. (In IT i nomi corrispondenti sono
+       lunghi uguali: Sicurezza & Mesh Simulatore, Tribu' Recensioni &
+       Squadre, Carpooling & Spese di Viaggio, Zaino Intelligente.)
+
+   RESIDUO NOTO (non deciso di sistemarlo, si riapre solo se Denis lo
+   chiede): i 4-5 titoli di sezione piu' lunghi restano troncati coi "..."
+   su telefono (era gia' cosi' anche nella @media da 900px, ma ora con piu'
+   testo visibile - ~13 char). Per farli stare INTERI servirebbe: (1)
+   lasciarli troncati com'e' adesso - i puntini bastano a orientarsi; (2)
+   mandarli a capo su 2 righe nella @media - ma cambia l'altezza
+   dell'header, oggi fissa a 56px e "su una riga" e' una scelta esplicita
+   (vedi commento in styles.css riga ~4475); (3) accorciare i nomi delle
+   sezioni stesse. Chiudendo il punto Denis ha scelto implicitamente la (1).
+
+   COMMITTATO E PUSHATO su richiesta esplicita di Denis ("commit e push")
+   insieme a leggimi.txt e cose_da_fare.txt. Verificato dal vivo con
+   l'iframe stessa-origine a 386px (login demo Marco, getBoundingClientRect
+   per elemento) + desktop 1278px. Nessuna pulizia dati (sola lettura + un
+   demo-login sull'account demo).
 
 =====================================================================
 
