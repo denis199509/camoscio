@@ -995,8 +995,8 @@
 
                             <!-- Sezione Meteo Multi-Quota -->
                             <div class="glass-card weather-widget-card">
-                                <h4><i data-lucide="cloud-lightning"></i> Meteo Multi-Quota & Microclima</h4>
-                                <p class="small text-muted">Analisi delle temperature e del vento alle diverse altitudini del percorso.</p>
+                                <h4><i data-lucide="cloud-lightning"></i> <span data-i18n="weather.cardTitolo">Meteo Multi-Quota & Microclima</span></h4>
+                                <p class="small text-muted" data-i18n="weather.cardDesc">Analisi delle temperature e del vento alle diverse altitudini del percorso.</p>
 
                                 <!-- Punto 27: prima c'erano due soli tasti fissi (Gran Sasso / Monte
                                      Vettore) e nessun modo di guardare il meteo altrove. Ora si sceglie
@@ -1007,37 +1007,42 @@
                                         <div class="trailhead-search-field">
                                             <i data-lucide="search"></i>
                                             <input type="text" id="weather-point-search" autocomplete="off"
-                                                placeholder="Cerca un luogo, es. Campo Imperatore">
+                                                placeholder="Cerca un luogo, es. Campo Imperatore"
+                                                data-i18n-placeholder="weather.cercaPlaceholder">
                                         </div>
                                         <!-- Con l'etichetta e non di sola icona: su schermo stretto questa
                                              riga si impila (@media in styles.css) e il pulsante diventa largo
                                              quanto la casella - una lente da sola, larga 274px, non direbbe
                                              niente a nessuno. -->
                                         <button type="button" class="btn btn-secondary" id="btn-open-weather-map-picker"
-                                            title="Scegli il punto direttamente sulla mappa">
-                                            <i data-lucide="map-pin"></i> Mappa
+                                            title="Scegli il punto direttamente sulla mappa"
+                                            data-i18n-title="weather.mappaBtnTitle">
+                                            <i data-lucide="map-pin"></i> <span data-i18n="weather.mappaBtn">Mappa</span>
                                         </button>
                                     </div>
                                     <div id="weather-search-results" class="trailhead-results hidden"></div>
                                     <button type="button" class="btn btn-sm btn-secondary btn-block weather-here-btn" id="btn-weather-here">
-                                        <i data-lucide="locate"></i> Meteo dove mi trovo
+                                        <i data-lucide="locate"></i> <span data-i18n="weather.meteoQui">Meteo dove mi trovo</span>
                                     </button>
                                 </div>
 
                                 <div id="weather-details-container" class="weather-details-box">
                                     <!-- Caricato dinamicamente tramite API Open-Meteo -->
-                                    <div class="text-center py-4">Seleziona una località o un sentiero...</div>
+                                    <div class="text-center py-4"><span data-i18n="weather.selezionaPunto">Seleziona una località o un sentiero...</span></div>
                                 </div>
                             </div>
 
                             <!-- Sezione Esposizione Solare -->
                             <div class="glass-card sun-exposure-card">
-                                <h4><i data-lucide="sun"></i> Esposizione Solare</h4>
+                                <h4><i data-lucide="sun"></i> <span data-i18n="solar.cardTitolo">Esposizione Solare</span></h4>
                                 <div class="sun-exposure-content" id="sun-exposure-info">
-                                    <p class="small text-muted">L'algoritmo analizza la pendenza e l'orientamento dei versanti alpini consigliando gli orari e i versanti migliori.</p>
+                                    <p class="small text-muted" data-i18n="solar.cardDesc">L'algoritmo analizza la pendenza e l'orientamento dei versanti alpini consigliando gli orari e i versanti migliori.</p>
                                     <div id="sun-advice-box" class="sun-advice-box info">
-                                        <!-- Generato dinamicamente -->
-                                        Seleziona un sentiero per ottenere consigli sul sole/ombra.
+                                        <!-- Generato dinamicamente; il data-i18n sta sullo <span> interno, non
+                                             su #sun-advice-box, perche' renderSolarExposureAdvice ne sostituisce
+                                             l'innerHTML e un attributo sul contenitore verrebbe riscritto sopra
+                                             il testo generato ad ogni cambio lingua. -->
+                                        <span data-i18n="solar.selezionaSentiero">Seleziona un sentiero per ottenere consigli sul sole/ombra.</span>
                                     </div>
                                 </div>
                             </div>

@@ -5,6 +5,22 @@
 // punto si sceglie con la stessa barra di ricerca del punto di ritrovo di un'escursione
 // (punto 8), riusandone il componente - vedi CamoscioPlaceSearch in trailhead-picker.js.
 
+// Rollout traduzione punto 102 (lotto Mappa, area 3: Meteo + Esposizione Solare).
+// var, non const: questo file non e' avvolto in una IIFE e "const T" in un secondo
+// <script> classico da' SyntaxError (vedi 07-Trappole-Tecniche.md). Ogni file
+// assegna sempre lo stesso valore, e' idempotente.
+var T = (window.CamoscioI18n && window.CamoscioI18n.t) || function () { return null; };
+
+// Virgola in italiano, punto in inglese, come formattaDecimale del secondo lotto.
+// Nome proprio (non "formattaDecimale") perche' quello e' gia' un global di
+// userprofile.js che fa .toFixed(1) e caricherebbe dopo: stessa trappola del sesto
+// lotto (formattaEuro/formattaKg). Prima qui era .toFixed(1) fisso col punto anche
+// in italiano - ora segue la lingua, per coerenza col resto del sito.
+function decimaleMeteo(n) {
+    const s = n.toFixed(1);
+    return (window.CamoscioI18n && window.CamoscioI18n.getLang() === 'en') ? s : s.replace('.', ',');
+}
+
 // Punto da cui si parte la prima volta in assoluto. E' il RITROVO di Campo Imperatore, non
 // la vetta del Corno Grande come prima: le tre quote si calcolano a salire dal punto scelto,
 // quindi partendo da una vetta (2673 m) la terza riga finiva a 3473 m, una quota che in
@@ -19,6 +35,14 @@ const PUNTO_PREDEFINITO = { lat: 42.4423, lng: 13.5581, nome: "Campo Imperatore"
 const CHIAVE_MEMORIA = 'camoscio_punto_meteo';
 
 let puntoMeteo = null;
+
+// Ultima risposta gia' elaborata (dati + nome del punto + se erano simulati offline):
+// serve all'onChange in fondo al file per ridisegnare la tabella al cambio lingua
+// SENZA rifare il fetch a open-meteo, che ha un tetto (punto 33). Stessa logica di
+// #backpack al sesto lotto.
+let ultimoDatoMeteo = null;
+let ultimoNomeMeteo = null;
+let ultimoMeteoSimulato = false;
 
 function leggiPuntoRicordato() {
     try {
@@ -64,8 +88,8 @@ function initWeatherModule() {
     const btnMappa = document.getElementById('btn-open-weather-map-picker');
     if (btnMappa) {
         btnMappa.addEventListener('click', () => window.CamoscioPlaceSearch.openMapPicker({
-            titolo: 'Scegli il punto del meteo',
-            suggerimento: 'Tocca la mappa nel punto che ti interessa: temperature e vento vengono calcolati per quella zona, alle diverse quote.',
+            titolo: T('weather.mapPickerTitolo') || 'Scegli il punto del meteo',
+            suggerimento: T('weather.mapPickerSuggerimento') || 'Tocca la mappa nel punto che ti interessa: temperature e vento vengono calcolati per quella zona, alle diverse quote.',
             punto: puntoMeteo,
             onConfirm: p2 => {
                 fetchWeatherForCoords(p2.lat, p2.lng, p2.nome);
@@ -84,17 +108,24 @@ async function meteoDoveMiTrovo() {
     if (!window.CamoscioGeo) return;
 
     const btn = document.getElementById('btn-weather-here');
-    const etichetta = btn ? btn.innerHTML : null;
+    // Il testo del tasto si ricostruisce da T() invece di salvare/ripristinare
+    // l'innerHTML: cosi' un cambio lingua fatto durante la ricerca lascia
+    // comunque il tasto nella lingua giusta al termine (l'onChange in fondo
+    // salta finche' il tasto e' disabled, poi ripristina() lo rifa').
+    const rifaiEtichetta = () => {
+        if (!btn) return;
+        btn.innerHTML = `<i data-lucide="locate"></i> ${T('weather.meteoQui') || 'Meteo dove mi trovo'}`;
+    };
     if (btn) {
         btn.disabled = true;
-        btn.innerHTML = `<i data-lucide="loader"></i> Cerco la posizione...`;
+        btn.innerHTML = `<i data-lucide="loader"></i> ${T('weather.cercoPosizione') || 'Cerco la posizione...'}`;
         if (window.lucide) window.lucide.createIcons();
     }
 
     const ripristina = () => {
         if (!btn) return;
         btn.disabled = false;
-        btn.innerHTML = etichetta;
+        rifaiEtichetta();
         if (window.lucide) window.lucide.createIcons();
     };
 
@@ -122,7 +153,7 @@ async function meteoDoveMiTrovo() {
             if (!window.CamoscioGeo.ultimaPosizione()) {
                 disiscrivi();
                 ripristina();
-                window.showToast("Non sono ancora riuscito a leggere la posizione. Riprova fra qualche secondo, all'aperto.", "info");
+                window.showToast(T('weather.nonLettaPosizione') || "Non sono ancora riuscito a leggere la posizione. Riprova fra qualche secondo, all'aperto.", "info");
             }
         }, 8000);
         return;
@@ -137,7 +168,7 @@ async function meteoDoveMiTrovo() {
 // SUBITO con le coordinate, senza aspettare il nome: la ricerca del riferimento puo'
 // impiegare qualche secondo e non c'e' motivo di far attendere il dato che serve davvero.
 async function usaPosizionePerMeteo(lat, lng) {
-    fetchWeatherForCoords(lat, lng, "La mia posizione");
+    fetchWeatherForCoords(lat, lng, T('weather.laMiaPosizione') || "La mia posizione");
 
     if (!window.CamoscioPlaceSearch) return;
     const dati = await window.CamoscioPlaceSearch.cercaRiferimento(lat, lng);
@@ -158,7 +189,7 @@ async function fetchWeatherForCoords(lat, lng, placeName) {
     puntoMeteo = { lat, lng, nome: placeName };
     ricordaPunto(puntoMeteo);
 
-    container.innerHTML = `<div class="text-center py-4"><span class="blink">Interrogazione API Meteo...</span></div>`;
+    container.innerHTML = `<div class="text-center py-4"><span class="blink">${T('weather.interrogazione') || 'Interrogazione API Meteo...'}</span></div>`;
 
     // Utilizziamo le API Open-Meteo (Open Source, senza chiavi API necessarie)
     // Richiediamo temperatura a 2m, velocità vento a 10m, probabilità precipitazioni e indice CAPE (instabilità fulmini)
@@ -182,9 +213,20 @@ async function fetchWeatherForCoords(lat, lng, placeName) {
 }
 
 // Elabora e renderizza i dati reali ricevuti dall'API
-function renderWeatherData(data, placeName) {
+function renderWeatherData(data, placeName, simulato) {
     const container = document.getElementById("weather-details-container");
     if (!container) return;
+
+    // Ricorda l'ultimo dato per il ridisegno al cambio lingua (vedi onChange in fondo).
+    ultimoDatoMeteo = data;
+    ultimoNomeMeteo = placeName;
+    ultimoMeteoSimulato = !!simulato;
+
+    // Il suffisso "(Simulato Offline)" si aggiunge qui, non dal chiamante, cosi' segue
+    // la lingua anche quando l'onChange rigioca il dato.
+    const nomeMostrato = simulato
+        ? `${placeName} (${T('weather.simulatoOffline') || 'Simulato Offline'})`
+        : placeName;
 
     // Otteniamo l'ora corrente per estrarre l'indice dell'orario odierno
     const currentHour = new Date().getHours();
@@ -211,13 +253,13 @@ function renderWeatherData(data, placeName) {
     // 2919 m, cioe' praticamente in vetta (2912 m). Con +1000 si sarebbe mostrata una quota
     // di 3119 m, che in queste quattro regioni non esiste da nessuna parte.
     const altitudes = [
-        { name: "Punto scelto", elevation: Math.round(stationAlt) },
-        { name: "Salita", elevation: Math.round(stationAlt + 400) },
-        { name: "Cresta / Vetta", elevation: Math.round(stationAlt + 800) }
+        { name: T('weather.quota.puntoScelto') || "Punto scelto", elevation: Math.round(stationAlt) },
+        { name: T('weather.quota.salita') || "Salita", elevation: Math.round(stationAlt + 400) },
+        { name: T('weather.quota.crestaVetta') || "Cresta / Vetta", elevation: Math.round(stationAlt + 800) }
     ];
 
-    let html = `<h5 style="margin-bottom: 8px; color: #FFF;">${escapeHtml(placeName)}</h5>`;
-    html += `<div style="font-size: 0.8rem; margin-bottom: 12px; color: var(--color-text-secondary);">Precipitazioni: <b>${rainProb}%</b> | Instabilità CAPE: <b>${Math.round(capeValue)} J/kg</b></div>`;
+    let html = `<h5 style="margin-bottom: 8px; color: #FFF;">${escapeHtml(nomeMostrato)}</h5>`;
+    html += `<div style="font-size: 0.8rem; margin-bottom: 12px; color: var(--color-text-secondary);">${T('weather.precipitazioni') || 'Precipitazioni:'} <b>${rainProb}%</b> | ${T('weather.instabilitaCape') || 'Instabilità CAPE:'} <b>${Math.round(capeValue)} J/kg</b></div>`;
 
     altitudes.forEach(alt => {
         // 1. Calcolo Gradiente Termico Verticale (Lapse Rate): circa -0.65°C ogni 100 metri
@@ -236,8 +278,8 @@ function renderWeatherData(data, placeName) {
                     ${alt.name} <span class="text-muted" style="font-weight: normal; font-size: 0.75rem;">(${alt.elevation}m)</span>
                 </div>
                 <div class="weather-alt-info">
-                    <span class="temp-text">${calculatedTemp.toFixed(1)}°C</span>
-                    <span class="wind-text">💨 ${calculatedWind.toFixed(1)} km/h</span>
+                    <span class="temp-text">${decimaleMeteo(calculatedTemp)}°C</span>
+                    <span class="wind-text">💨 ${decimaleMeteo(calculatedWind)} km/h</span>
                 </div>
             </div>
         `;
@@ -249,10 +291,10 @@ function renderWeatherData(data, placeName) {
 
     if (capeValue > 1000) {
         lightningRisk = true;
-        riskMessage = "PERICOLO ELEVATO: Fortissima instabilità convettiva. Rischio temporali violenti e fulmini imminenti nel pomeriggio!";
+        riskMessage = T('weather.rischioElevato') || "PERICOLO ELEVATO: Fortissima instabilità convettiva. Rischio temporali violenti e fulmini imminenti nel pomeriggio!";
     } else if (capeValue > 400 && rainProb > 30) {
         lightningRisk = true;
-        riskMessage = "RISCHIO FULMINI: Alta umidità con instabilità. Possibilità di celle temporalesche in quota.";
+        riskMessage = T('weather.rischioFulmini') || "RISCHIO FULMINI: Alta umidità con instabilità. Possibilità di celle temporalesche in quota.";
     }
 
     if (lightningRisk) {
@@ -269,7 +311,7 @@ function renderWeatherData(data, placeName) {
         html += `
             <div class="lightning-alert" style="background: rgba(76, 122, 68, 0.15); border-color: var(--accent-green); color: #B8CBA8;">
                 <i data-lucide="check-circle" style="color:var(--accent-green); width:16px; height:16px;"></i>
-                <span>Nessun rischio fulmini rilevato per le prossime ore.</span>
+                <span>${T('weather.nessunRischio') || 'Nessun rischio fulmini rilevato per le prossime ore.'}</span>
             </div>
         `;
     }
@@ -299,7 +341,7 @@ function renderSimulatedWeatherData(placeName) {
         }
     };
 
-    renderWeatherData(mockData, placeName + " (Simulato Offline)");
+    renderWeatherData(mockData, placeName, true);
 }
 
 // Notifica Push di emergenza (simulata nel browser)
@@ -326,3 +368,24 @@ function triggerLightningPushNotification(message) {
 window.fetchWeatherForCoords = fetchWeatherForCoords;
 window.initWeatherModule = initWeatherModule;
 window.renderWeatherData = renderWeatherData;
+
+// Rollout traduzione punto 102, lotto Mappa area 3: il contenuto di
+// #weather-details-container e' innerHTML costruito da renderWeatherData
+// sull'ultima risposta dell'API - applyStaticTranslations non lo tocca, e
+// rifare il fetch a ogni cambio lingua sprecherebbe una chiamata a open-meteo
+// (che ha un tetto, punto 33). Come #backpack al sesto lotto: si rigioca
+// l'ultimo dato gia' in mano, nessun fetch. Solo se la Mappa e' la sezione
+// attiva (gate come le aree 1-2). Il tasto "Meteo dove mi trovo" ha il testo
+// scritto da JS: si rimette anche quello (se non e' in mezzo a una ricerca).
+if (window.CamoscioI18n && window.CamoscioI18n.onChange) {
+    window.CamoscioI18n.onChange(function () {
+        const btn = document.getElementById('btn-weather-here');
+        if (btn && !btn.disabled) {
+            btn.innerHTML = `<i data-lucide="locate"></i> ${T('weather.meteoQui') || 'Meteo dove mi trovo'}`;
+            if (window.lucide) window.lucide.createIcons();
+        }
+        const sez = document.getElementById('map-section');
+        if (!sez || !sez.classList.contains('active')) return;
+        if (ultimoDatoMeteo) renderWeatherData(ultimoDatoMeteo, ultimoNomeMeteo, ultimoMeteoSimulato);
+    });
+}

@@ -1381,16 +1381,22 @@ function calculateBearing(lat1, lng1, lat2, lng2) {
     return (bearingRad * 180 / Math.PI + 360) % 360;
 }
 
-// Classifica un orientamento in uno degli 8 settori cardinali
+// Classifica un orientamento in uno degli 8 settori cardinali.
+// Rollout traduzione punto 102 (lotto Mappa, area 3): `.label` esce gia' nella
+// lingua attiva (chiave `solar.compass.<KEY>`), `.key` resta il codice usato per
+// i confronti (["N","NE","NW"].includes(...) qui e nella Map dei versanti di
+// esposizioneSolare in routeplanner.js) - stessa regola di Difficolta'/Tag Tribu'
+// e di CamoscioReportTypes.titleFor. Tradotta qui, la vedono giuste entrambe le
+// funzioni che la usano (renderSolarExposureAdvice e routeplanner.esposizioneSolare).
 function bearingToCompassSector(bearing) {
     const sectors = [
-        { label: "Nord", key: "N" }, { label: "Nord-Est", key: "NE" },
-        { label: "Est", key: "E" }, { label: "Sud-Est", key: "SE" },
-        { label: "Sud", key: "S" }, { label: "Sud-Ovest", key: "SW" },
-        { label: "Ovest", key: "W" }, { label: "Nord-Ovest", key: "NW" }
+        { it: "Nord", key: "N" }, { it: "Nord-Est", key: "NE" },
+        { it: "Est", key: "E" }, { it: "Sud-Est", key: "SE" },
+        { it: "Sud", key: "S" }, { it: "Sud-Ovest", key: "SW" },
+        { it: "Ovest", key: "W" }, { it: "Nord-Ovest", key: "NW" }
     ];
-    const index = Math.round(bearing / 45) % 8;
-    return sectors[index];
+    const s = sectors[Math.round(bearing / 45) % 8];
+    return { key: s.key, label: T('solar.compass.' + s.key) || s.it };
 }
 
 // Algoritmo di consiglio esposizione solare: orientamento reale trailhead->cima + stagione,
@@ -1405,7 +1411,7 @@ function renderSolarExposureAdvice(hike) {
 
     if (!hike.peaks || hike.peaks.length === 0) {
         adviceBox.className = "sun-advice-box info";
-        adviceBox.innerHTML = `Nessuna vetta registrata per questo percorso: impossibile stimare l'orientamento del versante. Valuta comunque partenze anticipate nei mesi estivi per evitare le ore più calde.`;
+        adviceBox.innerHTML = T('solar.nessunaVetta') || `Nessuna vetta registrata per questo percorso: impossibile stimare l'orientamento del versante. Valuta comunque partenze anticipate nei mesi estivi per evitare le ore più calde.`;
         return;
     }
 
@@ -1415,28 +1421,31 @@ function renderSolarExposureAdvice(hike) {
     const sector = bearingToCompassSector(bearing);
     const isNorthFacing = ["N", "NE", "NW"].includes(sector.key);
     const isGlacierRisk = hike.maxAltitude > 3500;
+    // `sector.label` arriva gia' tradotto da bearingToCompassSector: le voci
+    // `solar.*` del dizionario prendono il versante come argomento.
+    const v = sector.label;
 
     let html = "";
     if (isGlacierRisk) {
         adviceBox.className = "sun-advice-box summer";
-        html = `<strong>❄️ Alta Quota: Riflesso Ghiacciaio Elevato (versante ${sector.label})</strong><br>
+        html = T('solar.ghiacciaio', v) || `<strong>❄️ Alta Quota: Riflesso Ghiacciaio Elevato (versante ${v})</strong><br>
             A quota superiore a 3500m l'esposizione solare è massima. Obbligo di occhiali da sole categoria 4 e crema protettiva. Attenzione al riscaldamento del ghiacciaio dalle ore 12:00 che rende instabili i ponti di neve.`;
     } else if (isSummer && !isNorthFacing) {
         adviceBox.className = "sun-advice-box summer";
-        html = `<strong>☀️ Consiglio Estivo: Versante ${sector.label}, esposizione elevata</strong><br>
-            Il percorso verso la cima è orientato a ${sector.label} e si scalda rapidamente nelle ore centrali. Si raccomanda la partenza entro le 07:00 per evitare colpi di calore e attenzione al rischio fulmini pomeridiano.`;
+        html = T('solar.estateEsposto', v) || `<strong>☀️ Consiglio Estivo: Versante ${v}, esposizione elevata</strong><br>
+            Il percorso verso la cima è orientato a ${v} e si scalda rapidamente nelle ore centrali. Si raccomanda la partenza entro le 07:00 per evitare colpi di calore e attenzione al rischio fulmini pomeridiano.`;
     } else if (isSummer && isNorthFacing) {
         adviceBox.className = "sun-advice-box info";
-        html = `<strong>🌲 Consiglio Estivo: Versante ${sector.label}, più ombreggiato</strong><br>
-            Il percorso verso la cima è orientato a ${sector.label}: resta più fresco anche nelle ore centrali, ma può trattenere neve o ghiaccio residuo più a lungo negli avvallamenti. Portare comunque protezione solare per i tratti allo scoperto.`;
+        html = T('solar.estateOmbra', v) || `<strong>🌲 Consiglio Estivo: Versante ${v}, più ombreggiato</strong><br>
+            Il percorso verso la cima è orientato a ${v}: resta più fresco anche nelle ore centrali, ma può trattenere neve o ghiaccio residuo più a lungo negli avvallamenti. Portare comunque protezione solare per i tratti allo scoperto.`;
     } else if (!isSummer && !isNorthFacing) {
         adviceBox.className = "sun-advice-box info";
-        html = `<strong>❄️ Consiglio Stagionale: Versante ${sector.label}, massimizza la luce</strong><br>
-            Si consiglia di effettuare la salita nelle ore centrali (10:00 - 14:00) sfruttando il versante ${sector.label} per beneficiare del soleggiamento.`;
+        html = T('solar.invernoLuce', v) || `<strong>❄️ Consiglio Stagionale: Versante ${v}, massimizza la luce</strong><br>
+            Si consiglia di effettuare la salita nelle ore centrali (10:00 - 14:00) sfruttando il versante ${v} per beneficiare del soleggiamento.`;
     } else {
         adviceBox.className = "sun-advice-box info";
-        html = `<strong>❄️ Consiglio Stagionale: Versante ${sector.label}, rischio ghiaccio</strong><br>
-            Il percorso verso la cima è orientato a ${sector.label}, poco soleggiato in questa stagione: valuta ramponcini/bastoncini e un rientro non troppo tardivo per il rischio di ghiaccio improvviso.`;
+        html = T('solar.invernoGhiaccio', v) || `<strong>❄️ Consiglio Stagionale: Versante ${v}, rischio ghiaccio</strong><br>
+            Il percorso verso la cima è orientato a ${v}, poco soleggiato in questa stagione: valuta ramponcini/bastoncini e un rientro non troppo tardivo per il rischio di ghiaccio improvviso.`;
     }
 
     adviceBox.innerHTML = html;
@@ -1460,18 +1469,22 @@ window.rimuoviPuntinoPosizione = rimuoviPuntinoPosizione;
 window.aggiornaTastoPosizione = aggiornaTastoPosizione;
 window.centraSuPuntino = centraSuPuntino;
 
-// Rollout traduzione punto 102, lotto Mappa (area 1): al cambio lingua diversi pezzi
-// di questa sezione non li tocca applyStaticTranslations - la lista segnalazioni e i
-// popup dei marker sono costruiti via innerHTML, il tasto "Dove sono" ha il testo
-// scritto da aggiornaTastoPosizione. Si ridisegnano SOLO se la Mappa e' la sezione
-// attiva (gate come il <select> recensioni del quinto lotto e la lista moderazione
-// del settimo): niente lavoro a vuoto per una pagina che non si sta guardando, e chi
-// riapre la Mappa la ritrova gia' nella lingua giusta (triggerSectionRender in app.js
-// richiama renderWazeReportsList/renderMapMarkers all'ingresso). Il titolo pagina lo
-// rimette da solo updateSectionTitle (prettyNames + sectionTitle.map-section).
-// NON di quest'area e quindi non ridisegnati qui: progetta percorso (routeplanner.js),
-// meteo + esposizione solare (weather.js/renderSolarExposureAdvice) e tracciamento -
-// restano in italiano fino al loro lotto.
+// Rollout traduzione punto 102, lotto Mappa: al cambio lingua diversi pezzi di questa
+// sezione non li tocca applyStaticTranslations - la lista segnalazioni e i popup dei
+// marker sono costruiti via innerHTML, il tasto "Dove sono" ha il testo scritto da
+// aggiornaTastoPosizione, e la card Esposizione Solare da renderSolarExposureAdvice.
+// Si ridisegnano SOLO se la Mappa e' la sezione attiva (gate come il <select>
+// recensioni del quinto lotto e la lista moderazione del settimo): niente lavoro a
+// vuoto per una pagina che non si sta guardando, e chi riapre la Mappa la ritrova
+// gia' nella lingua giusta (triggerSectionRender in app.js richiama
+// renderWazeReportsList/renderMapMarkers all'ingresso). Il titolo pagina lo rimette
+// da solo updateSectionTitle (prettyNames + sectionTitle.map-section).
+// - area 1: renderMapMarkers / renderWazeReportsList / aggiornaTastoPosizione.
+// - area 3 (28/08): renderSolarExposureAdvice, ripescando l'escursione attiva da
+//   CamoscioState.activeHikeId (la scrive loadActiveHikeOnMap) - se non ce n'e' una,
+//   il riquadro mostra ancora il testo statico, gia' gestito da applyStaticTranslations.
+//   Il Meteo (weather.js) e l'esposizione del pannello percorso (routeplanner.js) hanno
+//   un onChange proprio nei loro file. NON di nessuna area ancora: il tracciamento GPS.
 if (window.CamoscioI18n && window.CamoscioI18n.onChange) {
     window.CamoscioI18n.onChange(function () {
         const sez = document.getElementById('map-section');
@@ -1479,5 +1492,9 @@ if (window.CamoscioI18n && window.CamoscioI18n.onChange) {
         renderMapMarkers();
         renderWazeReportsList();
         if (window.CamoscioGeo) aggiornaTastoPosizione(window.CamoscioGeo.isAcceso());
+        const db = window.CamoscioState;
+        const attiva = db && db.activeHikeId && Array.isArray(db.hikes)
+            ? db.hikes.find(h => h.id === db.activeHikeId) : null;
+        if (attiva) renderSolarExposureAdvice(attiva);
     });
 }

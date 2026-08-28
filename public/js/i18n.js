@@ -1388,7 +1388,117 @@
             'rp.prog.salitaTitle': 'Estimated from a terrain model, can be off by about 5%',
             'rp.prog.inRettaTitle': 'Stretches where no known trail connects the points',
             'rp.prog.tuttoSuSentieri': 'all on trails',
-            'rp.prog.apriSullaMappa': 'Open on the map'
+            'rp.prog.apriSullaMappa': 'Open on the map',
+
+            // ==================================================================
+            // Rollout punto 102, LOTTO MAPPA - area 3 di 4 (28/08/2026):
+            // "Meteo + Esposizione Solare". Un cluster unico su TRE file (come
+            // previsto facendo le aree 1-2): `weather.js` per intero, piu' in
+            // `map.js` `renderSolarExposureAdvice` + `bearingToCompassSector`
+            // (le 8 etichette dei settori cardinali), piu' in `routeplanner.js`
+            // la funzione `esposizioneSolare()` - il riquadro `.rp-sole` del
+            // pannello del percorso, lasciato in italiano fino a qui. Con
+            // quest'area la barra laterale della Mappa e' tradotta tranne il
+            // tracciamento GPS (area 4). `calculateBearing` e' pura matematica,
+            // niente da tradurre.
+            //
+            // Scelte non ovvie:
+            // 1) I decimali di temperatura/vento nella tabella meteo usano
+            //    virgola (IT) / punto (EN) come `formattaDecimale` del secondo
+            //    lotto - prima erano `.toFixed(1)` fisso col punto anche in
+            //    italiano (per coerenza col resto del sito ora seguono la
+            //    lingua). Helper `decimaleMeteo` locale a weather.js (non e' in
+            //    una IIFE: nome proprio per non collidere, come `formattaEuro`).
+            // 2) `#weather-details-container` e' innerHTML costruito da
+            //    `renderWeatherData` sull'ultima risposta di open-meteo:
+            //    `applyStaticTranslations` non lo tocca. L'`onChange` di
+            //    weather.js RIGIOCA l'ultimo dato gia' in mano (`ultimoData`),
+            //    NESSUN fetch nuovo - open-meteo ha un tetto (punto 33). Stessa
+            //    logica di `#backpack` al sesto lotto. Solo se `#map-section`
+            //    e' attiva (gate come le aree 1-2 del lotto Mappa).
+            // 3) `bearingToCompassSector` (map.js) ora restituisce `.label` gia'
+            //    nella lingua attiva (chiave `solar.compass.<KEY>`), `.key`
+            //    resta il codice N/NE/... usato per i confronti - stessa regola
+            //    di Difficolta'/Tag Tribu' al secondo lotto e di `titleFor`
+            //    all'area 1. La usano sia `renderSolarExposureAdvice` (map.js)
+            //    sia `esposizioneSolare` (routeplanner.js): tradotta in un
+            //    posto solo, la vedono giusta entrambe.
+            // 4) `esposizioneSolare` di routeplanner.js si ridisegna gia' col
+            //    suo `onChange` (chiama `aggiornaPannello` dallo stato in
+            //    memoria) - basta tradurne il corpo, l'handler non cambia.
+            // 5) Il titolo notifica "Camoscio Safety Alert" (weather.js,
+            //    triggerLightningPushNotification) resta invariato: e' un nome
+            //    di notifica col marchio davanti, come "Admin"/"Carpooling". Il
+            //    corpo (il messaggio di rischio) e' tradotto.
+            // 6) I `console.warn` di weather.js restano in italiano: il
+            //    dizionario e' solo per l'interfaccia, mai per la console.
+
+            // --- Card Meteo Multi-Quota (#weather-widget-card): HTML statico ---
+            'weather.cardTitolo': 'Multi-Altitude Weather & Microclimate',
+            'weather.cardDesc': 'Analysis of temperature and wind at the different altitudes along the route.',
+            'weather.cercaPlaceholder': 'Search a place, e.g. Campo Imperatore',
+            'weather.mappaBtn': 'Map',
+            'weather.mappaBtnTitle': 'Choose the point directly on the map',
+            'weather.meteoQui': 'Weather where I am',
+            'weather.selezionaPunto': 'Select a place or a trail...',
+
+            // --- weather.js: testo generato da JS ---
+            'weather.interrogazione': 'Querying Weather API...',
+            'weather.cercoPosizione': 'Finding your position...',
+            'weather.nonLettaPosizione': "I couldn't read your position yet. Try again in a few seconds, out in the open.",
+            'weather.laMiaPosizione': 'My position',
+            'weather.simulatoOffline': 'Offline Simulation',
+            'weather.mapPickerTitolo': 'Choose the weather point',
+            'weather.mapPickerSuggerimento': "Tap the map where you're interested: temperature and wind are calculated for that area, at the different altitudes.",
+            'weather.precipitazioni': 'Precipitation:',
+            'weather.instabilitaCape': 'CAPE instability:',
+            'weather.quota.puntoScelto': 'Chosen point',
+            'weather.quota.salita': 'Ascent',
+            'weather.quota.crestaVetta': 'Ridge / Summit',
+            'weather.rischioElevato': 'HIGH DANGER: Very strong convective instability. Risk of violent storms and imminent lightning in the afternoon!',
+            'weather.rischioFulmini': 'LIGHTNING RISK: High humidity with instability. Chance of storm cells at altitude.',
+            'weather.nessunRischio': 'No lightning risk detected for the next few hours.',
+
+            // --- Card Esposizione Solare (#sun-exposure-card): HTML statico ---
+            'solar.cardTitolo': 'Sun Exposure',
+            'solar.cardDesc': 'The algorithm analyzes the slope and aspect of alpine hillsides, advising the best times and aspects.',
+            'solar.selezionaSentiero': 'Select a trail to get sun/shade advice.',
+
+            // --- map.js renderSolarExposureAdvice: consigli generati da JS
+            //     (contengono <strong>/<br>, contenuto nostro - vengono messi
+            //     via innerHTML come gli altri *.js html del dizionario). Il
+            //     versante lo passa chi chiama (gia' tradotto, vedi solar.compass). ---
+            'solar.nessunaVetta': "No summit recorded for this route: the hillside aspect can't be estimated. Still, consider early starts in the summer months to avoid the hottest hours.",
+            'solar.ghiacciaio': function (s) { return '<strong>❄️ High Altitude: High Glacier Glare (' + s + '-facing slope)</strong><br>\n            Above 3500m sun exposure is at its peak. Category 4 sunglasses and protective sunscreen are mandatory. Watch for the glacier warming from 12:00, which makes the snow bridges unstable.'; },
+            'solar.estateEsposto': function (s) { return '<strong>☀️ Summer Tip: ' + s + '-facing slope, high exposure</strong><br>\n            The route to the summit faces ' + s + ' and heats up quickly during the central hours. A start by 07:00 is recommended to avoid heat stroke, and mind the afternoon lightning risk.'; },
+            'solar.estateOmbra': function (s) { return '<strong>🌲 Summer Tip: ' + s + '-facing slope, more shaded</strong><br>\n            The route to the summit faces ' + s + ': it stays cooler even in the central hours, but can hold residual snow or ice longer in the hollows. Bring sun protection anyway for the open stretches.'; },
+            'solar.invernoLuce': function (s) { return '<strong>❄️ Seasonal Tip: ' + s + '-facing slope, maximize the light</strong><br>\n            Doing the climb in the central hours (10:00 - 14:00) is recommended, using the ' + s + '-facing slope to benefit from the sunshine.'; },
+            'solar.invernoGhiaccio': function (s) { return '<strong>❄️ Seasonal Tip: ' + s + '-facing slope, ice risk</strong><br>\n            The route to the summit faces ' + s + ', with little sun this season: consider micro-spikes/poles and a not-too-late return because of the risk of sudden ice.'; },
+
+            // --- 8 settori cardinali (bearingToCompassSector, map.js): chiave =
+            //     codice, valore = etichetta nella lingua attiva. Condivisa fra
+            //     renderSolarExposureAdvice (map.js) e esposizioneSolare (routeplanner.js). ---
+            'solar.compass.N': 'North',
+            'solar.compass.NE': 'Northeast',
+            'solar.compass.E': 'East',
+            'solar.compass.SE': 'Southeast',
+            'solar.compass.S': 'South',
+            'solar.compass.SW': 'Southwest',
+            'solar.compass.W': 'West',
+            'solar.compass.NW': 'Northwest',
+
+            // --- routeplanner.js esposizioneSolare(): riquadro .rp-sole nel
+            //     pannello "Progetta un percorso" ---
+            'rp.sole.titolo': 'Sun exposure',
+            'rp.sole.direzionePrevalente': function (etichetta) { return ' · mostly facing ' + etichetta; },
+            'rp.sole.aSud': 'south',
+            'rp.sole.aNord': 'north',
+            'rp.sole.nota': "Calculated from the track's orientation. It doesn't account for shade from nearby walls, which can't be known without the elevations.",
+            'rp.sole.consiglioSudEstate': "More than half the route faces south and heats up early: this season it's best to start by 7:00, and remember that heat storms roll in from early afternoon.",
+            'rp.sole.consiglioSud': 'More than half the route faces south: it gets sun for a long time, which helps in winter — the snow melts sooner and the ground is less frozen in the morning.',
+            'rp.sole.consiglioNordEstate': 'More than half the route faces north: it stays cooler even in summer, good for the central hours.',
+            'rp.sole.consiglioNordInverno': 'More than half the route faces north: in the cold months ice lingers there for a long time even in the sun. Consider micro-spikes.',
+            'rp.sole.consiglioMisto': 'The route changes aspect often, alternating sunny and shaded stretches: no exposure dominates.'
         }
     };
 

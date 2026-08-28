@@ -366,6 +366,7 @@
         const sud = quota('S') + quota('SE') + quota('SW');
         const nord = quota('N') + quota('NE') + quota('NW');
         const prevalente = [...versanti.entries()].sort((a, b) => b[1] - a[1])[0];
+        // .label arriva gia' nella lingua attiva da map.js (rollout punto 102, area 3).
         const etichetta = window.bearingToCompassSector(['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'].indexOf(prevalente[0]) * 45).label;
 
         const mese = new Date().getMonth();
@@ -373,26 +374,26 @@
 
         let consiglio;
         if (sud >= 50 && estate) {
-            consiglio = `Piu' della meta' del percorso e' rivolta a sud e si scalda presto: in questa stagione conviene partire entro le 7:00, e ricorda che i temporali di calore arrivano dal primo pomeriggio.`;
+            consiglio = T('rp.sole.consiglioSudEstate') || `Piu' della meta' del percorso e' rivolta a sud e si scalda presto: in questa stagione conviene partire entro le 7:00, e ricorda che i temporali di calore arrivano dal primo pomeriggio.`;
         } else if (sud >= 50) {
-            consiglio = `Piu' della meta' del percorso e' rivolta a sud: prende sole a lungo, il che d'inverno aiuta - la neve si scioglie prima e il fondo e' meno gelato al mattino.`;
+            consiglio = T('rp.sole.consiglioSud') || `Piu' della meta' del percorso e' rivolta a sud: prende sole a lungo, il che d'inverno aiuta - la neve si scioglie prima e il fondo e' meno gelato al mattino.`;
         } else if (nord >= 50) {
             consiglio = estate
-                ? `Piu' della meta' del percorso e' rivolta a nord: resta piu' fresco anche d'estate, buono per le ore centrali.`
-                : `Piu' della meta' del percorso e' rivolta a nord: nei mesi freddi il ghiaccio ci resta a lungo anche col sole. Valuta i ramponcini.`;
+                ? (T('rp.sole.consiglioNordEstate') || `Piu' della meta' del percorso e' rivolta a nord: resta piu' fresco anche d'estate, buono per le ore centrali.`)
+                : (T('rp.sole.consiglioNordInverno') || `Piu' della meta' del percorso e' rivolta a nord: nei mesi freddi il ghiaccio ci resta a lungo anche col sole. Valuta i ramponcini.`);
         } else {
-            consiglio = `Il percorso cambia versante spesso, quindi alterna tratti al sole e all'ombra: nessuna esposizione domina.`;
+            consiglio = T('rp.sole.consiglioMisto') || `Il percorso cambia versante spesso, quindi alterna tratti al sole e all'ombra: nessuna esposizione domina.`;
         }
 
         return `
             <div class="rp-sole">
-                <div class="rp-sole-testa"><i data-lucide="sun"></i> <b>Esposizione al sole</b> · direzione prevalente ${esc(etichetta)}</div>
+                <div class="rp-sole-testa"><i data-lucide="sun"></i> <b>${T('rp.sole.titolo') || 'Esposizione al sole'}</b>${T('rp.sole.direzionePrevalente', esc(etichetta)) || ` · direzione prevalente ${esc(etichetta)}`}</div>
                 <div class="rp-sole-barre">
-                    <div><span>${sud}%</span><small>a sud</small></div>
-                    <div><span>${nord}%</span><small>a nord</small></div>
+                    <div><span>${sud}%</span><small>${T('rp.sole.aSud') || 'a sud'}</small></div>
+                    <div><span>${nord}%</span><small>${T('rp.sole.aNord') || 'a nord'}</small></div>
                 </div>
                 <p class="small">${consiglio}</p>
-                <p class="small text-muted">Calcolata dall'orientamento del tracciato. Non tiene conto dell'ombra delle pareti vicine, che senza le quote non si puo' sapere.</p>
+                <p class="small text-muted">${T('rp.sole.nota') || "Calcolata dall'orientamento del tracciato. Non tiene conto dell'ombra delle pareti vicine, che senza le quote non si puo' sapere."}</p>
             </div>`;
     }
 
@@ -702,9 +703,10 @@
     // memoria (nessun ricalcolo del percorso - ultimoEsito e' gia' in mano; la sola
     // fetch e' quella dell'elenco bozze nel ramo "non attivo"), renderProgetti
     // rifacendo la sua fetch (gia' rifatta a ogni ingresso in "Le mie escursioni").
-    // Il blocco "Esposizione al sole" del pannello (esposizioneSolare) NON e' di
-    // quest'area - resta in italiano fino all'area 3, insieme a
-    // renderSolarExposureAdvice / bearingToCompassSector di map.js.
+    // Il blocco "Esposizione al sole" del pannello (esposizioneSolare) e' stato
+    // tradotto all'area 3 (28/08): l'handler qui non cambia, aggiornaPannello() lo
+    // ricostruisce gia' e le sue stringhe rp.sole.* ora seguono la lingua, con le
+    // etichette dei versanti che arrivano tradotte da bearingToCompassSector (map.js).
     if (window.CamoscioI18n && window.CamoscioI18n.onChange) {
         window.CamoscioI18n.onChange(function () {
             const mappa = document.getElementById('map-section');
