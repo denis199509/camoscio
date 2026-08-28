@@ -6622,23 +6622,30 @@ schermo spento ancora."
    prova-invito-squadra 59/59).
 
    COMMITTATO E PUSHATO su richiesta esplicita di Denis ("procedi con la
-   chiusura"), camoscio `c747bdc`. Erano 4 commit auto-save dell'hook Stop
+   chiusura"), camoscio `c747bdc` (codice) + `9505ae9` (chiusura doc:
+   leggimi.txt + cose_da_fare.txt). Erano 4 commit auto-save dell'hook Stop
    (uno per passo), schiacciati in uno con git reset --soft e7dbfdf prima
    del commit vero (con --amend se ne rifondeva uno solo, qui erano
-   quattro). VERIFICA DAL VIVO DI DENIS: da fare, come per lotto Mappa /
-   gate / lotti 3-7.
+   quattro).
 
-   >>> ORA IL PUNTO 102 E' SENZA CODA: non c'e' PIU' NIENTE da tradurre.
-   Resta italiano solo cio' che e' stato deciso di lasciare (testo utente,
-   nomi propri di luogo, titolo/descrizione dei badge personali,
-   segnaposto nativo di <input type=date>/<input type=file>, e
-   componiRapporto() dentro diagnostica-gps.html).
+   >>> PUNTO 102 CHIUSO. Denis, 28/08/2026: "considera chiuso il punto".
+   Chiuso senza attendere la sua riprova in locale su lotto Mappa / gate /
+   diagnostica-gps.html (i lotti 1-2 li aveva confermati a suo tempo, i
+   lotti 3-7 guardati di corsa il 28/08: "per adesso tutto bene"). Ogni
+   pezzo resta comunque verificato con l'estensione Chrome IT<->EN
+   (toggle+sweep, zero errori console) e con le prove automatiche
+   (prova-configurazione 9/9, prova-passo-non-misurato 28/28,
+   prova-invito-squadra 59/59; per il gate anche prova-punto7 53/53 e
+   prova-verifica-email 34/34). Non c'e' PIU' NIENTE da tradurre; resta
+   italiano solo cio' che e' stato deciso di lasciare (testo utente, nomi
+   propri di luogo, titolo/descrizione dei badge personali, segnaposto
+   nativo di <input type=date>/<input type=file>, e componiRapporto()
+   dentro diagnostica-gps.html).
 
-   RIPARTIRE DA: verifica dal vivo di Denis del punto 102 (lotto Mappa +
-   gate + pagine HTML + lotti 3-7 + diagnostica-gps.html, tutto pushato);
-   poi punti 106 (fix responsive), 108 (teletrasporto GPS che farma i
-   badge - decisione di prodotto), 111 (feature "risolvi"/scadenza
-   segnalazioni - dall'agente architect).
+   RIPARTIRE DA (il punto 102 e' fuori da questa lista): punti 106 (fix
+   responsive), 108 (teletrasporto GPS che farma i badge - decisione di
+   prodotto), 111 (feature "risolvi"/scadenza segnalazioni - dall'agente
+   architect).
 
 =====================================================================
 

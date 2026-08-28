@@ -1,8 +1,8 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-28 (nona sessione, seguito 6). >>> PUNTO 102 SENZA
-CODA: tutta l'interfaccia tradotta IT/EN, tradotta anche
-diagnostica-gps.html - non c'e' piu' niente da tradurre. <<<
+Aggiornato: 2026-08-28 (nona sessione, seguito 6). >>> PUNTO 102 CHIUSO:
+tutta l'interfaccia IT/EN, diagnostica-gps.html inclusa, niente piu' da
+tradurre. Chiuso su decisione di Denis ("considera chiuso il punto"). <<<
 
 Il rollout, in ordine di commit camoscio:
   10c137f  1o lotto - Cerca Persone / Profilo / Squadra / Escursione
@@ -29,41 +29,26 @@ TRADOTTA il 28/08 (c747bdc). Dentro quella pagina resta italiano solo
 componiRapporto() - il rapporto tecnico da copiare e incollare per
 assistenza, non e' interfaccia.
 
-VERIFICA DAL VIVO DI DENIS: sui lotti 3-7 prova veloce il 28/08 - "per
-adesso tutto bene" (parziale); sul lotto Mappa e sul gate ha detto
-"lascia stare la verifica". RESTA DA VERIFICARE DAL VIVO tutto quanto.
-Ogni pezzo e' stato comunque provato con l'estensione Chrome (IT<->EN,
-toggle+sweep, listener error/unhandledrejection: ZERO errori) e con le
-prove automatiche (prova-configurazione 9/9, prova-passo-non-misurato
-28/28, prova-invito-squadra 59/59; per il gate anche prova-punto7 53/53 e
-prova-verifica-email 34/34, le due che CLAUDE.md impone quando si tocca
-accessi/password/email). Dettaglio completo nel vault (03/04/06) e in
-cose_da_fare.txt punto 102.
+VERIFICHE FATTE: ogni lotto (i 7 + lotto Mappa aree 1-4 + gate/3 pagine
+HTML + diagnostica-gps.html) provato con l'estensione Chrome IT<->EN
+(toggle+sweep, listener error/unhandledrejection: ZERO errori) e con le
+prove automatiche (prova-configurazione 9/9, prova-passo-non-misurato 28/28,
+prova-invito-squadra 59/59; per il gate anche prova-punto7 53/53 e
+prova-verifica-email 34/34, le due che CLAUDE.md impone su
+accessi/password/email). Per diagnostica-gps.html: gli 8 rami del verdetto
+(mostraVerdetto) pilotati con uno stub di navigator.geolocation, guida
+sblocco Android+iOS, decimali virgola/punto. In locale da Denis: lotti 1-2
+confermati a suo tempo, lotti 3-7 prova veloce il 28/08 ("per adesso tutto
+bene"); su lotto Mappa / gate / diagnostica-gps.html ha chiuso il punto
+senza riprova ("considera chiuso il punto"). Dettaglio nel vault (03/04/06)
+e in cose_da_fare.txt punto 102.
 
-diagnostica-gps.html verificata anche lei con l'estensione Chrome IT<->EN:
-tutti gli 8 rami del verdetto (mostraVerdetto) pilotati con uno stub di
-navigator.geolocation, guida sblocco Android+iOS, decimali virgola/punto,
-zero errori in console. + prova-configurazione 9/9, prova-passo-non-misurato
-28/28, prova-invito-squadra 59/59 (guardia di regressione su i18n.js).
-Verifica dal vivo di Denis: da fare come per tutto il resto.
-
-ULTIMO PEZZO (gate + pagine HTML) - com'e' fatto:
-- auth.js NON e' in una IIFE -> var T. Testo statico del gate #auth-gate
-  (index.html) marcato data-i18n; auth.js traduce solo i messaggi generati
-  da JS (errori, stati dei bottoni). NESSUN onChange per il gate: le righe
-  contatto-emergenza costruite da JS portano data-i18n NEL TEMPLATE, quindi
-  applyStaticTranslations le traduce al cambio lingua senza perdere quanto
-  gia' scritto (tocca solo textContent/placeholder, mai value);
-- bandiere anche prima del login: una .lang-switcher in ognuna delle 3
-  viste del gate e in ognuna delle 3 pagine autonome. i18n.js aggancia
-  gia' tutte le .lang-flag-btn del documento;
-- demo.html / conferma-email.html / reimposta-password.html: non
-  caricavano i18n.js -> aggiunto <script src="js/i18n.js"> PRIMA del loro
-  <script> inline (a fine body, non in head: li' il DOM non c'e' ancora).
-  Seguono la preferenza localStorage 'camoscioLang' del sito;
-- vocabolario fisso del wizard (livello, interessi, difficolta' CAI,
-  privacy) tradotto solo a video: il data-value/value resta la stringa IT
-  che va al server. Marche/Lazio/Abruzzo/Molise NON tradotti (nomi propri).
+COME SONO FATTI I LOTTI (data-i18n / data-i18n-html, var T fuori dalle IIFE
+e const T dentro, dizionario SOLO inglese in public/js/i18n.js con
+l'italiano mai duplicato, bandiere SVG inline, onChange solo dove il
+ridisegno costa zero, vocabolario fisso tradotto a video ma valore IT al
+server, nomi propri di luogo/regioni mai tradotti): dettaglio completo nel
+vault 03, sezioni "Punto 102" e "diagnostica-gps.html".
 
 Resta valido: hook "Stop" di auto-save (commit locale, MAI push) a fine di
 ogni risposta. Debito icona Bivacco Carlo Fusco CHIUSO il 28/08 (icona
@@ -99,15 +84,9 @@ schedulato, UI) -> la prossima sessione PARTE DALL'AGENTE architect per il
 piano. Dettaglio e domande aperte in cose_da_fare.txt punti 109, 110, 111.
 
 >>> APERTO PER LA PROSSIMA SESSIONE, in quest'ordine se Denis non dice
-altro:
+altro (il PUNTO 102 e' CHIUSO, fuori da questa lista):
 
-1. Verifica dal vivo di Denis del PUNTO 102 (COMPLETO, niente piu' da
-   tradurre): lotti 3-7 gia' guardati di corsa il 28/08 ("per adesso tutto
-   bene"); resta da verificare TUTTO IL LOTTO MAPPA (aree 1-4), il GATE +
-   le 3 PAGINE HTML, e diagnostica-gps.html. Tutto gia' pushato. Se
-   segnala qualcosa, correggere.
-
-2. PUNTO 106 (giro a parte): due difetti responsive PRE-ESISTENTI trovati
+1. PUNTO 106 (giro a parte): due difetti responsive PRE-ESISTENTI trovati
    verificando il terzo lotto su mobile (non regressioni della traduzione,
    misurati identici IT/EN a 387px):
    a) #my-profile, .photo-upload-row (styles.css ~3087): il bottone
@@ -119,7 +98,7 @@ altro:
    Verificare a ~387px con l'iframe stessa-origine (resize_window NON
    funziona) senza rompere il desktop.
 
-3. PUNTO 108 (giro a parte): il tasto di simulazione della posizione GPS
+2. PUNTO 108 (giro a parte): il tasto di simulazione della posizione GPS
    sulla mappa fa scattare i timbri e sblocca i badge per davvero - si
    possono conquistare tutti i badge da fermi. E' prima una DECISIONE di
    prodotto (il teletrasporto resta ma non da' timbri? solo per i demo?
@@ -128,7 +107,7 @@ altro:
    (SOGLIA_TIMBRO_M, condivisa col conteggio salite del punto 42b).
    Dettaglio in cose_da_fare.txt punto 108.
 
-4. PUNTO 111 (multi-modulo, PARTE DALL'AGENTE architect): "risolvi" di una
+3. PUNTO 111 (multi-modulo, PARTE DALL'AGENTE architect): "risolvi" di una
    segnalazione da utente normale e scadenza a 90 giorni diventano
    entrambi una notifica a Denis che decide (conferma/tieni ancora,
    oppure togli/rinnova +90 gg). L'auto-cancellazione TTL del punto 109
@@ -290,9 +269,14 @@ MAI piu' (congelato); cose_da_fare.txt quando un punto si chiude o ne arriva uno
           l'estensione Chrome (IT+EN, toggle dal vivo, zero errori)
           e con prova-configurazione.js/prova-passo-non-misurato.js.
           Committato e pushato su richiesta esplicita di Denis
-          (`6474cd9`). VERIFICA DAL VIVO DI DENIS ANCORA DA FARE
-          ("la faccio in un secondo momento") - vedi blocco in cima
-          a questo file per il prossimo lotto.
+          (`6474cd9`). Poi lotti 4-7, lotto Mappa (aree 1-4), gate +
+          3 pagine HTML e diagnostica-gps.html - tutti fatti,
+          verificati (estensione Chrome + prove automatiche),
+          committati e pushati entro il 28/08. PUNTO 102 CHIUSO su
+          decisione di Denis ("considera chiuso il punto"), senza sua
+          riprova in locale su Mappa/gate/diagnostica. Dettaglio:
+          blocco in cima a questo file, vault 03/04/06,
+          cose_da_fare.txt punto 102.
 
      103. [22/08/2026, trovato durante il punto 102] Il titolo di
           un'escursione importata da GPX sul profilo di DaniWoll
