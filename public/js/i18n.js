@@ -1179,6 +1179,8 @@
             'map.geo.timbraBtn': 'STAMP PASSPORT',
             'map.geo.timbroSbloccato': 'Stamp Unlocked! 🏆',
             'map.geo.timbratoConSuccesso': function (nome) { return 'The peak passport for <b>' + nome + '</b> was stamped successfully!'; },
+            'map.geo.serveRegistrazione': 'The stamp unlocks by walking here with a recording running (or by importing the .gpx track of the climb).',
+            'map.geo.timbroNegato': "The stamp couldn't be registered right now.",
 
             // --- Punti timbrabili disegnati sulla mappa (drawStampablePoints) ---
             'map.punto.altitudine': function (m) { return 'Altitude: <b>' + m + 'm</b>'; },

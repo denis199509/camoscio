@@ -1,50 +1,53 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-28 (decima sessione).
+Aggiornato: 2026-08-28 (undicesima sessione).
 
->>> PUNTO 112 FATTO E PUSHATO — due parti:
-  (A) tre badge luoghi nuovi (camoscio c77572e): Monte Velino 2486 m,
-      Monte Cafornia 2424 m, Rifugio Capanna di Sevice 2119 m - tutti
-      Abruzzo, zona nuova "Sirente-Velino". Coordinate da Overpass per
-      tag (natural=peak / tourism=alpine_hut), quote OSM = cifre sulle
-      icone, regione confermata con lib/regions.js, DB controllato
-      (nessuna vetta omonima gia' presente). Catalogo badge 21 -> 24.
-      Icone in public/img/badge-luoghi/, sorgenti in "Badge per
-      Camoscio/fatto/".
-  (B) bottone "i" nel modale immagine del badge (punto 99), camoscio
-      dffdda3: quando il badge ha una scheda compare una "i" accanto
-      alla x -> pannello nome + testo ancorato al fondo dell'immagine.
-      Le 24 descrizioni in public/js/badge-info.js (NUOVO): file
-      SOLO-BROWSER (il server non lo carica, a differenza di
-      badge-points.js), indicizzato per stampId, nessun campo MongoDB,
-      testo IT fuori da i18n come i nomi di luogo (punto 102). Lo
-      stampId arriva al click via data-stamp-id su .badge-card e sullo
-      slot Passaporto; badge personali e vette da escursione non hanno
-      scheda -> niente "i". Verificato dal vivo (estensione Chrome,
-      demo Marco, IT+EN, badge bloccato/personale, Esc, console
-      pulita). Dettaglio: cose_da_fare.txt punto 112, vault 03/04/06.
+>>> PUNTO 108 FATTO — un timbro si sblocca solo con una traccia reale.
+    NON ancora in commit veri: 3 auto-save locali (e3b44c1 refactor,
+    4509108 verifica + prova, 5985086 script) da rifondere con
+    `git reset --soft 171d5a0` + commit veri PRIMA del push, quando
+    Denis da' il via. Repo camoscio NON pushato.
 
-  Tre cose lasciate cosi' (Denis: "via libera" senza modifiche):
-  titolo del pannello = nome del catalogo (non "Carlo Franchetti" /
-  "Tito Zilioli", che restano nel testo); un probabile refuso nella
-  prosa di Denis lasciato tale e quale (Terminillo, "panorami che
-  spazzano dalla Piana Reatina"); aria-label della "i" in italiano
-  fisso, come la x.
+  Il buco non era il tasto teletrasporto: POST /api/stamps creava il
+  timbro senza NESSUN controllo di posizione (i 150 m stavano solo nel
+  browser, checkGeofencing). Decisione di prodotto concordata con
+  Denis: "verificato per tutti" - il timbro si crea solo se una traccia
+  REALE dell'utente (registrazione in corso/conclusa o .gpx importato)
+  e' passata entro SOGLIA_TIMBRO_M dalla vetta, account demo compresi.
 
->>> APERTO PER LA PROSSIMA SESSIONE, in quest'ordine se Denis non dice
-    altro:
+  - lib/geofenceTimbri.js (NUOVO): SOGLIA_TIMBRO_M, puntiTimbrabili,
+    distanzaMinimaDaTraccia, tracciaToccaPunto. Consolida le DUE copie
+    a mano della scansione che stavano in routes/tracking.js
+    (assegnaTimbriDallaTraccia + /peak-ascents). Comportamento identico
+    verificato: 5542 casi, 0 differenze. Import .gpx e conteggio salite
+    42b invariati.
+  - routes/stamps.js POST /: 400 se stampId fuori catalogo, 403 se
+    nessuna ActiveHikeSession dell'utente (aperta O conclusa) tocca il
+    punto entro 150 m.
+  - public/js/map.js: bottone "TIMBRA" solo se
+    CamoscioTrackingIsRecording(); unlockStampDirectly mostra l'errore
+    del server invece di ignorarlo. i18n.js: 2 chiavi EN. Teletrasporto
+    e segnaposto restano (GPS reale + esplorazione).
+  - prove/prova-punto108.js (NUOVO): 24 controlli verdi. Controprova
+    col vecchio stamps.js: 6 cadono (3a/3b).
+  - scripts/timbri-senza-traccia.js (NUOVO): sola lettura di default,
+    --scrivi --stamp=id per la cancellazione mirata (deleteMany
+    filtrato per userId + stampId). Diagnosi account di Denis: 4 timbri
+    con .gpx reale entro 2-19 m, 1 senza (badge_viglio / Monte Viglio)
+    -> CANCELLATO su sua conferma (5 -> 4 timbri, gli altri 4 intatti).
 
-1. PUNTO 108 (giro a parte): il tasto di simulazione della posizione
-   GPS sulla mappa fa scattare i timbri e sblocca i badge PER DAVVERO -
-   si possono conquistare tutti i badge da fermi. E' prima una
-   DECISIONE di prodotto (il teletrasporto resta ma non da' timbri?
-   solo per i demo? si toglie?), da concordare con Denis prima di
-   scrivere. Codice: simulazione posizione in map.js/tracking.js +
-   geofencing timbri (SOGLIA_TIMBRO_M, condivisa col conteggio salite
-   del punto 42b - non spaccarlo). Dettaglio in cose_da_fare.txt
-   punto 108.
+  Trappola: /peak-ascents conta solo le sessioni status:'ended', NON la
+  registrazione aperta - voluto, e diverso apposta dalla query di
+  stamps.js. Dettaglio: cose_da_fare.txt punto 108, vault 03/04/06/07.
 
-2. PUNTO 111 (multi-modulo, PARTE DALL'AGENTE architect): "risolvi" di
+  DA PROVARE DAL VIVO (Denis, se vuole): sulla mappa, teletrasporto su
+  una vetta SENZA registrare -> niente bottone, compare "il timbro si
+  sblocca camminando fin qui con una registrazione attiva". Con una
+  registrazione avviata -> bottone "TIMBRA" che funziona.
+
+>>> APERTO PER LA PROSSIMA SESSIONE:
+
+1. PUNTO 111 (multi-modulo, PARTE DALL'AGENTE architect): "risolvi" di
    una segnalazione da utente normale e scadenza a 90 giorni diventano
    entrambi una notifica a Denis che decide (conferma/tieni ancora,
    oppure togli/rinnova +90 gg). L'auto-cancellazione TTL del punto 109
@@ -70,11 +73,13 @@ Aggiornato: 2026-08-28 (decima sessione).
     <input type=date>/<input type=file>, e componiRapporto() dentro
     diagnostica-gps.html. Meccanismo dei lotti: vault 03, sezioni
     "Punto 102" e "diagnostica-gps.html".
-  - Punti 102 e 106 CHIUSI E PUSHATI il 28/08. 106 = due fix responsive
-    di styles.css (rollout 102: 10c137f -> ... -> c747bdc; 106:
-    07ee6ef). Residuo noto del 106, non in coda: i 4-5 titoli di
-    sezione piu' lunghi restano coi "..." su telefono - si riapre solo
-    se Denis lo chiede.
+  - Punti 102, 106 e 112 CHIUSI E PUSHATI il 28/08. 106 = due fix
+    responsive di styles.css (07ee6ef). 112 = 3 badge luoghi nuovi
+    (c77572e, catalogo 21->24, zona Sirente-Velino) + bottone "i" nel
+    modale badge con scheda del luogo (dffdda3, testi in
+    public/js/badge-info.js, solo-browser). Residuo noto del 106, non in
+    coda: i 4-5 titoli di sezione piu' lunghi restano coi "..." su
+    telefono - si riapre solo se Denis lo chiede.
   - Punti 109 (TTL segnalazioni 30 -> 90 gg, FATTO, sara' sostituito
     dal 111) e 110 (falso allarme, chiuso senza azione) - vedi
     cose_da_fare.txt.

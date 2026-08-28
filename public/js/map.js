@@ -547,6 +547,14 @@ function checkGeofencing(lat, lng) {
         const stampId = foundNearPeak.stampId;
         const alreadyHasStamp = db.stamps.some(s => s.stampId === stampId);
 
+        // Punto 108: il bottone "TIMBRA" compare solo se una registrazione e' in corso. Il
+        // server (routes/stamps.js) sblocca il timbro solo con una traccia reale che passa
+        // dalla vetta - senza questo filtro il bottone comparirebbe anche trascinando il
+        // segnaposto o col tasto "teletrasporta", per poi fallire con un 403. Chi sta
+        // davvero salendo con la registrazione attiva ha i punti GPS veri nella sessione
+        // aperta, quindi per lui il bottone c'e' e funziona.
+        const staRegistrando = !!(window.CamoscioTrackingIsRecording && window.CamoscioTrackingIsRecording());
+
         if (alreadyHasStamp) {
             userGpsMarker.bindPopup(`
                 <div style="color: white; font-family: inherit;">
@@ -554,13 +562,20 @@ function checkGeofencing(lat, lng) {
                     <p style="font-size: 0.8rem; margin: 0;">${T('map.geo.giaCollezionato') || 'Hai già collezionato questo timbro del passaporto!'}</p>
                 </div>
             `).openPopup();
-        } else {
+        } else if (staRegistrando) {
             userGpsMarker.bindPopup(`
                 <div style="color: white; font-family: inherit; text-align: center;">
                     <h4 style="margin: 0 0 4px 0;">🎉 ${T('map.geo.vettaRaggiunta') || 'Vetta Raggiunta!'}</h4>
                     <h5 style="margin: 0 0 8px 0; color: #C1662E;">${foundNearPeak.name} (${foundNearPeak.altitude}m)</h5>
                     <p style="font-size: 0.8rem; margin: 0 0 10px 0;">${T('map.geo.aSoliMetri', Math.round(distance)) || ('Sei a soli ' + Math.round(distance) + 'm dalla cima.')}</p>
                     <button class="btn btn-sm btn-primary" onclick="unlockStampDirectly('${stampId}', '${foundNearPeak.name}')">${T('map.geo.timbraBtn') || 'TIMBRA PASSAPORTO'}</button>
+                </div>
+            `).openPopup();
+        } else {
+            userGpsMarker.bindPopup(`
+                <div style="color: white; font-family: inherit; text-align: center;">
+                    <h4 style="margin: 0 0 4px 0;">📍 ${foundNearPeak.name} (${foundNearPeak.altitude}m)</h4>
+                    <p style="font-size: 0.8rem; margin: 0;">${T('map.geo.serveRegistrazione') || 'Il timbro si sblocca camminando fin qui con una registrazione attiva (o importando la traccia .gpx della salita).'}</p>
                 </div>
             `).openPopup();
         }
@@ -600,6 +615,21 @@ window.unlockStampDirectly = async function(stampId, peakName) {
             if (document.getElementById("dashboard").classList.contains("active")) {
                 window.renderDashboardStamps();
             }
+        } else {
+            // Punto 108: il server puo' rifiutare (nessuna traccia reale entro 150 m dalla
+            // vetta, timbro fuori catalogo). Fino a oggi la risposta veniva ignorata in
+            // silenzio e il popup restava "Vetta Raggiunta!" - sembrava un bug del sito.
+            let messaggio = T('map.geo.timbroNegato') || 'Non è stato possibile timbrare adesso.';
+            try {
+                const dati = await response.json();
+                if (dati && dati.error) messaggio = dati.error;
+            } catch (_) { /* corpo non JSON: si tiene il messaggio generico */ }
+            userGpsMarker.bindPopup(`
+                <div style="color: white; font-family: inherit; text-align: center;">
+                    <h5 style="margin: 0 0 6px 0;">📍 ${peakName}</h5>
+                    <p style="font-size: 0.8rem; margin: 0;">${messaggio}</p>
+                </div>
+            `).openPopup();
         }
     } catch (e) {
         console.error("Errore nello sblocco del timbro:", e);

@@ -12,6 +12,9 @@ const { parseGpx, statisticheTraccia, ErroreGpx, SOGLIA_DISLIVELLO_M, movimentoS
 const trailIndex = require('../lib/trailIndex');
 const { mongoose } = require('../db/mongo');
 const { recalculateAndApplyPace } = require('../lib/hikeStats');
+// Soglia + catalogo + scansione di una traccia: una copia sola, condivisa con la verifica
+// di un timbro da mappa (routes/stamps.js) e col conteggio salite (/peak-ascents qui sotto).
+const { SOGLIA_TIMBRO_M, puntiTimbrabili, distanzaMinimaDaTraccia, tracciaToccaPunto } = require('../lib/geofenceTimbri');
 
 const MAX_POINTS_PER_BATCH = 500; // un client onesto ne manda ~60-180 ogni 20-30s, mai a uno a uno
 // LA SOGLIA DEL DISLIVELLO DAL VIVO NON ESISTE PIU' COME NUMERO A PARTE. Fino al 2026-07-28
@@ -320,37 +323,10 @@ router.delete('/sessions/:id', requireAuth, async (req, res) => {
 // public/js/map.js), che gira nel browser mentre si cammina. Una traccia importata non
 // passava da nessuna parte.
 //
-// STESSA REGOLA DELLA MAPPA, di proposito: gli stessi 150 metri e lo stesso catalogo di
-// punti (public/js/badge-points.js, letto da qui e dal browser). Due soglie diverse
-// vorrebbero dire che camminare con il sito aperto e importare la stessa traccia danno
-// risultati diversi - cioe' che uno dei due sta sbagliando, senza poter dire quale.
-const SOGLIA_TIMBRO_M = 150;
-const CATALOGO_BADGE = require('../public/js/badge-points.js');
-
-// Il catalogo fisso PIU' le vette delle escursioni sul database, come fa catalogo() in
-// public/js/badges.js: chi crea un'escursione con una vetta nuova si ritrova il badge
-// senza che nessuno tocchi il codice, e la pagina Badge e l'importazione mostrano lo
-// stesso elenco.
-async function puntiTimbrabili() {
-    const perCodice = new Map();
-    for (const b of CATALOGO_BADGE) {
-        if (isFiniteNum(b.lat) && isFiniteNum(b.lng)) perCodice.set(b.stampId, b);
-    }
-
-    const escursioni = await Hike.find({}).select('peaks').lean();
-    for (const h of escursioni) {
-        for (const p of (h.peaks || [])) {
-            if (!p || !p.stampId || perCodice.has(p.stampId)) continue;
-            if (!isFiniteNum(p.lat) || !isFiniteNum(p.lng)) continue;
-            perCodice.set(p.stampId, { stampId: p.stampId, nome: p.name || 'Punto senza nome', emoji: '⛰️' });
-            // Le coordinate arrivano dal documento, non dal catalogo: si riscrivono qui
-            // per non dipendere dall'ordine dei campi.
-            perCodice.get(p.stampId).lat = p.lat;
-            perCodice.get(p.stampId).lng = p.lng;
-        }
-    }
-    return Array.from(perCodice.values());
-}
+// La soglia (SOGLIA_TIMBRO_M), il catalogo dei punti (puntiTimbrabili) e la scansione di
+// una traccia stanno in lib/geofenceTimbri.js: la stessa regola serve qui, alla rotta
+// /peak-ascents piu' sotto e alla verifica di un timbro da mappa (routes/stamps.js, punto
+// 108). Prima del 2026-08-28 erano due copie a mano dentro questo file.
 
 // Restituisce i badge NUOVI conquistati dalla traccia, gia' salvati sul database.
 // Non solleva mai: un badge non assegnato e' un dispiacere, un'importazione fallita dopo
@@ -361,22 +337,13 @@ async function assegnaTimbriDallaTraccia(userId, punti, dataUscita) {
         const candidati = await puntiTimbrabili();
         if (!candidati.length || !punti.length) return [];
 
-        // Una passata sola sui punti. Per ogni candidato si tiene una finestra in gradi
-        // larga quanto la soglia: il confronto costa due sottrazioni e scarta subito la
-        // quasi totalita' dei punti, cosi' anche una traccia da decine di migliaia di
-        // punti non diventa un calcolo pesante sul server.
-        const gradiLat = SOGLIA_TIMBRO_M / 111320;
+        // distanzaMinimaDaTraccia (lib/geofenceTimbri.js) fa una passata sola sui punti con
+        // una finestra in gradi larga quanto la soglia, cosi' anche una traccia da decine di
+        // migliaia di punti non diventa un calcolo pesante. Qui serve il minimo e non solo
+        // il si'/no: la distanza si mostra a schermo ("sei arrivato a Xm dalla cima").
         const raggiunti = new Map();
-
         for (const c of candidati) {
-            const gradiLng = SOGLIA_TIMBRO_M / (111320 * Math.max(0.1, Math.cos(c.lat * Math.PI / 180)));
-            let minimo = Infinity;
-            for (const p of punti) {
-                if (Math.abs(p[1] - c.lat) > gradiLat) continue;
-                if (Math.abs(p[0] - c.lng) > gradiLng) continue;
-                const d = haversineKm(p[1], p[0], c.lat, c.lng) * 1000;
-                if (d < minimo) minimo = d;
-            }
+            const minimo = distanzaMinimaDaTraccia(punti, c.lat, c.lng);
             if (minimo <= SOGLIA_TIMBRO_M) raggiunti.set(c.stampId, { punto: c, distanzaM: Math.round(minimo) });
         }
         if (!raggiunti.size) return [];
@@ -443,17 +410,10 @@ router.get('/peak-ascents/:userId', requireAuth, async (req, res) => {
             ((utente && utente.recognizedAscents) || []).map(r => [r.stampId, r.count])
         );
 
-        const gradiLat = SOGLIA_TIMBRO_M / 111320;
         const risultato = candidati.map(c => {
-            const gradiLng = SOGLIA_TIMBRO_M / (111320 * Math.max(0.1, Math.cos(c.lat * Math.PI / 180)));
             let siteCount = 0;
             for (const s of sessioni) {
-                const toccata = (s.points || []).some(p =>
-                    Math.abs(p[1] - c.lat) <= gradiLat &&
-                    Math.abs(p[0] - c.lng) <= gradiLng &&
-                    haversineKm(p[1], p[0], c.lat, c.lng) * 1000 <= SOGLIA_TIMBRO_M
-                );
-                if (toccata) siteCount++;
+                if (tracciaToccaPunto(s.points, c.lat, c.lng)) siteCount++;
             }
             const recognizedCount = pavimenti.get(c.stampId) || 0;
             return { stampId: c.stampId, recognizedCount, siteCount, total: recognizedCount + siteCount };

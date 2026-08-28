@@ -6884,7 +6884,8 @@ schermo spento ancora."
 
 --- BADGE FARMABILI COL TELETRASPORTO GPS ---
 
-108. [28/08/2026, ottava sessione - segnalato da Denis a fine sessione]
+108. [FATTO 2026-08-28, undicesima sessione - segnalato da Denis a fine
+   ottava sessione]
    Denis, parole sue: "Sulla mappa ho trovato il badge del Monte
    Viglio. Badge mai conquistato. Ho visto il tasto teletrasporto qui
    GPS. Cliccando sopra il mio GPS si e' spostato sulla cima del Monte
@@ -6901,17 +6902,69 @@ schermo spento ancora."
    il badge per davvero, senza esserci mai stati. Con quel tasto si
    possono raccogliere tutti i badge da fermi.
 
-   NON TOCCATO in questa sessione (segnalato a fine sessione, da
-   sistemare in un giro a parte). RIPARTIRE DA: e' prima di tutto una
-   DECISIONE di prodotto, non solo codice - le strade possibili:
-   (a) il teletrasporto GPS resta ma NON fa scattare i timbri (solo il
-   GPS reale del dispositivo li sblocca); (b) il teletrasporto resta
-   pieno solo per gli account demo, disattivato per gli account veri;
-   (c) si toglie del tutto il tasto. Da concordare con Denis quale,
-   prima di scrivere. Codice coinvolto: la simulazione della posizione
-   in public/js/map.js / tracking.js e il geofencing dei timbri
-   (SOGLIA_TIMBRO_M, la stessa soglia usata anche dal conteggio salite
-   del punto 42b - occhio a non spaccare quello).
+   DECISIONE DI PRODOTTO (concordata con Denis prima di scrivere, fra le
+   tre strade proposte): "verificato per tutti". Il teletrasporto GPS
+   RESTA (serve a esplorare la mappa e al tasto "Dove sono" col GPS
+   reale) ma NON fa piu' scattare i timbri di per se': il timbro si crea
+   solo se una traccia REALE dell'utente - registrazione in corso,
+   registrazione conclusa o file .gpx importato - e' passata entro
+   SOGLIA_TIMBRO_M (150 m) dalla vetta. Vale per TUTTI, account demo
+   compresi (scartata l'opzione "demo pieno": una regola sola e' piu'
+   facile da spiegare, e il teletrasporto non serviva davvero a
+   dimostrare i badge nemmeno in demo).
+
+   Cosa e' emerso guardando il codice: il buco NON era il tasto
+   teletrasporto, era che POST /api/stamps creava il timbro per chi era
+   loggato con un qualunque stampId nel corpo, SENZA nessun controllo di
+   posizione (i 150 m vivevano solo nel browser, checkGeofencing in
+   map.js). Anche togliendo il tasto, il timbro restava ottenibile con
+   un fetch dalla console. La correzione e' quindi lato SERVER.
+
+   FATTO in tre pezzi + pulizia:
+   1) REFACTOR (camoscio, auto-save da rifondere) - nuovo
+      lib/geofenceTimbri.js: SOGLIA_TIMBRO_M, puntiTimbrabili(),
+      distanzaMinimaDaTraccia(), tracciaToccaPunto(). Prima la stessa
+      scansione "un punto entro 150 m da una vetta" era scritta DUE
+      volte a mano dentro routes/tracking.js (assegnaTimbriDallaTraccia
+      + /peak-ascents). Ora una copia sola. Comportamento IDENTICO
+      verificato: 5542 casi (limiti, confine esatto della finestra in
+      gradi, tracce random, latitudini fino a 78 gradi), 0 differenze.
+      Import .gpx e conteggio salite del punto 42b invariati.
+   2) VERIFICA (camoscio) - routes/stamps.js POST /: 400 se lo stampId
+      non e' nel catalogo (chiude anche "crea un timbro con id
+      qualsiasi"); 403 se nessuna ActiveHikeSession dell'utente (aperta
+      O conclusa) tocca il punto entro 150 m; altrimenti crea come
+      prima. public/js/map.js: il bottone "TIMBRA PASSAPORTO" compare
+      solo se una registrazione e' in corso (CamoscioTrackingIsRecording),
+      altrimenti un messaggio che spiega come si sblocca;
+      unlockStampDirectly mostra l'errore del server invece di
+      ignorarlo in silenzio. public/js/i18n.js: 2 chiavi EN nuove.
+   3) PROVA - prove/prova-punto108.js (nuova): 24 controlli, tutti
+      verdi. Sez.1 equivalenza del refactor (senza server/DB); sez.2
+      puntiTimbrabili() sul DB; sez.3 integrazione col server vero
+      (403 senza traccia, 400 fuori catalogo, 200 con la registrazione
+      sulla vetta, idempotenza, import .gpx che assegna, /peak-ascents).
+      CONTROPROVA col vecchio routes/stamps.js (git stash): 6 controlli
+      cadono, sono i 3a/3b. Account demo Marco, pulizia in finally
+      filtrata per userId + chiave. Nessuna prova di prove/ da
+      rilanciare (non tocca accessi/password/email).
+   4) PULIZIA (richiesta esplicita di Denis, "script filtrato in due
+      tempi") - nuovo scripts/timbri-senza-traccia.js: sola lettura di
+      default, "--scrivi --stamp=id1,id2" per la cancellazione mirata
+      (deleteMany filtrato per userId + stampId; rifiuta un id che ha
+      una traccia dietro, salvo --forza). Diagnosi sull'account di
+      Denis: 5 timbri, 4 con un .gpx reale entro 2-19 m dalla vetta,
+      1 SENZA (badge_viglio, Monte Viglio, timbro del 22/08 - nessuna
+      traccia da nessuna parte). Cancellato badge_viglio su conferma
+      esplicita di Denis ("cancella badge_viglio, quello conquistato
+      con il teletrasporto"). Verificato con lettura indipendente:
+      5 -> 4 timbri, gli altri 4 intatti.
+
+   NOTA emersa provando: /peak-ascents (punto 42b) conta solo le
+   sessioni status:'ended', quindi NON vede la registrazione ancora
+   aperta - e' voluto (il conteggio salite e' per le uscite concluse) e
+   non confligge con la verifica del timbro, che invece guarda anche la
+   sessione aperta apposta, per poter timbrare DURANTE la camminata.
 
 =====================================================================
 
