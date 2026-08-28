@@ -2,58 +2,69 @@
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
 Aggiornato: 2026-08-28 (undicesima sessione).
 
->>> PUNTO 108 FATTO — un timbro si sblocca solo con una traccia reale.
-    NON ancora in commit veri: 3 auto-save locali (e3b44c1 refactor,
-    4509108 verifica + prova, 5985086 script) da rifondere con
-    `git reset --soft 171d5a0` + commit veri PRIMA del push, quando
-    Denis da' il via. Repo camoscio NON pushato.
+>>> PUNTO 111 IN CORSO — passi 1-5 di 11 fatti, committati e pushati.
+    SI RIPARTE DAL PASSO 6.
 
-  Il buco non era il tasto teletrasporto: POST /api/stamps creava il
-  timbro senza NESSUN controllo di posizione (i 150 m stavano solo nel
-  browser, checkGeofencing). Decisione di prodotto concordata con
-  Denis: "verificato per tutti" - il timbro si crea solo se una traccia
-  REALE dell'utente (registrazione in corso/conclusa o .gpx importato)
-  e' passata entro SOGLIA_TIMBRO_M dalla vetta, account demo compresi.
+  Le segnalazioni sentiero: "risolvi" di un utente normale e scadenza a
+  90 giorni diventano una notifica a Denis che decide (conferma / tieni
+  ancora, oppure rinnova +90gg / togli). Piano dell'agente `architect`
+  (11 passi), validato con Denis. Decisioni di prodotto e passi 6-11
+  PER ESTESO in cose_da_fare.txt punto 111 - NON serve rilanciare
+  l'architect.
 
-  - lib/geofenceTimbri.js (NUOVO): SOGLIA_TIMBRO_M, puntiTimbrabili,
-    distanzaMinimaDaTraccia, tracciaToccaPunto. Consolida le DUE copie
-    a mano della scansione che stavano in routes/tracking.js
-    (assegnaTimbriDallaTraccia + /peak-ascents). Comportamento identico
-    verificato: 5542 casi, 0 differenze. Import .gpx e conteggio salite
-    42b invariati.
-  - routes/stamps.js POST /: 400 se stampId fuori catalogo, 403 se
-    nessuna ActiveHikeSession dell'utente (aperta O conclusa) tocca il
-    punto entro 150 m.
-  - public/js/map.js: bottone "TIMBRA" solo se
-    CamoscioTrackingIsRecording(); unlockStampDirectly mostra l'errore
-    del server invece di ignorarlo. i18n.js: 2 chiavi EN. Teletrasporto
-    e segnaposto restano (GPS reale + esplorazione).
-  - prove/prova-punto108.js (NUOVO): 24 controlli verdi. Controprova
-    col vecchio stamps.js: 6 cadono (3a/3b).
-  - scripts/timbri-senza-traccia.js (NUOVO): sola lettura di default,
-    --scrivi --stamp=id per la cancellazione mirata (deleteMany
-    filtrato per userId + stampId). Diagnosi account di Denis: 4 timbri
-    con .gpx reale entro 2-19 m, 1 senza (badge_viglio / Monte Viglio)
-    -> CANCELLATO su sua conferma (5 -> 4 timbri, gli altri 4 intatti).
+  FATTO (camoscio, pushato):
+  - commit 2424cd4 (passi 1-3) + migrazione --scrivi su Atlas (passo 4):
+    schema Report con expiresAt (default +90gg) + 3 campi opzionali;
+    TTL su createdAt RIMOSSO, paracadute TTL su expiresAt a 365gg; i 4
+    report esistenti hanno expiresAt = createdAt+90 (scadono
+    27/10..21/11). lib/scadenzaSegnalazioni.js (rinnovo() = adesso+90).
+  - commit e9be6dd (passo 5): User.receivesReportAlerts (a chi arriva
+    l'avviso, != canModerateReports); Notification.relatedReportId;
+    lib/reportAlerts.js (destinatari + testi + notifiche +
+    controllaScadenze, quest'ultima NON ancora agganciata);
+    scripts/set-report-alerts.js; routes/reports.js:
+      POST /:id/resolve-request (il "risolvi" utente, non cancella)
+      DELETE /:id/resolve-request (moderatore, "Tieni ancora")
+      DELETE /:id/resolve -> ora MODERATORE (era requireAuth)
+      GET / -> nasconde resolutionRequestedBy + expiryNotifiedAt
+  - prove/prova-punto111.js (nuovo, sez. 1-7): 40/40.
+    prove/prova-punto45.js aggiornata (era rotta): 46/46.
 
-  Trappola: /peak-ascents conta solo le sessioni status:'ended', NON la
-  registrazione aperta - voluto, e diverso apposta dalla query di
-  stamps.js. Dettaglio: cose_da_fare.txt punto 108, vault 03/04/06/07.
+  DA FARE, in ordine: PASSO 6 (PATCH /:id/renew + aggancio pigro di
+  controllaScadenze a GET /api/notifications + click-through
+  relatedReportId in app.js) -> 7 (GET /moderation, ritiro di /pending,
+  badge=totale) -> 8 (map.js: "risolvi" -> resolve-request, testo
+  conferma, tasto spento) -> 9 (pagina Moderazione UI) -> 10 (prove
+  sez. 8-11 + controprova) -> 11 (vault + note). Dettaglio di ognuno
+  in cose_da_fare.txt punto 111.
 
-  DA PROVARE DAL VIVO (Denis, se vuole): sulla mappa, teletrasporto su
-  una vetta SENZA registrare -> niente bottone, compare "il timbro si
-  sblocca camminando fin qui con una registrazione attiva". Con una
-  registrazione avviata -> bottone "TIMBRA" che funziona.
+  >>> DUE COSE DA SAPERE SUBITO:
+  1. FINESTRA 403 APERTA IN PRODUZIONE. Il passo 5 (gia' pushato) rende
+     DELETE /:id/resolve moderatore-only, ma map.js lo chiama ancora:
+     un utente normale che preme "risolvi" su una segnalazione prende
+     403 (niente viene cancellato). La chiude il PASSO 8 (map.js), da
+     deployare presto. Rischio pratico ~nullo (4 segnalazioni su tutto
+     il DB, traffico bassissimo).
+  2. GAP SCADENZE. Da adesso le segnalazioni NON scadono piu' da sole
+     a 90gg (TTL createdAt rimosso) e niente avvisa Denis alla scadenza
+     finche' non c'e' il passo 6. Le 4 attuali scadono fra fine ottobre
+     e fine novembre: c'e' margine, non mesi.
 
->>> APERTO PER LA PROSSIMA SESSIONE:
+  TRAPPOLA (per il passo 8 e ogni futuro cambio di indice): autoIndex
+  attivo, nessun syncIndexes -> se droppi un indice ma lasci la riga
+  reportSchema.index(...) nello schema, il primo riavvio di Render lo
+  RICREA in silenzio. Ordine: deploy del codice senza la riga, POI il
+  dropIndex.
 
-1. PUNTO 111 (multi-modulo, PARTE DALL'AGENTE architect): "risolvi" di
-   una segnalazione da utente normale e scadenza a 90 giorni diventano
-   entrambi una notifica a Denis che decide (conferma/tieni ancora,
-   oppure togli/rinnova +90 gg). L'auto-cancellazione TTL del punto 109
-   va sostituita da un campo expiresAt + job schedulato; il TTL a 90 gg
-   resta come paracadute finche' 111 non e' fatto. Requisiti e domande
-   aperte in cose_da_fare.txt punto 111.
+>>> PUNTO 108 CHIUSO E PUSHATO il 28/08 (camoscio f006edf): un timbro
+    si sblocca solo con una traccia reale entro SOGLIA_TIMBRO_M dalla
+    vetta, per tutti (demo inclusi). Regola in lib/geofenceTimbri.js
+    (era duplicata in routes/tracking.js). badge_viglio (l'unico timbro
+    di Denis senza traccia dietro) rimosso dal suo account. Prova
+    prova-punto108.js 24/24 + controprova. Dettaglio: cose_da_fare.txt
+    punto 108, vault 03/04/06/07.
+    DA PROVARE DAL VIVO se Denis vuole: teletrasporto su una vetta
+    senza registrare -> niente bottone "TIMBRA", solo il messaggio.
 
 >>> ALTRE APERTE, non urgenti (dettaglio in vault 04-Da-Fare.md):
     livelli ORIGINALI del punto 63b (gradini per la ZONA dichiarata a
@@ -80,9 +91,10 @@ Aggiornato: 2026-08-28 (undicesima sessione).
     public/js/badge-info.js, solo-browser). Residuo noto del 106, non in
     coda: i 4-5 titoli di sezione piu' lunghi restano coi "..." su
     telefono - si riapre solo se Denis lo chiede.
-  - Punti 109 (TTL segnalazioni 30 -> 90 gg, FATTO, sara' sostituito
-    dal 111) e 110 (falso allarme, chiuso senza azione) - vedi
-    cose_da_fare.txt.
+  - Punto 109 (TTL segnalazioni 30 -> 90 gg): il TTL su createdAt e'
+    stato SOSTITUITO dal punto 111 (passi 1-4, gia' in produzione) -
+    ora c'e' Report.expiresAt + paracadute a 365gg. Punto 110 = falso
+    allarme, chiuso senza azione. Vedi cose_da_fare.txt.
 
 ===================================================================
 

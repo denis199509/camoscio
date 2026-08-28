@@ -7063,8 +7063,9 @@ schermo spento ancora."
 
 --- SEGNALAZIONI SENTIERO: "RISOLVI" E SCADENZA PASSANO DA DENIS ---
 
-111. [28/08/2026, nona sessione - DA FARE, solo raccolta requisiti,
-   nessun codice scritto] Nato da una domanda di Denis a fine sessione:
+111. [IN CORSO - requisiti raccolti nella nona sessione, piano
+   dall'agente architect + passi 1-5 di 11 fatti nell'undicesima
+   sessione (28/08/2026)] Nato da una domanda di Denis a fine sessione:
    "chi e' che puo risolvere una segnalazione? mi risulta che posso
    farla pure dal account demo di marco". Risposto che si', e' di
    proposito (punto 45): DELETE /api/reports/:id/resolve e' gated solo
@@ -7127,6 +7128,143 @@ schermo spento ancora."
      un endpoint nuovo, oppure un controllo in-process leggero;
    - dove Denis conferma/rinnova: pagina Moderazione, la notifica
      stessa, o un pannello nuovo - da decidere col piano.
+
+   -----------------------------------------------------------------
+   STATO AL 28/08/2026 (undicesima sessione) - PASSI 1-5 DI 11 FATTI
+   -----------------------------------------------------------------
+
+   PIANO COMPLETO: redatto dall'agente `architect`, 11 passi. Il file
+   di lavoro era nello scratchpad (effimero); i passi 6-11 e le
+   decisioni sono qui sotto per esteso - non serve rilanciare
+   l'architect, il piano e' stato validato con Denis.
+
+   DECISIONI DI PRODOTTO PRESE DA DENIS (non piu' aperte):
+   1. Notifiche in campanella SOLO per le due situazioni nuove
+      (risoluzione richiesta, scadenza). Le nuove segnalazioni restano
+      come ora: si vedono solo nella pagina Moderazione.
+   2. Destinatario: SOLO l'account di Denis (non "tutti i moderatori").
+      Implementato con un campo nuovo User.receivesReportAlerts,
+      separato da canModerateReports.
+   3. Interfaccia: estendere la pagina Moderazione (pendingreports.js),
+      sezione nuova con i bottoni Conferma la risoluzione / Tieni
+      ancora / Rinnova +90gg / Togli.
+   4. Le segnalazioni ancora 'pending' (mai verificate) scadono anche
+      loro -> finiscono nella lista "scadute" con [Rinnova] / [Rifiuta
+      ed elimina].
+   5. Il numero sul triangolo Moderazione conta TUTTO (da verificare +
+      risoluzioni richieste + scadute); campana e triangolo possono
+      mostrare lo stesso evento due volte, va bene.
+   6. Paracadute a 365 giorni: una segnalazione scaduta e mai toccata
+      per un anno intero si cancella da sola (unico limite di crescita
+      della collezione, le foto pesano). Su expiresAt, non createdAt.
+   7. Controllo scadenze: PIGRO (agganciato a GET /api/notifications
+      come il promemoria del punto 64), NIENTE cron-job.org. Motivo:
+      la conseguenza e' un pallino sulla campanella di Denis, che
+      esiste solo quando lui apre l'app - cron e pigro danno lo stesso
+      risultato, il pigro non aggiunge una dipendenza non-open-source.
+      Cron resta l'opzione B, da fare solo se un domani l'avviso
+      diventa un'email.
+   8. "Rinnova" = adesso + 90 giorni, MAI expiresAt + 90 (parole di
+      Denis: "tenerla per ALTRI 90 giorni"). Vive in
+      lib/scadenzaSegnalazioni.js rinnovo().
+   9. Nome di chi ha chiesto la risoluzione: visibile a Denis in
+      Moderazione, NON agli altri utenti in mappa (GET /api/reports
+      esclude resolutionRequestedBy).
+
+   FATTO (passi 1-5), tutto committato e pushato su camoscio:
+   - Passo 1-3 (commit 2424cd4): lib/scadenzaSegnalazioni.js (nuovo);
+     models/Report.js +4 campi (resolutionRequestedAt/By,
+     expiryNotifiedAt = default undefined; expiresAt = required,
+     default a +90gg dallo schema); rimosso il TTL su createdAt,
+     aggiunto paracadute TTL su expiresAt a 365gg;
+     scripts/scadenza-segnalazioni-esplicita.js (nuovo, migrazione);
+     scripts/allunga-ttl-segnalazioni.js nota "superato dal 111".
+   - Passo 4: migrazione --scrivi lanciata su Atlas. Backfill
+     expiresAt = createdAt + 90gg sui 4 report (scadono 27/10, 14/11,
+     15/11, 21/11), poi dropIndex(createdAt_1) + createIndex(expiresAt_1
+     365gg). Verificato indipendentemente, idempotente.
+   - Passo 5 (commit e9be6dd): models/User.js +receivesReportAlerts;
+     models/Notification.js +relatedReportId; routes/users.js
+     (campo privato); lib/reportAlerts.js (nuovo: destinatariAvvisi con
+     ripiego sui moderatori, testi IT, notificaRichiestaRisoluzione,
+     controllaScadenze pronto ma non ancora agganciato);
+     scripts/set-report-alerts.js (nuovo); routes/reports.js:
+       POST /:id/resolve-request (requireAuth, guardia atomica
+         findOneAndUpdate, notifica 1 volta sola, {success,
+         giaRichiesta?, giaRisolta?})
+       DELETE /:id/resolve-request (moderatore, "Tieni ancora", $unset)
+       DELETE /:id/resolve: guard da requireAuth a MODERATORE
+       GET /: .select('-resolutionRequestedBy -expiryNotifiedAt')
+   - Prove: prove/prova-punto111.js (nuovo, sez. 1-7, 40/40);
+     prove/prova-punto45.js aggiornata (era rotta da ieri: TTL a 30gg
+     + guard di /resolve), ora 46/46.
+
+   DA FARE (passi 6-11):
+   - Passo 6: PATCH /api/reports/:id/renew (moderatore, expiresAt =
+     rinnovo() = adesso+90, $unset expiryNotifiedAt); agganciare
+     controllaScadenze() a GET /api/notifications/:userId (come
+     ensureCompletionReminders, con un pre-controllo countDocuments
+     sull'indice expiresAt_1 che nel 99,9% dei casi esce a 0);
+     app.js renderNotificationBell: onclick con un terzo ramo per
+     relatedReportId che porta alla pagina Moderazione (la campanella
+     e' gia' cliccabile per relatedHikeId). Prova: prova-punto111.js
+     sez. 8-10 (rinnovo sposta expiresAt di ~90gg da ADESSO e non
+     +90 dal vecchio; controllaScadenze non rinotifica; destinatari
+     solo receivesReportAlerts + ripiego).
+   - Passo 7: GET /api/reports/moderation (moderatore, 3 liste
+     DISGIUNTE {daVerificare, risoluzioniRichieste, scadute, totale};
+     priorita' scadute > risoluzioni > da verificare; "totale" lo
+     calcola il server); RITIRARE GET /pending e spostare i suoi due
+     chiamanti (app.js ~427, pendingreports.js ~80); app.js badge del
+     triangolo = totale. Aggiornare prova-punto45.js (usa /pending).
+   - Passo 8: public/js/map.js - resolveReportDirectly ->
+     POST /:id/resolve-request (rinominare requestReportResolution);
+     TOGLIERE la riga db.reports = db.reports.filter(...) (se resta,
+     chi preme il tasto vede la segnalazione sparire solo dalla sua
+     mappa); riscrivere il testo della conferma (oggi dice "verra'
+     eliminata per sempre", che dopo il 111 e' FALSO - vincolo hard 7);
+     con resolutionRequestedAt gia' valorizzato mostrare il tasto
+     SPENTO ("gia' segnalata come risolta, in attesa di verifica",
+     renderWazeReportsList ~1282). Il popup del marker (~1223) non ha
+     il tasto - verificato, nessuna seconda copia.
+     >>> PASSI 5 E 8 DEVONO USCIRE NELLO STESSO DEPLOY IN PRODUZIONE:
+     tra il momento in cui DELETE /:id/resolve e' moderatore-only
+     (passo 5, GIA' PUSHATO) e il momento in cui map.js chiama la
+     rotta nuova, il tasto "risolvi" di un utente normale risponde
+     403 (niente viene cancellato, ma vede un errore di permesso).
+     Rischio pratico ~nullo (4 segnalazioni su tutto il DB), ma il
+     passo 8 va deployato presto per chiuderlo.
+   - Passo 9: pagina Moderazione - HTML (2 glass-card nuove in
+     #pending-reports-page) + pendingreports.js (da 1 lista a 3, 4
+     azioni) + CSS + i18n.js (~18 chiavi EN sotto pendingReports.*,
+     ~4 sotto map.waze.* che cambiano di significato; i testi delle
+     NOTIFICHE restano IT fuori da i18n, come routes/safety.js).
+     Card: renderPendingReportsListBody generalizzata (stessa
+     struttura, cambia la coppia di bottoni). Conferme obbligatorie
+     solo su [Conferma la risoluzione] e [Togli] (cancellano);
+     [Rinnova] e [Tieni ancora] sono reversibili, niente modale.
+   - Passo 10: completare prove/prova-punto111.js (sez. 8-11: rinnovo,
+     controllaScadenze, destinatari, struttura indici) + controprova
+     (git worktree su un HEAD prima del 111: cadono almeno 2,4,5,6,8,
+     9,11) + voce in prove/LEGGIMI-PROVE.txt col numero VERO della
+     controprova. Il finally di prova-punto111 deve cancellare anche
+     le NOTIFICHE (filtrate per userId + relatedReportId dei test).
+   - Passo 11: vault (03, 04, 06, e 07 per la trappola autoIndex) +
+     cose_da_fare.txt + leggimi.txt, commit E PUSH anche del vault.
+
+   TRAPPOLA gia' pagata mezza (per il passo 8/deploy futuri):
+   autoIndex e' attivo e non c'e' syncIndexes - se si droppa un indice
+   dal database lasciando la riga reportSchema.index(...) nello schema,
+   il primo riavvio di Render lo RICREA in silenzio. Per il 111
+   l'ordine e' stato: deploy del codice senza la riga (passo 3) ->
+   POI la migrazione che droppa (passo 4). Per qualunque futuro
+   cambio di indice, stesso ordine.
+
+   STATO PRODUZIONE ADESSO: passi 1-5 pushati; passo 5 in deploy su
+   Render a fine sessione. Le segnalazioni NON scadono piu' da sole a
+   90 giorni (createdAt TTL rimosso) e niente avvisa Denis alla
+   scadenza finche' non arriva il passo 6 - le 4 attuali scadono fra
+   fine ottobre e fine novembre, quindi c'e' margine ma non mesi.
 
 112. [FATTO 2026-08-28, decima sessione] Denis, parole sue: "dobbiamo
    aggiungere dei badge nuovi". Poi il dettaglio: tre file in
