@@ -6564,14 +6564,81 @@ schermo spento ancora."
    lotto. Resta italiano DI PROPOSITO: tutto il testo scritto dagli utenti,
    i nomi propri di luogo (cime/rifugi/regioni), titolo/descrizione dei
    badge personali, il segnaposto nativo di <input type=date>/<input
-   type=file> (limite Chrome). UNICO AVANZO TECNICO: diagnostica-gps.html
-   (490 righe, strumento di debug) - non tradotto, da decidere se vale.
+   type=file> (limite Chrome). Restava UN avanzo tecnico -
+   diagnostica-gps.html - chiuso anche quello (sotto).
+
+   ---
+
+   DIAGNOSTICA-GPS.HTML [FATTO] - nona sessione (seguito 6), 28/08/2026.
+   Denis: "cosa serve per tradurre la diagnostica-gps?" -> presentato
+   l'ambito (una sessione, il grosso e' la prosa istruttiva del verdetto),
+   poi "cominciamo un punto per volta". Fatto in 4 passi, verifica fra uno
+   e l'altro:
+   1. IMPIANTO: <script src="js/i18n.js"> a fine <body> + .lang-switcher
+      con le 2 bandiere SVG (pagina autonoma senza header, come le 3 del
+      gate); var T + helper numLoc() (decimali secondi: virgola IT / punto
+      EN, come decimaleMeteo/numTracc). Il CSS di .lang-switcher copiato
+      nella pagina - non carica styles.css, dipendenze zero per scelta.
+   2. HTML STATICO: 27 attributi data-i18n / data-i18n-html (titoli card,
+      ~18 etichette, 2 note con <em>, link). "Esito" / "Tempo impiegato" /
+      "Messaggio del browser" (identiche nelle card 2 e 3) su chiave unica
+      condivisa. <title> resta IT, come le pagine del gate.
+   3. FRAMMENTI JS DI STATO: nomeCodice(), i messaggi di
+      posizioneUnaVolta(), i ~20 pezzi scritti nelle righe da diagnosi()
+      (stati, esiti, "precisione N metri", "errore <codice>", ...),
+      "codice N" di provaWatch(), gli stati transitori dei bottoni. Tutto
+      dietro T('diag.js.*') || "<italiano>". 29 chiavi.
+   4. VERDETTO E GUIDA: mostraVerdetto() (gli 8 rami, blocchi HTML con
+      <strong>/<code>/<ol>) e guidaSblocco() (Android + iOS) dietro
+      T('diag.verd.*') / T('diag.guida.*') || "<italiano>".
+      'diag.verd.altro' e' una FUNZIONE (incolla i due codici errore nella
+      frase). Nei passaggi impostazioni le diciture inglesi reali di
+      Android/iOS (Location Services, "While Using the App", Website
+      Settings). 12 chiavi.
+
+   SCELTE:
+   - componiRapporto() (il testo del rapporto da copiare per assistenza)
+     resta ITALIANO: artefatto tecnico, non interfaccia - stessa logica
+     delle notifiche lato server scritte una volta nella lingua di chi
+     invia (secondo lotto).
+   - NESSUN onChange: un verdetto gia' a schermo non si ritraduce al
+     cambio lingua (l'intestazione della card si', il corpo no) - residuo
+     onesto, si rigenera al "Ripeti la diagnosi". Coerente con
+     chatpanel.js / userprofile.js del punto 102.
+   - #btn-avvia / #btn-copia: data-i18n sulla sola etichetta di partenza,
+     gli stati transitori da T() nel JS.
+
+   Dizionario +68 chiavi diag.* (di cui 1 funzione), solo lato EN.
+
+   VERIFICATO: node --check su i18n.js e sullo script inline; sandbox vm
+   (tutte le chiavi diag.* risolvono in EN, in IT tornano null -> ripiego
+   nel codice); estensione Chrome IT<->EN (server locale) - impalcatura
+   statica nei due sensi, TUTTI GLI 8 RAMI del verdetto pilotati con uno
+   stub di navigator.geolocation (codice 1/2/3, ok, ok-solo-bassa, misto),
+   guida sblocco Android+iOS completa, decimali virgola/punto,
+   componiRapporto() confermato ancora IT, ZERO errori in console,
+   screenshot layout pulito. + la terna di regressione
+   (prova-configurazione 9/9, prova-passo-non-misurato 28/28,
+   prova-invito-squadra 59/59).
+
+   COMMITTATO E PUSHATO su richiesta esplicita di Denis ("procedi con la
+   chiusura"), camoscio `c747bdc`. Erano 4 commit auto-save dell'hook Stop
+   (uno per passo), schiacciati in uno con git reset --soft e7dbfdf prima
+   del commit vero (con --amend se ne rifondeva uno solo, qui erano
+   quattro). VERIFICA DAL VIVO DI DENIS: da fare, come per lotto Mappa /
+   gate / lotti 3-7.
+
+   >>> ORA IL PUNTO 102 E' SENZA CODA: non c'e' PIU' NIENTE da tradurre.
+   Resta italiano solo cio' che e' stato deciso di lasciare (testo utente,
+   nomi propri di luogo, titolo/descrizione dei badge personali,
+   segnaposto nativo di <input type=date>/<input type=file>, e
+   componiRapporto() dentro diagnostica-gps.html).
 
    RIPARTIRE DA: verifica dal vivo di Denis del punto 102 (lotto Mappa +
-   gate + pagine HTML + lotti 3-7, tutto pushato); poi punti 106 (fix
-   responsive), 108 (teletrasporto GPS che farma i badge - decisione di
-   prodotto), 111 (feature "risolvi"/scadenza segnalazioni - dall'agente
-   architect); e, facoltativo, diagnostica-gps.html.
+   gate + pagine HTML + lotti 3-7 + diagnostica-gps.html, tutto pushato);
+   poi punti 106 (fix responsive), 108 (teletrasporto GPS che farma i
+   badge - decisione di prodotto), 111 (feature "risolvi"/scadenza
+   segnalazioni - dall'agente architect).
 
 =====================================================================
 

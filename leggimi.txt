@@ -1,7 +1,8 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-28 (nona sessione). >>> PUNTO 102 COMPLETO: tutta
-l'interfaccia del sito e' tradotta IT/EN. <<<
+Aggiornato: 2026-08-28 (nona sessione, seguito 6). >>> PUNTO 102 SENZA
+CODA: tutta l'interfaccia tradotta IT/EN, tradotta anche
+diagnostica-gps.html - non c'e' piu' niente da tradurre. <<<
 
 Il rollout, in ordine di commit camoscio:
   10c137f  1o lotto - Cerca Persone / Profilo / Squadra / Escursione
@@ -13,16 +14,20 @@ Il rollout, in ordine di commit camoscio:
   e04d6e2  7o lotto - Moderazione
   8988610 / 57c1250 / 8a74a5a / 2b310e9  LOTTO MAPPA, aree 1-4
   8b17376  gate di login/registrazione + 3 pagine HTML autonome
+  c747bdc  diagnostica-gps.html (strumento di debug) - ex ultimo avanzo tecnico
 (+ un commit-doc di chiusura dopo ogni lotto). Tutto pushato su richiesta
-esplicita di Denis ("commit e push"); hook auto-save rifuso con --amend
-ogni volta.
+esplicita di Denis ("commit e push"); hook auto-save rifuso ogni volta
+(per diagnostica-gps.html erano 4 auto-save, schiacciati con reset --soft).
 
 RESTA ITALIANO DI PROPOSITO: tutto il testo scritto dagli utenti
 (descrizioni, chat, nomi squadre/escursioni), i nomi propri di luogo
 (cime/rifugi/regioni), titolo/descrizione dei badge personali, il
 segnaposto nativo del browser di <input type=date>/<input type=file>
-(limite Chrome). UNICO AVANZO TECNICO: diagnostica-gps.html (490 righe,
-strumento di debug) - non tradotto, da decidere in un giro a parte se vale.
+(limite Chrome). NIENTE PIU' AVANZO TECNICO: diagnostica-gps.html
+(strumento di debug, ci si arriva solo dalla guida allo sblocco GPS)
+TRADOTTA il 28/08 (c747bdc). Dentro quella pagina resta italiano solo
+componiRapporto() - il rapporto tecnico da copiare e incollare per
+assistenza, non e' interfaccia.
 
 VERIFICA DAL VIVO DI DENIS: sui lotti 3-7 prova veloce il 28/08 - "per
 adesso tutto bene" (parziale); sul lotto Mappa e sul gate ha detto
@@ -34,6 +39,13 @@ prove automatiche (prova-configurazione 9/9, prova-passo-non-misurato
 prova-verifica-email 34/34, le due che CLAUDE.md impone quando si tocca
 accessi/password/email). Dettaglio completo nel vault (03/04/06) e in
 cose_da_fare.txt punto 102.
+
+diagnostica-gps.html verificata anche lei con l'estensione Chrome IT<->EN:
+tutti gli 8 rami del verdetto (mostraVerdetto) pilotati con uno stub di
+navigator.geolocation, guida sblocco Android+iOS, decimali virgola/punto,
+zero errori in console. + prova-configurazione 9/9, prova-passo-non-misurato
+28/28, prova-invito-squadra 59/59 (guardia di regressione su i18n.js).
+Verifica dal vivo di Denis: da fare come per tutto il resto.
 
 ULTIMO PEZZO (gate + pagine HTML) - com'e' fatto:
 - auth.js NON e' in una IIFE -> var T. Testo statico del gate #auth-gate
@@ -89,12 +101,11 @@ piano. Dettaglio e domande aperte in cose_da_fare.txt punti 109, 110, 111.
 >>> APERTO PER LA PROSSIMA SESSIONE, in quest'ordine se Denis non dice
 altro:
 
-1. Verifica dal vivo di Denis del PUNTO 102 (ora COMPLETO): lotti 3-7 gia'
-   guardati di corsa il 28/08 ("per adesso tutto bene"); resta da
-   verificare TUTTO IL LOTTO MAPPA (aree 1-4) e il GATE + le 3 PAGINE HTML.
-   Tutto gia' pushato. Se segnala qualcosa, correggere. (Non c'e' piu'
-   niente da tradurre a parte, facoltativo, diagnostica-gps.html - 490
-   righe, strumento di debug: chiedere a Denis se lo vuole.)
+1. Verifica dal vivo di Denis del PUNTO 102 (COMPLETO, niente piu' da
+   tradurre): lotti 3-7 gia' guardati di corsa il 28/08 ("per adesso tutto
+   bene"); resta da verificare TUTTO IL LOTTO MAPPA (aree 1-4), il GATE +
+   le 3 PAGINE HTML, e diagnostica-gps.html. Tutto gia' pushato. Se
+   segnala qualcosa, correggere.
 
 2. PUNTO 106 (giro a parte): due difetti responsive PRE-ESISTENTI trovati
    verificando il terzo lotto su mobile (non regressioni della traduzione,
