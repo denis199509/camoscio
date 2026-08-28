@@ -1,58 +1,67 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-28 (nona sessione). PUNTO 102, LOTTO MAPPA - la
-sezione piu' grande del sito (~4.450 righe su 6 file), fatta a 4 AREE
-(Denis via AskUserQuestion: "un'area alla volta"). >>> LOTTO MAPPA CHIUSO:
+Aggiornato: 2026-08-28 (nona sessione). >>> PUNTO 102 COMPLETO: tutta
+l'interfaccia del sito e' tradotta IT/EN. <<<
 
-  1) base mappa + Segnalazioni sentiero ...... FATTA, camoscio `8988610`
-  2) Progetta un percorso (routeplanner.js) .. FATTA, camoscio `57c1250`
-  3) Meteo + Esposizione Solare .............. FATTA, camoscio `8a74a5a`
-  4) Tracciamento GPS + mappa offline ........ FATTA, camoscio `2b310e9`
+Il rollout, in ordine di commit camoscio:
+  10c137f  1o lotto - Cerca Persone / Profilo / Squadra / Escursione
+  d4a599f  2o lotto - Escursioni / Le mie escursioni
+  6474cd9  3o lotto - Dashboard / Profilo proprio / header
+  106af9d  4o lotto - Sicurezza & Mesh
+  9c079c1  5o lotto - Sociale + chatpanel
+  5160c14  6o lotto - Carpooling + Zaino
+  e04d6e2  7o lotto - Moderazione
+  8988610 / 57c1250 / 8a74a5a / 2b310e9  LOTTO MAPPA, aree 1-4
+  8b17376  gate di login/registrazione + 3 pagine HTML autonome
+(+ un commit-doc di chiusura dopo ogni lotto). Tutto pushato su richiesta
+esplicita di Denis ("commit e push"); hook auto-save rifuso con --amend
+ogni volta.
 
-TUTTE E 4 LE AREE FATTE E PUSHATE su richiesta esplicita di Denis ("commit
-e push" per ciascuna; hook auto-save rifuso con --amend prima del push).
-VERIFICATE CON L'ESTENSIONE CHROME (login demo Marco Alpinista, IT<->EN,
-toggle+sweep, listener error/unhandledrejection: ZERO errori;
-prova-configurazione 9/9, prova-passo-non-misurato 28/28,
-prova-invito-squadra 59/59; node -c su tutti i file toccati). VERIFICA DAL
-VIVO DI DENIS: sui lotti 3-7 prova veloce il 28/08 - "per adesso tutto
-bene" (parziale); per l'area 4 ha detto esplicitamente "lascia stare la
-verifica". Resta da verificare dal vivo TUTTO IL LOTTO MAPPA. Dettaglio
-nel vault (03/04/06) e in cose_da_fare.txt punto 102, blocchi "AREA 1..4".
+RESTA ITALIANO DI PROPOSITO: tutto il testo scritto dagli utenti
+(descrizioni, chat, nomi squadre/escursioni), i nomi propri di luogo
+(cime/rifugi/regioni), titolo/descrizione dei badge personali, il
+segnaposto nativo del browser di <input type=date>/<input type=file>
+(limite Chrome). UNICO AVANZO TECNICO: diagnostica-gps.html (490 righe,
+strumento di debug) - non tradotto, da decidere in un giro a parte se vale.
 
-La barra laterale della Mappa e' ORA TUTTA TRADOTTA. Restano italiano di
-proposito: i testi/nomi scritti dagli utenti, e il segnaposto nativo di
-<input type=date>/<input type=file> (limite Chrome, secondo lotto).
+VERIFICA DAL VIVO DI DENIS: sui lotti 3-7 prova veloce il 28/08 - "per
+adesso tutto bene" (parziale); sul lotto Mappa e sul gate ha detto
+"lascia stare la verifica". RESTA DA VERIFICARE DAL VIVO tutto quanto.
+Ogni pezzo e' stato comunque provato con l'estensione Chrome (IT<->EN,
+toggle+sweep, listener error/unhandledrejection: ZERO errori) e con le
+prove automatiche (prova-configurazione 9/9, prova-passo-non-misurato
+28/28, prova-invito-squadra 59/59; per il gate anche prova-punto7 53/53 e
+prova-verifica-email 34/34, le due che CLAUDE.md impone quando si tocca
+accessi/password/email). Dettaglio completo nel vault (03/04/06) e in
+cose_da_fare.txt punto 102.
 
-AREA 4 - com'e' fatta (per capire il resto):
-- tracking.js e geolocation.js NON sono in una IIFE -> var T. offline-map.js
-  NON toccato: nessuna stringa d'interfaccia, solo Error() interni;
-- tracking.js: helper numTracc (virgola IT / punto EN per distanza e
-  velocita', prima toFixed fisso col punto). Nuovo onChange che ridisegna
-  DALLO STATO IN MEMORIA, mai un fetch: tasto mappa sempre; pannello/badge
-  se si sta registrando (renderTrackingUi + setSyncBadge(ultimoStatoSync));
-  riepilogo SOLO se il suo pannello e' gia' aperto (renderSummary rigioca
-  ultimaSessioneRiepilogo; showPanel dentro e' no-op se gia' visibile);
-- #tracking-gps-quality / #tracking-sync-status hanno data-i18n sullo STATO
-  DI PARTENZA: quando JS li porta altrove, applyStaticTranslations li
-  riporta li' al cambio lingua, ma l'onChange gira subito dopo e li rimette
-  allo stato vero. #map-record-label NON marcato (updateMapRecordButton,
-  due stati);
-- geolocation.js: nessun onChange (stringhe solo in modali/toast al
-  momento). MOTIVO_PREDEFINITO const -> motivoPredefinito() funzione;
-- promemoria nativo Android tradotto alla programmazione (edge: cambio
-  lingua a escursione in corso -> testo vecchio fino alla ricorrenza dopo).
+ULTIMO PEZZO (gate + pagine HTML) - com'e' fatto:
+- auth.js NON e' in una IIFE -> var T. Testo statico del gate #auth-gate
+  (index.html) marcato data-i18n; auth.js traduce solo i messaggi generati
+  da JS (errori, stati dei bottoni). NESSUN onChange per il gate: le righe
+  contatto-emergenza costruite da JS portano data-i18n NEL TEMPLATE, quindi
+  applyStaticTranslations le traduce al cambio lingua senza perdere quanto
+  gia' scritto (tocca solo textContent/placeholder, mai value);
+- bandiere anche prima del login: una .lang-switcher in ognuna delle 3
+  viste del gate e in ognuna delle 3 pagine autonome. i18n.js aggancia
+  gia' tutte le .lang-flag-btn del documento;
+- demo.html / conferma-email.html / reimposta-password.html: non
+  caricavano i18n.js -> aggiunto <script src="js/i18n.js"> PRIMA del loro
+  <script> inline (a fine body, non in head: li' il DOM non c'e' ancora).
+  Seguono la preferenza localStorage 'camoscioLang' del sito;
+- vocabolario fisso del wizard (livello, interessi, difficolta' CAI,
+  privacy) tradotto solo a video: il data-value/value resta la stringa IT
+  che va al server. Marche/Lazio/Abruzzo/Molise NON tradotti (nomi propri).
 
 Resta valido: hook "Stop" di auto-save (commit locale, MAI push) a fine di
-ogni risposta. Debito icona Bivacco Carlo Fusco CHIUSO il 28/08: Denis ha
-fornito l'icona nuova che disegna 2455 m (coincide col catalogo), sostituita
-in public/img/badge-luoghi/bivacco-carlo-fusco.png. Nella stessa occasione
-RIFINITE le coordinate di Rifugio Franchetti e Rifugio Zilioli su lettura
-DMS di Denis (~13 m di spostamento ciascuna, quota invariata) - erano le due
-voci "da verificare a mano" del vault. PUNTO 106 (due fix responsive
-pre-esistenti di styles.css, giro a parte) e PUNTO 108 (teletrasporto GPS
-che farma i badge, giro a parte + decisione di prodotto) ANCORA APERTI,
-non toccati - dettaglio in cose_da_fare.txt punti 106 e 108.
+ogni risposta. Debito icona Bivacco Carlo Fusco CHIUSO il 28/08 (icona
+nuova a 2455 m in public/img/badge-luoghi/bivacco-carlo-fusco.png).
+Coordinate Rifugio Franchetti / Rifugio Zilioli rifinite su DMS di Denis
+(~13 m ciascuna, quota invariata) - erano le due voci "da verificare a
+mano" del vault. PUNTO 106 (due fix responsive pre-esistenti di styles.css,
+giro a parte) e PUNTO 108 (teletrasporto GPS che farma i badge, giro a
+parte + decisione di prodotto) ANCORA APERTI, non toccati - dettaglio in
+cose_da_fare.txt punti 106 e 108.
 
 TRE PUNTI NUOVI di questa sessione (nona), fuori dal filo del lotto Mappa:
 PUNTO 109 FATTO - scadenza automatica delle segnalazioni sentiero (Report)
@@ -80,19 +89,12 @@ piano. Dettaglio e domande aperte in cose_da_fare.txt punti 109, 110, 111.
 >>> APERTO PER LA PROSSIMA SESSIONE, in quest'ordine se Denis non dice
 altro:
 
-1. PUNTO 102, COSA RESTA DELLA TRADUZIONE: il GATE di login/registrazione
-   (schermata di accesso + wizard di registrazione a fasi - vive PRIMA di
-   #app, non e' dentro) e le 3 PAGINE HTML AUTONOME in public/ che non
-   passano da index.html: demo.html, conferma-email.html,
-   reimposta-password.html (verificare se caricano gia' i18n.js; se no, o
-   si aggiunge lo <script> o si accetta che restino IT). Concordare
-   l'ambito con Denis, un pezzo alla volta. Dopo questo il punto 102 e'
-   completo. Non riproporre "facciamolo tutto insieme".
-
-2. Verifica dal vivo di Denis del punto 102: lotti 3-7 gia' guardati di
-   corsa il 28/08 ("per adesso tutto bene"), resta da verificare TUTTO IL
-   LOTTO MAPPA (aree 1-4, tutto gia' pushato). Se segnala qualcosa,
-   correggere.
+1. Verifica dal vivo di Denis del PUNTO 102 (ora COMPLETO): lotti 3-7 gia'
+   guardati di corsa il 28/08 ("per adesso tutto bene"); resta da
+   verificare TUTTO IL LOTTO MAPPA (aree 1-4) e il GATE + le 3 PAGINE HTML.
+   Tutto gia' pushato. Se segnala qualcosa, correggere. (Non c'e' piu'
+   niente da tradurre a parte, facoltativo, diagnostica-gps.html - 490
+   righe, strumento di debug: chiedere a Denis se lo vuole.)
 
 3. PUNTO 106 (giro a parte): due difetti responsive PRE-ESISTENTI trovati
    verificando il terzo lotto su mobile (non regressioni della traduzione,

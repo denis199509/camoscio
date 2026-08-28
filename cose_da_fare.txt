@@ -6492,13 +6492,86 @@ schermo spento ancora."
    utenti, e il segnaposto nativo di <input type=date>/<input type=file>
    (limite Chrome, secondo lotto).
 
-   RIPARTIRE DA: (1) COSA RESTA DELLA TRADUZIONE - il gate di
-   login/registrazione (schermata accesso + wizard registrazione a fasi,
-   vive PRIMA di #app) e le 3 pagine HTML autonome in public/ che non
-   passano da index.html: demo.html, conferma-email.html,
-   reimposta-password.html (verificare se caricano gia' i18n.js). Concordare
-   con Denis, un pezzo alla volta; dopo, il punto 102 e' completo. (2)
-   verifica dal vivo di Denis (tutto il lotto Mappa + lotti 3-7).
+   ---
+
+   GATE DI LOGIN/REGISTRAZIONE + 3 PAGINE HTML AUTONOME [FATTO] - nona
+   sessione (seguito 5), 28/08/2026. >>> ULTIMO PEZZO: il punto 102 e' ora
+   COMPLETO. Denis: "procediamo con il gate di login e le pagine HTML".
+
+   FATTO - dizionario +~150 chiavi (auth.*, demoPage.*, emailConfirm.*,
+   pwdReset.*), 6 file:
+   - index.html #auth-gate (login / "password dimenticata" / wizard 6
+     passi): testo statico -> data-i18n / data-i18n-html (le note con
+     <strong>) / data-i18n-placeholder;
+   - auth.js (425 righe, NON in una IIFE -> var T): messaggi
+     d'errore/validazione + stati transitori dei bottoni via T() || ripiego.
+     data.error dal server resta il testo del server; console.error IT;
+   - demo.html / conferma-email.html / reimposta-password.html: NON
+     caricavano i18n.js. Aggiunto <script src="js/i18n.js"> SUBITO PRIMA del
+     loro <script> inline (a fine body, cosi' applyStaticTranslations vede
+     gia' il DOM - NON in <head>) + data-i18n + var T / T() nel JS inline.
+     Seguono la preferenza localStorage 'camoscioLang' del sito;
+   - bandiere prima del login: il gate vive fuori da #main-app-container
+     (dove sta la .lang-switcher dell'header). Aggiunta una .lang-switcher
+     (2 bandiere SVG inline) in ognuna delle 3 viste del gate e in ognuna
+     delle 3 pagine autonome. i18n.js aggancia gia' tutte le .lang-flag-btn
+     del documento, aggiornaBandiere() marca .active su tutte.
+
+   SCELTE NON OVVIE (dettaglio nel vault, 03 sottosezione "Gate di login +
+   3 pagine HTML autonome"):
+   - NESSUN onChange per il gate, nemmeno per le righe contatto-emergenza
+     costruite da JS: le loro etichette/placeholder portano data-i18n NEL
+     TEMPLATE, cosi' applyStaticTranslations (che interroga tutto il
+     documento) le traduce al cambio lingua toccando solo
+     textContent/placeholder - MAI value, quindi quanto l'utente ha gia'
+     digitato resta. Regola nuova: contenuto JS fatto di sole etichette
+     statiche non ha bisogno di un onChange;
+   - vocabolario fisso del wizard (livello, 17 interessi, difficolta' CAI,
+     privacy) tradotto SOLO a video: il data-value/value che va al server
+     resta la stringa IT (regola del secondo lotto);
+   - Marche/Lazio/Abruzzo/Molise NON tradotti (nomi propri): <option>
+     region senza data-i18n, solo "Nessuna preferenza" marcato;
+   - i <script src="js/i18n.js"> delle pagine autonome vanno prima
+     dell'inline script, non in <head> (li' il body non c'e' ancora).
+
+   VERIFICATO CON L'ESTENSIONE CHROME (IT<->EN, il gate reso visibile via
+   JS senza toccare la sessione): login gate (login + forgot, 6 bandiere =
+   3 viste x 2), wizard tutti e 6 i passi (titoli, radio eta', 5 opzioni
+   fascia eta', 5 opzioni CAI, 4 livelli con emoji tenuta, 17 interessi, 3
+   opzioni privacy, Back/Next/Complete Registration), REGIONI NON TRADOTTE
+   confermato; righe contatto-emergenza con "Anna"/"sorella" digitati che
+   SOPRAVVIVONO al toggle IT<->EN; errore di validazione JS tradotto
+   ("Enter a valid email address."); vista forgot; le 3 pagine autonome
+   (aperte con token finto -> stato "scaduto") con badge/intro/link/note
+   <strong> IT<->EN e bandiere funzionanti. Console: ZERO errori ovunque.
+   node -c OK su i18n.js e auth.js. prova-configurazione.js (9/9),
+   prova-passo-non-misurato.js (28/28), prova-invito-squadra.js (59/59), e
+   - le due che CLAUDE.md impone quando si tocca accessi/password/email -
+   prova-punto7.js (53/53, recupero password) e prova-verifica-email.js
+   (34/34, conferma email), entrambe PULITE (giravano col server locale
+   ancora su dalla verifica browser; il "problema noto chiavi Mailjet in
+   locale" non si e' presentato).
+
+   COMMITTATO E PUSHATO su richiesta esplicita di Denis ("commit e push"),
+   camoscio `8b17376`. Hook di auto-save `9dc9db3` coi 6 file rifuso con
+   git commit --amend prima del push.
+
+   >>> IL PUNTO 102 E' COMPLETO. Tutta l'interfaccia del sito e' tradotta
+   IT/EN. Ordine dei commit del rollout: 10c137f (1o lotto) -> d4a599f (2o)
+   -> 6474cd9 (3o) -> 106af9d (4o) -> 9c079c1 (5o) -> 5160c14 (6o) ->
+   e04d6e2 (7o) -> 8988610/57c1250/8a74a5a/2b310e9 (lotto Mappa aree 1-4)
+   -> 8b17376 (gate + pagine HTML), piu' i commit-doc di chiusura di ogni
+   lotto. Resta italiano DI PROPOSITO: tutto il testo scritto dagli utenti,
+   i nomi propri di luogo (cime/rifugi/regioni), titolo/descrizione dei
+   badge personali, il segnaposto nativo di <input type=date>/<input
+   type=file> (limite Chrome). UNICO AVANZO TECNICO: diagnostica-gps.html
+   (490 righe, strumento di debug) - non tradotto, da decidere se vale.
+
+   RIPARTIRE DA: verifica dal vivo di Denis del punto 102 (lotto Mappa +
+   gate + pagine HTML + lotti 3-7, tutto pushato); poi punti 106 (fix
+   responsive), 108 (teletrasporto GPS che farma i badge - decisione di
+   prodotto), 111 (feature "risolvi"/scadenza segnalazioni - dall'agente
+   architect); e, facoltativo, diagnostica-gps.html.
 
 =====================================================================
 
