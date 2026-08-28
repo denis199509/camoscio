@@ -146,7 +146,7 @@ window.showAlertModal = function(message, confirmLabel = "Ho capito") {
 // tutte nel DOM insieme (vedi 07-Trappole-Tecniche.md del vault), quindi un solo
 // ascoltatore copre badge propri (Badge), badge di un altro utente (profilo) e il badge
 // personale (Dashboard/profilo) senza dover toccare badges.js/userprofile.js.
-window.openImageLightbox = function(src, alt, grayscale) {
+window.openImageLightbox = function(src, alt, grayscale, stampId) {
     const modal = document.getElementById("image-lightbox");
     const img = document.getElementById("image-lightbox-img");
     if (!modal || !img || !src) return;
@@ -155,7 +155,37 @@ window.openImageLightbox = function(src, alt, grayscale) {
     // Un badge non ancora conquistato resta grigio anche ingrandito - stesso motivo del
     // grayscale piccolo sulla scheda, non ha senso svelarlo a colori prima di averlo preso.
     img.classList.toggle("image-lightbox-grayscale", !!grayscale);
+
+    // "i" in alto a destra (chiesto da Denis il 28/08/2026): compare solo se questo badge
+    // ha una scheda in badge-info.js - le cime e i rifugi del catalogo. I badge personali
+    // e le vette ricavate dalle escursioni non ne hanno, e la "i" resta nascosta.
+    const info = (window.CamoscioBadgeInfo && stampId) ? window.CamoscioBadgeInfo.get(stampId) : null;
+    const btnInfo = document.getElementById("image-lightbox-info-btn");
+    const boxInfo = document.getElementById("image-lightbox-info");
+    if (btnInfo && boxInfo) {
+        const titInfo = document.getElementById("image-lightbox-info-title");
+        const txtInfo = document.getElementById("image-lightbox-info-text");
+        if (info) {
+            if (titInfo) titInfo.textContent = info.nome || "";
+            if (txtInfo) txtInfo.textContent = info.testo || "";
+        }
+        btnInfo.classList.toggle("hidden", !info);
+        // Sempre chiuso all'apertura del modale: il pannello si vede solo premendo la "i".
+        boxInfo.classList.add("hidden");
+        btnInfo.setAttribute("aria-expanded", "false");
+    }
+
     modal.classList.remove("hidden");
+};
+
+// Apre/chiude il pannello informativo dentro il modale immagine (bottone "i").
+window.toggleImageLightboxInfo = function() {
+    const btnInfo = document.getElementById("image-lightbox-info-btn");
+    const boxInfo = document.getElementById("image-lightbox-info");
+    if (!btnInfo || !boxInfo) return;
+    const daMostrare = boxInfo.classList.contains("hidden");
+    boxInfo.classList.toggle("hidden", !daMostrare);
+    btnInfo.setAttribute("aria-expanded", daMostrare ? "true" : "false");
 };
 
 window.closeImageLightbox = function() {
@@ -165,6 +195,11 @@ window.closeImageLightbox = function() {
     // Svuotato alla chiusura: non tiene in memoria un'immagine grande per una finestra chiusa.
     const img = document.getElementById("image-lightbox-img");
     if (img) img.src = "";
+    // Pannello "i" richiuso, cosi' la prossima apertura riparte sempre dall'immagine.
+    const boxInfo = document.getElementById("image-lightbox-info");
+    if (boxInfo) boxInfo.classList.add("hidden");
+    const btnInfo = document.getElementById("image-lightbox-info-btn");
+    if (btnInfo) btnInfo.setAttribute("aria-expanded", "false");
 };
 
 document.addEventListener("click", (e) => {
@@ -180,7 +215,11 @@ document.addEventListener("click", (e) => {
     // antenati esiste, bloccato resta false.
     const card = img.closest(".badge-card, .stamp-slot");
     const bloccato = !!(card && !card.classList.contains("unlocked"));
-    window.openImageLightbox(img.src, img.alt, bloccato);
+    // stampId (messo da schedaBadge in badges.js e da renderDashboardStamps qui sotto)
+    // serve alla "i": .personal-badge-illustration non ha una card antenata, quindi resta
+    // undefined e il pannello informativo semplicemente non compare.
+    const stampId = card ? card.dataset.stampId : null;
+    window.openImageLightbox(img.src, img.alt, bloccato, stampId);
 });
 
 document.addEventListener("keydown", (e) => {
@@ -1011,6 +1050,9 @@ function renderDashboardStamps() {
     daMostrare.forEach(badge => {
         const slot = document.createElement("div");
         slot.className = `stamp-slot ${badge.sbloccato ? 'unlocked' : ''}`;
+        // Come per .badge-card in badges.js: il click sull'icona risale a questo slot per
+        // sapere quale badge aprire e se ha la scheda "i" (badge-info.js).
+        if (badge.stampId) slot.dataset.stampId = badge.stampId;
 
         // Punto 91, 18/08/2026: stessa scelta icona/emoji di schedaBadge in badges.js -
         // stamp-icon resta la classe condivisa col grayscale blocco/sblocco (styles.css).

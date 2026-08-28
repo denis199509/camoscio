@@ -208,6 +208,9 @@
         const esc = window.escapeHtml;
         const el = document.createElement('div');
         el.className = `badge-card ${b.sbloccato ? 'unlocked' : ''}`;
+        // Il click sull'icona (delegato in app.js) risale a questa card per sapere quale
+        // badge aprire nel modale e se ha una scheda "i" (badge-info.js).
+        if (b.stampId) el.dataset.stampId = b.stampId;
 
         // Riga di contesto: quota, zona e regione quando si sanno. I badge ricavati
         // dalle vette di un'escursione non hanno zona ne' regione, e si scrive solo

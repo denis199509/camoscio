@@ -2040,7 +2040,17 @@
     <div id="image-lightbox" class="modal hidden" onclick="if (event.target === this) closeImageLightbox()">
         <div class="image-lightbox-content">
             <button type="button" class="image-lightbox-close" onclick="closeImageLightbox()" aria-label="Chiudi">&times;</button>
+            <!-- "i" in alto a destra: compare solo per i badge che hanno una scheda in
+                 badge-info.js (openImageLightbox in app.js la mostra/nasconde). -->
+            <button type="button" id="image-lightbox-info-btn" class="image-lightbox-info-btn hidden"
+                    onclick="toggleImageLightboxInfo()" aria-label="Informazioni sul badge" aria-expanded="false">
+                <span aria-hidden="true">i</span>
+            </button>
             <img id="image-lightbox-img" src="" alt="">
+            <div id="image-lightbox-info" class="image-lightbox-info hidden" role="region" aria-label="Informazioni sul badge">
+                <h4 id="image-lightbox-info-title"></h4>
+                <p id="image-lightbox-info-text"></p>
+            </div>
         </div>
     </div>
 
@@ -2261,6 +2271,10 @@
     <script src="js/badge-points.js"></script>
     <script src="js/badges.js"></script>
     <script src="js/personal-badges.js"></script>
+    <!-- badge-info.js: testo della "i" nel modale immagine badge. Solo browser (il
+         server non lo carica, a differenza di badge-points.js). Ordine indifferente
+         purche' prima di app.js, che lo legge al click. -->
+    <script src="js/badge-info.js"></script>
     <script src="js/userprofile.js"></script>
     <script src="js/chatpanel.js"></script>
     <script src="js/squadpage.js"></script>
