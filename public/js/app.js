@@ -434,7 +434,11 @@ function setupNavigation() {
         // renderUserProfile ci scrive lo username): tenendolo qui, updateSectionTitle
         // lo rimette a posto da solo a ogni cambio lingua - vedi 'sectionTitle.my-profile'
         // in i18n.js e renderMyProfilePage in profile.js (rollout punto 102, terzo lotto).
-        "my-profile": "Il Tuo Profilo"
+        "my-profile": "Il Tuo Profilo",
+        // #pending-reports-page: stesso caso di #my-profile - titolo fisso, nessuna
+        // voce in barra. showPendingReportsPage non lo scrive piu' a mano, ci pensa
+        // updateSectionTitle via 'sectionTitle.pending-reports-page' (punto 102, settimo lotto).
+        "pending-reports-page": "Segnalazioni da verificare"
     };
 
     // Estratta da navigateTo il 22/08/2026 perche' serve anche a i18n.js: se

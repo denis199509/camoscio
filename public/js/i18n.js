@@ -1066,7 +1066,55 @@
             'backpack.js.aggiuntoGruppo': "Added. You're carrying it for the group.",
             'backpack.js.erroreAggiunta': "I couldn't add it. Try again.",
             'backpack.js.mancaObbligatorio': function (elenco) { return 'Mandatory items still to check off: ' + elenco + '.'; },
-            'backpack.js.zainoConfermatoToast': 'Backpack confirmed: you have everything mandatory!'
+            'backpack.js.zainoConfermatoToast': 'Backpack confirmed: you have everything mandatory!',
+
+            // ==================================================================
+            // Rollout punto 102, SETTIMO lotto (28/08/2026): Moderazione - la
+            // sezione #pending-reports-page e pendingreports.js per intero (178
+            // righe). Pagina senza voce in barra, si apre solo dal triangolo in
+            // header (gia' col data-i18n-title dal terzo lotto), visibile solo a
+            // chi ha canModerateReports. Denis: "andiamo avanti con la
+            // moderazione" - ordine gia' fissato dal vault, niente AskUserQuestion.
+            //
+            // Scelte:
+            // 1) Titolo fisso della pagina ("Segnalazioni da verificare",
+            //    piu' corto del titolo della card "Segnalazioni sentiero da
+            //    verificare"): aggiunto a prettyNames (app.js) E come
+            //    'sectionTitle.pending-reports-page' -> updateSectionTitle lo
+            //    rimette da solo a ogni cambio lingua, come #my-profile al terzo
+            //    lotto. showPendingReportsPage non scrive piu' il titolo a mano.
+            // 2) onChange in pendingreports.js: se #pending-reports-page e' la
+            //    sezione attiva, ri-chiama showPendingReportsPage (ri-fetch +
+            //    ridisegno lista) - la pagina fa gia' un fetch a ogni
+            //    conferma/rifiuto, e il suo corpo via innerHTML sarebbe stantio
+            //    sotto gli occhi al cambio lingua. Gate su sezione attiva come
+            //    il <select> recensioni del quinto lotto.
+            // 3) I tipi di segnalazione (emoji + titolo "Frana"/"Ghiaccio"...)
+            //    vengono da window.CamoscioReportTypes in map.js: NON tradotti
+            //    qui, restano al lotto Mappa (li usano anche i marker e la lista
+            //    waze). In EN il pannello mostra bottoni/etichette tradotti
+            //    accanto ai tipi in italiano - stesso caso del form DMS accanto
+            //    ai comandi mappa al quarto lotto. Tradotto solo il ripiego
+            //    'Avviso' per un tipo sconosciuto.
+            // 4) err.error dal server resta italiano (dizionario solo lato
+            //    client), tradotto solo il testo di ripiego.
+            'sectionTitle.pending-reports-page': 'Reports to Review',
+            'pendingReports.cardTitolo': 'Trail reports to review',
+            'pendingReports.cardDesc': 'Confirm the correct reports (they become visible to everyone) or reject them (they get deleted).',
+            'pendingReports.erroreCaricamento': 'Could not load the pending reports.',
+            'pendingReports.nessuna': 'No pending reports.',
+            'pendingReports.avvisoFallback': 'Alert',
+            'pendingReports.reporterNonDisponibile': 'user not available',
+            'pendingReports.segnalatoDa': function (nome, data, lat, lng) { return 'Reported by ' + nome + ' on ' + data + ' — coord: ' + lat + ', ' + lng; },
+            'pendingReports.rifiuta': 'Reject',
+            'pendingReports.conferma': 'Confirm',
+            'pendingReports.fotoAlt': 'Report photo',
+            'pendingReports.confermata': 'Report confirmed: it is now visible to everyone.',
+            'pendingReports.erroreConferma': 'Could not confirm the report.',
+            'pendingReports.rifiutaConfermaMsg': 'Rejecting this report deletes it permanently, with no way to recover it. Continue?',
+            'pendingReports.rifiutaConfermaBtn': 'Reject and delete',
+            'pendingReports.rifiutata': 'Report rejected and deleted.',
+            'pendingReports.erroreRifiuto': 'Could not reject the report.'
         }
     };
 
