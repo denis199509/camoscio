@@ -6125,6 +6125,119 @@ schermo spento ancora."
    iniziare. Dopo, il gate di login/registrazione e le pagine HTML
    autonome (demo/conferma-email/reimposta-password).
 
+   ---
+
+   LOTTO MAPPA - nona sessione, 28/08/2026. Denis: "possiamo continuare
+   con la traduzione". La Mappa e' la sezione piu' grande del sito
+   (~4.450 righe su 6 file: map.js 1439, tracking.js 1364, routeplanner.js
+   690, geolocation.js 464, weather.js 328, offline-map.js 166), quindi
+   AskUserQuestion su come affrontarla. Denis ha scelto "un'area alla
+   volta - 4 lotti". Ordine deciso: 1) base mappa + Segnalazioni
+   sentiero; 2) Progetta un percorso (routeplanner.js); 3) Meteo +
+   Esposizione Solare (weather.js + renderSolarExposureAdvice di map.js);
+   4) Tracciamento GPS + mappa offline (tracking.js/geolocation.js/
+   offline-map.js). Ogni area verificata e (su richiesta) committata
+   prima della successiva. Fra un'area e l'altra la barra laterale resta
+   mezza italiana - atteso, come il form DMS accanto ai comandi mappa al
+   quarto lotto.
+
+   AREA 1/4 FATTA: BASE MAPPA + SEGNALAZIONI SENTIERO. Tutto map.js
+   TRANNE l'Esposizione Solare (renderSolarExposureAdvice +
+   calculateBearing + bearingToCompassSector + card #sun-exposure-card):
+   e' l'unica funzione di map.js fuori da "base mappa", disegna la card
+   sorella del Meteo nella sidebar ed e' chiamata solo da
+   loadActiveHikeOnMap - farla ora avrebbe gonfiato il diff con ~50
+   righe di prosa meteo. L'AREA 3 TOCCHERA' QUINDI DI NUOVO map.js (non
+   solo weather.js), come il quinto lotto torno' su social.js dopo il
+   secondo. Tradotti: overlay istruzioni, tasto "Dove sono" + tooltip,
+   tooltip del segnaposto GPS a scarpone, popup geofencing/timbri
+   (checkGeofencing/unlockStampDirectly), drawStampablePoints, card
+   "Segnala Stato Sentiero" + form, pannello FAB "Segnala un pericolo"
+   (#report-fab / #report-panel, che vivono fuori da .page-container),
+   renderWazeReportsList, popup dei marker (renderMapMarkers), "Punto di
+   ritrovo" (loadActiveHikeOnMap). +~65 chiavi map.* (+ sectionTitle.map-
+   section), var T in testa a map.js.
+
+   Scelte non ovvie (dettaglio nel vault, 03-Decisioni-Architetturali.md
+   sottosezione "Lotto Mappa, area 1"):
+   - nuovo window.CamoscioReportTypes.titleFor(tipo): l'oggetto e'
+     costruito una volta al caricamento, quindi .title[tipo] non poteva
+     diventare T(...) a quel punto (la lingua cambia dopo). titleFor fa
+     il lookup al punto d'uso (t('map.reportType.'+tipo) || this.title
+     [tipo] || fallback). Il VALORE rep.type salvato e inviato al server
+     (frana/ghiaccio/fontana_secca/ostacolo) NON cambia mai - stessa
+     regola di Difficolta'/Tag Tribu' del secondo lotto: si traduce la
+     resa a schermo, non il dato. pendingreports.js (settimo lotto) ora
+     passa da titleFor con guard "tipi.titleFor ?" - era gia' previsto
+     ("lavoro del lotto Mappa"); il suo ripiego 'Alert' resta come rete;
+   - opzioni <select> del tipo pericolo (con l'emoji davanti, testo
+     diverso dai titoli di titleFor): chiavi loro (map.wazeOpt.*), ma
+     condivise fra i due <select> identici (#waze-type nella sidebar e
+     #report-fab-type nel pannello FAB), ognuno col proprio fallback.
+     Idem map.waze.tipoLabel/.descLabel/.descPlaceholder;
+   - onChange in map.js: renderMapMarkers + renderWazeReportsList +
+     aggiornaTastoPosizione SOLO se #map-section e' la sezione attiva
+     (lista segnalazioni e popup sono innerHTML, il tasto "Dove sono" ha
+     il testo scritto da JS - roba che applyStaticTranslations non
+     tocca). Gate come il <select> recensioni del quinto lotto e la
+     lista moderazione del settimo. triggerSectionRender (app.js)
+     ridisegna comunque all'ingresso nella Mappa;
+   - sectionTitle.map-section: titolo fisso ("Mappa & Sentieri") gia' in
+     prettyNames da sempre - basta la chiave, updateSectionTitle lo
+     rimette da solo a ogni cambio lingua, NESSUN onChange dedicato
+     (come #my-profile / #pending-reports-page). nav.map ("Map & Trails")
+     era gia' tradotto dal primo lotto (batch nav.*);
+   - data "Segnalato il" nel popup del marker con locale esplicito
+     en-GB/it-IT (regola dei lotti 2-4); showConfirmModal di
+     resolveReportDirectly allineato ai "cancella per sempre"
+     (cancelLabel T('common.cancella') + danger:true), che prima non
+     aveva;
+   - <input type="file"> "Scegli file" nel FAB resta in lingua browser -
+     limite noto di Chrome del secondo lotto, non un buco.
+
+   VERIFICATO CON L'ESTENSIONE CHROME (login demo Marco Alpinista, gia'
+   loggato da sessione precedente, isDemoAccount:true). IT<->EN: titolo
+   "Map & Trails", nav, overlay, tasto "My position" + tooltip, card
+   "Segnala Stato Sentiero" (titolo/desc/label tipo/4 opzioni con emoji/
+   placeholder/Cancel/Send Report), pannello FAB completo (h3, testi,
+   "Where is the hazard?", "I'm here now"/"Point it on the map", tipo +
+   opzioni, desc + placeholder, "Photo (optional):", Cancel/Send report),
+   lista segnalazioni sidebar ("Coord:", "Resolve report"). Popup marker
+   segnalazione: titolo via titleFor ("Ice on Trail" EN / "Presenza
+   Ghiaccio" IT), "Reported on: <data>" con locale, DESCRIZIONE UTENTE
+   RESTA IT. Popup punto timbrabile: "Corno Grande" (nome resta) +
+   "Altitude: 2912m" + "Stamp Collected v" + "Teleport GPS here".
+   Geofencing (via teleportUserGps a Corno Grande e Monte Vettore, SENZA
+   premere STAMP PASSPORT per non scrivere timbri veri): "You've already
+   collected this passport stamp!" e "Peak Reached! Monte Vettore (2476m)
+   You're just 0m from the summit. STAMP PASSPORT". Moderazione via STUB
+   IN MEMORIA (canModerateReports=true + fetch /api/reports/pending
+   avvolto con 2 finte, ripristinati subito - metodo del quarto/settimo
+   lotto, NESSUN dato vero toccato): titoli ora "Landslide / Collapse" e
+   "Alert" (tipo sconosciuto -> fallback). Toggle IT<->EN ripetuti (3x) +
+   sweep nav dashboard<->map + apri/chiudi FAB, listener error e
+   unhandledrejection piantato a mano: ZERO errori; 4 segnalazioni / 25
+   marker, nessuna duplicazione. Console pulita a parte un WARNING
+   pre-esistente di geolocation.js (timeout GPS, non c'e' GPS in
+   automazione). Due timeout CDP (screenshot e Runtime.evaluate) risolti
+   al retry - trappola gia' nota. prova-configurazione.js (9/9),
+   prova-passo-non-misurato.js (28/28), prova-invito-squadra.js (59/59).
+
+   COMMITTATO E PUSHATO su richiesta esplicita di Denis ("commit e
+   push"), camoscio `8988610`. L'hook di auto-save aveva gia' fatto un
+   commit locale generico (8f6b9ed) coi quattro file (index.html,
+   i18n.js, map.js, pendingreports.js): rifuso con git commit --amend
+   prima del push, stessa procedura dei lotti precedenti. VERIFICA DAL
+   VIVO DI DENIS ANCORA DA FARE - per l'area 1 e per i lotti 3-7.
+
+   RIPARTIRE DA: verifica dal vivo di Denis dei lotti 3-7 + area 1 Mappa.
+   Poi AREA 2/4: Progetta un percorso (routeplanner.js). Poi area 3
+   (Meteo + Esposizione Solare - INCLUDE renderSolarExposureAdvice/
+   calculateBearing/bearingToCompassSector e #sun-exposure-card di
+   map.js, oltre a weather.js) e area 4 (Tracciamento GPS + mappa
+   offline). Concordare con Denis l'inizio di ogni area. Dopo il lotto
+   Mappa, il gate di login/registrazione e le pagine HTML autonome.
+
 =====================================================================
 
 103. [22/08/2026, trovato durante il punto 102, non richiesto] Denis,

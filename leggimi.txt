@@ -1,42 +1,60 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-28 (ottava sessione, seguito). PUNTO 102, SETTIMO
-LOTTO fatto: MODERAZIONE - la sezione #pending-reports-page e
-pendingreports.js per intero (178 righe). Pagina di moderazione delle
-segnalazioni sentiero (punto 45): nessuna voce in barra, si apre solo dal
-triangolo in header (gia' col data-i18n-title dal terzo lotto), visibile
-solo a chi ha canModerateReports (oggi solo Denis). Denis: "andiamo avanti
-con la moderazione" - ordine gia' fissato dal vault, niente AskUserQuestion.
-+18 chiavi (pendingReports.*, sectionTitle.pending-reports-page), var T in
-testa. Scelte:
-- titolo fisso della pagina spostato in prettyNames (app.js) +
-  sectionTitle.pending-reports-page: showPendingReportsPage non lo scrive
-  piu' a mano, ci pensa navigateTo -> updateSectionTitle, come #my-profile
-  al terzo lotto;
-- onChange che ri-chiama showPendingReportsPage (ri-fetch + ridisegno
-  lista) solo se la pagina e' attiva - fa gia' quella fetch a ogni
-  conferma/rifiuto, gate come il <select> recensioni del quinto lotto;
-- i tipi di segnalazione ("Frana"/"Ghiaccio"...) e le emoji vengono da
-  CamoscioReportTypes in map.js: NON tradotti qui, sono del lotto Mappa.
-  In EN il pannello mostra bottoni/etichette tradotti accanto ai tipi in
-  italiano - stesso caso del form DMS accanto ai comandi mappa al quarto
-  lotto. Tradotto solo il ripiego 'Avviso' -> 'Alert';
-- modale conferma-rifiuto allineato agli altri "cancella per sempre"
-  (cancelLabel T('common.cancella') + danger:true).
-VERIFICATO CON L'ESTENSIONE CHROME: login demo Marco Alpinista -> triangolo
-header NASCOSTO (non e' moderatore, corretto). Poi con canModerateReports
-e il fetch /api/reports/pending STUBBATI in memoria (2 segnalazioni finte,
-NESSUN dato vero toccato, tutto ripristinato - stesso metodo del quarto
-lotto per /api/safety/*): pagina in IT ed EN, toggle restando sulla pagina
--> l'onChange ri-fetcha e ridisegna in EN ("Reports to Review", bottoni
-"Reject"/"Confirm", reporter fallback "user not available", tipo
-sconosciuto -> "Alert"), modale rifiuto tradotto con cancelLabel "Cancel"
-e danger:true, data in ora locale. Listener error piantato a mano: ZERO
-errori. + prova-configurazione (9/9), prova-passo-non-misurato (28/28),
-prova-invito-squadra (59/59). COMMITTATO E PUSHATO su richiesta esplicita
-di Denis ("commit e push", camoscio `e04d6e2`, hook auto-save `e116ba6`
-rifuso con --amend prima del push). LA VERIFICA DAL VIVO DI DENIS E'
-ANCORA DA FARE - per il settimo lotto, e restano in sospeso anche 3-6.
+Aggiornato: 2026-08-28 (nona sessione). PUNTO 102, LOTTO MAPPA - la
+sezione piu' grande del sito (~4.450 righe su 6 file), si fa a 4 AREE
+(Denis via AskUserQuestion: "un'area alla volta"). Ordine: 1) base mappa
++ Segnalazioni sentiero; 2) Progetta un percorso (routeplanner.js);
+3) Meteo + Esposizione Solare (weather.js + renderSolarExposureAdvice di
+map.js); 4) Tracciamento GPS + mappa offline.
+
+AREA 1/4 FATTA: BASE MAPPA + SEGNALAZIONI SENTIERO - tutto map.js TRANNE
+l'Esposizione Solare (renderSolarExposureAdvice/calculateBearing/
+bearingToCompassSector + #sun-exposure-card), lasciata all'area 3 col
+Meteo (unica funzione di map.js fuori da "base mappa", solo ~50 righe di
+prosa meteo - l'AREA 3 TOCCHERA' QUINDI DI NUOVO map.js, come il quinto
+lotto tornò su social.js). Tradotti: overlay istruzioni, tasto "Dove
+sono" + tooltip, tooltip segnaposto 🥾, popup geofencing/timbri,
+drawStampablePoints, card "Segnala Stato Sentiero" + form, pannello FAB
+"Segnala un pericolo" (#report-fab/#report-panel, fuori da
+.page-container), renderWazeReportsList, popup marker, "Punto di
+ritrovo". +~65 chiavi map.*, var T in testa a map.js. Scelte:
+- nuovo window.CamoscioReportTypes.titleFor(tipo): l'oggetto e' costruito
+  una volta al load, il titolo del tipo lo risolve titleFor al punto
+  d'uso (map.reportType.*). Il VALORE rep.type salvato/inviato resta il
+  codice (frana/ghiaccio/...) - regola Difficolta'/Tag Tribu' del 2o
+  lotto. pendingreports.js (7o lotto) ora passa da titleFor con guard -
+  era previsto ("lavoro del lotto Mappa");
+- opzioni <select> tipo pericolo: chiavi map.wazeOpt.* (con emoji),
+  diverse dai titoli di titleFor, condivise fra i due <select> identici
+  (#waze-type sidebar / #report-fab-type FAB);
+- onChange di map.js: renderMapMarkers + renderWazeReportsList +
+  aggiornaTastoPosizione SOLO se #map-section e' attiva (gate come 5o/7o
+  lotto; triggerSectionRender ridisegna comunque all'ingresso);
+- sectionTitle.map-section: titolo fisso gia' in prettyNames, lo rimette
+  updateSectionTitle da solo, NESSUN onChange dedicato. nav.map era gia'
+  tradotto dal primo lotto;
+- data "Segnalato il" nel popup con locale esplicito en-GB/it-IT;
+  showConfirmModal di resolveReportDirectly allineato ai "cancella per
+  sempre" (cancelLabel + danger:true).
+VERIFICATO CON L'ESTENSIONE CHROME (login demo Marco Alpinista, IT<->EN):
+titolo "Map & Trails", overlay, "My position" + tooltip, card
+segnalazioni completa, pannello FAB completo, lista sidebar ("Coord:",
+"Resolve report") senza duplicazioni dopo toggle+sweep. Popup marker
+segnalazione: titolo via titleFor ("Ice on Trail" EN / "Presenza
+Ghiaccio" IT), "Reported on: <data>" con locale, descrizione utente
+resta IT. Popup punto timbrabile ("Altitude: 2912m", "Stamp Collected
+✓", "Teleport GPS here"). Geofencing (teleportUserGps a due vette,
+SENZA premere STAMP PASSPORT): "You've already collected this passport
+stamp!" e "🎉 Peak Reached! ... You're just 0m from the summit. STAMP
+PASSPORT". Moderazione via stub in memoria (metodo 4o/7o lotto): tipi ora
+"Landslide / Collapse", tipo ignoto -> "Alert". Sweep nav+toggle+FAB con
+listener error/unhandledrejection a mano: ZERO errori. Console pulita a
+parte un WARNING pre-esistente di geolocation.js (timeout GPS, non c'e'
+GPS in automazione). prova-configurazione (9/9), prova-passo-non-misurato
+(28/28), prova-invito-squadra (59/59). COMMITTATO E PUSHATO su richiesta
+esplicita di Denis ("commit e push", camoscio `8988610`, hook auto-save
+`8f6b9ed` rifuso con --amend prima del push). LA VERIFICA DAL VIVO DI
+DENIS E' ANCORA DA FARE - per l'area 1 e per i lotti 3-7.
 
 Resta valido: hook "Stop" di auto-save (commit locale, MAI push) a fine di
 ogni risposta. Debito icona Bivacco Carlo Fusco (2645 m disegnati vs 2455 m
@@ -48,18 +66,20 @@ non toccati - dettaglio in cose_da_fare.txt punti 106 e 108.
 >>> APERTO PER LA PROSSIMA SESSIONE, in quest'ordine se Denis non dice
 altro:
 
-1. Verifica dal vivo di Denis dei lotti 3-7 del punto 102 (tutti gia'
-   pushati). Se segnala qualcosa, correggere prima di procedere.
+1. Verifica dal vivo di Denis dei lotti 3-7 + AREA 1 del lotto Mappa del
+   punto 102 (tutti gia' pushati). Se segnala qualcosa, correggere prima
+   di procedere.
 
-2. PUNTO 102, LOTTO SUCCESSIVO: LA MAPPA - la piu' grande e complessa
-   (livelli, progetta percorso, meteo, tracciamento, segnalazioni sulla
-   mappa + CamoscioReportTypes, il resto della barra laterale non ancora
-   tradotto accanto al form DMS gia' fatto al quarto lotto). Da concordare
-   con Denis prima di iniziare, non proseguire da soli sull'ordine. Dopo:
-   il gate di login/registrazione e le pagine HTML autonome
-   (demo/conferma-email/reimposta-password). Non riproporre "facciamolo
-   tutto insieme": Denis vuole un pezzo alla volta salvo un suo via libera
-   esplicito.
+2. PUNTO 102, LOTTO MAPPA AREA 2/4: PROGETTA UN PERCORSO (routeplanner.js,
+   690 righe + <h4> della card route-planner-card). Poi area 3 (Meteo +
+   Esposizione Solare - INCLUDE renderSolarExposureAdvice/calculateBearing/
+   bearingToCompassSector e #sun-exposure-card di map.js, oltre a
+   weather.js) e area 4 (Tracciamento GPS + mappa offline). Concordare con
+   Denis l'inizio di ogni area, non proseguire da soli sull'ordine. Dopo
+   il lotto Mappa: il gate di login/registrazione e le pagine HTML
+   autonome (demo/conferma-email/reimposta-password). Non riproporre
+   "facciamolo tutto insieme": Denis vuole un pezzo alla volta salvo un
+   suo via libera esplicito.
 
 3. PUNTO 106 (giro a parte): due difetti responsive PRE-ESISTENTI trovati
    verificando il terzo lotto su mobile (non regressioni della traduzione,
