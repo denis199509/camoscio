@@ -1,3 +1,21 @@
+// Traduzione IT/EN (punto 102, sesto lotto): 'var T' e non 'const', questo file
+// non e' avvolto in una IIFE e condivide lo scope globale con gli altri <script>
+// classici - 'const T' darebbe "Identifier 'T' has already been declared" e
+// bloccherebbe l'intero file (vedi 07-Trappole-Tecniche.md del vault). Ripiego
+// sempre all'italiano gia' scritto qui e nell'HTML: il dizionario ha solo l'EN.
+var T = (window.CamoscioI18n && window.CamoscioI18n.t) || function () { return null; };
+
+// Virgola italiana o punto inglese per i decimali degli importi in €. NON si
+// chiama "formattaDecimale": quel nome e' gia' un global di userprofile.js (non
+// avvolto in IIFE) che fa .toFixed(1) e, caricando dopo questo file, vincerebbe -
+// gli importi uscirebbero a un solo decimale (vedi 07-Trappole-Tecniche.md sul
+// collo di bottiglia dei <script> classici che condividono lo scope globale).
+function formattaEuro(n) {
+    const testo = (n || 0).toFixed(2);
+    const lang = window.CamoscioI18n && window.CamoscioI18n.getLang();
+    return lang === 'en' ? testo : testo.replace('.', ',');
+}
+
 function initCarpoolModule() {
     setupCarpoolEvents();
     renderCarpoolModule();
@@ -68,7 +86,7 @@ function renderMyCarpoolOffers() {
 
     box.innerHTML = "";
     if (mieOfferte.length === 0) {
-        box.innerHTML = `<div class="text-muted small italic text-center py-3">Non hai ancora offerto nessun passaggio. Usa il modulo qui sotto.</div>`;
+        box.innerHTML = `<div class="text-muted small italic text-center py-3">${T('carpool.js.nessunAnnuncio') || "Non hai ancora offerto nessun passaggio. Usa il modulo qui sotto."}</div>`;
         return;
     }
 
@@ -79,12 +97,12 @@ function renderMyCarpoolOffers() {
         item.innerHTML = `
             <div class="carpool-group-header">
                 <strong>${escapeHtml(hike.title)}</strong>
-                <span>${numPasseggeri}/${driver.seats} posti occupati</span>
+                <span>${T('carpool.js.postiOccupati', numPasseggeri, driver.seats) || (numPasseggeri + '/' + driver.seats + ' posti occupati')}</span>
             </div>
-            <div class="text-muted small">Partenza da: <b>${escapeHtml(driver.departureCity)}</b></div>
+            <div class="text-muted small">${T('carpool.js.partenzaDaLabel') || 'Partenza da:'} <b>${escapeHtml(driver.departureCity)}</b></div>
             <div style="display:flex; justify-content: flex-end; gap:8px; margin-top:8px;">
-                <button class="btn btn-sm btn-secondary" onclick="editMyCarpoolOffer('${hike.id}')">Modifica</button>
-                <button class="btn btn-sm btn-danger" onclick="deleteMyCarpoolOffer('${hike.id}')">Cancella annuncio</button>
+                <button class="btn btn-sm btn-secondary" onclick="editMyCarpoolOffer('${hike.id}')">${T('common.modifica') || 'Modifica'}</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteMyCarpoolOffer('${hike.id}')">${T('carpool.js.cancellaAnnuncio') || 'Cancella annuncio'}</button>
             </div>
         `;
         box.appendChild(item);
@@ -121,9 +139,9 @@ window.deleteMyCarpoolOffer = async function(hikeId) {
 
     const numPasseggeri = (driver.passengers || []).length;
     const messaggio = numPasseggeri > 0
-        ? `Hai ${numPasseggeri} passeggero${numPasseggeri > 1 ? 'i' : ''} a bordo: cancellando l'annuncio resterebbero senza passaggio, senza nessun avviso. Cancellare comunque?`
-        : "Cancellare questo annuncio?";
-    const conferma = await window.showConfirmModal(messaggio);
+        ? (T('carpool.js.confermaCancellaConPasseggeri', numPasseggeri) || `Hai ${numPasseggeri} passeggero${numPasseggeri > 1 ? 'i' : ''} a bordo: cancellando l'annuncio resterebbero senza passaggio, senza nessun avviso. Cancellare comunque?`)
+        : (T('carpool.js.confermaCancella') || "Cancellare questo annuncio?");
+    const conferma = await window.showConfirmModal(messaggio, T('common.elimina') || 'Elimina', { cancelLabel: T('common.cancella') || 'Annulla', danger: true });
     if (!conferma) return;
 
     hike.carpool.drivers = hike.carpool.drivers.filter(d => d.userId !== db.currentUser.id);
@@ -137,10 +155,10 @@ window.deleteMyCarpoolOffer = async function(hikeId) {
 
         await refreshState();
         renderCarpoolModule();
-        window.showToast("Annuncio cancellato.", "success");
+        window.showToast(T('carpool.js.annuncioCancellato') || "Annuncio cancellato.", "success");
     } catch (e) {
         console.error("Errore nel cancellare l'annuncio:", e);
-        window.showToast("Impossibile contattare il server. Riprova.", "error");
+        window.showToast(T('common.erroreServer') || "Impossibile contattare il server. Riprova.", "error");
     }
 };
 
@@ -152,10 +170,14 @@ function populateHikeSelects() {
     const db = window.CamoscioState;
     select.innerHTML = "";
 
+    // Data solo-cifre: identica in it-IT e en-GB (motivo della bandiera GB), ma il
+    // locale va passato esplicito - toLocaleDateString() senza argomenti segue il
+    // browser, non la lingua del sito.
+    const loc = (window.CamoscioI18n && window.CamoscioI18n.getLang() === 'en') ? 'en-GB' : 'it-IT';
     db.hikes.forEach(h => {
         const opt = document.createElement("option");
         opt.value = h.id;
-        opt.textContent = `${h.title} (${new Date(h.date).toLocaleDateString()})`;
+        opt.textContent = `${h.title} (${new Date(h.date).toLocaleDateString(loc)})`;
         select.appendChild(opt);
     });
 }
@@ -181,9 +203,9 @@ function calculateGenericExpenses() {
     const totalCost = fuelCost + tollTotale + extra;
     const costPerPerson = totalCost / pass;
 
-    document.getElementById("res-fuel-cost").textContent = `€ ${fuelCost.toFixed(2)}`;
-    document.getElementById("res-total-cost").textContent = `€ ${totalCost.toFixed(2)}`;
-    document.getElementById("res-share-cost").textContent = `€ ${costPerPerson.toFixed(2)}`;
+    document.getElementById("res-fuel-cost").textContent = `€ ${formattaEuro(fuelCost)}`;
+    document.getElementById("res-total-cost").textContent = `€ ${formattaEuro(totalCost)}`;
+    document.getElementById("res-share-cost").textContent = `€ ${formattaEuro(costPerPerson)}`;
 }
 
 // Algoritmo Privacy Partenza da Casa & Accoppiamento Automatico
@@ -203,7 +225,7 @@ async function renderAddressPrivacyMatch(hike) {
         statusBox.className = "privacy-status isolated";
         statusBox.innerHTML = `
             <i data-lucide="shield-alert"></i>
-            <span>Nessuna zona di partenza inserita. Inserisci la tua zona per trovare compagni vicini.</span>
+            <span>${T('carpool.js.nessunaZona') || "Nessuna zona di partenza inserita. Inserisci la tua zona per trovare compagni vicini."}</span>
         `;
         if (window.lucide) window.lucide.createIcons();
         return;
@@ -233,13 +255,13 @@ async function renderAddressPrivacyMatch(hike) {
         const matchedNames = matches.map(m => `<b>${escapeHtml(m.user.username.split(" ")[0])}</b> (${escapeHtml(m.city)})`).join(", ");
         statusBox.innerHTML = `
             <i data-lucide="check-circle" style="color:var(--accent-green)"></i>
-            <span><strong>CORRISPONDENZA PARTENZA TROVATA!</strong> Anche tu e ${matchedNames} partiti dalla stessa zona. Potete viaggiare insieme!</span>
+            <span>${T('carpool.js.matchTrovato', matchedNames) || `<strong>CORRISPONDENZA PARTENZA TROVATA!</strong> Anche tu e ${matchedNames} partiti dalla stessa zona. Potete viaggiare insieme!`}</span>
         `;
     } else {
         statusBox.className = "privacy-status isolated";
         statusBox.innerHTML = `
             <i data-lucide="shield"></i>
-            <span><strong>Posizione protetta:</strong> Stai partendo da <i>"${escapeHtml(myHomeCity)}"</i>. Attualmente nessun altro partecipante parte dalla tua zona. La tua partenza rimarrà nascosta per motivi di privacy.</span>
+            <span>${T('carpool.js.posizioneProtetta', escapeHtml(myHomeCity)) || `<strong>Posizione protetta:</strong> Stai partendo da <i>"${escapeHtml(myHomeCity)}"</i>. Attualmente nessun altro partecipante parte dalla tua zona. La tua partenza rimarrà nascosta per motivi di privacy.`}</span>
         `;
     }
 
@@ -341,7 +363,7 @@ function renderDriversList(hike) {
     const db = window.CamoscioState;
 
     if (!hike.carpool.drivers || hike.carpool.drivers.length === 0) {
-        container.innerHTML = `<div class="text-muted small italic text-center py-3">Nessuna auto disponibile registrata per questa gita. Offri tu il primo passaggio!</div>`;
+        container.innerHTML = `<div class="text-muted small italic text-center py-3">${T('carpool.js.nessunaAuto') || "Nessuna auto disponibile registrata per questa gita. Offri tu il primo passaggio!"}</div>`;
         return;
     }
 
@@ -369,12 +391,12 @@ function renderDriversList(hike) {
         if (driver.passengers && driver.passengers.length > 0) {
             passengerListHtml = driver.passengers.map(pId => {
                 const passUser = db.users.find(u => u.id === pId);
-                const name = passUser ? passUser.username.split(" ")[0] : "Passeggero";
+                const name = passUser ? passUser.username.split(" ")[0] : (T('carpool.js.passeggeroFallback') || "Passeggero");
                 const avatar = passUser ? passUser.avatar : "👤";
                 return `<span class="badge badge-primary" title="${escapeHtml(passUser ? passUser.username : '')}">${avatar} ${escapeHtml(name)}</span>`;
             }).join(" ");
         } else {
-            passengerListHtml = `<span class="text-muted small italic">Nessun passeggero a bordo</span>`;
+            passengerListHtml = `<span class="text-muted small italic">${T('carpool.js.nessunPasseggero') || "Nessun passeggero a bordo"}</span>`;
         }
 
         // Bottone Azione: Unisciti o Esci
@@ -382,15 +404,15 @@ function renderDriversList(hike) {
         const isPassenger = driver.passengers && driver.passengers.includes(db.currentUser.id);
 
         if (isMe) {
-            actionBtnHtml = `<span class="badge badge-accent">La tua Auto</span>`;
+            actionBtnHtml = `<span class="badge badge-accent">${T('carpool.js.laTuaAuto') || 'La tua Auto'}</span>`;
         } else if (isPassenger) {
-            actionBtnHtml = `<button class="btn btn-sm btn-danger" onclick="leaveCarpoolGroup('${hike.id}', '${driver.userId}')">Abbandona Auto</button>`;
+            actionBtnHtml = `<button class="btn btn-sm btn-danger" onclick="leaveCarpoolGroup('${hike.id}', '${driver.userId}')">${T('carpool.js.abbandonaAuto') || 'Abbandona Auto'}</button>`;
         } else {
             const seatsLeft = driver.seats - (driver.passengers ? driver.passengers.length : 0);
             if (seatsLeft > 0) {
-                actionBtnHtml = `<button class="btn btn-sm btn-success" onclick="joinCarpoolGroup('${hike.id}', '${driver.userId}')">Sali a Bordo</button>`;
+                actionBtnHtml = `<button class="btn btn-sm btn-success" onclick="joinCarpoolGroup('${hike.id}', '${driver.userId}')">${T('carpool.js.saliABordo') || 'Sali a Bordo'}</button>`;
             } else {
-                actionBtnHtml = `<span class="badge badge-red">Auto Piena</span>`;
+                actionBtnHtml = `<span class="badge badge-red">${T('carpool.js.autoPiena') || 'Auto Piena'}</span>`;
             }
         }
 
@@ -398,12 +420,12 @@ function renderDriversList(hike) {
 
         item.innerHTML = `
             <div class="carpool-group-header">
-                <strong>🚗 Conducente: ${escapeHtml(driverUser.username)}</strong>
-                <span>Posti liberi: <b>${seatsLeft}/${driver.seats}</b></span>
+                <strong>🚗 ${T('carpool.js.conducenteLabel') || 'Conducente:'} ${escapeHtml(driverUser.username)}</strong>
+                <span>${T('carpool.js.postiLiberiLabel') || 'Posti liberi:'} <b>${seatsLeft}/${driver.seats}</b></span>
             </div>
-            <div class="text-muted small">Partenza da: <b>${escapeHtml(driver.departureCity)}</b> | Costo stimato passeggero: <strong style="color:var(--accent-green)">€ ${splitCost.toFixed(2)}</strong></div>
+            <div class="text-muted small">${T('carpool.js.partenzaDaLabel') || 'Partenza da:'} <b>${escapeHtml(driver.departureCity)}</b> | ${T('carpool.js.costoStimatoLabel') || 'Costo stimato passeggero:'} <strong style="color:var(--accent-green)">€ ${formattaEuro(splitCost)}</strong></div>
             <div style="margin: 10px 0;">
-                <span class="small text-muted" style="display:block; margin-bottom:4px;">Equipaggio:</span>
+                <span class="small text-muted" style="display:block; margin-bottom:4px;">${T('carpool.js.equipaggioLabel') || 'Equipaggio:'}</span>
                 <div class="carpool-passengers">${passengerListHtml}</div>
             </div>
             <div style="display:flex; justify-content: flex-end; margin-top:8px;">
@@ -478,6 +500,25 @@ window.leaveCarpoolGroup = async function(hikeId, driverId) {
         }
     }
 };
+
+// Cambio lingua (punto 102, sesto lotto): renderCarpoolModule ricostruisce via
+// innerHTML testo che applyStaticTranslations non raggiunge (annunci, elenco auto,
+// stato privacy). Nessun fetch nel suo percorso sincrono -> ridisegno gratis, come
+// renderHikesList al secondo lotto. Il box "Split Spese" invece lo disegna solo il
+// suo bottone: si richiama calculateGenericExpenses per rimettere i tre importi €
+// nel separatore decimale della lingua nuova (i campi hanno sempre un valore,
+// nessun fetch). Solo se #carpool e' la sezione attiva: navigateTo lo ridisegna
+// comunque all'ingresso (app.js), come renderCompletate.
+if (window.CamoscioI18n && window.CamoscioI18n.onChange) {
+    window.CamoscioI18n.onChange(function () {
+        const sec = document.getElementById("carpool");
+        if (sec && sec.classList.contains("active") &&
+            window.CamoscioState && window.CamoscioState.currentUser) {
+            renderCarpoolModule();
+            calculateGenericExpenses();
+        }
+    });
+}
 
 window.initCarpoolModule = initCarpoolModule;
 window.renderCarpoolModule = renderCarpoolModule;

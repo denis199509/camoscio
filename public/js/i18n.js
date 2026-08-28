@@ -817,7 +817,256 @@
             'chat.inputPlaceholder': 'Write a message...',
             'chat.send': 'Send',
             'chat.empty': 'No messages yet, write the first one.',
-            'chat.errSend': 'Could not send the message.'
+            'chat.errSend': 'Could not send the message.',
+
+            // ==================================================================
+            // Rollout punto 102, SESTO lotto (28/08/2026): Carpooling + Zaino -
+            // le due sezioni #carpool e #backpack e i due file carpool.js (484
+            // righe) e backpack.js (919) per intero, un solo lotto. Denis ha
+            // scelto "Carpooling + Zaino insieme" (AskUserQuestion). Nessun
+            // modale dedicato a queste due sezioni.
+            //
+            // Scelte non ovvie:
+            // 1) sectionTitle.carpool aggiunto anche se la voce di menu
+            //    "Carpooling" NON e' tradotta (e' gia' inglese): sono i due
+            //    posti diversi (voce di menu vs titolo di pagina) descritti dal
+            //    commento di nav.* piu' sopra - qui il titolo di pagina in
+            //    italiano e' piu' lungo ("Carpooling & Spese Viaggio"), quindi
+            //    la sua traduzione serve. nav.backpack esisteva gia' dal primo
+            //    lotto ("Smart Backpack"); qui si aggiunge solo sectionTitle.*.
+            // 2) I nomi degli oggetti della checklist generati dalle REGOLE di
+            //    backpack.js (Scarponi da trekking, Mantella impermeabile...),
+            //    le categorie (Abbigliamento, Attrezzatura...) e i "generi"
+            //    (tenda, cucina...) sono vocabolario fisso NOSTRO, come
+            //    Difficolta'/Tag Tribu' del secondo lotto: tradotti SOLO per la
+            //    visualizzazione. Il valore usato per raggruppare e - questo e'
+            //    il punto delicato - la CHIAVE localStorage dello stato spuntato
+            //    (chiaveSpuntato keya su item.name) restano SEMPRE la stringa
+            //    italiana: cambiare lingua non fa mai perdere un oggetto gia'
+            //    spuntato. Gli oggetti del template escursione e quelli
+            //    personali aggiunti a mano (testo dell'utente) non stanno nel
+            //    dizionario: T() torna null e si ripiega al loro testo originale.
+            // 3) Cambio lingua stando sulla pagina: #carpool si ridisegna
+            //    tutto (nessun fetch nel suo percorso sincrono). #backpack pure
+            //    SI ridisegna (la checklist via innerHTML sarebbe altrimenti
+            //    stantia sotto gli occhi), ma SENZA rifare il fetch meteo di
+            //    open-meteo: applyBackpackRules (l'imbuto sincrono) salva i suoi
+            //    ultimi input in ultimoInputZaino, l'onChange li rigioca. Stessa
+            //    logica della Dashboard al terzo lotto (ridisegna, non rifetch).
+            //    Entrambi solo se la loro sezione e' quella attiva (navigateTo
+            //    li ridisegna comunque all'ingresso), come renderCompletate.
+            // 4) Decimali: gli importi in € del calcolatore spese e i kg della
+            //    ripartizione pesi usano virgola (IT) / punto (EN), come
+            //    formattaDecimale del secondo lotto - helper minuscolo
+            //    duplicato in locale nei due file, come gia' fa storico.js.
+            // 5) La conferma di cancellazione di un annuncio auto
+            //    (showConfirmModal in carpool.js) e' stata allineata all'idioma
+            //    gia' usato dai due "cancella una cosa tua" gemelli in
+            //    social.js/storico.js: T('common.elimina') + cancelLabel
+            //    T('common.cancella') + danger:true. Le altre showConfirmModal
+            //    del sito (Mappa, tracciamento, moderazione) restano in
+            //    italiano: sono lotti futuri.
+            'sectionTitle.carpool': 'Carpooling & Travel Costs',
+            'sectionTitle.backpack': 'Smart Backpack Checklist',
+
+            // Etichette generiche riusabili (come common.elimina/cancella dei
+            // lotti precedenti) - stanno qui per i lotti futuri.
+            'common.modifica': 'Edit',
+            'common.salvataggio': 'Saving…',
+
+            // ===================== CARPOOLING (#carpool) =======================
+            // --- Calcolatore spese viaggio (HTML statico) ---
+            'carpool.calc.titolo': 'Travel Cost Split',
+            'carpool.calc.desc': 'Enter the outbound trip only: the return is calculated automatically, on the same figures.',
+            'carpool.calc.distLabel': 'Outbound Distance (km):',
+            'carpool.calc.consumoLabel': 'Consumption (L/100km):',
+            'carpool.calc.benzinaLabel': 'Fuel Price (€/L):',
+            'carpool.calc.pedaggioLabel': 'Outbound Toll (€):',
+            'carpool.calc.extraLabel': 'Extra Costs (e.g. parking, hut):',
+            'carpool.calc.personeLabel': 'Total People in the Car:',
+            'carpool.calc.ricalcolaBtn': 'Recalculate Cost Split',
+            'carpool.calc.resFuelLabel': 'Total Fuel Cost:',
+            'carpool.calc.resTotalLabel': 'Total Trip Cost (round trip):',
+            'carpool.calc.resShareLabel': 'Share per Person:',
+
+            // --- I tuoi annunci auto / Offri un passaggio (HTML statico) ---
+            'carpool.offers.titolo': 'Your Car Listings',
+            'carpool.driver.titolo': 'Offer a Ride',
+            'carpool.driver.hikeLabel': 'For which hike?',
+            'carpool.driver.cityLabel': 'Departure City:',
+            'carpool.driver.cityPlaceholder': 'E.g. Milan, Bergamo...',
+            'carpool.driver.seatsLabel': 'Free Seats in the Car:',
+            'carpool.driver.distLabel': 'Estimated round-trip distance (km):',
+            'carpool.driver.pubblicaBtn': 'Publish Available Car',
+
+            // --- Abbinamenti & privacy partenze (HTML statico) ---
+            'carpool.match.titolo': 'Smart Matching & Departure Privacy',
+            'carpool.match.desc': 'Share your home departure area. The algorithm shows matches only if 2 or more people are from the same area, to protect privacy.',
+            'carpool.match.homeLabel': 'Your home address / departure area:',
+            'carpool.match.homePlaceholder': 'E.g. Milan Loreto, Bergamo Alta...',
+            'carpool.match.salvaZonaBtn': 'Save Area',
+            'carpool.match.dispTitolo': 'Available cars and rides:',
+
+            // --- carpool.js: testo generato da JS ---
+            'carpool.js.nessunAnnuncio': "You haven't offered any ride yet. Use the form below.",
+            'carpool.js.postiOccupati': function (n, tot) { return n + '/' + tot + ' seats taken'; },
+            'carpool.js.partenzaDaLabel': 'Departure from:',
+            'carpool.js.cancellaAnnuncio': 'Delete listing',
+            'carpool.js.confermaCancellaConPasseggeri': function (n) { return 'You have ' + n + (n === 1 ? ' passenger' : ' passengers') + ' on board: deleting the listing would leave them with no ride and no notice. Delete anyway?'; },
+            'carpool.js.confermaCancella': 'Delete this listing?',
+            'carpool.js.annuncioCancellato': 'Listing deleted.',
+            'carpool.js.nessunaZona': 'No departure area entered. Enter your area to find nearby companions.',
+            'carpool.js.matchTrovato': function (nomi) { return '<strong>DEPARTURE MATCH FOUND!</strong> You and ' + nomi + ' are also leaving from the same area. You can travel together!'; },
+            'carpool.js.posizioneProtetta': function (citta) { return '<strong>Position protected:</strong> You\'re leaving from <i>"' + citta + '"</i>. Right now no other participant leaves from your area. Your departure will stay hidden for privacy.'; },
+            'carpool.js.nessunaAuto': 'No car registered for this hike yet. Be the first to offer a ride!',
+            'carpool.js.passeggeroFallback': 'Passenger',
+            'carpool.js.nessunPasseggero': 'No passengers on board',
+            'carpool.js.laTuaAuto': 'Your Car',
+            'carpool.js.abbandonaAuto': 'Leave Car',
+            'carpool.js.saliABordo': 'Hop In',
+            'carpool.js.autoPiena': 'Car Full',
+            'carpool.js.conducenteLabel': 'Driver:',
+            'carpool.js.postiLiberiLabel': 'Free seats:',
+            'carpool.js.costoStimatoLabel': 'Estimated cost per passenger:',
+            'carpool.js.equipaggioLabel': 'Crew:',
+
+            // ================== ZAINO INTELLIGENTE (#backpack) =================
+            // --- Generatore checklist (HTML statico) ---
+            'backpack.gen.titolo': 'Smart Checklist Generator',
+            'backpack.gen.desc': "Enter the hike's environmental data to get a recommended checklist and split the weight with the group.",
+            'backpack.gen.stagioneLabel': 'Season:',
+            'backpack.gen.stagioneEstate': 'Summer (Heat, sudden storms)',
+            'backpack.gen.stagioneInverno': 'Winter (Deep cold, ice, snow)',
+            'backpack.gen.stagioneMezza': 'Shoulder Season (Wind, rain, layering)',
+            'backpack.gen.quotaLabel': 'Max Altitude (meters):',
+            'backpack.gen.durataLabel': 'Hike Duration:',
+            'backpack.gen.durataGiornata': 'Single Day',
+            'backpack.gen.durataPluri': 'Multi-Day (Hut/Tent)',
+            'backpack.gen.pioggiaCheck': 'Rain / Bad Weather Forecast',
+            'backpack.gen.generaBtn': 'Generate Dynamic Checklist',
+
+            // --- Ripartizione pesi / porto io una cosa per tutti (HTML statico) ---
+            'backpack.weight.titolo': 'Group Weight Split',
+            'backpack.weight.desc': 'Only items that are shared: tent, stove, first-aid kit. Personal things (jacket, water, food) are carried by each person and are not shown here.',
+            'backpack.shared.titolo': "I'm carrying something for everyone",
+            'backpack.shared.nomePlaceholder': 'E.g. 3-person tent',
+            'backpack.shared.pesoPlaceholder': 'E.g. 2400',
+            'backpack.shared.copreLabel': 'For how many people:',
+            'backpack.shared.coprePlaceholder': 'Empty = everyone',
+            'backpack.shared.hint': 'The number of people matters for things that only cover a few, like a tent. One stove is enough for the group: leave it empty.',
+            'backpack.shared.aggiungiBtn': 'Add to the group list',
+
+            // --- La tua checklist / aggiungi una tua cosa (HTML statico) ---
+            'backpack.list.titolo': 'Your Checklist',
+            'backpack.personal.titolo': 'Add something of yours',
+            'backpack.personal.nomePlaceholder': 'E.g. Trekking poles',
+            'backpack.personal.pesoPlaceholder': 'E.g. 400',
+            'backpack.personal.aggiungiBtn': 'Add to my list',
+            'backpack.list.confermatoBanner': 'Backpack confirmed: you have everything mandatory.',
+            'backpack.list.confermaBtn': 'Confirm backpack',
+
+            // --- Etichette dei campi "cosa / peso" (condivise dai due form) ---
+            'backpack.form.cosaLabel': 'What:',
+            'backpack.form.pesoLabel': 'Weight (grams):',
+
+            // --- Vocabolario checklist: OGGETTI generati dalle regole. Vedi
+            //     nota (2): il valore/chiave localStorage resta la stringa IT,
+            //     qui solo la traduzione per la visualizzazione. ---
+            'backpack.item.Scarponi da trekking': 'Trekking boots',
+            'backpack.item.Acqua (almeno 1.5 Litri)': 'Water (at least 1.5 Liters)',
+            'backpack.item.Snack energetici / Pranzo': 'Energy snacks / Lunch',
+            'backpack.item.Fischietto di emergenza': 'Emergency whistle',
+            'backpack.item.Coperta termica alluminata': 'Aluminized emergency blanket',
+            'backpack.item.Borraccia vuota extra': 'Extra empty water bottle',
+            'backpack.item.Ramponcini di sicurezza': 'Safety micro-spikes',
+            'backpack.item.Guscio antivento termico (Goretex)': 'Windproof thermal shell (Goretex)',
+            'backpack.item.Guanti e berretto caldi': 'Warm gloves and hat',
+            'backpack.item.K-Way o giacca leggera': 'Windbreaker or light jacket',
+            'backpack.item.Mantella impermeabile / Poncho': 'Waterproof cape / Poncho',
+            'backpack.item.Coprizaino impermeabile': 'Waterproof backpack cover',
+            'backpack.item.Sacchetti stagni per indumenti': 'Dry bags for clothing',
+            'backpack.item.Cramponi classici da ghiaccio': 'Classic ice crampons',
+            'backpack.item.Ghette da neve': 'Snow gaiters',
+            'backpack.item.Thermos per bevande calde': 'Thermos for hot drinks',
+            'backpack.item.Piumino leggero extra': 'Extra light down jacket',
+            'backpack.item.Crema solare protettiva': 'Protective sunscreen',
+            'backpack.item.Cappellino da sole': 'Sun hat',
+            'backpack.item.Sali minerali di scorta': 'Spare mineral salts',
+            'backpack.item.Sacco a pelo confort 0°C': 'Sleeping bag, comfort 0°C',
+            'backpack.item.Materassino isolante': 'Insulating sleeping mat',
+            'backpack.item.Torcia frontale + batterie': 'Headlamp + batteries',
+            'backpack.item.Powerbank per cellulare': 'Phone power bank',
+            'backpack.item.Articoli per igiene personale': 'Personal hygiene items',
+
+            // --- Vocabolario checklist: CATEGORIE (solo visualizzazione) ---
+            'backpack.cat.Abbigliamento': 'Clothing',
+            'backpack.cat.Attrezzatura': 'Gear',
+            'backpack.cat.Alimentazione': 'Food & Drink',
+            'backpack.cat.Sicurezza / Emergenza': 'Safety / Emergency',
+            'backpack.cat.Igiene': 'Hygiene',
+            'backpack.cat.Aggiunte da te': 'Added by you',
+            'backpack.cat.Attrezzatura di gruppo': 'Group gear',
+
+            // --- Vocabolario checklist: GENERI oggetti condivisi (avviso copertura) ---
+            'backpack.genere.tenda': 'tent',
+            'backpack.genere.cucina': 'kitchen',
+            'backpack.genere.primo soccorso': 'first aid',
+            'backpack.genere.corda': 'rope',
+            'backpack.genere.acqua': 'water',
+            'backpack.genere.navigazione': 'navigation',
+            'backpack.genere.riparo': 'shelter',
+            'backpack.genere.luce da campo': 'camp light',
+
+            // --- backpack.js: badge regole + avvisi (applyBackpackRules) ---
+            'backpack.js.badgeAltaQuota': 'Altitude > 2500m',
+            'backpack.js.badgeQuotaStd': 'Standard Altitude',
+            'backpack.js.alertQuota': 'Altitude above 2500m: <strong>Thermal Shell</strong> and <strong>Micro-spikes</strong> have been forced into the backpack!',
+            'backpack.js.alertPioggia': 'Rain forecast: <strong>Waterproof Cape</strong> mandatory!',
+
+            // --- backpack.js: riga della checklist (renderChecklistUI) ---
+            'backpack.js.obbligatorioTag': 'MANDATORY',
+            'backpack.js.portaLabel': 'Carried by:',
+            'backpack.js.qualcuno': 'Someone',
+            'backpack.js.daAssegnare': 'To assign',
+            'backpack.js.posti': function (n) { return n + (n === 1 ? ' spot' : ' spots'); },
+
+            // --- backpack.js: riquadro escursione di riferimento (mostraEscursioneDiRiferimento) ---
+            'backpack.js.zainoPersonaleTitolo': 'Personal backpack',
+            'backpack.js.zainoPersonaleDesc': 'You have no upcoming hikes: this is the list of your own things. Join a hike to also see the items to share with the group.',
+            'backpack.js.zainoPerLabel': 'Backpack for:',
+            'backpack.js.dataNonIndicata': 'date not set',
+            'backpack.js.quotaMassimaLabel': 'max altitude',
+            'backpack.js.organizzataDaTe': 'organized by you',
+            'backpack.js.aCuiPartecipi': "you're joining",
+
+            // --- backpack.js: nota previsione pioggia (mostraNotaPioggia) ---
+            'backpack.js.meteoTroppoLontano': "Forecast not available yet: it's more than two weeks away. Check the backpack again in the days before you leave.",
+            'backpack.js.meteoNonDisp': 'Weather forecast not available for this date: the list does not account for rain.',
+            'backpack.js.meteoPioggia': 'Forecast: rain likely on the day of the hike. Cape and backpack cover have been made mandatory.',
+            'backpack.js.meteoSereno': 'Forecast: a day without rain. Rain gear has not been forced into the list.',
+
+            // --- backpack.js: avviso "non basta per tutti" (mostraAvvisiCopertura) ---
+            'backpack.js.nonBastaPerTutti': 'Not enough for everyone',
+            'backpack.js.neManca': 'One is <strong>missing</strong>',
+            'backpack.js.neMancano': function (n) { return '<strong>' + n + '</strong> are missing'; },
+            'backpack.js.coperturaRiga': function (intest, posti, persone, mancano) { return '<li><strong>' + intest + '</strong>: ' + posti + ' for ' + persone + ' people. ' + mancano + ': you need something bigger, or another one to add.</li>'; },
+
+            // --- backpack.js: ripartizione pesi (renderWeightDistribution) ---
+            'backpack.js.wdNessunaGruppo': "No upcoming group hike: there's nothing to split.",
+            'backpack.js.wdSoloTu': "For now you're the only one on this hike: there's no one to split the weight with. Items to share appear when someone else joins.",
+            'backpack.js.wdNessunOggetto': 'No items to share on this hike. If you bring something everyone needs (tent, stove, first-aid kit) add it below.',
+            'backpack.js.assegnaOggetto': 'Assign item...',
+
+            // --- backpack.js: toast (aggiungi oggetto personale/condiviso, conferma zaino) ---
+            'backpack.js.scriviCosa': "Write what you're carrying.",
+            'backpack.js.mettiPeso': 'Enter a weight in grams.',
+            'backpack.js.mettiPesoCarico': "Enter a weight in grams, it's needed to split the load.",
+            'backpack.js.portataMin': 'The capacity must be at least 1 person, or leave it empty.',
+            'backpack.js.aggiuntoTua': 'Added to your list.',
+            'backpack.js.aggiuntoGruppo': "Added. You're carrying it for the group.",
+            'backpack.js.erroreAggiunta': "I couldn't add it. Try again.",
+            'backpack.js.mancaObbligatorio': function (elenco) { return 'Mandatory items still to check off: ' + elenco + '.'; },
+            'backpack.js.zainoConfermatoToast': 'Backpack confirmed: you have everything mandatory!'
         }
     };
 

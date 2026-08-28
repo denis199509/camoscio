@@ -1,3 +1,32 @@
+// Traduzione IT/EN (punto 102, sesto lotto): 'var T' e non 'const', questo file
+// non e' avvolto in una IIFE e condivide lo scope globale con gli altri <script>
+// classici - 'const T' darebbe "Identifier 'T' has already been declared" e
+// bloccherebbe l'intero file (vedi 07-Trappole-Tecniche.md del vault). Ripiego
+// sempre all'italiano gia' scritto qui e nell'HTML: il dizionario ha solo l'EN.
+var T = (window.CamoscioI18n && window.CamoscioI18n.t) || function () { return null; };
+
+// Virgola italiana o punto inglese per i kg della ripartizione pesi. NON si
+// chiama "formattaDecimale": quel nome e' gia' un global di userprofile.js (non
+// avvolto in IIFE) che fa .toFixed(1) e, caricando dopo questo file, vincerebbe
+// (vedi 07-Trappole-Tecniche.md sul collo di bottiglia dei <script> classici che
+// condividono lo scope globale). Qui servono due decimali.
+function formattaKg(n) {
+    const testo = (n || 0).toFixed(2);
+    const lang = window.CamoscioI18n && window.CamoscioI18n.getLang();
+    return lang === 'en' ? testo : testo.replace('.', ',');
+}
+
+// Traduzione per la SOLA visualizzazione del vocabolario fisso nostro (nomi
+// oggetti generati dalle regole, categorie, generi). Il valore vero - quello che
+// raggruppa e, soprattutto, quello con cui chiaveSpuntato costruisce la chiave
+// localStorage dello stato spuntato - resta SEMPRE la stringa italiana passata
+// qui: cambiare lingua non deve mai far perdere un oggetto gia' spuntato. Un
+// nome del template escursione o un oggetto personale aggiunto a mano (testo
+// dell'utente) non e' nel dizionario -> T() torna null -> si ripiega al nome originale.
+function nomeOggettoTradotto(nome) { return T('backpack.item.' + nome) || nome; }
+function catLabel(cat) { return T('backpack.cat.' + cat) || cat; }
+function genereLabel(g) { return T('backpack.genere.' + g) || g; }
+
 // Inizializzatore del modulo zaino
 function initBackpackModule() {
     setupBackpackEvents();
@@ -208,6 +237,7 @@ function renderBackpackModule() {
 function nascondiNotaPioggia() {
     const box = document.getElementById("backpack-weather-note");
     if (box) box.classList.add("hidden");
+    ultimaNotaPioggia = { visibile: false, pioggia: null, hike: null };
 }
 
 // Stagione ricavata dalla data vera dell'escursione (prima era scritta "estate" e basta).
@@ -351,11 +381,11 @@ async function aggiungiOggettoPersonale() {
     const peso = parseInt(document.getElementById("personal-item-weight").value, 10);
 
     if (!nome) {
-        window.showToast("Scrivi che cosa porti.", "error");
+        window.showToast(T('backpack.js.scriviCosa') || "Scrivi che cosa porti.", "error");
         return;
     }
     if (!Number.isFinite(peso) || peso <= 0) {
-        window.showToast("Metti un peso in grammi.", "error");
+        window.showToast(T('backpack.js.mettiPeso') || "Metti un peso in grammi.", "error");
         return;
     }
 
@@ -370,7 +400,7 @@ async function aggiungiOggettoPersonale() {
     document.getElementById("personal-item-weight").value = "";
 
     renderBackpackModule();
-    window.showToast("Aggiunto alla tua lista.", "success");
+    window.showToast(T('backpack.js.aggiuntoTua') || "Aggiunto alla tua lista.", "success");
 }
 
 // Ultimo elenco disegnato + per quale escursione: serve a confermaZaino per sapere QUALI
@@ -378,6 +408,13 @@ async function aggiungiOggettoPersonale() {
 // logica che potrebbe scostarsi da quella vera (lo stesso principio del punto 38: due
 // calcoli della stessa cosa in punti diversi finiscono per dire cose diverse).
 let ultimoRenderZaino = { items: [], hikeId: 'generic' };
+
+// Ultimi input passati ad applyBackpackRules da una render vera: servono
+// all'onChange del cambio lingua per ridisegnare la checklist tradotta senza
+// rifare il fetch meteo di open-meteo (vedi in fondo al file). Insieme, lo stato
+// corrente della nota meteo, per riscriverla nella lingua nuova senza rifetch.
+let ultimoInputZaino = null;
+let ultimaNotaPioggia = { visibile: false, pioggia: null, hike: null };
 
 // Tasto finale (punto 47): non e' un applauso, controlla davvero che tutto quello che le
 // regole hanno reso OBBLIGATORIO sia gia' spuntato prima di dire che lo zaino e' pronto.
@@ -389,14 +426,14 @@ function confermaZaino() {
         localStorage.getItem(chiaveSpuntato(hikeId, userId, item.name)) !== 'true');
 
     if (mancanti.length > 0) {
-        const elenco = mancanti.map(i => i.name).join(', ');
-        window.showToast(`Manca ancora da spuntare l'obbligatorio: ${elenco}.`, "error");
+        const elenco = mancanti.map(i => nomeOggettoTradotto(i.name)).join(', ');
+        window.showToast(T('backpack.js.mancaObbligatorio', elenco) || `Manca ancora da spuntare l'obbligatorio: ${elenco}.`, "error");
         return;
     }
 
     localStorage.setItem(`backpack_confirmed_${hikeId || 'generic'}_${userId}`, 'true');
     mostraZainoConfermato(hikeId);
-    window.showToast("Zaino confermato: hai tutto l'obbligatorio!", "success");
+    window.showToast(T('backpack.js.zainoConfermatoToast') || "Zaino confermato: hai tutto l'obbligatorio!", "success");
 }
 
 // Mostra il banner se questo zaino (per QUESTA escursione, o quello generico) e' gia'
@@ -421,6 +458,11 @@ function applyBackpackRules(season, altitude, duration, rainExpected, hike) {
     const isHighAltitude = altitude >= 2500;
     const hikeId = (hike && hike.id) || 'generic';
 
+    // Ultimi input di una render vera: l'onChange del cambio lingua li rigioca
+    // per ridisegnare la checklist tradotta SENZA rifare il fetch meteo (vedi in
+    // fondo al file). Questo e' l'unico imbuto sincrono che disegna la lista.
+    ultimoInputZaino = { season, altitude, duration, rainExpected, hike };
+
     // 1. Inizializziamo una lista base di articoli indispensabili
     let items = [
         { name: "Scarponi da trekking", category: "Abbigliamento", mandatory: true, weight: 1200 },
@@ -438,18 +480,18 @@ function applyBackpackRules(season, altitude, duration, rainExpected, hike) {
     let alertMsg = [];
     
     if (isHighAltitude) {
-        rulesBadge.textContent = "Quota > 2500m";
+        rulesBadge.textContent = T('backpack.js.badgeAltaQuota') || "Quota > 2500m";
         rulesBadge.className = "badge badge-red";
-        
+
         items.push({ name: "Ramponcini di sicurezza", category: "Attrezzatura", mandatory: true, weight: 400 });
         items.push({ name: "Guscio antivento termico (Goretex)", category: "Abbigliamento", mandatory: true, weight: 500 });
         items.push({ name: "Guanti e berretto caldi", category: "Abbigliamento", mandatory: true, weight: 200 });
-        
-        alertMsg.push("Quota sopra i 2500m: <strong>Guscio Termico</strong> e <strong>Ramponcini</strong> sono stati forzati nello zaino!");
+
+        alertMsg.push(T('backpack.js.alertQuota') || "Quota sopra i 2500m: <strong>Guscio Termico</strong> e <strong>Ramponcini</strong> sono stati forzati nello zaino!");
     } else {
-        rulesBadge.textContent = "Quota Standard";
+        rulesBadge.textContent = T('backpack.js.badgeQuotaStd') || "Quota Standard";
         rulesBadge.className = "badge badge-green";
-        
+
         items.push({ name: "K-Way o giacca leggera", category: "Abbigliamento", mandatory: false, weight: 250 });
     }
 
@@ -457,8 +499,8 @@ function applyBackpackRules(season, altitude, duration, rainExpected, hike) {
         items.push({ name: "Mantella impermeabile / Poncho", category: "Abbigliamento", mandatory: true, weight: 350 });
         items.push({ name: "Coprizaino impermeabile", category: "Attrezzatura", mandatory: true, weight: 100 });
         items.push({ name: "Sacchetti stagni per indumenti", category: "Attrezzatura", mandatory: false, weight: 50 });
-        
-        alertMsg.push("Previsione Pioggia: <strong>Mantella Impermeabile</strong> obbligatoria!");
+
+        alertMsg.push(T('backpack.js.alertPioggia') || "Previsione Pioggia: <strong>Mantella Impermeabile</strong> obbligatoria!");
     }
 
     // Regole stagionali
@@ -584,9 +626,11 @@ function renderChecklistUI(items, hikeId) {
         const catBox = document.createElement("div");
         catBox.className = "backpack-category";
         
+        // catDomKey resta sul nome IT originale: e' un id del DOM usato subito
+        // qui sotto, non deve dipendere dalla lingua. Solo il titolo si traduce.
         const catDomKey = catName.replace(/[^a-zA-Z0-9]/g, '');
         catBox.innerHTML = `
-            <h5>${escapeHtml(catName)}</h5>
+            <h5>${escapeHtml(catLabel(catName))}</h5>
             <div class="backpack-list-items" id="cat-items-${catDomKey}">
                 <!-- Articoli caricati qui -->
             </div>
@@ -611,24 +655,24 @@ function renderChecklistUI(items, hikeId) {
             if (item.isShared) {
                 const db = window.CamoscioState;
                 if (item.copre) {
-                    assignmentLabel += `<span class="item-covers">${item.copre} post${item.copre === 1 ? 'o' : 'i'}</span>`;
+                    assignmentLabel += `<span class="item-covers">${T('backpack.js.posti', item.copre) || (item.copre + ' post' + (item.copre === 1 ? 'o' : 'i'))}</span>`;
                 }
                 if (item.assignedTo) {
                     const assignee = db.users.find(u => u.id === item.assignedTo);
-                    const name = assignee ? assignee.username.split(" ")[0] : "Qualcuno";
-                    assignmentLabel += `<span class="item-assigned">Porta: ${escapeHtml(name)}</span>`;
+                    const name = assignee ? assignee.username.split(" ")[0] : (T('backpack.js.qualcuno') || "Qualcuno");
+                    assignmentLabel += `<span class="item-assigned">${T('backpack.js.portaLabel') || 'Porta:'} ${escapeHtml(name)}</span>`;
                 } else {
-                    assignmentLabel += `<span class="item-assigned" style="color:var(--accent-orange)">Da Assegnare</span>`;
+                    assignmentLabel += `<span class="item-assigned" style="color:var(--accent-orange)">${T('backpack.js.daAssegnare') || 'Da Assegnare'}</span>`;
                 }
             }
 
             itemRow.innerHTML = `
                 <div class="backpack-item-left ${isChecked ? 'checked' : ''}">
                     <input type="checkbox" id="check-${catDomKey}-${index}" ${isChecked ? 'checked' : ''}>
-                    <span>${escapeHtml(item.name)}</span>
+                    <span>${escapeHtml(nomeOggettoTradotto(item.name))}</span>
                 </div>
                 <div class="backpack-item-right">
-                    ${item.mandatory ? '<span class="item-mandatory-tag">OBBLIGATORIO</span>' : ''}
+                    ${item.mandatory ? `<span class="item-mandatory-tag">${T('backpack.js.obbligatorioTag') || 'OBBLIGATORIO'}</span>` : ''}
                     ${assignmentLabel}
                     <span class="text-muted small">${item.weight}g</span>
                 </div>
@@ -662,18 +706,19 @@ function mostraEscursioneDiRiferimento(hike) {
 
     if (!hike) {
         box.className = "backpack-context-box personale";
-        box.innerHTML = `<strong>Zaino personale</strong>
-            <span class="small">Non hai escursioni in programma: questa e' la lista delle tue cose.
-            Iscriviti a un'escursione per vedere anche gli oggetti da dividere col gruppo.</span>`;
+        box.innerHTML = `<strong>${T('backpack.js.zainoPersonaleTitolo') || 'Zaino personale'}</strong>
+            <span class="small">${T('backpack.js.zainoPersonaleDesc') || "Non hai escursioni in programma: questa e' la lista delle tue cose. Iscriviti a un'escursione per vedere anche gli oggetti da dividere col gruppo."}</span>`;
         return;
     }
 
     const db = window.CamoscioState;
     const mia = hike.creatorId === (db.currentUser || {}).id;
+    // Data col nome del mese: locale en-GB (EN) / it-IT, come le altre date estese.
+    const loc = (window.CamoscioI18n && window.CamoscioI18n.getLang() === 'en') ? 'en-GB' : 'it-IT';
     box.className = "backpack-context-box";
-    box.innerHTML = `<strong>Zaino per: ${escapeHtml(hike.title)}</strong>
-        <span class="small">${hike.date ? new Date(hike.date + 'T12:00:00').toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' }) : 'data non indicata'}
-        · quota massima ${hike.maxAltitude || '?'} m · ${mia ? 'organizzata da te' : 'a cui partecipi'}</span>`;
+    box.innerHTML = `<strong>${T('backpack.js.zainoPerLabel') || 'Zaino per:'} ${escapeHtml(hike.title)}</strong>
+        <span class="small">${hike.date ? new Date(hike.date + 'T12:00:00').toLocaleDateString(loc, { day: 'numeric', month: 'long', year: 'numeric' }) : (T('backpack.js.dataNonIndicata') || 'data non indicata')}
+        · ${T('backpack.js.quotaMassimaLabel') || 'quota massima'} ${hike.maxAltitude || '?'} m · ${mia ? (T('backpack.js.organizzataDaTe') || 'organizzata da te') : (T('backpack.js.aCuiPartecipi') || 'a cui partecipi')}</span>`;
 }
 
 // Nota sulla previsione di pioggia. Il caso "non lo so" va detto, non nascosto: e' la
@@ -682,17 +727,18 @@ function mostraNotaPioggia(pioggia, hike) {
     const box = document.getElementById("backpack-weather-note");
     if (!box) return;
 
+    ultimaNotaPioggia = { visibile: true, pioggia: pioggia, hike: hike };
     box.classList.remove("hidden");
     if (pioggia === null) {
         const troppoLontana = hike && hike.date && hike.date > new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10);
         box.textContent = troppoLontana
-            ? "Previsioni non ancora disponibili: mancano più di due settimane. Ricontrolla lo zaino nei giorni prima di partire."
-            : "Previsioni meteo non disponibili per questa data: la lista non tiene conto della pioggia.";
+            ? (T('backpack.js.meteoTroppoLontano') || "Previsioni non ancora disponibili: mancano più di due settimane. Ricontrolla lo zaino nei giorni prima di partire.")
+            : (T('backpack.js.meteoNonDisp') || "Previsioni meteo non disponibili per questa data: la lista non tiene conto della pioggia.");
         return;
     }
     box.textContent = pioggia
-        ? "Previsione: pioggia probabile il giorno dell'escursione. Mantella e coprizaino sono stati resi obbligatori."
-        : "Previsione: giornata senza pioggia. L'attrezzatura antipioggia non è stata forzata nella lista.";
+        ? (T('backpack.js.meteoPioggia') || "Previsione: pioggia probabile il giorno dell'escursione. Mantella e coprizaino sono stati resi obbligatori.")
+        : (T('backpack.js.meteoSereno') || "Previsione: giornata senza pioggia. L'attrezzatura antipioggia non è stata forzata nella lista.");
 }
 
 // Punto 25 - avviso quando un oggetto condiviso non basta per tutti.
@@ -710,25 +756,26 @@ function mostraAvvisiCopertura(avvisi, personeNelGruppo) {
     }
 
     const righe = avvisi.map(a => {
-        // Con un oggetto solo si scrive il suo nome e basta: ripetere il genere darebbe
-        // "tenda: Tenda 3 posti", che e' la stessa parola due volte. Con piu' oggetti il
-        // genere serve, perche' spiega perche' si stanno sommando fra loro.
+        // Con un oggetto solo si scrive il suo nome e basta (nome del template =
+        // testo dell'utente, non tradotto). Con piu' oggetti serve il "genere"
+        // (vocabolario nostro, tradotto per la sola visualizzazione).
         const intestazione = a.nomi.length === 1
             ? escapeHtml(a.nomi[0])
-            : `${escapeHtml(a.genere)} (${a.nomi.map(n => escapeHtml(n)).join(" + ")})`;
+            : `${escapeHtml(genereLabel(a.genere))} (${a.nomi.map(n => escapeHtml(n)).join(" + ")})`;
 
-        const posti = `${a.posti} post${a.posti === 1 ? 'o' : 'i'}`;
+        const posti = T('backpack.js.posti', a.posti) || `${a.posti} post${a.posti === 1 ? 'o' : 'i'}`;
         const mancano = a.mancano === 1
-            ? `Ne manca <strong>1</strong>`
-            : `Ne mancano <strong>${a.mancano}</strong>`;
+            ? (T('backpack.js.neManca') || `Ne manca <strong>1</strong>`)
+            : (T('backpack.js.neMancano', a.mancano) || `Ne mancano <strong>${a.mancano}</strong>`);
 
-        return `<li><strong>${intestazione}</strong>: ${posti} per ${personeNelGruppo} persone.
+        return T('backpack.js.coperturaRiga', intestazione, posti, personeNelGruppo, mancano) ||
+            `<li><strong>${intestazione}</strong>: ${posti} per ${personeNelGruppo} persone.
             ${mancano}: serve qualcosa di più grande, oppure un altro da aggiungere.</li>`;
     }).join("");
 
     box.classList.remove("hidden");
     box.innerHTML = `<i data-lucide="alert-triangle"></i>
-        <div><strong>Non basta per tutti</strong><ul>${righe}</ul></div>`;
+        <div><strong>${T('backpack.js.nonBastaPerTutti') || 'Non basta per tutti'}</strong><ul>${righe}</ul></div>`;
     if (window.lucide) window.lucide.createIcons();
 }
 
@@ -748,15 +795,14 @@ function renderWeightDistribution(hike) {
     const db = window.CamoscioState;
 
     if (!hike) {
-        container.innerHTML = `<p class="small text-muted">Nessuna escursione di gruppo in programma: non c'è nulla da ripartire.</p>`;
+        container.innerHTML = `<p class="small text-muted">${T('backpack.js.wdNessunaGruppo') || "Nessuna escursione di gruppo in programma: non c'è nulla da ripartire."}</p>`;
         if (box) box.classList.add("hidden");
         return;
     }
 
     const membri = gruppoDi(hike);
     if (!eDiGruppo(hike)) {
-        container.innerHTML = `<p class="small text-muted">A questa escursione per ora ci sei solo tu:
-            non c'è nessuno con cui dividere il peso. Gli oggetti da dividere compaiono quando si iscrive qualcun altro.</p>`;
+        container.innerHTML = `<p class="small text-muted">${T('backpack.js.wdSoloTu') || "A questa escursione per ora ci sei solo tu: non c'è nessuno con cui dividere il peso. Gli oggetti da dividere compaiono quando si iscrive qualcun altro."}</p>`;
         if (box) box.classList.add("hidden");
         return;
     }
@@ -769,8 +815,7 @@ function renderWeightDistribution(hike) {
     if (box) box.classList.remove("hidden");
 
     if (!condivisi.length) {
-        container.innerHTML = `<p class="small text-muted">Nessun oggetto da dividere in questa escursione.
-            Se porti qualcosa che serve a tutti (tenda, fornello, kit di primo soccorso) aggiungilo qui sotto.</p>`;
+        container.innerHTML = `<p class="small text-muted">${T('backpack.js.wdNessunOggetto') || "Nessun oggetto da dividere in questa escursione. Se porti qualcosa che serve a tutti (tenda, fornello, kit di primo soccorso) aggiungilo qui sotto."}</p>`;
         return;
     }
 
@@ -788,9 +833,11 @@ function renderWeightDistribution(hike) {
         const riga = document.createElement("div");
         riga.className = "weight-dist-item";
 
-        const kg = (pesi[pId] / 1000).toFixed(2);
+        const kg = formattaKg(pesi[pId] / 1000);
         const daAssegnare = condivisi.filter(o => String(o.item.assignedTo || '') !== pId);
 
+        // value = o.item.name (nome del template): lo usa reassignSharedGear per
+        // ritrovare l'oggetto. Testo del template = contenuto utente, non tradotto.
         const opzioni = daAssegnare.map(o =>
             `<option value="${escapeHtml(o.item.name)}">${escapeHtml(o.item.name)} (${o.item.weight}g)</option>`
         ).join('');
@@ -799,7 +846,7 @@ function renderWeightDistribution(hike) {
             <span>${user.avatar} ${escapeHtml(user.username)}</span>
             <div style="display:flex; align-items:center; gap: 10px;">
                 <select onchange="reassignSharedGear('${hike.id}', '${pId}', this.value)" class="user-select-dropdown" style="padding: 2px 4px; font-size: 0.75rem;">
-                    <option value="">Assegna oggetto...</option>
+                    <option value="">${T('backpack.js.assegnaOggetto') || 'Assegna oggetto...'}</option>
                     ${opzioni}
                 </select>
                 <strong>${kg} kg</strong>
@@ -824,15 +871,15 @@ async function aggiungiOggettoCondiviso() {
     const copre = copreGrezzo === "" ? null : parseInt(copreGrezzo, 10);
 
     if (!nome) {
-        window.showToast("Scrivi che cosa porti.", "error");
+        window.showToast(T('backpack.js.scriviCosa') || "Scrivi che cosa porti.", "error");
         return;
     }
     if (!Number.isFinite(peso) || peso <= 0) {
-        window.showToast("Metti un peso in grammi, serve per dividere il carico.", "error");
+        window.showToast(T('backpack.js.mettiPesoCarico') || "Metti un peso in grammi, serve per dividere il carico.", "error");
         return;
     }
     if (copre !== null && (!Number.isFinite(copre) || copre < 1)) {
-        window.showToast("La portata deve essere almeno 1 persona, oppure lasciala vuota.", "error");
+        window.showToast(T('backpack.js.portataMin') || "La portata deve essere almeno 1 persona, oppure lasciala vuota.", "error");
         return;
     }
 
@@ -843,7 +890,7 @@ async function aggiungiOggettoCondiviso() {
     const btn = document.getElementById("btn-add-shared-item");
     const etichetta = btn.textContent;
     btn.disabled = true;
-    btn.textContent = "Salvataggio…";
+    btn.textContent = T('common.salvataggio') || "Salvataggio…";
 
     // Si manda il template COMPLETO col nuovo in fondo. Il server pretende che gli
     // articoli gia' presenti restino identici e che quelli aggiunti siano a carico di chi
@@ -875,10 +922,10 @@ async function aggiungiOggettoCondiviso() {
 
         await refreshState();
         renderBackpackModule();
-        window.showToast("Aggiunto. Lo porti tu per il gruppo.", "success");
+        window.showToast(T('backpack.js.aggiuntoGruppo') || "Aggiunto. Lo porti tu per il gruppo.", "success");
     } catch (e) {
         console.error("Impossibile aggiungere l'oggetto condiviso:", e);
-        window.showToast("Non sono riuscito ad aggiungerlo. Riprova.", "error");
+        window.showToast(T('backpack.js.erroreAggiunta') || "Non sono riuscito ad aggiungerlo. Riprova.", "error");
     } finally {
         btn.disabled = false;
         btn.textContent = etichetta;
@@ -914,6 +961,28 @@ window.reassignSharedGear = async function(hikeId, newAssigneeId, itemName) {
         }
     }
 };
+
+// Cambio lingua (punto 102, sesto lotto): la checklist, la ripartizione pesi e il
+// riquadro dell'escursione sono costruiti via innerHTML - applyStaticTranslations
+// non li raggiunge, resterebbero in italiano sotto gli occhi. Si ridisegnano, ma
+// SENZA rifare il fetch meteo di open-meteo: si rigiocano gli ultimi input veri
+// (ultimoInputZaino, catturati nell'imbuto sincrono applyBackpackRules) e si
+// riscrive la nota meteo con l'ultimo valore gia' noto. Stessa logica della
+// Dashboard al terzo lotto: ridisegna, non rifetch. Solo se #backpack e' attiva
+// (navigateTo lo ridisegna comunque all'ingresso), come renderCompletate.
+if (window.CamoscioI18n && window.CamoscioI18n.onChange) {
+    window.CamoscioI18n.onChange(function () {
+        const sec = document.getElementById("backpack");
+        if (!sec || !sec.classList.contains("active") || !ultimoInputZaino) return;
+        const i = ultimoInputZaino;
+        renderWeightDistribution(i.hike);
+        mostraEscursioneDiRiferimento(i.hike);
+        applyBackpackRules(i.season, i.altitude, i.duration, i.rainExpected, i.hike);
+        if (ultimaNotaPioggia.visibile) {
+            mostraNotaPioggia(ultimaNotaPioggia.pioggia, ultimaNotaPioggia.hike);
+        }
+    });
+}
 
 window.initBackpackModule = initBackpackModule;
 window.renderBackpackModule = renderBackpackModule;
