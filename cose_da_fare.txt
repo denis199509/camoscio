@@ -6596,13 +6596,23 @@ schermo spento ancora."
 
 --- TRACCIA GPX DI DANIWOLL FUORI DALLE REGIONI ---
 
-110. [28/08/2026, nona sessione - IN ATTESA, nessun lavoro fatto oltre
-   la diagnosi] Denis, parole sue: "ho visto che DaniWoll ha pubblicato
+110. [CHIUSO 2026-08-28, nona sessione - FALSO ALLARME, nessuna azione
+   necessaria] Denis, parole sue: "ho visto che DaniWoll ha pubblicato
    per sbaglio una traccia fuori dalle regioni del sito, bisogna
    cancellarla per non occupare memoria inutilmente". Poi: "dimmi se la
    trovi prima di procedere". Poi ha precisato: "una traccia gpx
    importata, ho chiesto a dani se ha cancellato lui la traccia, aspetto
    risposta".
+
+   ESITO: Denis, dopo aver sentito Dani: "Dani dice che il sistema non
+   gli ha fatto caricare la traccia fuori regione quindi tutto a posto".
+   La validazione geografica del sito (lib/regions.js / routes/routing.js
+   / trailhead-picker.js) ha respinto l'import prima che venisse
+   salvato: nessuna traccia fuori regione e' mai finita sul database.
+   Combacia con la diagnosi (scripts/trova-traccia-fuori-regioni.js):
+   l'unica traccia GPX di DaniWoll era ed e' quella del Gran Sasso,
+   dentro l'Abruzzo. Niente da cancellare. Lo script diagnostico resta
+   in scripts/ come strumento riutilizzabile.
 
    DIAGNOSI (sola lettura, scripts/trova-traccia-fuori-regioni.js -
    controlla ogni punto contro i confini reali di lib/regions.js, gli
@@ -6623,13 +6633,10 @@ schermo spento ancora."
    un falso positivo dei confini semplificati sul crinale, non di
    DaniWoll.
 
-   RIPARTIRE DA: aspettare la risposta di Dani a Denis. Se Dani conferma
-   di aver cancellato lui la traccia, il punto si chiude senza fare
-   niente (gia' sparita, spazio gia' liberato). Se invece risulta
-   ancora presente con un altro nome/data, Denis dara' il dettaglio:
-   ritrovarla con lo stesso script di sola lettura e cancellarla mirata
-   per _id, con conferma esplicita di Denis prima di scrivere (nessun
-   database di prova separato per questo progetto, si scrive sul vero).
+   NIENTE DA RIPRENDERE: chiuso il 28/08/2026 dopo che Dani ha riferito
+   a Denis che il sistema non gli aveva fatto caricare la traccia fuori
+   regione (vedi ESITO sopra). La validazione ha funzionato; non c'e'
+   mai stato nulla sul database da cancellare.
 
 =====================================================================
 

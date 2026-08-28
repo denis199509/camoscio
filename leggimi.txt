@@ -43,11 +43,12 @@ dal solo schema, e collMod e' negato sul nostro utente Atlas: si fa
 dropIndex + createIndex). Applicato su Atlas e verificato. Trappola nel
 vault 07. NB: la parte "MongoDB cancella da solo a 90 giorni" verra'
 SOSTITUITA dal punto 111 (vedi sotto); per ora il TTL resta come paracadute.
-PUNTO 110 IN ATTESA - Denis dice che DaniWoll ha pubblicato per
-sbaglio una traccia GPX fuori dalle regioni; la diagnosi (sola lettura,
-scripts/trova-traccia-fuori-regioni.js) NON l'ha trovata (l'unica traccia
-GPX di DaniWoll e' al Gran Sasso, dentro le regioni). Denis ha chiesto a
-Dani se l'ha cancellata lui e aspetta risposta.
+PUNTO 110 CHIUSO (falso allarme) - Denis segnalava una traccia GPX di
+DaniWoll fuori dalle regioni da cancellare; la diagnosi (sola lettura,
+scripts/trova-traccia-fuori-regioni.js) NON ha trovato nulla fuori regione
+in tutto il database, e Dani ha poi riferito che "il sistema non gli ha
+fatto caricare la traccia fuori regione": la validazione l'aveva gia'
+respinta all'import, niente e' mai stato salvato. Niente da fare.
 PUNTO 111 DA FARE (requisiti raccolti, niente codice) - "risolvi" di una
 segnalazione fatto da un utente normale non deve piu' cancellare subito:
 manda una notifica a Denis, che conferma o dice "tienila ancora". Idem
