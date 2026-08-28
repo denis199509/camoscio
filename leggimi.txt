@@ -5,29 +5,40 @@ sezione piu' grande del sito (~4.450 righe su 6 file), si fa a 4 AREE
 (Denis via AskUserQuestion: "un'area alla volta"). Ordine e stato:
   1) base mappa + Segnalazioni sentiero ...... FATTA, camoscio `8988610`
   2) Progetta un percorso (routeplanner.js) .. FATTA, camoscio `57c1250`
-  3) Meteo + Esposizione Solare .............. da fare (vedi sotto)
-  4) Tracciamento GPS + mappa offline ........ da fare
+  3) Meteo + Esposizione Solare .............. FATTA, camoscio `8a74a5a`
+  4) Tracciamento GPS + mappa offline ........ DA FARE (l'ultima)
 
-AREE 1-2 FATTE E PUSHATE su richiesta esplicita di Denis ("commit e
+AREE 1-2-3 FATTE E PUSHATE su richiesta esplicita di Denis ("commit e
 push" per ciascuna; hook auto-save rifuso con --amend prima del push).
 VERIFICATE CON L'ESTENSIONE CHROME (login demo Marco Alpinista, IT<->EN,
 toggle+sweep con listener error/unhandledrejection: ZERO errori;
 prova-configurazione 9/9, prova-passo-non-misurato 28/28,
-prova-invito-squadra 59/59). VERIFICA DAL VIVO DI DENIS: sui lotti 3-7 ha
-fatto una prova veloce il 28/08 - "per adesso tutto bene" (parziale, non
-un via libera definitivo). Restano da verificare dal vivo le AREE 1-2 del
-lotto Mappa. Dettaglio completo nel vault (03/04/06) e in cose_da_fare.txt
-punto 102, blocchi "AREA 1" e "AREA 2".
+prova-invito-squadra 59/59; per l'area 3 anche node -c su tutti e 5 i
+file, e prova-punto33 55/59 - i 4 falliti sono accuratezza dislivello
+vs Open-Meteo LIVE, rumore fonte esterna, quel test non tocca i file
+client modificati). VERIFICA DAL VIVO DI DENIS: sui lotti 3-7 prova
+veloce il 28/08 - "per adesso tutto bene" (parziale). Restano da
+verificare dal vivo le AREE 1-2-3 del lotto Mappa. Dettaglio nel vault
+(03/04/06) e in cose_da_fare.txt punto 102, blocchi "AREA 1/2/3".
 
-Due punti da ricordare per l'AREA 3, emersi facendo 1 e 2:
-- l'Esposizione Solare vive sparsa su TRE file e va tradotta tutta
-  insieme: renderSolarExposureAdvice + calculateBearing +
-  bearingToCompassSector + #sun-exposure-card (map.js), esposizioneSolare()
-  (routeplanner.js), piu' weather.js. Cioe' l'area 3 tocca anche map.js e
-  routeplanner.js, non solo weather.js;
-- fino ad allora il riquadro "Esposizione al sole" nel pannello del
-  percorso e la card omonima nella sidebar restano in italiano - atteso,
-  non un buco.
+AREA 3 - com'e' fatta (per l'area 4 e per capire il resto):
+- weather.js NON e' in una IIFE -> var T; helper decimaleMeteo (virgola
+  IT / punto EN per temp e vento: PRIMA era .toFixed(1) fisso col punto
+  anche in italiano). onChange che RIGIOCA l'ultima risposta di
+  open-meteo SENZA rifare il fetch (tetto punto 33), gate #map-section -
+  come #backpack al sesto lotto;
+- bearingToCompassSector (map.js) ora torna .label nella lingua attiva
+  (chiave solar.compass.<KEY>), .key invariato - la usano sia
+  renderSolarExposureAdvice (map.js) sia esposizioneSolare
+  (routeplanner.js), tradotta in un posto solo;
+- l'onChange dell'area 1 (map.js) esteso: ripesca l'escursione da
+  CamoscioState.activeHikeId e ridisegna la card Esposizione Solare.
+  L'onChange dell'area 2 (routeplanner.js) NON cambia;
+- RESIDUO (gia' dell'area 2, non un difetto dell'area 3): cambiando
+  lingua FUORI dalla Mappa e poi entrandoci, il corpo iniziale del
+  pannello "Progetta un percorso" resta nella lingua di prima - entrare
+  nella sezione non ri-esegue aggiornaPannello(). Le card Meteo ed
+  Esposizione Solare nella sidebar si aggiornano comunque.
 
 Resta valido: hook "Stop" di auto-save (commit locale, MAI push) a fine di
 ogni risposta. Debito icona Bivacco Carlo Fusco CHIUSO il 28/08: Denis ha
@@ -67,21 +78,20 @@ piano. Dettaglio e domande aperte in cose_da_fare.txt punti 109, 110, 111.
 altro:
 
 1. Verifica dal vivo di Denis: lotti 3-7 gia' guardati di corsa il 28/08
-   ("per adesso tutto bene"), restano le AREE 1-2 del lotto Mappa (tutto
-   gia' pushato). Se segnala qualcosa, correggere prima di procedere.
+   ("per adesso tutto bene"), restano le AREE 1-2-3 del lotto Mappa
+   (tutto gia' pushato). Se segnala qualcosa, correggere prima di
+   procedere.
 
-2. PUNTO 102, LOTTO MAPPA AREA 3/4: METEO + ESPOSIZIONE SOLARE. weather.js
-   (328 righe) + #weather-widget-card / #sun-exposure-card in index.html +
-   renderSolarExposureAdvice / calculateBearing / bearingToCompassSector
-   di map.js + esposizioneSolare() di routeplanner.js. Tre file, ma
-   cluster unico. Poi area 4 (Tracciamento GPS + mappa offline:
-   tracking.js / geolocation.js / offline-map.js + #map-record-setup /
-   #map-record-controls / #tracking-panel / #tracking-mini-bar).
-   Concordare con Denis l'inizio di ogni area, non proseguire da soli
-   sull'ordine. Dopo il lotto Mappa: il gate di login/registrazione e le
-   pagine HTML autonome (demo/conferma-email/reimposta-password). Non
-   riproporre "facciamolo tutto insieme": Denis vuole un pezzo alla volta
-   salvo un suo via libera esplicito.
+2. PUNTO 102, LOTTO MAPPA AREA 4/4: TRACCIAMENTO GPS + MAPPA OFFLINE -
+   l'ULTIMA area. tracking.js (1364 righe) / geolocation.js (464) /
+   offline-map.js (166) + #map-record-setup / #map-record-controls /
+   #tracking-panel / #tracking-mini-bar in index.html. Alla sua chiusura
+   la barra laterale della Mappa e' tutta tradotta. Concordare comunque
+   l'inizio con Denis. Dopo il lotto Mappa: il gate di
+   login/registrazione e le pagine HTML autonome
+   (demo/conferma-email/reimposta-password). Non riproporre "facciamolo
+   tutto insieme": Denis vuole un pezzo alla volta salvo un suo via
+   libera esplicito.
 
 3. PUNTO 106 (giro a parte): due difetti responsive PRE-ESISTENTI trovati
    verificando il terzo lotto su mobile (non regressioni della traduzione,

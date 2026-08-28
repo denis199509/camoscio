@@ -6317,16 +6317,102 @@ schermo spento ancora."
    stessa procedura delle aree/lotti precedenti. VERIFICA DAL VIVO DI
    DENIS ANCORA DA FARE - per l'area 2, l'area 1 e i lotti 3-7.
 
-   RIPARTIRE DA: verifica dal vivo di Denis dei lotti 3-7 + aree 1-2
-   Mappa. Poi AREA 3/4: Meteo + Esposizione Solare - weather.js (328
-   righe) + #weather-widget-card / #sun-exposure-card in index.html +
-   renderSolarExposureAdvice / calculateBearing / bearingToCompassSector
-   di map.js + esposizioneSolare() di routeplanner.js. Tre file, cluster
-   unico. Poi area 4 (Tracciamento GPS + mappa offline: tracking.js /
-   geolocation.js / offline-map.js + #map-record-setup /
-   #map-record-controls / #tracking-panel / #tracking-mini-bar).
-   Concordare con Denis l'inizio di ogni area. Dopo il lotto Mappa, il
-   gate di login/registrazione e le pagine HTML autonome.
+   ---
+
+   LOTTO MAPPA - AREA 3/4 [FATTA] - nona sessione (seguito 3), 28/08/2026.
+   METEO + ESPOSIZIONE SOLARE. Denis: "possiamo continuare con la
+   traduzione". Ordine gia' fissato dal vault (area 3 dopo le 1-2),
+   ambito presentato in chat prima di scrivere, niente AskUserQuestion.
+   Cluster unico su TRE file.
+
+   FATTO:
+   - weather.js per intero (329 righe, NON in una IIFE -> var T in testa).
+     Nuovo helper decimaleMeteo(n): virgola IT / punto EN per temperatura
+     e vento - PRIMA era .toFixed(1) fisso col punto anche in italiano,
+     ora coerente col resto del sito. Nome proprio e non formattaDecimale
+     (gia' un function top-level di userprofile.js che caricherebbe dopo -
+     trappola gemella formattaEuro/formattaKg del sesto lotto). Tutte le
+     stringhe UI dietro T() || ripiego: card, ricerca punto, "Meteo dove
+     mi trovo", tabella 3 quote, "Precipitazioni:"/"Instabilita' CAPE:",
+     rischio fulmini, dati simulati offline, toast, testo del map-picker;
+   - map.js: bearingToCompassSector ora torna .label nella lingua attiva
+     (chiave solar.compass.<KEY>), .key invariato - e' cio' che si
+     confronta (["N","NE","NW"].includes(...) e la chiave della Map dei
+     versanti in routeplanner.js). renderSolarExposureAdvice tradotta (5
+     rami stagione/versante + ramo "nessuna vetta"). L'onChange dell'area
+     1 esteso: ripesca l'escursione da CamoscioState.activeHikeId (gia'
+     scritto da loadActiveHikeOnMap, nessuna module-var nuova) e ridisegna
+     la card;
+   - routeplanner.js: esposizioneSolare() tradotta (riquadro .rp-sole:
+     titolo, "direzione prevalente", barre "a sud"/"a nord", i 5 consigli,
+     nota). L'onChange dell'area 2 NON cambia - aggiornaPannello()
+     ricostruisce gia' il pannello;
+   - index.html: #weather-widget-card + #sun-exposure-card marcati (h4 in
+     <span> come la waze-card, data-i18n-placeholder, data-i18n-title). Il
+     data-i18n di #sun-advice-box sta sullo <span> INTERNO, non sul
+     contenitore che renderSolarExposureAdvice riscrive;
+   - dizionario +~55 chiavi (weather.*, solar.* incl. solar.compass.*,
+     rp.sole.*).
+
+   SCELTE NON OVVIE (dettaglio nel vault, 03 sottosezione "Lotto Mappa,
+   area 3"):
+   - weather.js onChange RIGIOCA l'ultima risposta di open-meteo
+     (ultimoDatoMeteo) SENZA rifare il fetch - open-meteo ha un tetto
+     (punto 33), stessa ragione per cui #backpack al sesto lotto non
+     rifa' il fetch meteo. Gate #map-section attiva;
+   - suffisso "(Simulato Offline)" passato come FLAG (simulato), non
+     concatenato dal chiamante, cosi' segue la lingua sul replay;
+   - titolo notifica "Camoscio Safety Alert" invariato (marchio + tipo,
+     come "Admin"/"Carpooling"), corpo (messaggio di rischio) tradotto.
+     I console.warn di weather.js mai tradotti (dizionario = interfaccia).
+
+   RESIDUO (gia' dell'area 2, NON un difetto dell'area 3): cambiando
+   lingua FUORI dalla Mappa e poi entrandoci, il corpo iniziale del
+   pannello "Progetta un percorso" resta nella lingua di prima - entrare
+   nella sezione non ri-esegue aggiornaPannello(). Stesso residuo onesto
+   di userprofile.js/chatpanel.js. Le card Meteo ed Esposizione Solare
+   nella sidebar si aggiornano comunque.
+
+   VERIFICATO CON L'ESTENSIONE CHROME (demo Marco Alpinista, IT<->EN,
+   toggle avanti e indietro + sweep): card Meteo (titolo, "Precipitation:
+   0% | CAPE instability: 140 J/kg", 3 righe "Chosen point (2119m) 27.3
+   gradi C / 24.3 km/h" ecc. - DECIMALE A PUNTO in EN, A VIRGOLA in IT
+   27,3; "No lightning risk detected for the next few hours."), card
+   Esposizione Solare che SI RIDISEGNA con l'escursione attiva ("Consiglio
+   Estivo: Versante Nord, piu' ombreggiato..." <-> "Summer Tip:
+   North-facing slope, more shaded..."), riquadro .rp-sole del pannello
+   percorso (2 tappe vere via gestisciClickMappa): "Esposizione al sole .
+   direzione prevalente Nord / 17% a sud / 64% a nord / Piu' della meta'
+   del percorso e' rivolta a nord..." <-> "Sun exposure . mostly facing
+   North / 17% south / 64% north / More than half the route faces
+   north...". .rp-sole a 1 solo nodo, tabella meteo a 3 righe, nessuna
+   duplicazione dopo 4+ toggle. Listener error/unhandledrejection a mano:
+   ZERO. Console: solo un warning GPS non correlato (nessun GPS in
+   automazione, atteso). Verificato anche il ramo "nessuna escursione
+   attiva" -> card col segnaposto statico tradotto. Due timeout CDP
+   durante gli sweep piu' lunghi (map + tile Leaflet), recuperati
+   ricaricando e ritestando in passi piu' piccoli - trappola gia' nota.
+   node -c OK su tutti e 5 i file. prova-configurazione.js (9/9),
+   prova-passo-non-misurato.js (28/28), prova-invito-squadra.js (59/59).
+   prova-punto33.js 55/59: i 4 falliti sono controlli di accuratezza del
+   dislivello contro Open-Meteo LIVE (+-10%, "vicina a quella vera") -
+   rumore della fonte esterna che il LEGGIMI del test segnala; verificato
+   che quel test carica solo lib/elevation/gpx/geometry/trailGraph
+   (server), NESSUNO dei file client toccati.
+
+   COMMITTATO E PUSHATO su richiesta esplicita di Denis ("commit e push"),
+   camoscio `8a74a5a`. L'hook di auto-save aveva gia' fatto un commit
+   locale generico (3ff7a51) coi 5 file: rifuso con git commit --amend
+   prima del push, stessa procedura delle aree/lotti precedenti. VERIFICA
+   DAL VIVO DI DENIS ANCORA DA FARE - per l'area 3, aree 1-2 e i lotti 3-7.
+
+   RIPARTIRE DA: verifica dal vivo di Denis dei lotti 3-7 + aree 1-2-3
+   Mappa. Poi AREA 4/4 (l'ULTIMA): Tracciamento GPS + mappa offline -
+   tracking.js (1364 righe) / geolocation.js (464) / offline-map.js (166)
+   + #map-record-setup / #map-record-controls / #tracking-panel /
+   #tracking-mini-bar in index.html. Alla sua chiusura la barra laterale
+   della Mappa e' tutta tradotta. Concordare con Denis l'inizio. Dopo il
+   lotto Mappa, il gate di login/registrazione e le pagine HTML autonome.
 
 =====================================================================
 
