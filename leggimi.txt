@@ -13,9 +13,11 @@ push" per ciascuna; hook auto-save rifuso con --amend prima del push).
 VERIFICATE CON L'ESTENSIONE CHROME (login demo Marco Alpinista, IT<->EN,
 toggle+sweep con listener error/unhandledrejection: ZERO errori;
 prova-configurazione 9/9, prova-passo-non-misurato 28/28,
-prova-invito-squadra 59/59). LA VERIFICA DAL VIVO DI DENIS E' ANCORA DA
-FARE - per le aree 1-2 e per i lotti 3-7. Dettaglio completo nel vault
-(03/04/06) e in cose_da_fare.txt punto 102, blocchi "AREA 1" e "AREA 2".
+prova-invito-squadra 59/59). VERIFICA DAL VIVO DI DENIS: sui lotti 3-7 ha
+fatto una prova veloce il 28/08 - "per adesso tutto bene" (parziale, non
+un via libera definitivo). Restano da verificare dal vivo le AREE 1-2 del
+lotto Mappa. Dettaglio completo nel vault (03/04/06) e in cose_da_fare.txt
+punto 102, blocchi "AREA 1" e "AREA 2".
 
 Due punti da ricordare per l'AREA 3, emersi facendo 1 e 2:
 - l'Esposizione Solare vive sparsa su TRE file e va tradotta tutta
@@ -60,9 +62,9 @@ piano. Dettaglio e domande aperte in cose_da_fare.txt punti 109, 110, 111.
 >>> APERTO PER LA PROSSIMA SESSIONE, in quest'ordine se Denis non dice
 altro:
 
-1. Verifica dal vivo di Denis dei lotti 3-7 + AREE 1-2 del lotto Mappa
-   (tutti gia' pushati). Se segnala qualcosa, correggere prima di
-   procedere.
+1. Verifica dal vivo di Denis: lotti 3-7 gia' guardati di corsa il 28/08
+   ("per adesso tutto bene"), restano le AREE 1-2 del lotto Mappa (tutto
+   gia' pushato). Se segnala qualcosa, correggere prima di procedere.
 
 2. PUNTO 102, LOTTO MAPPA AREA 3/4: METEO + ESPOSIZIONE SOLARE. weather.js
    (328 righe) + #weather-widget-card / #sun-exposure-card in index.html +
