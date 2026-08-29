@@ -341,6 +341,10 @@
                     <i data-lucide="layout-dashboard"></i>
                     <span data-i18n="nav.dashboard">Dashboard</span>
                 </button>
+                <button class="nav-btn" data-target="feed" id="btn-nav-feed">
+                    <i data-lucide="newspaper"></i>
+                    <span data-i18n="nav.feed">Feed</span>
+                </button>
                 <button class="nav-btn" data-target="hikes" id="btn-nav-hikes">
                     <i data-lucide="compass"></i>
                     <span data-i18n="nav.hikes">Escursioni</span>
@@ -614,6 +618,17 @@
                             </div>
                         </div>
                     </div>
+                </section>
+
+                <!-- Punto 113: FEED - le uscite pubblicate dalle persone che segui, più
+                     recenti prima. Riempito da public/js/feed.js (renderFeed), dati da
+                     GET /api/feed (paginazione a cursore). -->
+                <section id="feed" class="page-section">
+                    <div class="glass-card feed-intro">
+                        <h4><i data-lucide="newspaper"></i> <span data-i18n="feed.titolo">Feed</span></h4>
+                        <p class="small text-muted" data-i18n="feed.sottotitolo">Le uscite pubblicate dalle persone che segui, più recenti prima. Tocca un'uscita per aprirla.</p>
+                    </div>
+                    <div id="feed-list"><!-- renderFeed() --></div>
                 </section>
 
                 <!-- 2. ESCURSIONI -->
@@ -1446,6 +1461,28 @@
                     <div class="social-layout">
                         <!-- Colonna Sinistra: Squadre Ricorrenti & Obiettivi Comuni -->
                         <div class="social-column">
+                            <!-- Punto 113: chi segui / chi ti segue. Le due liste sono
+                                 chiuse di default: si aprono cliccando sull'intestazione
+                                 (richiesta di Denis). Riempite da renderFollowLists()
+                                 (public/js/social.js): "chi seguo" da CamoscioState.following,
+                                 "chi mi segue" da GET /api/follow/followers. -->
+                            <div class="glass-card follow-people-card">
+                                <h4><i data-lucide="users"></i> <span data-i18n="follow.sezioneTitolo">Persone</span></h4>
+                                <p class="small text-muted" data-i18n="follow.sezioneDesc">Chi segui e chi ti segue. Tocca un nome per aprire il profilo.</p>
+
+                                <button type="button" class="follow-list-toggle" data-follow-toggle="following" aria-expanded="false">
+                                    <span><span data-i18n="follow.seguitiTitolo">Persone che segui</span> <span class="small text-muted" id="following-count"></span></span>
+                                    <i data-lucide="chevron-down"></i>
+                                </button>
+                                <div id="following-list" class="squads-list follow-list-body hidden"><!-- renderFollowLists() --></div>
+
+                                <button type="button" class="follow-list-toggle" data-follow-toggle="followers" aria-expanded="false">
+                                    <span><span data-i18n="follow.seguaciTitolo">Persone che ti seguono</span> <span class="small text-muted" id="followers-count"></span></span>
+                                    <i data-lucide="chevron-down"></i>
+                                </button>
+                                <div id="followers-list" class="squads-list follow-list-body hidden"><!-- renderFollowLists() --></div>
+                            </div>
+
                             <!-- Squadre Ricorrenti -->
                             <div class="glass-card squads-card">
                                 <h4><i data-lucide="users"></i> <span data-i18n="social.squadsTitle">Le tue Squadre Ricorrenti</span></h4>
@@ -1591,8 +1628,13 @@
                      pagina e' in aggiornamento - il resto lo decide Denis in seguito. -->
                 <section id="user-profile" class="page-section">
                     <div class="glass-card user-profile-header-card" id="user-profile-header">
-                        <!-- Riempito da JS: avatar/foto, nome, livello -->
+                        <!-- Riempito da JS: avatar/foto, nome, livello + tasto "Segui" (punto 113) -->
                     </div>
+
+                    <!-- Punto 113: "N seguaci · N seguiti", cliccabili -> elenco in un
+                         modale (window.showFollowList in userprofile.js). Solo sul profilo
+                         di un ALTRO utente, non sul proprio. -->
+                    <div id="user-profile-follow-counts" class="user-profile-follow-counts"></div>
 
                     <div id="user-profile-personal-badge">
                         <!-- Riempito da JS SOLO se questo profilo ha un badge personale -->
@@ -1778,6 +1820,25 @@
 
                     <div class="glass-card" id="hike-page-chat">
                         <!-- Riempito da JS: chat riservata ai soli partecipanti dell'escursione -->
+                    </div>
+                </section>
+
+                <!-- Punto 113: pagina di UNA uscita pubblicata - stesso principio di
+                     #hike-page: nessuna voce in barra, si apre da JS (public/js/outingpage.js,
+                     window.showOutingPage(sessionId)) cliccando una card nel Feed o sul
+                     profilo di chi si segue. Dati da GET /api/tracking/sessions/:id/meta e
+                     /points?scopo=mini (protette: autore o follower). -->
+                <section id="outing-page" class="page-section">
+                    <div class="glass-card" id="outing-page-header">
+                        <!-- Riempito da JS: autore + data di pubblicazione -->
+                    </div>
+
+                    <div class="glass-card">
+                        <div id="outing-page-map" class="outing-page-map"><!-- mini-mappa Leaflet --></div>
+                        <div id="outing-page-stats"><!-- Riempito da JS: distanza / dislivello / durata --></div>
+                        <div id="outing-page-caption"><!-- Riempito da JS: didascalia dell'autore, se c'è --></div>
+                        <div id="outing-page-actions"><!-- Passo 7: mi piace -->
+                        </div>
                     </div>
                 </section>
 
@@ -2035,6 +2096,19 @@
             </div>
             <p class="small text-muted" data-i18n="social.inviteModalDesc">Scegli l'escursione: i membri verranno aggiunti tra i partecipanti, o proposti all'organizzatore se l'escursione richiede approvazione.</p>
             <div id="invite-squad-hike-list" class="hike-carpools-list"></div>
+        </div>
+    </div>
+
+    <!-- Punto 113: elenco "seguaci"/"seguiti" di un utente, aperto dai due contatori sul
+         suo profilo (window.showFollowList in userprofile.js). Sola navigazione: ogni riga
+         porta al profilo di quella persona. Fuori da .page-container come gli altri modali. -->
+    <div id="follow-list-modal" class="modal hidden" onclick="if (event.target === this) closeFollowListModal()">
+        <div class="modal-content glass-card">
+            <div class="modal-header">
+                <h4 id="follow-list-modal-title"></h4>
+                <button class="close-modal-btn" onclick="closeFollowListModal()">&times;</button>
+            </div>
+            <div id="follow-list-modal-body" class="squads-list"></div>
         </div>
     </div>
 
@@ -2297,9 +2371,15 @@
     <script src="js/chatpanel.js"></script>
     <script src="js/squadpage.js"></script>
     <script src="js/hikepage.js"></script>
+    <!-- Punto 113: pagina di una uscita pubblicata. Dopo userprofile.js (usa
+         window.showUserProfile); Leaflet è già caricato più sopra. -->
+    <script src="js/outingpage.js"></script>
     <script src="js/pendingreports.js"></script>
     <script src="js/peoplesearch.js"></script>
     <script src="js/storico.js"></script>
+    <!-- Punto 113: pagina Feed. Dopo userprofile.js: usa window.showUserProfile e
+         window.CamoscioSchedeCompatte da lì. -->
+    <script src="js/feed.js"></script>
     <!-- Punto 26: permessi di posizione e puntino blu. Prima di map.js, che gli si iscrive
          per disegnare il puntino, e di tracking.js, che gli passa i propri fix GPS. -->
     <script src="js/geolocation.js"></script>

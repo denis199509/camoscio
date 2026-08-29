@@ -134,6 +134,20 @@ function initSocialModule() {
 }
 
 function setupSocialEvents() {
+    // Punto 113: apri/chiudi le due liste follow (Denis: "cliccando sopra devo vedere").
+    // I due bottoni sono statici nell'HTML, un ascoltatore diretto qui basta (setupSocialEvents
+    // gira una volta all'avvio); il contenuto delle liste si ridisegna ma i contenitori no.
+    document.querySelectorAll('[data-follow-toggle]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const quale = btn.getAttribute('data-follow-toggle') === 'following' ? 'following-list' : 'followers-list';
+            const body = document.getElementById(quale);
+            if (!body) return;
+            const chiuso = body.classList.toggle('hidden'); // true se 'hidden' è stato aggiunto
+            btn.classList.toggle('open', !chiuso);
+            btn.setAttribute('aria-expanded', String(!chiuso));
+        });
+    });
+
     // Form inserimento obiettivo di allenamento
     const formGoal = document.getElementById("training-goal-form");
     if (formGoal) {
@@ -301,6 +315,61 @@ function renderSocialModule() {
     // #social e' la sezione aperta (vedi in fondo al file), non a ogni toggle da un'altra
     // pagina - stesso schema di renderCompletate al secondo lotto.
     if (window.CamoscioState.currentUser) populateReviewTargets();
+    // Punto 113: liste "chi segui"/"chi ti segue". Come populateReviewTargets fa un fetch
+    // (/api/follow/followers), quindi sta qui e non in renderSocialStaticParts.
+    if (window.CamoscioState.currentUser) renderFollowLists();
+}
+
+// Punto 113: le persone che seguo e che mi seguono, nella pagina Tribù & Squadre.
+// "Chi seguo" viene da CamoscioState.following (già in stato, aggiornato da refreshState);
+// "chi mi segue" da GET /api/follow/followers. Righe .squad-item come renderSquadsList,
+// cliccabili verso il profilo, con un tasto segui/smetti inline (follow-back nella lista
+// "ti seguono"). Le due liste sono chiuse di default: l'apri/chiudi è in setupSocialEvents.
+async function renderFollowLists() {
+    const followingBox = document.getElementById('following-list');
+    const followersBox = document.getElementById('followers-list');
+    if (!followingBox || !followersBox) return;
+
+    const db = window.CamoscioState;
+    if (!db.currentUser) return;
+
+    const utente = (id) => db.users.find(u => u.id === id);
+    const rigaPersona = (u, seguoGia) => {
+        if (!u) return '';
+        const btnCls = seguoGia ? 'btn-secondary' : 'btn-primary';
+        const btnLbl = seguoGia ? (T('follow.seguiGia') || 'Segui già') : (T('follow.segui') || 'Segui');
+        return `<div class="squad-item">
+            <div class="squad-item-open" onclick="showUserProfile('${escapeHtml(u.id)}')">
+                <h5>${escapeHtml(u.avatar)} ${escapeHtml(u.username)}</h5>
+            </div>
+            <div><button class="btn btn-sm ${btnCls}" onclick="toggleFollow('${escapeHtml(u.id)}')">${escapeHtml(btnLbl)}</button></div>
+        </div>`;
+    };
+
+    // "Chi seguo" - da CamoscioState.following, nessun fetch.
+    const seguiti = db.following || [];
+    const seguitiIds = new Set(seguiti.map(f => f.followingId));
+    const followingCount = document.getElementById('following-count');
+    if (followingCount) followingCount.textContent = seguiti.length ? `(${seguiti.length})` : '';
+    followingBox.innerHTML = seguiti.length
+        ? seguiti.map(f => rigaPersona(utente(f.followingId), true)).join('')
+        : `<div class="text-muted small italic text-center py-2">${escapeHtml(T('follow.nessunSeguito') || 'Non segui ancora nessuno.')}</div>`;
+
+    // "Chi mi segue" - un solo GET, come populateReviewTargets.
+    let followers = [];
+    try {
+        const res = await fetch('/api/follow/followers');
+        if (res.ok) followers = await res.json();
+    } catch (e) {
+        console.error('Errore caricamento seguaci:', e);
+    }
+    const followersCount = document.getElementById('followers-count');
+    if (followersCount) followersCount.textContent = followers.length ? `(${followers.length})` : '';
+    followersBox.innerHTML = followers.length
+        ? followers.map(f => rigaPersona(utente(f.followerId), seguitiIds.has(f.followerId))).join('')
+        : `<div class="text-muted small italic text-center py-2">${escapeHtml(T('follow.nessunSeguace') || 'Nessuno ti segue ancora.')}</div>`;
+
+    if (window.lucide) window.lucide.createIcons();
 }
 
 // Le parti di #social che disegnano SOLO da window.CamoscioState (nessun fetch):
@@ -539,6 +608,7 @@ if (window.CamoscioI18n) window.CamoscioI18n.onChange(function () {
     const social = document.getElementById("social");
     if (social && social.classList.contains("active") && window.CamoscioState.currentUser) {
         populateReviewTargets();
+        renderFollowLists(); // punto 113: fa un fetch, solo se #social è aperta
     }
 });
 
@@ -2090,3 +2160,4 @@ window.renderSocialModule = renderSocialModule;
 window.renderHikesList = renderHikesList;
 window.renderSquadsList = renderSquadsList;
 window.renderOtherSquadsList = renderOtherSquadsList;
+window.renderFollowLists = renderFollowLists; // punto 113: lo richiama anche toggleFollow (userprofile.js)

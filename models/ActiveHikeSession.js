@@ -88,7 +88,18 @@ const activeHikeSessionSchema = new mongoose.Schema({
     // traccia creata prima di questo campo e' assente per lo stesso motivo (non c'e' modo di
     // distinguerla da una "non attendibile" spendendo altro spazio, e non serve: l'_id
     // contiene gia' il momento di creazione).
-    movingTimeSec: { type: Number, default: undefined }
+    movingTimeSec: { type: Number, default: undefined },
+
+    // --- Punto 113: uscita pubblicata nel feed dei follower ---
+    // publishedAt assente = non nel feed. Presente = visibile a chi segue l'autore, e ordina
+    // il feed (piu' recente prima). Spubblicare fa $unset di entrambi - MAI assegnare
+    // undefined e save(), stessa trappola gia' annotata su openSession qui sopra.
+    // caption e' testo scritto dall'utente: non si traduce (punto 102), a schermo sempre via
+    // escapeHtml. default: undefined su entrambi (vincolo hard sullo spazio, come
+    // importedFrom/durationUnknown qui sopra: scritti solo sulle poche uscite dove servono).
+    // Indice PARZIALE su publishedAt: passo 5.
+    publishedAt: { type: Date, default: undefined },
+    caption: { type: String, default: undefined, maxlength: 500 }
 });
 
 activeHikeSessionSchema.index(
@@ -109,6 +120,15 @@ activeHikeSessionSchema.index(
 activeHikeSessionSchema.index(
     { userId: 1, movingTimeSec: 1, elevationGainM: 1, distanceKm: 1, hikeId: 1 },
     { partialFilterExpression: { movingTimeSec: { $gt: 0 } } }
+);
+
+// Punto 113: la query del feed - le uscite pubblicate di un gruppo di autori ($in su
+// userId), ordinate per publishedAt decrescente. PARZIALE come i due indici qui sopra
+// (openSession, movingTimeSec): le uscite pubblicate sono una piccola frazione, un indice
+// pieno porterebbe un'entrata per ogni sessione mai registrata, per niente.
+activeHikeSessionSchema.index(
+    { userId: 1, publishedAt: -1 },
+    { partialFilterExpression: { publishedAt: { $exists: true } } }
 );
 
 // Durata calcolata dal dato reale (ultimo punto ricevuto), non dall'orologio di sistema:

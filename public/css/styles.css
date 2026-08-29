@@ -4144,6 +4144,154 @@ option {
     align-items: center;
     gap: 16px;
     margin-bottom: 20px;
+    /* Punto 113: fa spazio al tasto "Segui" in coda alla riga; su schermo stretto il
+       tasto va a capo sotto avatar/dettagli invece di schiacciare lo username. */
+    flex-wrap: wrap;
+}
+
+/* Punto 113: tasto "Segui" nell'intestazione del profilo di un ALTRO utente.
+   margin-left:auto lo stacca a destra nella riga flex del .user-profile-header-card. */
+.profile-follow-btn {
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+/* Punto 113: "N seguaci · N seguiti" sotto l'intestazione del profilo di un altro utente. */
+.user-profile-follow-counts {
+    margin: -8px 0 16px;
+    font-size: 0.9rem;
+}
+.user-profile-follow-counts:empty {
+    display: none;
+}
+.follow-count-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
+    color: inherit;
+}
+.follow-count-sep {
+    color: var(--text-muted, rgba(255, 255, 255, 0.5));
+    margin: 0 4px;
+}
+
+/* Punto 113: pagina Feed. */
+#feed-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+.feed-intro {
+    margin-bottom: 14px;
+}
+.feed-item {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    padding: 14px;
+}
+.feed-item-author {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    margin-bottom: 8px;
+}
+.feed-item-author:hover b {
+    color: var(--accent-blue);
+}
+.feed-item-avatar {
+    font-size: 1.35rem;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+.feed-item-when {
+    color: var(--text-muted, rgba(255, 255, 255, 0.5));
+    font-weight: 400;
+    font-size: 0.9rem;
+}
+.feed-item-caption {
+    margin: 0 0 10px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+.feed-item-body {
+    cursor: pointer;
+}
+.feed-item-body .outing-card {
+    margin: 0;
+}
+#feed-load-more {
+    margin-top: 2px;
+}
+
+/* Punto 113: pagina di una uscita pubblicata. */
+.outing-page-map {
+    height: 260px;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 14px;
+    background: rgba(255, 255, 255, 0.04);
+}
+.outing-page-author {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+}
+.outing-page-author:hover b {
+    color: var(--accent-blue);
+}
+.outing-page-caption {
+    margin: 12px 0 0;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+#outing-page-stats .outing-card-stats {
+    margin-top: 4px;
+}
+/* Punto 113: card uscita cliccabile (feed a parte: sul profilo di chi si segue). */
+.outing-open-wrap {
+    cursor: pointer;
+}
+
+/* Punto 113: intestazioni apri/chiudi delle due liste follow in Tribù & Squadre. */
+.follow-list-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 8px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: inherit;
+    font: inherit;
+    font-weight: 600;
+    padding: 10px 2px;
+    text-align: left;
+}
+/* lucide sostituisce <i data-lucide> con <svg>: la rotazione deve colpire entrambi. */
+.follow-list-toggle i,
+.follow-list-toggle svg {
+    flex-shrink: 0;
+    transition: transform 0.15s ease;
+}
+.follow-list-toggle.open i,
+.follow-list-toggle.open svg {
+    transform: rotate(180deg);
+}
+.follow-list-body {
+    margin-bottom: 6px;
 }
 
 .user-profile-avatar {

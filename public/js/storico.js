@@ -89,6 +89,72 @@
     // sessione per hikeId viene tolta (un Completion è unico per utente+escursione, ma due
     // sessioni con lo stesso hikeId sono possibili - tracciamento chiuso per sbaglio e
     // ripreso - e la seconda resta comunque una traccia GPS vera da mostrare).
+    // --- PUNTO 113: pubblicare un'uscita nel feed dei follower ---
+    //
+    // Il tasto vive sulle card di "Le mie escursioni". sessionId presente = c'è una traccia
+    // GPS pubblicabile (una ActiveHikeSession, registrata o importata). Assente = l'escursione
+    // non ha traccia: il tasto non pubblica, spiega che serve prima importare un .gpx (il
+    // tasto ⬆ "tempo reale" NON salva la traccia - solo "Carica un file .gpx" qui sopra lo fa).
+    function bottonePubblica(sessionId, publishedAt) {
+        if (!sessionId) {
+            return `<button class="btn btn-sm btn-secondary" style="padding:2px 8px;" onclick="avvisoPubblicaSenzaTraccia()" title="${esc(T('publish.serveTracciaTitle') || 'Serve una traccia GPS per pubblicare nel feed')}"><i data-lucide="upload-cloud"></i> ${esc(T('publish.pubblica') || 'Pubblica nel feed')}</button>`;
+        }
+        if (publishedAt) {
+            return `<button class="btn btn-sm btn-success" style="padding:2px 8px;" onclick="togglePubblicaUscita('${esc(sessionId)}', true)" title="${esc(T('publish.pubblicataTitle') || 'Nel feed di chi ti segue. Clic per toglierla.')}"><i data-lucide="check"></i> ${esc(T('publish.pubblicata') || 'Pubblicata')}</button>`;
+        }
+        return `<button class="btn btn-sm btn-primary" style="padding:2px 8px;" onclick="togglePubblicaUscita('${esc(sessionId)}', false)" title="${esc(T('publish.pubblicaTitle') || 'Rendi visibile questa uscita a chi ti segue')}"><i data-lucide="upload-cloud"></i> ${esc(T('publish.pubblica') || 'Pubblica nel feed')}</button>`;
+    }
+
+    async function togglePubblicaUscita(sessionId, giaPubblicata) {
+        try {
+            if (giaPubblicata) {
+                const ok = window.showConfirmModal
+                    ? await window.showConfirmModal(
+                        T('publish.confermaTogli') || 'Togliere questa uscita dal feed? Non sarà più visibile a chi ti segue (i "mi piace" restano).',
+                        T('publish.togli') || 'Togli dal feed',
+                        { cancelLabel: T('common.annulla') || 'Annulla' })
+                    : true;
+                if (!ok) return;
+                const res = await fetch(`/api/tracking/sessions/${encodeURIComponent(sessionId)}/unpublish`, { method: 'POST' });
+                if (!res.ok) {
+                    const d = await res.json().catch(() => ({}));
+                    if (window.showToast) window.showToast(d.error || (T('publish.erroreTogli') || 'Non è stato possibile togliere l\'uscita dal feed.'), 'error');
+                    return;
+                }
+                if (window.showToast) window.showToast(T('publish.tolta') || 'Uscita tolta dal feed.', 'success');
+            } else {
+                const didascalia = window.showPromptModal
+                    ? await window.showPromptModal(T('publish.chiediDidascalia') || 'Scrivi due righe sull\'uscita (facoltativo). Premi OK per pubblicarla nel feed di chi ti segue.', '')
+                    : '';
+                if (didascalia === null) return; // annullato
+                const res = await fetch(`/api/tracking/sessions/${encodeURIComponent(sessionId)}/publish`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ caption: (didascalia || '').trim().slice(0, 500) })
+                });
+                if (!res.ok) {
+                    const d = await res.json().catch(() => ({}));
+                    if (window.showToast) window.showToast(d.error || (T('publish.errorePubblica') || 'Non è stato possibile pubblicare l\'uscita.'), 'error');
+                    return;
+                }
+                if (window.showToast) window.showToast(T('publish.fatta') || 'Uscita pubblicata nel feed!', 'success');
+            }
+            if (window.renderMyHikes) window.renderMyHikes(); // ridisegna la lista con lo stato nuovo
+        } catch (e) {
+            console.error('Pubblicazione/rimozione uscita fallita:', e);
+            if (window.showToast) window.showToast(T('common.erroreServer') || 'Non è stato possibile contattare il server.', 'error');
+        }
+    }
+
+    function avvisoPubblicaSenzaTraccia() {
+        if (window.showToast) {
+            window.showToast(
+                T('publish.serveTraccia') || 'Questa escursione non ha una traccia GPS: per il feed serve una traccia. Caricala con "Carica un file .gpx" qui sopra, poi potrai pubblicarla.',
+                'error'
+            );
+        }
+    }
+
     async function renderCompletate(fatte) {
         const box = document.getElementById('completate-list');
         const contatore = document.getElementById('count-completate');
@@ -108,10 +174,30 @@
         // significa "degradare" in questa lista: si vede di meno (mancano le uscite
         // registrate), mai qualcosa di sbagliato.
         const db = window.CamoscioState;
+
+        // Punto 113: le sessioni servono PRIMA di costruire le voci-escursione, per sapere
+        // quali "escursioni completate" hanno una traccia GPS collegata (quindi pubblicabile
+        // nel feed) e quali no. La deduplicazione per hikeId più sotto resta identica.
+        let sessioni = [];
+        let erroreSessioni = false;
+        try {
+            const res = await fetch('/api/tracking/sessions');
+            if (!res.ok) throw new Error('richiesta fallita');
+            sessioni = await res.json();
+        } catch (e) {
+            console.error('Impossibile caricare lo storico delle uscite:', e);
+            erroreSessioni = true;
+        }
+
         const vociHike = (fatte || []).map(h => {
             const completion = (db.completions || []).find(c => c.hikeId === h.id);
             if (!completion) return null; // non dovrebbe succedere: 'fatte' viene proprio da lì
+            // Punto 113: la traccia GPS di questa escursione (dedotta dal hikeId). Se c'è, è
+            // lei l'oggetto pubblicabile - è anche quella che usciteVisibili toglie qui sotto
+            // per non mostrarla due volte. Se non c'è, il tasto lo spiega.
+            const tracciaCollegata = sessioni.find(s => s.hikeId === h.id && (s.distanceKm || 0) > 0.05);
             const azioni = `
+                ${bottonePubblica(tracciaCollegata ? tracciaCollegata.id : null, tracciaCollegata ? tracciaCollegata.publishedAt : null)}
                 <button class="btn btn-sm btn-secondary" style="padding:2px 6px;" onclick="uploadCompletionGpx('${completion.id}')" title="${esc(T('hikeCard.caricaGpxTitle') || 'Carica un file .gpx per avere il tempo reale di questa escursione')}">
                     <i data-lucide="upload"></i>
                 </button>
@@ -126,17 +212,6 @@
 
         const hikeIdGiaRappresentati = new Set(vociHike.map(v => v.hikeIdCollegato));
 
-        let sessioni = [];
-        let erroreSessioni = false;
-        try {
-            const res = await fetch('/api/tracking/sessions');
-            if (!res.ok) throw new Error('richiesta fallita');
-            sessioni = await res.json();
-        } catch (e) {
-            console.error('Impossibile caricare lo storico delle uscite:', e);
-            erroreSessioni = true;
-        }
-
         // Le sessioni senza nemmeno un punto GPS non si mostrano: sono avvii annullati
         // o prove finite subito (ce n'e' piu' d'una sul database, da prove vere fatte dal
         // telefono). In un elenco di uscite fatte direbbero solo "0 km, 0 min".
@@ -150,7 +225,7 @@
             .map(s => ({
                 ordinamento: Date.parse(s.startedAt) || 0,
                 html: window.CamoscioSchedeCompatte.uscita(s, {
-                    azioniHtml: `<button class="outing-card-del" data-del-outing="${esc(s.id)}" title="${esc(T('outing.cancellaTitle') || 'Cancella questa uscita dallo storico')}" aria-label="${esc(T('outing.cancellaTitle') || 'Cancella questa uscita dallo storico')}"><i data-lucide="trash-2"></i></button>`
+                    azioniHtml: `${bottonePubblica(s.id, s.publishedAt)} <button class="outing-card-del" data-del-outing="${esc(s.id)}" title="${esc(T('outing.cancellaTitle') || 'Cancella questa uscita dallo storico')}" aria-label="${esc(T('outing.cancellaTitle') || 'Cancella questa uscita dallo storico')}"><i data-lucide="trash-2"></i></button>`
                 })
             }));
 
@@ -452,4 +527,7 @@
     // contatori in cima a "Le mie escursioni" restano vecchi.
     window.renderCompletate = renderCompletate;
     window.initStorico = initStorico;
+    // Punto 113: usati dagli onclick dei tasti "Pubblica nel feed" sulle card.
+    window.togglePubblicaUscita = togglePubblicaUscita;
+    window.avvisoPubblicaSenzaTraccia = avvisoPubblicaSenzaTraccia;
 })();

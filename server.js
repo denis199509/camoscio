@@ -19,6 +19,8 @@ const notificationsRouter = require('./routes/notifications');
 const reviewsRouter = require('./routes/reviews');
 const squadsRouter = require('./routes/squads');
 const bookmarksRouter = require('./routes/bookmarks');
+const followRouter = require('./routes/follow'); // punto 113: "Segui" una persona
+const feedRouter = require('./routes/feed'); // punto 113: il feed delle uscite pubblicate
 const trackingRouter = require('./routes/tracking');
 const regionsRouter = require('./routes/regions');
 const geocodingRouter = require('./routes/geocoding');
@@ -92,6 +94,8 @@ app.use('/api/notifications', notificationsRouter);
 app.use('/api/reviews', reviewsRouter);
 app.use('/api/squads', squadsRouter);
 app.use('/api/bookmarks', bookmarksRouter);
+app.use('/api/follow', followRouter);
+app.use('/api/feed', feedRouter);
 app.use('/api/tracking', trackingRouter);
 app.use('/api/regions', regionsRouter);
 app.use('/api/geocoding', geocodingRouter);

@@ -8,6 +8,7 @@ window.CamoscioState = {
     squads: [],
     bookmarks: [],
     completions: [], // Escursioni già segnate come completate dall'utente corrente
+    following: [], // Punto 113: documenti Follow dell'utente corrente (chi segue) - tasto "Segui", liste in Tribù & Squadre, Feed
     notifications: [], // Notifiche dell'utente corrente (nuove escursioni di squadra, esiti iscrizioni)
     moderation: null, // Punto 111: {scadute, risoluzioniRichieste, daVerificare, totale} da GET /api/reports/moderation, solo per chi modera
     activeHikeId: null // Escursione attualmente selezionata da Zaino/Carpooling/Mappa; default hikes[0] finché non se ne sceglie una
@@ -418,6 +419,13 @@ async function refreshState() {
             window.CamoscioState.notifications = notifications;
             renderNotificationBell();
 
+            // Punto 113: chi segue l'utente corrente. Come stamps/completions/notifiche qui
+            // sopra si ricarica ad ogni refreshState() (cioè ad ogni cambio sezione), nessun
+            // polling - lo useranno il tasto "Segui" sui profili, le liste follow in Tribù &
+            // Squadre e la pagina Feed.
+            const following = await fetchApi('/api/follow/following');
+            window.CamoscioState.following = following;
+
             // Punto 45: il conteggio del triangolo, SOLO per chi puo' moderare - altrimenti
             // sarebbe una fetch-e-403 sprecata per chiunque altro ad ogni cambio sezione.
             // Stessa cadenza event-driven gia' in uso per le notifiche sopra (nessun polling
@@ -462,6 +470,7 @@ function setupNavigation() {
     // posto il titolo quando si cambia lingua senza navigare altrove).
     const prettyNames = {
         "dashboard": "Dashboard",
+        "feed": "Feed",
         "hikes": "Escursioni",
         "my-hikes": "Le mie escursioni",
         "badges": "I tuoi Badge",
@@ -481,7 +490,10 @@ function setupNavigation() {
         // voce in barra. showPendingReportsPage non lo scrive piu' a mano, ci pensa
         // updateSectionTitle via 'sectionTitle.pending-reports-page' (punto 102, settimo lotto).
         // Punto 111: la pagina ora ha tre code, non solo "da verificare".
-        "pending-reports-page": "Moderazione segnalazioni"
+        "pending-reports-page": "Moderazione segnalazioni",
+        // Punto 113: titolo di ripiego - disegnaTestata (outingpage.js) ci scrive poi il
+        // nome dell'autore, come #user-profile con lo username.
+        "outing-page": "Uscita"
     };
 
     // Estratta da navigateTo il 22/08/2026 perche' serve anche a i18n.js: se
@@ -584,6 +596,9 @@ function triggerSectionRender(sectionId) {
         switch (sectionId) {
             case "dashboard":
                 renderDashboard();
+                break;
+            case "feed":
+                if (window.renderFeed) window.renderFeed(); // punto 113
                 break;
             case "hikes":
                 if (window.renderHikesList) window.renderHikesList();

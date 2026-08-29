@@ -19,6 +19,11 @@ var T = (window.CamoscioI18n && window.CamoscioI18n.t) || function () { return n
 // completo, vedi la nota li' sotto sul perche'.
 var profiloUserIdAperto = null;
 
+// Punto 113: chi seguo IO, ricaricato dentro il Promise.all di renderUserProfile ad ogni
+// apertura di un profilo. renderProfileIdentity lo legge per decidere se il tasto dice
+// "Segui" o "Segui gia'". Sul PROPRIO profilo non viene mai letto (isSelf, vedi sotto).
+var seguitiDiMe = [];
+
 async function showUserProfile(userId) {
     if (!userId) return;
     if (window.navigateTo) window.navigateTo("user-profile");
@@ -39,13 +44,33 @@ function renderProfileIdentity(utente, timbri, els, ascese) {
             : esc(utente.avatar);
         const livelloTesto = T('profile.livelloReputazione', esc(utente.experienceLevel), utente.reputation)
             || `Livello: ${esc(utente.experienceLevel)} · Reputazione: ${utente.reputation}%`;
+
+        // Punto 113: tasto "Segui" - SOLO sul profilo di un altro utente. Questa funzione
+        // e' condivisa col proprio profilo (profile.js renderMyProfilePage, che passa
+        // CamoscioState.currentUser): li' utente.id === currentUser.id, quindi isSelf e'
+        // vero e il tasto non viene disegnato.
+        const io = window.CamoscioState && window.CamoscioState.currentUser;
+        const isSelf = !io || String(io.id) === String(utente.id);
+        let followBtnHtml = '';
+        if (!isSelf) {
+            const seguoGia = (seguitiDiMe || []).some(f => String(f.followingId) === String(utente.id));
+            followBtnHtml = `<button class="btn btn-sm ${seguoGia ? 'btn-secondary' : 'btn-primary'} profile-follow-btn"`
+                + ` id="btn-follow-toggle" data-target-user="${esc(utente.id)}"`
+                + (seguoGia ? ` title="${esc(T('follow.smettiSegui') || 'Non seguire più')}"` : '')
+                + `>${esc(seguoGia ? (T('follow.seguiGia') || 'Segui già') : (T('follow.segui') || 'Segui'))}</button>`;
+        }
+
         els.header.innerHTML = `
             <span class="user-profile-avatar">${avatarHtml}</span>
             <div class="user-details">
                 <h3 class="font-bold">${esc(utente.username)}</h3>
                 <p class="small text-muted">${livelloTesto}</p>
             </div>
+            ${followBtnHtml}
         `;
+
+        const fb = els.header.querySelector('#btn-follow-toggle');
+        if (fb) fb.addEventListener('click', () => window.toggleFollow(utente.id));
     }
 
     if (els.badgeBox) {
@@ -271,9 +296,27 @@ async function renderProfileHikes(userId, container) {
         })
         .filter(Boolean);
 
+    // Punto 113: una card uscita apre la pagina dell'uscita (showOutingPage) SOLO se questo
+    // utente può vederla - sul proprio profilo tutte, sul profilo di chi si segue solo
+    // quelle pubblicate (le altre darebbero 404 su /meta). Un click a vuoto è peggio di
+    // nessun click.
+    const io = db.currentUser;
+    const proprioProfilo = !!(io && io.id === userId);
+    const seguoQuesto = !!(io && (db.following || []).some(f => f.followingId === userId));
+
     const hikeIdGiaRappresentati = new Set(vociHike.map(v => v.hikeIdCollegato));
     const vociUscita = usciteVisibili(sessioni, hikeIdGiaRappresentati)
-        .map(s => ({ tipo: 'uscita', data: s.startedAt, html: schedaUscitaProfilo(s) }));
+        .map(s => {
+            const card = schedaUscitaProfilo(s);
+            const apribile = proprioProfilo || (seguoQuesto && s.publishedAt);
+            return {
+                tipo: 'uscita',
+                data: s.startedAt,
+                html: apribile
+                    ? `<div class="outing-open-wrap" onclick="showOutingPage('${window.escapeHtml(s.id)}')">${card}</div>`
+                    : card
+            };
+        });
 
     const tutte = [...vociHike, ...vociUscita].sort((a, b) => String(b.data || '').localeCompare(String(a.data || '')));
 
@@ -357,15 +400,19 @@ async function renderUserProfile(userId) {
     let timbri = [];
     let ascese = {};
     try {
-        let asceseArray;
-        [utente, timbri, asceseArray] = await Promise.all([
+        let asceseArray, seguiti;
+        [utente, timbri, asceseArray, seguiti] = await Promise.all([
             fetch(`/api/users/${userId}`).then(r => r.ok ? r.json() : null),
             fetch(`/api/stamps/${userId}`).then(r => r.ok ? r.json() : []),
             // Punto 42b: quante volte, non solo "se" - stessa rotta usata per il proprio
             // profilo (app.js), qui per un altro utente. Stessa trasformazione in oggetto.
-            fetch(`/api/tracking/peak-ascents/${userId}`).then(r => r.ok ? r.json() : [])
+            fetch(`/api/tracking/peak-ascents/${userId}`).then(r => r.ok ? r.json() : []),
+            // Punto 113: chi seguo io - fresco ad ogni apertura, per il tasto "Segui".
+            // Ripiego [] se la rotta non c'e' ancora: il profilo si disegna lo stesso.
+            fetch('/api/follow/following').then(r => r.ok ? r.json() : [])
         ]);
         asceseArray.forEach(a => { ascese[a.stampId] = a; });
+        seguitiDiMe = Array.isArray(seguiti) ? seguiti : [];
     } catch (e) {
         console.error("Errore nel caricamento del profilo:", e);
         header.innerHTML = `<p class="text-muted">${window.escapeHtml(T('profile.erroreCaricamento') || 'Non è stato possibile caricare questo profilo. Riprova più tardi.')}</p>`;
@@ -396,9 +443,124 @@ async function renderUserProfile(userId) {
     }
 
     renderProfileIdentity(utente, timbri, { header, badgeBox, badgesGrid, expertPeaks: document.getElementById("user-profile-expert-peaks") }, ascese);
+
+    // Punto 113: "N seguaci · N seguiti", cliccabili -> elenco in un modale
+    // (window.showFollowList). Fetch a parte, non nel Promise.all sopra: se GET /counts
+    // fallisce (o la rotta non c'è ancora) il resto del profilo si vede lo stesso.
+    const countsEl = document.getElementById("user-profile-follow-counts");
+    if (countsEl) {
+        countsEl.innerHTML = "";
+        fetch(`/api/follow/counts/${userId}`)
+            .then(r => r.ok ? r.json() : null)
+            .then(c => {
+                if (!c) return;
+                countsEl.innerHTML =
+                    `<button type="button" class="user-link follow-count-btn" onclick="showFollowList('${esc(userId)}','followers')">`
+                    + `<b>${Number(c.followers) || 0}</b> ${esc(T('follow.seguaci') || 'seguaci')}</button>`
+                    + `<span class="follow-count-sep"> · </span>`
+                    + `<button type="button" class="user-link follow-count-btn" onclick="showFollowList('${esc(userId)}','following')">`
+                    + `<b>${Number(c.following) || 0}</b> ${esc(T('follow.seguiti') || 'seguiti')}</button>`;
+            })
+            .catch(() => {});
+    }
+
     renderProfileHikes(userId, document.getElementById("user-profile-hikes"));
     renderProfileBookmarks(userId, document.getElementById("user-profile-bookmarks"));
 }
+
+// Punto 113: segui / smetti di seguire dal tasto nell'intestazione del profilo. Due stati
+// come window.toggleBookmark (social.js): sceglie POST o DELETE guardando lo stato attuale,
+// e ridisegna il profilo DOPO la risposta del server, mai in modo ottimistico - un tasto a
+// due stati non deve mostrare uno stato che il server non ha ancora confermato (lezione
+// gia' scritta su toggleBookmark).
+window.toggleFollow = async function (targetUserId) {
+    const db = window.CamoscioState;
+    if (!db || !db.currentUser || !targetUserId) return;
+    if (String(targetUserId) === String(db.currentUser.id)) return; // non ci si segue da soli
+
+    // La scelta POST/DELETE guarda CamoscioState.following (la fonte canonica, popolata
+    // all'avvio e riallineata da ogni refreshState): questo tasto si chiama sia dal profilo
+    // sia dalle righe delle liste in Tribù & Squadre, e seguitiDiMe è aggiornato solo dalla
+    // pagina profilo.
+    const seguoGia = (db.following || []).some(f => String(f.followingId) === String(targetUserId));
+    const btn = document.getElementById('btn-follow-toggle');
+    if (btn) btn.disabled = true;
+
+    try {
+        const res = await fetch('/api/follow/' + encodeURIComponent(targetUserId), {
+            method: seguoGia ? 'DELETE' : 'POST'
+        });
+        if (!res.ok) {
+            const d = await res.json().catch(() => ({}));
+            if (window.showToast) window.showToast(d.error || (T('follow.errore') || 'Non è stato possibile aggiornare.'), 'error');
+            if (btn) btn.disabled = false;
+            return;
+        }
+        // Stato vero dal server, poi si ridisegna la superficie aperta: la pagina profilo
+        // (tasto + conteggi), oppure le liste in Tribù & Squadre. Mai in modo ottimistico.
+        await refreshState();
+        const up = document.getElementById('user-profile');
+        const so = document.getElementById('social');
+        if (up && up.classList.contains('active') && profiloUserIdAperto) {
+            await renderUserProfile(profiloUserIdAperto);
+        } else if (so && so.classList.contains('active') && window.renderFollowLists) {
+            window.renderFollowLists();
+        }
+    } catch (e) {
+        console.error('Errore toggle follow:', e);
+        if (window.showToast) window.showToast(T('common.erroreServer') || 'Non è stato possibile contattare il server.', 'error');
+        if (btn) btn.disabled = false;
+    }
+};
+
+// Punto 113: elenco "seguaci"/"seguiti" di un utente, aperto dai due contatori sul suo
+// profilo. Sola navigazione: ogni riga porta al profilo di quella persona. Le liste follow
+// sono pubbliche fra utenti loggati (decisione di Denis) - GET /api/follow/<tipo>/:userId.
+window.showFollowList = async function (userId, tipo) {
+    const modal = document.getElementById('follow-list-modal');
+    const titleEl = document.getElementById('follow-list-modal-title');
+    const bodyEl = document.getElementById('follow-list-modal-body');
+    if (!modal || !bodyEl || (tipo !== 'followers' && tipo !== 'following')) return;
+
+    const db = window.CamoscioState;
+    const chi = (db.users || []).find(u => u.id === userId);
+    const nome = chi ? chi.username : (T('common.utente') || 'Utente');
+    if (titleEl) {
+        titleEl.textContent = (tipo === 'followers'
+            ? (T('follow.seguaci') || 'seguaci')
+            : (T('follow.seguiti') || 'seguiti')) + ' · ' + nome;
+    }
+    bodyEl.innerHTML = `<p class="small text-muted">${window.escapeHtml(T('profile.caricamento') || 'Caricamento...')}</p>`;
+    modal.classList.remove('hidden');
+
+    let lista = [];
+    try {
+        const res = await fetch(`/api/follow/${tipo}/${encodeURIComponent(userId)}`);
+        if (res.ok) lista = await res.json();
+    } catch (e) {
+        console.error('Errore caricamento elenco follow:', e);
+    }
+
+    const esc = window.escapeHtml;
+    const idField = tipo === 'followers' ? 'followerId' : 'followingId';
+    const persone = lista.map(f => (db.users || []).find(u => u.id === f[idField])).filter(Boolean);
+
+    bodyEl.innerHTML = persone.length
+        ? persone.map(u => `
+            <div class="squad-item" style="cursor:pointer;" onclick="closeFollowListModal(); showUserProfile('${esc(u.id)}')">
+                <div><h5>${esc(u.avatar)} ${esc(u.username)}</h5></div>
+            </div>`).join('')
+        : `<div class="text-muted small italic text-center py-2">${esc(tipo === 'followers'
+            ? (T('follow.nessunSeguaceAltri') || 'Nessuno segue questa persona.')
+            : (T('follow.nessunSeguitoAltri') || 'Questa persona non segue nessuno.'))}</div>`;
+
+    if (window.lucide) window.lucide.createIcons();
+};
+
+window.closeFollowListModal = function () {
+    const modal = document.getElementById('follow-list-modal');
+    if (modal) modal.classList.add('hidden');
+};
 
 window.showUserProfile = showUserProfile;
 

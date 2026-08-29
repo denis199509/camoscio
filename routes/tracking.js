@@ -5,6 +5,7 @@ const Hike = require('../models/Hike');
 const TrailCandidate = require('../models/TrailCandidate');
 const Stamp = require('../models/Stamp'); // timbri assegnati dalle tracce .gpx importate
 const User = require('../models/User'); // punto 42b: recognizedAscents
+const Follow = require('../models/Follow'); // punto 113: chi può vedere un'uscita pubblicata
 const { requireAuth } = require('../middleware/auth');
 const { isFiniteNum, haversineKm, simplifyTrack } = require('../lib/geometry');
 const { regionForPoint } = require('../lib/regions');
@@ -312,6 +313,131 @@ router.delete('/sessions/:id', requireAuth, async (req, res) => {
     } catch (e) {
         console.error('Cancellazione uscita fallita:', e);
         res.status(500).json({ error: 'Non e\' stato possibile cancellare l\'uscita. Riprova.' });
+    }
+});
+
+// --- PUNTO 113: pubblicare / togliere un'uscita dal feed dei follower ---
+//
+// Solo il proprietario, solo su una sessione conclusa: una registrazione ancora aperta non
+// ha senso nel feed e i suoi numeri cambiano ancora. La didascalia e' facoltativa, testo
+// dell'utente (max 500, come nello schema). Spubblicare fa $unset di publishedAt+caption
+// (vedi models/ActiveHikeSession.js). Il confronto e' con req.session.userId, mai con un id
+// del client - regola di tutte le rotte del progetto.
+router.post('/sessions/:id/publish', requireAuth, async (req, res) => {
+    try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(400).json({ error: 'Identificativo non valido.' });
+        }
+        const sessione = await ActiveHikeSession.findById(req.params.id).select('userId status');
+        if (!sessione) return res.status(404).json({ error: 'Questa uscita non esiste.' });
+        if (String(sessione.userId) !== String(req.session.userId)) {
+            return res.status(403).json({ error: 'Puoi pubblicare solo le tue uscite.' });
+        }
+        if (sessione.status !== 'ended') {
+            return res.status(409).json({ error: 'Questa registrazione e\' ancora in corso: terminala prima di pubblicarla.' });
+        }
+
+        let caption = (req.body && typeof req.body.caption === 'string') ? req.body.caption.trim() : '';
+        if (caption.length > 500) caption = caption.slice(0, 500);
+
+        // $set + $unset insieme: MongoDB non ammette un campo semplice e un operatore nello
+        // stesso update. Senza didascalia si toglie quella eventuale di una pubblicazione
+        // precedente, cosi' ri-pubblicare senza testo non lascia il vecchio commento.
+        const update = caption
+            ? { $set: { publishedAt: new Date(), caption } }
+            : { $set: { publishedAt: new Date() }, $unset: { caption: '' } };
+        await ActiveHikeSession.updateOne({ _id: sessione._id }, update);
+
+        res.json({ success: true });
+    } catch (e) {
+        console.error('Pubblicazione uscita fallita:', e);
+        res.status(500).json({ error: 'Non e\' stato possibile pubblicare l\'uscita.' });
+    }
+});
+
+router.post('/sessions/:id/unpublish', requireAuth, async (req, res) => {
+    try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(400).json({ error: 'Identificativo non valido.' });
+        }
+        const sessione = await ActiveHikeSession.findById(req.params.id).select('userId');
+        if (!sessione) return res.status(404).json({ error: 'Questa uscita non esiste.' });
+        if (String(sessione.userId) !== String(req.session.userId)) {
+            return res.status(403).json({ error: 'Puoi modificare solo le tue uscite.' });
+        }
+        await ActiveHikeSession.updateOne({ _id: sessione._id }, { $unset: { publishedAt: '', caption: '' } });
+        res.json({ success: true });
+    } catch (e) {
+        console.error('Rimozione uscita dal feed fallita:', e);
+        res.status(500).json({ error: 'Non e\' stato possibile togliere l\'uscita dal feed.' });
+    }
+});
+
+// --- PUNTO 113: la singola uscita pubblicata (pagina di dettaglio + "crea percorso") ---
+//
+// CHI PUÒ VEDERLA (decisione 6 di Denis): l'autore sempre; gli altri SOLO se l'uscita è
+// pubblicata E la seguono. 404 (non 403) quando non è pubblicata: a chi non è l'autore non
+// si rivela nemmeno che l'uscita esiste. Restituisce { sessione } o { errore: {status, body} }.
+async function guardiaUscitaVisibile(sessionId, viewerId, campi) {
+    if (!mongoose.Types.ObjectId.isValid(sessionId)) {
+        return { errore: { status: 400, body: { error: 'Identificativo non valido.' } } };
+    }
+    const sessione = await ActiveHikeSession.findById(sessionId).select(campi);
+    if (!sessione) return { errore: { status: 404, body: { error: 'Questa uscita non esiste.' } } };
+
+    if (String(sessione.userId) === String(viewerId)) return { sessione };
+
+    if (!sessione.publishedAt) {
+        return { errore: { status: 404, body: { error: 'Questa uscita non esiste.' } } };
+    }
+    if (!(await Follow.exists({ followerId: viewerId, followingId: sessione.userId }))) {
+        return { errore: { status: 403, body: { error: 'Puoi vedere questa uscita solo se segui chi l\'ha pubblicata.' } } };
+    }
+    return { sessione };
+}
+
+// Metadati dell'uscita (senza i punti GPS): per la testata, le statistiche e la didascalia
+// della pagina. Niente .lean(): durationSeconds/avgSpeedKmh sono virtuali dello schema.
+router.get('/sessions/:id/meta', requireAuth, async (req, res) => {
+    try {
+        const g = await guardiaUscitaVisibile(req.params.id, req.session.userId, '-points -offTrailBuffer');
+        if (g.errore) return res.status(g.errore.status).json(g.errore.body);
+        res.json(g.sessione);
+    } catch (e) {
+        console.error('Errore meta uscita:', e);
+        res.status(500).json({ error: 'Impossibile caricare l\'uscita.' });
+    }
+});
+
+// I punti GPS di UNA sola uscita: per la mini-mappa e per "crea percorso" (passo 8). È
+// l'unica rotta che restituisce la geometria - le liste (/sessions, /feed) la escludono
+// sempre. ?scopo=mini semplifica ancora (25m) SOLO nella risposta, per una mappa piccola:
+// il dato d'archivio non si tocca.
+router.get('/sessions/:id/points', requireAuth, async (req, res) => {
+    try {
+        const g = await guardiaUscitaVisibile(
+            req.params.id, req.session.userId,
+            'userId publishedAt points distanceKm elevationGainM importedFrom importedName startedAt'
+        );
+        if (g.errore) return res.status(g.errore.status).json(g.errore.body);
+        const s = g.sessione;
+
+        let punti = s.points || [];
+        if (req.query.scopo === 'mini' && punti.length > 2) {
+            punti = simplifyTrack(punti, 25);
+        }
+        res.json({
+            id: String(s._id),
+            punti,
+            distanceKm: s.distanceKm,
+            elevationGainM: s.elevationGainM,
+            importedFrom: s.importedFrom,
+            importedName: s.importedName,
+            startedAt: s.startedAt
+        });
+    } catch (e) {
+        console.error('Errore punti uscita:', e);
+        res.status(500).json({ error: 'Impossibile caricare la traccia.' });
     }
 });
 
