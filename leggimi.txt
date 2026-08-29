@@ -2,10 +2,16 @@
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
 Aggiornato: 2026-08-29 (dodicesima sessione).
 
->>> NIENTE IN CORSO. L'ultimo punto aperto (111) e' CHIUSO.
+>>> NIENTE IN CORSO. L'ultimo punto aperto (111) e' CHIUSO E IN PRODUZIONE.
 
->>> PUNTO 111 CHIUSO il 29/08 — tutti gli 11 passi, pushati su camoscio.
-    NON ANCORA DEPLOYATO: i passi 6-9 devono uscire IN UN DEPLOY SOLO.
+>>> PUNTO 111 CHIUSO il 29/08 — tutti gli 11 passi, pushati e DEPLOYATI
+    su camoscio.onrender.com (Render fa redeploy automatico a ogni push;
+    i passi 6-9 sono usciti nella sequenza dei push). Verificato dal
+    vivo su Render: file serviti col codice nuovo, GET /api/reports/
+    moderation e PATCH /:id/renew -> 401 (rotte vive), GET /pending ->
+    404 (ritirata), indici Atlas = _id_ + expiresAt_1 (365gg), nessun
+    createdAt_1, 4 report tutti sani, 84 notifiche (baseline).
+    Finestra 403 e buco scadenze: CHIUSI in produzione.
 
   Le segnalazioni sentiero: "risolvi" di un utente normale e scadenza a
   90 giorni non cancellano piu' da soli - diventano una notifica a chi
@@ -28,16 +34,10 @@ Aggiornato: 2026-08-29 (dodicesima sessione).
   + controprova su f006edf: 14 cadono + voce LEGGIMI-PROVE).
   Prove: prova-punto111.js 82/82, prova-punto45.js 46/46.
 
-  >>> IL DEPLOY (passi 6-9 insieme) CHIUDE IN PRODUZIONE:
-  1. FINESTRA 403. Da quando il passo 5 (gia' in produzione) rende
-     DELETE /:id/resolve moderatore-only, un utente normale che preme
-     "risolvi" in mappa prende 403 (niente viene cancellato). Il passo
-     8 (map.js -> POST /:id/resolve-request) la chiude.
-  2. BUCO SCADENZE. Da quando i passi 1-4 hanno tolto il TTL su
-     createdAt, le segnalazioni non scadono piu' da sole e niente
-     avvisa Denis, finche' il passo 6 (controllaScadenze agganciato)
-     non e' vivo. Le 4 attuali scadono fra fine ottobre e fine
-     novembre 2026: c'e' margine, non mesi.
+  (Erano da chiudere in produzione la FINESTRA 403 - il passo 8 fa
+  chiamare POST /:id/resolve-request al posto di DELETE /:id/resolve -
+  e il BUCO SCADENZE - il passo 6 aggancia controllaScadenze a
+  GET /api/notifications. Col deploy del 29/08 sono chiusi entrambi.)
 
   DUE TRAPPOLE PAGATE (dettaglio nel vault 07-Trappole-Tecniche.md):
   - una controprova via git worktree su codice pre-111 che AVVIA il

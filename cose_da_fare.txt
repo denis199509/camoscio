@@ -7065,9 +7065,9 @@ schermo spento ancora."
 
 111. [FATTO 2026-08-29, dodicesima sessione - requisiti nella nona
    sessione, piano dall'agente architect, passi 1-5 nell'undicesima
-   (28/08), passi 6-11 nella dodicesima (29/08). Pushato su camoscio,
-   NON ancora deployato: i passi 6-9 escono in un deploy solo.] Nato da
-   una domanda di Denis a fine sessione:
+   (28/08), passi 6-11 nella dodicesima (29/08). Pushato E DEPLOYATO su
+   camoscio.onrender.com, verificato dal vivo su Render.] Nato da una
+   domanda di Denis a fine sessione:
    "chi e' che puo risolvere una segnalazione? mi risulta che posso
    farla pure dal account demo di marco". Risposto che si', e' di
    proposito (punto 45): DELETE /api/reports/:id/resolve e' gated solo
@@ -7396,9 +7396,21 @@ schermo spento ancora."
    PASSO 11 - note: vault (03/04/06/07), questo file, leggimi.txt.
    Commit e push anche del vault (repo separato).
 
-   STATO FINALE: punto chiuso. DB Atlas al baseline (report 4->4,
-   notifiche 84->84, indici reports = _id_ + expiresAt_1 a 365gg).
-   Da deployare i passi 6-9 in un colpo solo.
+   DEPLOY (29/08, dopo il passo 11): Render fa redeploy automatico a
+   ogni push su master, quindi i passi 6-11 sono usciti nella sequenza
+   dei push - nessun bottone da premere. Verificato dal vivo su
+   camoscio.onrender.com: pendingreports.js/map.js/i18n.js/index.html
+   serviti col codice nuovo; GET /api/reports/moderation e PATCH
+   /:id/renew -> 401 (rotte vive), GET /api/reports/pending -> 404
+   (ritirata); indici Atlas su reports = _id_ + expiresAt_1 (365gg),
+   NESSUN createdAt_1; 4 report tutti 'active' e sani (scadono
+   27/10..21/11, nessuna richiesta di risoluzione, nessuno notificato);
+   84 notifiche (baseline). Finestra 403 e buco scadenze CHIUSI in
+   produzione.
+
+   STATO FINALE: punto chiuso e in produzione. DB Atlas al baseline
+   (report 4->4, notifiche 84->84, indici reports = _id_ + expiresAt_1
+   a 365gg).
 
 112. [FATTO 2026-08-28, decima sessione] Denis, parole sue: "dobbiamo
    aggiungere dei badge nuovi". Poi il dettaglio: tre file in
