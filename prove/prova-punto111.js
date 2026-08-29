@@ -11,7 +11,8 @@
 //  - "Rinnova +90gg" (PATCH /:id/renew, moderatore): 90 giorni DA ADESSO, azzera il timbro
 //  - controllo scadenze PIGRO su GET /api/notifications: avvisa una volta sola, il rinnovo ri-arma
 //  - destinatari: chi ha receivesReportAlerts, con ripiego sui moderatori se nessuno ce l'ha
-// I passi 7+ (GET /moderation, UI Moderazione, controprova sugli indici) arrivano dopo.
+//  - GET /api/reports/moderation: tre liste DISGIUNTE + totale, priorita' scadute > risoluzioni > da verificare
+// I passi 8+ (map.js, UI Moderazione, controprova su HEAD pre-111) arrivano dopo.
 //
 // Due account DEMO: A parte utente normale (in sez. 10 viene elevato a moderatore per un
 // attimo, poi revocato), B viene elevato a moderatore E dato receivesReportAlerts
@@ -292,6 +293,57 @@ function jpegFinto(bytes) {
         // ripristino: il finally si aspetta B destinatario e A pulito
         await User.findByIdAndUpdate(idB, { receivesReportAlerts: true });
         await User.findByIdAndUpdate(idA, { $unset: { canModerateReports: 1 } });
+
+        // === 11. GET /api/reports/moderation: tre liste disgiunte + totale dal server ===
+        console.log('\n11. GET /api/reports/moderation (passo 7): scadute > risoluzioni > da verificare, disgiunte');
+        const modA = await chiama('GET', '/api/reports/moderation', null, cookieA);
+        ok('GET /moderation come A (non moderatore) -> 403', modA.status === 403, `status ${modA.status}`);
+
+        // una segnalazione per ogni lista
+        async function creaPending(descr) {
+            const cr = await chiama('POST', '/api/reports',
+                { type: 'ostacolo', lat: 42.44, lng: 13.54, description: descr }, cookieA);
+            const id = cr.corpo && cr.corpo.id;
+            if (id) reportIdsCreati.push(id);
+            return id;   // resta 'pending': niente confirm
+        }
+        const ridVerif = await creaPending(`PROVA-111-11-verif-${MARCA}`);   // pending, non scaduta
+        const ridScad = await creaPending(`PROVA-111-11-scad-${MARCA}`);     // pending, poi forzata scaduta
+        await reports.updateOne({ _id: new mongoose.Types.ObjectId(ridScad) }, { $set: { expiresAt: nelPassato(2) } });
+        const ridRis = await creaReportAttivo(`PROVA-111-11-ris-${MARCA}`);  // active
+        await chiama('POST', `/api/reports/${ridRis}/resolve-request`, null, cookieA);
+
+        const mod = await chiama('GET', '/api/reports/moderation', null, cookieB);
+        ok('GET /moderation come B -> 200', mod.status === 200, `status ${mod.status}`);
+        const { scadute, risoluzioniRichieste, daVerificare, totale } = mod.corpo || {};
+        ok('il corpo ha le tre liste come array',
+            Array.isArray(scadute) && Array.isArray(risoluzioniRichieste) && Array.isArray(daVerificare));
+        ok('totale e\' un numero', typeof totale === 'number');
+
+        const inLista = (lista, id) => Array.isArray(lista) && lista.some(r => r.id === id);
+        ok('la pending non scaduta sta in daVerificare', inLista(daVerificare, ridVerif));
+        ok('...e in nessun\'altra lista', !inLista(scadute, ridVerif) && !inLista(risoluzioniRichieste, ridVerif));
+        ok('la active con richiesta di risoluzione sta in risoluzioniRichieste', inLista(risoluzioniRichieste, ridRis));
+        ok('...e in nessun\'altra lista', !inLista(scadute, ridRis) && !inLista(daVerificare, ridRis));
+        ok('la pending SCADUTA sta in scadute (scadono anche le mai verificate)', inLista(scadute, ridScad));
+        ok('...e NON in daVerificare', !inLista(daVerificare, ridScad));
+
+        ok('totale = somma delle tre lunghezze (lo calcola il server)',
+            totale === scadute.length + risoluzioniRichieste.length + daVerificare.length,
+            `${totale} vs ${scadute.length}+${risoluzioniRichieste.length}+${daVerificare.length}`);
+        const tuttiGliId = [...scadute, ...risoluzioniRichieste, ...daVerificare].map(r => r.id);
+        ok('le tre liste sono DISGIUNTE (nessun id ripetuto)', new Set(tuttiGliId).size === tuttiGliId.length);
+        ok('in /moderation la foto non c\'e\' mai (select:false)',
+            [...scadute, ...risoluzioniRichieste, ...daVerificare].every(r => !('photo' in r)));
+        const voceRis = risoluzioniRichieste.find(r => r.id === ridRis);
+        ok('a chi modera resolutionRequestedBy E\' visibile (a differenza di GET /)',
+            voceRis && voceRis.resolutionRequestedBy != null);
+
+        // priorita': se una richiesta di risoluzione scade, si sposta in scadute
+        await reports.updateOne({ _id: new mongoose.Types.ObjectId(ridRis) }, { $set: { expiresAt: nelPassato(2) } });
+        const mod2 = await chiama('GET', '/api/reports/moderation', null, cookieB);
+        ok('una richiesta di risoluzione SCADUTA passa in scadute (priorita\')',
+            inLista(mod2.corpo.scadute, ridRis) && !inLista(mod2.corpo.risoluzioniRichieste, ridRis));
 
     } catch (e) {
         console.error('\nERRORE DELLA PROVA:', e);

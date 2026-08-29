@@ -1,12 +1,14 @@
 // PROVA DEL PUNTO 45 (moderazione segnalazioni sentiero + foto): campo canModerateReports, le
-// rotte di moderazione (GET /pending, PATCH /:id/confirm, DELETE /:id), la correzione di
+// rotte di moderazione (GET /moderation, PATCH /:id/confirm, DELETE /:id), la correzione di
 // sicurezza su GET /api/reports (non deve piu' esporre segnalazioni 'pending' a chiunque sia
 // loggato), la foto (upload, GET /:id/photo, mai nelle liste) e DELETE /:id/resolve che
 // CANCELLA per intero invece di marcare 'resolved'.
 //
-// Aggiornata per il punto 111 (28/08/2026): DELETE /:id/resolve e' ora gated MODERATORE, e
-// il TTL su createdAt e' stato sostituito da expiresAt + paracadute a 365gg. Il flusso nuovo
-// del "risolvi" utente (POST /:id/resolve-request) e' provato in prove/prova-punto111.js.
+// Aggiornata per il punto 111 (28-29/08/2026): DELETE /:id/resolve e' ora gated MODERATORE,
+// il TTL su createdAt e' stato sostituito da expiresAt + paracadute a 365gg, e GET /pending
+// e' diventata GET /moderation (oggetto con tre liste + totale, passo 7). Il flusso nuovo
+// del "risolvi" utente (POST /:id/resolve-request) e la struttura di /moderation sono
+// provati in prove/prova-punto111.js.
 //
 // Usa due account DEMO (login senza password): A resta senza permesso per tutta la prova,
 // B viene elevato a moderatore DIRETTAMENTE sul database - non esiste (e non deve esistere)
@@ -136,8 +138,8 @@ function comeDataUrl(buf) {
         //        Punto 111: anche DELETE /:id/resolve e' ora gated moderatore (il "risolvi"
         //        dell'utente normale e' passato a POST /:id/resolve-request, vedi
         //        prove/prova-punto111.js) -> A qui prende 403, non piu' 400. ---
-        const pendingComeA = await chiama('GET', '/api/reports/pending', null, cookieA);
-        ok('GET /pending come A (senza permesso) da 403', pendingComeA.status === 403, `status ${pendingComeA.status}`);
+        const pendingComeA = await chiama('GET', '/api/reports/moderation', null, cookieA);
+        ok('GET /moderation come A (senza permesso) da 403', pendingComeA.status === 403, `status ${pendingComeA.status}`);
 
         const confermaComeA = await chiama('PATCH', `/api/reports/${reportId1}/confirm`, null, cookieA);
         ok('PATCH /:id/confirm come A (senza permesso) da 403', confermaComeA.status === 403, `status ${confermaComeA.status}`);
@@ -161,14 +163,17 @@ function comeDataUrl(buf) {
         const bDopoElevazione = await User.findById(idB);
         ok('B risulta moderatore sul database', bDopoElevazione.canModerateReports === true);
 
-        // --- 6. B vede la segnalazione di A nell'elenco pendenti, con hasPhoto ma senza la
-        //        foto vera (select:false rispettato dalle query normali) ---
-        const pendingComeB = await chiama('GET', '/api/reports/pending', null, cookieB);
-        ok('GET /pending come B (con permesso) risponde 200', pendingComeB.status === 200, `status ${pendingComeB.status}`);
-        const vocePending = Array.isArray(pendingComeB.corpo) && pendingComeB.corpo.find(r => r.id === reportId1);
-        ok('la segnalazione di A compare nei pendenti di B', !!vocePending);
-        ok('hasPhoto visibile nell\'elenco pendenti', vocePending && vocePending.hasPhoto === true);
-        ok('la foto NON e\' nell\'elenco pendenti (select:false)', vocePending && !('photo' in vocePending));
+        // --- 6. B vede la segnalazione di A nella lista "da verificare" di /moderation, con
+        //        hasPhoto ma senza la foto vera (select:false rispettato dalle query normali).
+        //        Punto 111: /pending -> /moderation, la risposta ora e' un oggetto con tre
+        //        liste ({scadute, risoluzioniRichieste, daVerificare}) + totale. ---
+        const pendingComeB = await chiama('GET', '/api/reports/moderation', null, cookieB);
+        ok('GET /moderation come B (con permesso) risponde 200', pendingComeB.status === 200, `status ${pendingComeB.status}`);
+        const daVerificareB = pendingComeB.corpo && pendingComeB.corpo.daVerificare;
+        const vocePending = Array.isArray(daVerificareB) && daVerificareB.find(r => r.id === reportId1);
+        ok('la segnalazione di A compare fra quelle da verificare di B', !!vocePending);
+        ok('hasPhoto visibile nell\'elenco da verificare', vocePending && vocePending.hasPhoto === true);
+        ok('la foto NON e\' nell\'elenco da verificare (select:false)', vocePending && !('photo' in vocePending));
 
         // --- 7. La foto vera si scarica solo dalla rotta dedicata, e i byte tornano
         //        identici a quelli mandati - anche per A (il creatore, non moderatore):

@@ -42,11 +42,14 @@ function setupPendingReportsTriangle() {
 // renderNotificationBell() in app.js (incluso il troncamento "9+"). Chiamata da
 // refreshState() ad ogni cambio sezione, solo per chi modera: stessa identica cadenza
 // gia' in uso oggi per la campana (nessun polling a intervallo in tutto il progetto).
-function renderPendingReportsBadge(pendingReports) {
+// Punto 111: riceve il "totale" gia' calcolato dal server (GET /api/reports/moderation):
+// da verificare + risoluzioni richieste + scadute. Prima era la lunghezza dell'array
+// delle sole 'pending'.
+function renderPendingReportsBadge(totale) {
     const badge = document.getElementById("moderation-count-badge");
     if (!badge) return;
 
-    const count = (pendingReports || []).length;
+    const count = totale || 0;
     if (count > 0) {
         badge.textContent = count > 9 ? "9+" : count;
         badge.classList.remove("hidden");
@@ -56,9 +59,12 @@ function renderPendingReportsBadge(pendingReports) {
 }
 
 // Click handler del triangolo, ed e' anche la funzione richiamata dopo ogni conferma/rifiuto
-// per ricaricare la lista. Fetch fresca propria (non riusa window.CamoscioState.pendingReports,
+// per ricaricare la lista. Fetch fresca propria (non riusa window.CamoscioState.moderation,
 // che potrebbe risalire alla navigazione precedente): in un pannello dove si decide di
 // pubblicare o eliminare per sempre, servono i dati veri in quel momento, non una cache.
+// Punto 111: legge GET /api/reports/moderation ({scadute, risoluzioniRichieste,
+// daVerificare, totale}). Per ora disegna solo "daVerificare" com'era la vecchia lista;
+// le altre due liste e le loro azioni arrivano col passo 9.
 async function showPendingReportsPage() {
     if (window.navigateTo) window.navigateTo("pending-reports-page");
 
@@ -77,14 +83,14 @@ async function showPendingReportsPage() {
     if (!box) return;
 
     try {
-        const res = await fetch("/api/reports/pending");
+        const res = await fetch("/api/reports/moderation");
         if (!res.ok) throw new Error(`risposta ${res.status}`);
-        const reports = await res.json();
-        window.CamoscioState.pendingReports = reports;
-        renderPendingReportsBadge(reports);
-        renderPendingReportsListBody(reports);
+        const moderation = await res.json();
+        window.CamoscioState.moderation = moderation;
+        renderPendingReportsBadge(moderation.totale);
+        renderPendingReportsListBody(moderation.daVerificare);
     } catch (e) {
-        console.error("Errore nel caricare le segnalazioni in attesa:", e);
+        console.error("Errore nel caricare le segnalazioni da moderare:", e);
         box.innerHTML = `<p class="text-muted">${T('pendingReports.erroreCaricamento') || "Impossibile caricare le segnalazioni in attesa."}</p>`;
     }
 }
@@ -200,7 +206,7 @@ async function rejectPendingReport(id) {
 // costruito via innerHTML - applyStaticTranslations non lo raggiunge, resterebbe
 // in italiano sotto gli occhi di chi modera. Se la pagina e' quella aperta, si
 // ri-chiama showPendingReportsPage (ri-fetch + ridisegno): fa gia' lo stesso a
-// ogni conferma/rifiuto, e la fetch a /api/reports/pending e' per soli moderatori,
+// ogni conferma/rifiuto, e la fetch a /api/reports/moderation e' per soli moderatori,
 // leggera. Gate sulla sezione attiva come il <select> recensioni del quinto lotto:
 // nessun fetch a vuoto quando la pagina non e' in vista. Il titolo lo rimette gia'
 // updateSectionTitle da solo (via prettyNames + sectionTitle.pending-reports-page).

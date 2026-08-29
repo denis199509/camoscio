@@ -9,7 +9,7 @@ window.CamoscioState = {
     bookmarks: [],
     completions: [], // Escursioni già segnate come completate dall'utente corrente
     notifications: [], // Notifiche dell'utente corrente (nuove escursioni di squadra, esiti iscrizioni)
-    pendingReports: [], // Punto 45: segnalazioni sentiero in attesa di verifica, solo per chi modera
+    moderation: null, // Punto 111: {scadute, risoluzioniRichieste, daVerificare, totale} da GET /api/reports/moderation, solo per chi modera
     activeHikeId: null // Escursione attualmente selezionata da Zaino/Carpooling/Mappa; default hikes[0] finché non se ne sceglie una
 };
 
@@ -423,10 +423,13 @@ async function refreshState() {
             // Stessa cadenza event-driven gia' in uso per le notifiche sopra (nessun polling
             // a intervallo in tutto il progetto): si aggiorna ad ogni refreshState(), cioe'
             // ad ogni cambio pagina.
+            // Punto 111: /moderation ha sostituito /pending - il pallino ora conta tutto
+            // cio' che chiede una decisione (da verificare + risoluzioni + scadute), non
+            // solo le 'pending'. Il totale lo calcola il server.
             if (window.CamoscioState.currentUser.canModerateReports) {
-                const pendingReports = await fetchApi('/api/reports/pending');
-                window.CamoscioState.pendingReports = pendingReports;
-                if (window.renderPendingReportsBadge) window.renderPendingReportsBadge(pendingReports);
+                const moderation = await fetchApi('/api/reports/moderation');
+                window.CamoscioState.moderation = moderation;
+                if (window.renderPendingReportsBadge) window.renderPendingReportsBadge(moderation.totale);
             }
         }
     } catch (e) {

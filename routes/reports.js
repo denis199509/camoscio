@@ -37,12 +37,38 @@ router.get('/', requireAuth, async (req, res) => {
     res.json(reports);
 });
 
-// Punto 45: elenco delle segnalazioni in attesa di verifica - solo per chi modera. Registrata
-// prima di qualunque eventuale futura GET /:id (che oggi non esiste): un path letterale va
-// sempre dichiarato prima di un param altrimenti "pending" verrebbe interpretato come :id.
-router.get('/pending', requireAuth, requireReportModerator, async (req, res) => {
-    const reports = await Report.find({ status: 'pending' }).sort({ createdAt: -1 });
-    res.json(reports);
+// Punto 111: la lista unica della pagina Moderazione. Sostituisce GET /pending (ritirata):
+// il triangolo nell'header contava solo le 'pending', ora conta tutto cio' che chiede una
+// decisione. Tre gruppi DISGIUNTI, ogni segnalazione in UNO solo, per priorita'
+// scadute > risoluzioni richieste > da verificare:
+//   - scadute:              expiresAt passato, QUALUNQUE status (anche una 'pending' mai
+//                           verificata - decisione di Denis) -> [Rinnova] / [Togli]
+//   - risoluzioniRichieste: 'active', un utente ha premuto "risolvi", NON ancora scaduta
+//                           -> [Conferma la risoluzione] / [Tieni ancora]
+//   - daVerificare:         'pending', NON ancora scaduta -> [Conferma] / [Rifiuta]
+// "totale" lo calcola il server (somma delle tre lunghezze) - il client non lo ricava da
+// solo. La foto resta fuori (select:false); a differenza di GET / qui resolutionRequestedBy
+// SI vede - serve a chi modera per sapere chi ha chiesto la risoluzione (decisione di Denis;
+// pagina per soli moderatori, il vincolo 7 non c'entra).
+// Registrata prima di qualunque eventuale futura GET /:id: un path letterale va sempre
+// dichiarato prima di un param, altrimenti "moderation" verrebbe letto come :id.
+router.get('/moderation', requireAuth, requireReportModerator, async (req, res) => {
+    const adesso = new Date();
+    const [scadute, risoluzioniRichieste, daVerificare] = await Promise.all([
+        Report.find({ expiresAt: { $lte: adesso } }).sort({ expiresAt: 1 }),
+        Report.find({
+            status: 'active',
+            resolutionRequestedAt: { $exists: true },
+            expiresAt: { $gt: adesso }
+        }).sort({ resolutionRequestedAt: 1 }),
+        Report.find({ status: 'pending', expiresAt: { $gt: adesso } }).sort({ createdAt: -1 })
+    ]);
+    res.json({
+        scadute,
+        risoluzioniRichieste,
+        daVerificare,
+        totale: scadute.length + risoluzioniRichieste.length + daVerificare.length
+    });
 });
 
 // Crea report di crowdsourcing (Waze) - chi segnala e' sempre chi ha fatto login. Punto 45:
