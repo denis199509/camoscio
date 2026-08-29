@@ -12,8 +12,14 @@
 //  - controllo scadenze PIGRO su GET /api/notifications: avvisa una volta sola, il rinnovo ri-arma
 //  - destinatari: chi ha receivesReportAlerts, con ripiego sui moderatori se nessuno ce l'ha
 //  - GET /api/reports/moderation: tre liste DISGIUNTE + totale, priorita' scadute > risoluzioni > da verificare
-// Il passo 8 (map.js: "risolvi" -> POST /:id/resolve-request, tasto spento) e' lato client,
-// non coperto qui. I passi 9+ (UI Moderazione, controprova su HEAD pre-111) arrivano dopo.
+//  - indici di reports: via il TTL su createdAt (punti 45/109), resta il paracadute su expiresAt a 365gg
+// I passi 8 (map.js) e 9 (pagina Moderazione) sono lato client, verificati dal vivo, non qui.
+//
+// CONTROPROVA (passo 10, 29/08/2026): questa stessa prova girata sul codice PRIMA del
+// punto 111 (git worktree su f006edf, "Punto 108") fa cadere 14 controlli nelle sez. 1-6,
+// poi si ferma in errore a sez. 6 - il report e' gia' stato cancellato da un UTENTE NORMALE
+// in sez. 5 (vecchio DELETE /:id/resolve gated solo requireAuth: proprio il buco che il 111
+// chiude), quindi le sez. 7-12 non vengono nemmeno raggiunte. Dettaglio in LEGGIMI-PROVE.txt.
 //
 // Due account DEMO: A parte utente normale (in sez. 10 viene elevato a moderatore per un
 // attimo, poi revocato), B viene elevato a moderatore E dato receivesReportAlerts
@@ -345,6 +351,19 @@ function jpegFinto(bytes) {
         const mod2 = await chiama('GET', '/api/reports/moderation', null, cookieB);
         ok('una richiesta di risoluzione SCADUTA passa in scadute (priorita\')',
             inLista(mod2.corpo.scadute, ridRis) && !inLista(mod2.corpo.risoluzioniRichieste, ridRis));
+
+        // === 12. Struttura degli indici: il TTL su createdAt e' SPARITO, resta il paracadute su expiresAt ===
+        console.log('\n12. Indici della collezione reports: via il TTL su createdAt (punti 45/109), su expiresAt un paracadute a 365gg');
+        const indici = await reports.indexes();
+        ok('NESSUN indice TTL su createdAt (era 30gg col punto 45, 90gg col 109)',
+            !indici.some(i => i.key && i.key.createdAt === 1 && typeof i.expireAfterSeconds === 'number'),
+            JSON.stringify(indici.filter(i => i.key && i.key.createdAt).map(i => ({ key: i.key, ttl: i.expireAfterSeconds }))));
+        const ttlExp = indici.find(i => i.key && i.key.expiresAt === 1 && typeof i.expireAfterSeconds === 'number');
+        ok('c\'e\' un indice su expiresAt', !!ttlExp);
+        ok('...con expireAfterSeconds = 365 giorni (il paracadute, non la scadenza vera)',
+            ttlExp && ttlExp.expireAfterSeconds === 365 * 24 * 60 * 60, ttlExp && ttlExp.expireAfterSeconds);
+        // l'indice su expiresAt e' anche quello che il pre-controllo di GET /api/notifications
+        // usa (countDocuments su expiresAt<=now): la sua sola esistenza basta a coprirlo.
 
     } catch (e) {
         console.error('\nERRORE DELLA PROVA:', e);

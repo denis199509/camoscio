@@ -128,6 +128,64 @@ dell'APPROVAZIONE MANUALE che si poteva scavalcare:
     quel giorno stesso. I tre controlli B11 lo presidiano, e pretendono 409 e non un 403
     qualunque: deve fermarsi perche' l'escursione e' CHIUSA, non per un caso dei permessi.
 
+La prova del PUNTO 111 ("risolvi" e scadenza delle segnalazioni sentiero passano da
+Denis - la richiesta di un utente diventa una RICHIESTA che il moderatore conferma o
+tiene ancora; alla scadenza dei 90 giorni parte un avviso, non una cancellazione):
+
+    node prove/prova-punto111.js                    82 controlli  (ne avvia uno suo, sulla 3111)
+
+    DODICI SEZIONI. Due account demo: A resta un utente normale (in sez. 10 elevato a
+    moderatore per un attimo e poi revocato), B viene fatto moderatore E dato
+    receivesReportAlerts DIRETTAMENTE sul database, tutto revocato nel finally.
+    1-7: scadenza esplicita alla creazione (expiresAt = createdAt + 90gg); "risolvi" di
+    un utente = POST /:id/resolve-request che NON cancella e NON cambia lo status;
+    GET /api/reports non esporta resolutionRequestedBy ne' expiryNotifiedAt; guardia
+    anti-doppione atomica (una sola notifica); DELETE /:id/resolve ora gated MODERATORE;
+    "Tieni ancora" (DELETE /:id/resolve-request); "Conferma la risoluzione" cancella per
+    intero, foto compresa.
+    8: PATCH /:id/renew (moderatore) sposta expiresAt a 90gg DA ADESSO (non vecchio +90),
+    azzera expiryNotifiedAt, 403 per i non moderatori, 404 su id inesistente.
+    9: controllo scadenze PIGRO agganciato a GET /api/notifications - il primo fetch di
+    CHIUNQUE fa notificare i destinatari e "timbra" expiryNotifiedAt; un secondo fetch non
+    rinotifica; dopo un renew la scadenza riavvisa.
+    10: l'avviso va a chi ha receivesReportAlerts, NON a "tutti i moderatori"; se nessuno
+    ce l'ha, ripiego rumoroso su tutti i moderatori.
+    11: GET /api/reports/moderation - tre liste DISGIUNTE (scadute / risoluzioniRichieste /
+    daVerificare) + totale calcolato dal server, priorita' scadute > risoluzioni > da
+    verificare; resolutionRequestedBy visibile a chi modera (a differenza di GET /).
+    12: indici di 'reports' - il TTL su createdAt (punti 45/109) e' SPARITO, resta il
+    paracadute TTL su expiresAt a 365 giorni.
+    Il finally cancella report per _id E notifiche per relatedReportId dei test (quegli
+    ObjectId nascono nel run - nessun dato vero puo' combaciare; non filtrato per userId
+    perche' la sez. 10b, col ripiego, crea avvisi anche per A e per altri moderatori veri).
+    I passi 8 (map.js) e 9 (pagina Moderazione) sono lato client, verificati dal vivo con
+    l'estensione Chrome (demo Marco moderatore, 4 report finti PROVA-P9-*, IT+EN, azione
+    Rinnova end-to-end, console pulita), non da questa prova.
+    CONTROPROVA fatta il 29/08/2026 (git worktree su f006edf, "Punto 108" = HEAD prima del
+    111, + NODE_PATH sui node_modules del progetto, .env e prova-punto111.js copiati nel
+    worktree): 14 controlli caduti nelle sez. 1-6, poi la prova si FERMA IN ERRORE a sez. 6
+    perche' in sez. 5 il report e' gia' stato cancellato da un utente normale (vecchio
+    DELETE /:id/resolve gated solo requireAuth - proprio il buco che il 111 chiude); le
+    sez. 7-12 non vengono nemmeno raggiunte. La prova guarda davvero quello che dice.
+    ATTENZIONE, pagata il 29/08/2026: il server pre-111 del worktree gira con autoIndex e
+    la vecchia riga reportSchema.index({createdAt:1},{expireAfterSeconds:...}) -> avviarlo
+    contro il DB Atlas condiviso RESUSCITA l'indice TTL createdAt_1 (90gg) che il punto 111
+    aveva droppato. Dopo QUALSIASI controprova che tocca gli indici e avvia il server
+    vecchio: ridroppare a mano (c.dropIndex('createdAt_1')) o rilanciare
+    scripts/scadenza-segnalazioni-esplicita.js --scrivi. La sez. 12 di questa prova (o la
+    sez. 13 di prova-punto45) lo becca subito.
+    TRAPPOLA gia' pagata (29/08/2026): una verifica dal vivo che lascia sul database report
+    SCADUTI fa scattare il controllo pigro al primo GET /api/notifications dell'app (che
+    refreshState chiama da sola) -> nascono avvisi di scadenza per i moderatori. Il teardown
+    della verifica dal vivo deve cancellare ANCHE le notifiche (filtrate sul testo finto),
+    non solo i report: 4 notifiche orfane trovate cosi' col riconfronto dei conteggi.
+
+La prova del PUNTO 45 (moderazione segnalazioni + foto) e' stata aggiornata per il 111:
+GET /pending -> GET /moderation (oggetto con tre liste + totale), DELETE /:id/resolve
+gated moderatore, TTL createdAt -> expiresAt. 46 controlli, invariati nel numero.
+
+    node prove/prova-punto45.js                     46 controlli  (ne avvia uno suo, sulla 3103)
+
 La prova del PUNTO 35 vuole anche Puppeteer (vedi sotto), ma non legge il log:
 
     PUPPETEER_PATH=... node prove/prova-punto35.js  16 controlli
