@@ -1,60 +1,52 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-28 (undicesima sessione).
+Aggiornato: 2026-08-29 (dodicesima sessione).
 
->>> PUNTO 111 IN CORSO — passi 1-5 di 11 fatti, committati e pushati.
-    SI RIPARTE DAL PASSO 6.
+>>> NIENTE IN CORSO. L'ultimo punto aperto (111) e' CHIUSO.
+
+>>> PUNTO 111 CHIUSO il 29/08 — tutti gli 11 passi, pushati su camoscio.
+    NON ANCORA DEPLOYATO: i passi 6-9 devono uscire IN UN DEPLOY SOLO.
 
   Le segnalazioni sentiero: "risolvi" di un utente normale e scadenza a
-  90 giorni diventano una notifica a Denis che decide (conferma / tieni
-  ancora, oppure rinnova +90gg / togli). Piano dell'agente `architect`
-  (11 passi), validato con Denis. Decisioni di prodotto e passi 6-11
-  PER ESTESO in cose_da_fare.txt punto 111 - NON serve rilanciare
-  l'architect.
+  90 giorni non cancellano piu' da soli - diventano una notifica a chi
+  modera, che decide (conferma / tieni ancora, oppure rinnova +90gg /
+  togli). Dettaglio per passo in cose_da_fare.txt punto 111; decisioni
+  nel vault 03-Decisioni-Architetturali.md "Punto 111".
 
-  FATTO (camoscio, pushato):
-  - commit 2424cd4 (passi 1-3) + migrazione --scrivi su Atlas (passo 4):
-    schema Report con expiresAt (default +90gg) + 3 campi opzionali;
-    TTL su createdAt RIMOSSO, paracadute TTL su expiresAt a 365gg; i 4
-    report esistenti hanno expiresAt = createdAt+90 (scadono
-    27/10..21/11). lib/scadenzaSegnalazioni.js (rinnovo() = adesso+90).
-  - commit e9be6dd (passo 5): User.receivesReportAlerts (a chi arriva
-    l'avviso, != canModerateReports); Notification.relatedReportId;
-    lib/reportAlerts.js (destinatari + testi + notifiche +
-    controllaScadenze, quest'ultima NON ancora agganciata);
-    scripts/set-report-alerts.js; routes/reports.js:
-      POST /:id/resolve-request (il "risolvi" utente, non cancella)
-      DELETE /:id/resolve-request (moderatore, "Tieni ancora")
-      DELETE /:id/resolve -> ora MODERATORE (era requireAuth)
-      GET / -> nasconde resolutionRequestedBy + expiryNotifiedAt
-  - prove/prova-punto111.js (nuovo, sez. 1-7): 40/40.
-    prove/prova-punto45.js aggiornata (era rotta): 46/46.
+  Passi 1-5 (28/08): schema Report.expiresAt spostabile al posto del
+  TTL su createdAt (paracadute TTL su expiresAt a 365gg);
+  User.receivesReportAlerts (a chi suona il campanello, != chi puo'
+  moderare); POST /:id/resolve-request (il "risolvi" utente, non
+  cancella); DELETE /:id/resolve -> moderatore-only.
+  Passi 6-11 (29/08): commit a8edc4f (PATCH /:id/renew + controllo
+  scadenze PIGRO agganciato a GET /api/notifications + click-through
+  campanella) -> 29e3de3 (GET /api/reports/moderation: tre liste
+  disgiunte + totale, al posto di /pending) -> 8147dfa (map.js: "risolvi"
+  -> resolve-request, tasto spento, testo di conferma senza "eliminata
+  per sempre") -> 788a629 (pagina Moderazione a TRE code, 4 azioni
+  nuove, ~24 chiavi EN, verificata dal vivo) -> b8e24c0 (prova sez. 12
+  + controprova su f006edf: 14 cadono + voce LEGGIMI-PROVE).
+  Prove: prova-punto111.js 82/82, prova-punto45.js 46/46.
 
-  DA FARE, in ordine: PASSO 6 (PATCH /:id/renew + aggancio pigro di
-  controllaScadenze a GET /api/notifications + click-through
-  relatedReportId in app.js) -> 7 (GET /moderation, ritiro di /pending,
-  badge=totale) -> 8 (map.js: "risolvi" -> resolve-request, testo
-  conferma, tasto spento) -> 9 (pagina Moderazione UI) -> 10 (prove
-  sez. 8-11 + controprova) -> 11 (vault + note). Dettaglio di ognuno
-  in cose_da_fare.txt punto 111.
+  >>> IL DEPLOY (passi 6-9 insieme) CHIUDE IN PRODUZIONE:
+  1. FINESTRA 403. Da quando il passo 5 (gia' in produzione) rende
+     DELETE /:id/resolve moderatore-only, un utente normale che preme
+     "risolvi" in mappa prende 403 (niente viene cancellato). Il passo
+     8 (map.js -> POST /:id/resolve-request) la chiude.
+  2. BUCO SCADENZE. Da quando i passi 1-4 hanno tolto il TTL su
+     createdAt, le segnalazioni non scadono piu' da sole e niente
+     avvisa Denis, finche' il passo 6 (controllaScadenze agganciato)
+     non e' vivo. Le 4 attuali scadono fra fine ottobre e fine
+     novembre 2026: c'e' margine, non mesi.
 
-  >>> DUE COSE DA SAPERE SUBITO:
-  1. FINESTRA 403 APERTA IN PRODUZIONE. Il passo 5 (gia' pushato) rende
-     DELETE /:id/resolve moderatore-only, ma map.js lo chiama ancora:
-     un utente normale che preme "risolvi" su una segnalazione prende
-     403 (niente viene cancellato). La chiude il PASSO 8 (map.js), da
-     deployare presto. Rischio pratico ~nullo (4 segnalazioni su tutto
-     il DB, traffico bassissimo).
-  2. GAP SCADENZE. Da adesso le segnalazioni NON scadono piu' da sole
-     a 90gg (TTL createdAt rimosso) e niente avvisa Denis alla scadenza
-     finche' non c'e' il passo 6. Le 4 attuali scadono fra fine ottobre
-     e fine novembre: c'e' margine, non mesi.
-
-  TRAPPOLA (per il passo 8 e ogni futuro cambio di indice): autoIndex
-  attivo, nessun syncIndexes -> se droppi un indice ma lasci la riga
-  reportSchema.index(...) nello schema, il primo riavvio di Render lo
-  RICREA in silenzio. Ordine: deploy del codice senza la riga, POI il
-  dropIndex.
+  DUE TRAPPOLE PAGATE (dettaglio nel vault 07-Trappole-Tecniche.md):
+  - una controprova via git worktree su codice pre-111 che AVVIA il
+    server contro il DB Atlas condiviso RESUSCITA gli indici droppati
+    (autoIndex). Dopo: ridroppare, o usare un DB usa-e-getta.
+  - una verifica dal vivo che lascia Report SCADUTI sul database fa
+    scattare il controllo pigro al primo GET /api/notifications
+    dell'app -> avvisi orfani per i moderatori. Il teardown dal vivo
+    deve cancellare anche le Notification (filtrate su testo finto).
 
 >>> PUNTO 108 CHIUSO E PUSHATO il 28/08 (camoscio f006edf): un timbro
     si sblocca solo con una traccia reale entro SOGLIA_TIMBRO_M dalla

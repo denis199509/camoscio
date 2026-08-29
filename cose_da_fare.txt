@@ -7063,9 +7063,11 @@ schermo spento ancora."
 
 --- SEGNALAZIONI SENTIERO: "RISOLVI" E SCADENZA PASSANO DA DENIS ---
 
-111. [IN CORSO - requisiti raccolti nella nona sessione, piano
-   dall'agente architect + passi 1-5 di 11 fatti nell'undicesima
-   sessione (28/08/2026)] Nato da una domanda di Denis a fine sessione:
+111. [FATTO 2026-08-29, dodicesima sessione - requisiti nella nona
+   sessione, piano dall'agente architect, passi 1-5 nell'undicesima
+   (28/08), passi 6-11 nella dodicesima (29/08). Pushato su camoscio,
+   NON ancora deployato: i passi 6-9 escono in un deploy solo.] Nato da
+   una domanda di Denis a fine sessione:
    "chi e' che puo risolvere una segnalazione? mi risulta che posso
    farla pure dal account demo di marco". Risposto che si', e' di
    proposito (punto 45): DELETE /api/reports/:id/resolve e' gated solo
@@ -7265,6 +7267,138 @@ schermo spento ancora."
    90 giorni (createdAt TTL rimosso) e niente avvisa Denis alla
    scadenza finche' non arriva il passo 6 - le 4 attuali scadono fra
    fine ottobre e fine novembre, quindi c'e' margine ma non mesi.
+
+   -----------------------------------------------------------------
+   PASSI 6-11 FATTI (29/08/2026, dodicesima sessione) - PUNTO CHIUSO
+   -----------------------------------------------------------------
+
+   Tutti i commit su camoscio/master, pushati. NON ancora deployato:
+   i passi 6-9 devono uscire in UN deploy solo (e' quello che chiude
+   in produzione la finestra 403 del passo 5 e il buco scadenze dei
+   passi 1-4).
+
+   PASSO 6 (commit a8edc4f) - rinnovo + controllo scadenze pigro:
+   - routes/reports.js: PATCH /:id/renew (moderatore) - expiresAt =
+     rinnovo() = adesso + 90 (mai vecchio + 90), $unset
+     expiryNotifiedAt cosi' fra 90gg riavvisa; 404 su id inesistente;
+     vale anche per una 'pending' scaduta.
+   - routes/notifications.js: controllaScadenze() agganciato a
+     GET /api/notifications/:userId come ensureCompletionReminders
+     del punto 64, in un try suo, con un pre-check countDocuments
+     (expiresAt<=now, expiryNotifiedAt assente) sull'indice
+     expiresAt_1 che nel caso normale esce 0. NON gated sul
+     destinatario: il primo fetch di CHIUNQUE fa notificare i
+     destinatari e "timbra" expiryNotifiedAt.
+   - public/js/app.js + pendingreports.js: terzo ramo dell'onclick
+     della campanella - relatedReportId -> goToReportModeration() ->
+     pagina Moderazione (via showPendingReportsPage).
+   - prova-punto111.js sez. 8-10 nuove; 64/64.
+
+   PASSO 7 (commit 29e3de3) - GET /api/reports/moderation:
+   - Tre liste DISGIUNTE (scadute / risoluzioniRichieste /
+     daVerificare) + totale calcolato dal server. Priorita' scadute >
+     risoluzioni richieste > da verificare, ogni Report in UNA lista:
+     scadute = expiresAt passato QUALUNQUE status (anche una 'pending'
+     mai verificata); risoluzioniRichieste = 'active' con
+     resolutionRequestedAt e non scaduta; daVerificare = 'pending' non
+     scaduta.
+   - GET /pending RITIRATA, i suoi due chiamanti (app.js,
+     pendingreports.js) spostati. Il pallino del triangolo passa da
+     "solo pending" a moderation.totale.
+   - CamoscioState.pendingReports (scritto e mai letto) rinominato
+     CamoscioState.moderation, ora contiene l'oggetto {scadute,
+     risoluzioniRichieste, daVerificare, totale}.
+   - resolutionRequestedBy e' nel payload di /moderation (solo
+     moderatori), NON in GET / pubblica.
+   - prova-punto111.js sez. 11 nuova; 79/79. prova-punto45.js
+     spostata da /pending a /moderation; 46/46.
+
+   PASSO 8 (commit 8147dfa) - map.js: "risolvi" e' una RICHIESTA:
+   - resolveReportDirectly -> requestReportResolution: chiama
+     POST /:id/resolve-request, NON cancella, NON fa piu'
+     db.reports = db.reports.filter(...) (la segnalazione spariva solo
+     dalla mappa di chi premeva).
+   - Testo di conferma riscritto: via "verra' eliminata per sempre"
+     (vincolo hard 7). Col resolutionRequestedAt gia' valorizzato il
+     tasto e' SPENTO ("gia' segnalata come risolta, in attesa di
+     verifica"). Gestione giaRichiesta (info) e giaRisolta (race:
+     un moderatore l'ha gia' cancellata -> tolta in locale).
+   - i18n.js: map.waze.* riscritte (risolviTitle/ConfermaMsg/
+     ConfermaBtn/erroreRisolvi), rimossa map.waze.risolta, aggiunte
+     richiestaInviata/giaRichiesta/inAttesaTitle/giaRimossa.
+   - Chiude la finestra 403 del passo 5 (una volta deployato).
+
+   PASSO 9 (commit 788a629) - pagina Moderazione a tre code:
+   - index.html: due glass-card nuove (Scadute, Risoluzioni
+     richieste) + la card "Da verificare" col vecchio
+     #pending-reports-list in un <div> interno; ogni titolo con un
+     contatore.
+   - pendingreports.js: renderModerationLists -> tre
+     renderModerationListBody(reports, kind, box, chiaveVuota),
+     generalizzazione di renderPendingReportsListBody: stessa card
+     (emoji/titolo/descrizione/foto/riga "segnalato da") + una riga
+     di contesto ("Segnalata come risolta da X il Y" / "Scaduta il
+     Y") + bottoniModerazione(rep, kind).
+   - 4 azioni nuove: keepReportActive (DELETE /:id/resolve-request),
+     renewReport (PATCH /:id/renew) - reversibili, niente modale;
+     confirmReportResolution + removeExpiredReport (DELETE
+     /:id/resolve) - conferma obbligatoria (showConfirmModal). Una
+     scaduta 'pending' usa "Rifiuta ed elimina" (rejectPendingReport,
+     DELETE /:id), una 'active' usa "Togli".
+   - i18n.js: ~24 chiavi EN nuove sotto pendingReports.*; titolo
+     pagina riscritto ("Moderazione segnalazioni" / "Report
+     moderation"). I testi delle NOTIFICHE restano IT fuori da i18n
+     (server, come routes/safety.js).
+   - styles.css: .moderation-list-count + accento arancione a
+     sinistra sulle righe scadute.
+   - app.js: prettyNames "pending-reports-page" -> "Moderazione
+     segnalazioni".
+   - VERIFICATO DAL VIVO (estensione Chrome, demo Marco moderatore
+     per un attimo, 4 report finti PROVA-P9-* uno per caso,
+     setup/teardown filtrati per descrizione): 3 code col contatore,
+     ogni report nel bucket giusto, 6 varianti di bottone con
+     l'etichetta giusta, riga di contesto, accento arancione, toggle
+     IT<->EN che ridisegna tutto (nomi dei tipi compresi), azione
+     Rinnova end-to-end (expiresAt -> oggi+90, status invariato, riga
+     esce dalla coda, contatore e triangolo scendono), console pulita.
+
+   PASSO 10 (commit b8e24c0) - sez. 12 + controprova + LEGGIMI-PROVE:
+   - prova-punto111.js sez. 12: indici di 'reports' - NESSUN TTL su
+     createdAt (era 30gg col 45, 90gg col 109), expiresAt_1 con
+     expireAfterSeconds = 365 giorni. 82/82.
+   - CONTROPROVA (git worktree su f006edf, "Punto 108" = HEAD
+     pre-111, .env + prova-punto111.js copiati, NODE_PATH sui
+     node_modules): 14 controlli caduti nelle sez. 1-6, poi errore a
+     sez. 6 - in sez. 5 un utente normale ha gia' cancellato il
+     report (vecchio DELETE /:id/resolve solo requireAuth). Le sez.
+     7-12 non si raggiungono. La prova guarda davvero quello che dice.
+   - prove/LEGGIMI-PROVE.txt: voce per prova-punto111 (12 sezioni,
+     numero vero della controprova) + nota su prova-punto45.
+
+   DUE TRAPPOLE PAGATE (dettaglio nel vault 07-Trappole-Tecniche.md):
+   1. La controprova via worktree ha RESUSCITATO createdAt_1 su
+      Atlas. Il server.js pre-111 del worktree - autoIndex attivo, la
+      vecchia riga reportSchema.index({createdAt:1},...) - avviato
+      contro lo STESSO DB Atlas condiviso ha ricreato al primo
+      riavvio il TTL su createdAt (90gg) che i passi 1-4 avevano
+      droppato. Beccato dalla sez. 12 della prova, ridroppato a mano.
+      Regola: dopo una controprova che tocca gli indici e avvia il
+      server vecchio, ridroppare - o usare un DB usa-e-getta.
+   2. La verifica dal vivo del passo 9 aveva lasciato 4 avvisi di
+      scadenza ORFANI. I 2 report finti scaduti hanno fatto scattare
+      controllaScadenze() al primo GET /api/notifications dell'app
+      (che refreshState chiama da sola), creando avvisi per i
+      moderatori (Denis compreso). Il teardown cancellava i report ma
+      non le notifiche. Beccati dal riconfronto conteggi (+4),
+      rimossi (text: /PROVA-P9/). Regola: un teardown dal vivo che ha
+      toccato le segnalazioni deve cancellare anche le Notification.
+
+   PASSO 11 - note: vault (03/04/06/07), questo file, leggimi.txt.
+   Commit e push anche del vault (repo separato).
+
+   STATO FINALE: punto chiuso. DB Atlas al baseline (report 4->4,
+   notifiche 84->84, indici reports = _id_ + expiresAt_1 a 365gg).
+   Da deployare i passi 6-9 in un colpo solo.
 
 112. [FATTO 2026-08-28, decima sessione] Denis, parole sue: "dobbiamo
    aggiungere dei badge nuovi". Poi il dettaglio: tre file in
