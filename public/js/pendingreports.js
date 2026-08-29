@@ -213,6 +213,19 @@ if (window.CamoscioI18n && window.CamoscioI18n.onChange) {
     });
 }
 
+// Punto 111: dal click su una notifica di segnalazione sentiero (relatedReportId:
+// richiesta di risoluzione o scadenza) alla pagina Moderazione, dove Denis decide.
+// Gemello di goToHikeToComplete (social.js) per la campana. Aprire il campanello ha
+// gia' segnato tutto letto (punto 81), quindi qui non serve markNotificationRead.
+// showPendingReportsPage fa da se' navigateTo + fetch + titolo; il ripiego copre il
+// caso (teorico) in cui questo file non fosse caricato.
+window.goToReportModeration = function () {
+    const dropdown = document.getElementById("notification-dropdown");
+    if (dropdown) dropdown.classList.add("hidden");
+    if (window.showPendingReportsPage) window.showPendingReportsPage();
+    else if (window.navigateTo) window.navigateTo("pending-reports-page");
+};
+
 window.setupPendingReportsTriangle = setupPendingReportsTriangle;
 window.renderPendingReportsBadge = renderPendingReportsBadge;
 window.showPendingReportsPage = showPendingReportsPage;

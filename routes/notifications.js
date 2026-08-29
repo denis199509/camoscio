@@ -1,8 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const Notification = require('../models/Notification');
+const Report = require('../models/Report');
 const { requireAuth } = require('../middleware/auth');
 const { ensureCompletionReminders } = require('../lib/hikeStats'); // punto 64
+const { controllaScadenze } = require('../lib/reportAlerts'); // punto 111
 
 // Ottieni le notifiche di un utente (più recenti prima) - SOLO le proprie, mai quelle di un altro
 router.get('/:userId', requireAuth, async (req, res) => {
@@ -16,6 +18,25 @@ router.get('/:userId', requireAuth, async (req, res) => {
         // creato un'escursione. Non esistendo scheduler ne' push in questo progetto, e'
         // anche l'unico momento in cui "il promemoria compare" puo' succedere davvero.
         await ensureCompletionReminders(req.params.userId);
+
+        // Punto 111: controllo scadenze delle segnalazioni sentiero, PIGRO come il
+        // promemoria del punto 64 qui sopra - non esistendo scheduler, il fetch delle
+        // notifiche e' l'unico momento in cui una segnalazione scaduta puo' diventare un
+        // avviso per Denis. Pre-controllo sull'indice expiresAt_1: nel caso normale
+        // (niente di scaduto) esce 0 e ci si ferma. NON gated sul destinatario: se
+        // qualcosa e' scaduto, il primo fetch di CHIUNQUE lo fa notificare a chi ha
+        // receivesReportAlerts e "timbra" expiryNotifiedAt, cosi' i fetch successivi
+        // ritrovano 0. try suo: un errore qui non deve svuotare la lista notifiche di un
+        // utente che non c'entra (il catch esterno risponde []).
+        try {
+            const daNotificare = await Report.countDocuments({
+                expiresAt: { $lte: new Date() },
+                expiryNotifiedAt: { $exists: false }
+            });
+            if (daNotificare > 0) await controllaScadenze();
+        } catch (e) {
+            console.error('Controllo scadenze segnalazioni fallito:', e.message);
+        }
 
         const userNotifications = await Notification.find({ userId: req.params.userId }).sort({ createdAt: -1 });
         res.json(userNotifications);

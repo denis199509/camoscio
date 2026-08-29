@@ -3,7 +3,7 @@ const router = express.Router();
 const Report = require('../models/Report');
 const User = require('../models/User');
 const { requireAuth } = require('../middleware/auth');
-const { notificaRichiestaRisoluzione } = require('../lib/reportAlerts');
+const { notificaRichiestaRisoluzione, rinnovo } = require('../lib/reportAlerts');
 
 // Punto 45 (foto): margine sopra il tetto lato browser (~300-400 KB dopo compressione in
 // imagecompress.js) - il controllo vero e' li', questo e' solo il paracadute lato server
@@ -231,6 +231,27 @@ router.delete('/:id/resolve', requireAuth, requireReportModerator, async (req, r
         res.json({ success: true });
     } catch (e) {
         res.status(400).json({ error: 'Impossibile eliminare la segnalazione' });
+    }
+});
+
+// Punto 111: "Rinnova +90gg" - il moderatore sposta la scadenza a 90 giorni DA ADESSO
+// (rinnovo(), MAI expiresAt + 90: se una segnalazione e' scaduta a ottobre e Denis la
+// rinnova a novembre, deve valere 90 giorni pieni - vedi lib/scadenzaSegnalazioni.js) e
+// azzera il timbro anti-doppione, cosi' fra 90 giorni il controllo scadenze riavvisa da
+// solo. Vale sia per una segnalazione 'active' sia per una 'pending' scaduta (decisione
+// di Denis: scadono anche quelle mai verificate). $unset e non {: null}: expiryNotifiedAt
+// e' default undefined nello schema, vincolo spazio.
+router.patch('/:id/renew', requireAuth, requireReportModerator, async (req, res) => {
+    try {
+        const report = await Report.findByIdAndUpdate(
+            req.params.id,
+            { $set: { expiresAt: rinnovo() }, $unset: { expiryNotifiedAt: 1 } },
+            { new: true }
+        );
+        if (!report) return res.status(404).json({ error: 'Segnalazione non trovata' });
+        res.json(report);
+    } catch (e) {
+        res.status(400).json({ error: 'Impossibile rinnovare la segnalazione' });
     }
 });
 

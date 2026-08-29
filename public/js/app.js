@@ -677,12 +677,15 @@ function renderNotificationBell() {
         return;
     }
 
-    // Punto 81: una notifica legata a un'escursione (oggi solo il promemoria "non hai
-    // ancora completato", relatedHikeId - lib/hikeStats.js) porta li' invece di limitarsi a
+    // Punto 81: una notifica legata a un'escursione (il promemoria "non hai ancora
+    // completato", relatedHikeId - lib/hikeStats.js) porta li' invece di limitarsi a
     // segnarsi come letta: aprire il campanello gia' la segna letta da sola (vedi sotto),
     // quindi cliccarla sopra puo' fare qualcosa di piu' utile.
+    // Punto 111: stesso schema per una notifica di segnalazione sentiero (relatedReportId
+    // - richiesta di risoluzione o scadenza): porta Denis alla pagina Moderazione
+    // (goToReportModeration in pendingreports.js).
     list.innerHTML = notifications.map(n => `
-        <div class="notification-item ${n.read ? '' : 'unread'}" onclick="${n.relatedHikeId ? `goToHikeToComplete('${n.relatedHikeId}')` : `markNotificationRead('${n.id}')`}">
+        <div class="notification-item ${n.read ? '' : 'unread'}" onclick="${n.relatedReportId ? `goToReportModeration()` : n.relatedHikeId ? `goToHikeToComplete('${n.relatedHikeId}')` : `markNotificationRead('${n.id}')`}">
             ${escapeHtml(n.text)}
             <span class="notification-time">${new Date(n.createdAt).toLocaleString([], { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
         </div>
@@ -690,7 +693,7 @@ function renderNotificationBell() {
 }
 
 // Segna una notifica come letta al click - solo quelle senza un posto dove portare
-// (relatedHikeId assente, vedi renderNotificationBell sopra).
+// (ne' relatedReportId ne' relatedHikeId, vedi renderNotificationBell sopra).
 window.markNotificationRead = async function(notificationId) {
     const notif = window.CamoscioState.notifications.find(n => n.id === notificationId);
     if (!notif || notif.read) return;

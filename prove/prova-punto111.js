@@ -1,6 +1,6 @@
 // PROVA DEL PUNTO 111 - "risolvi" e scadenza delle segnalazioni sentiero passano da Denis.
 //
-// Copre finora i PASSI 1-5 del piano:
+// Copre i PASSI 1-6 del piano:
 //  - scadenza esplicita alla creazione (Report.expiresAt = createdAt + 90gg)
 //  - "risolvi" di un utente normale = RICHIESTA (POST /:id/resolve-request), NON cancella
 //  - GET /api/reports non esporta i campi nuovi (resolutionRequestedBy, expiryNotifiedAt)
@@ -8,10 +8,14 @@
 //  - DELETE /:id/resolve ora e' gated moderatore (era requireAuth)
 //  - "Tieni ancora" (DELETE /:id/resolve-request, moderatore) riporta la segnalazione pulita
 //  - "Conferma la risoluzione" (DELETE /:id/resolve, moderatore) cancella per intero
-// I passi 6+ (renew, controllaScadenze, /moderation, indici) arrivano dopo.
+//  - "Rinnova +90gg" (PATCH /:id/renew, moderatore): 90 giorni DA ADESSO, azzera il timbro
+//  - controllo scadenze PIGRO su GET /api/notifications: avvisa una volta sola, il rinnovo ri-arma
+//  - destinatari: chi ha receivesReportAlerts, con ripiego sui moderatori se nessuno ce l'ha
+// I passi 7+ (GET /moderation, UI Moderazione, controprova sugli indici) arrivano dopo.
 //
-// Due account DEMO: A resta un utente normale, B viene elevato a moderatore E dato
-// receivesReportAlerts DIRETTAMENTE sul database (nessuna interfaccia - in produzione
+// Due account DEMO: A parte utente normale (in sez. 10 viene elevato a moderatore per un
+// attimo, poi revocato), B viene elevato a moderatore E dato receivesReportAlerts
+// DIRETTAMENTE sul database (nessuna interfaccia - in produzione
 // scripts/set-report-moderator.js e scripts/set-report-alerts.js). Tutto revocato nel
 // finally. Stesso schema di prova-punto45.js.
 //
@@ -69,6 +73,11 @@ function jpegFinto(bytes) {
     const reports = mongoose.connection.collection('reports');
     const notifiche = mongoose.connection.collection('notifications');
 
+    // Quanti avvisi di scadenza/risoluzione ha ricevuto un utente per UNA data segnalazione.
+    const contaAvvisi = (oid, ridStr) => notifiche.countDocuments({
+        userId: oid, relatedReportId: new mongoose.Types.ObjectId(ridStr)
+    });
+
     const partenza = {
         utenti: await mongoose.connection.collection('users').countDocuments(),
         report: await reports.countDocuments(),
@@ -77,7 +86,7 @@ function jpegFinto(bytes) {
     console.log('Conteggi di partenza:', partenza, '\n');
 
     let server;
-    let idA = null, idB = null, oidB = null;
+    let idA = null, idB = null, oidA = null, oidB = null;
     const reportIdsCreati = [];   // per la pulizia
 
     try {
@@ -97,6 +106,7 @@ function jpegFinto(bytes) {
         const elenco = await (await fetch(BASE + '/api/auth/demo-accounts')).json();
         ok('almeno due account demo', Array.isArray(elenco) && elenco.length >= 2, `${elenco.length}`);
         idA = elenco[0].id; idB = elenco[1].id;
+        oidA = new mongoose.Types.ObjectId(idA);
         oidB = new mongoose.Types.ObjectId(idB);
         const cookieA = await loginDemo(idA);
         const cookieB = await loginDemo(idB);
@@ -105,6 +115,19 @@ function jpegFinto(bytes) {
         await User.findByIdAndUpdate(idB, { canModerateReports: true, receivesReportAlerts: true });
         const bDb = await User.findById(idB);
         ok('B e\' moderatore e riceve gli avvisi', bDb.canModerateReports === true && bDb.receivesReportAlerts === true);
+
+        // Crea una segnalazione (via A) e la porta subito ad 'active' (via B): le sezioni
+        // 8-10 partono tutte da una segnalazione attiva di cui poi forzano expiresAt.
+        async function creaReportAttivo(descr) {
+            const cr = await chiama('POST', '/api/reports',
+                { type: 'ostacolo', lat: 42.44, lng: 13.54, description: descr }, cookieA);
+            const id = cr.corpo && cr.corpo.id;
+            if (id) reportIdsCreati.push(id);
+            await chiama('PATCH', `/api/reports/${id}/confirm`, null, cookieB);
+            return id;
+        }
+        const UN_GIORNO = 86400000;
+        const nelPassato = (giorni) => new Date(Date.now() - giorni * UN_GIORNO);
 
         // === 1. Scadenza esplicita alla creazione ===
         console.log('\n1. Una segnalazione nasce con expiresAt = createdAt + 90 giorni');
@@ -190,24 +213,107 @@ function jpegFinto(bytes) {
         const confDiNuovo = await chiama('DELETE', `/api/reports/${rid}/resolve`, null, cookieB);
         ok('richiamare DELETE /:id/resolve su un id sparito -> 200 (idempotente)', confDiNuovo.status === 200, `status ${confDiNuovo.status}`);
 
+        // === 8. "Rinnova +90gg": 90 giorni DA ADESSO, non expiresAt + 90 ===
+        console.log('\n8. PATCH /:id/renew (moderatore): 90 giorni da adesso, azzera expiryNotifiedAt');
+        const rid8 = await creaReportAttivo(`PROVA-111-8-${MARCA}`);
+        const oid8 = new mongoose.Types.ObjectId(rid8);
+        // "scaduta da 100 giorni" e gia' timbrata: expiresAt + 90 sarebbe ancora nel passato
+        await reports.updateOne({ _id: oid8 }, { $set: { expiresAt: nelPassato(100), expiryNotifiedAt: nelPassato(5) } });
+
+        const renewA = await chiama('PATCH', `/api/reports/${rid8}/renew`, null, cookieA);
+        ok('PATCH /:id/renew come A (non moderatore) -> 403', renewA.status === 403, `status ${renewA.status}`);
+        const doc8pre = await reports.findOne({ _id: oid8 });
+        ok('A non ha spostato niente (expiresAt ancora nel passato)', new Date(doc8pre.expiresAt) < new Date());
+        ok('A non ha toccato expiryNotifiedAt', doc8pre.expiryNotifiedAt instanceof Date);
+
+        const renewB = await chiama('PATCH', `/api/reports/${rid8}/renew`, null, cookieB);
+        ok('PATCH /:id/renew come B (moderatore) -> 200', renewB.status === 200, JSON.stringify(renewB.corpo));
+        const doc8 = await reports.findOne({ _id: oid8 });
+        const giorniDaAdesso = (new Date(doc8.expiresAt) - Date.now()) / UN_GIORNO;
+        ok('expiresAt spostato a ~90 giorni DA ADESSO', Math.abs(giorniDaAdesso - 90) < 1, `${giorniDaAdesso.toFixed(2)} giorni`);
+        ok('non e\' "expiresAt + 90" (che sarebbe ancora nel passato)', new Date(doc8.expiresAt) > new Date());
+        ok('expiryNotifiedAt azzerato dal rinnovo', !('expiryNotifiedAt' in doc8));
+
+        const renewMancante = await chiama('PATCH', `/api/reports/${new mongoose.Types.ObjectId()}/renew`, null, cookieB);
+        ok('PATCH /:id/renew su un id inesistente -> 404', renewMancante.status === 404, `status ${renewMancante.status}`);
+
+        // === 9. Controllo scadenze PIGRO su GET /api/notifications: avvisa una volta sola ===
+        console.log('\n9. GET /api/notifications fa scattare il controllo scadenze (un avviso solo, il rinnovo ri-arma)');
+        const rid9 = await creaReportAttivo(`PROVA-111-9-${MARCA}`);
+        const oid9 = new mongoose.Types.ObjectId(rid9);
+        await reports.updateOne({ _id: oid9 }, { $set: { expiresAt: nelPassato(1) } });
+
+        ok('nessun avviso di scadenza per B prima del fetch', (await contaAvvisi(oidB, rid9)) === 0);
+        // il fetch di A (che NON e' destinatario) fa comunque scattare il controllo globale
+        const fetchA9 = await chiama('GET', `/api/notifications/${idA}`, null, cookieA);
+        ok('GET /api/notifications/:idA -> 200', fetchA9.status === 200, `status ${fetchA9.status}`);
+        ok('1 avviso di scadenza creato per B (destinatario)', (await contaAvvisi(oidB, rid9)) === 1);
+        ok('nessun avviso per A (non e\' destinatario)', (await contaAvvisi(oidA, rid9)) === 0);
+        const avviso9 = await notifiche.findOne({ userId: oidB, relatedReportId: oid9 });
+        ok('il testo dell\'avviso dice "scaduta"', /scadut/i.test(avviso9 && avviso9.text || ''), avviso9 && avviso9.text);
+        ok('la notifica porta a relatedReportId (click-through)', avviso9 && String(avviso9.relatedReportId) === rid9);
+        const doc9 = await reports.findOne({ _id: oid9 });
+        ok('expiryNotifiedAt "timbrato" sulla segnalazione', doc9.expiryNotifiedAt instanceof Date);
+
+        // secondo giro: non deve rinotificare
+        await chiama('GET', `/api/notifications/${idB}`, null, cookieB);
+        await chiama('GET', `/api/notifications/${idA}`, null, cookieA);
+        ok('un secondo fetch non crea un secondo avviso', (await contaAvvisi(oidB, rid9)) === 1);
+
+        // il rinnovo ri-arma: dopo renew + nuova scadenza, riavvisa
+        await chiama('PATCH', `/api/reports/${rid9}/renew`, null, cookieB);
+        const doc9r = await reports.findOne({ _id: oid9 });
+        ok('renew ha tolto di nuovo expiryNotifiedAt', !('expiryNotifiedAt' in doc9r));
+        await reports.updateOne({ _id: oid9 }, { $set: { expiresAt: nelPassato(1) } });
+        await chiama('GET', `/api/notifications/${idB}`, null, cookieB);
+        ok('dopo il rinnovo la scadenza riavvisa (2 avvisi in tutto)', (await contaAvvisi(oidB, rid9)) === 2);
+
+        // === 10. Destinatari: chi ha receivesReportAlerts, non "tutti i moderatori" ===
+        console.log('\n10. L\'avviso va a receivesReportAlerts; se nessuno ce l\'ha, ripiego sui moderatori');
+
+        // 10a. A diventa moderatore ma NON destinatario: non deve ricevere l'avviso
+        await User.findByIdAndUpdate(idA, { canModerateReports: true });
+        const rid10 = await creaReportAttivo(`PROVA-111-10-${MARCA}`);
+        await reports.updateOne({ _id: new mongoose.Types.ObjectId(rid10) }, { $set: { expiresAt: nelPassato(1) } });
+        await chiama('GET', `/api/notifications/${idB}`, null, cookieB);
+        ok('B (receivesReportAlerts) riceve l\'avviso', (await contaAvvisi(oidB, rid10)) === 1);
+        ok('A (moderatore ma NON receivesReportAlerts) non lo riceve', (await contaAvvisi(oidA, rid10)) === 0);
+
+        // 10b. Nessuno ha receivesReportAlerts -> ripiego RUMOROSO su tutti i moderatori
+        await User.findByIdAndUpdate(idB, { $unset: { receivesReportAlerts: 1 } });
+        const restanti = await User.countDocuments({ receivesReportAlerts: true });
+        ok('nessun utente con receivesReportAlerts per la prova del ripiego', restanti === 0, `${restanti} rimasti`);
+        const rid10b = await creaReportAttivo(`PROVA-111-10b-${MARCA}`);
+        await reports.updateOne({ _id: new mongoose.Types.ObjectId(rid10b) }, { $set: { expiresAt: nelPassato(1) } });
+        await chiama('GET', `/api/notifications/${idB}`, null, cookieB);
+        ok('ripiego: B (moderatore) riceve comunque l\'avviso', (await contaAvvisi(oidB, rid10b)) === 1);
+        ok('ripiego: anche A (moderatore) riceve l\'avviso', (await contaAvvisi(oidA, rid10b)) === 1);
+
+        // ripristino: il finally si aspetta B destinatario e A pulito
+        await User.findByIdAndUpdate(idB, { receivesReportAlerts: true });
+        await User.findByIdAndUpdate(idA, { $unset: { canModerateReports: 1 } });
+
     } catch (e) {
         console.error('\nERRORE DELLA PROVA:', e);
         falliti++; fallimenti.push('la prova stessa e\' andata in errore: ' + e.message);
     } finally {
         if (server) server.kill();
 
-        // Pulizia mirata: report per _id, notifiche per userId(B) + relatedReportId dei test.
+        // Pulizia mirata: report per _id, notifiche per relatedReportId dei test (quegli
+        // ObjectId sono nati in questo run - nessun dato vero puo' combaciare). Non filtrata
+        // per userId: la sez. 10b, col ripiego, crea avvisi anche per A e per eventuali
+        // altri moderatori veri.
         for (const rid of reportIdsCreati) {
             await reports.deleteOne({ _id: new mongoose.Types.ObjectId(rid) }).catch(() => {});
         }
-        if (oidB && reportIdsCreati.length) {
+        if (reportIdsCreati.length) {
             const del = await notifiche.deleteMany({
-                userId: oidB,
                 relatedReportId: { $in: reportIdsCreati.map(r => new mongoose.Types.ObjectId(r)) }
             }).catch(() => ({ deletedCount: 0 }));
             console.log(`     (pulizia: ${del.deletedCount} notifiche di prova cancellate)`);
         }
         if (idB) await User.findByIdAndUpdate(idB, { $unset: { canModerateReports: 1, receivesReportAlerts: 1 } }).catch(() => {});
+        if (idA) await User.findByIdAndUpdate(idA, { $unset: { canModerateReports: 1, receivesReportAlerts: 1 } }).catch(() => {});
 
         const fine = {
             utenti: await mongoose.connection.collection('users').countDocuments(),
@@ -221,6 +327,10 @@ function jpegFinto(bytes) {
         if (idB) {
             const bFin = await User.findById(idB);
             ok('B non e\' piu\' moderatore ne\' riceve avvisi', bFin.canModerateReports === undefined && bFin.receivesReportAlerts === undefined);
+        }
+        if (idA) {
+            const aFin = await User.findById(idA);
+            ok('A e\' tornato un utente normale', aFin.canModerateReports === undefined && aFin.receivesReportAlerts === undefined);
         }
 
         await mongoose.disconnect();
