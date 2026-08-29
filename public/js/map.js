@@ -1273,47 +1273,77 @@ function renderWazeReportsList() {
         // marker sulla mappa (vedi renderMapMarkers), non nell'elenco compatto.
         const fotoFlag = rep.hasPhoto ? ' · 📷' : '';
 
+        // Punto 111: "risolvi" e' ora una RICHIESTA che passa da chi modera, non una
+        // cancellazione. Con la richiesta gia' inviata (resolutionRequestedAt valorizzato -
+        // GET /api/reports lo lascia passare apposta) il tasto e' spento: la segnalazione
+        // resta sulla mappa finche' un moderatore non decide.
+        const bottone = rep.resolutionRequestedAt
+            ? `<button class="waze-item-resolve" disabled title="${T('map.waze.inAttesaTitle') || 'Già segnalata come risolta, in attesa di verifica'}">⏳</button>`
+            : `<button class="waze-item-resolve" onclick="requestReportResolution('${rep.id}')" title="${T('map.waze.risolviTitle') || 'Segnala come risolta'}">✓</button>`;
+
         item.innerHTML = `
             <span>${emoji}</span>
             <div class="waze-item-desc">
                 <strong>${escapeHtml(rep.description)}</strong>
                 <div class="text-muted small">${T('map.waze.coord') || 'Coord:'} ${rep.lat.toFixed(3)}, ${rep.lng.toFixed(3)}${fotoFlag}</div>
             </div>
-            <button class="waze-item-resolve" onclick="resolveReportDirectly('${rep.id}')" title="${T('map.waze.risolviTitle') || 'Risolvi segnalazione'}">✓</button>
+            ${bottone}
         `;
         container.appendChild(item);
     });
 }
 
-// Punto 45: "risolvi" ora CANCELLA la segnalazione per intero (foto compresa), non la marca
-// piu' solo 'resolved' - decisione di Denis, con conferma obbligatoria perche' un tocco
-// sbagliato ora distrugge l'avviso per sempre invece di limitarsi a nasconderlo. Stesso
-// schema/stesso testo di rejectPendingReport() in pendingreports.js (azione gemella, sulla
-// stessa funzionalita', decisa nella stessa sessione).
-window.resolveReportDirectly = async function(reportId) {
+// Punto 111: "risolvi" di un utente normale NON cancella piu' - e' una RICHIESTA di
+// risoluzione (POST /:id/resolve-request). Parte una notifica a chi modera, che decide se
+// confermare (allora la segnalazione si cancella) o tenerla ancora. Fino ad allora la
+// segnalazione resta 'active' sulla mappa: il pericolo potrebbe esserci ancora. La
+// cancellazione vera la fa solo il moderatore (DELETE /:id/resolve, ora gated). Da qui il
+// nuovo nome, il testo senza "eliminata per sempre" (vincolo hard 7: non promettere cio'
+// che non succede) e l'assenza del filter locale che faceva sparire la riga a chi premeva.
+window.requestReportResolution = async function(reportId) {
+    const db = window.CamoscioState;
+    const rep = db.reports.find(r => r.id === reportId);
+
     const confermato = await window.showConfirmModal(
-        T('map.waze.risolviConfermaMsg') || "Confermi che il pericolo segnalato non c'è più? La segnalazione (foto compresa) verrà eliminata per sempre, senza possibilità di recupero.",
-        T('map.waze.risolviConfermaBtn') || "Segna come risolta",
-        { cancelLabel: T('common.cancella') || 'Annulla', danger: true }
+        T('map.waze.risolviConfermaMsg') || "Confermi che il pericolo segnalato non c'è più? La richiesta arriva a chi modera, che deciderà se togliere la segnalazione. Nel frattempo resta visibile sulla mappa.",
+        T('map.waze.risolviConfermaBtn') || "Segnala come risolta",
+        { cancelLabel: T('common.cancella') || 'Annulla' }
     );
     if (!confermato) return;
 
     try {
-        const res = await fetch(`/api/reports/${reportId}/resolve`, { method: 'DELETE' });
+        const res = await fetch(`/api/reports/${reportId}/resolve-request`, { method: 'POST' });
+        const corpo = await res.json().catch(() => ({}));
         if (!res.ok) {
-            const err = await res.json().catch(() => ({}));
-            window.showToast(err.error || T('map.waze.erroreRisolvi') || "Impossibile segnare la segnalazione come risolta.", "error");
+            window.showToast(corpo.error || T('map.waze.erroreRisolvi') || "Impossibile inviare la richiesta di risoluzione.", "error");
             return;
         }
 
-        const db = window.CamoscioState;
-        db.reports = db.reports.filter(r => r.id !== reportId);
-        window.showToast(T('map.waze.risolta') || "Segnalazione risolta ed eliminata.", "success");
-        renderMapMarkers();
+        if (corpo.giaRisolta) {
+            // Race rara: un moderatore l'ha gia' cancellata fra il caricamento e il click.
+            // Qui la segnalazione E' davvero sparita dal server - toglierla in locale e'
+            // corretto, non e' il filter che il punto 111 ha rimosso dal percorso normale.
+            db.reports = db.reports.filter(r => r.id !== reportId);
+            window.showToast(T('map.waze.giaRimossa') || "Questa segnalazione è già stata rimossa.", "info");
+            renderMapMarkers();
+            renderWazeReportsList();
+            return;
+        }
+
+        // La segnalazione NON sparisce: resta sulla mappa finche' un moderatore non decide.
+        // Segno la richiesta in locale cosi' il tasto passa subito a "spento" senza aspettare
+        // il prossimo refreshState.
+        if (rep) rep.resolutionRequestedAt = new Date().toISOString();
+        window.showToast(
+            corpo.giaRichiesta
+                ? (T('map.waze.giaRichiesta') || "Questa segnalazione è già stata segnalata come risolta: in attesa di verifica.")
+                : (T('map.waze.richiestaInviata') || "Richiesta inviata: chi modera verificherà e deciderà se togliere la segnalazione."),
+            corpo.giaRichiesta ? "info" : "success"
+        );
         renderWazeReportsList();
     } catch (e) {
-        console.error("Errore nel risolvere la segnalazione:", e);
-        window.showToast(T('map.waze.erroreRisolvi') || "Impossibile segnare la segnalazione come risolta.", "error");
+        console.error("Errore nell'inviare la richiesta di risoluzione:", e);
+        window.showToast(T('map.waze.erroreRisolvi') || "Impossibile inviare la richiesta di risoluzione.", "error");
     }
 };
 

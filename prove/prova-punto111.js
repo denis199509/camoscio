@@ -12,7 +12,8 @@
 //  - controllo scadenze PIGRO su GET /api/notifications: avvisa una volta sola, il rinnovo ri-arma
 //  - destinatari: chi ha receivesReportAlerts, con ripiego sui moderatori se nessuno ce l'ha
 //  - GET /api/reports/moderation: tre liste DISGIUNTE + totale, priorita' scadute > risoluzioni > da verificare
-// I passi 8+ (map.js, UI Moderazione, controprova su HEAD pre-111) arrivano dopo.
+// Il passo 8 (map.js: "risolvi" -> POST /:id/resolve-request, tasto spento) e' lato client,
+// non coperto qui. I passi 9+ (UI Moderazione, controprova su HEAD pre-111) arrivano dopo.
 //
 // Due account DEMO: A parte utente normale (in sez. 10 viene elevato a moderatore per un
 // attimo, poi revocato), B viene elevato a moderatore E dato receivesReportAlerts

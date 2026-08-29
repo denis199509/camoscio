@@ -1197,11 +1197,16 @@
             'map.waze.invia': 'Send Report',
             'map.waze.nessuna': 'No active trail reports.',
             'map.waze.coord': 'Coord:',
-            'map.waze.risolviTitle': 'Resolve report',
-            'map.waze.risolviConfermaMsg': 'Do you confirm the reported hazard is gone? The report (photo included) will be permanently deleted, with no way to recover it.',
-            'map.waze.risolviConfermaBtn': 'Mark as resolved',
-            'map.waze.risolta': 'Report resolved and deleted.',
-            'map.waze.erroreRisolvi': 'Could not mark the report as resolved.',
+            // Punto 111: "risolvi" e' una RICHIESTA che passa da chi modera, non piu' una
+            // cancellazione - testi riscritti di conseguenza (niente "permanently deleted").
+            'map.waze.risolviTitle': 'Report as resolved',
+            'map.waze.risolviConfermaMsg': 'Do you confirm the reported hazard is gone? Your request goes to the moderators, who decide whether to remove the report. It stays visible on the map in the meantime.',
+            'map.waze.risolviConfermaBtn': 'Report as resolved',
+            'map.waze.richiestaInviata': 'Request sent: the moderators will check and decide whether to remove the report.',
+            'map.waze.giaRichiesta': 'This report has already been marked as resolved: awaiting verification.',
+            'map.waze.inAttesaTitle': 'Already reported as resolved, awaiting verification',
+            'map.waze.giaRimossa': 'This report has already been removed.',
+            'map.waze.erroreRisolvi': 'Could not send the resolution request.',
 
             // --- Opzioni <select> tipo pericolo: condivise da #waze-type e
             //     #report-fab-type (stesso testo con l'emoji davanti). ---
