@@ -7491,3 +7491,186 @@ schermo spento ancora."
      "spaziano");
    - aria-label della "i" = "Informazioni sul badge", italiano fisso,
      come l'aria-label="Chiudi" della x gia' esistente.
+
+-------------------------------------------------------------------
+
+113. [IN CORSO - passi 1-6 di 10 fatti e verificati dal vivo il
+   29-30/08/2026 (tredicesima sessione); commit locale b6a771c, NON
+   pushato. Piano approvato da Denis dopo esplorazione + agente Plan.]
+   Denis, parole sue:
+
+   "adesso ci dovremmo occupare sulla parte social. Un tasto 'segui'
+   quando entro sul profilo di qualcuno. Esempio, entro sul profillo di
+   DaniWoll. Proprio sulla destra dove ce il nome, reputazione, livello
+   voglio un tasto 'segui'. Poi sulla destra penso sotto la 'dashboard'
+   qualcosa tipo 'feed'. Sara' una pagino dove io potro' visualizzare i
+   percorsi pubblicati dalle persone che seguo. Quindi se seguo DaniWoll,
+   ogni sua prossima escursione comparira' nel 'feed'. Esattamente come
+   sui social. Ogni escursione pubblicata dovra' esseree apribile.
+   Esempio, DaniWoll pubblica un escursione. La vedo nel 'feed'. Cliccando
+   sul escursione voglio che si apra' la pagina del escursione. Con una
+   piccola mappa che segna la traccia gpx. Sotto tutta l'informazione che
+   e' stata pubblicata sul escursione. Tipo distanza, dislivello, tempo.
+   In piu magari un commento lasciato dal autore. Un emoji della montanga
+   pure come segno di 'mi piace' accumulabile se piu utenti cliccano sul
+   mi piace. Piu un tasto 'crea percorso' per creare un percorso
+   direttamente dalla traccia di qualcuno per poter usare la sua traccia
+   durante un escursione. Cosi se in futuro vedo una bella escursione
+   pubblicata da qualcuno posso usare la sua traccia per preparare un
+   percorso per me."
+
+   E subito dopo: "nella pagina 'tribu squadre' una sezione con le
+   'persone che segui' dove cliccando sopra devo vedere tutte le persone
+   che seguo. nello stesso modo 'persone che ti seguono' dove cliccando
+   sopra vedo le persone che mi seguono".
+
+   E ancora: "3. notifica solo per like" (rispondendo alle 5 decisioni
+   minori che gli avevo elencato - vedi sotto).
+
+   OTTO DECISIONI PRESE DA DENIS (con le AskUserQuestion, il 29/08):
+   1. Follow UNIDIREZIONALE, senza conferma (stile Instagram/Twitter).
+   2. Pubblicazione ESPLICITA con didascalia opzionale: tasto "Pubblica
+      nel feed" + campo commento. Solo il pubblicato entra nel feed.
+   3. SOLO uscite CON traccia GPS. Sue parole: "le uscite senza gps al
+      momento del 'pubblica sul feed' deve comparire un messaggio di
+      aggiungere prima una traccia gpx per poter pubblicare il percorso".
+   4. "Crea percorso": percorso rivedibile sulla mappa, allegabile a una
+      propria escursione futura, e SEGUIBILE dal vivo durante una
+      registrazione - ma SOLO come linea disegnata, NESSUN avviso di
+      fuori-percorso (un avviso di sicurezza che sbaglia e' peggio che
+      non averlo; eventualmente in futuro).
+   5. Il percorso creato sta in "I miei progetti", con un'etichetta che
+      dice da chi viene (es. "da DaniWoll").
+   6. Visibilita': SOLO chi mi segue. Un'uscita pubblicata compare nel
+      feed dei follower; NON e' visibile a chi visita il profilo senza
+      seguirmi. Protetto lato server.
+   7. Le mie due liste follow in "Tribu' & Squadre"; IN PIU' un contatore
+      "N seguaci - N seguiti" cliccabile sul profilo di un ALTRO utente
+      (le liste follow sono pubbliche fra utenti loggati).
+   8. "Mi piace": emoji montagna, contatore accumulabile, toggle per
+      utente. Nessuna lista di chi ha messo like. NOTIFICA all'autore
+      quando qualcuno mette like (decisione 3 di cui sopra); NESSUNA
+      notifica quando chi segui pubblica (il feed e' la superficie).
+
+   ALTRE 4 DECISIONI (dalle mie "5 cose che ho deciso io", Denis ha
+   corretto solo la 3):
+   - le TUE uscite non compaiono nel TUO feed (le rivedi in "Le mie
+     escursioni");
+   - spubblicare NON azzera i mi piace (se ripubblichi li ritrovi);
+   - la didascalia si riscrive ripubblicando, senza schermata di modifica;
+   - agganciare un percorso copiato a una tua escursione ne allarga la
+     visibilita' (la geometria, tua e rietichettata, diventa visibile ai
+     partecipanti di quell'escursione).
+
+   -----------------------------------------------------------------
+   PIANO A 10 PASSI (fermabili, uno per volta). File del piano:
+   .claude/plans/ok-adesso-ci-dovremmo-dreamy-castle.md
+   -----------------------------------------------------------------
+   1. Follow: modello + rotte + stato.                       [FATTO]
+   2. Tasto "Segui" sul profilo.                             [FATTO]
+   3. Liste follow in Tribu' & Squadre + contatore profilo.  [FATTO]
+   4. Pubblicazione di un'uscita.                            [FATTO]
+   5. Pagina Feed.                                           [FATTO]
+   6. Pagina uscita pubblicata + mini-mappa.                 [FATTO]
+   7. Mi piace (+ notifica all'autore).                      da fare
+   8. Percorso da traccia: modello SavedRoute + "I miei
+      progetti" + rotte.                                     da fare
+   9. Segui la linea dal vivo + aggancio a una Hike
+      (Hike.routeSource.kind:'saved').                       da fare
+   10. Traduzione EN (tutte le chiavi dei passi 1-9) +
+      prove/prova-punto113.js + controprova.                 da fare
+
+   -----------------------------------------------------------------
+   STATO AL 30/08/2026 (tredicesima sessione) - PASSI 1-6 DI 10 FATTI
+   -----------------------------------------------------------------
+   Tutti e 6 verificati dal vivo (estensione Chrome, account demo
+   Marco/Luca/Sofia), DB pulito a fine di ogni passo, server fermato.
+   Commit LOCALE b6a771c (rifusione dei 6 auto-save), NON pushato.
+
+   PASSO 1 - models/Follow.js (collezione dedicata {followerId,
+     followingId}, NON due array su User: un array su cui si fa $push va
+     scritto su ogni utente anche di chi non segue nessuno, vietato dal
+     vincolo spazio. Stessa forma di RouteBookmark/Stamp). Due indici:
+     unico {followerId,followingId} + {followingId}. routes/follow.js
+     montato su /api/follow: POST/DELETE /:userId (400 auto-follow, 404
+     target inesistente, 11000 -> idempotente), GET /following[/:userId],
+     /followers[/:userId], /counts/:userId. CamoscioState.following
+     caricato in refreshState (app.js). Smoke test 19/19.
+
+   PASSO 2 - tasto "Segui"/"Segui gia'" nell'header del profilo, DENTRO
+     renderProfileIdentity (userprofile.js) che e' condivisa col PROPRIO
+     profilo (profile.js): reso solo se utente.id != currentUser.id.
+     window.toggleFollow: POST o DELETE secondo CamoscioState.following,
+     ridisegna DOPO il round-trip (mai ottimistico, lezione toggleBookmark).
+     Verificato: btn-primary -> btn-secondary, persiste al reload, assente
+     sul proprio profilo.
+     NOTA UX: il tasto resta disabilitato ~2-4s perche' toggleFollow fa
+     refreshState() completo + renderUserProfile prima di mostrare il
+     nuovo stato. Coerente col tasto preferiti. Alleggeribile se da'
+     fastidio.
+
+   PASSO 3 - card "Persone" in cima alla colonna sinistra di #social,
+     due sezioni A SCOMPARSA "Persone che segui (N)" / "Persone che ti
+     seguono (N)" (chiuse di default, si aprono cliccando l'intestazione,
+     come chiesto: "cliccando sopra devo vedere"). Righe .squad-item,
+     click -> profilo, tasto segui/smetti inline. renderFollowLists()
+     in social.js, chiamata da renderSocialModule() (il fratello dove i
+     fetch sono ammessi). Contatore "N seguaci - N seguiti" su #user-
+     profile (non #my-profile), cliccabile -> window.showFollowList
+     (modale #follow-list-modal, sola navigazione).
+
+   PASSO 4 - ActiveHikeSession.publishedAt (Date) + caption (String,
+     max 500), default undefined entrambi. routes/tracking.js:
+     POST /sessions/:id/publish {caption} + /unpublish - autore, solo
+     status 'ended'; $set+$unset insieme (MongoDB non ammette un campo
+     semplice e un operatore nello stesso update - trappola in vault 07);
+     unpublish fa $unset di publishedAt+caption. storico.js renderCompletate
+     ora carica le sessioni PRIMA, per sapere quali escursioni completate
+     hanno una traccia collegata (pubblicabile) e quali no. Tasto
+     "Pubblica nel feed" su ogni card: uscita con traccia -> flusso vero;
+     escursione senza traccia -> messaggio "Carica un file .gpx qui
+     sopra" (NON il tasto di completamento gpx, che non salva la traccia).
+
+   PASSO 5 - pagina Feed: voce di barra #btn-nav-feed subito dopo
+     Dashboard, <section id="feed">, public/js/feed.js. routes/feed.js
+     montato su /api/feed: GET /api/feed?before=<ISO> - uscite pubblicate
+     di chi segui, sort publishedAt -1, paginazione A CURSORE (non skip),
+     .select('-points -offTrailBuffer') (mai la geometria in una lista),
+     limit PAGINA+1 per sapere se c'e' un'altra pagina. Card = riga autore
+     + didascalia + la card compatta riusata (CamoscioSchedeCompatte.
+     uscita). Indice PARZIALE {userId:1, publishedAt:-1} su
+     ActiveHikeSession (come i due gia' presenti su openSession/
+     movingTimeSec). Verificato: risposta SENZA il campo points; cursore
+     ?before= funziona; stati vuoti giusti (nessun seguito / nessuna
+     pubblicazione).
+
+   PASSO 6 - pagina di UNA uscita, <section id="outing-page">,
+     public/js/outingpage.js (dentro una IIFE, per non collidere con gli
+     helper omonimi di feed.js). routes/tracking.js: guardiaUscitaVisibile
+     (autore -> sempre; altri -> solo se pubblicata E la seguono; 404 non
+     403 se non pubblicata, cosi' non si rivela che esiste) + GET
+     /sessions/:id/meta (metadati, niente points) e /sessions/:id/points
+     (UNICA rotta con la geometria; ?scopo=mini -> simplifyTrack(25) SOLO
+     nella risposta). Mini-mappa = SECONDA istanza Leaflet (miniMap,
+     locale al file, non su window; una sola istanza riusata,
+     invalidateSize dopo la comparsa; colore #7FB5C7 della traccia
+     registrata). Cambio lingua ridisegna la testata da metaCorrente
+     (nessun refetch), mappa intatta. Card uscita sul profilo cliccabili
+     SOLO se apribili (proprio profilo: tutte; profilo di chi segui: solo
+     le pubblicate). Verificato tutte le guardie 200/403/404/400, la
+     mini-mappa disegna la traccia, il messaggio "non puoi vedere" per il
+     non-follower.
+
+   COSMETICO (segnalato a Denis, non deciso di sistemarlo):
+   - card Feed mostra due date: pubblicazione (riga autore) e data
+     dell'uscita (titolo della card riusata). Informativo ma ridondante.
+   - sulle card "escursione" strette il tasto "Pubblica nel feed" va a
+     capo su due righe.
+
+   -----------------------------------------------------------------
+   SI RIPARTE DAL PASSO 7 (mi piace + notifica all'autore).
+   Passo 8 = SavedRoute (RouteDraft salva solo 2-25 punti cliccati, mai
+   la polyline: una traccia densa non ci entra, serve un modello nuovo -
+   dettaglio nel piano). Passo 9 tocca lib/percorso.js e la UI di
+   tracciamento. Passo 10 = EN + prove.
+   -----------------------------------------------------------------
