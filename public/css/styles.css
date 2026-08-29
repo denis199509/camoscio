@@ -2022,6 +2022,19 @@ option {
     margin-bottom: 6px;
 }
 
+/* Punto 111: la pagina Moderazione ha tre code (scadute / risoluzioni richieste / da
+   verificare), ognuna nella sua glass-card. Le righe restano le .pending-report-item del
+   punto 45; qui solo il contatore accanto al titolo e un accento sulle scadute. */
+.moderation-list-count {
+    color: var(--accent-tan);
+    font-weight: normal;
+    font-size: 0.9em;
+}
+
+.pending-report-item--scaduta {
+    border-left: 3px solid var(--accent-orange);
+}
+
 /* ==========================================================================
    4. SECTION: CARPOOLING
    ========================================================================== */

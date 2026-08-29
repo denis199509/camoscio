@@ -480,7 +480,8 @@ function setupNavigation() {
         // #pending-reports-page: stesso caso di #my-profile - titolo fisso, nessuna
         // voce in barra. showPendingReportsPage non lo scrive piu' a mano, ci pensa
         // updateSectionTitle via 'sectionTitle.pending-reports-page' (punto 102, settimo lotto).
-        "pending-reports-page": "Segnalazioni da verificare"
+        // Punto 111: la pagina ora ha tre code, non solo "da verificare".
+        "pending-reports-page": "Moderazione segnalazioni"
     };
 
     // Estratta da navigateTo il 22/08/2026 perche' serve anche a i18n.js: se

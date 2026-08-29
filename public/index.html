@@ -1789,11 +1789,29 @@
                      che ci porta, ma la rotta lato server e' comunque protetta a parte. -->
                 <section id="pending-reports-page" class="page-section">
                     <div class="glass-card">
-                        <h4><i data-lucide="triangle-alert"></i> <span data-i18n="pendingReports.cardTitolo">Segnalazioni sentiero da verificare</span></h4>
-                        <p class="small text-muted" data-i18n="pendingReports.cardDesc">Conferma le segnalazioni corrette (diventano visibili a tutti) o rifiutale (vengono eliminate).</p>
+                        <h4><i data-lucide="triangle-alert"></i> <span data-i18n="pendingReports.cardTitolo">Segnalazioni sentiero da moderare</span></h4>
+                        <p class="small text-muted" data-i18n="pendingReports.cardDesc">Tre code: segnalazioni scadute (da rinnovare o togliere), risoluzioni chieste dagli utenti (da confermare o tenere ancora) e nuove segnalazioni (da confermare o rifiutare).</p>
                     </div>
-                    <div class="glass-card" id="pending-reports-list">
-                        <!-- Riempito da JS -->
+
+                    <!-- Punto 111: tre code distinte, ognuna nella sua glass-card, riempite da
+                         pendingreports.js (renderModerationLists). Priorita' scadute > risoluzioni
+                         richieste > da verificare, gia' garantita dal server in GET /api/reports/moderation. -->
+                    <div class="glass-card">
+                        <h4><span data-i18n="pendingReports.scaduteTitolo">Scadute</span> <span class="moderation-list-count" id="moderation-scadute-list-count"></span></h4>
+                        <p class="small text-muted" data-i18n="pendingReports.scaduteDesc">Passati i 90 giorni. Rinnova per altri 90 giorni da oggi, oppure togli la segnalazione.</p>
+                        <div id="moderation-scadute-list"><!-- Riempito da JS --></div>
+                    </div>
+
+                    <div class="glass-card">
+                        <h4><span data-i18n="pendingReports.risoluzioniTitolo">Risoluzioni richieste</span> <span class="moderation-list-count" id="moderation-risoluzioni-list-count"></span></h4>
+                        <p class="small text-muted" data-i18n="pendingReports.risoluzioniDesc">Un utente ha segnalato che il pericolo non c'è più. Conferma (la segnalazione viene eliminata) oppure tienila ancora.</p>
+                        <div id="moderation-risoluzioni-list"><!-- Riempito da JS --></div>
+                    </div>
+
+                    <div class="glass-card">
+                        <h4><span data-i18n="pendingReports.daVerificareTitolo">Da verificare</span> <span class="moderation-list-count" id="pending-reports-list-count"></span></h4>
+                        <p class="small text-muted" data-i18n="pendingReports.daVerificareDesc">Nuove segnalazioni non ancora pubbliche. Conferma (diventano visibili a tutti) oppure rifiuta (vengono eliminate).</p>
+                        <div id="pending-reports-list"><!-- Riempito da JS --></div>
                     </div>
                 </section>
 

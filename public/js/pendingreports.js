@@ -76,7 +76,7 @@ async function showPendingReportsPage() {
         window.CamoscioUpdateSectionTitle("pending-reports-page");
     } else {
         const sectionTitle = document.getElementById("section-title");
-        if (sectionTitle) sectionTitle.textContent = "Segnalazioni da verificare";
+        if (sectionTitle) sectionTitle.textContent = "Moderazione segnalazioni";
     }
 
     const box = document.getElementById("pending-reports-list");
@@ -88,19 +88,47 @@ async function showPendingReportsPage() {
         const moderation = await res.json();
         window.CamoscioState.moderation = moderation;
         renderPendingReportsBadge(moderation.totale);
-        renderPendingReportsListBody(moderation.daVerificare);
+        renderModerationLists(moderation);
     } catch (e) {
         console.error("Errore nel caricare le segnalazioni da moderare:", e);
+        ["moderation-scadute-list", "moderation-risoluzioni-list"].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.innerHTML = "";
+        });
         box.innerHTML = `<p class="text-muted">${T('pendingReports.erroreCaricamento') || "Impossibile caricare le segnalazioni in attesa."}</p>`;
     }
 }
 
-function renderPendingReportsListBody(reports) {
-    const box = document.getElementById("pending-reports-list");
+// Punto 111: le tre code della pagina Moderazione. Il corpo delle righe e' identico per
+// tutte e tre (renderModerationListBody); cambia la coppia di bottoni in fondo e una riga
+// di contesto. L'ordine di priorita' (scadute > risoluzioni > da verificare) lo garantisce
+// gia' il server: qui si disegna e basta.
+const LISTE_MODERAZIONE = [
+    { chiave: 'scadute',              containerId: 'moderation-scadute-list',     vuota: 'pendingReports.nessunaScaduta' },
+    { chiave: 'risoluzioniRichieste', containerId: 'moderation-risoluzioni-list', vuota: 'pendingReports.nessunaRisoluzione' },
+    { chiave: 'daVerificare',         containerId: 'pending-reports-list',        vuota: 'pendingReports.nessuna' }
+];
+
+function renderModerationLists(moderation) {
+    LISTE_MODERAZIONE.forEach(({ chiave, containerId, vuota }) => {
+        const box = document.getElementById(containerId);
+        if (!box) return;
+        const reports = (moderation && moderation[chiave]) || [];
+        const countEl = document.getElementById(containerId + "-count");
+        if (countEl) countEl.textContent = reports.length ? `(${reports.length})` : "";
+        renderModerationListBody(reports, chiave, box, vuota);
+    });
+}
+
+// Corpo di UNA coda. 'kind' e' 'scadute' | 'risoluzioniRichieste' | 'daVerificare':
+// decide la coppia di bottoni (bottoniModerazione) e una riga di contesto in piu'. Il
+// resto della card (emoji, titolo, descrizione, foto, riga "segnalato da") e' quello del
+// punto 45, spostato qui una volta sola invece di ripeterlo per tre liste.
+function renderModerationListBody(reports, kind, box, chiaveVuota) {
     if (!box) return;
 
     if (reports.length === 0) {
-        box.innerHTML = `<div class="text-muted small italic text-center" style="padding: 16px;">${T('pendingReports.nessuna') || "Nessuna segnalazione in attesa."}</div>`;
+        box.innerHTML = `<div class="text-muted small italic text-center" style="padding: 16px;">${T(chiaveVuota) || "Nessuna segnalazione."}</div>`;
         return;
     }
 
@@ -109,29 +137,28 @@ function renderPendingReportsListBody(reports) {
     // Data solo-cifre (giorno/mese, ora:minuti): identica in it-IT e en-GB, ma il
     // locale va passato esplicito - toLocaleString([]) segue il browser, non il sito.
     const loc = (window.CamoscioI18n && window.CamoscioI18n.getLang() === 'en') ? 'en-GB' : 'it-IT';
-    // Estratta in map.js (window.CamoscioReportTypes): terza occorrenza della stessa mappa
-    // tipo->emoji/titolo, dopo renderMapMarkers() e renderWazeReportsList() - si fattorizza
-    // alla seconda, non si aspetta la terza (stesso principio gia' applicato alla chat
-    // condivisa fra pagina squadra ed escursione, punto 55).
-    // Rollout punto 102, lotto Mappa: titleFor(tipo) restituisce il titolo nella lingua
-    // attiva (chiave map.reportType.*), col ripiego italiano di tipi.title - era gia'
-    // previsto che i tipi si traducessero "col lotto Mappa" (settimo lotto). Il guard
-    // tipi.titleFor tiene in piedi la pagina anche se map.js non fosse caricato.
+    const fmtData = (d) => new Date(d).toLocaleString(loc, { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    // Estratta in map.js (window.CamoscioReportTypes): quarta occorrenza della stessa mappa
+    // tipo->emoji/titolo. titleFor(tipo) da' il titolo nella lingua attiva (chiave
+    // map.reportType.*), col ripiego italiano di tipi.title; il guard tiene in piedi la
+    // pagina anche se map.js non fosse caricato.
     const tipi = window.CamoscioReportTypes || { emoji: {}, title: {} };
+    const nomeUtente = (uid, ripiego) => {
+        const u = db.users.find(x => x.id === uid);
+        return u ? esc(u.username) : ripiego;
+    };
 
     box.innerHTML = reports.map(rep => {
         const emoji = tipi.emoji[rep.type] || '⚠️';
         const titolo = tipi.titleFor
             ? tipi.titleFor(rep.type)
             : (tipi.title[rep.type] || (T('pendingReports.avvisoFallback') || 'Avviso'));
-        const reporter = db.users.find(u => u.id === rep.reporterId);
-        const nomeReporter = reporter ? esc(reporter.username) : (T('pendingReports.reporterNonDisponibile') || "utente non disponibile");
-        const data = new Date(rep.createdAt).toLocaleString(loc, { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+        const nomeReporter = nomeUtente(rep.reporterId, T('pendingReports.reporterNonDisponibile') || "utente non disponibile");
+        const data = fmtData(rep.createdAt);
 
         // Punto 45 (foto): qui, a differenza dell'elenco pubblico/mappa (solo un'iconcina,
-        // vedi map.js), la foto vera serve a decidere se confermare o rifiutare - si carica
-        // sempre, non solo "aprendo" la segnalazione, perche' la card di moderazione E' gia'
-        // la vista di dettaglio.
+        // vedi map.js), la foto vera serve a decidere - si carica sempre, la card di
+        // moderazione E' gia' la vista di dettaglio.
         const fotoHtml = rep.hasPhoto
             ? `<img src="/api/reports/${rep.id}/photo" alt="${T('pendingReports.fotoAlt') || 'Foto della segnalazione'}" class="pending-report-photo">`
             : '';
@@ -139,24 +166,56 @@ function renderPendingReportsListBody(reports) {
         const rigaMeta = T('pendingReports.segnalatoDa', nomeReporter, data, rep.lat.toFixed(3), rep.lng.toFixed(3))
             || `Segnalato da ${nomeReporter} il ${data} — coord: ${rep.lat.toFixed(3)}, ${rep.lng.toFixed(3)}`;
 
+        // Riga di contesto in piu', diversa per coda. Su 'risoluzioniRichieste' mostra CHI
+        // ha chiesto la risoluzione (GET /moderation lo espone apposta ai soli moderatori,
+        // punto 111); su 'scadute' la data di scadenza.
+        let rigaExtra = '';
+        if (kind === 'risoluzioniRichieste' && rep.resolutionRequestedAt) {
+            const chi = nomeUtente(rep.resolutionRequestedBy, T('pendingReports.utenteSconosciuto') || 'un utente');
+            rigaExtra = `<div class="text-muted small">${T('pendingReports.risoltaDa', chi, fmtData(rep.resolutionRequestedAt)) || `Segnalata come risolta da ${chi} il ${fmtData(rep.resolutionRequestedAt)}`}</div>`;
+        } else if (kind === 'scadute' && rep.expiresAt) {
+            rigaExtra = `<div class="text-muted small">${T('pendingReports.scadutaIl', fmtData(rep.expiresAt)) || `Scaduta il ${fmtData(rep.expiresAt)}`}</div>`;
+        }
+
         return `
-            <div class="pending-report-item">
+            <div class="pending-report-item${kind === 'scadute' ? ' pending-report-item--scaduta' : ''}">
                 <div class="pending-report-header">
                     <span>${emoji}</span>
                     <strong>${esc(titolo)}</strong>
                 </div>
                 <p>${esc(rep.description)}</p>
                 ${fotoHtml}
-                <div class="text-muted small">
-                    ${rigaMeta}
-                </div>
-                <div class="form-row-buttons">
-                    <button class="btn btn-sm btn-danger" onclick="rejectPendingReport('${rep.id}')">${T('pendingReports.rifiuta') || 'Rifiuta'}</button>
-                    <button class="btn btn-sm btn-success" onclick="confirmPendingReport('${rep.id}')">${T('pendingReports.conferma') || 'Conferma'}</button>
-                </div>
+                <div class="text-muted small">${rigaMeta}</div>
+                ${rigaExtra}
+                <div class="form-row-buttons">${bottoniModerazione(rep, kind)}</div>
             </div>
         `;
     }).join("");
+}
+
+// La coppia di bottoni per una riga, per coda. Le azioni che CANCELLANO
+// (confirmReportResolution / removeExpiredReport / rejectPendingReport) chiedono conferma
+// nel loro handler; quelle reversibili (renewReport / keepReportActive / confirmPendingReport)
+// no - decisione di Denis.
+function bottoniModerazione(rep, kind) {
+    const b = (cls, fn, chiave, testoIt) =>
+        `<button class="btn btn-sm ${cls}" onclick="${fn}('${rep.id}')">${T(chiave) || testoIt}</button>`;
+
+    if (kind === 'risoluzioniRichieste') {
+        return b('btn-secondary', 'keepReportActive', 'pendingReports.tieniAncora', 'Tieni ancora')
+             + b('btn-success', 'confirmReportResolution', 'pendingReports.confermaRisoluzione', 'Conferma la risoluzione');
+    }
+    if (kind === 'scadute') {
+        // Una scaduta puo' essere 'active' (si toglie con DELETE /:id/resolve) o 'pending'
+        // mai verificata (si rifiuta con DELETE /:id, decisione di Denis: scadono anche quelle).
+        const secondo = rep.status === 'pending'
+            ? b('btn-danger', 'rejectPendingReport', 'pendingReports.rifiutaEElimina', 'Rifiuta ed elimina')
+            : b('btn-danger', 'removeExpiredReport', 'pendingReports.togli', 'Togli');
+        return b('btn-secondary', 'renewReport', 'pendingReports.rinnova', 'Rinnova +90gg') + secondo;
+    }
+    // daVerificare (comportamento del punto 45)
+    return b('btn-danger', 'rejectPendingReport', 'pendingReports.rifiuta', 'Rifiuta')
+         + b('btn-success', 'confirmPendingReport', 'pendingReports.conferma', 'Conferma');
 }
 
 // Nessuna conferma extra: e' un'azione meno rischiosa del rifiuto, sempre risolvibile dopo
@@ -202,8 +261,74 @@ async function rejectPendingReport(id) {
     }
 }
 
-// Cambio lingua (punto 102, settimo lotto): il corpo di #pending-reports-list e'
-// costruito via innerHTML - applyStaticTranslations non lo raggiunge, resterebbe
+// --- Punto 111: le azioni delle due code nuove (scadute, risoluzioni richieste) ---
+//
+// Tutte ricaricano la pagina con showPendingReportsPage() a fine azione, come
+// confirm/rejectPendingReport qui sopra: la fetch a /moderation e' leggera e per soli
+// moderatori, e serve il conteggio vero del triangolo aggiornato subito.
+
+// Un solo posto per "chiama la rotta, poi ricarica o mostra l'errore".
+async function azioneModerazione(url, metodo, okMsg, erroreMsg) {
+    try {
+        const res = await fetch(url, { method: metodo });
+        if (res.ok) {
+            window.showToast(okMsg, "success");
+            await showPendingReportsPage();
+        } else {
+            const err = await res.json().catch(() => ({}));
+            window.showToast(err.error || erroreMsg, "error");
+        }
+    } catch (e) {
+        console.error("Errore azione moderazione:", e);
+        window.showToast(erroreMsg, "error");
+    }
+}
+
+// Conferma obbligatoria prima di azioneModerazione, per le azioni che cancellano.
+async function eliminaConConferma(url, msg, btn, okMsg, erroreMsg) {
+    const procedi = await window.showConfirmModal(
+        msg, btn,
+        { cancelLabel: T('common.cancella') || 'Annulla', danger: true }
+    );
+    if (!procedi) return;
+    await azioneModerazione(url, 'DELETE', okMsg, erroreMsg);
+}
+
+// Reversibile, niente modale.
+async function keepReportActive(id) {
+    await azioneModerazione(`/api/reports/${id}/resolve-request`, 'DELETE',
+        T('pendingReports.tenutaAncora') || "Segnalazione tenuta attiva: l'utente potrà rifare la richiesta.",
+        T('pendingReports.erroreTieniAncora') || "Impossibile tenere la segnalazione.");
+}
+
+// Reversibile, niente modale. rinnovo = adesso + 90 giorni (lato server).
+async function renewReport(id) {
+    await azioneModerazione(`/api/reports/${id}/renew`, 'PATCH',
+        T('pendingReports.rinnovata') || "Scadenza spostata a 90 giorni da oggi.",
+        T('pendingReports.erroreRinnova') || "Impossibile rinnovare la segnalazione.");
+}
+
+// Cancella (segnalazione 'active' con richiesta di risoluzione) -> conferma obbligatoria.
+async function confirmReportResolution(id) {
+    await eliminaConConferma(`/api/reports/${id}/resolve`,
+        T('pendingReports.confermaRisoluzioneMsg') || "Confermi che il pericolo non c'è più? La segnalazione (foto compresa) verrà eliminata per sempre, senza possibilità di recupero.",
+        T('pendingReports.confermaRisoluzioneBtn') || "Conferma ed elimina",
+        T('pendingReports.risoluzioneConfermata') || "Risoluzione confermata: segnalazione eliminata.",
+        T('pendingReports.erroreConfermaRisoluzione') || "Impossibile confermare la risoluzione.");
+}
+
+// Cancella (segnalazione 'active' scaduta) -> conferma obbligatoria. Per una 'pending'
+// scaduta il bottone e' invece "Rifiuta ed elimina" (rejectPendingReport, DELETE /:id).
+async function removeExpiredReport(id) {
+    await eliminaConConferma(`/api/reports/${id}/resolve`,
+        T('pendingReports.togliMsg') || "Togliere questa segnalazione scaduta? Verrà eliminata per sempre, foto compresa.",
+        T('pendingReports.togliBtn') || "Togli ed elimina",
+        T('pendingReports.tolta') || "Segnalazione scaduta rimossa.",
+        T('pendingReports.erroreTogli') || "Impossibile togliere la segnalazione.");
+}
+
+// Cambio lingua (punto 102, settimo lotto): i corpi delle tre liste sono
+// costruiti via innerHTML - applyStaticTranslations non li raggiunge, resterebbero
 // in italiano sotto gli occhi di chi modera. Se la pagina e' quella aperta, si
 // ri-chiama showPendingReportsPage (ri-fetch + ridisegno): fa gia' lo stesso a
 // ogni conferma/rifiuto, e la fetch a /api/reports/moderation e' per soli moderatori,
@@ -237,3 +362,8 @@ window.renderPendingReportsBadge = renderPendingReportsBadge;
 window.showPendingReportsPage = showPendingReportsPage;
 window.confirmPendingReport = confirmPendingReport;
 window.rejectPendingReport = rejectPendingReport;
+// Punto 111: azioni delle code "risoluzioni richieste" e "scadute".
+window.keepReportActive = keepReportActive;
+window.renewReport = renewReport;
+window.confirmReportResolution = confirmReportResolution;
+window.removeExpiredReport = removeExpiredReport;
