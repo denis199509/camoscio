@@ -2,31 +2,47 @@
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
 Aggiornato: 2026-08-30 (tredicesima sessione).
 
->>> NIENTE IN CORSO. Ultimo lavoro: PUNTO 113 (la parte social) —
-    CHIUSO E IN PRODUZIONE il 30/08. Tutti e 10 i passi, push
-    6271cf8..b7afa35 su camoscio/master, Render redeploy automatico.
+>>> NIENTE IN CORSO. Tutto pushato e in produzione (Render redeploy
+    automatico ai push).
 
-  Cos'e' il punto 113: tasto "Segui" sui profili (unidirezionale, stile
-  Instagram); pagina "Feed" (voce di barra dopo Dashboard) con le uscite
-  pubblicate da chi segui; ogni uscita apribile su una pagina con
-  mini-mappa + distanza/dislivello/tempo + didascalia; un "mi piace"
-  (emoji montagna) con notifica all'autore; un tasto "crea percorso" che
-  copia la traccia altrui fra "I miei progetti" e la si puo' seguire dal
-  vivo come SOLA LINEA (nessun avviso di fuori-percorso - vincolo 7);
-  escursione coi numeri presi da un percorso salvato. Piu' le liste
-  "chi segui / ti segue" in Tribu' & Squadre + contatore sul profilo.
+  ULTIMO LAVORO — PUNTO 113 (la parte social), CHIUSO E IN PRODUZIONE il
+  30/08 (push 6271cf8..b7afa35 su camoscio/master). Tasto "Segui"
+  (unidirezionale); pagina "Feed" con le uscite pubblicate da chi segui;
+  ogni uscita apribile con mini-mappa + numeri + didascalia; "mi piace"
+  (emoji montagna) con notifica all'autore; "crea percorso" che copia la
+  traccia altrui fra "I miei progetti", seguibile dal vivo come SOLA
+  LINEA (nessun avviso di fuori-percorso - vincolo 7); escursione coi
+  numeri presi da un percorso salvato; liste follow in Tribu' & Squadre.
+  Dettaglio in cose_da_fare.txt punto 113; decisioni nel vault 03
+  "Punto 113"; racconto per passo nel vault 06 tredicesima sessione.
+  File nuovi: models/Follow.js, models/Like.js, models/SavedRoute.js,
+  lib/uscitaVisibile.js, routes/follow.js, routes/feed.js,
+  public/js/feed.js, public/js/outingpage.js, prove/prova-punto113.js.
 
-  Dettaglio per passo in cose_da_fare.txt punto 113; decisioni tecniche
-  nel vault 03 "Punto 113"; racconto per passo nel vault 06 tredicesima
-  sessione. File nuovi: models/Follow.js, models/Like.js,
-  models/SavedRoute.js, lib/uscitaVisibile.js, routes/follow.js,
-  routes/feed.js, public/js/feed.js, public/js/outingpage.js,
-  prove/prova-punto113.js (103 controlli).
+  CODA DELLA STESSA SESSIONE (dopo il 113 - dettaglio in cose_da_fare.txt
+  "CODA DELLA TREDICESIMA SESSIONE"):
+  - scripts/utenti-registrati.js (SOLA LETTURA, commit 37650c8): elenco
+    persone registrate, data ricavata dal _id (nessun campo nuovo).
+  - FIX (commit 934229d): il .gpx aggiunto col tasto ⬆ a un'escursione
+    GIA' completata ora salva anche la TRACCIA come sessione collegata
+    (hikeId) -> l'escursione diventa pubblicabile nel feed. Prima la
+    traccia nasceva solo dal tracciamento dal vivo. prova-punto113-gpx.js
+    (27 controlli) + controprova su 37650c8.
+    >>> DENIS DEVE RICARICARE il .gpx col ⬆ per le escursioni gia' fatte
+        che vuole pubblicare (l'originale non era stato conservato).
 
-  COSMETICO noto sul 113 (non deciso di sistemarlo): la card Feed mostra
-  due date (pubblicazione + data uscita); su card "escursione" strette
-  "Pubblica nel feed" va a capo su due righe; se togli e rimetti un
-  "mi piace" arriva all'autore una seconda notifica.
+  COSMETICI noti sul 113 (non decisi di sistemarli): la card Feed mostra
+  due date; su card "escursione" strette "Pubblica nel feed" va a capo;
+  togliere e rimettere un "mi piace" manda una seconda notifica; il .gpx
+  del ⬆ non assegna i badge di vetta come /import-gpx (aggiunta piccola,
+  sposterebbe assegnaTimbriDallaTraccia in lib/geofenceTimbri.js).
+
+  SPLIT CAMMINO/PAUSE E FILE .GPX: se un .gpx ha buchi temporali/spaziali
+  ("smart recording" / GPS perso), movimentoSecAttendibile (punto 79)
+  rifiuta lo split con "buchi non interpretabili" e salva solo il totale.
+  NON e' un bug: e' il file. Rimedio: export GPX a risoluzione piena.
+  IDEA aperta (non richiesta): import FIT (Garmin registra in FIT, il GPX
+  di Garmin Connect e' gia' degradato) - vedi vault 05-Idee-Facoltative.
 
 >>> GIA' IN PRODUZIONE (sessioni precedenti): Punto 111 (segnalazioni
     sentiero: "risolvi" e scadenza a 90gg passano dal moderatore) e

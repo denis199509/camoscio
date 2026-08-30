@@ -7759,3 +7759,81 @@ schermo spento ancora."
    il racconto per passo in 06-Cronologia-Sessioni.md tredicesima
    sessione.
    -----------------------------------------------------------------
+
+
+CODA DELLA TREDICESIMA SESSIONE (30/08/2026, dopo la chiusura del 113)
+=====================================================================
+
+A) LISTA PERSONE REGISTRATE - richiesta di Denis:
+   "appena puoi mi fai una lista con le persone registrate sul sito" +
+   "dovremmo aggiungere la data di registrazione. non visibile sul
+   profilo ma solo per me [...] ma le altre volte avevi messo la data
+   di registrazione pero".
+   FATTO senza aggiungere un campo: la data di registrazione e' gia' nel
+   _id (l'ObjectId porta il timestamp di creazione). Aggiungere un
+   createdAt sarebbe un doppione (vincolo spazio) e non retroattivo.
+   Script NUOVO scripts/utenti-registrati.js (SOLA LETTURA): elenco
+   ordinato per _id (= ordine di registrazione), ora italiana; opzioni
+   --demo, --csv. Commit 37650c8, pushato.
+   Al 30/08: 10 persone reali (Denis, DaniWoll, Manu er 5 lingue, Matteo
+   Bi, Camilla [email non confermata], Bob84, Nicolo97, Scheldon,
+   gabriele183, Luisella) + 4 demo.
+
+B) FIX - il .gpx aggiunto a un'escursione GIA' completata non salvava la
+   traccia. Parole di Denis:
+   "non riesco a pubblicare l'escursione 'Alba Corno Grande' sul feed.
+   Chiede il file gpx. File che avevo gia' inserito prima, infatti c'e'
+   gia' il tempo in camminata e tempo totale".
+   Causa: POST /api/completions/:id/gpx (tasto ⬆) estraeva solo gli
+   orari e buttava la geometria; il feed ha bisogno della linea, e
+   un'escursione di gruppo diventa pubblicabile solo se ha una
+   ActiveHikeSession collegata (hikeId), che prima nasceva SOLO dal
+   tracciamento dal vivo.
+   FATTO (commit 934229d, pushato -> Render redeploy automatico):
+   - routes/completions.js: dopo gli orari, crea (o sostituisce, se e'
+     gia' un .gpx) una ActiveHikeSession collegata all'escursione
+     (hikeId, importedFrom:'gpx', status:'ended', points ~8m,
+     movingTimeSec). Una sessione registrata dal vivo NON si tocca. Il
+     ri-upload aggiorna lo stesso documento e conserva publishedAt/
+     caption. Non blocca: se fallisce, gli orari sono comunque aggiornati.
+   - routes/tracking.js /import-gpx: il tetto mensile conta solo le
+     uscite a se' (hikeId:null); un .gpx su un'escursione gia' fatta non
+     consuma un posto.
+   - storico.js / i18n.js: il messaggio "serve una traccia" rimanda al
+     tasto ⬆ sulla card, non a "Carica un file .gpx" (che crea un'uscita
+     a se').
+   - social.js: dopo il ⬆ ridisegna "Le mie escursioni".
+   Verificato dal vivo + prove/prova-punto113-gpx.js (27 controlli) +
+   controprova su 37650c8. Nessuna regressione: prova-punto113 103/103,
+   prova-punto92 84/84.
+   NON incluso di proposito: il .gpx del ⬆ NON assegna i badge di vetta
+   come fa /import-gpx (assegnaTimbriDallaTraccia e' in routes/tracking.js,
+   non esportato - andrebbe spostato in lib/geofenceTimbri.js). Aggiunta
+   piccola se Denis la vuole.
+   DA FARE PER LE VECCHIE ESCURSIONI: Denis deve RICARICARE il .gpx col
+   tasto ⬆ per le escursioni gia' completate che vuole pubblicare
+   (l'originale non era stato conservato).
+
+C) "com'e' possibile che la prima volta siamo riusciti a calcolare il
+   tempo e adesso no?" - NON e' una regressione del fix B (quel codice
+   non e' stato toccato). Sono due cose:
+   - "la prima volta" era un FILE DIVERSO (Alba Corno Grande, 2 ago:
+     actualTimeHours 7.3062; ora 7.2675 -> file diverso, stessa
+     camminata esportata da un'app/impostazione diversa);
+   - il file di adesso ha buchi temporali/spaziali ("smart recording" /
+     GPS perso): movimentoSecAttendibile (punto 79) rifiuta lo split
+     cammino/pause con "buchi non interpretabili" e salva solo il totale.
+     Scelta di prodotto: il nostro algoritmo e' volutamente piu' severo
+     del visualizzatore GPX. Il totale si salva comunque (basta primo +
+     ultimo orario), e la traccia + pubblicabilita' del fix B funzionano
+     lo stesso.
+   RIMEDIO PRATICO: ri-esportare la stessa attivita' in GPX a
+   "risoluzione piena" / "tutti i punti" (non l'export "smart").
+
+D) [IDEA, non richiesta - Denis: "se lo vuoi dimmelo e lo faccio come
+   punto a se'"] IMPORT FIT. Denis usa Garmin; il GPX di Garmin Connect
+   e' gia' una copia degradata del FIT (che registra ~1 punto/secondo).
+   KML: non aiuta (di solito niente orari sui punti) e non e' supportato.
+   FIT: binario, servirebbe una libreria dedicata (nuova dipendenza) +
+   un ramo nel percorso di import. Darebbe lo split cammino/pause pulito.
+   Vedi ../camoscio memoria/05-Idee-Facoltative.md.
