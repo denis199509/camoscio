@@ -53,6 +53,15 @@ Aggiornato: 2026-08-30 (quattordicesima sessione).
   >>> DENIS DEVE RICARICARE il .gpx/.fit col ⬆ per le escursioni gia'
       fatte che vuole pubblicare (l'originale non era stato conservato).
 
+  CODA: controllo dimensioni file. Le 33 icone badge (public/img/) erano
+  46 MB, l'88% del repo (salvate a 1024-1254 px, mostrate a 80-90 px).
+  Ridimensionate a 768 px PNG senza perdita con scripts/comprimi-badge.js
+  (NUOVO, sharp): 46 -> 8,8 MB, zero codice toccato, originali in
+  ../camoscio-badge-originali/ (fuori dal repo). Commit 084f992.
+  NON fatto: sgonfiare il .git da 89 MB (git filter-repo, delicato su
+  repo pubblico); WebP; alleggerire lucide.js. Non stanno su MongoDB:
+  era peso di pagina + repo, non il vincolo 512 MB.
+
 >>> GIA' IN PRODUZIONE (sessioni precedenti): Punto 113 (parte social:
     Segui, Feed, uscita apribile, "mi piace", "crea percorso"); Punto 111
     (segnalazioni sentiero: "risolvi" e scadenza a 90gg passano dal

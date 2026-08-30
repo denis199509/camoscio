@@ -8003,3 +8003,30 @@ escursioni" / "commit e push, tutto funzionante").
     appare NEL FEED e nella pagina di dettaglio. Due nomi per la stessa cosa se
     Denis li fa diversi. Il default (nome traccia = titolo escursione) li tiene
     allineati finche' non li si tocca.
+
+--------------------------------------------------------------------------------
+CODA - CONTROLLO DIMENSIONI FILE + COMPRESSIONE ICONE BADGE [FATTO]
+--------------------------------------------------------------------------------
+Denis: "vorrei un controllo sui file per vedere la grandezza dei file e se
+possibile ridimensionare. quindi un controllo sui file che usiamo di solito".
+
+AUDIT: repo (senza node_modules/.git/android) = 52,7 MB, di cui public/img/ =
+46,4 MB (l'88% - 33 PNG badge salvate a 1024-1254 px ma mostrate a 80-90 px).
+Le immagini NON stanno su MongoDB (file statici su Render): il costo era il peso
+di pagina (la pagina Badge scaricava fino a 46 MB) e la dimensione del repo
+pubblico, non il vincolo dei 512 MB. .git = 89 MB (icone rifatte 11 volte).
+
+FATTO (scelta di Denis: PNG 768 px, stessi nomi):
+- scripts/comprimi-badge.js (NUOVO, sharp): downscale a lato max 768 px, PNG
+  senza perdita. Nomi e formato invariati -> ZERO modifiche al codice.
+  Originali copiati in ../camoscio-badge-originali/ (fuori dal repo).
+- 33 immagini: 46,4 MB -> 8,8 MB (-81%). Repo 52,7 -> 15,1 MB.
+- Commit 084f992, pushato -> Render redeploy.
+
+NON FATTO (flaggato a Denis):
+- .git da 89 MB: sgonfiarlo = riscrivere la storia (git filter-repo) su repo
+  pubblico con remoto - operazione delicata, da decidere a parte.
+- WebP (-altri ~6 MB, ma serve rinominare i riferimenti .png->.webp in 6 file JS).
+- lucide.js 586 KB (set icone completo, se ne usano ~40) - subset build, rischio
+  icone rotte, non urgente.
+- cose_da_fare.txt / cronologia.txt crescono per scelta (archivio) - non toccati.
