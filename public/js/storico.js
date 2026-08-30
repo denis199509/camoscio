@@ -225,6 +225,7 @@
             const tracciaCollegata = sessioni.find(s => s.hikeId === h.id && (s.distanceKm || 0) > 0.05);
             const azioni = `
                 ${bottonePubblica(tracciaCollegata ? tracciaCollegata.id : null, tracciaCollegata ? tracciaCollegata.publishedAt : null, tracciaCollegata ? tracciaCollegata.importedName : null)}
+                ${tracciaCollegata ? bottoneRinomina(tracciaCollegata.id, tracciaCollegata.importedName) : ''}
                 <button class="btn btn-sm btn-secondary" style="padding:2px 6px;" onclick="uploadCompletionGpx('${completion.id}')" title="${esc(T('hikeCard.caricaGpxTitle') || 'Carica un file .gpx per avere il tempo reale di questa escursione')}">
                     <i data-lucide="upload"></i>
                 </button>

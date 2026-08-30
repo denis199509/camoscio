@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Completion = require('../models/Completion');
 const User = require('../models/User');
+const Hike = require('../models/Hike'); // punto 115: nome di default della traccia = titolo dell'escursione
 const ActiveHikeSession = require('../models/ActiveHikeSession'); // punto 113 fix: la traccia diventa una sessione collegata all'escursione
 const { requireAuth } = require('../middleware/auth');
 const { mongoose } = require('../db/mongo');
@@ -111,9 +112,17 @@ router.post('/:id/gpx', requireAuth, async (req, res) => {
                 distanceKm: datiReali.distanceKm,
                 elevationGainM: datiReali.elevationGain,
                 points: puntiSemplificati,
-                importedFrom: 'gpx',
-                importedName: (letto.nome || '').slice(0, 120) || undefined
+                importedFrom: 'gpx'
+                // importedName gestito a parte qui sotto (punto 115): la creazione e il
+                // ricaricamento hanno regole diverse.
             };
+            // Punto 115: nome dell'uscita. Il <name> del file quando c'e'; il .fit non ne
+            // ha uno, allora si ripiega sul TITOLO dell'escursione, cosi' nel feed non
+            // compare una data nuda al posto di "Ascesa al Corno Grande".
+            const nomeFile = (letto.nome || '').slice(0, 120) || null;
+            const hike = await Hike.findById(completion.hikeId).select('title').lean();
+            const nomeDefault = nomeFile || ((hike && hike.title) ? hike.title.slice(0, 120) : null);
+
             const esistente = await ActiveHikeSession.findOne({ userId: completion.userId, hikeId: completion.hikeId });
             if (!esistente) {
                 // openSession NON impostato: la traccia e' gia' conclusa (stesso motivo di /import-gpx).
@@ -121,6 +130,7 @@ router.post('/:id/gpx', requireAuth, async (req, res) => {
                     userId: completion.userId,
                     hikeId: completion.hikeId,
                     ...campiTraccia,
+                    ...(nomeDefault ? { importedName: nomeDefault } : {}),
                     ...(movimento.sec ? { movingTimeSec: movimento.sec } : {})
                 });
             } else if (esistente.importedFrom === 'gpx') {
@@ -128,8 +138,13 @@ router.post('/:id/gpx', requireAuth, async (req, res) => {
                 // publishedAt/caption (e' la stessa uscita, traccia aggiornata).
                 const set = { ...campiTraccia };
                 const unset = {};
-                if (set.importedName === undefined) { delete set.importedName; unset.importedName = ''; }
                 if (movimento.sec) set.movingTimeSec = movimento.sec; else unset.movingTimeSec = '';
+                // Il nome: se il nuovo file ne porta uno, quello vince (l'utente sta
+                // ricaricando quella traccia). Se non ne porta (es. .fit) NON si tocca:
+                // un nome messo a mano con la matita (punto 115) o quello vecchio restano.
+                // Solo se non c'era proprio niente si mette il titolo dell'escursione.
+                if (nomeFile) set.importedName = nomeFile;
+                else if (!esistente.importedName && hike && hike.title) set.importedName = hike.title.slice(0, 120);
                 const upd = { $set: set };
                 if (Object.keys(unset).length) upd.$unset = unset;
                 await ActiveHikeSession.updateOne({ _id: esistente._id }, upd);

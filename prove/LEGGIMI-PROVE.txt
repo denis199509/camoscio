@@ -240,9 +240,9 @@ La prova del FIX 30/08/2026 (punto 113): il .gpx aggiunto a un'escursione GIA' c
 pubblicabile nel feed. Segnalato da Denis: "Alba Corno Grande" chiedeva un .gpx gia'
 caricato.
 
-    node prove/prova-punto113-gpx.js                27 controlli  (ne avvia uno suo, sulla 3115)
+    node prove/prova-punto113-gpx.js                35 controlli  (ne avvia uno suo, sulla 3115)
 
-    CINQUE SEZIONI, un account demo. Un hike completato SENZA sessione collegata (come "Alba
+    SEI SEZIONI, un account demo. Un hike completato SENZA sessione collegata (come "Alba
     Corno Grande"), poi POST /api/completions/:id/gpx: 1) crea 1 ActiveHikeSession con
     hikeId != null, importedFrom:'gpx', status ended, points, movingTimeSec, NIENTE
     openSession, non pubblicata; 2) quella sessione e' pubblicabile (POST /sessions/:id/
@@ -256,6 +256,10 @@ caricato.
     vecchio /:id/gpx non crea nessuna sessione), poi la prova si FERMA IN ERRORE a sez. 2
     (nessuna sessione da pubblicare -> S._id su undefined). La prova guarda davvero quello
     che dice.
+    SEZ. 6 (punto 115): un .gpx SENZA <name> (imita un .fit) collegato al ⬆ -> importedName
+    = TITOLO dell'escursione (non una data nuda nel feed); PATCH /name rinomina; un
+    ri-upload senza <name> NON tocca il nome scelto a mano; un ri-upload CON <name> lo
+    sovrascrive (l'utente sta ricaricando quella traccia).
     NOTA non coperta da questa prova (e' il FILE, non il codice): se il .gpx ha buchi
     temporali/spaziali (registrazione "smart"/semplificata), movimentoSecAttendibile
     (punto 79) rifiuta lo split cammino/pause con "buchi non interpretabili" e si salva

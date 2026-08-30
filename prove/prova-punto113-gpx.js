@@ -68,6 +68,13 @@ function gpx(nome, giornoIso) {
     return `<?xml version="1.0"?><gpx version="1.1" creator="prova"><trk><name>${nome}</name><trkseg>${pts.join('')}</trkseg></trk></gpx>`;
 }
 
+// Punto 115: come gpx() ma SENZA <name> - imita un .fit (che non porta un nome traccia)
+// esportato in gpx. Serve a verificare il ripiego "nome = titolo dell'escursione".
+function gpxSenzaNome(giornoIso) {
+    const conNome = gpx('_', giornoIso);
+    return conNome.replace(/<name>[^<]*<\/name>/, '');
+}
+
 (async () => {
     await mongoose.connect(process.env.MONGODB_URI);
     const hikes = mongoose.connection.collection('hikes');
@@ -181,6 +188,37 @@ function gpx(nome, giornoIso) {
         const senzaFiltro = await sessions.countDocuments({ userId: oid(idA), importedFrom: 'gpx', _id: { $gte: sogliaId } });
         ok('la sessione collegata (hikeId != null) resta fuori dal conteggio del tetto',
             senzaFiltro - conFiltro >= 1, JSON.stringify({ con: conFiltro, senza: senzaFiltro }));
+
+        // === 6. Punto 115: nome della traccia collegata ===
+        console.log('\n6. Punto 115: il .fit senza <name> ripiega sul titolo dell\'escursione; la matita e il ri-upload');
+        const { HID: HID3, CID: CID3 } = await creaHikeCompletato('punto115');
+        const titoloHike = MARCA + ' punto115';
+
+        // 6a - .gpx SENZA <name> (come un .fit) -> importedName = titolo dell'escursione
+        const u6a = await chiama('POST', `/api/completions/${CID3}/gpx`, { gpxText: gpxSenzaNome('2026-08-03') }, cookieA);
+        ok('6a  POST /:id/gpx senza <name> -> 200', u6a.status === 200, JSON.stringify(u6a.corpo && u6a.corpo.error));
+        let S6 = await sessions.findOne({ hikeId: oid(HID3) });
+        ok('6a  importedName = titolo dell\'escursione (niente data nuda nel feed)',
+            S6 && S6.importedName === titoloHike, S6 && S6.importedName);
+
+        // 6b - rinomina con la matita (PATCH /name)
+        const u6b = await chiama('PATCH', `/api/tracking/sessions/${S6._id}/name`, { name: MARCA + ' Nome a mano' }, cookieA);
+        ok('6b  PATCH /name -> 200', u6b.status === 200, `status ${u6b.status}`);
+        S6 = await sessions.findOne({ _id: S6._id });
+        ok('6b  importedName aggiornato al nome scelto', S6.importedName === MARCA + ' Nome a mano', S6.importedName);
+
+        // 6c - ri-upload di un .gpx SENZA <name>: il nome scelto a mano NON viene toccato
+        const u6c = await chiama('POST', `/api/completions/${CID3}/gpx`, { gpxText: gpxSenzaNome('2026-08-03') }, cookieA);
+        ok('6c  ri-upload senza <name> -> 200', u6c.status === 200);
+        S6 = await sessions.findOne({ _id: S6._id });
+        ok('6c  il nome messo a mano e\' RIMASTO (ri-upload senza nome non lo tocca)',
+            S6.importedName === MARCA + ' Nome a mano', S6.importedName);
+
+        // 6d - ri-upload di un .gpx CON <name>: quello vince (l'utente sta ricaricando quella traccia)
+        const u6d = await chiama('POST', `/api/completions/${CID3}/gpx`, { gpxText: gpx(MARCA + ' dal file', '2026-08-03') }, cookieA);
+        ok('6d  ri-upload con <name> -> 200', u6d.status === 200);
+        S6 = await sessions.findOne({ _id: S6._id });
+        ok('6d  il <name> del nuovo file vince sul nome vecchio', S6.importedName === MARCA + ' dal file', S6.importedName);
 
     } catch (e) {
         console.error('\nERRORE DELLA PROVA:', e);
