@@ -7572,20 +7572,25 @@ schermo spento ancora."
    4. Pubblicazione di un'uscita.                            [FATTO]
    5. Pagina Feed.                                           [FATTO]
    6. Pagina uscita pubblicata + mini-mappa.                 [FATTO]
-   7. Mi piace (+ notifica all'autore).                      da fare
+   7. Mi piace (+ notifica all'autore).                      [FATTO]
    8. Percorso da traccia: modello SavedRoute + "I miei
-      progetti" + rotte.                                     da fare
+      progetti" + rotte.                                     [FATTO]
    9. Segui la linea dal vivo + aggancio a una Hike
-      (Hike.routeSource.kind:'saved').                       da fare
+      (Hike.routeSource.kind:'saved').                       [FATTO]
    10. Traduzione EN (tutte le chiavi dei passi 1-9) +
-      prove/prova-punto113.js + controprova.                 da fare
+      prove/prova-punto113.js + controprova.                 [FATTO]
 
    -----------------------------------------------------------------
-   STATO AL 30/08/2026 (tredicesima sessione) - PASSI 1-6 DI 10 FATTI
+   PUNTO 113 CHIUSO E IN PRODUZIONE (30/08/2026, tredicesima sessione)
    -----------------------------------------------------------------
-   Tutti e 6 verificati dal vivo (estensione Chrome, account demo
-   Marco/Luca/Sofia), DB pulito a fine di ogni passo, server fermato.
-   Commit LOCALE b6a771c (rifusione dei 6 auto-save), NON pushato.
+   Tutti e 10 i passi verificati dal vivo (estensione Chrome, account
+   demo Marco/Luca/Sofia, IT+EN, console pulita), DB pulito a fine di
+   ogni passo, server fermato. Passi 1-6 in b6a771c (sessione scorsa),
+   passi 7-10 in un commit unico b7afa35 (git reset --soft 629476f sui
+   4 auto-save + un commit vero). Push del 30/08: 6271cf8..b7afa35 su
+   camoscio/master (b6a771c + 629476f + b7afa35, i primi due erano
+   rimasti indietro dalla sessione scorsa). Render fa redeploy
+   automatico ai push.
 
    PASSO 1 - models/Follow.js (collezione dedicata {followerId,
      followingId}, NON due array su User: un array su cui si fa $push va
@@ -7661,16 +7666,96 @@ schermo spento ancora."
      mini-mappa disegna la traccia, il messaggio "non puoi vedere" per il
      non-follower.
 
+   PASSO 7 - "mi piace" (emoji montagna) su un'uscita pubblicata.
+     models/Like.js: collezione dedicata {userId, sessionId} + indice
+     UNICO {userId,sessionId} + {sessionId}. NIENTE contatore
+     denormalizzato su ActiveHikeSession: serve comunque la riga
+     per-utente ("l'ho messo io"), e un secondo numero andrebbe fuori
+     sync - countDocuments su indice a questa scala e' esatto. POST/DELETE
+     /api/tracking/sessions/:id/like -> { likeCount, likedByMe } (toggle,
+     mai ottimistico). POST idempotente (catch 11000). Cascata
+     Like.deleteMany nel DELETE della sessione (try suo: la sessione e'
+     gia' sparita). Notifica all'AUTORE solo alla PRIMA comparsa del Like
+     di quella persona (creato=true; se il Like c'era gia', niente),
+     MAI per un like a se stessi; Notification.relatedSessionId (nuovo,
+     default undefined) + ramo nuovo in renderNotificationBell (app.js)
+     -> goToOutingFromNotification (outingpage.js). Togliere il like non
+     manda niente e non cancella la notifica gia' inviata. NOTA: se
+     togli e rimetti il like, arriva una seconda notifica (e' legata alla
+     creazione della riga Like, non a un flag permanente - vincolo
+     spazio). /meta e il feed portano likeCount/likedByMe (nel feed in
+     due query batch: aggregate totali + find dei miei). Bottone .mi-
+     piace-btn in feed.js e outingpage.js. Verificato dal vivo + smoke
+     19/19.
+
+   PASSO 8 - "crea percorso" da una traccia altrui -> models/SavedRoute.js
+     (NUOVO, non RouteDraft: quello salva 2-25 punti cliccati e ricalcola,
+     una traccia copiata e' l'opposto). Copia la geometria alla creazione,
+     NESSUN sessionId salvato -> indipendente (l'uscita sorgente puo'
+     sparire). simplifyTrack ~18 m, solo [lng,lat] (quota/tempo scartati),
+     tetti MAX_PERCORSI_SALVATI=50 / MAX_PUNTI_PERCORSO=400. origineUserId
+     + origineUsername (l'etichetta "da <autore>" resta leggibile se
+     l'account cambia nome), distanzaKm/dislivelloM/quotaMaxM copiati.
+     La guardia autore-o-follower (guardiaUscitaVisibile) ESTRATTA da
+     routes/tracking.js in lib/uscitaVisibile.js: la usano sia le rotte
+     dell'uscita sia POST /api/routing/saved-routes (mai due copie).
+     GET/POST/DELETE /api/routing/saved-routes (POST: guardia + controllo
+     regioni campione-e-maggioranza come i .gpx importati, 429 al tetto).
+     routeplanner.js renderProgetti elenca anche i percorsi salvati
+     (badge "da una traccia" + "da <autore>"); map.js
+     disegnaPercorsoSalvato (#4C7E90, il blu del percorso progettato).
+     Bug di layout trovato e corretto: titolo del percorso che andava a
+     capo una lettera per riga (dentro la riga flex .outing-card-head con
+     due badge) -> spostato su una riga sua, come schedaEscursioneCompletata.
+     Verificato dal vivo + smoke 21/21.
+
+   PASSO 9 - Hike.routeSource.kind guadagna 'saved' (['draft','gpx','saved']).
+     lib/percorso.js calcolaDaPercorso: ramo 'saved' carica il PROPRIO
+     SavedRoute e restituisce i numeri GIA' copiati (misure di una traccia
+     GPS reale, piu' oneste di una stima DEM, nessun servizio esterno).
+     Distanza: dal campo copiato, o ricalcolata dai punti se manca.
+     Dislivello/quota max NON ricostruibili (i punti sono solo [lng,lat]):
+     se mancano -> ripiego "quote a mano" del punto 93 (422 richiedeQuote,
+     poi retry con quoteManuali -> routeSource.dislivelloManuale:true).
+     motivo 'fonte' cosi' risolviPercorso e i due punti di routes/hikes.js
+     NON si toccano. routeSource sulla Hike resta solo un'etichetta
+     {kind:'saved', nome} (no savedRouteId) -> i numeri restano se il
+     SavedRoute viene cancellato. Form creazione escursione: opzione
+     "Li calcolo da un percorso salvato da una traccia" + picker
+     (social.js, gemello di quello dei progetti). "Segui la linea dal
+     vivo": selettore "Percorso da seguire (facoltativo)" nel pannello di
+     registrazione (tracking.js) -> disegna la polyline come RIFERIMENTO
+     (map.js disegnaPercorsoSalvato riusata, bringToBack sotto la traccia
+     live). NESSUN rilevamento di fuori-percorso, NESSUN avviso (vincolo
+     7) - la nota a schermo lo dice per esteso. Verificato dal vivo +
+     smoke 21/21.
+
+   PASSO 10 - traduzione EN di TUTTE le chiavi dei passi 1-9 in
+     public/js/i18n.js (~75 voci: nav.feed, sectionTitle.feed/outing-page,
+     feed.*, follow.*, publish.*, outing.*, rp.prog.tagDaTraccia/daAutore/
+     ..., hikeModal.routeSaved/qualePercorso, track.percorsoDaSeguire/Nota;
+     due chiavi a FUNZIONE per l'interpolazione, come rp.nomeDefault).
+     Restano in italiano di proposito: le didascalie del feed (testo
+     utente), i nomi dei percorsi salvati e l'etichetta "da <autore>"
+     (nome proprio), il testo delle notifiche (lo genera il server).
+     prove/prova-punto113.js NUOVO: 103 controlli, 8 sezioni, server suo
+     sulla 3113, auto-pulente (marca PROVA-113-<timestamp>). CONTROPROVA
+     su 6271cf8 (git worktree): 18 controlli caduti, poi si ferma alla
+     sez. 3 (/api/feed non esiste). Voce in prove/LEGGIMI-PROVE.txt.
+     Verificato dal vivo anche il toggle EN su Feed/pagina uscita/form
+     escursione/pannello registrazione.
+
    COSMETICO (segnalato a Denis, non deciso di sistemarlo):
    - card Feed mostra due date: pubblicazione (riga autore) e data
      dell'uscita (titolo della card riusata). Informativo ma ridondante.
    - sulle card "escursione" strette il tasto "Pubblica nel feed" va a
      capo su due righe.
+   - se togli e rimetti un "mi piace", l'autore riceve una seconda
+     notifica (vedi passo 7). Comportamento raro, lasciato com'e'.
 
    -----------------------------------------------------------------
-   SI RIPARTE DAL PASSO 7 (mi piace + notifica all'autore).
-   Passo 8 = SavedRoute (RouteDraft salva solo 2-25 punti cliccati, mai
-   la polyline: una traccia densa non ci entra, serve un modello nuovo -
-   dettaglio nel piano). Passo 9 tocca lib/percorso.js e la UI di
-   tracciamento. Passo 10 = EN + prove.
+   PUNTO 113 CHIUSO. Niente in corso. Le decisioni tecniche per esteso
+   in ../camoscio memoria/03-Decisioni-Architetturali.md "Punto 113";
+   il racconto per passo in 06-Cronologia-Sessioni.md tredicesima
+   sessione.
    -----------------------------------------------------------------

@@ -2,71 +2,31 @@
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
 Aggiornato: 2026-08-30 (tredicesima sessione).
 
->>> IN CORSO: PUNTO 113 — LA PARTE SOCIAL. Passi 1-6 di 10 fatti e
-    verificati dal vivo. Commit LOCALE b6a771c (rifusione dei 6 auto-save),
-    NON PUSHATO. SI RIPARTE DAL PASSO 7.
+>>> NIENTE IN CORSO. Ultimo lavoro: PUNTO 113 (la parte social) —
+    CHIUSO E IN PRODUZIONE il 30/08. Tutti e 10 i passi, push
+    6271cf8..b7afa35 su camoscio/master, Render redeploy automatico.
 
-  Cosa e': tasto "Segui" sui profili (unidirezionale, stile Instagram);
-  pagina "Feed" (voce di barra dopo Dashboard) con le uscite pubblicate
-  da chi segui; ogni uscita apribile su una pagina con mini-mappa della
-  traccia + distanza/dislivello/tempo + didascalia; un "mi piace" (emoji
-  montagna); un tasto "crea percorso" che copia la traccia altrui fra
-  "I miei progetti" per riusarla. Piu' le liste "chi segui / ti segue"
-  in Tribu' & Squadre + contatore sul profilo altrui.
+  Cos'e' il punto 113: tasto "Segui" sui profili (unidirezionale, stile
+  Instagram); pagina "Feed" (voce di barra dopo Dashboard) con le uscite
+  pubblicate da chi segui; ogni uscita apribile su una pagina con
+  mini-mappa + distanza/dislivello/tempo + didascalia; un "mi piace"
+  (emoji montagna) con notifica all'autore; un tasto "crea percorso" che
+  copia la traccia altrui fra "I miei progetti" e la si puo' seguire dal
+  vivo come SOLA LINEA (nessun avviso di fuori-percorso - vincolo 7);
+  escursione coi numeri presi da un percorso salvato. Piu' le liste
+  "chi segui / ti segue" in Tribu' & Squadre + contatore sul profilo.
 
-  PIANO (10 passi fermabili) - file:
-  .claude/plans/ok-adesso-ci-dovremmo-dreamy-castle.md
-    1. Follow: modello + rotte + stato                       [FATTO]
-    2. Tasto "Segui" sul profilo                             [FATTO]
-    3. Liste follow in Tribu' & Squadre + contatore profilo  [FATTO]
-    4. Pubblicazione di un'uscita                            [FATTO]
-    5. Pagina Feed                                           [FATTO]
-    6. Pagina uscita pubblicata + mini-mappa                 [FATTO]
-    7. Mi piace (+ notifica all'autore)                      <- QUI
-    8. Percorso da traccia (modello SavedRoute nuovo)        da fare
-    9. Segui la linea dal vivo + aggancio a una Hike         da fare
-   10. Traduzione EN di tutte le chiavi + prova + controprova da fare
+  Dettaglio per passo in cose_da_fare.txt punto 113; decisioni tecniche
+  nel vault 03 "Punto 113"; racconto per passo nel vault 06 tredicesima
+  sessione. File nuovi: models/Follow.js, models/Like.js,
+  models/SavedRoute.js, lib/uscitaVisibile.js, routes/follow.js,
+  routes/feed.js, public/js/feed.js, public/js/outingpage.js,
+  prove/prova-punto113.js (103 controlli).
 
-  FATTO FIN QUI (dettaglio per passo in cose_da_fare.txt punto 113,
-  decisioni nel vault 03 "Punto 113"):
-  - models/Follow.js (collezione {followerId,followingId} + 2 indici),
-    routes/follow.js su /api/follow, CamoscioState.following in refreshState
-  - tasto "Segui" in renderProfileIdentity (condivisa col proprio
-    profilo: gate isSelf), window.toggleFollow
-  - card "Persone" a scomparsa in #social + contatore "N seguaci - N
-    seguiti" su #user-profile (modale #follow-list-modal)
-  - ActiveHikeSession.publishedAt + caption; POST /sessions/:id/publish +
-    /unpublish (autore, solo 'ended'); tasto "Pubblica nel feed" sulle
-    card di "Le mie escursioni"
-  - <section id="feed"> + public/js/feed.js + routes/feed.js
-    (GET /api/feed?before=<ISO>, cursore, MAI i points); indice parziale
-    {userId,publishedAt} su ActiveHikeSession
-  - <section id="outing-page"> + public/js/outingpage.js (IIFE);
-    guardiaUscitaVisibile + GET /sessions/:id/meta e /points
-    (?scopo=mini semplifica); mini-mappa = seconda istanza Leaflet
-
-  OTTO DECISIONI DI DENIS (in cose_da_fare.txt punto 113, per esteso):
-  follow unidirezionale senza conferma; pubblicazione ESPLICITA con
-  didascalia; SOLO uscite con traccia GPS; "crea percorso" seguibile dal
-  vivo solo come linea (NESSUN avviso di fuori-percorso); percorso copiato
-  in "I miei progetti" con etichetta "da <autore>"; visibilita' SOLO ai
-  follower (protetta lato server); liste follow pubbliche fra utenti
-  loggati; mi piace con notifica all'autore, nessuna notifica per le
-  pubblicazioni.
-
-  DUE TRAPPOLE PAGATE (in vault 07):
-  - MongoDB non ammette un campo semplice ({publishedAt: x}) e un
-    operatore ($unset) nello stesso update -> $set + $unset.
-  - lucide sostituisce <i data-lucide> con <svg>: un CSS che ruota "i"
-    manca il bersaglio -> selezionare anche "svg".
-
-  COSMETICO noto (non deciso di sistemarlo): la card Feed mostra due date
-  (pubblicazione + data uscita); su card strette "Pubblica nel feed" va a
-  capo su due righe.
-
->>> PRIMA DI RIPRENDERE: il commit b6a771c e' LOCALE. Se si vuole pushare
-    (Denis lo deve chiedere), e' gia' un commit vero unico - basta
-    `git push`. Gli auto-save successivi vanno rifusi come sempre.
+  COSMETICO noto sul 113 (non deciso di sistemarlo): la card Feed mostra
+  due date (pubblicazione + data uscita); su card "escursione" strette
+  "Pubblica nel feed" va a capo su due righe; se togli e rimetti un
+  "mi piace" arriva all'autore una seconda notifica.
 
 >>> GIA' IN PRODUZIONE (sessioni precedenti): Punto 111 (segnalazioni
     sentiero: "risolvi" e scadenza a 90gg passano dal moderatore) e
@@ -82,17 +42,18 @@ Aggiornato: 2026-08-30 (tredicesima sessione).
 >>> RESTA VALIDO:
   - Hook "Stop" di auto-save: commit locale (MAI push) a fine di ogni
     risposta se ci sono modifiche non salvate in questo repo. Va rifuso
-    in un commit vero prima di ogni push (reset --soft se sono piu' di
-    uno) - fatto per i passi 1-6 (b6a771c).
+    in un commit vero prima di ogni push (git reset --soft sull'ultimo
+    commit vero se gli auto-save sono piu' di uno) - fatto per i passi
+    7-10 (b7afa35, reset --soft 629476f sui 4 auto-save).
   - Traduzione IT/EN (punto 102, CHIUSO): resta ITALIANO di proposito
     tutto il testo scritto dagli utenti (didascalie del feed comprese),
-    i nomi propri di luogo, titolo/descrizione dei badge personali, le
-    schede "i" dei badge (punto 112), il segnaposto nativo di
-    <input type=date>/<input type=file>, e componiRapporto() dentro
-    diagnostica-gps.html. Le chiavi EN dei passi 1-6 del punto 113 NON
-    sono ancora nel dizionario: si aggiungono tutte al passo 10 (ripiego
-    all'italiano inline fino ad allora, come da rollout del punto 102).
-  - Punti 102, 106 e 112 CHIUSI E PUSHATI il 28/08.
+    i nomi propri di luogo, i nomi dei percorsi salvati e l'etichetta
+    "da <autore>", titolo/descrizione dei badge personali, le schede "i"
+    dei badge (punto 112), il testo delle notifiche (lo genera il
+    server), il segnaposto nativo di <input type=date>/<input type=file>,
+    e componiRapporto() dentro diagnostica-gps.html. Le chiavi EN del
+    punto 113 sono state aggiunte tutte al passo 10.
+  - Punti 102, 106, 108, 111, 112, 113 CHIUSI E IN PRODUZIONE.
 
 ===================================================================
 
