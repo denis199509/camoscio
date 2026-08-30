@@ -1,53 +1,63 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-30 (tredicesima sessione).
+Aggiornato: 2026-08-30 (quattordicesima sessione).
 
 >>> NIENTE IN CORSO. Tutto pushato e in produzione (Render redeploy
     automatico ai push).
 
-  ULTIMO LAVORO — PUNTO 113 (la parte social), CHIUSO E IN PRODUZIONE il
-  30/08 (push 6271cf8..b7afa35 su camoscio/master). Tasto "Segui"
-  (unidirezionale); pagina "Feed" con le uscite pubblicate da chi segui;
-  ogni uscita apribile con mini-mappa + numeri + didascalia; "mi piace"
-  (emoji montagna) con notifica all'autore; "crea percorso" che copia la
-  traccia altrui fra "I miei progetti", seguibile dal vivo come SOLA
-  LINEA (nessun avviso di fuori-percorso - vincolo 7); escursione coi
-  numeri presi da un percorso salvato; liste follow in Tribu' & Squadre.
-  Dettaglio in cose_da_fare.txt punto 113; decisioni nel vault 03
-  "Punto 113"; racconto per passo nel vault 06 tredicesima sessione.
-  File nuovi: models/Follow.js, models/Like.js, models/SavedRoute.js,
-  lib/uscitaVisibile.js, routes/follow.js, routes/feed.js,
-  public/js/feed.js, public/js/outingpage.js, prove/prova-punto113.js.
+  ULTIMO LAVORO — PUNTI 114 e 115, CHIUSI E IN PRODUZIONE il 30/08
+  (push a2a53a5..f3dfeef su camoscio/master), confermati da Denis dal
+  vivo.
 
-  CODA DELLA STESSA SESSIONE (dopo il 113 - dettaglio in cose_da_fare.txt
-  "CODA DELLA TREDICESIMA SESSIONE"):
-  - scripts/utenti-registrati.js (SOLA LETTURA, commit 37650c8): elenco
-    persone registrate, data ricavata dal _id (nessun campo nuovo).
-  - FIX (commit 934229d): il .gpx aggiunto col tasto ⬆ a un'escursione
-    GIA' completata ora salva anche la TRACCIA come sessione collegata
-    (hikeId) -> l'escursione diventa pubblicabile nel feed. Prima la
-    traccia nasceva solo dal tracciamento dal vivo. prova-punto113-gpx.js
-    (27 controlli) + controprova su 37650c8.
-    >>> DENIS DEVE RICARICARE il .gpx col ⬆ per le escursioni gia' fatte
-        che vuole pubblicare (l'originale non era stato conservato).
+  PUNTO 114 — IMPORT FILE .FIT (formato nativo Garmin) nello storico.
+  lib/fit.js NUOVO: parseFit(buffer) restituisce la STESSA forma di
+  parseGpx -> tutto il codice a valle invariato. Dipendenza nuova
+  fit-file-parser@5.0.2 (MIT, +buffer, 0 vulnerabilita' nuove): il FIT
+  e' binario, il divieto di librerie sui .gpx era anti-XXE e non vale.
+  Ambito: i due punti dello storico (/import-gpx e il ⬆ di
+  completions.js). importedFrom resta 'gpx' (= "importato da file", non
+  il formato). Il .fit viaggia in base64 (window.fileToBase64 in app.js).
+  prove/prova-fit.js NUOVO (33, senza server). Commit 0837f42.
+  >>> LIMITE, e' il FILE non il codice: un .fit "smart" (o da Garmin
+      Connect) ha gli stessi buchi di un GPX degradato -> niente split
+      cammino/pause. Serve un .fit a 1 Hz. Distanza/dislivello/durata
+      totale/badge: sempre giusti.
 
-  COSMETICI noti sul 113 (non decisi di sistemarli): la card Feed mostra
-  due date; su card "escursione" strette "Pubblica nel feed" va a capo;
-  togliere e rimettere un "mi piace" manda una seconda notifica; il .gpx
-  del ⬆ non assegna i badge di vetta come /import-gpx (aggiunta piccola,
-  sposterebbe assegnaTimbriDallaTraccia in lib/geofenceTimbri.js).
+  PUNTO 115 — NOME DELL'USCITA, MODIFICABILE. ActiveHikeSession
+  .importedName diventa il nome editabile (non solo il <name> del file),
+  max 120, per QUALSIASI uscita; assente -> data. PATCH
+  /api/tracking/sessions/:id/name NUOVA (owner, vuoto -> $unset);
+  publish accetta anche {name}. Frontend: MATITA in "Le mie escursioni"
+  su ogni riga uscita (anche le "escursione completata" con traccia dal
+  ⬆ - aggiunto dopo feedback di Denis); tasti pubblica/rinomina delegati
+  (data-*, non onclick inline); titolo dell'uscita in cima alla pagina
+  di dettaglio (NUOVO). completions.js: nome di default della traccia
+  collegata = <name> del file o il titolo dell'escursione. prove/
+  prova-punto115.js NUOVO (28) + sez.6 in prova-punto113-gpx.js (27->35).
+  Commit e13ca9a + f3dfeef.
+  Dettaglio: cose_da_fare.txt "Quattordicesima sessione"; decisioni nel
+  vault 03 "Punto 114"/"Punto 115"; racconto nel vault 06.
 
-  SPLIT CAMMINO/PAUSE E FILE .GPX: se un .gpx ha buchi temporali/spaziali
-  ("smart recording" / GPS perso), movimentoSecAttendibile (punto 79)
-  rifiuta lo split con "buchi non interpretabili" e salva solo il totale.
-  NON e' un bug: e' il file. Rimedio: export GPX a risoluzione piena.
-  IDEA aperta (non richiesta): import FIT (Garmin registra in FIT, il GPX
-  di Garmin Connect e' gia' degradato) - vedi vault 05-Idee-Facoltative.
+  CONTROLLO FATTIBILITA' SMARTWATCH (Garmin/Suunto/Amazfit) fatto e
+  SCARTATO: Garmin blocca il programma developer (solo persone
+  giuridiche + sospeso), Amazfit non ha API, Suunto e' possibile ma
+  marginale, Strava vieta di mostrare i dati altrui. Non riproporre
+  "colleghiamo Garmin". Dettaglio in vault 05-Idee-Facoltative.
 
->>> GIA' IN PRODUZIONE (sessioni precedenti): Punto 111 (segnalazioni
-    sentiero: "risolvi" e scadenza a 90gg passano dal moderatore) e
-    Punto 108 (un timbro richiede una traccia reale entro la soglia).
-    Dettaglio: cose_da_fare.txt punti 111/108, vault 03/06/07.
+  COSMETICO noto sul 115 (non deciso di sistemarlo): su una riga
+  "escursione completata" con traccia collegata, la card in "Le mie
+  escursioni" mostra il TITOLO dell'escursione; la matita rinomina il
+  nome nel FEED / pagina di dettaglio. Due nomi se li fai diversi (il
+  default li tiene allineati).
+
+  >>> DENIS DEVE RICARICARE il .gpx/.fit col ⬆ per le escursioni gia'
+      fatte che vuole pubblicare (l'originale non era stato conservato).
+
+>>> GIA' IN PRODUZIONE (sessioni precedenti): Punto 113 (parte social:
+    Segui, Feed, uscita apribile, "mi piace", "crea percorso"); Punto 111
+    (segnalazioni sentiero: "risolvi" e scadenza a 90gg passano dal
+    moderatore); Punto 108 (un timbro richiede una traccia reale entro la
+    soglia). Dettaglio: cose_da_fare.txt punti 113/111/108, vault 03/06/07.
 
 >>> ALTRE APERTE, non urgenti (dettaglio in vault 04-Da-Fare.md):
     livelli ORIGINALI del punto 63b (gradini per la ZONA dichiarata a
@@ -67,9 +77,10 @@ Aggiornato: 2026-08-30 (tredicesima sessione).
     "da <autore>", titolo/descrizione dei badge personali, le schede "i"
     dei badge (punto 112), il testo delle notifiche (lo genera il
     server), il segnaposto nativo di <input type=date>/<input type=file>,
-    e componiRapporto() dentro diagnostica-gps.html. Le chiavi EN del
-    punto 113 sono state aggiunte tutte al passo 10.
-  - Punti 102, 106, 108, 111, 112, 113 CHIUSI E IN PRODUZIONE.
+    e componiRapporto() dentro diagnostica-gps.html. Le chiavi EN dei
+    punti 113/114/115 sono state aggiunte tutte. Restano IT anche i NOMI
+    delle uscite (punto 115: li scrive l'utente).
+  - Punti 102, 106, 108, 111, 112, 113, 114, 115 CHIUSI E IN PRODUZIONE.
 
 ===================================================================
 

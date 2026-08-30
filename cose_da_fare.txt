@@ -7837,3 +7837,169 @@ D) [IDEA, non richiesta - Denis: "se lo vuoi dimmelo e lo faccio come
    FIT: binario, servirebbe una libreria dedicata (nuova dipendenza) +
    un ramo nel percorso di import. Darebbe lo split cammino/pause pulito.
    Vedi ../camoscio memoria/05-Idee-Facoltative.md.
+
+
+================================================================================
+QUATTORDICESIMA SESSIONE (30/08/2026) - punti 114 e 115
+================================================================================
+
+--------------------------------------------------------------------------------
+CONTROLLO FATTIBILITA' SMARTWATCH (prima del punto 114)
+--------------------------------------------------------------------------------
+Denis: "vorrei un controllo sulla fattibilita' di collegare il sito ad uno
+smartwatch (es. Garmin, Suunto, Amazfit). in modo da poter sincronizzare
+l'orologio e fare comparire la traccia sul sito. senza l'importazione manuale."
+
+RISPOSTA (non e' fattibile come funzione unica, i tre marchi stanno in tre
+situazioni diverse):
+- GARMIN: il percorso ufficiale (Garmin Connect Developer Program -> Activity
+  API, push webhook col FIT) e' (1) SOLO per persone giuridiche - domande "uso
+  personale" rifiutate - e (2) da mesi SOSPESO, non accetta nuove domande.
+  Doppio blocco per un singolo sviluppatore. Lo scraping non ufficiale
+  (librerie tipo garminconnect) e' da escludere: viola i termini, si rompe a
+  ogni cambio del sito, rischia il ban dell'account Garmin.
+- AMAZFIT / ZEPP: nessuna API pubblica per estrarre le attivita'. Lo Zepp OS SDK
+  serve a scrivere app/quadranti CHE GIRANO sull'orologio, non a tirare fuori i
+  dati. Niente OAuth, niente webhook.
+- SUUNTO: l'unico praticabile da un singolo - API pubblica (apizone.suunto.com),
+  OAuth2, webhook "New Workout". Approvazione ~3-4 settimane, gratuita. Ma:
+  dipendenza da un cloud proprietario (vincolo 2, come Render/Atlas, va deciso
+  esplicitamente), serve comunque un parser FIT, storage dei token OAuth per
+  utente (+ security review), ~5-8 giorni di lavoro, per il marchio di orologi
+  MENO diffuso.
+- STRAVA come ponte (molti orologi vi sincronizzano): affossato dal cambio
+  termini del 1/6/2026 - un'app terza NON puo' mostrare i dati di un utente a
+  nessuno tranne l'utente stesso => il feed sociale di Camoscio li violerebbe.
+  Piu': vietati gli aggregatori, serve un abbonamento Strava per l'API, vietato
+  l'uso AI/ML.
+- HEALTH CONNECT (Android): sembrava pulito (l'app Capacitor esiste gia'), ma
+  Garmin verso Health Connect condivide solo metriche scalari (distanza,
+  dislivello, FC, passo...), NON la traccia GPS. Non e' una soluzione generale.
+
+CONCLUSIONE: sync automatico "vero" costruibile da soli solo per Suunto, ed e'
+quello che vale meno la pena. Per Garmin non c'e' modo legittimo. La risposta
+pragmatica al problema di Denis (il GPX di Garmin Connect e' degradato) e'
+l'import FIT manuale a un tap -> PUNTO 114.
+Analisi completa in 05-Idee-Facoltative.md ("Sync cloud da smartwatch").
+
+--------------------------------------------------------------------------------
+PUNTO 114 - IMPORT FILE .FIT (formato nativo Garmin) [FATTO, IN PRODUZIONE]
+--------------------------------------------------------------------------------
+Denis, dopo il controllo fattibilita': "allora proviamo con il file .fit".
+E la scelta della libreria e dell'ambito, sempre sue: parser = fit-file-parser
+(consigliato); ambito = "solo i due punti dello storico".
+
+RAGIONAMENTO / COSA E' STATO FATTO:
+Il .fit e' il formato in cui Garmin (e Suunto, Polar...) registra davvero, ~1
+punto/secondo; il .gpx che Garmin Connect esporta e' gia' una copia degradata,
+con buchi temporali che fanno rifiutare lo split cammino/pause a
+movimentoSecAttendibile (punto 79). Il .fit a risoluzione piena lo darebbe
+pulito.
+
+- lib/fit.js (NUOVO): parseFit(buffer) restituisce ESATTAMENTE la stessa forma
+  di parseGpx ({punti,nome,inizio,fine,durataIgnota,tipo,avvisi}), cosi' tutto
+  il codice a valle (Douglas-Peucker, statisticheTraccia, tempiTraccia,
+  assegnazione badge, controllo regioni) non cambia. Non ci si fida
+  dell'output della libreria: stesso tetto MAX_PUNTI, stessi controlli di
+  range sulle coordinate. Nessuna strada "durata ignota" (quella del .gpx
+  esiste per gli itinerari progettati senza orari - un .fit e' sempre una
+  registrazione: se non ha orari e' rotto e si rifiuta). ErroreFit con flag
+  .utente, come ErroreGpx.
+- DIPENDENZA NUOVA: fit-file-parser@5.0.2 (MIT, JS puro, unica sub-dipendenza
+  `buffer`, 0 vulnerabilita' nuove). Il FIT e' BINARIO: il motivo del parser
+  GPX scritto a mano (evitare XXE/billion-laughs) NON si applica. Denis ha
+  approvato la dipendenza.
+- Ambito: i due punti dello storico. POST /api/tracking/import-gpx accetta
+  {fit:"<base64>"} oltre a {gpx}; il tasto freccia-su su un'escursione
+  completata (routes/completions.js) idem, via kind:'fit' in calcolaDaPercorso
+  (ramo unificato con 'gpx', unica coda). NON esteso alla sorgente dati di
+  un'escursione pianificata (routeSource.kind), scelta di Denis.
+- importedFrom resta 'gpx' anche per un .fit: marca "importato da file", non il
+  formato - cosi' tetto mensile e filtri frontend restano intatti senza toccare
+  ogni confronto === 'gpx' sparso nel codice.
+- Frontend: il .fit letto come binario -> base64 (window.fileToBase64 in app.js,
+  condivisa fra storico.js e social.js), cap 7 MB lato client (base64 +33%,
+  deve stare sotto i 10 MB di express.json). accept=".gpx,.fit". Chiavi EN.
+- prove/prova-fit.js (NUOVO, 33 controlli, senza server): FIT sintetici via
+  FitEncoder. Verifica dal vivo end-to-end col file vero di Denis (fitprova.fit,
+  Corno Grande - NON nel repo, e' una sua traccia reale): 448 punti, 9,07 km,
+  +867 m, regioni 41/41 dentro; movimentoSecAttendibile = null perche' QUEL
+  FILE e' registrato "smart" (~58 s fra i punti) - come atteso, non un bug.
+
+>>> LIMITE NOTO, e' il FILE non il codice: un .fit esportato "smart" (o via
+    Garmin Connect) ha gli stessi buchi di un GPX degradato -> niente split
+    cammino/pause. Serve un .fit registrato a 1 Hz (impostazione orologio
+    "Ogni secondo" / attivita' grezza dall'orologio). Distanza, dislivello,
+    durata totale, badge: sempre corretti.
+
+Commit: 0837f42 (rifuso da 1 auto-save), pushato -> Render redeploy.
+Decisione tecnica in 03-Decisioni-Architetturali.md "Punto 114".
+Confermato da Denis dal vivo ("importato il file .fit. Ho pubblicato
+l'escursione sul feed").
+
+--------------------------------------------------------------------------------
+PUNTO 115 - NOME DELL'USCITA, MODIFICABILE [FATTO, IN PRODUZIONE]
+--------------------------------------------------------------------------------
+Denis, dalla prova del 114: "con l'account di marco Alpinista ho trovato
+l'escursione nel feed con il nome di 02 agosto 2026 (giorno in cui e' stata
+registrata). aprendo l'escursione compare Denis 30 agosto 2026 (giorno in cui
+ho importato la traccia). serve una modifica al nome. magari al momento della
+pubblicazione della traccia oltre al commento serve da inserire pure il nome.
+in poi servono i tre puntini nelle mie escursioni completate per poter cambiare
+il nome. se importo una traccia questa prende il nome dalla traccia. se ha un
+nome standard importata da qualche orologio (es. Suunto) il nome contiene tutta
+l'informazione base del Suunto. voglio la possibilita' di cambiare il nome del
+escursione".
+
+Scelte, sue (rispondendo a tre domande):
+- comando rinomina = icona matita in linea (non un menu a tendina);
+- vale per TUTTE le uscite (anche quelle registrate dal vivo, non solo le
+  importate);
+- al momento di pubblicare, chiedere anche il nome oltre al commento.
+
+COSA E' STATO FATTO:
+- ActiveHikeSession.importedName diventa il NOME dell'uscita (non solo il <name>
+  del file): editabile, maxlength 120, vale per qualsiasi uscita. Assente = si
+  mostra la data. Nessuna migrazione.
+- PATCH /api/tracking/sessions/:id/name (NUOVA): solo il proprietario, trim +
+  tetto 120, nome vuoto -> $unset (torna alla data), id non valido 400,
+  inesistente 404, di un altro utente 403.
+- POST /sessions/:id/publish accetta anche {name}: pubblicando si puo'
+  assegnare/cambiare il nome. Campo name assente = non si tocca il nome.
+  /unpublish non tocca il nome.
+- Frontend: matita in "Le mie escursioni" su OGNI riga uscita (le standalone
+  E quelle "escursione completata" che hanno una traccia collegata dal
+  freccia-su - quest'ultimo aggiunto dopo il feedback di Denis "trovo la matita
+  esclusivamente dalle escursioni importate"). I tasti pubblica/rinomina
+  passano da data-attributi + un ascoltatore delegato (come il cestino), non
+  piu' onclick inline, cosi' un nome con apici non rompe l'HTML.
+  Pubblicazione: prima chiede il nome (gia' compilato), poi il commento.
+  schedaUscitaProfilo: il titolo usa importedName per ogni uscita.
+  outingpage.js: titolo dell'uscita in cima alla pagina di dettaglio (NUOVO -
+  prima si vedeva solo "autore - data di pubblicazione", senza titolo).
+  CSS .outing-page-title. Chiavi EN.
+- completions.js /:id/gpx: il nome della traccia collegata al freccia-su. Prima
+  prendeva solo il <name> del file (il .fit non ne ha uno -> nel feed una data
+  nuda). Ora: <name> del file se c'e', altrimenti il TITOLO dell'escursione. Su
+  un ri-upload: un nuovo <name> vince; un file senza <name> NON tocca il nome
+  (un nome messo a mano con la matita resta).
+- prove/prova-punto115.js (NUOVO, 28 controlli, server suo 3115) + sez. 6 in
+  prova-punto113-gpx.js (+8, 27->35). Regressione: prova-fit 33/33,
+  prova-punto113 103/103.
+- prova-punto113.js: l'asserzione "ogni item del feed ha likeCount 0" ristretta
+  ai soli item della prova - dopo la verifica dal vivo del 114 il feed
+  dell'account demo contiene l'uscita .fit vera di Denis con un like reale di
+  Marco Alpinista.
+
+Commit: e13ca9a (nome dell'uscita) + f3dfeef (matita anche su create+traccia,
+nome di default dal titolo escursione). Pushati -> Render redeploy.
+Decisione tecnica in 03-Decisioni-Architetturali.md "Punto 115".
+Confermato da Denis dal vivo ("provato, la matita ora c'e' su tutte le
+escursioni" / "commit e push, tutto funzionante").
+
+>>> COSMETICO NOTO, non deciso di sistemarlo: su una riga "escursione
+    completata" con traccia collegata, la card in "Le mie escursioni" mostra il
+    TITOLO dell'escursione; la matita rinomina invece il nome con cui l'uscita
+    appare NEL FEED e nella pagina di dettaglio. Due nomi per la stessa cosa se
+    Denis li fa diversi. Il default (nome traccia = titolo escursione) li tiene
+    allineati finche' non li si tocca.
