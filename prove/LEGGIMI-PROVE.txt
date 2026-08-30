@@ -279,6 +279,23 @@ i file .fit di prova sono sintetici, costruiti con il FitEncoder di fit-file-par
     perche' quel file e' registrato "smart" (~58 s fra i punti) - come atteso, non e' un
     bug del parser.
 
+La prova del PUNTO 115 (rinominare un'uscita) avvia un server suo sulla 3115:
+
+    node prove/prova-punto115.js                   28 controlli  (ne avvia uno suo, sulla 3115)
+
+    NOVE SEZIONI, due account demo, su una ActiveHikeSession senza nome (come un .fit appena
+    importato). PATCH /api/tracking/sessions/:id/name: 1) il proprietario mette un nome
+    (trim, risposta { importedName }); 2) nome vuoto -> $unset, torna alla data; 3) tetto
+    120 caratteri; 4) un altro utente -> 403, nome invariato; 5) id non valido -> 400,
+    inesistente -> 404. POST /publish con { name, caption }: 6) pubblica E nomina;
+    7) name:'' toglie il nome ma resta pubblicata; 8) campo name assente -> non tocca il
+    nome. 9) /unpublish toglie publishedAt/caption ma NON il nome. Pulizia: cancella le
+    sessioni create (filtrate per _id e per importedName ^PROVA-115).
+    NB (30/08/2026): dopo la verifica dal vivo del punto 114, in prova-punto113.js
+    l'asserzione "ogni item del feed ha likeCount 0" e' stata ristretta ai soli item creati
+    dalla prova - il feed dell'account demo ora contiene anche l'uscita .fit vera pubblicata
+    da Denis, con un "mi piace" reale di Marco Alpinista. 103/103 invariato.
+
 La prova del PUNTO 45 (moderazione segnalazioni + foto) e' stata aggiornata per il 111:
 GET /pending -> GET /moderation (oggetto con tre liste + totale), DELETE /:id/resolve
 gated moderatore, TTL createdAt -> expiresAt. 46 controlli, invariati nel numero.

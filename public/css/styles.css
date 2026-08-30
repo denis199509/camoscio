@@ -4242,6 +4242,13 @@ option {
     margin-bottom: 14px;
     background: rgba(255, 255, 255, 0.04);
 }
+/* Punto 115: titolo dell'uscita in cima alla pagina di dettaglio. */
+.outing-page-title {
+    margin: 0 0 8px;
+    font-size: 1.15rem;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+}
 .outing-page-author {
     display: flex;
     align-items: center;

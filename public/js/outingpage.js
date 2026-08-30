@@ -100,7 +100,16 @@
         const sectionTitle = document.getElementById('section-title');
         if (sectionTitle) sectionTitle.textContent = nome;
 
+        // Punto 115: il NOME dell'uscita, come titolo della pagina. Prima non c'era: aprendo
+        // un'uscita si vedeva solo "autore · data", quindi due uscite dello stesso giorno
+        // erano indistinguibili. Senza nome (importedName), si mostra la data dell'uscita
+        // (diversa da `quando`, che e' la data di PUBBLICAZIONE).
+        const titoloUscita = meta.importedName
+            ? esc(meta.importedName)
+            : formattaData(meta.startedAt);
+
         document.getElementById('outing-page-header').innerHTML = `
+            <h3 class="outing-page-title">${titoloUscita}</h3>
             <div class="outing-page-author" onclick="showUserProfile('${esc(meta.userId)}')">
                 <span class="feed-item-avatar">${avatar}</span>
                 <span><b>${nome}</b><span class="feed-item-when"> · ${quando}</span></span>

@@ -219,8 +219,10 @@ function schedaEscursioneCompletata(hike, completion, { azioniHtml = '' } = {}) 
 function schedaUscitaProfilo(s, { azioniHtml = '' } = {}) {
     const esc = window.escapeHtml;
     const importata = s.importedFrom === 'gpx';
-    const titolo = importata && s.importedName ? esc(s.importedName) : formattaDataItaliana(s.startedAt);
-    const sottotitolo = (importata && s.importedName) ? formattaDataItaliana(s.startedAt) : '';
+    // Punto 115: il nome (importedName) vale per QUALSIASI uscita, non solo le importate -
+    // anche una registrata dal vivo puo' essere rinominata. Senza nome: si mostra la data.
+    const titolo = s.importedName ? esc(s.importedName) : formattaDataItaliana(s.startedAt);
+    const sottotitolo = s.importedName ? formattaDataItaliana(s.startedAt) : '';
     return `
         <div class="outing-card" data-outing-id="${esc(s.id)}">
             <div class="outing-card-head">

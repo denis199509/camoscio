@@ -353,12 +353,23 @@ router.post('/sessions/:id/publish', requireAuth, async (req, res) => {
         let caption = (req.body && typeof req.body.caption === 'string') ? req.body.caption.trim() : '';
         if (caption.length > 500) caption = caption.slice(0, 500);
 
-        // $set + $unset insieme: MongoDB non ammette un campo semplice e un operatore nello
-        // stesso update. Senza didascalia si toglie quella eventuale di una pubblicazione
-        // precedente, cosi' ri-pubblicare senza testo non lascia il vecchio commento.
-        const update = caption
-            ? { $set: { publishedAt: new Date(), caption } }
-            : { $set: { publishedAt: new Date() }, $unset: { caption: '' } };
+        // $set + $unset insieme: MongoDB non ammette lo stesso campo nei due, ma qui sono
+        // campi diversi (publishedAt/caption/importedName) quindi si possono combinare.
+        // Senza didascalia si toglie quella eventuale di una pubblicazione precedente, cosi'
+        // ri-pubblicare senza testo non lascia il vecchio commento.
+        const set = { publishedAt: new Date() };
+        const unset = {};
+        if (caption) set.caption = caption; else unset.caption = '';
+
+        // Punto 115: la pubblicazione puo' anche assegnare/cambiare il nome dell'uscita
+        // (nome + commento, decisione di Denis). Solo se il campo `name` e' presente nel
+        // corpo: assente = non si tocca il nome. Stringa vuota = si toglie (torna alla data).
+        if (req.body && typeof req.body.name === 'string') {
+            const nome = req.body.name.trim().slice(0, 120);
+            if (nome) set.importedName = nome; else unset.importedName = '';
+        }
+
+        const update = Object.keys(unset).length ? { $set: set, $unset: unset } : { $set: set };
         await ActiveHikeSession.updateOne({ _id: sessione._id }, update);
 
         res.json({ success: true });
@@ -383,6 +394,37 @@ router.post('/sessions/:id/unpublish', requireAuth, async (req, res) => {
     } catch (e) {
         console.error('Rimozione uscita dal feed fallita:', e);
         res.status(500).json({ error: 'Non e\' stato possibile togliere l\'uscita dal feed.' });
+    }
+});
+
+// --- PUNTO 115: rinominare un'uscita ---
+//
+// Vale per QUALSIASI uscita propria (importata da .gpx/.fit o registrata dal vivo): tutte
+// mostrano solo una data finche' non gli si da' un nome. Nome vuoto = si toglie, si torna
+// alla data. Solo il proprietario, su qualsiasi stato (anche una registrazione in corso:
+// innocuo). Il confronto e' con req.session.userId, mai con un id del client.
+router.patch('/sessions/:id/name', requireAuth, async (req, res) => {
+    try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(400).json({ error: 'Identificativo non valido.' });
+        }
+        const sessione = await ActiveHikeSession.findById(req.params.id).select('userId');
+        if (!sessione) return res.status(404).json({ error: 'Questa uscita non esiste.' });
+        if (String(sessione.userId) !== String(req.session.userId)) {
+            return res.status(403).json({ error: 'Puoi rinominare solo le tue uscite.' });
+        }
+
+        const nome = (req.body && typeof req.body.name === 'string') ? req.body.name.trim().slice(0, 120) : '';
+        // $set con un nome, $unset senza: mai assegnare '' o undefined e save(), stessa
+        // trappola gia' annotata su openSession/publishedAt in models/ActiveHikeSession.js.
+        await ActiveHikeSession.updateOne(
+            { _id: sessione._id },
+            nome ? { $set: { importedName: nome } } : { $unset: { importedName: '' } }
+        );
+        res.json({ importedName: nome || null });
+    } catch (e) {
+        console.error('Rinomina uscita fallita:', e);
+        res.status(500).json({ error: 'Non e\' stato possibile rinominare l\'uscita.' });
     }
 });
 

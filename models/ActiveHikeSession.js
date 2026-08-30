@@ -61,10 +61,15 @@ const activeHikeSessionSchema = new mongoose.Schema({
     // routes/tracking.js) e dire a schermo quali uscite sono importate invece che
     // registrate - due cose diverse che e' giusto non far sembrare uguali.
     importedFrom: { type: String, enum: ['gpx'], default: undefined },
-    // Il nome scritto dentro il file (<name>), quando c'e': senza, in elenco una traccia
-    // importata sarebbe solo una data. NON e' il nome del file caricato, che spesso e'
-    // solo un codice tipo "activity_1234567.gpx".
-    importedName: { type: String, default: undefined },
+    // Punto 15 -> 115: il NOME dell'uscita. All'import prende il <name> del file .gpx quando
+    // c'e' (il .fit non ne ha uno, punto 114); da lì in poi il proprietario può cambiarlo
+    // (PATCH /sessions/:id/name, o al momento della pubblicazione) - serve perché un nome
+    // auto-generato da un orologio è spesso illeggibile ("Move 2026-... Trail running") e
+    // perché senza, in elenco e nel feed l'uscita è solo una data. Vale per QUALSIASI
+    // uscita, anche quelle registrate dal vivo (non solo le importate). NON è il nome del
+    // file caricato (spesso un codice tipo "activity_1234567.gpx"). Assente = si mostra la
+    // data. default: undefined, scritto solo quando c'e' davvero un nome (vincolo spazio).
+    importedName: { type: String, default: undefined, maxlength: 120 },
     // Presente (true) solo sulle tracce importate da un file SENZA gli orari dei punti,
     // accettate su decisione dell'utente del 2026-07-27 invece di essere respinte.
     // Di queste uscite si sanno distanza e dislivello - che stanno nel file e sono veri -

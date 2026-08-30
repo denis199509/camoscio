@@ -422,6 +422,11 @@
             'outing.cancellaBadgeRestano': "Badges you've earned stay in your passport.",
             'outing.erroreCancella': 'Could not delete this hike.',
             'outing.cancellataSuccesso': 'Hike removed from your history.',
+            'outing.rinominaTitle': 'Rename this outing',
+            'outing.rinominaPrompt': 'New name for the outing (leave empty to go back to the date).',
+            'outing.rinominaErrore': 'Could not rename the outing.',
+            'outing.rinominata': 'Outing renamed.',
+            'outing.nomeTolto': 'Name removed: it shows the date again.',
 
             // --- Le mie escursioni: caricamento .gpx (storico.js) ---
             'gpx.estensioneErrata': function (nome) { return 'The file must have a <b>.gpx</b> or <b>.fit</b> extension. You chose "' + nome + '".'; },
@@ -2042,6 +2047,7 @@
             'publish.pubblicataTitle': 'In the feed of the people who follow you. Click to remove it.',
             'publish.serveTracciaTitle': 'A GPS track is needed to publish to the feed',
             'publish.serveTraccia': 'This hike has no GPS track on the site. Add it with the ⬆ button on this card (the same one for real time), then you can publish it to the feed.',
+            'publish.chiediNome': 'Name of the outing (optional, but it helps whoever sees it in the feed).',
             'publish.chiediDidascalia': 'Write a line or two about the outing (optional). Press OK to publish it to the feed of the people who follow you.',
             'publish.confermaTogli': 'Remove this outing from the feed? It will no longer be visible to the people who follow you (the likes stay).',
             'publish.errorePubblica': 'Could not publish the outing.',

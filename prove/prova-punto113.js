@@ -228,8 +228,13 @@ function tracciaFinta(n, conQuote) {
         ok('gli item del feed NON contengono "points"', feedA.corpo.items.every(i => i.points === undefined));
         ok('gli item del feed NON contengono "offTrailBuffer"', feedA.corpo.items.every(i => i.offTrailBuffer === undefined));
         ok('ordine per publishedAt decrescente (la piu\' recente prima)', idsFeedA.indexOf(sB2.id) < idsFeedA.indexOf(sB1.id));
-        ok('ogni item porta likeCount (0) e likedByMe (false)',
-            feedA.corpo.items.every(i => i.likeCount === 0 && i.likedByMe === false));
+        // Solo gli item creati QUI (sB1/sB2): il feed puo' contenere anche uscite vere di
+        // utenti che l'account demo segue davvero (es. un'uscita pubblicata da Denis con un
+        // "mi piace" reale) - "ogni item ha likeCount 0" era fragile contro il DB condiviso.
+        const mieiItem = feedA.corpo.items.filter(i => i.id === sB1.id || i.id === sB2.id);
+        ok('gli item di prova portano likeCount (0) e likedByMe (false)',
+            mieiItem.length === 2 && mieiItem.every(i => i.likeCount === 0 && i.likedByMe === false),
+            JSON.stringify(mieiItem.map(i => ({ id: i.id, lc: i.likeCount, lbm: i.likedByMe }))));
 
         const feedC = await chiama('GET', '/api/feed', null, cookieC);
         ok('C non segue nessuno -> feed vuoto', feedC.status === 200 && feedC.corpo.items.length === 0, JSON.stringify(feedC.corpo));

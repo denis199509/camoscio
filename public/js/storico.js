@@ -100,17 +100,28 @@
     // GPS pubblicabile (una ActiveHikeSession, registrata o importata). Assente = l'escursione
     // non ha traccia: il tasto non pubblica, spiega che serve prima importare un .gpx (il
     // tasto ⬆ "tempo reale" NON salva la traccia - solo "Carica un file .gpx" qui sopra lo fa).
-    function bottonePubblica(sessionId, publishedAt) {
+    // Punto 115: i tasti usano data-attributi + un ascoltatore delegato (come [data-del-outing]),
+    // non piu' onclick inline - cosi' il nome dell'uscita (che puo' contenere apici e virgolette)
+    // ci arriva pulito dentro data-outing-name senza rompere l'HTML.
+    function bottonePubblica(sessionId, publishedAt, nomeAttuale) {
         if (!sessionId) {
-            return `<button class="btn btn-sm btn-secondary" style="padding:2px 8px;" onclick="avvisoPubblicaSenzaTraccia()" title="${esc(T('publish.serveTracciaTitle') || 'Serve una traccia GPS per pubblicare nel feed')}"><i data-lucide="upload-cloud"></i> ${esc(T('publish.pubblica') || 'Pubblica nel feed')}</button>`;
+            return `<button type="button" class="btn btn-sm btn-secondary" style="padding:2px 8px;" data-pub-notrack="1" title="${esc(T('publish.serveTracciaTitle') || 'Serve una traccia GPS per pubblicare nel feed')}"><i data-lucide="upload-cloud"></i> ${esc(T('publish.pubblica') || 'Pubblica nel feed')}</button>`;
         }
+        const nomeAttr = ` data-outing-name="${esc(nomeAttuale || '')}"`;
         if (publishedAt) {
-            return `<button class="btn btn-sm btn-success" style="padding:2px 8px;" onclick="togglePubblicaUscita('${esc(sessionId)}', true)" title="${esc(T('publish.pubblicataTitle') || 'Nel feed di chi ti segue. Clic per toglierla.')}"><i data-lucide="check"></i> ${esc(T('publish.pubblicata') || 'Pubblicata')}</button>`;
+            return `<button type="button" class="btn btn-sm btn-success" style="padding:2px 8px;" data-pub-outing="${esc(sessionId)}" data-published="1"${nomeAttr} title="${esc(T('publish.pubblicataTitle') || 'Nel feed di chi ti segue. Clic per toglierla.')}"><i data-lucide="check"></i> ${esc(T('publish.pubblicata') || 'Pubblicata')}</button>`;
         }
-        return `<button class="btn btn-sm btn-primary" style="padding:2px 8px;" onclick="togglePubblicaUscita('${esc(sessionId)}', false)" title="${esc(T('publish.pubblicaTitle') || 'Rendi visibile questa uscita a chi ti segue')}"><i data-lucide="upload-cloud"></i> ${esc(T('publish.pubblica') || 'Pubblica nel feed')}</button>`;
+        return `<button type="button" class="btn btn-sm btn-primary" style="padding:2px 8px;" data-pub-outing="${esc(sessionId)}"${nomeAttr} title="${esc(T('publish.pubblicaTitle') || 'Rendi visibile questa uscita a chi ti segue')}"><i data-lucide="upload-cloud"></i> ${esc(T('publish.pubblica') || 'Pubblica nel feed')}</button>`;
     }
 
-    async function togglePubblicaUscita(sessionId, giaPubblicata) {
+    // Punto 115: la matita per rinominare. Vale per ogni uscita propria (importata o
+    // registrata dal vivo). data-outing-name porta il nome attuale (vuoto = ancora senza nome).
+    function bottoneRinomina(sessionId, nomeAttuale) {
+        const etichetta = esc(T('outing.rinominaTitle') || 'Rinomina questa uscita');
+        return `<button type="button" class="outing-card-del" data-rename-outing="${esc(sessionId)}" data-outing-name="${esc(nomeAttuale || '')}" title="${etichetta}" aria-label="${etichetta}"><i data-lucide="pencil"></i></button>`;
+    }
+
+    async function togglePubblicaUscita(sessionId, giaPubblicata, nomeAttuale) {
         try {
             if (giaPubblicata) {
                 const ok = window.showConfirmModal
@@ -128,6 +139,14 @@
                 }
                 if (window.showToast) window.showToast(T('publish.tolta') || 'Uscita tolta dal feed.', 'success');
             } else {
+                // Punto 115: prima il NOME (gia' compilato se ce l'ha), poi il commento.
+                // Annullare uno dei due annulla tutta la pubblicazione.
+                let nome = nomeAttuale || '';
+                if (window.showPromptModal) {
+                    const r = await window.showPromptModal(T('publish.chiediNome') || 'Nome dell\'uscita (facoltativo, ma aiuta chi la vede nel feed).', nomeAttuale || '');
+                    if (r === null) return; // annullato
+                    nome = r;
+                }
                 const didascalia = window.showPromptModal
                     ? await window.showPromptModal(T('publish.chiediDidascalia') || 'Scrivi due righe sull\'uscita (facoltativo). Premi OK per pubblicarla nel feed di chi ti segue.', '')
                     : '';
@@ -135,7 +154,10 @@
                 const res = await fetch(`/api/tracking/sessions/${encodeURIComponent(sessionId)}/publish`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ caption: (didascalia || '').trim().slice(0, 500) })
+                    body: JSON.stringify({
+                        caption: (didascalia || '').trim().slice(0, 500),
+                        name: (nome || '').trim().slice(0, 120)
+                    })
                 });
                 if (!res.ok) {
                     const d = await res.json().catch(() => ({}));
@@ -202,7 +224,7 @@
             // per non mostrarla due volte. Se non c'è, il tasto lo spiega.
             const tracciaCollegata = sessioni.find(s => s.hikeId === h.id && (s.distanceKm || 0) > 0.05);
             const azioni = `
-                ${bottonePubblica(tracciaCollegata ? tracciaCollegata.id : null, tracciaCollegata ? tracciaCollegata.publishedAt : null)}
+                ${bottonePubblica(tracciaCollegata ? tracciaCollegata.id : null, tracciaCollegata ? tracciaCollegata.publishedAt : null, tracciaCollegata ? tracciaCollegata.importedName : null)}
                 <button class="btn btn-sm btn-secondary" style="padding:2px 6px;" onclick="uploadCompletionGpx('${completion.id}')" title="${esc(T('hikeCard.caricaGpxTitle') || 'Carica un file .gpx per avere il tempo reale di questa escursione')}">
                     <i data-lucide="upload"></i>
                 </button>
@@ -230,7 +252,7 @@
             .map(s => ({
                 ordinamento: Date.parse(s.startedAt) || 0,
                 html: window.CamoscioSchedeCompatte.uscita(s, {
-                    azioniHtml: `${bottonePubblica(s.id, s.publishedAt)} <button class="outing-card-del" data-del-outing="${esc(s.id)}" title="${esc(T('outing.cancellaTitle') || 'Cancella questa uscita dallo storico')}" aria-label="${esc(T('outing.cancellaTitle') || 'Cancella questa uscita dallo storico')}"><i data-lucide="trash-2"></i></button>`
+                    azioniHtml: `${bottonePubblica(s.id, s.publishedAt, s.importedName)} ${bottoneRinomina(s.id, s.importedName)} <button class="outing-card-del" data-del-outing="${esc(s.id)}" title="${esc(T('outing.cancellaTitle') || 'Cancella questa uscita dallo storico')}" aria-label="${esc(T('outing.cancellaTitle') || 'Cancella questa uscita dallo storico')}"><i data-lucide="trash-2"></i></button>`
                 })
             }));
 
@@ -255,8 +277,54 @@
         box.querySelectorAll('[data-del-outing]').forEach(b => {
             b.addEventListener('click', () => cancellaUscita(b.getAttribute('data-del-outing')));
         });
+        // Punto 115: pubblica/rinomina, delegati come la cancellazione qui sopra.
+        box.querySelectorAll('[data-pub-outing]').forEach(b => {
+            b.addEventListener('click', () => togglePubblicaUscita(
+                b.getAttribute('data-pub-outing'),
+                b.hasAttribute('data-published'),
+                b.getAttribute('data-outing-name') || ''
+            ));
+        });
+        box.querySelectorAll('[data-pub-notrack]').forEach(b => {
+            b.addEventListener('click', () => avvisoPubblicaSenzaTraccia());
+        });
+        box.querySelectorAll('[data-rename-outing]').forEach(b => {
+            b.addEventListener('click', () => rinominaUscita(
+                b.getAttribute('data-rename-outing'),
+                b.getAttribute('data-outing-name') || ''
+            ));
+        });
 
         if (window.lucide) window.lucide.createIcons();
+    }
+
+    // --- PUNTO 115: RINOMINA DI UN'USCITA ---
+    async function rinominaUscita(sessionId, nomeAttuale) {
+        if (!window.showPromptModal) return;
+        const nuovo = await window.showPromptModal(
+            T('outing.rinominaPrompt') || 'Nuovo nome dell\'uscita (lascia vuoto per tornare alla data).',
+            nomeAttuale || ''
+        );
+        if (nuovo === null) return; // annullato
+        const nome = (nuovo || '').trim().slice(0, 120);
+        if (nome === (nomeAttuale || '').trim()) return; // nessun cambiamento
+        try {
+            const res = await fetch(`/api/tracking/sessions/${encodeURIComponent(sessionId)}/name`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: nome })
+            });
+            if (!res.ok) {
+                const d = await res.json().catch(() => ({}));
+                if (window.showToast) window.showToast(d.error || (T('outing.rinominaErrore') || 'Non è stato possibile rinominare l\'uscita.'), 'error');
+                return;
+            }
+            if (window.showToast) window.showToast(nome ? (T('outing.rinominata') || 'Uscita rinominata.') : (T('outing.nomeTolto') || 'Nome rimosso: torna a mostrare la data.'), 'success');
+            if (window.renderMyHikes) window.renderMyHikes();
+        } catch (e) {
+            console.error('Rinomina uscita fallita:', e);
+            if (window.showToast) window.showToast(T('common.erroreServer') || 'Non è stato possibile contattare il server.', 'error');
+        }
     }
 
     // --- CANCELLAZIONE DI UN'USCITA ---
