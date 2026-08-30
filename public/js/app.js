@@ -408,10 +408,12 @@ async function refreshState() {
         window.CamoscioState.squads = squads;
         window.CamoscioState.bookmarks = bookmarks;
 
-        // Imposta l'escursione attiva di default sulla prima disponibile, solo se non è già stata scelta
-        if (!window.CamoscioState.activeHikeId && hikes.length > 0) {
-            window.CamoscioState.activeHikeId = hikes[0].id;
-        }
+        // activeHikeId resta null finché l'utente non sceglie DAVVERO un'escursione (clic sul
+        // tasto "Mappa" di una scheda -> loadActiveHikeOnMap in map.js). Prima qui c'era un
+        // default su hikes[0], cioè la PRIMA escursione del database di chiunque: ogni
+        // selettore che legge activeHikeId (registrazione GPS, Zaino) ci atterrava sopra
+        // senza che l'utente l'avesse scelta. Stesso difetto già tolto dallo Zaino a suo
+        // tempo (vedi il commento in backpack.js/escursioneDiRiferimento).
 
         if (window.CamoscioState.currentUser) {
             // Aggiorna l'utente corrente con i dati freschi dal server

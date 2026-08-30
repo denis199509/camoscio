@@ -179,6 +179,20 @@ async function mostraGuidaSblocco() {
     }
 
     const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    // Su computer i "tre livelli" del telefono non esistono: c'e' solo il permesso del sito.
+    // Prima la guida mostrava comunque le istruzioni Android (Impostazioni Android -> App ->
+    // Chrome, la tendina delle impostazioni rapide), cioe' passaggi che sul desktop non ci
+    // sono - segnalato provando dal PC.
+    const desktop = !/Android|iPad|iPhone|iPod/i.test(navigator.userAgent);
+
+    const pc = T('geo.guidaDesktop') ||
+        "Computer (Chrome, Edge, Firefox…) — un solo livello: il permesso del sito\n" +
+        "1. Clicca l'icona a sinistra dell'indirizzo (il lucchetto, o il cursore «impostazioni sito»)\n" +
+        "2. Alla voce «Posizione» scegli «Consenti» (oppure «Chiedi (predefinito)»)\n" +
+        "3. Ricarica la pagina\n" +
+        "Su Firefox: se la voce dice «Bloccato», clicca la × accanto per azzerarla, poi ricarica.\n" +
+        "Se non trovi la voce, controlla anche che la localizzazione di Windows/macOS sia accesa\n" +
+        "(Windows: Impostazioni → Privacy → Posizione).";
 
     const safari = T('geo.guidaSafari') ||
         "iPhone / iPad (Safari) — tre livelli, servono tutti e tre\n" +
@@ -206,11 +220,11 @@ async function mostraGuidaSblocco() {
         "posizione in tre modi diversi e dice quale dei livelli è chiuso.\n\n" +
         "Vuoi aprirla adesso?";
 
-    const apri = await window.showConfirmModal(
-        intro + "\n\n" +
-        (iOS ? safari + "\n\n" + chrome : chrome + "\n\n" + safari) +
-        "\n\n" + outro
-    );
+    const corpo = desktop
+        ? pc
+        : (iOS ? safari + "\n\n" + chrome : chrome + "\n\n" + safari);
+
+    const apri = await window.showConfirmModal(intro + "\n\n" + corpo + "\n\n" + outro);
     if (apri) window.location.href = PAGINA_DIAGNOSI;
 }
 

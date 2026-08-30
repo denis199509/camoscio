@@ -27,6 +27,14 @@ function nomeOggettoTradotto(nome) { return T('backpack.item.' + nome) || nome; 
 function catLabel(cat) { return T('backpack.cat.' + cat) || cat; }
 function genereLabel(g) { return T('backpack.genere.' + g) || g; }
 
+// L'escursione scelta A MANO dal selettore in cima allo Zaino. Tre valori:
+//  - undefined  -> nessuna scelta esplicita: vale l'automatico (escursioneDiRiferimento)
+//  - ''         -> "Zaino personale" scelto apposta (nessuna escursione)
+//  - una stringa -> l'id dell'escursione scelta
+// Resta per la sessione. Prima non esisteva: lo Zaino prendeva sempre la prossima in
+// programma (o l'escursione attiva globale) senza alternativa.
+var zainoHikeIdScelto;
+
 // Inizializzatore del modulo zaino
 function initBackpackModule() {
     setupBackpackEvents();
@@ -48,6 +56,14 @@ function setupBackpackEvents() {
     // Punto 47 - stessa cosa ma per gli oggetti PERSONALI, e il tasto di conferma finale.
     const btnAddPersonal = document.getElementById("btn-add-personal-item");
     if (btnAddPersonal) btnAddPersonal.addEventListener("click", aggiungiOggettoPersonale);
+
+    // Selettore "prepara lo zaino per": la scelta a mano vince sull'automatico.
+    const hikeSelect = document.getElementById("backpack-hike-select");
+    if (hikeSelect) hikeSelect.addEventListener("change", () => {
+        const v = hikeSelect.value;
+        zainoHikeIdScelto = (v === "__auto__") ? undefined : v;
+        renderBackpackModule();
+    });
 
     const btnConfirm = document.getElementById("btn-confirm-backpack");
     if (btnConfirm) btnConfirm.addEventListener("click", confermaZaino);
@@ -71,6 +87,15 @@ function escursioneDiRiferimento() {
         ? (() => { const c = window.classificaMieEscursioni(); return c.create.concat(c.partecipo); })()
         : [];
 
+    // Scelta A MANO dal selettore in cima allo Zaino: vince su tutto il resto.
+    if (zainoHikeIdScelto !== undefined) {
+        if (zainoHikeIdScelto === '') return null; // "Zaino personale" scelto apposta
+        const sceltaManuale = mie.find(h => h.id === zainoHikeIdScelto);
+        if (sceltaManuale) return sceltaManuale;
+        // id non piu' valido (escursione cancellata o completata nel frattempo): si ricade
+        // sull'automatico qui sotto invece di restare bloccati su niente.
+    }
+
     // Se l'utente ha scelto un'escursione (es. dal pulsante "Mappa" di una scheda) vale solo
     // se e' davvero sua: altrimenti si tornerebbe a mostrare lo zaino di un altro.
     const scelta = mie.find(h => h.id === db.activeHikeId);
@@ -78,13 +103,11 @@ function escursioneDiRiferimento() {
 
     // Altrimenti la PROSSIMA in programma: e' quella per cui uno sta preparando lo zaino.
     // Le date sono stringhe "YYYY-MM-DD" (vedi models/Hike.js), quindi si ordinano da sole.
+    // NIENTE ripiego sull'ultima escursione PASSATA: per lo Zaino una gia' fatta non ha
+    // senso (deciso con Denis). Senza nulla in programma si mostra lo zaino personale.
     const oggi = new Date().toISOString().slice(0, 10);
     const future = mie.filter(h => h.date && h.date >= oggi).sort((a, b) => a.date.localeCompare(b.date));
-    if (future.length) return future[0];
-
-    // Nessuna in programma: si prende comunque la piu' recente fra le proprie, se c'e'.
-    const passate = mie.filter(h => h.date).sort((a, b) => b.date.localeCompare(a.date));
-    return passate[0] || null;
+    return future.length ? future[0] : null;
 }
 
 // =====================================================================
@@ -215,8 +238,45 @@ function verificaCoperture(condivisi, personeNelGruppo) {
     return avvisi;
 }
 
+// Popola il selettore "prepara lo zaino per": Automatico + le mie escursioni IN PROGRAMMA
+// (organizzate da me / a cui partecipo, in due gruppi) + Zaino personale. Le escursioni
+// GIA' FATTE non ci sono di proposito (deciso con Denis: per lo zaino non hanno senso);
+// classificaMieEscursioni le tiene gia' fuori, qui si filtrano anche quelle con data
+// passata. Il valore selezionato riflette la scelta a mano, o "Automatico" se non c'e'.
+function popolaZainoHikeSelect() {
+    const select = document.getElementById("backpack-hike-select");
+    if (!select) return;
+
+    const c = window.classificaMieEscursioni ? window.classificaMieEscursioni() : { create: [], partecipo: [] };
+    const oggi = new Date().toISOString().slice(0, 10);
+    // Stessa regola di escursioneDiRiferimento: solo con una data futura (le gia' fatte
+    // classificaMieEscursioni le tiene gia' fuori; qui si escludono anche le passate).
+    const inProgramma = arr => (arr || []).filter(h => h.date && h.date >= oggi);
+    const create = inProgramma(c.create);
+    const partecipo = inProgramma(c.partecipo);
+
+    const loc = (window.CamoscioI18n && window.CamoscioI18n.getLang() === 'en') ? 'en-GB' : 'it-IT';
+    const opt = h => {
+        const quando = h.date ? ` · ${new Date(h.date + 'T12:00:00').toLocaleDateString(loc, { day: 'numeric', month: 'short' })}` : '';
+        return `<option value="${escapeHtml(h.id)}">${escapeHtml(h.title)}${quando}</option>`;
+    };
+    let html = `<option value="__auto__">${escapeHtml(T('backpack.gen.perAuto') || 'Automatico (la prossima in programma)')}</option>`;
+    if (create.length) html += `<optgroup label="${escapeHtml(T('backpack.gen.grpOrganizzate') || 'Organizzate da me')}">${create.map(opt).join('')}</optgroup>`;
+    if (partecipo.length) html += `<optgroup label="${escapeHtml(T('backpack.gen.grpPartecipo') || 'A cui partecipo')}">${partecipo.map(opt).join('')}</optgroup>`;
+    html += `<option value="">${escapeHtml(T('backpack.gen.perPersonale') || 'Zaino personale (nessuna escursione)')}</option>`;
+    select.innerHTML = html;
+
+    // "" e' un valore valido (Zaino personale), quindi si distingue da undefined con typeof.
+    if (typeof zainoHikeIdScelto === 'string' && [...select.options].some(o => o.value === zainoHikeIdScelto)) {
+        select.value = zainoHikeIdScelto;
+    } else {
+        select.value = "__auto__"; // nessuna scelta, o id non piu' valido
+    }
+}
+
 // Renderizza il modulo zaino in base all'escursione attiva o a input dell'utente
 function renderBackpackModule() {
+    popolaZainoHikeSelect();
     const hike = escursioneDiRiferimento();
 
     renderWeightDistribution(hike);
@@ -706,8 +766,14 @@ function mostraEscursioneDiRiferimento(hike) {
 
     if (!hike) {
         box.className = "backpack-context-box personale";
+        // Due casi diversi: nessuna escursione in programma, oppure "Zaino personale"
+        // scelto apposta dal selettore. Il messaggio "non hai escursioni" era fuorviante
+        // nel secondo caso.
+        const desc = (zainoHikeIdScelto === '')
+            ? (T('backpack.js.zainoPersonaleScelto') || "Hai scelto di non collegarlo a un'escursione: e' la lista delle tue cose, senza oggetti da dividere col gruppo.")
+            : (T('backpack.js.zainoPersonaleDesc') || "Non hai escursioni in programma: questa e' la lista delle tue cose. Iscriviti a un'escursione per vedere anche gli oggetti da dividere col gruppo.");
         box.innerHTML = `<strong>${T('backpack.js.zainoPersonaleTitolo') || 'Zaino personale'}</strong>
-            <span class="small">${T('backpack.js.zainoPersonaleDesc') || "Non hai escursioni in programma: questa e' la lista delle tue cose. Iscriviti a un'escursione per vedere anche gli oggetti da dividere col gruppo."}</span>`;
+            <span class="small">${desc}</span>`;
         return;
     }
 
@@ -973,7 +1039,9 @@ window.reassignSharedGear = async function(hikeId, newAssigneeId, itemName) {
 if (window.CamoscioI18n && window.CamoscioI18n.onChange) {
     window.CamoscioI18n.onChange(function () {
         const sec = document.getElementById("backpack");
-        if (!sec || !sec.classList.contains("active") || !ultimoInputZaino) return;
+        if (!sec || !sec.classList.contains("active")) return;
+        popolaZainoHikeSelect(); // le option/optgroup del selettore sono costruite via T()||italiano
+        if (!ultimoInputZaino) return;
         const i = ultimoInputZaino;
         renderWeightDistribution(i.hike);
         mostraEscursioneDiRiferimento(i.hike);

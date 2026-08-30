@@ -939,6 +939,11 @@
             // --- Generatore checklist (HTML statico) ---
             'backpack.gen.titolo': 'Smart Checklist Generator',
             'backpack.gen.desc': "Enter the hike's environmental data to get a recommended checklist and split the weight with the group.",
+            'backpack.gen.perQualeLabel': 'Pack for:',
+            'backpack.gen.perAuto': 'Automatic (the next scheduled one)',
+            'backpack.gen.grpOrganizzate': 'Organized by me',
+            'backpack.gen.grpPartecipo': "I'm joining",
+            'backpack.gen.perPersonale': 'Personal backpack (no hike)',
             'backpack.gen.stagioneLabel': 'Season:',
             'backpack.gen.stagioneEstate': 'Summer (Heat, sudden storms)',
             'backpack.gen.stagioneInverno': 'Winter (Deep cold, ice, snow)',
@@ -1038,6 +1043,7 @@
             // --- backpack.js: riquadro escursione di riferimento (mostraEscursioneDiRiferimento) ---
             'backpack.js.zainoPersonaleTitolo': 'Personal backpack',
             'backpack.js.zainoPersonaleDesc': 'You have no upcoming hikes: this is the list of your own things. Join a hike to also see the items to share with the group.',
+            'backpack.js.zainoPersonaleScelto': "You chose not to link it to a hike: it's the list of your own things, with no items to share with the group.",
             'backpack.js.zainoPerLabel': 'Backpack for:',
             'backpack.js.dataNonIndicata': 'date not set',
             'backpack.js.quotaMassimaLabel': 'max altitude',
@@ -1668,6 +1674,7 @@
 
             // --- geolocation.js: guida allo sblocco del permesso (mostraGuidaSblocco) ---
             'geo.insecureContext': 'Location is blocked because this page isn’t on a secure connection (https).\n\nIt’s not a block you set: browsers deny GPS to any page opened over http, and still answer "permission denied".\n\nOpen the site at https://camoscio.onrender.com and location will work.',
+            'geo.guidaDesktop': 'Computer (Chrome, Edge, Firefox…) — one level only: the site permission\n1. Click the icon left of the address (the padlock, or the "site settings" slider)\n2. Under "Location" choose "Allow" (or "Ask (default)")\n3. Reload the page\nOn Firefox: if it says "Blocked", click the × next to it to clear it, then reload.\nIf you can’t find the setting, also check that Windows/macOS location is on\n(Windows: Settings → Privacy → Location).',
             'geo.guidaSafari': 'iPhone / iPad (Safari) — three levels, you need all three\n1. iOS Settings → Privacy & Security → Location Services: on\n2. On the same screen, further down: Safari → "While Using the App"\n   (this is the most common case, and the site can’t tell it apart from point 3)\n3. On the site: "aA" in the address bar → Website Settings → Location → Allow',
             'geo.guidaChrome': 'Android (Chrome) — three levels, you need all three\n1. PHONE location: pull down the quick settings and check that\n   "Location" is on (or Android Settings → Location).\n   It’s the one missing most often, and the only one you won’t find by searching "Chrome".\n2. Chrome APP permission: Android Settings → Apps → Chrome → Permissions\n   → Location → allowed, with "precise location" on\n3. SITE permission: tap the padlock next to the address → Permissions\n   → Location → Allow\nIf you see a warning triangle next to the permission, the site is fine and one of\nthe two levels above is closed: tap the triangle and Chrome tells you which.',
             'geo.guidaIntro': 'Location isn’t coming through, and I can’t unblock it from here: it has to be re-enabled by hand.',
