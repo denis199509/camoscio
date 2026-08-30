@@ -901,6 +901,19 @@
                                         </select>
                                     </div>
 
+                                    <!-- Punto 113 passo 9: una linea di riferimento sulla mappa
+                                         durante la registrazione, presa da un percorso salvato
+                                         (SavedRoute). NON c'e' nessun rilevamento di fuori-percorso
+                                         ne' avviso - vincolo 7: un avviso di sicurezza che sbaglia
+                                         e' peggio che non averlo. Il testo qui sotto lo dice. -->
+                                    <div class="form-group">
+                                        <label for="tracking-route-select" data-i18n="track.percorsoDaSeguire">Percorso da seguire (facoltativo):</label>
+                                        <select id="tracking-route-select" class="form-control">
+                                            <option value="" data-i18n="track.nessunPercorso">Nessuno</option>
+                                        </select>
+                                        <p class="small text-muted" data-i18n="track.percorsoDaSeguireNota">Solo una linea di riferimento sulla mappa. Il sito non ti avvisa se te ne allontani.</p>
+                                    </div>
+
                                     <div id="tracking-geo-consent-alert" class="privacy-alert-box hidden">
                                         <i data-lucide="alert-triangle"></i>
                                         <span data-i18n="track.consensoAlert">Il tracciamento userà la posizione GPS reale del telefono. Avevi lasciato il consenso alla geolocalizzazione disattivato in registrazione: verrà attivato ora, se prosegui.</span>
@@ -1929,12 +1942,20 @@
                     <select id="hike-route-source">
                         <option value="manuale" data-i18n="hikeModal.routeManuale">Li scrivo io</option>
                         <option value="draft" data-i18n="hikeModal.routeDraft">Li calcolo da un progetto già fatto</option>
+                        <option value="saved" data-i18n="hikeModal.routeSaved">Li calcolo da un percorso salvato da una traccia</option>
                         <option value="gpx" data-i18n="hikeModal.routeGpx">Li calcolo importando una traccia (.gpx)</option>
                     </select>
                 </div>
                 <div class="form-group hidden" id="hike-route-draft-picker">
                     <label for="hike-route-draft-select" data-i18n="hikeModal.qualeProgetto">Quale progetto:</label>
                     <select id="hike-route-draft-select"></select>
+                </div>
+                <!-- Punto 113 passo 9: percorso copiato da una traccia (SavedRoute). Come il
+                     progetto qui sopra ma i numeri vengono dalla traccia GPS reale gia'
+                     copiata, non da un ricalcolo. -->
+                <div class="form-group hidden" id="hike-route-saved-picker">
+                    <label for="hike-route-saved-select" data-i18n="hikeModal.qualePercorso">Quale percorso:</label>
+                    <select id="hike-route-saved-select"></select>
                 </div>
                 <div class="form-group hidden" id="hike-route-gpx-picker">
                     <label for="hike-route-gpx-file" data-i18n="hikeModal.fileGpxLabel">File .gpx:</label>

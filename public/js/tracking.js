@@ -332,6 +332,11 @@ async function endTracking() {
     trackingState.status = 'ended';
     pulisciSpecchioLocale();
     if (window.endLiveGpsView) window.endLiveGpsView();
+    // Punto 113 passo 9: via la linea di riferimento e il menu torna a "Nessuno" - la
+    // registrazione e' finita, il riepilogo mostra la traccia vera.
+    if (window.clearPercorsoSalvato) window.clearPercorsoSalvato();
+    const routeSelect = document.getElementById('tracking-route-select');
+    if (routeSelect) routeSelect.value = '';
     updateMapRecordButton();
     fermaPromemoriaTracciamento();
     renderSummary(finalSession);
@@ -971,6 +976,11 @@ function updateMapRecordButton() {
     // select ancora modificabile mentirebbe a schermo su quale escursione si sta registrando.
     const hikeSelect = document.getElementById('tracking-hike-select');
     if (hikeSelect) hikeSelect.disabled = recording;
+    // Punto 113 passo 9: il "percorso da seguire" si fissa prima di partire, come
+    // l'escursione collegata - un menu ancora modificabile mentre si registra confonderebbe.
+    // La linea gia' scelta resta disegnata sulla mappa per tutta la registrazione.
+    const routeSelect = document.getElementById('tracking-route-select');
+    if (routeSelect) routeSelect.disabled = recording;
     const btnDownload = document.getElementById('btn-tracking-download-map');
     if (btnDownload) btnDownload.disabled = recording;
 
@@ -1022,6 +1032,42 @@ function renderHikeSelectOptions() {
     }
 }
 
+// Punto 113 passo 9: il menu "percorso da seguire" - i percorsi salvati dell'utente
+// (SavedRoute). Scegliendone uno, la sua linea compare sulla mappa come RIFERIMENTO: nessun
+// rilevamento di fuori-percorso, nessun avviso (vincolo 7). L'elenco fetchato si tiene in
+// cache qui cosi' il change handler trova i punti senza rifare la chiamata.
+// var, non let: questo file non e' in una IIFE (vedi la nota su "var T" in cima).
+var percorsiDaSeguire = [];
+async function renderRouteToFollowOptions() {
+    const select = document.getElementById('tracking-route-select');
+    if (!select) return;
+    const currentValue = select.value;
+    try {
+        const res = await fetch('/api/routing/saved-routes');
+        percorsiDaSeguire = res.ok ? await res.json() : [];
+    } catch (e) {
+        console.error('Errore caricamento percorsi da seguire:', e);
+        percorsiDaSeguire = [];
+    }
+    select.innerHTML = `<option value="">${escapeHtml(T('track.nessunPercorso') || 'Nessuno')}</option>` +
+        percorsiDaSeguire.map(p => `<option value="${p.id}">${escapeHtml(p.nome)}</option>`).join('');
+    if (currentValue && percorsiDaSeguire.some(p => p.id === currentValue)) {
+        select.value = currentValue;
+    }
+}
+
+// Disegna / toglie la linea di riferimento in base alla scelta del menu.
+function applicaPercorsoDaSeguire() {
+    const select = document.getElementById('tracking-route-select');
+    if (!select) return;
+    const scelto = percorsiDaSeguire.find(p => p.id === select.value);
+    if (scelto && Array.isArray(scelto.punti) && window.disegnaPercorsoSalvato) {
+        window.disegnaPercorsoSalvato(scelto.punti);
+    } else if (window.clearPercorsoSalvato) {
+        window.clearPercorsoSalvato();
+    }
+}
+
 function toggleGeoConsentAlert() {
     const alertBox = document.getElementById('tracking-geo-consent-alert');
     if (!alertBox) return;
@@ -1051,6 +1097,7 @@ function renderTrackingUi() {
         idle.classList.remove('hidden');
         miniBar.classList.add('hidden');
         renderHikeSelectOptions();
+        renderRouteToFollowOptions();
         toggleGeoConsentAlert();
     }
 }
@@ -1362,6 +1409,11 @@ function initTrackingModule() {
     if (btnDownload) btnDownload.addEventListener('click', handleDownloadOfflineMap);
     if (btnSummaryClose) btnSummaryClose.addEventListener('click', resetToIdleUi);
 
+    // Punto 113 passo 9: cambiare "percorso da seguire" disegna/toglie la linea di
+    // riferimento sulla mappa (nessun avviso di fuori-percorso - vincolo 7).
+    const routeSelect = document.getElementById('tracking-route-select');
+    if (routeSelect) routeSelect.addEventListener('change', applicaPercorsoDaSeguire);
+
     // Punto 14: tasto unico sulla mappa + tasto per tornare a farsi seguire (punto 11)
     const btnMapRecord = document.getElementById('btn-map-quick-record');
     const btnMapRecenter = document.getElementById('btn-map-recenter');
@@ -1392,6 +1444,7 @@ window.initTrackingModule = initTrackingModule;
 // di renderTrackingUi), che con il vecchio pulsante a scarpone rimosso non si apre piu' da
 // soli. Chiamate esplicitamente dal caso "map-section" di triggerSectionRender (app.js).
 window.renderHikeSelectOptions = renderHikeSelectOptions;
+window.renderRouteToFollowOptions = renderRouteToFollowOptions;
 window.toggleGeoConsentAlert = toggleGeoConsentAlert;
 
 // Rollout traduzione punto 102, lotto Mappa area 4: al cambio lingua i pezzi scritti da

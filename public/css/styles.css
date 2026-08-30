@@ -4264,6 +4264,56 @@ option {
     cursor: pointer;
 }
 
+/* Punto 113, passo 7: bottone "mi piace" (emoji montagna) - feed e pagina uscita.
+   Passo 8: accanto al "mi piace" sulla pagina uscita c'e' anche "Crea percorso". */
+.feed-item-actions {
+    margin-top: 10px;
+}
+#outing-page-actions:not(:empty) {
+    margin-top: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+#outing-page-actions .mi-piace-btn {
+    /* stessa altezza del bottone "Crea percorso" accanto (btn-sm) */
+    padding-top: 6px;
+    padding-bottom: 6px;
+}
+.mi-piace-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--border-color);
+    background: rgba(243, 239, 230, 0.05);
+    color: var(--color-text-primary);
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: background var(--transition-speed), border-color var(--transition-speed);
+}
+.mi-piace-btn:hover:not(:disabled) {
+    background: rgba(243, 239, 230, 0.12);
+}
+.mi-piace-btn.attivo {
+    border-color: var(--accent-blue-light);
+    background: rgba(127, 181, 199, 0.18);
+}
+.mi-piace-btn:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+.mi-piace-emoji {
+    font-size: 1.05rem;
+    line-height: 1;
+}
+.mi-piace-conteggio {
+    font-weight: 600;
+    min-width: 1ch;
+}
+
 /* Punto 113: intestazioni apri/chiudi delle due liste follow in Tribù & Squadre. */
 .follow-list-toggle {
     display: flex;

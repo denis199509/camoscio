@@ -1985,7 +1985,105 @@
                 '<li>On the same screen, further down: Safari → «While Using the App» <em>(this is the most common case, and cannot be told apart from the next one from the site)</em></li>' +
                 '<li>On the site: «aA» in the address bar → Website Settings → Location → Allow</li>' +
                 '</ol>',
-            'diag.guida.ricarica': '<p>Then reload the page.</p>'
+            'diag.guida.ricarica': '<p>Then reload the page.</p>',
+
+            // ============================================================
+            // PUNTO 113 - Parte social: Segui, Feed, pagina uscita, "mi piace", "crea percorso".
+            // Traduzione EN aggiunta al passo 10 (30/08/2026): i passi 1-9 erano gia' a schermo
+            // col ripiego italiano inline (T('chiave') || 'italiano'), come da rollout del
+            // punto 102. RESTANO IN ITALIANO di proposito: la didascalia di un'uscita (testo
+            // utente), il nome di un percorso salvato e l'etichetta "da <autore>" (nome
+            // proprio), e il testo delle notifiche (lo genera il server, come tutte le altre).
+            // ============================================================
+
+            // Voce di barra + titolo di sezione
+            'nav.feed': 'Feed',
+            'sectionTitle.feed': 'Feed',
+            // #section-title dell'uscita: disegnaTestata (outingpage.js) ci scrive poi il nome
+            // dell'autore (come #user-profile con lo username) - questa e' la parola di
+            // ripiego per l'istante prima, e per il picker della barra dove la sezione non ha voce.
+            'sectionTitle.outing-page': 'Outing',
+
+            // Pagina Feed (feed.js + intro statica in index.html)
+            'feed.titolo': 'Feed',
+            'feed.sottotitolo': 'Outings published by the people you follow, most recent first. Tap an outing to open it.',
+            'feed.caricamento': 'Loading...',
+            'feed.caricaAltre': 'Load more',
+            'feed.errore': 'Could not load the feed. Try again later.',
+            'feed.vuoto': 'No outings published yet by the people you follow.',
+            'feed.nessunSeguito': 'You\'re not following anyone yet. Find people in "Search People" or on their profile and follow them: their published outings will show up here.',
+            'feed.miPiaceMetti': 'Add a like',
+            'feed.miPiaceTogli': 'Remove the like',
+            'feed.miPiaceErrore': 'Could not update the like.',
+
+            // Tasto "Segui" e liste follow (userprofile.js, social.js, index.html)
+            'follow.segui': 'Follow',
+            'follow.seguiGia': 'Following',
+            'follow.smettiSegui': 'Unfollow',
+            'follow.errore': 'Could not update.',
+            'follow.seguaci': 'followers',
+            'follow.seguiti': 'following',
+            'follow.nessunSeguito': 'You\'re not following anyone yet.',
+            'follow.nessunSeguace': 'Nobody follows you yet.',
+            'follow.nessunSeguitoAltri': 'This person isn\'t following anyone.',
+            'follow.nessunSeguaceAltri': 'Nobody follows this person.',
+            'follow.sezioneTitolo': 'People',
+            'follow.sezioneDesc': 'Who you follow and who follows you. Tap a name to open the profile.',
+            'follow.seguitiTitolo': 'People you follow',
+            'follow.seguaciTitolo': 'People who follow you',
+
+            // Pubblicare / togliere un'uscita dal feed (storico.js)
+            'publish.pubblica': 'Publish to feed',
+            'publish.pubblicata': 'Published',
+            'publish.togli': 'Remove from feed',
+            'publish.tolta': 'Outing removed from the feed.',
+            'publish.fatta': 'Outing published to the feed!',
+            'publish.pubblicaTitle': 'Make this outing visible to the people who follow you',
+            'publish.pubblicataTitle': 'In the feed of the people who follow you. Click to remove it.',
+            'publish.serveTracciaTitle': 'A GPS track is needed to publish to the feed',
+            'publish.serveTraccia': 'This hike has no GPS track: the feed needs one. Upload it with "Upload a .gpx file" above, then you can publish it.',
+            'publish.chiediDidascalia': 'Write a line or two about the outing (optional). Press OK to publish it to the feed of the people who follow you.',
+            'publish.confermaTogli': 'Remove this outing from the feed? It will no longer be visible to the people who follow you (the likes stay).',
+            'publish.errorePubblica': 'Could not publish the outing.',
+            'publish.erroreTogli': 'Could not remove the outing from the feed.',
+
+            // Pagina di una singola uscita (outingpage.js)
+            'outing.caricamento': 'Loading...',
+            'outing.errore': 'Could not load this outing. Try again later.',
+            'outing.nonVisibile': 'You can\'t see this outing: maybe it\'s no longer public, or you no longer follow whoever published it.',
+            'outing.durata': 'duration',
+            'outing.durataIgnota': 'duration unknown',
+            'outing.durataIgnotaTitle': 'The .gpx file didn\'t contain point timestamps.',
+            'outing.mDisliv': 'm elev. gain',
+            'outing.miPiaceMetti': 'Add a like',
+            'outing.miPiaceTogli': 'Remove the like',
+            'outing.miPiaceErrore': 'Could not update the like.',
+            'outing.creaPercorso': 'Create route',
+            'outing.creaPercorsoChiediNome': 'What name do you want to give this route? You\'ll find it in "My Hikes" → My projects.',
+            'outing.creaPercorsoFatto': 'Route created: you\'ll find it in "My Hikes" → My projects.',
+            'outing.creaPercorsoErrore': 'Could not create the route.',
+            // Nome di default per "crea percorso": "autore · data". Identico in IT/EN
+            // (la data la formatta gia' formattaData in en-GB/it-IT).
+            'outing.creaPercorsoNomeDefault': function (autore, quando) { return autore + ' · ' + quando; },
+
+            // "Crea percorso" -> SavedRoute nelle card di "I miei progetti" (routeplanner.js)
+            'rp.prog.tagDaTraccia': 'from a track',
+            'rp.prog.tagDaTracciaTitle': 'Route copied from an outing\'s track, to reuse it',
+            'rp.prog.daAutore': function (nome) { return 'from ' + nome; },
+            'rp.prog.daAutoreTitle': 'Who walked the original track',
+            'rp.prog.quotaMax': 'max elevation',
+            'rp.prog.cancellaPercorsoMsg': 'Delete this saved route?\n\nThe copy of the track will be lost. The original outing of whoever walked it is not touched.',
+
+            // Escursione con i numeri calcolati da un percorso salvato (social.js, index.html)
+            'hikeModal.routeSaved': 'Calculate from a route saved from a track',
+            'hikeModal.qualePercorso': 'Which route:',
+            'hikeModal.nessunPercorsoSalvato': 'You don\'t have any routes saved from a track yet',
+            'hikeToast.scegliPercorso': 'Choose a route from the list.',
+
+            // "Percorso da seguire" durante una registrazione (tracking.js, index.html)
+            'track.percorsoDaSeguire': 'Route to follow (optional):',
+            'track.nessunPercorso': 'None',
+            'track.percorsoDaSeguireNota': 'Just a reference line on the map. The site does not warn you if you stray from it.'
         }
     };
 

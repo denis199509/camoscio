@@ -622,6 +622,7 @@ function triggerSectionRender(sectionId) {
                 // vedi tracking.js). Senza questa chiamata il menu resterebbe vuoto per
                 // sempre: prima lo popolava solo renderTrackingUi() nel suo ramo idle.
                 if (window.renderHikeSelectOptions) window.renderHikeSelectOptions();
+                if (window.renderRouteToFollowOptions) window.renderRouteToFollowOptions();
                 if (window.toggleGeoConsentAlert) window.toggleGeoConsentAlert();
                 break;
             case "carpool":
@@ -703,8 +704,10 @@ function renderNotificationBell() {
     // Punto 111: stesso schema per una notifica di segnalazione sentiero (relatedReportId
     // - richiesta di risoluzione o scadenza): porta Denis alla pagina Moderazione
     // (goToReportModeration in pendingreports.js).
+    // Punto 113: stesso schema per un "mi piace" ricevuto (relatedSessionId): il click apre
+    // la pagina dell'uscita (goToOutingFromNotification in outingpage.js).
     list.innerHTML = notifications.map(n => `
-        <div class="notification-item ${n.read ? '' : 'unread'}" onclick="${n.relatedReportId ? `goToReportModeration()` : n.relatedHikeId ? `goToHikeToComplete('${n.relatedHikeId}')` : `markNotificationRead('${n.id}')`}">
+        <div class="notification-item ${n.read ? '' : 'unread'}" onclick="${n.relatedReportId ? `goToReportModeration()` : n.relatedHikeId ? `goToHikeToComplete('${n.relatedHikeId}')` : n.relatedSessionId ? `goToOutingFromNotification('${n.relatedSessionId}')` : `markNotificationRead('${n.id}')`}">
             ${escapeHtml(n.text)}
             <span class="notification-time">${new Date(n.createdAt).toLocaleString([], { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
         </div>
@@ -712,7 +715,7 @@ function renderNotificationBell() {
 }
 
 // Segna una notifica come letta al click - solo quelle senza un posto dove portare
-// (ne' relatedReportId ne' relatedHikeId, vedi renderNotificationBell sopra).
+// (ne' relatedReportId ne' relatedHikeId ne' relatedSessionId, vedi renderNotificationBell sopra).
 window.markNotificationRead = async function(notificationId) {
     const notif = window.CamoscioState.notifications.find(n => n.id === notificationId);
     if (!notif || notif.read) return;

@@ -30,10 +30,12 @@ function resetHikeRouteSourcePicker() {
     const sel = document.getElementById('hike-route-source');
     if (sel) sel.value = 'manuale';
     const draftPicker = document.getElementById('hike-route-draft-picker');
+    const savedPicker = document.getElementById('hike-route-saved-picker');
     const gpxPicker = document.getElementById('hike-route-gpx-picker');
     const manualRow = document.getElementById('hike-route-manual-row');
     const nota = document.getElementById('hike-route-calcolato-nota');
     if (draftPicker) draftPicker.classList.add('hidden');
+    if (savedPicker) savedPicker.classList.add('hidden');
     if (gpxPicker) gpxPicker.classList.add('hidden');
     if (manualRow) manualRow.classList.remove('hidden');
     if (nota) nota.classList.add('hidden');
@@ -86,6 +88,27 @@ async function popolaBozzePerHike() {
         sel.innerHTML = bozze.map(b => `<option value="${b.id}">${window.escapeHtml(b.nome)}</option>`).join('');
     } catch (e) {
         console.error('Errore nel caricamento dei progetti:', e);
+        sel.innerHTML = `<option value="">${escapeHtml(T('hikeModal.erroreCaricaProgetti') || 'Non è stato possibile caricare i progetti')}</option>`;
+    }
+}
+
+// Punto 113 passo 9: gemella di popolaBozzePerHike, ma per i percorsi salvati da una
+// traccia (GET /api/routing/saved-routes). Solo nome e id: i numeri li calcola il server
+// al salvataggio, dai valori gia' copiati sul SavedRoute.
+async function popolaPercorsiSalvatiPerHike() {
+    const sel = document.getElementById('hike-route-saved-select');
+    if (!sel) return;
+    sel.innerHTML = `<option>${escapeHtml(T('profile.caricamento') || 'Caricamento...')}</option>`;
+    try {
+        const res = await fetch('/api/routing/saved-routes');
+        const percorsi = res.ok ? await res.json() : [];
+        if (!percorsi.length) {
+            sel.innerHTML = `<option value="">${escapeHtml(T('hikeModal.nessunPercorsoSalvato') || 'Non hai ancora nessun percorso salvato da una traccia')}</option>`;
+            return;
+        }
+        sel.innerHTML = percorsi.map(p => `<option value="${p.id}">${window.escapeHtml(p.nome)}</option>`).join('');
+    } catch (e) {
+        console.error('Errore nel caricamento dei percorsi salvati:', e);
         sel.innerHTML = `<option value="">${escapeHtml(T('hikeModal.erroreCaricaProgetti') || 'Non è stato possibile caricare i progetti')}</option>`;
     }
 }
@@ -196,6 +219,8 @@ function setupSocialEvents() {
             const manualRow = document.getElementById('hike-route-manual-row');
             const manuale = selRouteSource.value === 'manuale';
 
+            const savedPicker = document.getElementById('hike-route-saved-picker');
+
             if (manualRow) manualRow.classList.toggle('hidden', !manuale);
             document.querySelectorAll('#hike-alt, #hike-elev, #hike-dist').forEach(el => el.required = manuale);
             // Cambiare la fonte del percorso invalida qualunque numero scritto a mano per
@@ -204,6 +229,9 @@ function setupSocialEvents() {
 
             if (draftPicker) draftPicker.classList.toggle('hidden', selRouteSource.value !== 'draft');
             if (selRouteSource.value === 'draft') popolaBozzePerHike();
+
+            if (savedPicker) savedPicker.classList.toggle('hidden', selRouteSource.value !== 'saved');
+            if (selRouteSource.value === 'saved') popolaPercorsiSalvatiPerHike();
 
             if (gpxPicker) gpxPicker.classList.toggle('hidden', selRouteSource.value !== 'gpx');
         });
@@ -1213,6 +1241,23 @@ async function submitCreateHike() {
         // anche quei due numeri insieme al progetto - non lo si manda mai se il riquadro
         // e' nascosto, altrimenti numeri di un tentativo passato viaggerebbero anche su un
         // calcolo che stavolta riesce da solo.
+        const boxQuoteManuali = document.getElementById('hike-route-quote-manuali');
+        if (boxQuoteManuali && !boxQuoteManuali.classList.contains('hidden')) {
+            routeSource.quoteManuali = {
+                maxAltitude: parseInt(document.getElementById('hike-quota-manuale').value),
+                elevationGain: parseInt(document.getElementById('hike-dislivello-manuale').value)
+            };
+        }
+    } else if (fonte === 'saved') {
+        // Punto 113 passo 9: come 'draft', ma i numeri vengono dai valori gia' copiati sul
+        // SavedRoute (traccia GPS reale), non da un ricalcolo. Il ripiego "quote a mano" del
+        // punto 93 vale lo stesso: una traccia importata senza elevazione non ha la quota.
+        const savedRouteId = document.getElementById("hike-route-saved-select").value;
+        if (!savedRouteId) {
+            window.showToast(T('hikeToast.scegliPercorso') || "Scegli un percorso dall'elenco.", "error");
+            return;
+        }
+        routeSource = { kind: 'saved', savedRouteId };
         const boxQuoteManuali = document.getElementById('hike-route-quote-manuali');
         if (boxQuoteManuali && !boxQuoteManuali.classList.contains('hidden')) {
             routeSource.quoteManuali = {

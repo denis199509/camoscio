@@ -86,6 +86,13 @@ function disegnaFeed() {
         });
     }
 
+    box.querySelectorAll('[data-outing-like]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation(); // non aprire l'uscita: il bottone è fuori da .feed-item-body, ma per sicurezza
+            toggleMiPiaceFeed(btn.getAttribute('data-outing-like'), btn);
+        });
+    });
+
     if (window.lucide) window.lucide.createIcons();
 }
 
@@ -101,9 +108,21 @@ function schedaFeed(item) {
     const captionHtml = item.caption ? `<p class="feed-item-caption">${esc(item.caption)}</p>` : '';
 
     // Corpo: la stessa card compatta di "Le mie escursioni" e del profilo (km / dislivello /
-    // durata + badge registrata/importata). Niente azioniHtml qui: il "mi piace" arriva al
-    // passo 7.
+    // durata + badge registrata/importata).
     const cardStats = window.CamoscioSchedeCompatte.uscita(item, {});
+
+    // Passo 7: "mi piace" (emoji montagna). data-outing-like porta l'id: il listener si
+    // aggancia in disegnaFeed (ridisegna solo il bottone toccato, non tutto il feed).
+    const attivo = !!item.likedByMe;
+    const titolo = attivo
+        ? (T('feed.miPiaceTogli') || 'Togli il mi piace')
+        : (T('feed.miPiaceMetti') || 'Metti un mi piace');
+    const miPiaceHtml = `<div class="feed-item-actions">
+        <button type="button" class="mi-piace-btn${attivo ? ' attivo' : ''}" data-outing-like="${esc(item.id)}" title="${esc(titolo)}" aria-pressed="${attivo}">
+            <span class="mi-piace-emoji" aria-hidden="true">⛰️</span>
+            <span class="mi-piace-conteggio">${item.likeCount || 0}</span>
+        </button>
+    </div>`;
 
     return `<article class="feed-item">
         <div class="feed-item-author" onclick="event.stopPropagation(); showUserProfile('${esc(item.userId)}')">
@@ -112,7 +131,41 @@ function schedaFeed(item) {
         </div>
         ${captionHtml}
         <div class="feed-item-body" onclick="apriUscita('${esc(item.id)}')">${cardStats}</div>
+        ${miPiaceHtml}
     </article>`;
+}
+
+// Toggle "mi piace" da una card del feed. Come toggleMiPiace in outingpage.js: stato vero
+// dal server, mai ottimistico. Aggiorna solo il bottone toccato e l'item in memoria - un
+// ridisegno dell'intero feed perderebbe la posizione di scroll.
+async function toggleMiPiaceFeed(sessionId, btn) {
+    const item = feedItems.find(i => i.id === sessionId);
+    if (!item || !btn) return;
+    btn.disabled = true;
+    try {
+        const res = await fetch('/api/tracking/sessions/' + encodeURIComponent(sessionId) + '/like', {
+            method: item.likedByMe ? 'DELETE' : 'POST'
+        });
+        if (!res.ok) {
+            if (window.showToast) window.showToast(T('feed.miPiaceErrore') || 'Non è stato possibile aggiornare il mi piace.', 'error');
+            btn.disabled = false;
+            return;
+        }
+        const d = await res.json();
+        item.likeCount = d.likeCount;
+        item.likedByMe = d.likedByMe;
+        btn.classList.toggle('attivo', !!d.likedByMe);
+        btn.setAttribute('aria-pressed', String(!!d.likedByMe));
+        btn.title = d.likedByMe
+            ? (T('feed.miPiaceTogli') || 'Togli il mi piace')
+            : (T('feed.miPiaceMetti') || 'Metti un mi piace');
+        const c = btn.querySelector('.mi-piace-conteggio');
+        if (c) c.textContent = d.likeCount;
+        btn.disabled = false;
+    } catch (e) {
+        console.error('Errore mi piace feed:', e);
+        btn.disabled = false;
+    }
 }
 
 // Nome del mese per esteso: cambia con la lingua (en-GB / it-IT), stessa scelta di

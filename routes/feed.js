@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Follow = require('../models/Follow');
 const ActiveHikeSession = require('../models/ActiveHikeSession');
+const Like = require('../models/Like'); // punto 113: "mi piace" per card, in batch
 const { requireAuth } = require('../middleware/auth');
 
 // Punto 113 - Il feed: le uscite pubblicate dalle persone che l'utente segue, più recenti
@@ -44,7 +45,31 @@ router.get('/', requireAuth, async (req, res) => {
         const items = cePiu ? trovate.slice(0, PAGINA) : trovate;
         const nextBefore = cePiu ? items[items.length - 1].publishedAt.toISOString() : null;
 
-        res.json({ items, nextBefore });
+        // Punto 113: i "mi piace" in DUE query per l'intera pagina, mai una per card - il
+        // totale per uscita (aggregate raggruppato) e quali ha messo l'utente corrente (una
+        // find sui soli id di pagina). A feed vuoto si salta tutto.
+        const ids = items.map(s => s._id);
+        let mappaConteggi = new Map();
+        let mieiSet = new Set();
+        if (ids.length) {
+            const [conteggi, miei] = await Promise.all([
+                Like.aggregate([
+                    { $match: { sessionId: { $in: ids } } },
+                    { $group: { _id: '$sessionId', n: { $sum: 1 } } }
+                ]),
+                Like.find({ sessionId: { $in: ids }, userId: req.session.userId }).select('sessionId').lean()
+            ]);
+            mappaConteggi = new Map(conteggi.map(c => [String(c._id), c.n]));
+            mieiSet = new Set(miei.map(m => String(m.sessionId)));
+        }
+        const itemsJson = items.map(s => {
+            const o = s.toJSON();
+            o.likeCount = mappaConteggi.get(String(s._id)) || 0;
+            o.likedByMe = mieiSet.has(String(s._id));
+            return o;
+        });
+
+        res.json({ items: itemsJson, nextBefore });
     } catch (e) {
         console.error('Errore feed:', e);
         res.status(500).json({ error: 'Impossibile caricare il feed.' });

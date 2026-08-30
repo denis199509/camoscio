@@ -625,25 +625,60 @@
     async function renderProgetti() {
         const box = document.getElementById('projects-list');
         if (!box) return;
-        let bozze = [];
+        let bozze = [], percorsi = [];
         try {
-            const res = await fetch('/api/routing/drafts');
-            if (!res.ok) throw new Error('richiesta fallita');
-            bozze = await res.json();
+            // Punto 113 passo 8: i "percorsi salvati" (copiati da una traccia altrui) stanno
+            // in "I miei progetti" accanto alle bozze - stessa pagina delle proprie cose.
+            const [rB, rP] = await Promise.all([
+                fetch('/api/routing/drafts'),
+                fetch('/api/routing/saved-routes')
+            ]);
+            if (!rB.ok || !rP.ok) throw new Error('richiesta fallita');
+            bozze = await rB.json();
+            percorsi = await rP.json();
         } catch (e) {
             box.innerHTML = `<div class="glass-card text-center py-4 text-muted">${T('rp.prog.erroreCarica') || 'Non è stato possibile caricare i tuoi progetti. Riprova più tardi.'}</div>`;
             return;
         }
 
         const contatore = document.getElementById('count-projects');
-        if (contatore) contatore.textContent = bozze.length;
+        if (contatore) contatore.textContent = bozze.length + percorsi.length;
 
-        if (!bozze.length) {
+        if (!bozze.length && !percorsi.length) {
             box.innerHTML = `<div class="glass-card text-center py-4 text-muted">
                 ${T('rp.prog.vuoto') || 'Nessun progetto per ora. Vai su <b>Mappa &amp; Sentieri</b>, apri "Progetta un percorso" e tocca i punti che vuoi collegare.'}
             </div>`;
             return;
         }
+
+        // Percorso copiato da una traccia (SavedRoute): niente "tappe scelte" ne' ricalcolo,
+        // e' una linea gia' camminata. Etichetta "da <autore>" (decisione 5 di Denis).
+        // Titolo su una riga TUTTA sua, fuori da .outing-card-head: quella e' una riga flex,
+        // e un titolo lungo accanto a due badge + cestino si vede spezzare lettera per
+        // lettera (stessa scelta gia' fatta per schedaEscursioneCompletata in userprofile.js).
+        const cardPercorso = (p) => `
+            <div class="outing-card" data-percorso-id="${esc(p.id)}">
+                <span class="outing-card-title">${esc(p.nome)}</span>
+                <div class="outing-card-head" style="margin-top: 4px;">
+                    <span class="badge badge-accent outing-tag" title="${T('rp.prog.tagDaTracciaTitle') || 'Percorso copiato dalla traccia di un\'uscita, per riusarlo'}"><i data-lucide="route"></i> ${T('rp.prog.tagDaTraccia') || 'da una traccia'}</span>
+                    ${p.origineUsername
+                        ? `<span class="badge outing-tag" title="${T('rp.prog.daAutoreTitle') || 'Chi ha camminato la traccia originale'}">${esc(T('rp.prog.daAutore', esc(p.origineUsername)) || ('da ' + esc(p.origineUsername)))}</span>`
+                        : ''}
+                    <button class="outing-card-del" data-percorso-del="${esc(p.id)}" title="${T('rp.prog.cancellaTitle') || 'Cancella questo progetto'}" aria-label="${T('rp.cancellaAria', esc(p.nome)) || ('Cancella ' + esc(p.nome))}"><i data-lucide="trash-2"></i></button>
+                </div>
+                <div class="outing-card-stats">
+                    ${typeof p.distanzaKm === 'number'
+                        ? `<div><strong>${metri((p.distanzaKm || 0) * 1000)}</strong><span>${T('rp.prog.lunghezza') || 'lunghezza'}</span></div>`
+                        : ''}
+                    ${typeof p.dislivelloM === 'number'
+                        ? `<div><strong>▲ ${Math.round(p.dislivelloM)} m</strong><span>${T('rp.salita') || 'salita'}</span></div>`
+                        : ''}
+                    ${typeof p.quotaMaxM === 'number'
+                        ? `<div><strong>${Math.round(p.quotaMaxM)} m</strong><span>${T('rp.prog.quotaMax') || 'quota max'}</span></div>`
+                        : ''}
+                </div>
+                <button class="btn btn-sm btn-secondary rp-apri-mappa" data-percorso-apri="${esc(p.id)}"><i data-lucide="map"></i> ${T('rp.prog.apriSullaMappa') || 'Apri sulla mappa'}</button>
+            </div>`;
 
         box.innerHTML = `<div class="outings-grid">${bozze.map(b => `
             <div class="outing-card" data-progetto-id="${esc(b.id)}">
@@ -673,7 +708,7 @@
                         : `<div><strong>✓</strong><span>${T('rp.prog.tuttoSuSentieri') || 'tutto su sentieri'}</span></div>`}
                 </div>
                 <button class="btn btn-sm btn-secondary rp-apri-mappa" data-prog-apri="${esc(b.id)}"><i data-lucide="map"></i> ${T('rp.prog.apriSullaMappa') || 'Apri sulla mappa'}</button>
-            </div>`).join('')}</div>`;
+            </div>`).join('') + percorsi.map(cardPercorso).join('')}</div>`;
 
         box.querySelectorAll('[data-prog-apri]').forEach(b => b.addEventListener('click', () => {
             const bozza = bozze.find(x => x.id === b.getAttribute('data-prog-apri'));
@@ -689,7 +724,44 @@
             renderProgetti();
         }));
 
+        // Punto 113 passo 8: "Apri sulla mappa" di un percorso salvato -> passa alla Mappa e
+        // disegna la linea (nessun ricalcolo: e' una traccia gia' camminata).
+        box.querySelectorAll('[data-percorso-apri]').forEach(b => b.addEventListener('click', () => {
+            const p = percorsi.find(x => x.id === b.getAttribute('data-percorso-apri'));
+            if (!p) return;
+            const voce = document.querySelector('.nav-btn[data-target="map-section"]');
+            if (voce) voce.click();
+            setTimeout(() => { if (window.disegnaPercorsoSalvato) window.disegnaPercorsoSalvato(p.punti); }, 400);
+        }));
+        box.querySelectorAll('[data-percorso-del]').forEach(b => b.addEventListener('click', async () => {
+            await cancellaPercorsoSalvato(b.getAttribute('data-percorso-del'));
+            renderProgetti();
+        }));
+
         if (window.lucide) window.lucide.createIcons();
+    }
+
+    // Punto 113 passo 8: cancella un percorso salvato (SavedRoute). La copia della traccia
+    // va persa; l'uscita originale di chi l'ha camminata non c'entra e non viene toccata.
+    async function cancellaPercorsoSalvato(id) {
+        const procedi = window.showConfirmModal
+            ? await window.showConfirmModal(
+                T('rp.prog.cancellaPercorsoMsg') || 'Cancellare questo percorso salvato?\n\nLa copia della traccia andrà persa. L\'uscita originale di chi l\'ha camminata non viene toccata.',
+                T('common.elimina') || 'Cancella',
+                { cancelLabel: T('common.cancella') || 'Annulla', danger: true })
+            : true;
+        if (!procedi) return;
+        try {
+            const res = await fetch(`/api/routing/saved-routes/${encodeURIComponent(id)}`, { method: 'DELETE' });
+            if (!res.ok) {
+                const d = await res.json().catch(() => ({}));
+                if (window.showToast) window.showToast(d.error || T('rp.erroreCancella') || 'Non e stato possibile cancellare.', 'error');
+                return;
+            }
+            if (window.showToast) window.showToast(T('rp.bozzaCancellata') || 'Percorso cancellato.', 'success');
+        } catch (e) {
+            if (window.showToast) window.showToast(T('common.erroreServer') || 'Non è stato possibile contattare il server.', 'error');
+        }
     }
 
     window.CamoscioRoutePlanner = { gestisciClickMappa, init: initRoutePlanner, renderProgetti };

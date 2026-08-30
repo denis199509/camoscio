@@ -514,6 +514,44 @@ function clearLiveTrackPolyline() {
     }
 }
 
+// Punto 113: percorso salvato (SavedRoute) disegnato come linea di riferimento sulla mappa
+// grande. Due usi: "Apri sulla mappa" da "I miei progetti" (passo 8) e "percorso da seguire"
+// durante una registrazione (passo 9). In entrambi NON e' il progetta-percorso: nessun
+// ricalcolo, nessun segnaposto numerato, e nel passo 9 NESSUN rilevamento di fuori-percorso
+// ne' avviso (vincolo 7 - un avviso di sicurezza che sbaglia e' peggio che non averlo).
+// Una sola linea per volta, ridisegnabile.
+let savedRoutePolyline = null;
+window.disegnaPercorsoSalvato = function (punti, opzioni) {
+    if (!window.mapInstance || typeof L === 'undefined' || !Array.isArray(punti)) return;
+    if (savedRoutePolyline) {
+        window.mapInstance.removeLayer(savedRoutePolyline);
+        savedRoutePolyline = null;
+    }
+    const latlng = punti
+        .map(p => [p[1], p[0]])
+        .filter(c => Number.isFinite(c[0]) && Number.isFinite(c[1]));
+    if (latlng.length < 2) return;
+    // #4C7E90: lo stesso blu del percorso PROGETTATO (routeplanner COLORE_SENTIERO) - un
+    // percorso DA SEGUIRE, non la traccia registrata dal vivo (#7FB5C7) ne' il verde di
+    // un'escursione pianificata.
+    savedRoutePolyline = L.polyline(latlng, { color: '#4C7E90', weight: 4, opacity: 0.9 }).addTo(window.mapInstance);
+    // Sotto la traccia registrata dal vivo (liveTrackPolyline, #7FB5C7), che si aggiunge
+    // dopo: questa e' un riferimento, non il dato che stai raccogliendo. I due blu della
+    // palette (progettato vs registrato) sono gia' la distinzione in uso nel progetto.
+    savedRoutePolyline.bringToBack();
+    if (!opzioni || opzioni.fit !== false) {
+        window.mapInstance.fitBounds(savedRoutePolyline.getBounds(), { padding: [40, 40] });
+    }
+    window.mapInstance.invalidateSize();
+};
+
+window.clearPercorsoSalvato = function () {
+    if (savedRoutePolyline && window.mapInstance) {
+        window.mapInstance.removeLayer(savedRoutePolyline);
+    }
+    savedRoutePolyline = null;
+};
+
 // Rileva se il marker GPS è vicino a vette o rifugi per sbloccare i timbri
 function checkGeofencing(lat, lng) {
     const db = window.CamoscioState;

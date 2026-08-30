@@ -11,11 +11,20 @@
 const express = require('express');
 const router = express.Router();
 const { requireAuth } = require('../middleware/auth');
-const { isFiniteNum } = require('../lib/geometry');
+const { isFiniteNum, simplifyTrack } = require('../lib/geometry');
 const { regionForPoint } = require('../lib/regions');
 const { progettaPercorso } = require('../lib/trailGraph');
 const RouteDraft = require('../models/RouteDraft');
+const SavedRoute = require('../models/SavedRoute'); // punto 113, passo 8: percorso copiato da una traccia
+const User = require('../models/User');
+const { guardiaUscitaVisibile } = require('../lib/uscitaVisibile'); // punto 113: guardia autore-o-follower
 const { mongoose } = require('../db/mongo');
+
+// Campione per il controllo delle quattro regioni su una traccia: mirror di CAMPIONE_REGIONE
+// in routes/tracking.js (una traccia di crinale entra ed esce dai confini, si guarda la
+// maggioranza di un campione invece del solo primo punto). Costante di tuning, non logica -
+// come MAX_PUNTI, gia' duplicato fra questo file e public/js/routeplanner.js.
+const CAMPIONE_REGIONE = 40;
 
 // Un progetto di escursione ha una manciata di tappe. Il tetto non serve contro l'utente
 // ma contro una richiesta costruita apposta: ogni tappa e' una ricerca su un grafo.
@@ -152,6 +161,122 @@ router.delete('/drafts/:id', requireAuth, async (req, res) => {
         res.json({ success: true });
     } catch (e) {
         console.error('Cancellazione bozza percorso fallita:', e);
+        res.status(500).json({ error: 'Non e\' stato possibile cancellare il percorso.' });
+    }
+});
+
+// --- PUNTO 113, passo 8: percorsi COPIATI dalla traccia di un'uscita ("Crea percorso") ---
+//
+// Personali come le bozze: si vedono/aprono/cancellano solo i propri, sempre
+// req.session.userId. LA DIFFERENZA con /drafts: qui si persiste la polyline vera (copiata
+// dalla traccia dell'uscita), non i punti scelti - vedi models/SavedRoute.js per il perche'
+// e per la disciplina di spazio.
+
+const MAX_PERCORSI_SALVATI = 50;    // specchio di MAX_BOZZE
+const MAX_PUNTI_PERCORSO = 400;     // una linea DA SEGUIRE, non un dato topografico
+const SEMPLIFICA_PERCORSO_M = 18;   // piu' grezzo degli ~8 m d'archivio
+
+router.get('/saved-routes', requireAuth, async (req, res) => {
+    try {
+        const percorsi = await SavedRoute.find({ userId: req.session.userId })
+            .sort({ creatoIl: -1 }).limit(MAX_PERCORSI_SALVATI);
+        res.json(percorsi);
+    } catch (e) {
+        console.error('Lettura percorsi salvati fallita:', e);
+        res.status(500).json({ error: 'Impossibile caricare i percorsi salvati.' });
+    }
+});
+
+router.post('/saved-routes', requireAuth, async (req, res) => {
+    try {
+        const nome = String((req.body && req.body.nome) || '').trim().slice(0, 80);
+        const sessionId = req.body && req.body.sessionId;
+        if (!nome) return res.status(400).json({ error: 'Dai un nome al percorso.' });
+
+        // Stessa guardia di GET /sessions/:id/meta|points: l'autore sempre, gli altri solo se
+        // seguono un'uscita pubblicata. E' la protezione server-side che la decisione 6 di
+        // Denis richiede - non ci si copia la traccia di chi non si potrebbe nemmeno vedere.
+        const g = await guardiaUscitaVisibile(
+            sessionId, req.session.userId,
+            'userId publishedAt points distanceKm elevationGainM importedName startedAt'
+        );
+        if (g.errore) return res.status(g.errore.status).json(g.errore.body);
+        const sessione = g.sessione;
+
+        const grezzi = Array.isArray(sessione.points) ? sessione.points : [];
+        if (grezzi.length < 2) {
+            return res.status(400).json({ error: 'Questa uscita non ha una traccia da cui creare un percorso.' });
+        }
+
+        // Vincolo delle quattro regioni col campione-e-maggioranza gia' usato per i .gpx
+        // importati (routes/tracking.js): una traccia di crinale entra ed esce dai confini,
+        // bocciarla per un punto singolo sarebbe un rifiuto a caso.
+        const passo = Math.max(1, Math.floor(grezzi.length / CAMPIONE_REGIONE));
+        let dentro = 0, esaminati = 0;
+        for (let i = 0; i < grezzi.length; i += passo) {
+            esaminati++;
+            if (regionForPoint(grezzi[i][0], grezzi[i][1])) dentro++;
+        }
+        if (dentro * 2 <= esaminati) {
+            return res.status(400).json({ error: 'Questa traccia si svolge fuori dalle quattro regioni coperte dal sito.' });
+        }
+
+        if (await SavedRoute.countDocuments({ userId: req.session.userId }) >= MAX_PERCORSI_SALVATI) {
+            return res.status(429).json({ error: `Hai gia' ${MAX_PERCORSI_SALVATI} percorsi salvati: cancellane uno per farne spazio.` });
+        }
+
+        // Quota massima dai punti COMPLETI, prima di scartare la terza colonna: serve
+        // all'elenco e (passo 9) al ramo "quote a mano" del punto 93 quando manca.
+        let quotaMaxM;
+        for (const p of grezzi) {
+            if (typeof p[2] === 'number' && Number.isFinite(p[2])) {
+                quotaMaxM = quotaMaxM === undefined ? p[2] : Math.max(quotaMaxM, p[2]);
+            }
+        }
+
+        // Semplifica (~18 m), poi tieni solo [lng, lat]; se restano troppi punti, campiona
+        // a passo fisso tenendo sempre l'ultimo.
+        let punti = simplifyTrack(grezzi, SEMPLIFICA_PERCORSO_M).map(p => [p[0], p[1]]);
+        if (punti.length > MAX_PUNTI_PERCORSO) {
+            const q = Math.ceil(punti.length / MAX_PUNTI_PERCORSO);
+            punti = punti.filter((_, i) => i % q === 0 || i === punti.length - 1);
+        }
+        if (punti.length < 2) {
+            return res.status(400).json({ error: 'La traccia di questa uscita e\' troppo corta per un percorso.' });
+        }
+
+        const autore = sessione.userId ? await User.findById(sessione.userId).select('username') : null;
+
+        const percorso = await SavedRoute.create({
+            userId: req.session.userId,
+            nome,
+            punti,
+            ...(sessione.userId ? { origineUserId: sessione.userId } : {}),
+            ...(autore && autore.username ? { origineUsername: autore.username } : {}),
+            ...(typeof sessione.distanceKm === 'number' ? { distanzaKm: sessione.distanceKm } : {}),
+            ...(typeof sessione.elevationGainM === 'number' ? { dislivelloM: Math.round(sessione.elevationGainM) } : {}),
+            ...(quotaMaxM !== undefined ? { quotaMaxM: Math.round(quotaMaxM) } : {})
+        });
+        res.json(percorso);
+    } catch (e) {
+        console.error('Creazione percorso da traccia fallita:', e);
+        res.status(500).json({ error: 'Non e\' stato possibile creare il percorso.' });
+    }
+});
+
+router.delete('/saved-routes/:id', requireAuth, async (req, res) => {
+    try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(400).json({ error: 'Identificativo non valido.' });
+        }
+        const esito = await SavedRoute.deleteOne({ _id: req.params.id, userId: req.session.userId });
+        if (!esito.deletedCount) {
+            // Stessa risposta sia se non esiste sia se e' di un altro (come /drafts/:id).
+            return res.status(404).json({ error: 'Questo percorso non esiste.' });
+        }
+        res.json({ success: true });
+    } catch (e) {
+        console.error('Cancellazione percorso salvato fallita:', e);
         res.status(500).json({ error: 'Non e\' stato possibile cancellare il percorso.' });
     }
 });

@@ -5,7 +5,8 @@ const Hike = require('../models/Hike');
 const TrailCandidate = require('../models/TrailCandidate');
 const Stamp = require('../models/Stamp'); // timbri assegnati dalle tracce .gpx importate
 const User = require('../models/User'); // punto 42b: recognizedAscents
-const Follow = require('../models/Follow'); // punto 113: chi può vedere un'uscita pubblicata
+const Like = require('../models/Like'); // punto 113: "mi piace" su un'uscita pubblicata
+const Notification = require('../models/Notification'); // punto 113: notifica all'autore per il "mi piace"
 const { requireAuth } = require('../middleware/auth');
 const { isFiniteNum, haversineKm, simplifyTrack } = require('../lib/geometry');
 const { regionForPoint } = require('../lib/regions');
@@ -16,6 +17,7 @@ const { recalculateAndApplyPace } = require('../lib/hikeStats');
 // Soglia + catalogo + scansione di una traccia: una copia sola, condivisa con la verifica
 // di un timbro da mappa (routes/stamps.js) e col conteggio salite (/peak-ascents qui sotto).
 const { SOGLIA_TIMBRO_M, puntiTimbrabili, distanzaMinimaDaTraccia, tracciaToccaPunto } = require('../lib/geofenceTimbri');
+const { guardiaUscitaVisibile } = require('../lib/uscitaVisibile'); // punto 113: guardia autore-o-follower, condivisa con routes/routing.js
 
 const MAX_POINTS_PER_BATCH = 500; // un client onesto ne manda ~60-180 ogni 20-30s, mai a uno a uno
 // LA SOGLIA DEL DISLIVELLO DAL VIVO NON ESISTE PIU' COME NUMERO A PARTE. Fino al 2026-07-28
@@ -295,6 +297,16 @@ router.delete('/sessions/:id', requireAuth, async (req, res) => {
 
         await ActiveHikeSession.deleteOne({ _id: sessione._id, userId: req.session.userId });
 
+        // Punto 113: i "mi piace" di un'uscita cancellata non hanno piu' un oggetto a cui
+        // riferirsi - vanno tolti con lei, altrimenti restano righe orfane in Like. try suo:
+        // la sessione e' gia' sparita, un errore qui non deve trasformare una cancellazione
+        // riuscita in un 500 (stesso criterio del ricalcolo passo qui sotto).
+        try {
+            await Like.deleteMany({ sessionId: sessione._id });
+        } catch (e) {
+            console.error('Pulizia "mi piace" dopo cancellazione uscita fallita:', e);
+        }
+
         // Punto 92: una traccia in meno cambia le osservazioni disponibili per il passo
         // personale allo stesso modo di una in piu' - senza, cancellare l'unica traccia
         // misurata lascerebbe un passo orfano di qualunque osservazione (stesso difetto gia'
@@ -375,26 +387,9 @@ router.post('/sessions/:id/unpublish', requireAuth, async (req, res) => {
 
 // --- PUNTO 113: la singola uscita pubblicata (pagina di dettaglio + "crea percorso") ---
 //
-// CHI PUÒ VEDERLA (decisione 6 di Denis): l'autore sempre; gli altri SOLO se l'uscita è
-// pubblicata E la seguono. 404 (non 403) quando non è pubblicata: a chi non è l'autore non
-// si rivela nemmeno che l'uscita esiste. Restituisce { sessione } o { errore: {status, body} }.
-async function guardiaUscitaVisibile(sessionId, viewerId, campi) {
-    if (!mongoose.Types.ObjectId.isValid(sessionId)) {
-        return { errore: { status: 400, body: { error: 'Identificativo non valido.' } } };
-    }
-    const sessione = await ActiveHikeSession.findById(sessionId).select(campi);
-    if (!sessione) return { errore: { status: 404, body: { error: 'Questa uscita non esiste.' } } };
-
-    if (String(sessione.userId) === String(viewerId)) return { sessione };
-
-    if (!sessione.publishedAt) {
-        return { errore: { status: 404, body: { error: 'Questa uscita non esiste.' } } };
-    }
-    if (!(await Follow.exists({ followerId: viewerId, followingId: sessione.userId }))) {
-        return { errore: { status: 403, body: { error: 'Puoi vedere questa uscita solo se segui chi l\'ha pubblicata.' } } };
-    }
-    return { sessione };
-}
+// La guardia "l'autore sempre, gli altri solo se seguono un'uscita pubblicata" (decisione 6
+// di Denis) e' in lib/uscitaVisibile.js: la usano anche le rotte del passo 8 in
+// routes/routing.js, e non deve esistere in due copie.
 
 // Metadati dell'uscita (senza i punti GPS): per la testata, le statistiche e la didascalia
 // della pagina. Niente .lean(): durationSeconds/avgSpeedKmh sono virtuali dello schema.
@@ -402,7 +397,17 @@ router.get('/sessions/:id/meta', requireAuth, async (req, res) => {
     try {
         const g = await guardiaUscitaVisibile(req.params.id, req.session.userId, '-points -offTrailBuffer');
         if (g.errore) return res.status(g.errore.status).json(g.errore.body);
-        res.json(g.sessione);
+        // Punto 113: allega lo stato "mi piace" (totale + se l'ho messo io) - la pagina
+        // uscita mostra il bottone e il contatore. toJSON() qui e' necessario per aggiungere
+        // due campi non-schema: g.sessione e' un documento Mongoose.
+        const meta = g.sessione.toJSON();
+        const [likeCount, mio] = await Promise.all([
+            Like.countDocuments({ sessionId: meta.id }),
+            Like.exists({ sessionId: meta.id, userId: req.session.userId })
+        ]);
+        meta.likeCount = likeCount;
+        meta.likedByMe = !!mio;
+        res.json(meta);
     } catch (e) {
         console.error('Errore meta uscita:', e);
         res.status(500).json({ error: 'Impossibile caricare l\'uscita.' });
@@ -438,6 +443,81 @@ router.get('/sessions/:id/points', requireAuth, async (req, res) => {
     } catch (e) {
         console.error('Errore punti uscita:', e);
         res.status(500).json({ error: 'Impossibile caricare la traccia.' });
+    }
+});
+
+// --- PUNTO 113: "mi piace" su un'uscita pubblicata (emoji montagna, decisione 8 di Denis) ---
+//
+// Contatore accumulabile, un like per utente, toggle. POST mette / DELETE toglie; entrambi
+// tornano { likeCount, likedByMe } cosi' il client ridisegna dallo stato vero del server,
+// mai in modo ottimistico (stessa lezione di toggleFollow/toggleBookmark).
+//
+// GUARDIA sul POST: la stessa di /meta e /points (guardiaUscitaVisibile) - l'autore sempre,
+// gli altri solo se seguono un'uscita pubblicata. Non si mette like a cio' che non si
+// potrebbe vedere. Sul DELETE non serve: togliere il PROPRIO like e' sempre innocuo, e
+// Like.deleteOne e' gia' circoscritto a req.session.userId.
+//
+// NOTIFICA ALL'AUTORE: solo al PRIMO like di quella persona su quell'uscita (il POST e'
+// idempotente grazie all'indice unico - se il Like c'era gia', nessuna nuova notifica). Mai
+// per un like a se stessi. Togliere il like non manda niente e non cancella la notifica
+// gia' inviata.
+router.post('/sessions/:id/like', requireAuth, async (req, res) => {
+    try {
+        const g = await guardiaUscitaVisibile(
+            req.params.id, req.session.userId,
+            'userId publishedAt startedAt importedName'
+        );
+        if (g.errore) return res.status(g.errore.status).json(g.errore.body);
+        const sessione = g.sessione;
+
+        let creato = false;
+        try {
+            await Like.create({ userId: req.session.userId, sessionId: sessione._id });
+            creato = true;
+        } catch (e) {
+            // 11000 = indice unico: il like c'era gia'. Idempotente, come il POST di
+            // routes/follow.js e routes/bookmarks.js.
+            if (e.code !== 11000) throw e;
+        }
+
+        // Notifica solo alla prima comparsa del like, e mai verso se stessi. Un errore qui
+        // non deve invalidare il like (che e' gia' salvato): si logga e si prosegue.
+        if (creato && String(sessione.userId) !== String(req.session.userId)) {
+            try {
+                const autoreLike = await User.findById(req.session.userId).select('username');
+                const nome = (autoreLike && autoreLike.username) ? autoreLike.username : 'Qualcuno';
+                const etichetta = sessione.importedName
+                    ? `"${sessione.importedName}"`
+                    : 'del ' + new Date(sessione.startedAt).toLocaleDateString('it-IT');
+                await Notification.create({
+                    userId: sessione.userId,
+                    text: `${nome} ha messo un mi piace alla tua uscita ${etichetta}.`,
+                    relatedSessionId: sessione._id
+                });
+            } catch (e) {
+                console.error('Notifica "mi piace" non creata (il like resta valido):', e);
+            }
+        }
+
+        const likeCount = await Like.countDocuments({ sessionId: sessione._id });
+        res.json({ success: true, likeCount, likedByMe: true });
+    } catch (e) {
+        console.error('Errore "mi piace":', e);
+        res.status(500).json({ error: 'Non e\' stato possibile mettere mi piace.' });
+    }
+});
+
+router.delete('/sessions/:id/like', requireAuth, async (req, res) => {
+    try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(400).json({ error: 'Identificativo non valido.' });
+        }
+        await Like.deleteOne({ userId: req.session.userId, sessionId: req.params.id });
+        const likeCount = await Like.countDocuments({ sessionId: req.params.id });
+        res.json({ success: true, likeCount, likedByMe: false });
+    } catch (e) {
+        console.error('Errore rimozione "mi piace":', e);
+        res.status(500).json({ error: 'Non e\' stato possibile togliere il mi piace.' });
     }
 });
 

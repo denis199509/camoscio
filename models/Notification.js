@@ -17,7 +17,14 @@ const notificationSchema = new mongoose.Schema({
     // letta (aggancio in app.js renderNotificationBell); (2) diagnosi - da una notifica si
     // risale alla segnalazione. NON e' la guardia anti-doppione: quella e'
     // Report.expiryNotifiedAt. default: undefined, vincolo spazio.
-    relatedReportId: { type: mongoose.Schema.Types.ObjectId, ref: 'Report', default: undefined }
+    relatedReportId: { type: mongoose.Schema.Types.ObjectId, ref: 'Report', default: undefined },
+
+    // Punto 113: come i due qui sopra, ma per un'uscita pubblicata. Nasce da un "mi piace"
+    // ricevuto: il click sulla notifica apre la pagina dell'uscita (goToOutingFromNotification
+    // in outingpage.js, ramo nuovo in app.js renderNotificationBell). NON e' una guardia
+    // anti-doppione - quella e' l'indice unico su Like: la notifica si crea solo al primo
+    // like di quella persona su quell'uscita. default: undefined, vincolo spazio.
+    relatedSessionId: { type: mongoose.Schema.Types.ObjectId, ref: 'ActiveHikeSession', default: undefined }
 }, { timestamps: { createdAt: true, updatedAt: false } });
 
 module.exports = mongoose.models.Notification || mongoose.model('Notification', notificationSchema);

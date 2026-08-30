@@ -88,7 +88,11 @@ const hikeSchema = new mongoose.Schema({
     // resta "non disponibile".
     routeSource: {
         type: new mongoose.Schema({
-            kind: { type: String, enum: ['draft', 'gpx'], required: true },
+            // 'saved' (punto 113 passo 9): un percorso copiato da una traccia altrui
+            // (models/SavedRoute.js). Come 'draft'/'gpx' e' solo un'etichetta presa una
+            // volta - i tre numeri qui sopra restano validi anche se poi il SavedRoute
+            // viene cancellato.
+            kind: { type: String, enum: ['draft', 'gpx', 'saved'], required: true },
             nome: { type: String, required: true },
             // Il progetto c'e' e il tracciato/la distanza vengono da lui, ma quota massima e
             // dislivello li ha scritti il creatore perche' la fonte delle quote non

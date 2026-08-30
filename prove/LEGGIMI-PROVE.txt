@@ -180,6 +180,61 @@ tiene ancora; alla scadenza dei 90 giorni parte un avviso, non una cancellazione
     della verifica dal vivo deve cancellare ANCHE le notifiche (filtrate sul testo finto),
     non solo i report: 4 notifiche orfane trovate cosi' col riconfronto dei conteggi.
 
+La prova del PUNTO 113 (parte social: Segui, Feed, pagina uscita, "mi piace", "crea
+percorso" da una traccia altrui, escursione con i numeri presi da un percorso salvato):
+
+    node prove/prova-punto113.js                    103 controlli  (ne avvia uno suo, sulla 3113)
+
+    OTTO SEZIONI. Tre account demo (A, B, C), niente permessi speciali da toccare.
+    1: /api/follow - POST su se stessi 400, su id inesistente 404, follow idempotente (un
+    solo documento, no doppioni), GET following/followers/counts, DELETE idempotente.
+    2: POST /sessions/:id/publish|unpublish - solo l'autore (403 per un altro), $set+$unset
+    (publishedAt e caption ASSENTI, non null, dopo unpublish), ri-pubblicare senza testo
+    toglie la vecchia caption.
+    3: GET /api/feed - solo le uscite pubblicate di chi segui, le TUE NON ci sono, MAI
+    "points" ne' "offTrailBuffer" nel corpo, ordine per publishedAt desc, cursore ?before=,
+    likeCount/likedByMe in ogni item, feed vuoto per chi non segue nessuno.
+    4: guardia autore-o-follower su GET /sessions/:id/meta e /points - autore 200, follower
+    200, estraneo su un'uscita PUBBLICATA 403, non-autore su un'uscita NON pubblicata 404
+    (non 403: non si rivela che esiste); /points e' l'unica rotta con la geometria,
+    ?scopo=mini semplifica SOLO la risposta (dato d'archivio intatto); /meta niente points.
+    5: POST/DELETE /sessions/:id/like - toggle contatore +1/-1, POST idempotente (un solo
+    Like per coppia), notifica all'autore SOLO al primo like di quella persona (con
+    relatedSessionId), MAI per un like a se stessi, MAI cancellata da un unlike; estraneo
+    403/404; unpublish non azzera i like; cascata Like.deleteMany nel DELETE della sessione.
+    6: POST /api/routing/saved-routes - stessa guardia autore-o-follower, forma del
+    documento (punti solo [lng,lat], origineUserId/origineUsername, distanza/dislivello/
+    quotaMaxM copiati, NIENTE sessionId), GET/DELETE dei propri, tetto MAX_PERCORSI_SALVATI
+    (51esimo -> 429), un altro utente non cancella il tuo (404). INDIPENDENZA: cancellata
+    l'uscita sorgente, il SavedRoute resta e si legge ancora.
+    7: Hike routeSource.kind:'saved' (POST e PUT /api/hikes) - i numeri atterrano dal
+    SavedRoute, routeSource resta solo un'etichetta (no savedRouteId, no dislivelloManuale),
+    e RESTANO se il SavedRoute viene poi cancellato; savedRouteId inesistente -> 400; una
+    traccia senza quote -> 422 richiedeQuote -> retry con quoteManuali -> dislivelloManuale
+    true (stesso ripiego del punto 93, motivo 'fonte' per non toccare risolviPercorso).
+    8: indici - Follow {followerId,followingId} UNICO + {followingId}; Like {userId,sessionId}
+    UNICO + {sessionId}; SavedRoute {userId}; ActiveHikeSession {userId,publishedAt:-1}
+    PARZIALE su publishedAt.
+    I passi 2-3 (tasto "Segui" nel profilo, liste in Tribu' & Squadre) e la parte UI del 9
+    ("percorso da seguire" = sola linea di riferimento sulla mappa, NESSUN avviso di
+    fuori-percorso - vincolo 7) sono lato client, verificati dal vivo con l'estensione Chrome
+    (demo Marco/Luca/Sofia, IT+EN, console pulita), non da questa prova.
+    Il finally cancella tutto per marca (MARCA = "PROVA-113-<timestamp>", un timestamp: nessun
+    dato vero combacia) E per gli _id nati nel run. ATTENZIONE, gia' pagata: POST /api/hikes
+    fa scattare la notifica "nuova escursione di squadra" ai membri delle squadre di A
+    (account demo collegato a una squadra vera) - quelle notifiche non hanno relatedSessionId,
+    si prendono per il testo (che contiene il titolo della hike, con MARCA). Senza quella riga
+    di pulizia restavano 12 notifiche orfane, beccate dal riconfronto dei conteggi.
+    CONTROPROVA fatta il 30/08/2026 (git worktree su 6271cf8, "Punto 111 deploy" = HEAD prima
+    dei passi 1-6 del 113; + NODE_PATH sui node_modules del progetto, .env e prova-punto113.js
+    copiati nel worktree): 18 controlli caduti nelle sez. 1-2, poi la prova si FERMA IN ERRORE
+    a sez. 3 (GET /api/feed non esiste -> 404 -> corpo null -> .items su null); le sez. 4-8
+    non vengono nemmeno raggiunte. La prova guarda davvero quello che dice.
+    NOTA sull'autoIndex (diverso dal caso del 111): il punto 113 solo AGGIUNGE indici, non ne
+    droppa - mongoose autoIndex crea gli indici mancanti ma non tocca quelli non dichiarati,
+    quindi avviare il server pre-113 contro Atlas NON cancella i tre indici nuovi. Verificato
+    subito dopo la controprova rilanciando la prova vera: sez. 8 verde (6/6).
+
 La prova del PUNTO 45 (moderazione segnalazioni + foto) e' stata aggiornata per il 111:
 GET /pending -> GET /moderation (oggetto con tre liste + totale), DELETE /:id/resolve
 gated moderatore, TTL createdAt -> expiresAt. 46 controlli, invariati nel numero.

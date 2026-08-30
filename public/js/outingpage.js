@@ -51,11 +51,13 @@
         const headerBox = document.getElementById('outing-page-header');
         const statsBox = document.getElementById('outing-page-stats');
         const captionBox = document.getElementById('outing-page-caption');
+        const actionsBox = document.getElementById('outing-page-actions');
         if (!headerBox || !statsBox || !captionBox) return;
 
         headerBox.innerHTML = `<p class="text-muted">${esc(T('outing.caricamento') || 'Caricamento...')}</p>`;
         statsBox.innerHTML = '';
         captionBox.innerHTML = '';
+        if (actionsBox) actionsBox.innerHTML = '';
 
         let meta;
         try {
@@ -77,6 +79,7 @@
 
         metaCorrente = meta;
         disegnaTestata(meta);
+        disegnaAzioni(meta);
         disegnaTraccia(sessionId);
 
         if (window.lucide) window.lucide.createIcons();
@@ -116,6 +119,97 @@
         // caption: testo scritto dall'autore. NON tradotto (punto 102), sempre via escapeHtml.
         document.getElementById('outing-page-caption').innerHTML =
             meta.caption ? `<p class="outing-page-caption">${esc(meta.caption)}</p>` : '';
+    }
+
+    // Riga azioni sotto le statistiche: "mi piace" (emoji montagna, contatore + toggle) e
+    // "Crea percorso" (copia la traccia fra "I miei progetti"). Ridisegnabile da sola (dal
+    // cambio lingua e dopo un toggle) leggendo metaCorrente.
+    function disegnaAzioni(meta) {
+        const box = document.getElementById('outing-page-actions');
+        if (!box) return;
+        const n = meta.likeCount || 0;
+        const attivo = !!meta.likedByMe;
+        const titoloLike = attivo
+            ? (T('outing.miPiaceTogli') || 'Togli il mi piace')
+            : (T('outing.miPiaceMetti') || 'Metti un mi piace');
+        box.innerHTML = `
+            <button type="button" class="mi-piace-btn${attivo ? ' attivo' : ''}" id="btn-mi-piace" title="${esc(titoloLike)}" aria-pressed="${attivo}">
+                <span class="mi-piace-emoji" aria-hidden="true">⛰️</span>
+                <span class="mi-piace-conteggio">${n}</span>
+            </button>
+            <button type="button" class="btn btn-sm btn-secondary" id="btn-crea-percorso">
+                <i data-lucide="route"></i> ${esc(T('outing.creaPercorso') || 'Crea percorso')}
+            </button>`;
+        const like = document.getElementById('btn-mi-piace');
+        if (like) like.addEventListener('click', toggleMiPiace);
+        const crea = document.getElementById('btn-crea-percorso');
+        if (crea) crea.addEventListener('click', creaPercorso);
+        if (window.lucide) window.lucide.createIcons();
+    }
+
+    // "Crea percorso": copia la traccia di QUESTA uscita fra "I miei progetti" (SavedRoute),
+    // per riusarla come linea da seguire (decisioni 4-5 di Denis). Chiede solo un nome; la
+    // geometria, l'etichetta "da <autore>" e i totali li mette il server. Il percorso resta
+    // anche se l'uscita sorgente viene cancellata o spubblicata (nessun sessionId salvato).
+    async function creaPercorso() {
+        if (!uscitaIdAperta || !metaCorrente) return;
+        const db = window.CamoscioState;
+        const autore = (db.users || []).find(u => u.id === metaCorrente.userId);
+        const nomeAutore = autore ? autore.username : (T('common.utente') || 'Utente');
+        const quando = formattaData(metaCorrente.publishedAt || metaCorrente.startedAt);
+        const nomeDefault = String(T('outing.creaPercorsoNomeDefault', nomeAutore, quando)
+            || `${nomeAutore} · ${quando}`).slice(0, 80);
+        const nome = window.showPromptModal
+            ? await window.showPromptModal(T('outing.creaPercorsoChiediNome') || 'Che nome vuoi dare a questo percorso? Lo troverai in "Le mie escursioni" → I miei progetti.', nomeDefault)
+            : nomeDefault;
+        if (!nome) return;
+
+        const btn = document.getElementById('btn-crea-percorso');
+        if (btn) btn.disabled = true;
+        try {
+            const res = await fetch('/api/routing/saved-routes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionId: uscitaIdAperta, nome })
+            });
+            const d = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                if (window.showToast) window.showToast(d.error || (T('outing.creaPercorsoErrore') || 'Non è stato possibile creare il percorso.'), 'error');
+                if (btn) btn.disabled = false;
+                return;
+            }
+            if (window.showToast) window.showToast(T('outing.creaPercorsoFatto') || 'Percorso creato: lo trovi in "Le mie escursioni" → I miei progetti.', 'success');
+            if (btn) btn.disabled = false;
+        } catch (e) {
+            console.error('Errore creazione percorso:', e);
+            if (window.showToast) window.showToast(T('common.erroreServer') || 'Non è stato possibile contattare il server.', 'error');
+            if (btn) btn.disabled = false;
+        }
+    }
+
+    // Stato vero dal server, mai ottimistico (stessa lezione di toggleFollow/toggleBookmark):
+    // si aspetta la risposta e si ridisegna il bottone col conteggio che dice lei.
+    async function toggleMiPiace() {
+        if (!uscitaIdAperta || !metaCorrente) return;
+        const btn = document.getElementById('btn-mi-piace');
+        if (btn) btn.disabled = true;
+        try {
+            const res = await fetch(`/api/tracking/sessions/${encodeURIComponent(uscitaIdAperta)}/like`, {
+                method: metaCorrente.likedByMe ? 'DELETE' : 'POST'
+            });
+            if (!res.ok) {
+                if (window.showToast) window.showToast(T('outing.miPiaceErrore') || 'Non è stato possibile aggiornare il mi piace.', 'error');
+                if (btn) btn.disabled = false;
+                return;
+            }
+            const d = await res.json();
+            metaCorrente.likeCount = d.likeCount;
+            metaCorrente.likedByMe = d.likedByMe;
+            disegnaAzioni(metaCorrente);
+        } catch (e) {
+            console.error('Errore mi piace:', e);
+            if (btn) btn.disabled = false;
+        }
     }
 
     function disegnaTraccia(sessionId) {
@@ -168,6 +262,15 @@
         const sec = document.getElementById('outing-page');
         if (sec && sec.classList.contains('active') && uscitaIdAperta && metaCorrente) {
             disegnaTestata(metaCorrente);
+            disegnaAzioni(metaCorrente);
         }
     });
+
+    // Click su una notifica di "mi piace" (relatedSessionId, app.js renderNotificationBell):
+    // chiude il campanello e apre l'uscita. Come goToHikeToComplete/goToReportModeration.
+    window.goToOutingFromNotification = function (sessionId) {
+        const dropdown = document.getElementById('notification-dropdown');
+        if (dropdown) dropdown.classList.add('hidden');
+        showOutingPage(sessionId);
+    };
 })();
