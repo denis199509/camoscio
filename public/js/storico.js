@@ -149,7 +149,7 @@
     function avvisoPubblicaSenzaTraccia() {
         if (window.showToast) {
             window.showToast(
-                T('publish.serveTraccia') || 'Questa escursione non ha una traccia GPS: per il feed serve una traccia. Caricala con "Carica un file .gpx" qui sopra, poi potrai pubblicarla.',
+                T('publish.serveTraccia') || 'Questa escursione non ha una traccia GPS sul sito. Aggiungila col tasto ⬆ su questa card (lo stesso del tempo reale), poi potrai pubblicarla nel feed.',
                 'error'
             );
         }

@@ -2,9 +2,10 @@ const express = require('express');
 const router = express.Router();
 const Completion = require('../models/Completion');
 const User = require('../models/User');
+const ActiveHikeSession = require('../models/ActiveHikeSession'); // punto 113 fix: la traccia diventa una sessione collegata all'escursione
 const { requireAuth } = require('../middleware/auth');
 const { mongoose } = require('../db/mongo');
-const { haversineKm } = require('../lib/geometry');
+const { haversineKm, simplifyTrack } = require('../lib/geometry');
 const { movimentoSecAttendibile } = require('../lib/gpx');
 const { calcolaDaPercorso } = require('../lib/percorso');
 const { recalculateAndApplyPace } = require('../lib/hikeStats');
@@ -85,6 +86,53 @@ router.post('/:id/gpx', requireAuth, async (req, res) => {
             ? { $set: { actualTimeHours, movingTimeHours } }
             : { $set: { actualTimeHours }, $unset: { movingTimeHours: '' } };
         await Completion.updateOne({ _id: completion._id }, mongoUpdate);
+
+        // Punto 113 (fix 30/08/2026): oltre agli orari, si salva anche la TRACCIA come
+        // ActiveHikeSession collegata all'escursione (hikeId impostato). Cosi' l'escursione
+        // completata diventa pubblicabile nel feed - prima serviva averla registrata dal
+        // vivo, e chi aveva aggiunto il .gpx qui vedeva "serve una traccia" pur avendolo
+        // caricato. La sessione ha hikeId != null quindi NON conta nel tetto mensile delle
+        // importazioni (quello e' per le uscite a se', vedi routes/tracking.js /import-gpx).
+        // Non blocca: se questo fallisce, gli orari sono comunque stati aggiornati.
+        try {
+            const puntiSemplificati = simplifyTrack(letto.punti, 8); // ~8 m, come /import-gpx e fine tracciamento
+            const campiTraccia = {
+                status: 'ended',
+                startedAt: letto.inizio,
+                endedAt: letto.fine,
+                lastPointAt: letto.fine,
+                distanceKm: datiReali.distanceKm,
+                elevationGainM: datiReali.elevationGain,
+                points: puntiSemplificati,
+                importedFrom: 'gpx',
+                importedName: (letto.nome || '').slice(0, 120) || undefined
+            };
+            const esistente = await ActiveHikeSession.findOne({ userId: completion.userId, hikeId: completion.hikeId });
+            if (!esistente) {
+                // openSession NON impostato: la traccia e' gia' conclusa (stesso motivo di /import-gpx).
+                await ActiveHikeSession.create({
+                    userId: completion.userId,
+                    hikeId: completion.hikeId,
+                    ...campiTraccia,
+                    ...(movimento.sec ? { movingTimeSec: movimento.sec } : {})
+                });
+            } else if (esistente.importedFrom === 'gpx') {
+                // Ricaricamento: si sostituisce geometria/misure, si lasciano stare
+                // publishedAt/caption (e' la stessa uscita, traccia aggiornata).
+                const set = { ...campiTraccia };
+                const unset = {};
+                if (set.importedName === undefined) { delete set.importedName; unset.importedName = ''; }
+                if (movimento.sec) set.movingTimeSec = movimento.sec; else unset.movingTimeSec = '';
+                const upd = { $set: set };
+                if (Object.keys(unset).length) upd.$unset = unset;
+                await ActiveHikeSession.updateOne({ _id: esistente._id }, upd);
+            }
+            // Se esiste ma NON e' importedFrom:'gpx' (registrata dal vivo): non si tocca -
+            // i suoi dati sono migliori di un file caricato dopo, e l'escursione e' gia'
+            // pubblicabile.
+        } catch (e) {
+            console.error('Traccia non salvata come sessione (gli orari sono comunque stati aggiornati):', e);
+        }
 
         const user = await User.findById(req.session.userId);
         if (!user) {

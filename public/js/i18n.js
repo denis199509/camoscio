@@ -2041,7 +2041,7 @@
             'publish.pubblicaTitle': 'Make this outing visible to the people who follow you',
             'publish.pubblicataTitle': 'In the feed of the people who follow you. Click to remove it.',
             'publish.serveTracciaTitle': 'A GPS track is needed to publish to the feed',
-            'publish.serveTraccia': 'This hike has no GPS track: the feed needs one. Upload it with "Upload a .gpx file" above, then you can publish it.',
+            'publish.serveTraccia': 'This hike has no GPS track on the site. Add it with the ⬆ button on this card (the same one for real time), then you can publish it to the feed.',
             'publish.chiediDidascalia': 'Write a line or two about the outing (optional). Press OK to publish it to the feed of the people who follow you.',
             'publish.confermaTogli': 'Remove this outing from the feed? It will no longer be visible to the people who follow you (the likes stay).',
             'publish.errorePubblica': 'Could not publish the outing.',

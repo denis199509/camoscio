@@ -658,9 +658,14 @@ router.post('/import-gpx', requireAuth, async (req, res) => {
         inizioMese.setHours(0, 0, 0, 0);
         const sogliaId = mongoose.Types.ObjectId.createFromTime(Math.floor(inizioMese.getTime() / 1000));
 
+        // hikeId: null -> il tetto conta SOLO le uscite importate a se'. Un .gpx aggiunto a
+        // un'escursione gia' completata sul sito (routes/completions.js /:id/gpx, punto 113
+        // fix) crea una sessione con hikeId impostato: e' un'altra azione, non consuma un
+        // posto del mese.
         const giaCaricati = await ActiveHikeSession.countDocuments({
             userId: req.session.userId,
             importedFrom: 'gpx',
+            hikeId: null,
             _id: { $gte: sogliaId }
         });
 

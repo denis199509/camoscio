@@ -1160,6 +1160,10 @@ window.uploadCompletionGpx = function(completionId) {
             }
             await refreshState();
             renderHikesList();
+            // Punto 113 fix: il .gpx ora crea anche la traccia collegata -> "Le mie
+            // escursioni" va ridisegnata perche' renderCompletate rilegga le sessioni e
+            // faccia comparire "Pubblica nel feed" senza un ricaricamento a mano.
+            if (window.renderMyHikes) window.renderMyHikes();
         } catch (e) {
             console.error('Errore nel caricare il gpx sul completamento:', e);
             if (window.showToast) window.showToast(T('common.erroreServer') || 'Non è stato possibile contattare il server.', 'error');
