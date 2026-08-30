@@ -284,8 +284,8 @@
             'myHikes.partecipoDesc': "Upcoming hikes you've joined, plus those awaiting approval.",
             'myHikes.completateTitolo': 'Completed Hikes',
             'myHikes.completateDesc': 'Hikes you completed on the site, and routes you recorded via GPS or uploaded from a file.',
-            'myHikes.gpxUploadTitolo': 'Upload a .gpx file',
-            'myHikes.gpxUploadDesc': 'Do you have tracks from hikes you did before using Camoscio? Upload them here to add them to your history and totals.',
+            'myHikes.gpxUploadTitolo': 'Upload a track (.gpx or .fit)',
+            'myHikes.gpxUploadDesc': 'Do you have tracks from hikes you did before using Camoscio? Upload them here to add them to your history and totals. .fit is Garmin\'s native format and gives the most complete data.',
             'myHikes.gpxSceglieFile': 'Choose file',
             'myHikes.progettiTitolo': 'My Projects',
             'myHikes.progettiDesc': 'Routes you designed on the map and saved. Open one to find it again on the Map, with sun exposure along the track.',
@@ -408,7 +408,7 @@
             'hikeConfirm.cancellaTracciaSeparata': 'If you had also recorded the route via GPS, that track stays separate in your history.',
             'hikeToast.erroreCancellaEscursione': 'Could not delete this hike.',
             'hikeToast.escursioneCancellata': 'Hike removed from your "completed" list.',
-            'hikeToast.filePesa': function (mb) { return 'The file is ' + mb + ' MB, over the 10 MB limit.'; },
+            'hikeToast.filePesa': function (mb, limite) { return 'The file is ' + mb + ' MB, over the ' + (limite || 10) + ' MB limit.'; },
             'hikeToast.erroreAggiuntaFile': 'Could not add the file.',
             'hikeToast.tempoRealeAggiunto': 'Real time added',
 
@@ -424,8 +424,8 @@
             'outing.cancellataSuccesso': 'Hike removed from your history.',
 
             // --- Le mie escursioni: caricamento .gpx (storico.js) ---
-            'gpx.estensioneErrata': function (nome) { return 'The file must have a <b>.gpx</b> extension. You chose "' + nome + '".'; },
-            'gpx.filePesa': function (mb) { return 'The file is ' + mb + ' MB, over the 10 MB limit. A normally-recorded hike is usually under 1 MB.'; },
+            'gpx.estensioneErrata': function (nome) { return 'The file must have a <b>.gpx</b> or <b>.fit</b> extension. You chose "' + nome + '".'; },
+            'gpx.filePesa': function (mb, limite) { return 'The file is ' + mb + ' MB, over the ' + (limite || 10) + ' MB limit. A normally-recorded hike is usually under 1 MB.'; },
             'gpx.stoLeggendo': function (nome) { return 'Reading "' + nome + '"…'; },
             'gpx.caricamentoAnnullato': "Upload canceled: without the hike's date, the track won't be added to your history.",
             'gpx.stoImportando': function (nome) { return 'Importing "' + nome + '"…'; },

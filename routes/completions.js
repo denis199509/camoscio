@@ -42,9 +42,16 @@ router.post('/:id/gpx', requireAuth, async (req, res) => {
             return res.status(403).json({ error: 'Puoi aggiungere un file solo alle tue escursioni completate.' });
         }
 
+        // Punto 114: il tasto ⬆ accetta ora anche un .fit (mandato in base64 nel campo
+        // `fit`). calcolaDaPercorso normalizza gpx e fit alla stessa forma, tutto il
+        // resto di questa rotta non cambia.
+        const routeSource = (req.body && typeof req.body.fit === 'string' && req.body.fit.trim())
+            ? { kind: 'fit', fitBase64: req.body.fit }
+            : { kind: 'gpx', gpxText: req.body && req.body.gpxText };
+
         let datiReali;
         try {
-            datiReali = await calcolaDaPercorso({ kind: 'gpx', gpxText: req.body && req.body.gpxText }, req.session.userId);
+            datiReali = await calcolaDaPercorso(routeSource, req.session.userId);
         } catch (e) {
             return res.status(400).json({ error: e.message });
         }

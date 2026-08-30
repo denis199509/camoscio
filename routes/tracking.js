@@ -11,6 +11,7 @@ const { requireAuth } = require('../middleware/auth');
 const { isFiniteNum, haversineKm, simplifyTrack } = require('../lib/geometry');
 const { regionForPoint } = require('../lib/regions');
 const { parseGpx, statisticheTraccia, ErroreGpx, SOGLIA_DISLIVELLO_M, movimentoSecAttendibile } = require('../lib/gpx');
+const { parseFit, ErroreFit } = require('../lib/fit'); // punto 114: stessa uscita di parseGpx, sorgente binaria
 const trailIndex = require('../lib/trailIndex');
 const { mongoose } = require('../db/mongo');
 const { recalculateAndApplyPace } = require('../lib/hikeStats');
@@ -641,12 +642,30 @@ router.get('/peak-ascents/:userId', requireAuth, async (req, res) => {
 // "costruirsi uno storico anche delle uscite fatte prima di usare il sito".
 router.post('/import-gpx', requireAuth, async (req, res) => {
     try {
-        const testo = req.body && req.body.gpx;
-        if (typeof testo !== 'string' || !testo.trim()) {
-            return res.status(400).json({ error: 'Nessun file .gpx ricevuto.' });
-        }
-        if (Buffer.byteLength(testo, 'utf8') > MAX_BYTE_GPX) {
-            return res.status(413).json({ error: 'Il file supera i 10 MB. Un\'escursione registrata normalmente pesa meno di 1 MB.' });
+        // Punto 114: la stessa rotta accetta un .gpx (testo nel campo `gpx`) OPPURE un
+        // .fit (binario in base64 nel campo `fit`). parseGpx e parseFit restituiscono la
+        // stessa forma: da `letto` in poi tutto il resto della rotta e' identico.
+        const testo = req.body && typeof req.body.gpx === 'string' ? req.body.gpx : null;
+        const fitB64 = req.body && typeof req.body.fit === 'string' ? req.body.fit : null;
+
+        let fitBuf = null;
+        if (fitB64 && fitB64.trim()) {
+            try { fitBuf = Buffer.from(fitB64, 'base64'); } catch (e) { fitBuf = null; }
+            if (!fitBuf || fitBuf.length === 0) {
+                return res.status(400).json({ error: 'Nessun file .fit ricevuto.' });
+            }
+            // Il tetto e' sul BINARIO decodificato: il base64 nel corpo della richiesta e'
+            // ~1/3 piu' grande, ma quello lo ferma gia' express.json (limite 10mb in
+            // server.js) prima di arrivare qui.
+            if (fitBuf.length > MAX_BYTE_GPX) {
+                return res.status(413).json({ error: 'Il file supera i 10 MB. Un\'escursione registrata normalmente pesa meno di 1 MB.' });
+            }
+        } else if (testo && testo.trim()) {
+            if (Buffer.byteLength(testo, 'utf8') > MAX_BYTE_GPX) {
+                return res.status(413).json({ error: 'Il file supera i 10 MB. Un\'escursione registrata normalmente pesa meno di 1 MB.' });
+            }
+        } else {
+            return res.status(400).json({ error: 'Nessun file ricevuto.' });
         }
 
         // Il tetto si conta sui caricamenti fatti QUESTO MESE, non sulle date delle
@@ -687,9 +706,9 @@ router.post('/import-gpx', requireAuth, async (req, res) => {
         // giusta dell'app, non un itinerario progettato).
         let letto;
         try {
-            letto = parseGpx(testo);
+            letto = fitBuf ? await parseFit(fitBuf) : parseGpx(testo);
         } catch (e) {
-            if (e instanceof ErroreGpx || e.utente) return res.status(400).json({ error: e.message });
+            if (e instanceof ErroreGpx || e instanceof ErroreFit || e.utente) return res.status(400).json({ error: e.message });
             throw e;
         }
 
@@ -800,6 +819,12 @@ router.post('/import-gpx', requireAuth, async (req, res) => {
             distanceKm: distanzaKm,
             elevationGainM: dislivelloM,
             points: puntiSemplificati,
+            // Punto 114: 'gpx' resta il marcatore anche per un .fit. Il campo distingue
+            // "traccia importata da un file" da "registrata dal vivo" (e' cosi' che lo
+            // leggono il tetto mensile, i filtri del frontend, gli script di manutenzione),
+            // non il formato del file. Un enum 'fit' a parte vorrebbe dire ritoccare ogni
+            // confronto `=== 'gpx'` sparso nel codice, col rischio di scordarne uno e
+            // aprire un buco nel tetto.
             importedFrom: 'gpx',
             importedName: (letto.nome || '').slice(0, 120) || undefined,
             // Solo dove serve: su una traccia con gli orari il campo non viene scritto affatto.

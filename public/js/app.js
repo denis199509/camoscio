@@ -125,6 +125,24 @@ window.showPromptModal = function(message, defaultValue = "") {
     return showGenericModal(message, { showInput: true, defaultValue });
 };
 
+// Punto 114: un file .fit e' binario, non si puo' mandare come testo dentro il JSON come
+// si fa col .gpx. Si legge come ArrayBuffer e si converte in base64, cosi' viaggia nello
+// stesso corpo JSON di sempre senza bisogno di un upload multipart (che vorrebbe dire una
+// libreria in piu' sul server). Usato sia dallo storico (storico.js) sia dal tasto ⬆ di
+// un'escursione completata (social.js): una funzione sola, non due copie.
+window.fileToBase64 = async function(file) {
+    const buf = await file.arrayBuffer();
+    const bytes = new Uint8Array(buf);
+    // A blocchi: String.fromCharCode(...bytes) con un file di qualche MB sfonderebbe il
+    // limite di argomenti dello stack. 0x8000 byte per giro e' il valore prudente d'uso comune.
+    let binario = '';
+    const BLOCCO = 0x8000;
+    for (let i = 0; i < bytes.length; i += BLOCCO) {
+        binario += String.fromCharCode.apply(null, bytes.subarray(i, i + BLOCCO));
+    }
+    return btoa(binario);
+};
+
 // Come showPromptModal ma con un campo DATA (calendario nativo sul telefono) e un tetto
 // a oggi: un'escursione gia' fatta non puo' essere nel futuro. Serve al caricamento dei
 // file .gpx senza orari, dove la data la deve dire l'utente (punto 32).

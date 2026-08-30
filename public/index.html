@@ -752,17 +752,17 @@
                         <div class="glass-card gpx-import-card">
                             <div class="gpx-import-head">
                                 <div>
-                                    <h4><i data-lucide="upload"></i> <span data-i18n="myHikes.gpxUploadTitolo">Carica un file .gpx</span></h4>
+                                    <h4><i data-lucide="upload"></i> <span data-i18n="myHikes.gpxUploadTitolo">Carica una traccia (.gpx o .fit)</span></h4>
                                     <p class="small text-muted">
                                         <span data-i18n="myHikes.gpxUploadDesc">Hai le tracce di uscite fatte prima di usare Camoscio? Caricale qui
-                                        per averle nello storico e nei totali.</span>
+                                        per averle nello storico e nei totali. Il .fit è il formato nativo di Garmin e dà i dati più completi.</span>
                                         <span id="gpx-quota-note"></span>
                                     </p>
                                 </div>
                                 <div class="gpx-import-actions">
                                     <!-- L'input vero resta nascosto: il file si sceglie dal pulsante,
                                          che è coerente col resto dei comandi del sito. -->
-                                    <input type="file" id="gpx-file-input" accept=".gpx,application/gpx+xml" hidden>
+                                    <input type="file" id="gpx-file-input" accept=".gpx,.fit,application/gpx+xml" hidden>
                                     <button class="btn btn-primary" id="btn-gpx-choose">
                                         <i data-lucide="file-up"></i> <span data-i18n="myHikes.gpxSceglieFile">Scegli il file</span>
                                     </button>

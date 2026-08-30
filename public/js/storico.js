@@ -27,6 +27,11 @@
     // dire subito che il file e' troppo grande, invece di far partire un invio da
     // decine di MB che verrebbe comunque rifiutato.
     const MAX_BYTE_GPX = 10 * 1024 * 1024;
+    // Punto 114: per un .fit il limite lato client e' piu' basso. Il file viaggia in
+    // base64 (~+33%), e il corpo JSON complessivo deve stare sotto i 10 MB di
+    // express.json: 7 MB di binario -> ~9,4 MB di base64, ancora dentro. Un .fit di
+    // 7 MB e' comunque enorme (il FIT e' molto compatto: ~7 MB = decine di ore a 1 s).
+    const MAX_BYTE_FIT = 7 * 1024 * 1024;
 
     function esc(s) { return window.escapeHtml ? window.escapeHtml(s) : String(s == null ? '' : s); }
 
@@ -347,18 +352,30 @@
 
         // Controlli fatti prima di leggere il file: dire subito cosa non va e' meglio
         // che far aspettare un invio destinato a fallire.
-        if (!/\.gpx$/i.test(file.name)) {
-            return mostraEsito(`<i data-lucide="circle-alert"></i> <span>${T('gpx.estensioneErrata', esc(file.name)) || `Il file deve avere estensione <b>.gpx</b>. Hai scelto "${esc(file.name)}".`}</span>`, 'errore');
+        // Punto 114: accettiamo .gpx (testo) e .fit (binario). Il .fit e' il formato
+        // nativo di Garmin: il .gpx che Garmin Connect esporta e' gia' una copia
+        // degradata, con buchi temporali che fanno rifiutare lo split cammino/pause.
+        const eFit = /\.fit$/i.test(file.name);
+        if (!eFit && !/\.gpx$/i.test(file.name)) {
+            return mostraEsito(`<i data-lucide="circle-alert"></i> <span>${T('gpx.estensioneErrata', esc(file.name)) || `Il file deve avere estensione <b>.gpx</b> o <b>.fit</b>. Hai scelto "${esc(file.name)}".`}</span>`, 'errore');
         }
-        if (file.size > MAX_BYTE_GPX) {
-            return mostraEsito(`<i data-lucide="circle-alert"></i> <span>${T('gpx.filePesa', (file.size / 1024 / 1024).toFixed(1)) || `Il file pesa ${(file.size / 1024 / 1024).toFixed(1)} MB, oltre il limite di 10 MB. Un'escursione registrata normalmente sta sotto 1 MB.`}</span>`, 'errore');
+        const tetto = eFit ? MAX_BYTE_FIT : MAX_BYTE_GPX;
+        if (file.size > tetto) {
+            const mb = (tetto / 1024 / 1024).toFixed(0);
+            const pesa = (file.size / 1024 / 1024).toFixed(1);
+            return mostraEsito(`<i data-lucide="circle-alert"></i> <span>${T('gpx.filePesa', pesa, mb) || `Il file pesa ${pesa} MB, oltre il limite di ${mb} MB. Un'escursione registrata normalmente sta sotto 1 MB.`}</span>`, 'errore');
         }
 
         mostraEsito(`<i data-lucide="loader"></i> <span>${T('gpx.stoLeggendo', esc(file.name)) || `Sto leggendo "${esc(file.name)}"…`}</span>`, 'attesa');
 
-        let testo;
+        // Il payload che viaggia nel JSON: { gpx: "<testo>" } oppure { fit: "<base64>" }.
+        // Tenuto come oggetto solo, cosi' l'eventuale reinvio con la data (ramo 422 qui
+        // sotto, solo .gpx) non deve sapere da che formato veniva.
+        let payload;
         try {
-            testo = await file.text();
+            payload = eFit
+                ? { fit: await window.fileToBase64(file) }
+                : { gpx: await file.text() };
         } catch (e) {
             return mostraEsito(`<i data-lucide="circle-alert"></i> <span>${T('hikeToast.fileNonLetto') || 'Non è stato possibile leggere il file.'}</span>`, 'errore');
         }
@@ -367,7 +384,7 @@
             let res = await fetch('/api/tracking/import-gpx', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ gpx: testo })
+                body: JSON.stringify(payload)
             });
             let dati = await res.json();
 
@@ -383,7 +400,7 @@
                 res = await fetch('/api/tracking/import-gpx', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ gpx: testo, dataUscita: esito })
+                    body: JSON.stringify({ ...payload, dataUscita: esito })
                 });
                 dati = await res.json();
             }

@@ -1123,21 +1123,28 @@ window.toggleBookmark = async function(hikeId) {
 window.uploadCompletionGpx = function(completionId) {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = '.gpx,application/gpx+xml';
+    // Punto 114: anche qui .gpx o .fit, come nello storico (storico.js).
+    input.accept = '.gpx,.fit,application/gpx+xml';
     input.addEventListener('change', async () => {
         const file = input.files && input.files[0];
         if (!file) return;
 
-        // Stesso tetto di storico.js (10 MB): dire subito cosa non va e' meglio che far
-        // aspettare un invio destinato a fallire.
-        if (file.size > 10 * 1024 * 1024) {
-            if (window.showToast) window.showToast(T('hikeToast.filePesa', (file.size / 1024 / 1024).toFixed(1)) || `Il file pesa ${(file.size / 1024 / 1024).toFixed(1)} MB, oltre il limite di 10 MB.`, 'error');
+        const eFit = /\.fit$/i.test(file.name);
+        // Stesso tetto di storico.js: 10 MB per il .gpx (testo), 7 MB per il .fit (viaggia
+        // in base64, il corpo JSON deve stare sotto i 10 MB di express.json).
+        const tetto = eFit ? 7 * 1024 * 1024 : 10 * 1024 * 1024;
+        if (file.size > tetto) {
+            const mb = (tetto / 1024 / 1024).toFixed(0);
+            const pesa = (file.size / 1024 / 1024).toFixed(1);
+            if (window.showToast) window.showToast(T('hikeToast.filePesa', pesa, mb) || `Il file pesa ${pesa} MB, oltre il limite di ${mb} MB.`, 'error');
             return;
         }
 
-        let gpxText;
+        let payload;
         try {
-            gpxText = await file.text();
+            payload = eFit
+                ? { fit: await window.fileToBase64(file) }
+                : { gpxText: await file.text() };
         } catch (e) {
             if (window.showToast) window.showToast(T('hikeToast.fileNonLetto') || 'Non è stato possibile leggere il file.', 'error');
             return;
@@ -1147,7 +1154,7 @@ window.uploadCompletionGpx = function(completionId) {
             const res = await fetch(`/api/completions/${completionId}/gpx`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ gpxText })
+                body: JSON.stringify(payload)
             });
             const dati = await res.json().catch(() => ({}));
             if (!res.ok) {

@@ -259,8 +259,25 @@ caricato.
     NOTA non coperta da questa prova (e' il FILE, non il codice): se il .gpx ha buchi
     temporali/spaziali (registrazione "smart"/semplificata), movimentoSecAttendibile
     (punto 79) rifiuta lo split cammino/pause con "buchi non interpretabili" e si salva
-    solo il totale. Un export GPX a risoluzione piena, o un FIT (non ancora supportato),
-    risolve.
+    solo il totale. Un export GPX a risoluzione piena, o un FIT registrato a 1 Hz,
+    risolve - ma un FIT esportato "smart" ha lo stesso problema (vedi prova-fit sotto).
+
+La prova del PUNTO 114 (import .fit, formato nativo Garmin) NON vuole ne' server ne' rete:
+i file .fit di prova sono sintetici, costruiti con il FitEncoder di fit-file-parser.
+
+    node prove/prova-fit.js                         33 controlli  (non serve il server)
+
+    Prova lib/fit.js -> parseFit(). Controlla che: 1) restituisca le STESSE chiavi di
+    parseGpx (punti/nome/inizio/fine/durataIgnota/tipo/avvisi), cosi' il codice a valle
+    non cambia; 2) statisticheTraccia e movimentoSecAttendibile (lib/gpx.js) girino sui
+    suoi punti senza modifiche; 3) salti i record senza posizione (GPS in aggancio) senza
+    contarli errore; 4) erediti la quota mancante, preferisca enhanced_altitude, tenga
+    solo orari crescenti; 5) rifiuti con ErroreFit (flag .utente, messaggio coi numeri)
+    i file rotti/vuoti/senza orari/con una sola posizione. Verifica dal vivo end-to-end
+    fatta il 30/08/2026 col file vero di Denis (fitprova.fit, Corno Grande, non nel repo):
+    448 punti, 9,07 km, +867 m, regione 41/41 dentro; movimentoSecAttendibile = null
+    perche' quel file e' registrato "smart" (~58 s fra i punti) - come atteso, non e' un
+    bug del parser.
 
 La prova del PUNTO 45 (moderazione segnalazioni + foto) e' stata aggiornata per il 111:
 GET /pending -> GET /moderation (oggetto con tre liste + totale), DELETE /:id/resolve
