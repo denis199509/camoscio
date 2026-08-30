@@ -8030,3 +8030,53 @@ NON FATTO (flaggato a Denis):
 - lucide.js 586 KB (set icone completo, se ne usano ~40) - subset build, rischio
   icone rotte, non urgente.
 - cose_da_fare.txt / cronologia.txt crescono per scelta (archivio) - non toccati.
+
+--------------------------------------------------------------------------------
+CODA 14a SESSIONE - verifica permesso GPS + 3 fix (A/B/C) [FATTO]
+--------------------------------------------------------------------------------
+PERMESSO GEOLOCALIZZAZIONE - verificato dal vivo (era da anni un "da
+verificare a mano": l'automazione non attraversa la finestrella nativa).
+Fatto con Denis su camoscio.onrender.com e completato da lui ("ho provato
+io tutto, funzionante"). Blocca -> app spegne tutto, tasto torna "Dove
+sono", guida mostrata, zero errori JS. Consenti -> app accesa, posizione
+presa, puntino sulla mappa. Permesso denied + ripremere -> dritto alla
+guida, nessuna ri-richiesta.
+
+Provando sono uscite 3 cose (commit 0d0ecc3, solo frontend, verificate dal
+vivo in locale):
+
+A) Guida allo sblocco GPS su PC. Denis: la guida (uscita cliccando
+   Blocca) mostra le istruzioni Android anche su Chrome desktop.
+   FIX: mostraGuidaSblocco (geolocation.js) - variante `desktop` (non
+   Android/iOS -> un solo livello: il permesso del sito dal lucchetto,
+   + nota localizzazione Windows/macOS). Chiave EN geo.guidaDesktop.
+
+B) Denis: "ogni volta che apro la pagina mappe magari per cominciare una
+   registrazione sta sempre su Ascesa corno grande. preferirei un default
+   su nessuna escursione. poi sarò io a scegliere se traccia libera o
+   qualche progetto."
+   CAUSA: app.js metteva activeHikeId su hikes[0] (la prima escursione
+   del DB di chiunque). FIX: tolto quel default - activeHikeId resta null
+   finche' l'utente non sceglie davvero un'escursione (tasto "Mappa" di
+   una scheda). Il menu "quale escursione sto registrando" parte da
+   "Nessuna - traccia libera".
+
+C) Denis: "lo zaino mi mette da prepararlo sul primo progetto che ho
+   creato. senza possibilità di scegliere. [...] vorrei sempre la
+   possibilità di scegliere se tra i miei progetti o tra escursioni a cui
+   partecipo" + "per lo zaino solo quelle in programma o progetti, le
+   escursioni passate non hanno senso".
+   FIX: <select> in cima allo Zaino - "Automatico" + optgroup
+   "Organizzate da me" / "A cui partecipo" (solo IN PROGRAMMA, data
+   futura) + "Zaino personale". La scelta a mano vince su
+   escursioneDiRiferimento, resta per la sessione. Tolto anche il ripiego
+   di escursioneDiRiferimento sull'ULTIMA escursione passata (senza nulla
+   in programma -> zaino personale). Riquadro "zaino personale"
+   context-aware (scelto a mano vs nessuna disponibile). Chiavi EN
+   backpack.gen.* + backpack.js.zainoPersonaleScelto.
+   Verificato dal vivo (demo Marco, 2 escursioni test create/cancellate):
+   i due optgroup, cambio scelta, personale, ritorno ad auto, console
+   pulita.
+
+Decisioni in ../camoscio memoria/03-Decisioni-Architetturali.md "Coda 14a
+sessione"; racconto in ../camoscio memoria/06-Cronologia-Sessioni.md.

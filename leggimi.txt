@@ -62,6 +62,19 @@ Aggiornato: 2026-08-30 (quattordicesima sessione).
   repo pubblico); WebP; alleggerire lucide.js. Non stanno su MongoDB:
   era peso di pagina + repo, non il vincolo 512 MB.
 
+  CODA (commit 0d0ecc3, solo frontend): verificato dal vivo il permesso
+  di geolocalizzazione del browser (finestrella nativa - Denis: "provato
+  tutto, funzionante"). Provando sono uscite 3 cose, sistemate:
+  A) la guida allo sblocco GPS su PC mostrava le istruzioni Android ->
+     aggiunta la variante desktop (geolocation.js, geo.guidaDesktop).
+  B) la registrazione GPS partiva sempre su "Ascesa Corno Grande":
+     app.js metteva activeHikeId su hikes[0] (prima escursione del DB di
+     chiunque) -> tolto. Ora parte da "Nessuna - traccia libera".
+  C) lo Zaino era bloccato sulla prima/prossima escursione senza scelta:
+     aggiunto un <select> ("Automatico" + optgroup "Organizzate da me" /
+     "A cui partecipo", solo IN PROGRAMMA + "Zaino personale"). Tolto
+     anche il ripiego sull'ultima escursione passata.
+
 >>> GIA' IN PRODUZIONE (sessioni precedenti): Punto 113 (parte social:
     Segui, Feed, uscita apribile, "mi piace", "crea percorso"); Punto 111
     (segnalazioni sentiero: "risolvi" e scadenza a 90gg passano dal
