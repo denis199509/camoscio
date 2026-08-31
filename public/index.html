@@ -507,14 +507,25 @@
                         <h2 class="dash-hero-greet" id="dash-hero-greet">Ciao 👋</h2>
                         <p class="dash-hero-sub" id="dash-hero-sub">Pronto per la prossima avventura?</p>
 
-                        <!-- Mostrata da renderDashHero SOLO se c'e' un'escursione in programma
-                             (organizzata da me o a cui partecipo, data futura, la piu' vicina).
-                             La card completa e' la Fase 2: qui solo titolo + data, apre l'escursione. -->
-                        <button type="button" class="dash-hero-next hidden" id="dash-hero-next">
-                            <i data-lucide="mountain-snow"></i>
-                            <span class="dash-hero-next-text"></span>
-                            <i data-lucide="arrow-right" class="dash-hero-next-arrow"></i>
-                        </button>
+                        <!-- FASE 2 revisione UX: la card della prossima avventura. Mostrata da
+                             renderDashHero SOLO se c'e' un'escursione CONFERMATA in programma
+                             (creata da me o dove sono gia' fra i partecipanti - non le semplici
+                             richieste in attesa), data futura, la piu' vicina. Righe numeri e "da"
+                             compaiono solo se i dati ci sono. Testo riempito da JS (niente
+                             data-i18n, stessa regola del saluto qui sopra); il bottone ha testo
+                             fisso e puo' usare data-i18n. -->
+                        <div class="dash-hero-adventure hidden" id="dash-hero-adventure">
+                            <h3 class="dash-hero-adv-title" id="dash-hero-adv-title"></h3>
+                            <p class="dash-hero-adv-when" id="dash-hero-adv-when"></p>
+                            <p class="dash-hero-adv-stats hidden" id="dash-hero-adv-stats"></p>
+                            <p class="dash-hero-adv-from hidden" id="dash-hero-adv-from"></p>
+                            <div class="dash-hero-adv-foot">
+                                <span class="dash-hero-adv-people" id="dash-hero-adv-people"></span>
+                                <button type="button" class="btn btn-primary" id="dash-hero-adventure-open">
+                                    <span data-i18n="dash.avventuraApri">Apri escursione</span> <i data-lucide="arrow-right"></i>
+                                </button>
+                            </div>
+                        </div>
 
                         <div class="dash-hero-actions">
                             <button class="btn btn-primary btn-nav-trigger dash-hero-cta" data-target="hikes">

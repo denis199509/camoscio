@@ -814,16 +814,17 @@ function setupNotificationBell() {
     });
 }
 
-// Blocco di apertura della Dashboard (PASSO 1 revisione UX v2). Due stati:
-//  - senza escursioni in programma: sottotitolo neutro, nessuna riga
-//  - con un'escursione in programma: sottotitolo dedicato + una riga cliccabile che la apre.
-// La card completa dell'escursione e' la Fase 2; qui bastano titolo e data.
+// Blocco di apertura della Dashboard (revisione UX v2). Due stati:
+//  - senza una prossima avventura: sottotitolo neutro, nessuna card
+//  - con un'escursione CONFERMATA in programma: sottotitolo dedicato + la card
+//    #dash-hero-adventure (titolo, quando + conto alla rovescia, numeri se ci sono, punto di
+//    partenza se c'e', partecipanti, "Apri escursione").
 function renderDashHero(usr) {
     const nome = usr.username.split(" ")[0];
     const greetEl = document.getElementById("dash-hero-greet");
     if (greetEl) greetEl.textContent = T("dash.ciaoNome", nome) || ("Ciao " + nome + " 👋");
 
-    const prossima = prossimaEscursione();
+    const prossima = prossimaAvventura(usr);
 
     const subEl = document.getElementById("dash-hero-sub");
     if (subEl) {
@@ -832,36 +833,81 @@ function renderDashHero(usr) {
             : (T("dash.heroSubDefault") || "Pronto per la prossima avventura?");
     }
 
-    const nextBtn = document.getElementById("dash-hero-next");
-    if (nextBtn) {
-        if (prossima) {
-            const loc = (window.CamoscioI18n && window.CamoscioI18n.getLang() === "en") ? "en-GB" : "it-IT";
-            const data = prossima.date
-                ? new Date(prossima.date + "T12:00:00").toLocaleDateString(loc, { day: "numeric", month: "long", year: "numeric" })
-                : (T("social.noDate") || "data non indicata");
-            // textContent, non innerHTML: il titolo e' testo scritto dall'utente.
-            nextBtn.querySelector(".dash-hero-next-text").textContent = prossima.title + " · " + data;
-            nextBtn.onclick = () => { if (window.showHikePage) window.showHikePage(prossima.id); };
-            nextBtn.classList.remove("hidden");
-        } else {
-            nextBtn.classList.add("hidden");
-            nextBtn.onclick = null;
-        }
+    const card = document.getElementById("dash-hero-adventure");
+    const openBtn = document.getElementById("dash-hero-adventure-open");
+    if (!card) return;
+
+    if (!prossima) {
+        card.classList.add("hidden");
+        if (openBtn) openBtn.onclick = null;
+        return;
     }
+
+    const loc = (window.CamoscioI18n && window.CamoscioI18n.getLang() === "en") ? "en-GB" : "it-IT";
+
+    // Titolo: testo scritto dall'utente -> textContent, mai innerHTML.
+    document.getElementById("dash-hero-adv-title").textContent = prossima.title;
+
+    // Quando: "Giorno D mese · <oggi | domani | fra N giorni>".
+    const d = new Date(prossima.date + "T12:00:00");
+    let quando = d.toLocaleDateString(loc, { weekday: "long", day: "numeric", month: "long" });
+    quando = quando.charAt(0).toUpperCase() + quando.slice(1);
+    const g = giorniAllaData(prossima.date);
+    const rel = g <= 0
+        ? (T("dash.avventuraOggi") || "oggi")
+        : g === 1
+            ? (T("dash.avventuraDomani") || "domani")
+            : (T("dash.avventuraFraGiorni", g) || ("fra " + g + " giorni"));
+    document.getElementById("dash-hero-adv-when").textContent = quando + " · " + rel;
+
+    // Numeri: solo quelli davvero presenti (quota / distanza / dislivello sono tutti opzionali
+    // nello schema; "mai un numero finto senza dati veri", punto 85).
+    // useGrouping:true forza il separatore migliaia: l'italiano da solo NON raggruppa i numeri
+    // a 4 cifre (2912 -> "2912"), e una quota o un dislivello stanno quasi sempre in quel range.
+    const raggr = { useGrouping: true };
+    const nums = [];
+    if (Number.isFinite(prossima.maxAltitude) && prossima.maxAltitude > 0) nums.push(prossima.maxAltitude.toLocaleString(loc, raggr) + " m");
+    if (Number.isFinite(prossima.distanceKm) && prossima.distanceKm > 0) nums.push(prossima.distanceKm.toLocaleString(loc, raggr) + " km");
+    if (Number.isFinite(prossima.elevationGain) && prossima.elevationGain > 0) nums.push("+" + prossima.elevationGain.toLocaleString(loc, raggr) + " m");
+    const statsEl = document.getElementById("dash-hero-adv-stats");
+    statsEl.textContent = nums.join(" · ");
+    statsEl.classList.toggle("hidden", nums.length === 0);
+
+    // Punto di partenza, solo se l'escursione ce l'ha.
+    const fromEl = document.getElementById("dash-hero-adv-from");
+    const partenza = prossima.trailhead && prossima.trailhead.name;
+    if (partenza) fromEl.textContent = T("dash.avventuraDa", partenza) || ("da " + partenza);
+    fromEl.classList.toggle("hidden", !partenza);
+
+    // Partecipanti.
+    const n = (prossima.participants || []).length;
+    document.getElementById("dash-hero-adv-people").textContent =
+        "👥 " + (T("dash.avventuraPartecipanti", n) || (n + (n === 1 ? " partecipante" : " partecipanti")));
+
+    if (openBtn) openBtn.onclick = () => { if (window.showHikePage) window.showHikePage(prossima.id); };
+    card.classList.remove("hidden");
 }
 
-// La PROSSIMA escursione in programma: fra quelle mie (organizzate o a cui partecipo, gia'
-// filtrate da classificaMieEscursioni), quelle con data da oggi in avanti, la piu' vicina.
-// Le date sono stringhe "YYYY-MM-DD" (models/Hike.js) e si ordinano come stringhe.
+// La PROSSIMA AVVENTURA: fra le escursioni CONFERMATE (create da me, o dove sono gia' fra i
+// participants - non le semplici richieste ancora in pendingApproval), quelle con data da oggi
+// in avanti, la piu' vicina. Date "YYYY-MM-DD" (models/Hike.js), si ordinano come stringhe.
 // NB: non si riusa escursioneDiRiferimento() dello Zaino - quella tiene conto del selettore
 // manuale dello Zaino e dell'activeHikeId, che qui sarebbero effetti collaterali sbagliati.
-function prossimaEscursione() {
+function prossimaAvventura(usr) {
     if (!window.classificaMieEscursioni) return null;
     const { create, partecipo } = window.classificaMieEscursioni();
+    const confermate = create.concat(partecipo.filter(h => (h.participants || []).includes(usr.id)));
     const oggi = new Date().toISOString().slice(0, 10);
-    return create.concat(partecipo)
+    return confermate
         .filter(h => h.date && h.date >= oggi)
         .sort((a, b) => a.date.localeCompare(b.date))[0] || null;
+}
+
+// Giorni interi da oggi alla data "YYYY-MM-DD". Ancorate a mezzogiorno cosi' il passaggio
+// all'ora legale non sposta il conteggio di un giorno (stesso accorgimento di backpack.js).
+function giorniAllaData(dateStr) {
+    const oggi = new Date().toISOString().slice(0, 10);
+    return Math.round((new Date(dateStr + "T12:00:00") - new Date(oggi + "T12:00:00")) / 86400000);
 }
 
 // Renderizzazione Dashboard

@@ -1029,9 +1029,9 @@ option {
     margin-bottom: 10px;
 }
 
-/* Blocco di apertura della Dashboard (PASSO 1 revisione UX v2). A tutta larghezza, sopra
-   .dashboard-grid: e' l'inizio della pagina, non una scheda. Scala tipografica decrescente
-   sui quattro livelli (saluto -> sottotitolo -> azione primaria -> azione secondaria).
+/* Blocco di apertura della Dashboard (revisione UX v2). A tutta larghezza, sopra
+   .dashboard-grid: e' l'inizio della pagina, non una scheda. Gerarchia dall'alto: saluto ->
+   sottotitolo -> card della prossima avventura (se c'e') -> azione primaria -> secondaria.
    Qui solo struttura e gerarchia: nessun colore, ombra o animazione nuovi. */
 .dash-hero {
     margin-bottom: 24px;
@@ -1051,44 +1051,58 @@ option {
     margin: 6px 0 0;
 }
 
-/* Riga della prossima escursione: compare solo se ce n'e' una (renderDashHero toglie
-   .hidden). E' un <button> perche' apre la pagina dell'escursione. */
-.dash-hero-next {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    width: 100%;
+/* Card della prossima avventura (FASE 2). Compare solo se c'e' un'escursione confermata in
+   programma (renderDashHero toglie .hidden). Riusa la scatola introdotta per la riga
+   segnaposto del PASSO 1: sfondo scuro, filo arancione a sinistra, raggio 12px. Solo
+   struttura e gerarchia: nessun colore, ombra o animazione nuovi. */
+.dash-hero-adventure {
     margin-top: 16px;
-    padding: 12px 14px;
+    padding: 14px 16px;
     background: rgba(0, 0, 0, 0.2);
     border: 1px solid var(--border-color);
     border-left: 3px solid var(--accent-orange);
     border-radius: 12px;
+}
+
+.dash-hero-adv-title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.dash-hero-adv-when {
+    margin: 4px 0 0;
     color: var(--color-text-primary);
-    font-size: 0.95rem;
     font-weight: 600;
-    text-align: left;
-    cursor: pointer;
-    transition: background var(--transition-speed);
 }
 
-.dash-hero-next:hover {
-    background: rgba(0, 0, 0, 0.32);
+.dash-hero-adv-stats,
+.dash-hero-adv-from {
+    margin: 4px 0 0;
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
 }
 
-.dash-hero-next i {
-    width: 18px;
-    height: 18px;
-    flex-shrink: 0;
+/* Conteggio partecipanti a sinistra, "Apri escursione" a destra; su contenitore stretto
+   vanno a capo (il bottone scende sotto), nessuna @media. */
+.dash-hero-adv-foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 12px;
 }
 
-.dash-hero-next-text {
-    flex: 1;
-    min-width: 0;
+.dash-hero-adv-people {
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
 }
 
-.dash-hero-next-arrow {
-    opacity: 0.7;
+.dash-hero-adventure .btn i {
+    width: 16px;
+    height: 16px;
 }
 
 /* Desktop: i due pulsanti affiancati. Su contenitore stretto vanno a capo da soli e

@@ -483,14 +483,21 @@
             //    scelto il locale come per le date col nome del mese (en-GB).
 
             // --- DASHBOARD: testo statico nell'HTML (#dashboard) ---
-            // Blocco di apertura (PASSO 1 revisione UX): saluto, sottotitolo e riga della
-            // prossima escursione li scrive renderDashHero (app.js) via le voci qui sotto -
-            // gli elementi NON hanno data-i18n apposta (vedi commento in index.html).
+            // Blocco di apertura (revisione UX): saluto, sottotitolo e card della prossima
+            // avventura li scrive renderDashHero (app.js) via le voci qui sotto - gli elementi
+            // NON hanno data-i18n apposta (vedi commento in index.html). Fa eccezione il bottone
+            // "Apri escursione", testo fisso, che sta come data-i18n.
             'dash.ciaoNome': function (nome) { return 'Hi ' + nome + ' 👋'; },
             'dash.heroSubDefault': 'Ready for your next adventure?',
             'dash.heroSubProssima': 'Your next adventure is almost ready.',
             'dash.ctaTrova': 'Find a hike',
             'dash.ctaEsplora': 'Explore',
+            'dash.avventuraApri': 'Open hike',
+            'dash.avventuraOggi': 'today',
+            'dash.avventuraDomani': 'tomorrow',
+            'dash.avventuraFraGiorni': function (n) { return 'in ' + n + ' days'; },
+            'dash.avventuraDa': function (nome) { return 'from ' + nome; },
+            'dash.avventuraPartecipanti': function (n) { return n + (n === 1 ? ' participant' : ' participants'); },
             'dash.passaportoTitolo': 'Digital Peak Passport',
             'dash.geofencingAttivo': 'Geofencing Active',
             'dash.passaportoDesc': 'Reach the peaks and huts to unlock collectible digital stamps. Use the map to simulate your GPS position!',
