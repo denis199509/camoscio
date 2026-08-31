@@ -5,12 +5,15 @@ Aggiornato: 2026-08-31 (quindicesima sessione).
 >>> NIENTE IN CORSO. Tutto pushato e in produzione (Render redeploy
     automatico ai push).
 
->>> PROSSIMO GRANDE LAVORO: REVISIONE UX. Un amico ha valutato il sito -
-    giudizio buono, ma "User Experience" poco intuitiva. Denis vuole
-    dedicarci una fase apposta. NON iniziata, nessun dettaglio: aspettare
-    che porti i consigli e decida da dove partire. Dentro ci ricadono i
+>>> LA PROSSIMA SESSIONE SI PARTE DALLA REVISIONE UX (deciso da Denis a
+    fine 15a sessione: "nella prossima sessione passiamo al aggiornamento
+    ux"). Un amico ha valutato il sito - giudizio buono, ma "User
+    Experience" poco intuitiva. NON iniziata, nessun dettaglio concordato:
+    a inizio sessione chiedere a Denis i consigli dell'amico e da dove
+    vuole partire, PRIMA di proporre modifiche. Dentro ci ricadono i
     titoli di sezione lunghi troncati su telefono (ex "punto 106
-    residuo") - non toccarli a pezzi. Dettaglio in vault 04-Da-Fare.
+    residuo") - non toccarli a pezzi. Dettaglio in vault 04-Da-Fare
+    ("PROSSIMO GRANDE LAVORO - revisione UX").
 
   ULTIMO LAVORO — QUATTRO RIFINITURE, chiuse e in produzione il 31/08
   (push 57697ac..152fb7a su camoscio/master, 2 commit).
