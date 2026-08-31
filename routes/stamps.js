@@ -48,7 +48,7 @@ router.post('/', requireAuth, async (req, res) => {
         // Tutte le sessioni dell'utente: quella aperta (i punti si accumulano mentre
         // cammina) e quelle concluse (registrazioni finite + .gpx importati).
         const sessioni = await ActiveHikeSession.find({ userId }).select('points').lean();
-        const raggiunta = sessioni.some(s => tracciaToccaPunto(s.points, punto.lat, punto.lng));
+        const raggiunta = sessioni.some(s => tracciaToccaPunto(s.points, punto));
         if (!raggiunta) {
             return res.status(403).json({
                 error: 'Il timbro si sblocca solo con una traccia reale che passa dalla vetta: cammina fin qui con una registrazione attiva, oppure importa il file .gpx della salita.'

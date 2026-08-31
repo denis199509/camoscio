@@ -575,7 +575,7 @@ function checkGeofencing(lat, lng) {
         // Il piu' vicino, non l'ultimo trovato: con piu' punti in elenco (rifugio e cima
         // possono stare a poche centinaia di metri, es. Franchetti e Corno Grande) l'ordine
         // dell'array avrebbe deciso quale timbro proporre.
-        if (dist < 150 && dist < distance) { // Distanza in metri per sbloccare (150m)
+        if (dist < (peak.sogliaM || 150) && dist < distance) { // metri per sbloccare: 150, o la soglia propria del punto (Ju Busciu: 10)
             foundNearPeak = peak;
             distance = dist;
         }

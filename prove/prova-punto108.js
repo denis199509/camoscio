@@ -17,6 +17,8 @@
 //           vecchia (copiata qui verbatim da routes/tracking.js) e le funzioni nuove di
 //           lib/geofenceTimbri.js danno lo stesso identico risultato, sui casi limite,
 //           sul confine esatto della finestra in gradi e su tracce randomizzate.
+//           + (2026-08-31) una voce di catalogo puo' avere una soglia propria `sogliaM`
+//           (Ju Busciu 10 m): con quella un punto a 20-140 m non tocca piu', col default si'.
 //   Sez. 2  (DB in sola lettura) - puntiTimbrabili() restituisce ogni voce di
 //           badge-points.js con coordinate finite, con le sue lat/lng.
 //   Sez. 3  (server acceso) - l'integrazione vera:
@@ -50,7 +52,7 @@ const {
 } = require('../lib/geofenceTimbri');
 const CATALOGO = require('../public/js/badge-points.js');
 
-const BASE_URL = 'http://localhost:3000';
+const BASE_URL = process.env.PROVA_BASE_URL || 'http://localhost:3000';
 
 let passati = 0, falliti = 0;
 const fallimenti = [];
@@ -105,7 +107,9 @@ function sezione1() {
 
     const confronta = (punti, cLat, cLng, etichetta) => {
         casi++;
-        const nTok = tracciaToccaPunto(punti, cLat, cLng);
+        // tracciaToccaPunto prende l'OGGETTO del punto (2026-08-31: gli serve sogliaM). Qui
+        // si passa {lat,lng} senza sogliaM -> soglia di default 150 m, come vecchioToccata.
+        const nTok = tracciaToccaPunto(punti, { lat: cLat, lng: cLng });
         let diverso = (vecchioToccata(punti, cLat, cLng) !== nTok);
 
         if (Array.isArray(punti) && punti.length > 0) {
@@ -162,6 +166,21 @@ function sezione1() {
         if (vecchioToccata([p], cLat, cLng) !== rotto) controDiff++;
     }
     ok('la controprova interna vede una soglia sbagliata (fascia 151-300 m)', controDiff > 0, `${controDiff}/1500`);
+
+    // --- soglia propria del punto: `sogliaM` (2026-08-31, Ju Busciu a 10 m) ---
+    // Con una sogliaM stretta un punto a 20-140 m NON tocca piu', mentre col default a 150 si'.
+    // Se sogliaPunto/tracciaToccaPunto ignorassero sogliaM, il ramo "medio" fallirebbe.
+    let sm = 0;
+    for (let it = 0; it < 500; it++) {
+        const cLat = rnd(36, 47), cLng = rnd(6, 19);
+        const stretto = { lat: cLat, lng: cLng, sogliaM: 10 };
+        const largo = { lat: cLat, lng: cLng };
+        const vicino = [spostaMetri(cLat, cLng, rnd(0, 9), rnd(0, 2 * Math.PI))];   // < 10 m
+        const medio = [spostaMetri(cLat, cLng, rnd(20, 140), rnd(0, 2 * Math.PI))]; // 20-140 m
+        if (!(tracciaToccaPunto(vicino, stretto) && tracciaToccaPunto(vicino, largo))) sm++;
+        if (!(!tracciaToccaPunto(medio, stretto) && tracciaToccaPunto(medio, largo))) sm++;
+    }
+    ok('sogliaM stringe la soglia del singolo punto (Ju Busciu 10 m)', sm === 0, `${sm} casi fuori attesa su 1000`);
 }
 
 // --------------------------------------------------------------------------

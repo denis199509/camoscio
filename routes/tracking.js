@@ -608,7 +608,7 @@ router.get('/peak-ascents/:userId', requireAuth, async (req, res) => {
         const risultato = candidati.map(c => {
             let siteCount = 0;
             for (const s of sessioni) {
-                if (tracciaToccaPunto(s.points, c.lat, c.lng)) siteCount++;
+                if (tracciaToccaPunto(s.points, c)) siteCount++;
             }
             const recognizedCount = pavimenti.get(c.stampId) || 0;
             return { stampId: c.stampId, recognizedCount, siteCount, total: recognizedCount + siteCount };

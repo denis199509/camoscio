@@ -148,7 +148,16 @@
         // probabile GPX) invece di quelle di Wikipedia - quota presa dall'icona (2645 m, dentro
         // l'intervallo 2645-2669 m riportato dalle fonti web per questo luogo). Se il badge
         // dovesse risultare impossibile da prendere stando sul posto vero, e' il primo sospetto.
-        { stampId: 'badge_jubusciu',    nome: 'Bivacco Ju Busciu',        tipo: 'rifugio', quota: 2645, lat: 42.47294,  lng: 13.56525, zona: 'Gran Sasso',       regione: 'Abruzzo', emoji: '🪨',  icona: 'img/badge-luoghi/bivacco-ju-busciu.png' },
+        //
+        // sogliaM: 10 -- soglia di prossimita' propria, NON i 150 m standard. Richiesta di
+        // Denis il 2026-08-31: "l'unico badge un po' particolare resta proprio Ju Busciu,
+        // essendo una perla nascosta voglio un range di 10 m". Il timbro si sblocca solo
+        // passandoci davvero accanto (geofencing mappa, import .gpx/.fit, tasto TIMBRA) e allo
+        // stesso modo si conta una salita ripetuta (/peak-ascents). E' l'unico punto del
+        // catalogo con una soglia propria; `sogliaM` assente = 150 m come tutti gli altri.
+        // Letto lato server da lib/geofenceTimbri.js (sogliaPunto) e lato browser da
+        // checkGeofencing in public/js/map.js.
+        { stampId: 'badge_jubusciu',    nome: 'Bivacco Ju Busciu',        tipo: 'rifugio', quota: 2645, lat: 42.47294,  lng: 13.56525, zona: 'Gran Sasso',       regione: 'Abruzzo', emoji: '🪨',  icona: 'img/badge-luoghi/bivacco-ju-busciu.png', sogliaM: 10 },
         // Rifugio Pino Ciuffarella ELIMINATO il 18/08/2026 su richiesta di Denis - stessa
         // verifica fatta per Pomilio qui sopra, nessun utente reale aveva ancora preso
         // badge_ciuffarella. Nessuna sostituzione: la voce sparisce e basta, il totale badge
