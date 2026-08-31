@@ -1,79 +1,69 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-30 (quattordicesima sessione).
+Aggiornato: 2026-08-31 (quindicesima sessione).
 
 >>> NIENTE IN CORSO. Tutto pushato e in produzione (Render redeploy
     automatico ai push).
 
-  ULTIMO LAVORO — PUNTI 114 e 115, CHIUSI E IN PRODUZIONE il 30/08
-  (push a2a53a5..f3dfeef su camoscio/master), confermati da Denis dal
-  vivo.
+>>> PROSSIMO GRANDE LAVORO: REVISIONE UX. Un amico ha valutato il sito -
+    giudizio buono, ma "User Experience" poco intuitiva. Denis vuole
+    dedicarci una fase apposta. NON iniziata, nessun dettaglio: aspettare
+    che porti i consigli e decida da dove partire. Dentro ci ricadono i
+    titoli di sezione lunghi troncati su telefono (ex "punto 106
+    residuo") - non toccarli a pezzi. Dettaglio in vault 04-Da-Fare.
 
-  PUNTO 114 — IMPORT FILE .FIT (formato nativo Garmin) nello storico.
-  lib/fit.js NUOVO: parseFit(buffer) restituisce la STESSA forma di
-  parseGpx -> tutto il codice a valle invariato. Dipendenza nuova
-  fit-file-parser@5.0.2 (MIT, +buffer, 0 vulnerabilita' nuove): il FIT
-  e' binario, il divieto di librerie sui .gpx era anti-XXE e non vale.
-  Ambito: i due punti dello storico (/import-gpx e il ⬆ di
-  completions.js). importedFrom resta 'gpx' (= "importato da file", non
-  il formato). Il .fit viaggia in base64 (window.fileToBase64 in app.js).
-  prove/prova-fit.js NUOVO (33, senza server). Commit 0837f42.
-  >>> LIMITE, e' il FILE non il codice: un .fit "smart" (o da Garmin
-      Connect) ha gli stessi buchi di un GPX degradato -> niente split
-      cammino/pause. Serve un .fit a 1 Hz. Distanza/dislivello/durata
-      totale/badge: sempre giusti.
+  ULTIMO LAVORO — QUATTRO RIFINITURE, chiuse e in produzione il 31/08
+  (push 57697ac..152fb7a su camoscio/master, 2 commit).
 
-  PUNTO 115 — NOME DELL'USCITA, MODIFICABILE. ActiveHikeSession
-  .importedName diventa il nome editabile (non solo il <name> del file),
-  max 120, per QUALSIASI uscita; assente -> data. PATCH
-  /api/tracking/sessions/:id/name NUOVA (owner, vuoto -> $unset);
-  publish accetta anche {name}. Frontend: MATITA in "Le mie escursioni"
-  su ogni riga uscita (anche le "escursione completata" con traccia dal
-  ⬆ - aggiunto dopo feedback di Denis); tasti pubblica/rinomina delegati
-  (data-*, non onclick inline); titolo dell'uscita in cima alla pagina
-  di dettaglio (NUOVO). completions.js: nome di default della traccia
-  collegata = <name> del file o il titolo dell'escursione. prove/
-  prova-punto115.js NUOVO (28) + sez.6 in prova-punto113-gpx.js (27->35).
-  Commit e13ca9a + f3dfeef.
-  Dettaglio: cose_da_fare.txt "Quattordicesima sessione"; decisioni nel
-  vault 03 "Punto 114"/"Punto 115"; racconto nel vault 06.
+  1. "Pubblica nel feed" si spezzava su card strette (commit fbf340a):
+     .outing-card-actions ora flex-wrap + i bottoni white-space:nowrap.
+  2. Due date nella card del feed (commit fbf340a): la riga autore ha
+     gia' la data di pubblicazione. schedaUscitaProfilo prende
+     {perFeed, dataUscitaDiversa}: nel feed il titolo senza nome e'
+     "Uscita"/"Outing" e la data compare SOLO se l'escursione e' di un
+     altro giorno (giorno di calendario). Chiave EN feed.uscitaSenzaNome.
+     Verificato dal vivo (demo Marco): post di Denis ok, console pulita.
+  3. Punto 115 residuo (commit fbf340a): sulla card "escursione
+     completata" con traccia collegata, se la traccia e' stata
+     RINOMINATA con la matita e' quel nome a fare da titolo (titolo
+     escursione sulla riga della data). Se i nomi COINCIDONO (default)
+     la card e' identica a prima. schedaEscursioneCompletata prende
+     {nomeUscita} da storico.js. NON verificato dal vivo il ramo
+     rinominato (nessun demo ce l'ha) - da guardare sul telefono.
+  4. Coda punto 113 (commit 152fb7a): il ⬆ su un'escursione completata
+     assegna i BADGE DI VETTA come /import-gpx. assegnaTimbriDallaTraccia
+     spostata VERBATIM da routes/tracking.js a lib/geofenceTimbri.js
+     (equivalenza: prova-punto108 24/24). routes/completions.js la
+     chiama sui punti COMPLETI, badge nuovi nel campo "badge" della
+     risposta; social.js mostra un toast. prova-punto113-gpx sez.7 nuova
+     (35->43), prova-punto92 84/84, prova-punto113 103/103 (corretta
+     un'asserzione fragile: i 4 demo seguono Denis davvero sul DB).
 
-  CONTROLLO FATTIBILITA' SMARTWATCH (Garmin/Suunto/Amazfit) fatto e
-  SCARTATO: Garmin blocca il programma developer (solo persone
-  giuridiche + sospeso), Amazfit non ha API, Suunto e' possibile ma
-  marginale, Strava vieta di mostrare i dati altrui. Non riproporre
-  "colleghiamo Garmin". Dettaglio in vault 05-Idee-Facoltative.
+  DECISIONI DI DENIS in questa sessione (NON riproporre):
+  - togliere+rimettere "mi piace" -> seconda notifica all'autore:
+    LASCIATO com'e' (raro, innocuo; un flag costerebbe un campo).
+  - titoli di sezione lunghi (punto 106): RIMANDATI alla revisione UX.
 
-  COSMETICO noto sul 115 (non deciso di sistemarlo): su una riga
-  "escursione completata" con traccia collegata, la card in "Le mie
-  escursioni" mostra il TITOLO dell'escursione; la matita rinomina il
-  nome nel FEED / pagina di dettaglio. Due nomi se li fai diversi (il
-  default li tiene allineati).
+  Dettaglio: cose_da_fare.txt "QUINDICESIMA SESSIONE"; decisioni nel
+  vault 03 "Coda punto 113: badge dal ⬆"; racconto nel vault 06;
+  prove/LEGGIMI-PROVE.txt (sez.7 di prova-punto113-gpx).
 
-  >>> DENIS DEVE RICARICARE il .gpx/.fit col ⬆ per le escursioni gia'
-      fatte che vuole pubblicare (l'originale non era stato conservato).
-
-  CODA: controllo dimensioni file. Le 33 icone badge (public/img/) erano
-  46 MB, l'88% del repo (salvate a 1024-1254 px, mostrate a 80-90 px).
-  Ridimensionate a 768 px PNG senza perdita con scripts/comprimi-badge.js
-  (NUOVO, sharp): 46 -> 8,8 MB, zero codice toccato, originali in
-  ../camoscio-badge-originali/ (fuori dal repo). Commit 084f992.
-  NON fatto: sgonfiare il .git da 89 MB (git filter-repo, delicato su
-  repo pubblico); WebP; alleggerire lucide.js. Non stanno su MongoDB:
-  era peso di pagina + repo, non il vincolo 512 MB.
-
-  CODA (commit 0d0ecc3, solo frontend): verificato dal vivo il permesso
-  di geolocalizzazione del browser (finestrella nativa - Denis: "provato
-  tutto, funzionante"). Provando sono uscite 3 cose, sistemate:
-  A) la guida allo sblocco GPS su PC mostrava le istruzioni Android ->
-     aggiunta la variante desktop (geolocation.js, geo.guidaDesktop).
-  B) la registrazione GPS partiva sempre su "Ascesa Corno Grande":
-     app.js metteva activeHikeId su hikes[0] (prima escursione del DB di
-     chiunque) -> tolto. Ora parte da "Nessuna - traccia libera".
-  C) lo Zaino era bloccato sulla prima/prossima escursione senza scelta:
-     aggiunto un <select> ("Automatico" + optgroup "Organizzate da me" /
-     "A cui partecipo", solo IN PROGRAMMA + "Zaino personale"). Tolto
-     anche il ripiego sull'ultima escursione passata.
+>>> GIA' IN PRODUZIONE (14a sessione, 30/08, push a2a53a5..0d0ecc3):
+    PUNTO 114 import file .fit (lib/fit.js, parseFit stessa forma di
+    parseGpx; dep fit-file-parser@5.0.2). PUNTO 115 nome dell'uscita
+    modificabile (ActiveHikeSession.importedName editabile, PATCH
+    /sessions/:id/name). Compressione icone badge (46->8,8 MB,
+    scripts/comprimi-badge.js). Verifica dal vivo permesso GPS + coda
+    A/B/C (guida GPS per PC; activeHikeId senza default globale; selettore
+    escursione nello Zaino). Smartwatch (Garmin/Suunto/Amazfit): valutato
+    e SCARTATO - non riproporre "colleghiamo Garmin".
+    >>> LIMITE .fit/.gpx, e' il FILE non il codice: un file "smart" (o da
+        Garmin Connect) ha buchi -> niente split cammino/pause. Serve 1 Hz.
+        Distanza/dislivello/durata totale/badge: sempre giusti.
+    >>> DENIS DEVE RICARICARE il .gpx/.fit col ⬆ per le escursioni gia'
+        fatte che vuole pubblicare (l'originale non era stato conservato).
+    NON fatto dalla compressione icone: sgonfiare il .git da 89 MB (git
+    filter-repo, delicato su repo pubblico); WebP; alleggerire lucide.js.
 
 >>> GIA' IN PRODUZIONE (sessioni precedenti): Punto 113 (parte social:
     Segui, Feed, uscita apribile, "mi piace", "crea percorso"); Punto 111
@@ -102,7 +92,10 @@ Aggiornato: 2026-08-30 (quattordicesima sessione).
     e componiRapporto() dentro diagnostica-gps.html. Le chiavi EN dei
     punti 113/114/115 sono state aggiunte tutte. Restano IT anche i NOMI
     delle uscite (punto 115: li scrive l'utente).
-  - Punti 102, 106, 108, 111, 112, 113, 114, 115 CHIUSI E IN PRODUZIONE.
+  - Punti 102, 108, 111, 112, 113, 114, 115 CHIUSI E IN PRODUZIONE
+    (+ le 4 rifiniture del 31/08). Il punto 106 e' chiuso per la parte
+    fatta il 28/08; il residuo (titoli sezione lunghi) e' nella revisione
+    UX. Il ⬆ ora assegna i badge di vetta (coda 113).
 
 ===================================================================
 

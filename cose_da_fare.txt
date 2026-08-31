@@ -8080,3 +8080,120 @@ C) Denis: "lo zaino mi mette da prepararlo sul primo progetto che ho
 
 Decisioni in ../camoscio memoria/03-Decisioni-Architetturali.md "Coda 14a
 sessione"; racconto in ../camoscio memoria/06-Cronologia-Sessioni.md.
+
+
+=====================================================================
+QUINDICESIMA SESSIONE (31/08/2026) — quattro rifiniture + annuncio revisione UX
+=====================================================================
+
+Denis: "abbiamo altre cose in sospeso?" -> riassunto del quadro (niente in
+corso, 2 decisioni sue in attesa, l'azione manuale del ricaricare i file,
+il debito tecnico noto, i cosmetici del 113/115).
+
+Poi: "facciamo questi 4 punti dpodiche vorrei dedicarmi alla sistemazione
+del sito. Un amico mi ha dato dei consigli. Il sito e' stato valutato
+molto bene. Unica cosa il cosi detto 'User Experience' non e abbastanza
+facile ed intuitivo. Quindi sto pensando a delle modifiche per facilitare
+l'uso del sito/app."
+
+I 4 punti erano i cosmetici noti di 113/115. Fatti di fila (Denis: "di
+fila e mostrami le tre insieme" per i primi tre; "finisci tutto poi vai
+con commit e push" per il quarto). Push 57697ac..152fb7a su
+camoscio/master, 2 commit (fbf340a rifiniture, 152fb7a badge dal ⬆).
+
+DUE DECISIONI DI DENIS (chieste con AskUserQuestion prima di toccare
+codice):
+- Titoli di sezione lunghi troncati su telefono (ex "punto 106 residuo"):
+  -> RIMANDATI ALLA REVISIONE UX. Non toccati. La divergenza header
+  ("Sicurezza & Mesh Simulator") / menu ("Sicurezza & Mesh") oggi e'
+  voluta (commenti in i18n.js).
+- Doppia notifica "mi piace" (togli e rimetti -> 2a notifica all'autore):
+  -> LASCIATO COM'E'. Raro e innocuo (notifica doppia, non like doppio);
+  un flag "gia' notificato" costerebbe un campo su Notification, vincolo
+  spazio. Il vault l'aveva gia' messo in conto (punto 113, passo 7).
+
+--- 1. Bottone "Pubblica nel feed" che si spezzava (commit fbf340a) ---
+Cosmetico noto del 113. Su una card "escursione completata" stretta la
+riga azioni ha 4 controlli (Pubblica + matita + ⬆ + cestino) e
+l'etichetta del bottone andava a capo DENTRO il bottone.
+FIX (solo CSS, public/css/styles.css): .outing-card-actions ->
+flex-wrap:wrap; .outing-card-actions .btn -> white-space:nowrap. Cosi'
+l'etichetta resta intera e, se non ci sta, scende tutto il bottone.
+
+--- 2. Due date nella card del feed (commit fbf340a) ---
+Cosmetico noto del 113. feed.js mostrava la data di PUBBLICAZIONE nella
+riga autore e la card compatta riusata sotto ne mostrava un'altra (la
+data dell'USCITA, spesso lo stesso giorno).
+FIX: schedaUscitaProfilo (userprofile.js) prende {perFeed,
+dataUscitaDiversa}. Con perFeed: titolo senza nome = "Uscita"/"Outing"
+(non la data); la data compare come sottotitolo SOLO se feed.js passa
+dataUscitaDiversa, cioe' solo quando il giorno di calendario dell'uscita
+!= quello della pubblicazione (es. oggi pubblico un'uscita di luglio: li'
+la data serve). Chiave EN feed.uscitaSenzaNome.
+VERIFICATO DAL VIVO (demo Marco, che segue Denis): il post "Alba Corno
+Grande" mostra "Denis - 30 August 2026" nella riga autore e "02 August
+2026" come sottotitolo (uscita del 2, pubblicata il 30 -> data diversa ->
+giusto che compaia). Zero errori console su Feed / My Hikes / Dashboard.
+
+--- 3. Punto 115 residuo - due nomi per la stessa cosa (commit fbf340a) ---
+Su una card "escursione completata" con traccia collegata dal ⬆, la card
+mostrava Hike.title mentre la matita rinomina il nome della SESSIONE
+(feed + pagina uscita) -> rinominare li' non cambiava niente a schermo.
+FIX: schedaEscursioneCompletata (userprofile.js) prende {nomeUscita} da
+storico.js (che ha gia' tracciaCollegata). Se il nome dato DIFFERISCE da
+Hike.title, il nome dato fa da titolo e Hike.title scende sulla riga
+della data ("<titolo> - <data>"). Se coincidono (il caso di default) la
+card e' BYTE-IDENTICA a prima. Il profilo di un altro utente (sola
+lettura, niente matita) non passa nomeUscita -> invariato.
+NON VERIFICATO DAL VIVO il ramo "rinominato" (nessun account demo ha una
+traccia collegata rinominata); il caso "non rinominato" (nessuna
+regressione) si'. Da guardare sul telefono di Denis.
+
+--- 4. Coda punto 113 - il ⬆ assegna i badge di vetta (commit 152fb7a) ---
+Il ⬆ su un'escursione gia' completata (POST /api/completions/:id/gpx)
+salvava la traccia ma non guardava le vette, a differenza di /import-gpx.
+FIX:
+- assegnaTimbriDallaTraccia() SPOSTATA VERBATIM da routes/tracking.js a
+  lib/geofenceTimbri.js, dove sono gia' puntiTimbrabili /
+  distanzaMinimaDaTraccia / SOGLIA_TIMBRO_M (stesso lavoro del punto
+  108). lib guadagna solo require('../models/Stamp'). tracking.js la
+  importa e non destruttura piu' SOGLIA_TIMBRO_M/distanzaMinimaDaTraccia
+  (non piu' usati li').
+- routes/completions.js: dopo aver salvato la traccia, chiama
+  assegnaTimbriDallaTraccia sui PUNTI COMPLETI (letto.punti, non
+  semplificati - su una vetta contano i metri), data = quella
+  dell'escursione. In un try suo (un errore non tocca il tempo gia'
+  salvato), indipendente dal ramo create/update/non-toccare della
+  sessione. I badge nuovi tornano nel campo "badge" della risposta.
+- public/js/social.js uploadCompletionGpx: se dati.badge non e' vuoto, un
+  2o toast (chiavi gpx.badgeConquistato* gia' esistenti). refreshState()
+  era gia' chiamato -> il Passaporto si aggiorna.
+PROVE:
+- prova-punto113-gpx.js sez. 7 NUOVA (35 -> 43): crea un hike con una
+  vetta di prova (stampId marcato, nessun account vero ce l'ha) sul primo
+  punto del gpx sintetico -> dopo il ⬆ la risposta porta il badge nel
+  campo "badge", il timbro e' sul DB con la DATA DELL'ESCURSIONE, un
+  ri-upload non fa doppioni.
+- prova-punto108 24/24 (equivalenza del refactor, "nessuna differenza su
+  5542 casi").
+- prova-punto92 84/84 (regressione /import-gpx).
+- prova-punto113 103/103 DOPO aver corretto un'asserzione diventata
+  fragile: la sez. 3 dava per scontato che il 3o account demo (Sofia
+  FotoPasso) non seguisse nessuno, ma i 4 account demo SEGUONO DENIS
+  DAVVERO sul DB Atlas (Follow con createdAt 2026-08-30 13:43-13:45,
+  dalle verifiche dal vivo di Denis del 30/08). Riscritta da "feed vuoto
+  per C" a "C (non segue A ne' B) non vede nel feed nessuna uscita di
+  prova" - stessa cautela gia' applicata a likeCount il 30/08. Nota in
+  prove/LEGGIMI-PROVE.txt e trappola in vault 07.
+
+--- PROSSIMO GRANDE LAVORO: REVISIONE UX ---
+Un amico ha valutato il sito: giudizio complessivo BUONO, ma UX poco
+intuitiva. Denis vuole dedicarci una fase apposta. NON iniziata, nessun
+dettaglio concordato: aspettare che Denis porti i consigli dell'amico e
+decida da dove partire. Voce nuova in
+../camoscio memoria/04-Da-Fare.md ("PROSSIMO GRANDE LAVORO - revisione
+UX"); ci ricadono dentro i titoli di sezione lunghi.
+
+Decisioni in ../camoscio memoria/03-Decisioni-Architetturali.md "Coda
+punto 113: badge dal ⬆"; racconto in
+../camoscio memoria/06-Cronologia-Sessioni.md "Quindicesima sessione".
