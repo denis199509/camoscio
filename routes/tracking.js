@@ -15,9 +15,10 @@ const { parseFit, ErroreFit } = require('../lib/fit'); // punto 114: stessa usci
 const trailIndex = require('../lib/trailIndex');
 const { mongoose } = require('../db/mongo');
 const { recalculateAndApplyPace } = require('../lib/hikeStats');
-// Soglia + catalogo + scansione di una traccia: una copia sola, condivisa con la verifica
-// di un timbro da mappa (routes/stamps.js) e col conteggio salite (/peak-ascents qui sotto).
-const { SOGLIA_TIMBRO_M, puntiTimbrabili, distanzaMinimaDaTraccia, tracciaToccaPunto } = require('../lib/geofenceTimbri');
+// Catalogo + scansione di una traccia + assegnazione dei badge di vetta: una copia sola in
+// lib/geofenceTimbri.js, condivisa con la verifica di un timbro da mappa (routes/stamps.js),
+// col conteggio salite (/peak-ascents qui sotto) e col tasto ⬆ di routes/completions.js.
+const { puntiTimbrabili, tracciaToccaPunto, assegnaTimbriDallaTraccia } = require('../lib/geofenceTimbri');
 const { guardiaUscitaVisibile } = require('../lib/uscitaVisibile'); // punto 113: guardia autore-o-follower, condivisa con routes/routing.js
 
 const MAX_POINTS_PER_BATCH = 500; // un client onesto ne manda ~60-180 ogni 20-30s, mai a uno a uno
@@ -564,64 +565,9 @@ router.delete('/sessions/:id/like', requireAuth, async (req, res) => {
     }
 });
 
-// --- Badge conquistati da una traccia importata (richiesta dell'utente, 2026-07-27) ---
-//
-// "Importando la traccia dimostri di averlo gia' conquistato": e' vero, ed era un buco.
-// L'utente ha importato la sua salita al Corno Grande e il badge e' rimasto da conquistare,
-// perche' i timbri si sbloccavano SOLO col geofencing della Mappa (checkGeofencing in
-// public/js/map.js), che gira nel browser mentre si cammina. Una traccia importata non
-// passava da nessuna parte.
-//
-// La soglia (SOGLIA_TIMBRO_M), il catalogo dei punti (puntiTimbrabili) e la scansione di
-// una traccia stanno in lib/geofenceTimbri.js: la stessa regola serve qui, alla rotta
-// /peak-ascents piu' sotto e alla verifica di un timbro da mappa (routes/stamps.js, punto
-// 108). Prima del 2026-08-28 erano due copie a mano dentro questo file.
-
-// Restituisce i badge NUOVI conquistati dalla traccia, gia' salvati sul database.
-// Non solleva mai: un badge non assegnato e' un dispiacere, un'importazione fallita dopo
-// che la traccia e' gia' salvata sarebbe un guaio (l'utente ha consumato uno dei 5
-// caricamenti del mese e vede un errore).
-async function assegnaTimbriDallaTraccia(userId, punti, dataUscita) {
-    try {
-        const candidati = await puntiTimbrabili();
-        if (!candidati.length || !punti.length) return [];
-
-        // distanzaMinimaDaTraccia (lib/geofenceTimbri.js) fa una passata sola sui punti con
-        // una finestra in gradi larga quanto la soglia, cosi' anche una traccia da decine di
-        // migliaia di punti non diventa un calcolo pesante. Qui serve il minimo e non solo
-        // il si'/no: la distanza si mostra a schermo ("sei arrivato a Xm dalla cima").
-        const raggiunti = new Map();
-        for (const c of candidati) {
-            const minimo = distanzaMinimaDaTraccia(punti, c.lat, c.lng);
-            if (minimo <= SOGLIA_TIMBRO_M) raggiunti.set(c.stampId, { punto: c, distanzaM: Math.round(minimo) });
-        }
-        if (!raggiunti.size) return [];
-
-        // La DATA del timbro e' quella dell'ESCURSIONE, non quella del caricamento: chi
-        // importa nel 2026 una salita del 2024 l'ha conquistata nel 2024, e il passaporto
-        // ordina i timbri per data. Stesso formato "YYYY-MM-DD" usato da routes/stamps.js.
-        const giorno = dataUscita.toISOString().split('T')[0];
-
-        const gia = await Stamp.find({ userId, stampId: { $in: [...raggiunti.keys()] } }).select('stampId').lean();
-        const giaPresi = new Set(gia.map(s => s.stampId));
-
-        const nuovi = [];
-        for (const [stampId, info] of raggiunti) {
-            if (giaPresi.has(stampId)) continue;
-            try {
-                await Stamp.create({ userId, stampId, dateUnlocked: giorno });
-                nuovi.push({ stampId, nome: info.punto.nome, emoji: info.punto.emoji || '⛰️', distanzaM: info.distanzaM });
-            } catch (e) {
-                // 11000 = indice unico: il timbro e' comparso nel frattempo. Non e' un errore.
-                if (e.code !== 11000) throw e;
-            }
-        }
-        return nuovi;
-    } catch (e) {
-        console.error('Assegnazione timbri dalla traccia importata fallita:', e);
-        return [];
-    }
-}
+// assegnaTimbriDallaTraccia() e' in lib/geofenceTimbri.js (spostata il 2026-08-31, coda
+// punto 113): la usa anche il tasto ⬆ di routes/completions.js. La /import-gpx qui sotto
+// la chiama al termine dell'import.
 
 // --- PUNTO 42b: quante volte, non solo "se" ---
 //

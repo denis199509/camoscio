@@ -193,7 +193,10 @@ percorso" da una traccia altrui, escursione con i numeri presi da un percorso sa
     toglie la vecchia caption.
     3: GET /api/feed - solo le uscite pubblicate di chi segui, le TUE NON ci sono, MAI
     "points" ne' "offTrailBuffer" nel corpo, ordine per publishedAt desc, cursore ?before=,
-    likeCount/likedByMe in ogni item, feed vuoto per chi non segue nessuno.
+    likeCount/likedByMe in ogni item, e chi non segue A ne' B non vede NESSUNA delle uscite
+    di prova (NB 31/08/2026: non piu' "feed vuoto" - i 4 account demo ora seguono Denis
+    davvero sul DB condiviso, da una sua verifica del 30/08; si asserisce sui soli id di
+    prova, come gia' fatto per likeCount).
     4: guardia autore-o-follower su GET /sessions/:id/meta e /points - autore 200, follower
     200, estraneo su un'uscita PUBBLICATA 403, non-autore su un'uscita NON pubblicata 404
     (non 403: non si rivela che esiste); /points e' l'unica rotta con la geometria,
@@ -240,9 +243,9 @@ La prova del FIX 30/08/2026 (punto 113): il .gpx aggiunto a un'escursione GIA' c
 pubblicabile nel feed. Segnalato da Denis: "Alba Corno Grande" chiedeva un .gpx gia'
 caricato.
 
-    node prove/prova-punto113-gpx.js                35 controlli  (ne avvia uno suo, sulla 3115)
+    node prove/prova-punto113-gpx.js                43 controlli  (ne avvia uno suo, sulla 3115)
 
-    SEI SEZIONI, un account demo. Un hike completato SENZA sessione collegata (come "Alba
+    SETTE SEZIONI, un account demo. Un hike completato SENZA sessione collegata (come "Alba
     Corno Grande"), poi POST /api/completions/:id/gpx: 1) crea 1 ActiveHikeSession con
     hikeId != null, importedFrom:'gpx', status ended, points, movingTimeSec, NIENTE
     openSession, non pubblicata; 2) quella sessione e' pubblicabile (POST /sessions/:id/
@@ -260,6 +263,16 @@ caricato.
     = TITOLO dell'escursione (non una data nuda nel feed); PATCH /name rinomina; un
     ri-upload senza <name> NON tocca il nome scelto a mano; un ri-upload CON <name> lo
     sovrascrive (l'utente sta ricaricando quella traccia).
+    SEZ. 7 (coda punto 113, 2026-08-31): il ⬆ assegna anche i BADGE DI VETTA, come "Carica
+    un file .gpx" - assegnaTimbriDallaTraccia e' stata spostata da routes/tracking.js a
+    lib/geofenceTimbri.js (dove sono gia' puntiTimbrabili/distanzaMinimaDaTraccia) e ora la
+    chiama anche routes/completions.js. La prova crea un hike con una vetta di prova
+    (stampId marcato, nessun account vero ce l'ha) sul primo punto del gpx sintetico:
+    dopo il ⬆ la risposta porta il badge nuovo nel campo "badge", il timbro e' sul DB con
+    la DATA DELL'ESCURSIONE, e un ri-upload non fa doppioni. La controprova (codice prima
+    del 2026-08-31): il ⬆ non mette `badge` nella risposta. prova-punto108 (24/24) copre
+    l'equivalenza matematica del refactor: la scansione non e' cambiata, e' solo cambiata
+    di casa.
     NOTA non coperta da questa prova (e' il FILE, non il codice): se il .gpx ha buchi
     temporali/spaziali (registrazione "smart"/semplificata), movimentoSecAttendibile
     (punto 79) rifiuta lo split cammino/pause con "buchi non interpretabili" e si salva

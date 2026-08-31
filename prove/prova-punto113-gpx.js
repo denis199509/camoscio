@@ -14,10 +14,16 @@
 //    publishedAt/caption; importedName segue il nuovo file;
 //  - una sessione REGISTRATA DAL VIVO (importedFrom assente) NON viene toccata dal ⬆;
 //  - il tetto mensile delle importazioni (/import-gpx) NON conta le sessioni con hikeId:
-//    quel tetto e' per le uscite a se' (hikeId:null).
+//    quel tetto e' per le uscite a se' (hikeId:null);
+//  - sez. 6 (punto 115): il nome della traccia collegata;
+//  - sez. 7 (coda punto 113, 2026-08-31): il ⬆ assegna anche i badge di vetta, come
+//    "Carica un file .gpx" - assegnaTimbriDallaTraccia spostata in lib/geofenceTimbri.js
+//    e richiamata da routes/completions.js; il badge nuovo torna nel campo "badge" della
+//    risposta e un ri-upload non crea doppioni.
 //
 // CONTROPROVA: la stessa prova sul codice PRIMA del fix (git worktree su 37650c8) fa
 // cadere le sezioni 2-4 (nessuna sessione creata dal ⬆, quindi niente da pubblicare).
+// Per la sez. 7, il codice prima del 2026-08-31 non passa `badge` nella risposta del ⬆.
 // Dettaglio ed esito in LEGGIMI-PROVE.txt.
 //
 // Lanciarla:  node prove/prova-punto113-gpx.js   (avvia un server suo sulla 3115)
@@ -80,12 +86,14 @@ function gpxSenzaNome(giornoIso) {
     const hikes = mongoose.connection.collection('hikes');
     const comps = mongoose.connection.collection('completions');
     const sessions = mongoose.connection.collection('activehikesessions');
+    const stamps = mongoose.connection.collection('stamps'); // sez. 7: badge di vetta dal ⬆
     const oid = s => new mongoose.Types.ObjectId(s);
 
     const partenza = {
         hikes: await hikes.countDocuments(),
         completions: await comps.countDocuments(),
-        sessioni: await sessions.countDocuments()
+        sessioni: await sessions.countDocuments(),
+        timbri: await stamps.countDocuments()
     };
     console.log('Conteggi di partenza:', partenza, '\n');
 
@@ -220,6 +228,45 @@ function gpxSenzaNome(giornoIso) {
         S6 = await sessions.findOne({ _id: S6._id });
         ok('6d  il <name> del nuovo file vince sul nome vecchio', S6.importedName === MARCA + ' dal file', S6.importedName);
 
+        // === 7. Coda punto 113 (2026-08-31): il ⬆ assegna i badge di vetta come /import-gpx ===
+        console.log('\n7. Il .gpx del ⬆ assegna i badge di vetta (assegnaTimbriDallaTraccia spostata in lib/geofenceTimbri.js)');
+        const stampProva = MARCA + '-cima';
+        // Una vetta di prova ESATTAMENTE sul primo punto del gpx sintetico (42.4686 /
+        // 13.5644): puntiTimbrabili() la raccoglie dai `peaks` degli hike sul DB, e nessun
+        // account reale ha questo stampId - cosi' la prova non dipende da quali badge ha
+        // gia' il demo e non sfiora nessun timbro vero.
+        const h7 = await hikes.insertOne({
+            title: MARCA + ' cima', description: 'x', difficulty: 'Esperto', date: '2026-08-01',
+            creatorId: oid(idA), participants: [oid(idA)], pendingApproval: [],
+            distanceKm: 10, elevationGain: 900, maxAltitude: 2912,
+            location: { type: 'Point', coordinates: [13.5644, 42.4686] },
+            trailhead: { lat: 42.4686, lng: 13.5644, name: MARCA },
+            peaks: [{ stampId: stampProva, name: MARCA + ' Cima di prova', lat: 42.4686, lng: 13.5644 }]
+        });
+        hikeIdsCreati.push(h7.insertedId);
+        const c7 = await comps.insertOne({ userId: oid(idA), hikeId: h7.insertedId, dateCompleted: new Date('2026-08-02') });
+        const CID7 = c7.insertedId.toString();
+
+        ok('7  setup: A non ha ancora il timbro di prova',
+            await stamps.countDocuments({ userId: oid(idA), stampId: stampProva }) === 0);
+
+        const u7 = await chiama('POST', `/api/completions/${CID7}/gpx`, { gpxText: gpx(MARCA + '-cima', '2026-08-02') }, cookieA);
+        ok('7  POST /:id/gpx -> 200', u7.status === 200, JSON.stringify(u7.corpo && u7.corpo.error));
+        ok('7  la risposta porta il badge nuovo nel campo "badge"',
+            Array.isArray(u7.corpo && u7.corpo.badge) && u7.corpo.badge.some(b => b.stampId === stampProva),
+            JSON.stringify(u7.corpo && u7.corpo.badge));
+        ok('7  il timbro e\' sul DB con la data dell\'ESCURSIONE (2026-08-02, non quella del caricamento)',
+            await stamps.countDocuments({ userId: oid(idA), stampId: stampProva, dateUnlocked: '2026-08-02' }) === 1);
+
+        // 7b - ri-upload: nessun badge NUOVO (gia' preso), nessun doppione
+        const u7b = await chiama('POST', `/api/completions/${CID7}/gpx`, { gpxText: gpx(MARCA + '-cima2', '2026-08-02') }, cookieA);
+        ok('7b  ri-upload -> 200', u7b.status === 200);
+        ok('7b  nessun badge NUOVO nella risposta (era gia\' preso)',
+            Array.isArray(u7b.corpo && u7b.corpo.badge) && u7b.corpo.badge.length === 0,
+            JSON.stringify(u7b.corpo && u7b.corpo.badge));
+        ok('7b  sempre 1 solo timbro (nessun doppione)',
+            await stamps.countDocuments({ userId: oid(idA), stampId: stampProva }) === 1);
+
     } catch (e) {
         console.error('\nERRORE DELLA PROVA:', e);
         falliti++; fallimenti.push('la prova stessa e\' andata in errore: ' + e.message);
@@ -231,16 +278,20 @@ function gpxSenzaNome(giornoIso) {
             await hikes.deleteOne({ _id: hid }).catch(() => {});
         }
         await sessions.deleteMany({ importedName: new RegExp('^' + MARCA) }).catch(() => {});
+        // Sez. 7: il timbro nasce con stampId marcato (MARCA), nessun dato vero combacia.
+        await stamps.deleteMany({ stampId: new RegExp('^' + MARCA) }).catch(() => {});
 
         const fine = {
             hikes: await hikes.countDocuments(),
             completions: await comps.countDocuments(),
-            sessioni: await sessions.countDocuments()
+            sessioni: await sessions.countDocuments(),
+            timbri: await stamps.countDocuments()
         };
         console.log('\nConteggi finali:', fine);
         ok('nessuna escursione di prova rimasta', fine.hikes === partenza.hikes, `${partenza.hikes} -> ${fine.hikes}`);
         ok('nessun completamento di prova rimasto', fine.completions === partenza.completions, `${partenza.completions} -> ${fine.completions}`);
         ok('nessuna sessione di prova rimasta', fine.sessioni === partenza.sessioni, `${partenza.sessioni} -> ${fine.sessioni}`);
+        ok('nessun timbro di prova rimasto', fine.timbri === partenza.timbri, `${partenza.timbri} -> ${fine.timbri}`);
 
         await mongoose.disconnect();
         console.log(`\n=== ${passati} passati, ${falliti} falliti ===`);

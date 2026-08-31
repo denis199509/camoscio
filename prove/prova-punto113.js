@@ -237,7 +237,14 @@ function tracciaFinta(n, conQuote) {
             JSON.stringify(mieiItem.map(i => ({ id: i.id, lc: i.likeCount, lbm: i.likedByMe }))));
 
         const feedC = await chiama('GET', '/api/feed', null, cookieC);
-        ok('C non segue nessuno -> feed vuoto', feedC.status === 200 && feedC.corpo.items.length === 0, JSON.stringify(feedC.corpo));
+        // C non segue A ne' B (gli account di prova), quindi non deve vedere nessuna delle
+        // uscite pubblicate qui. NON si asserisce "feed vuoto": C e' un account demo che sul
+        // DB condiviso puo' seguire persone VERE (es. Denis) e vederne le uscite - stessa
+        // cautela gia' applicata a `mieiItem` qui sopra per likeCount.
+        const idsFeedC = (feedC.corpo.items || []).map(i => i.id);
+        ok('C (non segue A ne\' B) non vede nel feed nessuna uscita di prova',
+            feedC.status === 200 && ![sB1.id, sB2.id, sA1.id].some(id => idsFeedC.includes(id)),
+            JSON.stringify(idsFeedC));
 
         // cursore: ?before = publishedAt della prima -> torna solo la piu' vecchia
         const primaPub = feedA.corpo.items[0].publishedAt;

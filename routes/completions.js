@@ -10,6 +10,7 @@ const { haversineKm, simplifyTrack } = require('../lib/geometry');
 const { movimentoSecAttendibile } = require('../lib/gpx');
 const { calcolaDaPercorso } = require('../lib/percorso');
 const { recalculateAndApplyPace } = require('../lib/hikeStats');
+const { assegnaTimbriDallaTraccia } = require('../lib/geofenceTimbri'); // coda punto 113: il ⬆ assegna i badge di vetta come /import-gpx
 
 // Ottieni le escursioni già segnate come completate da un utente
 router.get('/:userId', requireAuth, async (req, res) => {
@@ -156,6 +157,19 @@ router.post('/:id/gpx', requireAuth, async (req, res) => {
             console.error('Traccia non salvata come sessione (gli orari sono comunque stati aggiornati):', e);
         }
 
+        // Coda punto 113 (2026-08-31): come /import-gpx, la traccia caricata col ⬆ assegna i
+        // badge di vetta se e' passata entro SOGLIA_TIMBRO_M da un punto del catalogo. Si
+        // guardano i punti COMPLETI (letto.punti), non quelli semplificati - su una vetta
+        // contano i metri. Indipendente dal ramo qui sopra: il badge e' dovuto anche se la
+        // sessione collegata era gia' registrata dal vivo e non si e' toccata.
+        // assegnaTimbriDallaTraccia non solleva mai; il try qui e' solo cintura in piu'.
+        let timbri = [];
+        try {
+            timbri = await assegnaTimbriDallaTraccia(completion.userId, letto.punti, letto.inizio);
+        } catch (e) {
+            console.error('Assegnazione badge dal .gpx del completamento fallita (il tempo e\' comunque salvato):', e);
+        }
+
         const user = await User.findById(req.session.userId);
         if (!user) {
             return res.status(404).json({ error: 'Utente non trovato' });
@@ -168,7 +182,7 @@ router.post('/:id/gpx', requireAuth, async (req, res) => {
         await recalculateAndApplyPace(user);
 
         const completionAggiornato = await Completion.findById(completion._id);
-        res.json({ completion: completionAggiornato, user, avvisi });
+        res.json({ completion: completionAggiornato, user, avvisi, badge: timbri });
     } catch (e) {
         console.error('Errore aggiunta gpx al completamento:', e);
         res.status(400).json({ error: 'Impossibile aggiungere il file a questa escursione.' });

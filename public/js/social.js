@@ -1165,6 +1165,15 @@ window.uploadCompletionGpx = function(completionId) {
                 const avviso = (dati.avvisi || []).length ? ` (${dati.avvisi[0]})` : '';
                 window.showToast(`${T('hikeToast.tempoRealeAggiunto') || 'Tempo reale aggiunto'}${avviso}.`, 'success');
             }
+            // Coda punto 113: il ⬆ ora assegna anche i badge di vetta (come "Carica un file
+            // .gpx"). Se ne sono arrivati, un secondo toast - stesse chiavi di storico.js.
+            if (window.showToast && (dati.badge || []).length) {
+                const nomi = dati.badge.map(b => `${b.emoji || '⛰️'} ${b.nome}`).join(' · ');
+                const etichetta = dati.badge.length === 1
+                    ? (T('gpx.badgeConquistato') || 'Badge conquistato')
+                    : (T('gpx.badgeConquistati') || 'Badge conquistati');
+                window.showToast(`${etichetta}: ${nomi}`, 'success');
+            }
             await refreshState();
             renderHikesList();
             // Punto 113 fix: il .gpx ora crea anche la traccia collegata -> "Le mie
