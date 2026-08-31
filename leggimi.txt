@@ -1,78 +1,72 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-31 (quindicesima sessione).
+Aggiornato: 2026-08-31 (sedicesima sessione — iniziata la REVISIONE UX,
+tutto in LOCALE).
 
->>> NIENTE IN CORSO. Tutto pushato e in produzione (Render redeploy
-    automatico ai push).
+>>> LAVORO IN CORSO: revisione UX del sito ("Camoscio v2"). Si lavora
+    ESCLUSIVAMENTE IN LOCALE sul branch `v2-ux`, un blocco alla volta.
+    NIENTE push, NIENTE deploy: Denis manda online solo quando l'intera
+    v2 lo convince ("quando vedo che stiamo per finire mando online").
+    `master` resta intatto = la produzione attuale.
+    Metodo concordato: per ogni blocco approvato -> UN commit vero
+    `V2 UX PASSO n: ...` su `v2-ux` (locale). Alla fine: merge su
+    `master` + push. L'hook di auto-save committa comunque sul branch;
+    va rifuso in un commit vero (git reset --soft) prima di ogni tappa.
 
->>> LA PROSSIMA SESSIONE SI PARTE DALLA REVISIONE UX (deciso da Denis a
-    fine 15a sessione: "nella prossima sessione passiamo al aggiornamento
-    ux"). Un amico ha valutato il sito - giudizio buono, ma "User
-    Experience" poco intuitiva. NON iniziata, nessun dettaglio concordato:
-    a inizio sessione chiedere a Denis i consigli dell'amico e da dove
-    vuole partire, PRIMA di proporre modifiche. Dentro ci ricadono i
-    titoli di sezione lunghi troncati su telefono (ex "punto 106
-    residuo") - non toccarli a pezzi. Dettaglio in vault 04-Da-Fare
-    ("PROSSIMO GRANDE LAVORO - revisione UX").
+>>> FATTO su `v2-ux` (2 commit, NON pushati):
+  - `7915762` PASSO 1 — apertura Dashboard contestuale. Via la scheda
+    "Benvenuto" + le 3 statistiche; nuovo header .dash-hero (fuori dalla
+    .dashboard-grid): "Ciao [Nome] 👋" + sottotitolo contestuale +
+    [🥾 Trova un'escursione] (-> sez. #hikes) [🗺️ Esplora] (-> #map-section).
+    Titolo sez. escursioni "Esplora Escursioni di Gruppo" -> "Escursioni
+    di Gruppo". renderDashboard non scrive piu' i 3 nodi statistica
+    (renderDashHero al loro posto). Elementi riempiti da JS: MAI data-i18n
+    (applyStaticTranslations li riazzera al cambio lingua) - trappola in
+    vault 07.
+  - `48fb101` PASSO 2 (Fase 2) — card "La tua prossima avventura". La
+    riga segnaposto diventa la card vera: titolo, giorno+data+conto alla
+    rovescia (oggi/domani/fra N giorni), i 3 numeri SOLO se presenti,
+    "da <trailhead>" se c'e', "👥 N partecipanti", [Apri escursione ->].
+    Compare solo con un'escursione CONFERMATA in programma (prossimaAvventura:
+    creata da me o dove sono in participants — NON pendingApproval).
+    Senza -> stato invariato (saluto + 2 pulsanti). Numeri con
+    toLocaleString(loc,{useGrouping:true}): l'italiano da solo non
+    raggruppa le 4 cifre di una quota/dislivello (deviazione dal piano
+    di Fase 2, accettata).
 
-  ULTIMO LAVORO — QUATTRO RIFINITURE, chiuse e in produzione il 31/08
-  (push 57697ac..152fb7a su camoscio/master, 2 commit).
+  Verificato in locale (demo, escursioni di prova SOLO in memoria del
+  browser — window.CamoscioState.hikes.push + renderDashboard, MAI su DB):
+  tutti gli stati, IT<->EN + toggle, console pulita, le 3 schede sotto
+  invariate. Screenshot passati a Denis.
 
-  1. "Pubblica nel feed" si spezzava su card strette (commit fbf340a):
-     .outing-card-actions ora flex-wrap + i bottoni white-space:nowrap.
-  2. Due date nella card del feed (commit fbf340a): la riga autore ha
-     gia' la data di pubblicazione. schedaUscitaProfilo prende
-     {perFeed, dataUscitaDiversa}: nel feed il titolo senza nome e'
-     "Uscita"/"Outing" e la data compare SOLO se l'escursione e' di un
-     altro giorno (giorno di calendario). Chiave EN feed.uscitaSenzaNome.
-     Verificato dal vivo (demo Marco): post di Denis ok, console pulita.
-  3. Punto 115 residuo (commit fbf340a): sulla card "escursione
-     completata" con traccia collegata, se la traccia e' stata
-     RINOMINATA con la matita e' quel nome a fare da titolo (titolo
-     escursione sulla riga della data). Se i nomi COINCIDONO (default)
-     la card e' identica a prima. schedaEscursioneCompletata prende
-     {nomeUscita} da storico.js. NON verificato dal vivo il ramo
-     rinominato (nessun demo ce l'ha) - da guardare sul telefono.
-  4. Coda punto 113 (commit 152fb7a): il ⬆ su un'escursione completata
-     assegna i BADGE DI VETTA come /import-gpx. assegnaTimbriDallaTraccia
-     spostata VERBATIM da routes/tracking.js a lib/geofenceTimbri.js
-     (equivalenza: prova-punto108 24/24). routes/completions.js la
-     chiama sui punti COMPLETI, badge nuovi nel campo "badge" della
-     risposta; social.js mostra un toast. prova-punto113-gpx sez.7 nuova
-     (35->43), prova-punto92 84/84, prova-punto113 103/103 (corretta
-     un'asserzione fragile: i 4 demo seguono Denis davvero sul DB).
+>>> DA DOVE SI RIPARTE: Denis sta facendo prove in locale sulla v2
+    (branch `v2-ux`, server con `avvia.bat`). Alla ripresa: sentire il
+    suo riscontro su PASSO 1/2, poi concordare il blocco successivo.
+    Candidati: altri stati contestuali della Dashboard (escursione appena
+    conclusa, obiettivo in avvicinamento); il riequilibrio della
+    .dashboard-grid sotto l'header (ora colonna sx = solo Passaporto);
+    un'altra sezione del sito. Restano nella revisione UX i titoli di
+    sezione lunghi troncati su telefono (ex "punto 106 residuo") - non
+    a pezzi.
 
-  DECISIONI DI DENIS in questa sessione (NON riproporre):
-  - togliere+rimettere "mi piace" -> seconda notifica all'autore:
-    LASCIATO com'e' (raro, innocuo; un flag costerebbe un campo).
-  - titoli di sezione lunghi (punto 106): RIMANDATI alla revisione UX.
+>>> DOVE STA IL DETTAGLIO: il piano del blocco corrente in
+    C:\Users\lenovo\.claude\plans\melodic-scribbling-cray.md (Fase 2).
+    Revisione UX in vault 04-Da-Fare ("PROSSIMO GRANDE LAVORO"); decisioni
+    in vault 03 ("Camoscio v2 — revisione UX della Dashboard"); trappola
+    data-i18n in vault 07; parole di Denis in cose_da_fare.txt
+    ("SEDICESIMA SESSIONE"); racconto nel vault 06.
 
-  Dettaglio: cose_da_fare.txt "QUINDICESIMA SESSIONE"; decisioni nel
-  vault 03 "Coda punto 113: badge dal ⬆"; racconto nel vault 06;
-  prove/LEGGIMI-PROVE.txt (sez.7 di prova-punto113-gpx).
-
->>> GIA' IN PRODUZIONE (14a sessione, 30/08, push a2a53a5..0d0ecc3):
-    PUNTO 114 import file .fit (lib/fit.js, parseFit stessa forma di
-    parseGpx; dep fit-file-parser@5.0.2). PUNTO 115 nome dell'uscita
-    modificabile (ActiveHikeSession.importedName editabile, PATCH
-    /sessions/:id/name). Compressione icone badge (46->8,8 MB,
-    scripts/comprimi-badge.js). Verifica dal vivo permesso GPS + coda
-    A/B/C (guida GPS per PC; activeHikeId senza default globale; selettore
-    escursione nello Zaino). Smartwatch (Garmin/Suunto/Amazfit): valutato
-    e SCARTATO - non riproporre "colleghiamo Garmin".
+>>> GIA' IN PRODUZIONE (fino alla 15a sessione, su `master`,
+    8d6990c): traduzione IT/EN (punto 102), timbri con traccia reale
+    (108), moderazione segnalazioni sentiero (111), parte social —
+    Segui/Feed/"mi piace"/"crea percorso" (113), import .fit (114), nome
+    uscita editabile (115), + 4 rifiniture del 31/08. Dettaglio:
+    cose_da_fare.txt, vault 03/06/07.
     >>> LIMITE .fit/.gpx, e' il FILE non il codice: un file "smart" (o da
         Garmin Connect) ha buchi -> niente split cammino/pause. Serve 1 Hz.
-        Distanza/dislivello/durata totale/badge: sempre giusti.
     >>> DENIS DEVE RICARICARE il .gpx/.fit col ⬆ per le escursioni gia'
         fatte che vuole pubblicare (l'originale non era stato conservato).
-    NON fatto dalla compressione icone: sgonfiare il .git da 89 MB (git
-    filter-repo, delicato su repo pubblico); WebP; alleggerire lucide.js.
-
->>> GIA' IN PRODUZIONE (sessioni precedenti): Punto 113 (parte social:
-    Segui, Feed, uscita apribile, "mi piace", "crea percorso"); Punto 111
-    (segnalazioni sentiero: "risolvi" e scadenza a 90gg passano dal
-    moderatore); Punto 108 (un timbro richiede una traccia reale entro la
-    soglia). Dettaglio: cose_da_fare.txt punti 113/111/108, vault 03/06/07.
+    >>> Smartwatch (Garmin/Suunto/Amazfit): valutato e SCARTATO.
 
 >>> ALTRE APERTE, non urgenti (dettaglio in vault 04-Da-Fare.md):
     livelli ORIGINALI del punto 63b (gradini per la ZONA dichiarata a
@@ -83,9 +77,8 @@ Aggiornato: 2026-08-31 (quindicesima sessione).
 >>> RESTA VALIDO:
   - Hook "Stop" di auto-save: commit locale (MAI push) a fine di ogni
     risposta se ci sono modifiche non salvate in questo repo. Va rifuso
-    in un commit vero prima di ogni push (git reset --soft sull'ultimo
-    commit vero se gli auto-save sono piu' di uno) - fatto per i passi
-    7-10 (b7afa35, reset --soft 629476f sui 4 auto-save).
+    in un commit vero prima di ogni push/tappa (git reset --soft
+    sull'ultimo commit vero se gli auto-save sono piu' di uno).
   - Traduzione IT/EN (punto 102, CHIUSO): resta ITALIANO di proposito
     tutto il testo scritto dagli utenti (didascalie del feed comprese),
     i nomi propri di luogo, i nomi dei percorsi salvati e l'etichetta
@@ -93,12 +86,7 @@ Aggiornato: 2026-08-31 (quindicesima sessione).
     dei badge (punto 112), il testo delle notifiche (lo genera il
     server), il segnaposto nativo di <input type=date>/<input type=file>,
     e componiRapporto() dentro diagnostica-gps.html. Le chiavi EN dei
-    punti 113/114/115 sono state aggiunte tutte. Restano IT anche i NOMI
-    delle uscite (punto 115: li scrive l'utente).
-  - Punti 102, 108, 111, 112, 113, 114, 115 CHIUSI E IN PRODUZIONE
-    (+ le 4 rifiniture del 31/08). Il punto 106 e' chiuso per la parte
-    fatta il 28/08; il residuo (titoli sezione lunghi) e' nella revisione
-    UX. Il ⬆ ora assegna i badge di vetta (coda 113).
+    blocchi v2 UX si aggiungono mano a mano (scelta di Denis).
 
 ===================================================================
 

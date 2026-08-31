@@ -8197,3 +8197,217 @@ UX"); ci ricadono dentro i titoli di sezione lunghi.
 Decisioni in ../camoscio memoria/03-Decisioni-Architetturali.md "Coda
 punto 113: badge dal ⬆"; racconto in
 ../camoscio memoria/06-Cronologia-Sessioni.md "Quindicesima sessione".
+
+
+=====================================================================
+SEDICESIMA SESSIONE (31/08/2026) - inizio REVISIONE UX ("Camoscio v2"),
+tutta in locale, un blocco alla volta
+=====================================================================
+
+Denis: "Pronto per aggiornamento ux? ho preparato gia le informazioni.
+bisogna prima fare un bel piano".
+
+Poi il quadro completo, parole sue:
+
+  "Questa parte del progetto la facciamo esclusivamente in local. Una
+  volta finita se soddisfacente penseremmo a mandarla online. (Camoscio
+  v2)
+
+  Perfetto. Facciamo un passo alla volta, senza saltare subito a colori,
+  animazioni o codice. Partiamo solo dal primo elemento della dashboard.
+  Quando questo ci convince, passiamo al secondo."
+
+  [piu' avanti, sui commit:] "oggi abbiamo fatto solo la parte dashboard,
+  nei prossimi giorni faremo lavori del genere su tutto il sito. per
+  quello lo voglio in locale. quando vedo che stiamo per finire mando
+  online." - "me ne occupo io, non e' lavoro tuo" (sulla gestione git).
+
+METODO CONCORDATO (dettaglio in ../camoscio memoria/04-Da-Fare.md
+"PROSSIMO GRANDE LAVORO" e /03 "Camoscio v2"):
+- branch v2-ux, SOLO LOCALE, un blocco alla volta
+- master resta la produzione (8d6990c), intatto
+- un commit vero per blocco approvato (V2 UX PASSO n: ...)
+- niente push / niente deploy: si manda online l'INTERA v2 quando lo
+  decide Denis, con un merge v2-ux -> master
+- prima il piano (EnterPlanMode/ExitPlanMode), ambiguita' chiuse con
+  AskUserQuestion, poi il codice
+- verifica in locale con escursioni di prova SOLO in memoria del browser
+  (window.CamoscioState.hikes.push + renderDashboard), mai sul DB Atlas
+
+
+--- PASSO 1: apertura della Dashboard ---
+
+Spec di Denis (con mockup ASCII). Sintesi con parole sue:
+
+  "La prima cosa che voglio cambiare e' cosa vede l'utente nei primi 3
+  secondi. Attualmente la dashboard cerca di mostrare subito molte
+  informazioni. Io invece voglio che Camoscio dia una sensazione molto
+  piu' semplice: 'Sono entrato su Camoscio. Sono qui per andare in
+  montagna.'"
+
+  Parte superiore immaginata:
+    Ciao Denis 👋
+    Pronto per la prossima avventura?
+    [ 🥾 Trova escursione ]   [ 🗺️ Esplora ]
+
+  "Perche' partirei proprio da qui? Perche' non voglio che la dashboard
+  inizi con le statistiche. [...] La domanda principale dovrebbe essere:
+  'Cosa faccio adesso?'"
+
+  Saluto: "Non deve essere: 'Benvenuto nella tua dashboard personale di
+  Camoscio, Denis.' Troppo software. Semplicemente: 'Ciao Denis 👋'".
+  Sotto una frase che cambia col contesto ("Pronto per la prossima
+  avventura?" / "Quale sara' la tua prossima vetta?" / "La montagna ti
+  aspetta.").
+
+  "🥾 Il primo pulsante 'Trova un'escursione'. Questo e' il pulsante che
+  considero piu' importante. NON: 'Crea escursione'. Perche' non tutti
+  vogliono creare un'escursione. Un nuovo utente probabilmente vuole
+  prima vedere cosa puo' fare." -> porta alla sezione delle escursioni
+  disponibili (data / zona / difficolta' / distanza / dislivello si
+  filtrano LI', non in dashboard).
+
+  "🗺️ Il secondo pulsante 'Esplora'. [...] Significa: 'Fammi vedere cosa
+  c'e' la' fuori.' Da li' puoi esplorare: Vette, Rifugi, Mappa, Luoghi.
+  Trova escursione -> voglio partecipare a qualcosa. Esplora -> voglio
+  guardare/scoprire."
+
+  "Cosa NON metterei qui: statistiche, badge, feed, meteo, sicurezza,
+  carpooling, zaino, persone, squadre. Non ancora. Questa parte deve
+  respirare."
+
+  "La parte importante e' la gerarchia. Voglio che quando apro Camoscio,
+  prima ancora di leggere le statistiche o guardare il feed, il mio
+  occhio vada naturalmente su: Ciao -> prossima avventura -> cosa posso
+  fare."
+
+DECISIONI (chiuse con AskUserQuestion prima di scrivere):
+- le 3 statistiche della vecchia scheda "Benvenuto" (Escursioni fatte /
+  Timbri / Reputazione) -> TOLTE ORA
+- "Esplora" -> porta a #map-section (la Mappa attuale) cosi' com'e'; un
+  hub "Esplora" vero con elenchi = fase futura
+- riga prossima escursione nel PASSO 1 -> sottotitolo contestuale + una
+  riga compatta (la card completa e' la Fase 2)
+- i due pulsanti RESTANO anche con una prossima escursione (sotto la card)
+- chiavi EN da subito (prassi punto 102)
+- titolo sezione escursioni "Esplora Escursioni di Gruppo" -> "Escursioni
+  di Gruppo" (via il secondo "esplora")
+- lavoro su branch v2-ux
+
+FATTO (commit 7915762 su v2-ux, NON pushato):
+- index.html: via .glass-card.welcome-card; nuovo <header class="dash-hero">
+  fuori da .dashboard-grid (#dash-hero-greet h2, #dash-hero-sub p, la riga
+  #dash-hero-next nascosta, .dash-hero-actions coi due .btn-nav-trigger)
+- app.js: renderDashboard() non scrive piu' i 3 nodi statistica (senza
+  toccare il JS, rimuoverli dall'HTML rompeva l'intera Dashboard: nessuna
+  guardia null); nuove renderDashHero(usr) e prossimaEscursione() (riusa
+  classificaMieEscursioni, NON escursioneDiRiferimento dello Zaino)
+- i18n.js: -5 chiavi orfane (dash.benvenuto/sottotitolo/stat*), +5 EN
+  (saluto a funzione, 2 sottotitoli, 2 pulsanti), hikes.esplora ->
+  "Group Hikes"
+- styles.css: regole .dash-hero* (solo struttura: clamp() al posto di una
+  @media, flex-wrap + flex:1 1 200px per lo stack mobile senza
+  breakpoint); tolti i selettori orfani .q-stat/.q-val/.q-lbl/
+  .quick-stats-row/.welcome-card (con cura: .q-stat era in una regola
+  condivisa con .total-box/.pace-row che restano); commenti che citavano
+  elementi spariti corretti
+
+TROVATO E CORRETTO PROVANDO DAL VIVO: al cambio lingua il saluto perdeva
+il nome. Causa: #dash-hero-greet/#dash-hero-sub avevano data-i18n, e
+applyStaticTranslations li riportava al testo statico DOPO renderDashHero.
+Tolto il data-i18n da quei due (li scrive sempre e solo il JS, come
+#dash-totals-note). Trappola in ../camoscio memoria/07-Trappole-Tecniche.md.
+
+Commit: l'auto-save aveva gia' committato (e0f0dac "Auto-save..."), poi
+git commit --amend per il messaggio vero (un solo auto-save sopra master
+-> basta l'amend). Denis ha chiesto cosa fosse l'amend prima dell'ok.
+
+
+--- FASE 2: card "La tua prossima avventura" ---
+
+Spec di Denis (secondo mockup ASCII):
+
+  "Se l'utente ha gia' un'escursione programmata, la dashboard deve
+  cambiare. [...] E questa diventerebbe la cosa principale della
+  dashboard."
+
+    ┌──────────────────────────────────────────┐
+    │ 🥾 CORNO GRANDE                          │
+    │ Domenica 6 settembre                     │
+    │ 2.912 m · 14 km · +1.240 m               │
+    │ 👥 6 partecipanti                        │
+    │        [ Apri escursione → ]             │
+    └──────────────────────────────────────────┘
+
+  "Quindi la dashboard non e' statica. Se non hai niente: 'Cosa facciamo
+  oggi?' Se hai un'escursione: 'Ecco la tua prossima avventura.' [...]
+  La dashboard deve essere contestuale. [...] E cambiare leggermente il
+  contenuto principale [a seconda che l'utente sia] appena arrivato / non
+  ha ancora organizzato niente / ha un'escursione imminente / ha appena
+  concluso un'escursione / sta raggiungendo un obiettivo."
+
+DECISIONI (chiuse con AskUserQuestion):
+- conto alla rovescia accanto alla data (oggi / domani / fra N giorni)
+  -> SI (non era nel mockup; rafforza "escursione imminente")
+- punto di partenza "da <trailhead.name>" quando c'e' -> SI
+- numeri mancanti (quota/distanza/dislivello sono tutti opzionali nello
+  schema) -> mostra SOLO quelli presenti (regola "mai un numero finto
+  senza dati veri", punto 85)
+- "prossima avventura" = SOLO CONFERMATE: creata da me o gia' in
+  participants; NON le richieste ancora in pendingApproval. Definizione
+  piu' stretta per la card (prossimaEscursione del PASSO 1 -> sostituita
+  da prossimaAvventura)
+
+FATTO (commit 48fb101 su v2-ux, NON pushato):
+- index.html: <button #dash-hero-next> -> <div #dash-hero-adventure>
+  (titolo h3, riga "quando", riga numeri e riga "da" che nascono .hidden,
+  piede con conteggio partecipanti + <button #dash-hero-adventure-open>);
+  solo il bottone ha data-i18n
+- app.js: prossimaEscursione() -> prossimaAvventura(usr) (create +
+  partecipo filtrati a h.participants.includes(usr.id)); nuovo
+  giorniAllaData(dateStr) (giorni interi ancorati a mezzogiorno, come
+  backpack.js); renderDashHero popola la card - data con
+  toLocaleDateString(loc,{weekday,day,month}) + prima lettera maiuscola,
+  numeri con toLocaleString(loc,{useGrouping:true})
+- i18n.js: +6 chiavi EN (avventuraApri; oggi/domani/fra N giorni; da;
+  partecipanti - le ultime 3 a funzione)
+- styles.css: regole .dash-hero-adv* (solo struttura: riusa la scatola di
+  #dash-hero-next, piede in flex space-between + wrap); tolte le
+  .dash-hero-next*
+
+DEVIAZIONE DAL PIANO, accettata: il piano diceva toLocaleString(loc)
+"come renderTrackingTotals", ma l'italiano NON raggruppa i numeri a 4
+cifre ((2912).toLocaleString('it-IT') = "2912"), e quota/dislivello di
+una singola escursione stanno quasi sempre li'. Aggiunto {useGrouping:true}
+per rendere "2.912" come nel mockup. Segnalato a Denis.
+
+VERIFICATO in locale (demo Marco, escursioni di prova solo in memoria del
+browser): card completa / numeri parziali / senza numeri / senza
+trailhead / conto alla rovescia oggi-domani-fra N / solo-pendingApproval
+-> card NASCOSTA / la piu' vicina fra due mie / bottone -> #hike-page /
+IT<->EN + toggle / console pulita / le 3 schede sotto invariate.
+Screenshot IT ed EN passati a Denis.
+
+
+--- CHIUSURA SESSIONE ---
+
+Denis: "per adesso lasciamo cosi, faccio delle prove. Tu intanto salva
+tutto, aggiorna i file necessari. Prepara il lavoro per poterlo
+riprendere nella prossima sessione."
+
+Stato: v2-ux = 2 commit (7915762, 48fb101), working tree pulito, NIENTE
+pushato (fase locale). master intatto a 8d6990c. Denis sta facendo prove
+in locale (avvia.bat).
+
+DA DOVE SI RIPARTE: sentire il riscontro di Denis su PASSO 1/2, poi
+concordare il blocco successivo. Candidati: gli altri stati contestuali
+della Dashboard che Denis ha elencato (escursione appena conclusa,
+obiettivo in avvicinamento); il riequilibrio della .dashboard-grid sotto
+l'header (ora colonna sx = solo Passaporto); un'altra sezione del sito.
+Restano nella revisione UX i titoli di sezione lunghi troncati su
+telefono (ex "punto 106 residuo") - non a pezzi.
+
+Il piano del blocco corrente:
+C:\Users\lenovo\.claude\plans\melodic-scribbling-cray.md (Fase 2).
+Racconto in ../camoscio memoria/06-Cronologia-Sessioni.md "Sedicesima
+sessione"; decisioni in /03 "Camoscio v2 - revisione UX della Dashboard".
