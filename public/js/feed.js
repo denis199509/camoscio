@@ -109,7 +109,16 @@ function schedaFeed(item) {
 
     // Corpo: la stessa card compatta di "Le mie escursioni" e del profilo (km / dislivello /
     // durata + badge registrata/importata).
-    const cardStats = window.CamoscioSchedeCompatte.uscita(item, {});
+    // La riga autore qui sopra ha gia' la data di PUBBLICAZIONE: la card mostra la data
+    // dell'ESCURSIONE solo se e' un altro giorno (es. oggi si pubblica un'uscita di
+    // luglio) - li' l'informazione serve, altrimenti erano due date uguali una sotto
+    // l'altra. Confronto per giorno di calendario, non per istante.
+    const gUscita = new Date(item.startedAt);
+    const gPubbl = new Date(item.publishedAt || item.startedAt);
+    const dataUscitaDiversa = (!isNaN(gUscita) && gUscita.toDateString() !== gPubbl.toDateString())
+        ? formattaData(item.startedAt)
+        : null;
+    const cardStats = window.CamoscioSchedeCompatte.uscita(item, { perFeed: true, dataUscitaDiversa });
 
     // Passo 7: "mi piace" (emoji montagna). data-outing-like porta l'id: il listener si
     // aggancia in disegnaFeed (ridisegna solo il bottone toccato, non tutto il feed).

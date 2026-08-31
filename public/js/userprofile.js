@@ -165,8 +165,23 @@ function formattaDecimale(n) {
 // interno sbagliato metterebbe il cestino sul profilo di qualcun altro. Chi chiama con
 // azioniHtml (public/js/storico.js, la propria pagina "Le mie escursioni") decide cosa
 // mostrare; chi non lo passa resta sola lettura come sempre.
-function schedaEscursioneCompletata(hike, completion, { azioniHtml = '' } = {}) {
+function schedaEscursioneCompletata(hike, completion, { azioniHtml = '', nomeUscita = null } = {}) {
     const esc = window.escapeHtml;
+
+    // Punto 115: se la traccia GPS collegata a questa escursione e' stata rinominata (la
+    // matita in "Le mie escursioni" modifica ActiveHikeSession.importedName), quel nome
+    // era visibile solo nel feed / pagina uscita, non qui - rinominare sembrava non fare
+    // niente. Ora il nome dato e' il titolo della card, e il titolo dell'escursione scende
+    // sulla riga della data cosi' si sa ancora di che si tratta. Solo quando i due nomi
+    // DIFFERISCONO: il caso di default (nome uscita = titolo escursione) resta identico a
+    // prima, niente titolo ripetuto due volte. Il profilo di un altro utente non passa
+    // nomeUscita -> invariato.
+    const nomeDato = (nomeUscita || '').trim();
+    const rinominata = nomeDato && nomeDato !== (hike.title || '').trim();
+    const titoloCard = rinominata ? esc(nomeDato) : esc(hike.title);
+    const rigaData = rinominata
+        ? `${esc(hike.title)} · ${formattaDataItaliana(hike.date)}`
+        : formattaDataItaliana(hike.date);
 
     // Punto 79: se questa persona ha un tempo di cammino reale misurato da un .gpx per
     // questa escursione (Completion.movingTimeHours, solo quando la traccia era abbastanza
@@ -195,14 +210,14 @@ function schedaEscursioneCompletata(hike, completion, { azioniHtml = '' } = {}) 
     // tutta la larghezza della card, i badge stanno sotto in una riga propria.
     return `
         <div class="outing-card">
-            <span class="outing-card-title">${esc(hike.title)}</span>
+            <span class="outing-card-title">${titoloCard}</span>
             <div class="outing-card-head" style="margin-top: 4px;">
                 <span class="badge badge-primary outing-tag">${esc(T('difficulty.' + hike.difficulty) || hike.difficulty)}</span>
                 ${hike.groupCompletedAt
                     ? `<span class="badge badge-green outing-tag" title="${esc(T('profile.completataGruppoTitle') || 'Completata insieme al gruppo')}"><i data-lucide="users"></i> ${esc(T('profile.inGruppo') || 'in gruppo')}</span>`
                     : ''}
             </div>
-            <span class="outing-card-sub">${formattaDataItaliana(hike.date)}</span>
+            <span class="outing-card-sub">${rigaData}</span>
             <div class="outing-card-stats">
                 <div><strong>${formattaDecimale(hike.distanceKm)}</strong><span>km</span></div>
                 <div><strong>${Math.round(hike.elevationGain || 0)}</strong><span>${esc(T('profile.mDisliv') || 'm disliv.')}</span></div>
@@ -216,13 +231,24 @@ function schedaEscursioneCompletata(hike, completion, { azioniHtml = '' } = {}) 
 // Stesso principio di azioniHtml spiegato sopra su schedaEscursioneCompletata.
 // data-outing-id resta SEMPRE presente (anche in sola lettura): cancellaUscita
 // (public/js/storico.js) lo usa per ritrovare titolo/tipo della scheda cliccata.
-function schedaUscitaProfilo(s, { azioniHtml = '' } = {}) {
+function schedaUscitaProfilo(s, { azioniHtml = '', perFeed = false, dataUscitaDiversa = null } = {}) {
     const esc = window.escapeHtml;
     const importata = s.importedFrom === 'gpx';
     // Punto 115: il nome (importedName) vale per QUALSIASI uscita, non solo le importate -
     // anche una registrata dal vivo puo' essere rinominata. Senza nome: si mostra la data.
-    const titolo = s.importedName ? esc(s.importedName) : formattaDataItaliana(s.startedAt);
-    const sottotitolo = s.importedName ? formattaDataItaliana(s.startedAt) : '';
+    // Punto 113 (cosmetico feed): nel feed la data di pubblicazione e' gia' nella riga
+    // autore, quindi ripetere qui la data dell'uscita erano due date per la stessa cosa.
+    // Con perFeed la data compare SOLO se l'escursione e' di un altro giorno
+    // (dataUscitaDiversa, gia' formattata da feed.js) e senza nome il titolo e' una parola
+    // neutra invece della data.
+    let titolo, sottotitolo;
+    if (perFeed) {
+        titolo = s.importedName ? esc(s.importedName) : esc(T('feed.uscitaSenzaNome') || 'Uscita');
+        sottotitolo = dataUscitaDiversa ? esc(dataUscitaDiversa) : '';
+    } else {
+        titolo = s.importedName ? esc(s.importedName) : formattaDataItaliana(s.startedAt);
+        sottotitolo = s.importedName ? formattaDataItaliana(s.startedAt) : '';
+    }
     return `
         <div class="outing-card" data-outing-id="${esc(s.id)}">
             <div class="outing-card-head">

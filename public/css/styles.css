@@ -3757,9 +3757,18 @@ option {
    piu' di due elementi diventerebbe illeggibile. */
 .outing-card-actions {
     display: flex;
+    flex-wrap: wrap;
     justify-content: flex-end;
     gap: 4px;
     margin-top: 8px;
+}
+/* Su una card stretta questa riga puo' avere quattro controlli (Pubblica + matita +
+   carica + cestino): senza wrap il bottone "Pubblica nel feed" veniva schiacciato e la
+   sua etichetta andava a capo dentro il bottone. Con flex-wrap la riga scala su piu'
+   righe (sempre allineata a destra) e white-space:nowrap tiene l'etichetta intera - se
+   non ci sta, scende tutto il bottone, non solo meta' testo. */
+.outing-card-actions .btn {
+    white-space: nowrap;
 }
 
 @keyframes spin { to { transform: rotate(360deg); } }

@@ -2027,6 +2027,9 @@
             'feed.miPiaceMetti': 'Add a like',
             'feed.miPiaceTogli': 'Remove the like',
             'feed.miPiaceErrore': 'Could not update the like.',
+            // Titolo di ripiego della card nel feed quando l'uscita non ha un nome: nel feed
+            // la data e' gia' nella riga autore, quindi qui non si ripete (cosmetico punto 113).
+            'feed.uscitaSenzaNome': 'Outing',
 
             // Tasto "Segui" e liste follow (userprofile.js, social.js, index.html)
             'follow.segui': 'Follow',

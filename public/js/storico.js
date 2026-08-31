@@ -234,7 +234,13 @@
             return {
                 ordinamento: Date.parse(h.date) || 0,
                 hikeIdCollegato: h.id,
-                html: window.CamoscioSchedeCompatte.escursione(h, completion, { azioniHtml: azioni })
+                // Punto 115: se la traccia collegata e' stata rinominata con la matita, la
+                // card mostra QUEL nome invece del titolo dell'escursione - cosi' la
+                // rinomina ha un effetto visibile anche qui, non solo nel feed.
+                html: window.CamoscioSchedeCompatte.escursione(h, completion, {
+                    azioniHtml: azioni,
+                    nomeUscita: tracciaCollegata ? tracciaCollegata.importedName : null
+                })
             };
         }).filter(Boolean);
 
