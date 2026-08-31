@@ -8411,3 +8411,77 @@ Il piano del blocco corrente:
 C:\Users\lenovo\.claude\plans\melodic-scribbling-cray.md (Fase 2).
 Racconto in ../camoscio memoria/06-Cronologia-Sessioni.md "Sedicesima
 sessione"; decisioni in /03 "Camoscio v2 - revisione UX della Dashboard".
+
+
+DICIASSETTESIMA SESSIONE (31/08/2026) - badge Corno Piccolo mancante, poi
+Ju Busciu a 10 m. (Sessione a se, NON tocca la revisione UX: la v2 resta
+dov era a fine 16a sessione. Denis stava "controllando delle cose".)
+
+Denis: "stavo controllando delle cose. ho trovato una mia escursione
+Corno Piccolo/Corno Grande. La traccia passa per il corno piccolo ma non
+ho ricevuto il badge ancora"
+
+DIAGNOSI (script di sola lettura, filtrato sul suo account):
+- la traccia "Corno Piccolo/Corno Grande - Vetta Orientale 12-13/07/25"
+  (.gpx, 512 punti, importata il 18/08/2026 h12:31) passa a 5 m dal
+  punto-badge del Corno Piccolo (soglia 150). Ci ha diritto.
+- non ce l ha perche assegnaTimbriDallaTraccia gira UNA VOLTA SOLA, all
+  import, sul catalogo di quel momento. badge_cornopiccolo e entrato nel
+  catalogo alle 19:47 dello stesso giorno (commit 46ca5aa "Punto 97"),
+  ~7 h dopo il suo import. La stessa scansione quel mattino gli ha dato
+  il Rifugio Franchetti (2 m, ce l ha, datato 12/07/25) ma il Corno
+  Piccolo non esisteva ancora. Niente ripassa una traccia gia importata.
+- stesso caso su Bivacco Ju Busciu: la traccia "Corno Grande 11/08/24"
+  ci passa a 23 m, badge aggiunto nello stesso commit 46ca5aa, traccia
+  importata il 27/07 -> mancava pure quello.
+- nessun ALTRO utente aveva badge mancanti (16 utenti, ~15 tracce).
+
+FATTO 1 - backfill (scelta di Denis: "Backfill completo"). Script una
+tantum di sola lettura + --scrivi (stessa forma di
+scripts/timbri-senza-traccia.js): ripassa TUTTE le tracce concluse di
+TUTTI gli utenti sul catalogo di oggi, crea i timbri mancanti con la data
+dell USCITA (come la funzione vera). Dry-run mostrato a Denis, ok
+esplicito ("Si, crea il badge"). Creato 1 timbro: badge_cornopiccolo per
+Denis, 2025-07-12. Totale Stamp 11 -> 12. Verificato: sul suo account,
+accanto al Franchetti. Script nello scratchpad, NON nel repo (vedi sotto).
+
+FATTO 2 - Ju Busciu a 10 m PERMANENTE. Denis: "l unico badge un po
+particolare resta proprio ju busciu, essendo una perla nascosta voglio
+un range di 10 m per ju busciu". Scelte: "Regola permanente ovunque" +
+"master, hotfix a se".
+  Commit efd1290 su MASTER (non v2-ux; 1 avanti a origin/master, NON
+  pushato - lo revisiona e pusha Denis). 6 file, +57 -16:
+  - public/js/badge-points.js: campo opzionale sogliaM sulla voce Ju
+    Busciu (=10). Assente = 150 come gli altri. Unica voce che lo usa.
+    Letto da server e browser (catalogo condiviso).
+  - lib/geofenceTimbri.js: helper sogliaPunto(p) = p.sogliaM ?? 150,
+    esportato. Lo usano assegnaTimbriDallaTraccia (import .gpx/.fit +
+    tasto su escursione completata) e tracciaToccaPunto, che ora prende
+    l OGGETTO del punto (gli serve sogliaM) invece di lat/lng sciolte.
+  - routes/stamps.js (tasto TIMBRA) e routes/tracking.js (/peak-ascents,
+    conteggio salite): chiamata adeguata.
+  - public/js/map.js: checkGeofencing usa peak.sogliaM || 150.
+  - prove/prova-punto108.js: nuovo controllo che sogliaM stringe davvero
+    la soglia (+ controprova: rosso se sogliaPunto ignora il campo);
+    hook PROVA_BASE_URL per non dover usare la :3000.
+  Impatto retroattivo NULLO: nessuno ha badge_jubusciu, nessuna traccia
+  esistente ci passa entro 10 m (verificato).
+  PROVE (server master fresco su :3000, dopo che Denis ha chiuso il suo):
+  prova-punto108 25/25 (3 sezioni, incl. HTTP), prova-punto92 84/84,
+  prova-punto113-gpx 43/43.
+
+DA DECIDERE (Denis):
+- pushare efd1290 adesso (hotfix isolato) o lasciarlo entrare col merge
+  v2-ux -> master a fine v2. Nessuna urgenza: nessun utente ha quel badge.
+- se tenere lo script di backfill: oggi e nello scratchpad. E l utensile
+  giusto per "badge aggiunto al catalogo dopo che qualcuno aveva gia
+  importato la traccia" - riaccadra al prossimo lotto di badge. Se lo si
+  vuole, va in scripts/ SU MASTER, come timbri-senza-traccia.js.
+
+--- CHIUSURA SESSIONE ---
+Denis: "sito e server chiuso. puoi finire tranquillamente. poi facciamo
+la chiusura sessione, salva tutto prepara il lavoro per riprenderlo in
+una sessione futura e aggiorna i file necessari".
+Stato: master = efd1290 (NON pushato). v2-ux invariato (717932d), tree
+pulito - la revisione UX riprende da dove la lasciava la 16a sessione.
+Vault committato e pushato. cronologia.txt non toccato (congelato).

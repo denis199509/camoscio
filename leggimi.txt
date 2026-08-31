@@ -1,7 +1,9 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-31 (sedicesima sessione — iniziata la REVISIONE UX,
-tutto in LOCALE).
+Aggiornato: 2026-08-31 (DICIASSETTESIMA sessione — a se, NON revisione UX:
+backfill di 1 badge mancante + Ju Busciu a 10 m su master, non pushato.
+La revisione UX resta ferma dov'era a fine 16a sessione. Vedi il blocco
+"FUORI DAL FILO v2" qui sotto).
 
 >>> LAVORO IN CORSO: revisione UX del sito ("Camoscio v2"). Si lavora
     ESCLUSIVAMENTE IN LOCALE sul branch `v2-ux`, un blocco alla volta.
@@ -12,6 +14,28 @@ tutto in LOCALE).
     `V2 UX PASSO n: ...` su `v2-ux` (locale). Alla fine: merge su
     `master` + push. L'hook di auto-save committa comunque sul branch;
     va rifuso in un commit vero (git reset --soft) prima di ogni tappa.
+
+>>> FUORI DAL FILO v2 (17a sessione, 31/08) — chiuso, ma con code aperte:
+    Denis "controllando delle cose" trova che una sua traccia .gpx passa
+    dal Corno Piccolo ma non ha il badge. Causa: assegnaTimbriDallaTraccia
+    gira UNA VOLTA all'import, sul catalogo di allora, e NON e'
+    retroattiva; il badge Corno Piccolo e' entrato nel catalogo ~7 h dopo
+    che lui aveva importato quella traccia (18/08). Fatti:
+      1. BACKFILL una tantum (script sola lettura + --scrivi, NELLO
+         SCRATCHPAD, non nel repo) -> creato 1 timbro, badge_cornopiccolo
+         a Denis. Nessun altro utente era indietro.
+      2. Ju Busciu -> badge a 10 m invece di 150 ("perla nascosta",
+         scelta di Denis). Campo `sogliaM` nel catalogo condiviso.
+         Commit `efd1290` SU MASTER, 1 avanti a origin/master, NON
+         PUSHATO. Prove: prova-punto108 25/25, prova-punto92 84/84,
+         prova-punto113-gpx 43/43.
+    APERTO PER DENIS: (a) pushare `efd1290` ora, oppure lasciarlo entrare
+    col merge v2-ux->master a fine v2 (nessuna urgenza: nessuno ha quel
+    badge); (b) se tenere lo script di backfill in scripts/ su master
+    (servira' a ogni futuro lotto di badge). Dettaglio: vault 03
+    "Soglia di prossimita' per-punto", vault 07 "assegnaTimbriDallaTraccia
+    non e' retroattiva", vault 06 "Diciassettesima sessione",
+    cose_da_fare.txt "DICIASSETTESIMA SESSIONE".
 
 >>> FATTO su `v2-ux` (2 commit, NON pushati):
   - `7915762` PASSO 1 — apertura Dashboard contestuale. Via la scheda

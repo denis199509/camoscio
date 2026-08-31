@@ -270,9 +270,19 @@ caricato.
     (stampId marcato, nessun account vero ce l'ha) sul primo punto del gpx sintetico:
     dopo il ⬆ la risposta porta il badge nuovo nel campo "badge", il timbro e' sul DB con
     la DATA DELL'ESCURSIONE, e un ri-upload non fa doppioni. La controprova (codice prima
-    del 2026-08-31): il ⬆ non mette `badge` nella risposta. prova-punto108 (24/24) copre
-    l'equivalenza matematica del refactor: la scansione non e' cambiata, e' solo cambiata
-    di casa.
+    del 2026-08-31): il ⬆ non mette `badge` nella risposta. prova-punto108 (25/25 dopo
+    l'hotfix Ju Busciu del 31/08 - vedi sotto) copre l'equivalenza matematica del
+    refactor: la scansione non e' cambiata, e' solo cambiata di casa.
+
+    prova-punto108.js - AGGIORNATA il 31/08/2026 (hotfix `efd1290` su master, campo
+    `sogliaM` per-punto, Ju Busciu a 10 m): sez. 1 ha un controllo in piu' (25 totali) -
+    con `sogliaM:10` un punto a 20-140 m NON tocca piu', col default a 150 si'; ha la sua
+    controprova interna (rosso se sogliaPunto ignora il campo). `tracciaToccaPunto` ora
+    prende l'OGGETTO del punto, non lat/lng sciolte. Nuovo hook env `PROVA_BASE_URL` per
+    puntare la sez. 3 a un'altra porta invece della :3000 fissa.
+    Come si lancia: `node server.js > prove/server-prove.log 2>&1` (altra finestra) poi
+    `node prove/prova-punto108.js`. Senza server: solo sez. 1-2. Rilanciata il 31/08 con
+    server master fresco: 25/25.
     NOTA non coperta da questa prova (e' il FILE, non il codice): se il .gpx ha buchi
     temporali/spaziali (registrazione "smart"/semplificata), movimentoSecAttendibile
     (punto 79) rifiuta lo split cammino/pause con "buchi non interpretabili" e si salva
