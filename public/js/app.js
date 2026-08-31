@@ -814,16 +814,65 @@ function setupNotificationBell() {
     });
 }
 
+// Blocco di apertura della Dashboard (PASSO 1 revisione UX v2). Due stati:
+//  - senza escursioni in programma: sottotitolo neutro, nessuna riga
+//  - con un'escursione in programma: sottotitolo dedicato + una riga cliccabile che la apre.
+// La card completa dell'escursione e' la Fase 2; qui bastano titolo e data.
+function renderDashHero(usr) {
+    const nome = usr.username.split(" ")[0];
+    const greetEl = document.getElementById("dash-hero-greet");
+    if (greetEl) greetEl.textContent = T("dash.ciaoNome", nome) || ("Ciao " + nome + " 👋");
+
+    const prossima = prossimaEscursione();
+
+    const subEl = document.getElementById("dash-hero-sub");
+    if (subEl) {
+        subEl.textContent = prossima
+            ? (T("dash.heroSubProssima") || "La tua prossima avventura è quasi pronta.")
+            : (T("dash.heroSubDefault") || "Pronto per la prossima avventura?");
+    }
+
+    const nextBtn = document.getElementById("dash-hero-next");
+    if (nextBtn) {
+        if (prossima) {
+            const loc = (window.CamoscioI18n && window.CamoscioI18n.getLang() === "en") ? "en-GB" : "it-IT";
+            const data = prossima.date
+                ? new Date(prossima.date + "T12:00:00").toLocaleDateString(loc, { day: "numeric", month: "long", year: "numeric" })
+                : (T("social.noDate") || "data non indicata");
+            // textContent, non innerHTML: il titolo e' testo scritto dall'utente.
+            nextBtn.querySelector(".dash-hero-next-text").textContent = prossima.title + " · " + data;
+            nextBtn.onclick = () => { if (window.showHikePage) window.showHikePage(prossima.id); };
+            nextBtn.classList.remove("hidden");
+        } else {
+            nextBtn.classList.add("hidden");
+            nextBtn.onclick = null;
+        }
+    }
+}
+
+// La PROSSIMA escursione in programma: fra quelle mie (organizzate o a cui partecipo, gia'
+// filtrate da classificaMieEscursioni), quelle con data da oggi in avanti, la piu' vicina.
+// Le date sono stringhe "YYYY-MM-DD" (models/Hike.js) e si ordinano come stringhe.
+// NB: non si riusa escursioneDiRiferimento() dello Zaino - quella tiene conto del selettore
+// manuale dello Zaino e dell'activeHikeId, che qui sarebbero effetti collaterali sbagliati.
+function prossimaEscursione() {
+    if (!window.classificaMieEscursioni) return null;
+    const { create, partecipo } = window.classificaMieEscursioni();
+    const oggi = new Date().toISOString().slice(0, 10);
+    return create.concat(partecipo)
+        .filter(h => h.date && h.date >= oggi)
+        .sort((a, b) => a.date.localeCompare(b.date))[0] || null;
+}
+
 // Renderizzazione Dashboard
 function renderDashboard() {
     const usr = window.CamoscioState.currentUser;
     if (!usr) return;
 
-    // Statistiche generali
-    document.getElementById("dash-welcome-name").textContent = usr.username.split(" ")[0];
-    document.getElementById("stat-completed-hikes").textContent = usr.completedHikes;
-    document.getElementById("stat-stamps-count").textContent = window.CamoscioState.stamps.length;
-    document.getElementById("stat-reputation").textContent = `${usr.reputation}%`;
+    // PASSO 1 revisione UX: l'apertura e' "Ciao [Nome] + un'azione", non piu' tre statistiche.
+    // Saluto, sottotitolo e riga della prossima escursione sono contestuali: li riscrive
+    // renderDashHero a ogni render (quindi anche a ogni cambio lingua - onChange in fondo).
+    renderDashHero(usr);
 
     // Sezione Passo Personalizzato.
     // IL PASSO SI MOSTRA SOLO SE E' STATO MISURATO. Il campo esiste sul documento utente solo

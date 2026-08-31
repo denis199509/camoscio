@@ -262,7 +262,7 @@
             'eligibility.richiestoPassoSuperiore': 'Requires a Higher Pace',
 
             // --- ESCURSIONI (public/index.html #hikes, public/js/social.js) ---
-            'hikes.esplora': 'Explore Group Hikes',
+            'hikes.esplora': 'Group Hikes',
             'hikes.cercaTitoloLabel': 'Search by title:',
             'hikes.cercaTitoloPlaceholder': 'E.g. Alba Corno Grande...',
             'hikes.filtriTitolo': 'Filters and Matching Algorithms',
@@ -483,11 +483,14 @@
             //    scelto il locale come per le date col nome del mese (en-GB).
 
             // --- DASHBOARD: testo statico nell'HTML (#dashboard) ---
-            'dash.benvenuto': 'Welcome to Camoscio, <span class="highlight-text" id="dash-welcome-name">User</span>!',
-            'dash.sottotitolo': 'Your personal assistant for safe hikes, carpooling and advanced alpine planning.',
-            'dash.statCompletate': 'Hikes Done',
-            'dash.statTimbri': 'Peak Stamps',
-            'dash.statReputazione': 'Reputation Score',
+            // Blocco di apertura (PASSO 1 revisione UX): saluto, sottotitolo e riga della
+            // prossima escursione li scrive renderDashHero (app.js) via le voci qui sotto -
+            // gli elementi NON hanno data-i18n apposta (vedi commento in index.html).
+            'dash.ciaoNome': function (nome) { return 'Hi ' + nome + ' 👋'; },
+            'dash.heroSubDefault': 'Ready for your next adventure?',
+            'dash.heroSubProssima': 'Your next adventure is almost ready.',
+            'dash.ctaTrova': 'Find a hike',
+            'dash.ctaEsplora': 'Explore',
             'dash.passaportoTitolo': 'Digital Peak Passport',
             'dash.geofencingAttivo': 'Geofencing Active',
             'dash.passaportoDesc': 'Reach the peaks and huts to unlock collectible digital stamps. Use the map to simulate your GPS position!',

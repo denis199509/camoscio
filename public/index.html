@@ -492,30 +492,44 @@
                 
                 <!-- 1. DASHBOARD -->
                 <section id="dashboard" class="page-section active">
+
+                    <!-- PASSO 1 revisione UX (v2): l'apertura della Dashboard non parte piu' da tre
+                         statistiche ma da "chi sei / cosa fai adesso". Blocco a tutta larghezza,
+                         FUORI da .dashboard-grid: deve sembrare l'inizio naturale della pagina, non
+                         un pannello di controllo. E' contestuale - renderDashHero() in app.js
+                         riscrive saluto, sottotitolo e la riga della prossima escursione, e la rifa'
+                         a ogni cambio lingua (onChange gia' agganciato in fondo ad app.js). -->
+                    <header class="dash-hero">
+                        <!-- Niente data-i18n su questi due: li scrive SEMPRE renderDashHero (app.js)
+                             in entrambe le lingue. Con data-i18n, applyStaticTranslations li
+                             riporterebbe al testo statico a ogni cambio lingua, perdendo il nome e
+                             il sottotitolo contestuale. Il testo qui e' solo il guscio pre-render. -->
+                        <h2 class="dash-hero-greet" id="dash-hero-greet">Ciao 👋</h2>
+                        <p class="dash-hero-sub" id="dash-hero-sub">Pronto per la prossima avventura?</p>
+
+                        <!-- Mostrata da renderDashHero SOLO se c'e' un'escursione in programma
+                             (organizzata da me o a cui partecipo, data futura, la piu' vicina).
+                             La card completa e' la Fase 2: qui solo titolo + data, apre l'escursione. -->
+                        <button type="button" class="dash-hero-next hidden" id="dash-hero-next">
+                            <i data-lucide="mountain-snow"></i>
+                            <span class="dash-hero-next-text"></span>
+                            <i data-lucide="arrow-right" class="dash-hero-next-arrow"></i>
+                        </button>
+
+                        <div class="dash-hero-actions">
+                            <button class="btn btn-primary btn-nav-trigger dash-hero-cta" data-target="hikes">
+                                <span aria-hidden="true">🥾</span> <span data-i18n="dash.ctaTrova">Trova un'escursione</span>
+                            </button>
+                            <button class="btn btn-secondary btn-nav-trigger dash-hero-cta" data-target="map-section">
+                                <span aria-hidden="true">🗺️</span> <span data-i18n="dash.ctaEsplora">Esplora</span>
+                            </button>
+                        </div>
+                    </header>
+
                     <div class="dashboard-grid">
-                        
+
                         <!-- Colonna Sinistra -->
                         <div class="dash-col">
-                            <!-- Card Benvenuto -->
-                            <div class="glass-card welcome-card">
-                                <h3 data-i18n-html="dash.benvenuto">Benvenuto su Camoscio, <span class="highlight-text" id="dash-welcome-name">Utente</span>!</h3>
-                                <p class="text-muted" data-i18n="dash.sottotitolo">Il tuo assistente personale per escursioni sicure, organizzazione di carpooling e pianificazione alpina avanzata.</p>
-                                <div class="quick-stats-row">
-                                    <div class="q-stat">
-                                        <span class="q-val" id="stat-completed-hikes">0</span>
-                                        <span class="q-lbl" data-i18n="dash.statCompletate">Escursioni Fatte</span>
-                                    </div>
-                                    <div class="q-stat">
-                                        <span class="q-val" id="stat-stamps-count">0</span>
-                                        <span class="q-lbl" data-i18n="dash.statTimbri">Timbri Vette</span>
-                                    </div>
-                                    <div class="q-stat">
-                                        <span class="q-val" id="stat-reputation">50%</span>
-                                        <span class="q-lbl" data-i18n="dash.statReputazione">Punteggio Reputazione</span>
-                                    </div>
-                                </div>
-                            </div>
-
                             <!-- Card Passaporto Digitale Vette -->
                             <div class="glass-card passport-card">
                                 <div class="card-header-row">
@@ -634,7 +648,7 @@
                 <!-- 2. ESCURSIONI -->
                 <section id="hikes" class="page-section">
                     <div class="hikes-header-row">
-                        <h3 data-i18n="hikes.esplora">Esplora Escursioni di Gruppo</h3>
+                        <h3 data-i18n="hikes.esplora">Escursioni di Gruppo</h3>
                         <button class="btn btn-primary" id="btn-open-create-hike"><i data-lucide="plus"></i> <span data-i18n="hikeModal.creaNuova">Crea Nuova Escursione</span></button>
                     </div>
 
