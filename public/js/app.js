@@ -501,7 +501,9 @@ function setupNavigation() {
         "map-section": "Mappa",
         "carpool": "Carpooling",
         "backpack": "Zaino Intelligente",
-        "safety": "Sicurezza & Mesh",
+        // V2 UX PASSO 14a: "Sicurezza & Mesh" -> "Sicurezza" (header = menu), foglia
+        // dell'area personale. #safety internamente invariato.
+        "safety": "Sicurezza",
         "social": "Community",
         // V2 UX PASSO 10: #people-search rimossa (ora nella card "Persone" di #social).
         // navigateTo rimappa l'id vecchio -> "social" prima di arrivare qui.

@@ -83,7 +83,7 @@
             'nav.blocco.navigazione': 'Navigation',
             'nav.blocco.azione': 'Action',
             'nav.blocco.personale': 'Personal area',
-            'nav.blocco.strumenti': 'Tools',
+            // V2 UX PASSO 14a: via 'nav.blocco.strumenti' (il blocco "STRUMENTI" non esiste piu').
             'nav.home': 'Home',
             'nav.esplora': 'Explore',
             'nav.hikes': 'Hikes',
@@ -111,7 +111,8 @@
             'nav.profilo': 'Profile',
             'nav.impostazioni': 'Settings',
             'nav.backpack': 'Smart Backpack',
-            'nav.safety': 'Safety & Mesh',
+            // V2 UX PASSO 14a: 'nav.safety' -> 'nav.sicurezza', etichetta accorciata.
+            'nav.sicurezza': 'Safety',
 
             // V2 UX PASSO 11 - blocco "Il tuo cammino per zona" in fondo a #progress
             // (badges.js -> renderProgressoZoneTutte). "Ti mancano N vette..." riusa
@@ -680,7 +681,7 @@
             //    fatta per notifyParticipantDecision (secondo lotto).
             // 4) Orario nel registro avvisi (toLocaleTimeString): locale
             //    'en-GB'/'it-IT' come per le date col nome del mese.
-            'sectionTitle.safety': 'Safety & Mesh',
+            'sectionTitle.safety': 'Safety',
 
             // --- Fascia rossa #emergency-banner (globale). data-i18n-html: dentro
             //     c'e' <span id="emergency-banner-timer"> che safety.js aggiorna

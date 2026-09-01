@@ -454,11 +454,18 @@
                     <i data-lucide="settings"></i>
                     <span data-i18n="nav.impostazioni">Impostazioni</span>
                 </button>
+                <!-- V2 UX PASSO 14a: via il blocco "STRUMENTI" (ponte di PASSO 7).
+                     "Sicurezza" (era "Sicurezza & Mesh") e' ora una foglia dell'area
+                     personale: #safety resta invariato internamente (rimando timer +
+                     registro avvisi + Simulatore Mesh) - il timer vero vive in Mappa. -->
+                <button class="nav-btn" data-target="safety" id="btn-nav-safety">
+                    <i data-lucide="shield-alert"></i>
+                    <span data-i18n="nav.sicurezza">Sicurezza</span>
+                </button>
 
-                <!-- V2 UX PASSO 7: blocco PONTE. Carpooling / Zaino / Sicurezza restano
-                     raggiungibili qui finché PASSO 14+ non li sposta dentro hike-page (D1).
-                     Questo blocco sparirà allora. -->
-                <p class="nav-block-label" data-i18n="nav.blocco.strumenti">Strumenti</p>
+                <!-- Carpooling e Zaino: qui in modo TRANSITORIO finche' PASSO 14b/14c non
+                     li sposta come tab dentro hike-page (poi #btn-nav-carpool /
+                     #btn-nav-backpack e le due .page-section si ritirano). -->
                 <button class="nav-btn" data-target="carpool" id="btn-nav-carpool">
                     <i data-lucide="car"></i>
                     <span>Carpooling</span>
@@ -466,10 +473,6 @@
                 <button class="nav-btn" data-target="backpack" id="btn-nav-backpack">
                     <i data-lucide="backpack"></i>
                     <span data-i18n="nav.backpack">Zaino Intelligente</span>
-                </button>
-                <button class="nav-btn" data-target="safety" id="btn-nav-safety">
-                    <i data-lucide="shield-alert"></i>
-                    <span data-i18n="nav.safety">Sicurezza & Mesh</span>
                 </button>
             </nav>
 
