@@ -1,84 +1,79 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-31 (DICIASSETTESIMA sessione — a se, NON revisione UX:
-backfill di 1 badge mancante + Ju Busciu a 10 m su master, non pushato.
-La revisione UX resta ferma dov'era a fine 16a sessione. Vedi il blocco
-"FUORI DAL FILO v2" qui sotto).
+Aggiornato: 2026-09-01 (DICIOTTESIMA sessione — Fasi 3, 4, 5 della
+revisione UX: la DASHBOARD v2 E' CHIUSA. 5 commit su `v2-ux`, NIENTE
+pushato. Prossimo blocco della revisione = un'altra sezione del sito).
 
 >>> LAVORO IN CORSO: revisione UX del sito ("Camoscio v2"). Si lavora
     ESCLUSIVAMENTE IN LOCALE sul branch `v2-ux`, un blocco alla volta.
     NIENTE push, NIENTE deploy: Denis manda online solo quando l'intera
     v2 lo convince ("quando vedo che stiamo per finire mando online").
     `master` resta intatto = la produzione attuale.
-    Metodo concordato: per ogni blocco approvato -> UN commit vero
+    Metodo: per ogni blocco approvato -> prima il piano (EnterPlanMode +
+    AskUserQuestion per le ambiguita'), poi UN commit vero
     `V2 UX PASSO n: ...` su `v2-ux` (locale). Alla fine: merge su
     `master` + push. L'hook di auto-save committa comunque sul branch;
     va rifuso in un commit vero (git reset --soft) prima di ogni tappa.
+    La DASHBOARD e' finita (Fasi 1-5). Da qui si passa a un'altra sezione.
 
->>> FUORI DAL FILO v2 (17a sessione, 31/08) — chiuso, ma con code aperte:
-    Denis "controllando delle cose" trova che una sua traccia .gpx passa
-    dal Corno Piccolo ma non ha il badge. Causa: assegnaTimbriDallaTraccia
-    gira UNA VOLTA all'import, sul catalogo di allora, e NON e'
-    retroattiva; il badge Corno Piccolo e' entrato nel catalogo ~7 h dopo
-    che lui aveva importato quella traccia (18/08). Fatti:
-      1. BACKFILL una tantum (script sola lettura + --scrivi, NELLO
-         SCRATCHPAD, non nel repo) -> creato 1 timbro, badge_cornopiccolo
-         a Denis. Nessun altro utente era indietro.
-      2. Ju Busciu -> badge a 10 m invece di 150 ("perla nascosta",
-         scelta di Denis). Campo `sogliaM` nel catalogo condiviso.
-         Commit `efd1290` SU MASTER, 1 avanti a origin/master, NON
-         PUSHATO. Prove: prova-punto108 25/25, prova-punto92 84/84,
-         prova-punto113-gpx 43/43.
-    APERTO PER DENIS: (a) pushare `efd1290` ora, oppure lasciarlo entrare
-    col merge v2-ux->master a fine v2 (nessuna urgenza: nessuno ha quel
-    badge); (b) se tenere lo script di backfill in scripts/ su master
-    (servira' a ogni futuro lotto di badge). Dettaglio: vault 03
-    "Soglia di prossimita' per-punto", vault 07 "assegnaTimbriDallaTraccia
-    non e' retroattiva", vault 06 "Diciassettesima sessione",
-    cose_da_fare.txt "DICIASSETTESIMA SESSIONE".
+>>> FATTO su `v2-ux` (5 commit, NON pushati) — la DASHBOARD:
+  - `7915762` PASSO 1 — apertura Dashboard contestuale. Via "Benvenuto" +
+    le 3 statistiche; nuovo header .dash-hero (fuori dalla .dashboard-grid):
+    "Ciao [Nome] 👋" + sottotitolo contestuale + [🥾 Trova un'escursione]
+    [🗺️ Esplora]. Titolo sez. "Esplora Escursioni di Gruppo" -> "Escursioni
+    di Gruppo".
+  - `48fb101` PASSO 2 (Fase 2) — card "La tua prossima avventura":
+    titolo, giorno+data+conto alla rovescia, i 3 numeri SOLO se presenti,
+    "da <trailhead>", "👥 N partecipanti", [Apri escursione ->]. Solo con
+    un'escursione CONFERMATA in programma (prossimaAvventura).
+  - `5e2c01d` PASSO 3 (Fase 3) — due aggiunte alla card (il resto era gia'
+    coperto da Fase 2): link "Vedi tutte le mie escursioni ->" (solo se
+    >1 futura confermata); "Organizzata da te" se l'ho creata io.
+  - `0f42aa5` PASSO 4 (Fase 4) — "Il tuo cammino" (N vette/rifugi/badge +
+    progressione per ZONA: barra + "Ti mancano N vette per completare X")
+    SOSTITUISCE il Passaporto. "Ultimi traguardi" (ultimi N badge per data)
+    al posto dell'anteprima. "Il tuo <anno>" (escursioni/km/D+/vette
+    dell'anno) SOSTITUISCE "Quanto hai camminato". "Passo & Fatica" resta,
+    esce dal grid a piena larghezza. Nuove progressoZone()/ultimiTraguardi()
+    in badges.js su statoBadge() - NON il sistema LIVELLI_ASCESA (punti
+    86/87). UNICO tocco backend della revisione: GET /api/tracking/totals
+    accetta ?anno=YYYY opzionale (senza -> risposta identica). map.js
+    aggiornato (chiamava renderDashboardStamps, rimossa).
+  - `309ab92` PASSO 5 (Fase 5) — rifinitura CSS: grafico Passo & Fatica
+    non piu' stirato (max-width 640px); "4/7" accanto al nome zona;
+    .dashboard-grid align-items:start; 3 fix @media 900 (3 badge in fila,
+    "Vedi tutti i badge" fuori dall'angolo del FAB, stacco 16px).
 
->>> FATTO su `v2-ux` (2 commit, NON pushati):
-  - `7915762` PASSO 1 — apertura Dashboard contestuale. Via la scheda
-    "Benvenuto" + le 3 statistiche; nuovo header .dash-hero (fuori dalla
-    .dashboard-grid): "Ciao [Nome] 👋" + sottotitolo contestuale +
-    [🥾 Trova un'escursione] (-> sez. #hikes) [🗺️ Esplora] (-> #map-section).
-    Titolo sez. escursioni "Esplora Escursioni di Gruppo" -> "Escursioni
-    di Gruppo". renderDashboard non scrive piu' i 3 nodi statistica
-    (renderDashHero al loro posto). Elementi riempiti da JS: MAI data-i18n
-    (applyStaticTranslations li riazzera al cambio lingua) - trappola in
-    vault 07.
-  - `48fb101` PASSO 2 (Fase 2) — card "La tua prossima avventura". La
-    riga segnaposto diventa la card vera: titolo, giorno+data+conto alla
-    rovescia (oggi/domani/fra N giorni), i 3 numeri SOLO se presenti,
-    "da <trailhead>" se c'e', "👥 N partecipanti", [Apri escursione ->].
-    Compare solo con un'escursione CONFERMATA in programma (prossimaAvventura:
-    creata da me o dove sono in participants — NON pendingApproval).
-    Senza -> stato invariato (saluto + 2 pulsanti). Numeri con
-    toLocaleString(loc,{useGrouping:true}): l'italiano da solo non
-    raggruppa le 4 cifre di una quota/dislivello (deviazione dal piano
-    di Fase 2, accettata).
+  Verificato tutto in locale sull'account REALE di Denis (badge veri, sola
+  lettura; escursioni finte solo in memoria del browser): tutti gli stati
+  (inclusi vuoti e "vette ma nessuna zona a meta'"), Gran Sasso 4/7 scelta
+  giusta, IT<->EN, console pulita. Il responsive <900px verificato solo in
+  simulazione (resize_window inaffidabile, Denis non prova da telefono
+  perche' la v2 e' in locale) - da guardare al deploy.
 
-  Verificato in locale (demo, escursioni di prova SOLO in memoria del
-  browser — window.CamoscioState.hikes.push + renderDashboard, MAI su DB):
-  tutti gli stati, IT<->EN + toggle, console pulita, le 3 schede sotto
-  invariate. Screenshot passati a Denis.
+>>> DA DOVE SI RIPARTE: la Dashboard v2 e' CHIUSA. Il prossimo blocco della
+    revisione UX e' un'ALTRA SEZIONE del sito ("nei prossimi giorni faremo
+    lavori del genere su tutto il sito") - da concordare quale con Denis.
+    Il merge v2-ux -> master + push lo decide lui a fine v2.
+    RIMANDATO a un lavoro a se' (deciso in Fase 4): la pagina statistiche
+    filtrabile dietro un "Vedi statistiche ->" (nuova pagina, filtri per
+    data). Fuori dalla Dashboard per scelta di Denis.
+    Restano nella revisione UX i titoli di sezione lunghi troncati su
+    telefono (ex "punto 106 residuo") - riguardano l'header di OGNI sezione,
+    non toccati dalle Fasi 3/4/5.
+    NOTA: `efd1290` (hotfix Ju Busciu a 10 m, 17a sessione) e' stato
+    PUSHATO da Denis fra la 17a e la 18a sessione (verificato: reflog
+    origin/master "update by push"). `origin/master` ora e' a `efd1290`
+    - al merge v2-ux -> master si parte da li'. `master` locale = origin,
+    0 divergenza.
 
->>> DA DOVE SI RIPARTE: Denis sta facendo prove in locale sulla v2
-    (branch `v2-ux`, server con `avvia.bat`). Alla ripresa: sentire il
-    suo riscontro su PASSO 1/2, poi concordare il blocco successivo.
-    Candidati: altri stati contestuali della Dashboard (escursione appena
-    conclusa, obiettivo in avvicinamento); il riequilibrio della
-    .dashboard-grid sotto l'header (ora colonna sx = solo Passaporto);
-    un'altra sezione del sito. Restano nella revisione UX i titoli di
-    sezione lunghi troncati su telefono (ex "punto 106 residuo") - non
-    a pezzi.
-
->>> DOVE STA IL DETTAGLIO: il piano del blocco corrente in
-    C:\Users\lenovo\.claude\plans\melodic-scribbling-cray.md (Fase 2).
-    Revisione UX in vault 04-Da-Fare ("PROSSIMO GRANDE LAVORO"); decisioni
-    in vault 03 ("Camoscio v2 — revisione UX della Dashboard"); trappola
-    data-i18n in vault 07; parole di Denis in cose_da_fare.txt
-    ("SEDICESIMA SESSIONE"); racconto nel vault 06.
+>>> DOVE STA IL DETTAGLIO: i piani delle Fasi 3/4/5 in
+    C:\Users\lenovo\.claude\plans\jiggly-munching-brooks.md (l'ultimo
+    sovrascritto e' la Fase 5). Revisione UX in vault 04-Da-Fare
+    ("PROSSIMO GRANDE LAVORO"); decisioni in vault 03 ("Camoscio v2 —
+    revisione UX della Dashboard", sezioni Fase 3/4/5); due trappole nuove
+    in vault 07; parole di Denis in cose_da_fare.txt ("DICIOTTESIMA
+    SESSIONE"); racconto nel vault 06 ("Diciottesima sessione").
 
 >>> GIA' IN PRODUZIONE (fino alla 15a sessione, su `master`,
     8d6990c): traduzione IT/EN (punto 102), timbri con traccia reale

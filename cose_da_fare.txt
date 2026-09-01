@@ -8485,3 +8485,191 @@ una sessione futura e aggiorna i file necessari".
 Stato: master = efd1290 (NON pushato). v2-ux invariato (717932d), tree
 pulito - la revisione UX riprende da dove la lasciava la 16a sessione.
 Vault committato e pushato. cronologia.txt non toccato (congelato).
+
+
+=====================================================================
+DICIOTTESIMA SESSIONE (01/09/2026) - Fasi 3, 4, 5 della revisione UX:
+la DASHBOARD v2 e' chiusa
+=====================================================================
+
+Denis apre chiedendo conferma che "la Fase 1 della v2" fosse chiusa
+ieri -> si: la 16a sessione aveva chiuso PASSO 1 (apertura) E Fase 2
+(card prossima avventura). Poi due domande di config (/model opusplan:
+persiste, non va reinviato - non e' lavoro sul progetto). Infine manda
+lo spec di Fase 3, 4 e 5:
+
+  "adesso ti mando le indicazioni per le fasi successive (3,4 e 5). Se
+  abbiamo gia fatto qualcosa di queste fasi dimelo e passiamo al punto
+  successivo. con queste indicazioni dovremmo finire del tutto la
+  paggina dashboard."
+
+  "come sempre prima facciamo un bel piano poi andiamo con il codice"
+
+Metodo invariato: per ogni fase, piano (EnterPlanMode + AskUserQuestion
+per le ambiguita'), poi codice, poi verifica in locale, poi UN commit
+vero su v2-ux. opusplan attivo: i piani su Opus, l'esecuzione su Sonnet.
+
+
+--- FASE 3: rifiniture della finestra "prossima escursione" ---
+
+Spec di Denis (parole sue):
+  "Se l'utente ha piu escursioni future: Mostrare solamente la prossima.
+  Non trasformare questa sezione in un elenco. Aggiungere eventualmente
+  un link discreto: Vedi tutte le mie escursioni -> [alla sezione gia
+  esistente 'Le mie escursioni']. Se la prossima escursione e' stata
+  creata dall'utente [...] Eventualmente si puo aggiungere una piccola
+  indicazione: Organizzata da te, senza alterare la struttura
+  principale."
+  Obiettivo: 5 domande con risposta in pochi secondi - DOVE VADO? QUANDO?
+  CON CHI? QUALI SONO I DATI PRINCIPALI? DOVE CLICCO PER VEDERE TUTTO?
+  Scelta esplicita: "non ho messo il meteo nella card" (per non farla
+  diventare "data + ora + meteo + vento + ... + GPS", il problema che
+  si sta risolvendo).
+
+RAGIONAMENTO: confrontando lo spec col codice, la Fase 3 era gia
+soddisfatta all'80% dalla Fase 2 - prossimaAvventura() prende gia solo
+la piu vicina (non un elenco), e 4 delle 5 domande hanno gia risposta
+in card (titolo+"da", data+countdown, i 3 numeri, il bottone). "Con chi"
+resta il conteggio partecipanti (coerente con "non un elenco"). Il meteo
+non c'e' mai stato. Restavano DUE aggiunte.
+
+DECISO con AskUserQuestion:
+- link "Vedi tutte le mie escursioni ->": SOLO se ci sono piu di 1
+  escursione futura confermata (con una sola non porterebbe a nulla di
+  nuovo). Verso la sezione my-hikes, riusa .btn-nav-trigger.
+
+FATTO (commit 5e2c01d su v2-ux):
+- app.js: prossimaAvventura() ritorna { hike, totale, organizzata }
+  invece del solo hike - totale e organizzata (= creatorId mio) calcolati
+  sulla STESSA lista "confermate", non rifacendo il filtro (punti 98/B,
+  101). renderDashHero popola due righe nuove.
+- index.html: #dash-hero-adv-org ("Organizzata da te", .hidden) sotto il
+  titolo; #dash-hero-adv-more (link "vedi tutte", .hidden) in fondo alla
+  card. Il link e' un <button> reso link (no bordo/sfondo), NON un .btn:
+  non doveva competere con "Apri escursione".
+- i18n.js: 2 chiavi EN. styles.css: 2 regole (solo struttura).
+
+VERIFICATO in locale (account di Denis): singola creata da me (org si,
+link no), singola a cui partecipo (nessuna delle due), 2+ future (mostra
+la piu vicina + link), click -> "Le mie escursioni", IT<->EN, piede a
+capo a 340px, console pulita.
+TROVATO durante la verifica, NON di questa fase: con un oggetto hike di
+prova senza tribeTags il cambio lingua lancia un'eccezione in
+buildHikeCard dentro setLang. Dato di test incompleto mio (i dati veri
+hanno sempre il campo); coi cloni di un hike reale, console pulita.
+Trappola in vault 07.
+
+
+--- FASE 4: "Il tuo cammino" + "Ultimi traguardi" + "Il tuo <anno>" ---
+
+Spec di Denis (lunga, 20 punti + intro). Parole sue:
+  "Camoscio non deve solo dirti quante volte sei andato in montagna.
+  Deve farti vedere cosa hai conquistato."
+  "'Hai percorso 327 km' e' una statistica. 'Ti mancano 4 vette per
+  completare il Gran Sasso' e' un obiettivo. La seconda ti fa venire
+  voglia di fare qualcosa."
+  "Non voglio che assomigli alla classica schermata: 142 km - 4.200 D+
+  - 13 attivita' che puoi trovare in qualunque app sportiva."
+  Struttura: IL TUO CAMMINO (progressione) -> ULTIMI TRAGUARDI (badge
+  recenti) -> [piu sotto] IL TUO 2026 (statistiche annuali) + "Vedi
+  statistiche ->" a una pagina con filtri per data.
+
+DECISO con AskUserQuestion (prima del piano):
+1. "Il tuo cammino" SOSTITUISCE la card Passaporto (colonna sinistra).
+   Chiude anche il riequilibrio .dashboard-grid in sospeso da Fase 1.
+2. "Il tuo <anno>" SOSTITUISCE "Quanto hai camminato".
+3. Pagina statistiche filtrabile -> FASE A PARTE, dopo. Nessun link
+   "Vedi statistiche" per ora.
+4. (emersa esplorando) I 3 numeri di "Il tuo <anno>" vengono da
+   /api/tracking/totals, che da' SEMPRE il totale di tutta la vita ->
+   estensione minima: ?anno=YYYY opzionale. UNICO tocco backend di
+   tutta la revisione Dashboard.
+
+FATTO (commit 0f42aa5 su v2-ux):
+- badges.js: progressoZone() (cime per zona, tiene 0<presi<totale,
+  ordina meno-mancanti > percentuale > piu-recente; la Dashboard mostra
+  [0]) e ultimiTraguardi(n) (solo i presi, per data desc; niente
+  completamento coi bloccati). Su statoBadge() - NON il sistema
+  LIVELLI_ASCESA dei punti 86/87, che conta le salite ripetute a UNA
+  cima. Concetti distinti.
+- app.js: renderDashboardStamps -> renderDashJourney + renderDashAchievements;
+  renderTrackingTotals -> renderDashYearSummary (stessa fetch, ?anno=
+  <getFullYear()>; vette dell'anno contate lato client da statoBadge()
+  su b.data). Concordanza 1 vetta / N vette, 1 badge sbloccato.
+  useGrouping:true (come Fase 2).
+- routes/tracking.js /totals: req.query.anno -> un $match in piu' su
+  startedAt. Senza il parametro, risposta IDENTICA a prima. Nessun
+  modello/indice/migrazione, zero impatto MongoDB/RAM.
+- index.html: #dash-journey (3 stati: normale con zona / vette ma nessuna
+  zona a meta' / vuoto), #dash-achievements (griglia + stato vuoto),
+  "Passo & Fatica" spostata fuori dal grid a piena larghezza,
+  #dash-year-summary in fondo.
+- i18n.js: chiavi EN nuove; tolte 11 chiavi orfane del vecchio
+  Passaporto/Totali (verificato: non usate altrove).
+- map.js: lo sblocco timbro dalla Mappa chiamava window.renderDashboardStamps()
+  (rimossa) -> ora chiama le 3 nuove render. Trovato con grep esteso a
+  fine implementazione. Trappola in vault 07.
+
+VERIFICATO in locale (account di Denis, 11/24 badge):
+- "Il tuo cammino" -> Gran Sasso 4/7 scelta CORRETTAMENTE (unica zona
+  con progresso parziale: Maiella/Laga/Simbruini/Sirente-Velino gia
+  complete - incrociato a mano con badge-points.js via console);
+- stati vuoti (nessuna vetta / nessun badge) e stato "vette ma nessuna
+  zona a meta'" (CTA "Scopri le prossime vette");
+- "Il tuo 2026" -> 3 escursioni / 34,6 km / 3.170 m / 2 vette; ?anno=
+  ASSENTE = risposta identica a prima (nessuna regressione);
+- "Ultimi traguardi": 4 badge per data desc, link -> pagina Badge;
+- IT<->EN, console pulita.
+Nessuna prova in prove/ aggiunta per /totals?anno= (modifica a
+compatibilita' totale, fuori dall'ambito accessi/password/email).
+
+
+--- FASE 5: rifinitura finale ---
+
+Spec di Denis: "Rifinitura finale: spaziature, gerarchia, responsive,
+eventuali elementi ridondanti, stati vuoti, coerenza grafica,
+performance, controllo generale UX." + "Questo secondo me e' il punto
+giusto per fermarci. La dashboard deve essere breve, personale e utile,
+non diventare il posto dove infiliamo tutto Camoscio."
+
+FATTO (commit 309ab92 su v2-ux) - solo CSS + micro-ritocco markup/JS,
+dopo un'ispezione dal vivo a desktop e a ~600px:
+- .pace-chart-container max-width 640px: da piena larghezza il grafico
+  si stirava su ~1150px per 4 barre.
+- "Il tuo cammino": il "4 / 7" passa da riga persa sotto la barra a
+  spalla destra del nome zona (#dash-journey-zona in flex space-between,
+  due span). Ritmo verticale uniformato.
+- .dashboard-grid align-items:start: "Ultimi traguardi" (piu corta) non
+  piu stirata all'altezza di "Il tuo cammino".
+- @media 900: "Ultimi traguardi" repeat(3,1fr) (3 badge in fila, non
+  2+1); "Vedi tutti i badge" centrato + width:100% (nell'angolo destro
+  finiva sotto il FAB .app-fab - stesso problema del padding-bottom di
+  #my-hikes, punto 15); .dashboard-grid ~ .glass-card margin-top:16px.
+
+VALUTATO e LASCIATO com'e': emoji negli header degli stati vuoti
+(scaldano, coerenti con l'intento); "vette" che compare sia in "Il tuo
+cammino" (totale) sia in "Il tuo <anno>" (anno) - l'header da' gia' il
+contesto.
+
+Il responsive <900px verificato SOLO in simulazione (resize_window
+inaffidabile su questo Chrome; Denis non prova da telefono perche' la v2
+e' tutta in locale). Da guardare al deploy. Nota in vault 04.
+
+
+--- CHIUSURA SESSIONE ---
+Denis: "ci fermiamo qui, salva tutto, aggiorna i file necessari, prepara
+tutto per riprendere il lavoro nella prossima sessione, poi controllo
+finale e conferma chiusura sessione in sicurezza".
+
+Stato: v2-ux = 5 commit (7915762, 48fb101, 5e2c01d, 0f42aa5, 309ab92) +
+1 di note (2d9fa46), tree pulito, NIENTE pushato. master = efd1290, GIA'
+PUSHATO da Denis fra la 17a e questa sessione (verificato al controllo
+finale: reflog origin/master "update by push"; origin/master == master,
+0 divergenza). La DASHBOARD v2 E' CHIUSA ("finita del tutto", Denis).
+
+DA DOVE SI RIPARTE: il prossimo blocco della revisione UX e' un'ALTRA
+SEZIONE del sito ("nei prossimi giorni faremo lavori del genere su tutto
+il sito"). RIMANDATA a un lavoro a se': la pagina statistiche filtrabile
+(decisa in Fase 4).
+
+Vault committato e pushato. cronologia.txt non toccato (congelato).
