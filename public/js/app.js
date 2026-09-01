@@ -672,14 +672,32 @@ function setupNavigation() {
         }
 
         // Ri-esegui il rendering della sezione specifica per aggiornare i dati freschi
-        triggerSectionRender(targetId);
+        const renderFatto = triggerSectionRender(targetId);
 
         // V2 UX PASSO 10: meccanismo generico data-scroll. Una voce puo' chiedere,
         // dopo la navigazione, di portare in vista un elemento della pagina (es.
-        // "Amici" -> card "Persone"). Fatto in coda, dopo che la sezione e' .active.
+        // "Amici" -> card "Persone", "Vedi statistiche" -> blocco statistiche).
+        // Va fatto DOPO il render sincrono della sezione: un bersaglio in fondo alla
+        // pagina (es. #progress-stats, sotto 15 schede badge + 8 zone) si sposta
+        // mentre la sezione si riempie, e uno scroll fatto subito atterrerebbe corto.
         if (scrollToId) {
-            const bersaglio = document.getElementById(scrollToId);
-            if (bersaglio) bersaglio.scrollIntoView({ behavior: "smooth", block: "start" });
+            const scrollaAlBersaglio = () => {
+                const bersaglio = document.getElementById(scrollToId);
+                // "auto" e non "smooth": uno scroll animato di ~2500px (bersaglio in
+                // fondo alla pagina) viene interrotto dai render async che seguono la
+                // navigazione (createIcons, fetch delle statistiche) e resta a meta'.
+                if (bersaglio) bersaglio.scrollIntoView({ behavior: "auto", block: "start" });
+            };
+            // Due rAF dopo il render sincrono della sezione: il primo lascia
+            // completare il layout dopo gli innerHTML/createIcons, il secondo scrolla
+            // sulla posizione ormai definitiva (un bersaglio in fondo si sposta di
+            // migliaia di px mentre la sezione si riempie).
+            const scrollaDopoLayout = () => requestAnimationFrame(() => requestAnimationFrame(scrollaAlBersaglio));
+            if (renderFatto && typeof renderFatto.then === "function") {
+                renderFatto.then(scrollaDopoLayout, scrollaDopoLayout);
+            } else {
+                scrollaDopoLayout();
+            }
         }
     }
 
@@ -747,9 +765,11 @@ function setupNavigation() {
     window.navigateTo = navigateTo;
 }
 
-// Innesca il render corretto della sezione aperta
+// Innesca il render corretto della sezione aperta. Ritorna la promise del ciclo
+// (refreshState + render sincroni della sezione): navigateTo la usa per fare lo
+// scroll data-scroll DOPO che la pagina si e' riempita.
 function triggerSectionRender(sectionId) {
-    refreshState().then(() => {
+    return refreshState().then(() => {
         switch (sectionId) {
             case "dashboard":
                 renderDashboard();
@@ -773,6 +793,8 @@ function triggerSectionRender(sectionId) {
                 // id figli invariati) + il dettaglio della progressione per zona.
                 if (window.renderBadges) window.renderBadges();
                 if (window.renderProgressoZoneTutte) window.renderProgressoZoneTutte();
+                // PASSO 11b: statistiche filtrabili per intervallo di date.
+                if (window.renderProgressStats) window.renderProgressStats();
                 break;
             case "map-section":
                 if (window.renderWazeReportsList) window.renderWazeReportsList();
@@ -1191,6 +1213,115 @@ async function renderDashYearSummary() {
     }
 }
 
+// V2 UX PASSO 11b - "Le tue statistiche" nella pagina Progressi: gli stessi numeri
+// della card "Il tuo <anno>" (escursioni / km / D+ / vette) ma su un intervallo di
+// date scelto. escursioni/km/D+ dal server (GET /api/tracking/totals?from=&to=,
+// estremi vuoti = tutta la vita); le vette si contano qui dai timbri gia' in
+// memoria (statoBadge, data "YYYY-MM-DD"), stessa scelta di renderDashYearSummary.
+let _statsDebounce = null;
+// La rotta si chiama a raffica (debounce sui due input + i tre bottoni rapidi): le
+// risposte possono tornare fuori ordine e una vecchia sovrascriverebbe i numeri di
+// una piu' recente. Ogni chiamata prende un id; alla risposta si scarta se nel
+// frattempo ne e' partita un'altra.
+let _statsReqId = 0;
+
+function _rangeRapido(tipo) {
+    const oggi = new Date();
+    const iso = (d) => d.toISOString().slice(0, 10);
+    if (tipo === 'anno') return { from: oggi.getFullYear() + '-01-01', to: iso(oggi) };
+    if (tipo === '12mesi') {
+        const p = new Date(oggi);
+        p.setFullYear(p.getFullYear() - 1);
+        return { from: iso(p), to: iso(oggi) };
+    }
+    return { from: '', to: '' }; // "sempre" = nessun parametro
+}
+
+async function renderProgressStats() {
+    const grid = document.getElementById("progress-stats-grid");
+    if (!grid) return;
+    if (!window.CamoscioState || !window.CamoscioState.currentUser) return;
+
+    const fromEl = document.getElementById("progress-stats-from");
+    const toEl = document.getElementById("progress-stats-to");
+    const note = document.getElementById("progress-stats-note");
+    const elHikes = document.getElementById("stats-hikes");
+    const elDist = document.getElementById("stats-distance");
+    const elDisl = document.getElementById("stats-elevation");
+    const elVette = document.getElementById("stats-peaks");
+
+    // Aggancio unico dei listener: input date con debounce + i tre intervalli rapidi.
+    // Stesso schema di setupEmailVerifyBanner (dataset per non agganciare due volte).
+    const box = document.getElementById("progress-stats");
+    if (box && !box.dataset.wired) {
+        box.dataset.wired = "1";
+        const onChange = () => {
+            clearTimeout(_statsDebounce);
+            _statsDebounce = setTimeout(renderProgressStats, 250);
+        };
+        if (fromEl) fromEl.addEventListener("input", onChange);
+        if (toEl) toEl.addEventListener("input", onChange);
+        box.querySelectorAll(".progress-stats-quick button[data-range]").forEach(b => {
+            b.addEventListener("click", () => {
+                const r = _rangeRapido(b.dataset.range);
+                if (fromEl) fromEl.value = r.from;
+                if (toEl) toEl.value = r.to;
+                renderProgressStats();
+            });
+        });
+    }
+
+    const loc = (window.CamoscioI18n && window.CamoscioI18n.getLang() === 'en') ? 'en-GB' : 'it-IT';
+    const raggr = { useGrouping: true };
+    const from = (fromEl && fromEl.value) || "";
+    const to = (toEl && toEl.value) || "";
+
+    // Vette nell'intervallo: lato client, dai timbri (b.data = "YYYY-MM-DD", ordina come
+    // stringa = ordina per data). Un estremo vuoto = aperto da quel lato, coerente col
+    // server (from/to vuoti = tutta la vita).
+    if (elVette && window.CamoscioBadges) {
+        const n = window.CamoscioBadges.statoBadge().filter(b => {
+            if (b.tipo !== 'cima' || !b.sbloccato || !b.data) return false;
+            const d = String(b.data).slice(0, 10);
+            if (from && d < from) return false;
+            if (to && d > to) return false;
+            return true;
+        }).length;
+        elVette.textContent = n.toLocaleString(loc, raggr);
+    }
+
+    const reqId = ++_statsReqId;
+    try {
+        const qs = [];
+        if (from) qs.push("from=" + from);
+        if (to) qs.push("to=" + to);
+        const res = await fetch('/api/tracking/totals' + (qs.length ? '?' + qs.join('&') : ''));
+        if (!res.ok) throw new Error('Richiesta fallita');
+        const t = await res.json();
+        if (reqId !== _statsReqId) return; // una richiesta piu' recente e' partita: scarta
+
+        elHikes.textContent = t.sessioni.toLocaleString(loc, raggr);
+        elDist.textContent = t.distanzaKm.toLocaleString(loc, raggr);
+        elDisl.textContent = t.dislivelloM.toLocaleString(loc, raggr);
+
+        if (note) {
+            if (t.sessioni === 0) {
+                note.textContent = T('progress.statsVuoto') || "Nessuna escursione registrata in questo intervallo.";
+            } else if (t.sessioniSenzaDurata > 0) {
+                note.textContent = T('progress.statsSenzaDurata', t.sessioniSenzaDurata)
+                    || (t.sessioniSenzaDurata + " uscite senza durata registrata: km e dislivello le contano comunque.");
+            } else {
+                note.textContent = "";
+            }
+        }
+    } catch (e) {
+        if (reqId !== _statsReqId) return;
+        console.error("Impossibile calcolare le statistiche filtrate:", e);
+        if (note) note.textContent = T('dash.totaliErrore') || "Non è stato possibile caricare i totali. Riprova più tardi.";
+    }
+}
+window.renderProgressStats = renderProgressStats;
+
 // Fascia in cima al sito per chi non ha ancora confermato l'indirizzo email.
 // LA REGOLA: si vede solo se l'utente NON ha confermato E non e' un account demo. I 4
 // account demo entrano senza password dalla pagina /demo e non hanno un indirizzo: per
@@ -1463,5 +1594,9 @@ if (window.CamoscioI18n) {
         if (window.CamoscioState.currentUser) updateHeaderUserWidget();
         const dash = document.getElementById("dashboard");
         if (dash && dash.classList.contains("active")) renderDashboard();
+        // PASSO 11b: la nota e i numeri localizzati del blocco statistiche di #progress
+        // (renderBadges/renderProgressoZoneTutte hanno gia' il loro onChange in badges.js).
+        const prog = document.getElementById("progress");
+        if (prog && prog.classList.contains("active") && window.renderProgressStats) window.renderProgressStats();
     });
 }

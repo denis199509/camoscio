@@ -166,7 +166,22 @@ router.get('/totals', requireAuth, async (req, res) => {
         // gia' chiama questa rotta non cambia. startedAt e' un vero Date su ogni sessione,
         // anche quelle importate da file (models/ActiveHikeSession.js).
         const filtro = { userId: req.session.userId, status: 'ended' };
-        if (/^\d{4}$/.test(req.query.anno || '')) {
+        // Intervallo esplicito OPZIONALE (?from=YYYY-MM-DD&to=YYYY-MM-DD, revisione UX v2
+        // PASSO 11b - pagina "Progressi" > statistiche filtrabili). Estremi INCLUSIVI: il
+        // giorno "to" per intero, quindi $lt del giorno dopo. Se arrivano sia from/to sia
+        // anno, vincono from/to. I confini sono in UTC come il filtro ?anno qui sotto -
+        // stessa (im)precisione di fuso, per coerenza fra i due. Forma della risposta invariata.
+        const isData = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s || '');
+        if (isData(req.query.from) || isData(req.query.to)) {
+            const range = {};
+            if (isData(req.query.from)) range.$gte = new Date(`${req.query.from}T00:00:00.000Z`);
+            if (isData(req.query.to)) {
+                const giornoDopo = new Date(`${req.query.to}T00:00:00.000Z`);
+                giornoDopo.setUTCDate(giornoDopo.getUTCDate() + 1);
+                range.$lt = giornoDopo;
+            }
+            filtro.startedAt = range;
+        } else if (/^\d{4}$/.test(req.query.anno || '')) {
             const anno = Number(req.query.anno);
             filtro.startedAt = { $gte: new Date(`${anno}-01-01`), $lt: new Date(`${anno + 1}-01-01`) };
         }

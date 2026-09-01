@@ -4213,6 +4213,39 @@ option {
     color: var(--accent-green);
 }
 
+/* V2 UX PASSO 11b - "Le tue statistiche" (#progress-stats): controlli data +
+   intervalli rapidi sopra la stessa griglia .dash-year-grid della card "Il tuo
+   <anno>" (riuso: .total-box / .total-val / .total-lbl). */
+.progress-stats-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 12px 16px;
+    margin: 4px 0 18px;
+}
+
+.progress-stats-date {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.82rem;
+    color: var(--color-text-secondary);
+}
+
+.progress-stats-date input {
+    color-scheme: dark;
+}
+
+.progress-stats-quick {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.dash-year-stats-link {
+    margin-top: 10px;
+}
+
 .badges-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));

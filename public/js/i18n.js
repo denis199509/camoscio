@@ -112,6 +112,16 @@
             'progress.zoneDesc': 'How many peaks you have earned in each zone, and how many are left to complete it.',
             'progress.zoneCompletata': 'Zone completed.',
             'progress.zoneVuoto': 'No zone has catalogued peaks yet.',
+            // PASSO 11b - blocco "Le tue statistiche" (#progress-stats). I numeri
+            // (escursioni/km/D+/vette) riusano dash.annoEscursioni/.kmPercorsi/.mDislivello/.annoVette.
+            'progress.statsTitolo': 'Your stats',
+            'progress.statsDa': 'From',
+            'progress.statsA': 'To',
+            'progress.statsQuestoAnno': 'This year',
+            'progress.statsUltimi12': 'Last 12 months',
+            'progress.statsSempre': 'All time',
+            'progress.statsVuoto': 'No hikes recorded in this range.',
+            'progress.statsSenzaDurata': function (n) { return n + (n === 1 ? ' outing without' : ' outings without') + ' a recorded duration: distance and elevation still count them.'; },
 
             // Sezione Badge - testo statico nell'HTML (data-i18n / data-i18n-html)
             'badges.howto': 'Badges are earned on location: open the <b>Map</b> with your position active and get within 150 meters of the point. Each badge is earned once and kept forever.',
@@ -545,6 +555,8 @@
             'dash.traguardiVuotoCta': 'Discover hikes',
             'dash.annoEscursioni': 'hikes',
             'dash.annoVette': 'peaks',
+            // PASSO 11b: link dalla card "Il tuo <anno>" alla pagina statistiche filtrabile.
+            'dash.vediStatistiche': 'See stats',
             'dash.passoTitolo': 'Pace & Effort Calculator',
             'dash.passoDesc': 'The algorithm learns from your tracked hikes to estimate real walking times.',
             'dash.velocitaAscesa': 'Ascent Speed:',

@@ -758,6 +758,12 @@
                             </div>
                         </div>
                         <p class="small text-muted" id="dash-year-note"></p>
+                        <!-- V2 UX PASSO 11b: il link "Vedi statistiche" (previsto in Fase 4,
+                             lasciato per quando la pagina filtrabile fosse esistita) porta a
+                             #progress e scorre fino al blocco statistiche. -->
+                        <button type="button" class="btn btn-sm btn-secondary btn-nav-trigger dash-year-stats-link" data-target="progress" data-scroll="progress-stats">
+                            <span data-i18n="dash.vediStatistiche">Vedi statistiche</span> →
+                        </button>
                     </div>
                 </section>
 
@@ -984,6 +990,38 @@
                         </h3>
                         <p class="small text-muted" data-i18n="progress.zoneDesc">Quante vette hai conquistato in ogni zona, e quante te ne mancano per completarla.</p>
                         <div id="progress-zones" class="progress-zones"></div>
+                    </div>
+
+                    <!-- V2 UX PASSO 11b: statistiche personali filtrabili per intervallo di
+                         date (il "punto 2" rinviato). escursioni/km/D+ da
+                         GET /api/tracking/totals?from=&to= (estremi vuoti = tutta la vita);
+                         le vette contate lato client dai timbri, come "Il tuo <anno>". -->
+                    <div class="badges-group" id="progress-stats">
+                        <h3 class="badges-group-title">
+                            <i data-lucide="bar-chart-2"></i> <span data-i18n="progress.statsTitolo">Le tue statistiche</span>
+                        </h3>
+                        <div class="progress-stats-controls">
+                            <label class="progress-stats-date">
+                                <span data-i18n="progress.statsDa">Da</span>
+                                <input type="date" id="progress-stats-from">
+                            </label>
+                            <label class="progress-stats-date">
+                                <span data-i18n="progress.statsA">A</span>
+                                <input type="date" id="progress-stats-to">
+                            </label>
+                            <div class="progress-stats-quick">
+                                <button type="button" class="btn btn-sm btn-secondary" data-range="anno" data-i18n="progress.statsQuestoAnno">Quest'anno</button>
+                                <button type="button" class="btn btn-sm btn-secondary" data-range="12mesi" data-i18n="progress.statsUltimi12">Ultimi 12 mesi</button>
+                                <button type="button" class="btn btn-sm btn-secondary" data-range="sempre" data-i18n="progress.statsSempre">Sempre</button>
+                            </div>
+                        </div>
+                        <div class="dash-year-grid" id="progress-stats-grid">
+                            <div class="total-box"><span class="total-val" id="stats-hikes">—</span><span class="total-lbl" data-i18n="dash.annoEscursioni">escursioni</span></div>
+                            <div class="total-box"><span class="total-val" id="stats-distance">—</span><span class="total-lbl" data-i18n="dash.kmPercorsi">km percorsi</span></div>
+                            <div class="total-box"><span class="total-val" id="stats-elevation">—</span><span class="total-lbl" data-i18n="dash.mDislivello">m di dislivello</span></div>
+                            <div class="total-box"><span class="total-val" id="stats-peaks">—</span><span class="total-lbl" data-i18n="dash.annoVette">vette</span></div>
+                        </div>
+                        <p class="small text-muted" id="progress-stats-note"></p>
                     </div>
                 </section>
 
