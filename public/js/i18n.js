@@ -61,7 +61,7 @@
             // Titolo di sezione nell'header (#section-title): la mappa completa
             // sectionId -> titolo resta scritta una volta sola in app.js
             // (updateSectionTitle) - qui solo l'inglese per le sezioni tradotte.
-            'sectionTitle.badges': 'Your Badges',
+            'sectionTitle.badges': 'Badges',
             // Rollout punto 102: manca apposta una voce per squad-page/hike-page (non
             // sono nemmeno in prettyNames, app.js - la loro intestazione e' SEMPRE il
             // nome vero della squadra/escursione, mai un titolo fisso da tradurre qui).
@@ -71,11 +71,15 @@
             // Etichette della barra laterale (public/index.html, <nav class="nav-menu">) -
             // segnalato da Denis il 22/08/2026: restavano in italiano anche a pagina
             // tradotta, perche' non erano mai state marcate, nemmeno nella prova originale
-            // sulla sola pagina Badge. Chiavi separate da sectionTitle.*: sono due posti
-            // diversi (voce di menu compatta vs titolo di pagina) che qui capita abbiano
-            // spesso lo stesso testo, ma potrebbero divergere in futuro (es. un'etichetta
-            // di menu piu' corta del titolo della pagina, come gia' succede in italiano per
-            // "Carpooling & Spese Viaggio" -> solo "Carpooling" nel menu).
+            // sulla sola pagina Badge. Chiavi separate da sectionTitle.* perche' sono due
+            // punti diversi nel codice (voce di menu vs #section-title dell'header, che ha
+            // un meccanismo suo, updateSectionTitle, che parte da prettyNames in app.js).
+            // Dalla revisione UX v2 (PASSO 6, 01/09/2026) portano di proposito LO STESSO
+            // testo: i titoli lunghi dell'header ("Sicurezza & Mesh Simulator", "Carpooling
+            // & Spese Viaggio"...) sono stati accorciati alla forma del menu perche' su
+            // telefono venivano troncati coi "...". Se un domani un titolo di pagina deve
+            // tornare piu' esteso del menu, si cambia qui il valore di sectionTitle.* (e
+            // prettyNames per l'italiano) senza toccare nav.*.
             'nav.dashboard': 'Dashboard',
             'nav.hikes': 'Hikes',
             'nav.myHikes': 'My Hikes',
@@ -619,7 +623,7 @@
             //    fatta per notifyParticipantDecision (secondo lotto).
             // 4) Orario nel registro avvisi (toLocaleTimeString): locale
             //    'en-GB'/'it-IT' come per le date col nome del mese.
-            'sectionTitle.safety': 'Safety & Mesh Simulator',
+            'sectionTitle.safety': 'Safety & Mesh',
 
             // --- Fascia rossa #emergency-banner (globale). data-i18n-html: dentro
             //     c'e' <span id="emergency-banner-timer"> che safety.js aggiorna
@@ -741,15 +745,16 @@
             //    e i messaggi nuovi escono gia' nella lingua attiva.
             // 3) Data col nome del mese in rigaInvitoSquadra (riquadro "Invita a
             //    Gita"): locale 'en-GB'/'it-IT' come per le altre date estese.
-            // 4) sectionTitle.social ("Tribe, Reviews & Squads") diverso da
-            //    nav.social ("Tribe & Squads", piu' corto): il caso previsto dal
-            //    commento di nav.* - etichetta di menu piu' corta del titolo pagina.
+            // 4) sectionTitle.social e nav.social portano lo stesso testo
+            //    ("Tribe & Squads") dalla revisione UX v2 (PASSO 6). Prima l'header
+            //    era piu' lungo ("Tribe, Reviews & Squads"), accorciato perche' su
+            //    telefono si troncava - vedi il commento di nav.* piu' sopra.
             // 5) Un residuo del secondo lotto corretto qui perche' trovato
             //    lavorando nel file: il tooltip "Esperto locale: <zona>" sugli
             //    avatar dei partecipanti in buildHikeCard, ora dietro T()
             //    (riusa profile.espertoLocale del primo lotto). Il badge "Admin"
             //    su squadpage.js resta invariato: e' gia' inglese, come "Carpooling".
-            'sectionTitle.social': 'Tribe, Reviews & Squads',
+            'sectionTitle.social': 'Tribe & Squads',
 
             // --- #social: card "Le tue Squadre Ricorrenti" (HTML statico) ---
             'social.squadsTitle': 'Your Recurring Squads',
@@ -854,13 +859,14 @@
             // modale dedicato a queste due sezioni.
             //
             // Scelte non ovvie:
-            // 1) sectionTitle.carpool aggiunto anche se la voce di menu
-            //    "Carpooling" NON e' tradotta (e' gia' inglese): sono i due
-            //    posti diversi (voce di menu vs titolo di pagina) descritti dal
-            //    commento di nav.* piu' sopra - qui il titolo di pagina in
-            //    italiano e' piu' lungo ("Carpooling & Spese Viaggio"), quindi
-            //    la sua traduzione serve. nav.backpack esisteva gia' dal primo
-            //    lotto ("Smart Backpack"); qui si aggiunge solo sectionTitle.*.
+            // 1) sectionTitle.carpool esiste anche se la voce di menu "Carpooling"
+            //    NON e' tradotta (e' gia' inglese): serve comunque perche' l'header
+            //    ha un meccanismo suo (updateSectionTitle) che parte da prettyNames
+            //    in italiano. Dalla revisione UX v2 (PASSO 6) header e menu portano
+            //    lo stesso testo, "Carpooling" (prima l'header diceva "Carpooling &
+            //    Spese Viaggio" / "...& Travel Costs", accorciato perche' si troncava
+            //    su telefono). Idem sectionTitle.backpack -> "Smart Backpack", uguale
+            //    a nav.backpack (che esisteva gia' dal primo lotto).
             // 2) I nomi degli oggetti della checklist generati dalle REGOLE di
             //    backpack.js (Scarponi da trekking, Mantella impermeabile...),
             //    le categorie (Abbigliamento, Attrezzatura...) e i "generi"
@@ -893,8 +899,8 @@
             //    T('common.cancella') + danger:true. Le altre showConfirmModal
             //    del sito (Mappa, tracciamento, moderazione) restano in
             //    italiano: sono lotti futuri.
-            'sectionTitle.carpool': 'Carpooling & Travel Costs',
-            'sectionTitle.backpack': 'Smart Backpack Checklist',
+            'sectionTitle.carpool': 'Carpooling',
+            'sectionTitle.backpack': 'Smart Backpack',
 
             // Etichette generiche riusabili (come common.elimina/cancella dei
             // lotti precedenti) - stanno qui per i lotti futuri.
