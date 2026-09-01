@@ -997,6 +997,10 @@ option {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 24px;
+    /* FASE 5: ogni card alta quanto il suo contenuto. Senza, lo stretch di default stira
+       "Ultimi traguardi" (piu' corta) all'altezza di "Il tuo cammino" e lascia il bottone
+       "Vedi tutti i badge" isolato in fondo con dello spazio morto sopra. */
+    align-items: start;
 }
 
 .dash-col {
@@ -1292,26 +1296,34 @@ option {
 }
 
 .dash-journey-sub {
-    margin: 2px 0 0;
+    margin: 4px 0 0;
 }
 
 .dash-journey-goal {
     margin-top: 16px;
 }
 
+/* FASE 5: nome zona a sinistra, "4 / 7" a destra sulla STESSA riga. Prima il conteggio stava
+   sotto la barra, piccolo e grigio, dove si perdeva - nei mockup di Denis era in evidenza
+   accanto al nome. */
 .dash-journey-zona {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
     margin: 0 0 6px;
     font-weight: 600;
 }
 
 .dash-journey-count {
-    margin: 6px 0 0;
-    font-size: 0.85rem;
+    flex-shrink: 0;
+    font-size: 0.9rem;
+    font-weight: 600;
     color: var(--color-text-secondary);
 }
 
 .dash-journey-left {
-    margin: 4px 0 0;
+    margin: 6px 0 0;
     font-weight: 600;
 }
 
@@ -1412,6 +1424,11 @@ option {
 .pace-chart-container {
     height: 160px;
     position: relative;
+    /* FASE 5: da quando "Passo & Fatica" e' a piena larghezza (la card gemella "Quanto hai
+       camminato" e' stata rimossa) il grafico si stirava su ~1150px per quattro barre. In
+       mezza colonna era ~570px. Contenuto qui; i tre box velocita'/indice sopra restano a
+       piena larghezza. */
+    max-width: 640px;
 }
 
 /* Chart.js ridimensiona la tela da solo (responsive:true, vedi renderPaceChart in app.js),
@@ -4845,6 +4862,27 @@ option {
 
     .dash-achievements-grid .stamp-slot:nth-child(4) {
         display: none;
+    }
+
+    /* FASE 5: i tre badge rimasti in fila (3 colonne), non 2+1 con una cella vuota. */
+    .dash-achievements-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    /* FASE 5: "Vedi tutti i badge" non nell'angolo destro - li' scrollando finisce sotto il
+       pulsante flottante .app-fab (stesso problema del padding-bottom di #my-hikes, punto 15). */
+    .dash-achievements-more {
+        justify-content: center;
+    }
+
+    .dash-achievements-more .btn {
+        width: 100%;
+    }
+
+    /* FASE 5: lo stacco fra il grid e "Passo & Fatica" / "Il tuo <anno>" segue il gap ridotto
+       del mobile (16px), come tutto il resto. */
+    .dashboard-grid ~ .glass-card {
+        margin-top: 16px;
     }
 
     /* Punto 15: lo storico delle uscite e' l'ultima cosa della pagina "Le mie escursioni",

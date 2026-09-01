@@ -569,11 +569,17 @@
                                     <p class="small text-muted" id="dash-journey-sub"></p>
 
                                     <div class="dash-journey-goal hidden" id="dash-journey-goal">
-                                        <p class="dash-journey-zona" id="dash-journey-zona"></p>
+                                        <!-- FASE 5: nome zona e conteggio "4 / 7" sulla stessa
+                                             riga (prima il conteggio stava sotto la barra). Due
+                                             span separati: renderDashJourney li scrive singolarmente
+                                             (textContent sul <p> cancellerebbe i figli). -->
+                                        <p class="dash-journey-zona" id="dash-journey-zona">
+                                            <span id="dash-journey-zona-name"></span>
+                                            <span class="dash-journey-count" id="dash-journey-count"></span>
+                                        </p>
                                         <div class="badge-progress-track" role="img" id="dash-journey-track">
                                             <div class="badge-progress-bar" id="dash-journey-bar" style="width:0%"></div>
                                         </div>
-                                        <p class="dash-journey-count" id="dash-journey-count"></p>
                                         <p class="dash-journey-left" id="dash-journey-left"></p>
                                     </div>
 

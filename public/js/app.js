@@ -1237,7 +1237,7 @@ function renderDashJourney() {
         // l'ordine lo fa progressoZone). Una sola, mai piu' di una in Dashboard.
         const z = zone[0];
         goal.classList.remove("hidden");
-        document.getElementById("dash-journey-zona").textContent = z.zona;
+        document.getElementById("dash-journey-zona-name").textContent = z.zona;
         document.getElementById("dash-journey-bar").style.width = z.percentuale + "%";
         document.getElementById("dash-journey-track").setAttribute("aria-label",
             T('dash.camminoBarraAria', z.presi, z.totale, z.zona) || `${z.presi} vette su ${z.totale} nel ${z.zona}`);
