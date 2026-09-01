@@ -468,23 +468,19 @@ function renderHikesList() {
 
     // Classificazione calcolata SOLO sulle escursioni gia' filtrate qui sopra (stessa
     // funzione di "Le mie escursioni", punto 59: due pagine non devono poter raccontare
-    // due cose diverse per lo stesso criterio) - "disponibili" e' il complementare delle
-    // altre due, non un quarto confronto scritto a mano.
+    // due cose diverse per lo stesso criterio).
+    // V2 UX PASSO 9: "Escursioni" (Esplora) e' solo scoperta - qui si disegna solo
+    // "A cui puoi partecipare". create/partecipo/fatte servono ancora perche'
+    // "disponibili" e' il loro complementare (non un quarto confronto a mano); i
+    // gruppi "A cui partecipi" e "Completate" vivono ora solo in "Le mie escursioni".
     const { create, partecipo, fatte } = classificaMieEscursioni(filteredHikes);
     const nonDisponibiliIds = new Set([...create, ...partecipo, ...fatte].map(h => h.id));
     const disponibili = filteredHikes.filter(h => !nonDisponibiliIds.has(h.id));
-    const partecipi = [...create, ...partecipo].sort((a, b) => new Date(a.date) - new Date(b.date));
 
     document.getElementById("count-hikes-disponibili").textContent = disponibili.length;
-    document.getElementById("count-hikes-partecipi").textContent = partecipi.length;
-    document.getElementById("count-hikes-completate").textContent = fatte.length;
 
     riempiGruppo("hikes-list-disponibili", disponibili,
         T('hikes.nessunFiltro') || "Nessuna escursione trovata con i filtri inseriti.");
-    riempiGruppo("hikes-list-partecipi", partecipi,
-        T('hikes.nonPartecipiAlcuna') || "Non partecipi a nessuna escursione in programma.");
-    riempiGruppo("hikes-list-completate", fatte,
-        T('hikes.nessunaCompletata') || "Nessuna escursione completata.");
 
     if (window.lucide) window.lucide.createIcons();
 
@@ -583,6 +579,41 @@ function riempiGruppo(idContenitore, escursioni, messaggioVuoto) {
     escursioni.forEach(h => box.appendChild(buildHikeCard(h)));
 }
 
+// --- V2 UX PASSO 9: viste-filtro di "Le mie escursioni" -----------------------
+// Tre viste della STESSA pagina (non tre sezioni): "Tutte" mostra tutti i gruppi,
+// "In programma" solo organizzate + a cui partecipo (= non completate, nessun
+// confronto di date - la trappola del punto 58), "Completate" solo quelle.
+// La scelta sta in localStorage: nessun campo MongoDB (vincolo spazio), e
+// sopravvive a un ridisegno della sezione (renderMyHikes la riapplica in coda).
+// Il filtro vero e' CSS (#my-hikes[data-view="..."] [data-mh-group="..."]); qui si
+// scrive solo l'attributo sulla <section> e la .active sulla sotto-voce di menu.
+const MYHIKES_VISTE = ["tutte", "programma", "completate"];
+const LS_MYHIKES_VISTA = "camoscio.myhikes.view";
+
+function vistaCorrente() {
+    let v = "";
+    try { v = localStorage.getItem(LS_MYHIKES_VISTA) || ""; } catch (e) {}
+    return MYHIKES_VISTE.indexOf(v) === -1 ? "tutte" : v;
+}
+window.vistaCorrente = vistaCorrente;
+
+function impostaVistaMieEscursioni(vista) {
+    if (MYHIKES_VISTE.indexOf(vista) === -1) vista = "tutte";
+    try { localStorage.setItem(LS_MYHIKES_VISTA, vista); } catch (e) {}
+    const sezione = document.getElementById("my-hikes");
+    if (sezione) sezione.setAttribute("data-view", vista);
+    // La .active sulla sotto-voce ha senso solo mentre "Le mie escursioni" e' la
+    // sezione aperta - altrove ci pensa navigateTo a spegnerle tutte (questa funzione
+    // gira anche a cascata da renderHikesList, quando si e' sulla pagina Escursioni).
+    if (sezione && sezione.classList.contains("active")) {
+        document.querySelectorAll('.nav-group[data-group="mie"] .nav-sub[data-view]').forEach(b => {
+            b.classList.toggle("active", b.dataset.view === vista);
+        });
+    }
+}
+window.impostaVistaMieEscursioni = impostaVistaMieEscursioni;
+// ---------------------------------------------------------------------------
+
 function renderMyHikes() {
     const db = window.CamoscioState;
     if (!db || !db.currentUser) return;
@@ -619,6 +650,11 @@ function renderMyHikes() {
                    <div><strong>${fatte.length}</strong><span>${escapeHtml(T('myHikes.completateLabel') || 'completate')}</span></div>
                </div>`;
     }
+
+    // V2 UX PASSO 9: la sezione e' appena stata ridisegnata (da qui, da renderHikesList
+    // o da una delle dodici azioni che aggiornano le escursioni) - riapplica la
+    // vista-filtro corrente. Senza questo, ogni ridisegno riporterebbe a "Tutte".
+    impostaVistaMieEscursioni(vistaCorrente());
 
     if (window.lucide) window.lucide.createIcons();
 }

@@ -3813,6 +3813,22 @@ option {
     margin-bottom: 14px;
 }
 
+/* V2 UX PASSO 9: "Le mie escursioni" ha tre viste-filtro (Tutte / In programma /
+   Completate), scelte dalle sotto-voci del menu. La vista corrente e' in data-view
+   sulla <section id="my-hikes">; qui si nascondono i gruppi che non le appartengono.
+   - "tutte"      -> nessuna regola, si vede tutto.
+   - "programma"  -> solo organizzate + a cui partecipo (= non completate).
+   - "completate" -> solo il gruppo "Escursioni completate".
+   Selettore con #id + attributo = specificita' alta: nessun rischio di conflitto,
+   e .my-hikes-group non ha una regola d'autore su 'display' da dover battere. */
+#my-hikes[data-view="programma"] [data-mh-group="completate"],
+#my-hikes[data-view="programma"] [data-mh-group="progetti"],
+#my-hikes[data-view="completate"] [data-mh-group="organizzate"],
+#my-hikes[data-view="completate"] [data-mh-group="partecipo"],
+#my-hikes[data-view="completate"] [data-mh-group="progetti"] {
+    display: none;
+}
+
 /* ==========================================================================
    STORICO USCITE E CARICAMENTO .GPX — punto 15 di cose_da_fare.txt
 

@@ -369,10 +369,33 @@
                     </div>
                 </div>
 
-                <button class="nav-btn" data-target="my-hikes" id="btn-nav-my-hikes">
-                    <i data-lucide="footprints"></i>
-                    <span data-i18n="nav.myHikes">Le mie escursioni</span>
-                </button>
+                <!-- V2 UX PASSO 9: "Le mie escursioni" diventa un gruppo a fisarmonica.
+                     A differenza di "Esplora", la testa HA un data-target: un click
+                     naviga (alla vista corrente, "Tutte" la prima volta) E apre il
+                     gruppo - non lo chiude mai. Le tre sotto-voci sono viste-filtro
+                     della STESSA pagina (data-view), non sezioni diverse: le governa
+                     impostaVistaMieEscursioni (social.js), non il ciclo .active. -->
+                <div class="nav-group" data-group="mie">
+                    <button class="nav-group-head" data-target="my-hikes" aria-expanded="false" aria-controls="nav-group-mie" id="btn-nav-my-hikes">
+                        <i data-lucide="footprints"></i>
+                        <span data-i18n="nav.myHikes">Le mie escursioni</span>
+                        <i class="nav-chevron" data-lucide="chevron-down"></i>
+                    </button>
+                    <div class="nav-group-body" id="nav-group-mie" hidden>
+                        <button class="nav-btn nav-sub" data-target="my-hikes" data-view="tutte">
+                            <i data-lucide="list"></i>
+                            <span data-i18n="nav.mieTutte">Tutte</span>
+                        </button>
+                        <button class="nav-btn nav-sub" data-target="my-hikes" data-view="programma">
+                            <i data-lucide="calendar-clock"></i>
+                            <span data-i18n="nav.mieProgramma">In programma</span>
+                        </button>
+                        <button class="nav-btn nav-sub" data-target="my-hikes" data-view="completate">
+                            <i data-lucide="circle-check-big"></i>
+                            <span data-i18n="nav.mieCompletate">Completate</span>
+                        </button>
+                    </div>
+                </div>
                 <button class="nav-btn" data-target="social" id="btn-nav-social">
                     <i data-lucide="users"></i>
                     <span data-i18n="nav.community">Community</span>
@@ -560,7 +583,7 @@
                                     <span data-i18n="dash.avventuraApri">Apri escursione</span> <i data-lucide="arrow-right"></i>
                                 </button>
                             </div>
-                            <button type="button" class="dash-hero-adv-more hidden btn-nav-trigger" data-target="my-hikes" id="dash-hero-adv-more">
+                            <button type="button" class="dash-hero-adv-more hidden btn-nav-trigger" data-target="my-hikes" data-view="tutte" id="dash-hero-adv-more">
                                 <span data-i18n="dash.avventuraVediTutte">Vedi tutte le mie escursioni</span> →
                             </button>
                         </div>
@@ -782,32 +805,18 @@
                         </div>
                     </div>
 
-                    <!-- Punto 69: tre categorie invece di un elenco unico, stesso principio gia'
-                         usato in "Le mie escursioni" qui sotto (stessa classe .my-hikes-group) -
-                         "Completate" mostra solo le escursioni concluse a cui si e' partecipato,
-                         perche' il punto 77 fa gia' sparire le altre a monte (GET /api/hikes). -->
+                    <!-- V2 UX PASSO 9: "Escursioni" (Esplora) resta SOLO scoperta - un
+                         elenco, "A cui puoi partecipare". "A cui partecipi" e "Completate"
+                         vivono ora solo in "Le mie escursioni" (viste-filtro), cosi' le due
+                         pagine non raccontano piu' le stesse escursioni due volte.
+                         renderHikesList (social.js) calcola comunque create/partecipo/fatte:
+                         gli servono per sottrarle da "disponibili". -->
                     <div class="my-hikes-group">
                         <h3 class="my-hikes-group-title">
                             <i data-lucide="compass"></i> <span data-i18n="hikes.disponibiliTitolo">A cui puoi partecipare</span>
                             <span class="badge badge-accent" id="count-hikes-disponibili">0</span>
                         </h3>
                         <div class="hikes-grid" id="hikes-list-disponibili"></div>
-                    </div>
-
-                    <div class="my-hikes-group">
-                        <h3 class="my-hikes-group-title">
-                            <i data-lucide="users"></i> <span data-i18n="hikes.partecipiTitolo">A cui partecipi</span>
-                            <span class="badge badge-green" id="count-hikes-partecipi">0</span>
-                        </h3>
-                        <div class="hikes-grid" id="hikes-list-partecipi"></div>
-                    </div>
-
-                    <div class="my-hikes-group">
-                        <h3 class="my-hikes-group-title">
-                            <i data-lucide="circle-check-big"></i> <span data-i18n="hikes.completateTitolo">Completate</span>
-                            <span class="badge badge-primary" id="count-hikes-completate">0</span>
-                        </h3>
-                        <div class="hikes-grid" id="hikes-list-completate"></div>
                     </div>
                 </section>
 
@@ -816,12 +825,16 @@
                      capire quali erano "le mie" richiedeva di scorrerlo tutto cercando i
                      riquadri colorati dentro le singole schede. Qui le stesse schede sono
                      divise in tre gruppi chiari. -->
-                <section id="my-hikes" class="page-section">
+                <!-- V2 UX PASSO 9: data-view = vista-filtro corrente (tutte | programma |
+                     completate), scelta dalle sotto-voci del menu. La governa
+                     impostaVistaMieEscursioni (social.js) + le regole CSS su
+                     #my-hikes[data-view="..."] [data-mh-group="..."]. -->
+                <section id="my-hikes" class="page-section" data-view="tutte">
                     <div class="my-hikes-summary" id="my-hikes-summary">
                         <!-- contatori generati da JS -->
                     </div>
 
-                    <div class="my-hikes-group">
+                    <div class="my-hikes-group" data-mh-group="organizzate">
                         <h3 class="my-hikes-group-title">
                             <i data-lucide="flag"></i> <span data-i18n="myHikes.organizzateTitolo">Organizzate da me</span>
                             <span class="badge badge-accent" id="count-created">0</span>
@@ -830,7 +843,7 @@
                         <div class="hikes-grid" id="my-hikes-created"></div>
                     </div>
 
-                    <div class="my-hikes-group">
+                    <div class="my-hikes-group" data-mh-group="partecipo">
                         <h3 class="my-hikes-group-title">
                             <i data-lucide="users"></i> <span data-i18n="myHikes.partecipoTitolo">A cui partecipo</span>
                             <span class="badge badge-green" id="count-joined">0</span>
@@ -846,7 +859,7 @@
                          dati, che resta due collezioni separate - vedi renderCompletate in
                          public/js/storico.js), stesso principio gia' provato sul profilo utente
                          (punto 74, renderProfileHikes). -->
-                    <div class="my-hikes-group">
+                    <div class="my-hikes-group" data-mh-group="completate">
                         <h3 class="my-hikes-group-title">
                             <i data-lucide="circle-check-big"></i> <span data-i18n="myHikes.completateTitolo">Escursioni completate</span>
                             <span class="badge badge-primary" id="count-completate">0</span>
@@ -889,7 +902,7 @@
                          progettati si vedevano SOLO dentro la scheda della Mappa, cioe' bisognava
                          sapere dov'erano per trovarli. Un percorso che si e' costruiti si cerca
                          qui, insieme alle proprie escursioni - e' la pagina delle proprie cose. -->
-                    <div class="my-hikes-group">
+                    <div class="my-hikes-group" data-mh-group="progetti">
                         <h3 class="my-hikes-group-title">
                             <i data-lucide="route"></i> <span data-i18n="myHikes.progettiTitolo">I miei progetti</span>
                             <span class="badge badge-accent" id="count-projects">0</span>

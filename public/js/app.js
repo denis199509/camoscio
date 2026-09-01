@@ -557,7 +557,11 @@ function setupNavigation() {
     // persiste: segue la navigazione, non e' una scelta esplicita dell'utente.
     // Una foglia fuori dai gruppi non forza ne' chiude nessun gruppo.
     function aggiornaGruppoCorrente(targetId) {
-        const btn = document.querySelector('.nav-btn[data-target="' + targetId + '"]');
+        // V2 UX PASSO 9: la foglia puo' essere un .nav-btn (sottovoce di gruppo o
+        // voce diretta) OPPURE la testa di un gruppo che naviga (es. "Le mie
+        // escursioni", .nav-group-head con data-target).
+        const sel = '[data-target="' + targetId + '"]';
+        const btn = document.querySelector('.nav-btn' + sel + ', .nav-group-head' + sel);
         const gruppo = btn && btn.closest(".nav-group");
         navGroups.forEach(g => {
             const head = g.querySelector(".nav-group-head");
@@ -570,6 +574,15 @@ function setupNavigation() {
         const head = g.querySelector(".nav-group-head");
         if (!head) return;
         head.addEventListener("click", () => {
+            // V2 UX PASSO 9: una testa CON data-target (es. "Le mie escursioni")
+            // naviga e apre il gruppo - mai un toggle che lo chiude. navigateTo
+            // richiama aggiornaGruppoCorrente, che lo apre. Una testa SENZA
+            // data-target ("Esplora") resta un semplice toggle come in PASSO 7.
+            const target = head.getAttribute("data-target");
+            if (target) {
+                navigateTo(target);
+                return;
+            }
             const giaAperto = head.getAttribute("aria-expanded") === "true";
             impostaGruppo(giaAperto ? "" : g.getAttribute("data-group"));
         });
@@ -587,6 +600,10 @@ function setupNavigation() {
 
         // Aggiorna i pulsanti sidebar
         document.querySelectorAll(".nav-btn").forEach(btn => {
+            // V2 UX PASSO 9: le sotto-voci con data-view (viste di "Le mie escursioni")
+            // NON le governa questo ciclo - la singola accesa la sceglie
+            // impostaVistaMieEscursioni, e solo mentre my-hikes e' la sezione attiva.
+            if (btn.dataset.view) return;
             if (btn.getAttribute("data-target") === targetId) {
                 btn.classList.add("active");
             } else {
@@ -594,9 +611,24 @@ function setupNavigation() {
             }
         });
 
+        // V2 UX PASSO 9: uscendo da "Le mie escursioni" si spengono anche le sue
+        // viste-filtro (come ogni altra .nav-btn), cosi' il gruppo, se resta aperto,
+        // non mostra una sotto-voce accesa da un'altra sezione.
+        if (targetId !== "my-hikes") {
+            document.querySelectorAll('.nav-group[data-group="mie"] .nav-sub[data-view]')
+                .forEach(b => b.classList.remove("active"));
+        }
+
         // V2 UX PASSO 7: se la foglia attiva sta dentro un gruppo, apri quel gruppo
         // e segnane la testa. Copre anche i .btn-nav-trigger (card della Dashboard).
         aggiornaGruppoCorrente(targetId);
+
+        // V2 UX PASSO 9: "Le mie escursioni" e' una pagina a viste-filtro - riapplica
+        // quella corrente (data-view sulla <section> + .active sulla sotto-voce). Un
+        // trigger con data-view l'ha gia' scritta in localStorage prima di chiamarci.
+        if (targetId === "my-hikes" && window.impostaVistaMieEscursioni) {
+            window.impostaVistaMieEscursioni(window.vistaCorrente ? window.vistaCorrente() : "tutte");
+        }
 
         // Aggiorna il titolo dell'header
         updateSectionTitle(targetId);
@@ -629,21 +661,27 @@ function setupNavigation() {
         triggerSectionRender(targetId);
     }
 
+    // V2 UX PASSO 9: un elemento di navigazione puo' portare un data-view (le viste
+    // di "Le mie escursioni"). Si fissa la vista PRIMA di navigare: navigateTo poi
+    // richiama impostaVistaMieEscursioni(vistaCorrente()) e trova gia' il valore nuovo,
+    // senza sfarfallio. Gli elementi senza data-view si comportano come prima.
+    function navigaDaElemento(el) {
+        if (!el) return;
+        if (el.dataset.view && window.impostaVistaMieEscursioni) {
+            window.impostaVistaMieEscursioni(el.dataset.view);
+        }
+        navigateTo(el.getAttribute("data-target"));
+    }
+
     // Navigazione tramite pulsanti della sidebar
     navButtons.forEach(btn => {
-        btn.addEventListener("click", () => {
-            const target = btn.getAttribute("data-target");
-            navigateTo(target);
-        });
+        btn.addEventListener("click", () => navigaDaElemento(btn));
     });
 
     // Delegazione dei click per pulsanti interni di navigazione dinamici
     document.addEventListener("click", (e) => {
         const trigger = e.target.closest(".btn-nav-trigger");
-        if (trigger) {
-            const target = trigger.getAttribute("data-target");
-            navigateTo(target);
-        }
+        if (trigger) navigaDaElemento(trigger);
     });
 
     // Punto 59 di cose_da_fare.txt: l'icona del profilo in alto a destra porta alla

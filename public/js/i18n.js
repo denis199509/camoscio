@@ -88,6 +88,11 @@
             'nav.hikes': 'Hikes',
             'nav.map': 'Map',
             'nav.myHikes': 'My Hikes',
+            // V2 UX PASSO 9: sotto-voci di "Le mie escursioni" (viste-filtro della
+            // stessa pagina, non sezioni). "In programma" = non ancora completate.
+            'nav.mieTutte': 'All',
+            'nav.mieProgramma': 'Upcoming',
+            'nav.mieCompletate': 'Completed',
             'nav.community': 'Community',
             'nav.peopleSearch': 'Search People',
             'nav.crea': 'Create',
@@ -279,11 +284,11 @@
             'hikes.tutteDifficolta': 'All difficulties',
             'hikes.tribuLabel': 'Tribe (Lifestyle) — select one or more:',
             'hikes.disponibiliTitolo': 'Open to Join',
-            'hikes.partecipiTitolo': "You're Joining",
-            'hikes.completateTitolo': 'Completed',
+            // V2 UX PASSO 9: "Escursioni" (Esplora) e' solo scoperta - via le chiavi
+            // hikes.partecipiTitolo / hikes.completateTitolo / hikes.nonPartecipiAlcuna /
+            // hikes.nessunaCompletata (i gruppi "A cui partecipi" e "Completate" vivono
+            // ora solo in "Le mie escursioni").
             'hikes.nessunFiltro': 'No hikes found with the selected filters.',
-            'hikes.nonPartecipiAlcuna': "You're not joining any upcoming hike.",
-            'hikes.nessunaCompletata': 'No completed hikes.',
 
             // --- LE MIE ESCURSIONI (public/index.html #my-hikes, social.js +
             // storico.js) ---
