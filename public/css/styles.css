@@ -310,6 +310,81 @@ h1, h2, h3, h4, h5, h6 {
 .nav-crea:hover {
     color: var(--color-text-primary);
 }
+
+/* V2 UX PASSO 13 - popover di "＋ Crea". Ancorato al bottone (wrap position:relative).
+   Niente 'display' sulla regola base: e' un elemento con [hidden] e una regola
+   d'autore che imposta display batterebbe il display:none dello UA sheet (trappola
+   gia' pagata su .nav-group-body). Lo stato "aperto" vive su :not([hidden]). */
+.nav-crea-wrap {
+    position: relative;
+}
+
+.nav-crea-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    z-index: 60;
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 6px;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.5);
+}
+
+.nav-crea-menu:not([hidden]) {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+/* Verso l'alto quando aprirsi in giu' sforerebbe il fondo della .nav-menu (JS). */
+.nav-crea-menu--up {
+    top: auto;
+    bottom: calc(100% + 4px);
+}
+
+.nav-crea-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 12px;
+    background: transparent;
+    border: none;
+    outline: none;
+    border-radius: 8px;
+    color: var(--color-text-secondary);
+    font-size: 0.9rem;
+    text-align: left;
+    cursor: pointer;
+    transition: background var(--transition-speed), color var(--transition-speed);
+}
+
+.nav-crea-menu-item:hover,
+.nav-crea-menu-item:focus-visible {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--color-text-primary);
+}
+
+.nav-crea-menu-item i,
+.nav-crea-menu-item svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+/* Sul rail a icone (<=900px, regola-ponte di PASSO 7) il popover a piena larghezza
+   sarebbe largo 62px: si apre invece a fianco dell'icona. PASSO 8 (drawer) rivede
+   tutta la nav mobile. */
+@media (max-width: 900px) {
+    .nav-crea-menu {
+        left: calc(100% + 6px);
+        right: auto;
+        top: 0;
+        min-width: 190px;
+    }
+}
 /* -------------------------------------------------------------------------- */
 
 .sidebar-footer {

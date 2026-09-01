@@ -415,12 +415,24 @@
                 </div>
 
                 <p class="nav-block-label" data-i18n="nav.blocco.azione">Azione</p>
-                <!-- V2 UX PASSO 7: azione, non una sezione. PASSO 7 apre solo il modale
-                     "nuova escursione"; "nuovo percorso"/"nuova squadra" a PASSO 13. -->
-                <button class="nav-crea" id="btn-nav-crea">
-                    <i data-lucide="plus"></i>
-                    <span data-i18n="nav.crea">Crea</span>
-                </button>
+                <!-- V2 UX PASSO 13: "＋ Crea" apre un popover con 2 voci - nuova escursione
+                     (window.apriModaleNuovaEscursione) e nuovo percorso (Mappa + scroll
+                     alla card "Progetta un percorso"). NIENTE "nuova squadra": si crea
+                     dalla sua card in Community. Il menu si chiude su click-fuori / Esc. -->
+                <div class="nav-crea-wrap">
+                    <button class="nav-crea" id="btn-nav-crea" aria-haspopup="true" aria-expanded="false">
+                        <i data-lucide="plus"></i>
+                        <span data-i18n="nav.crea">Crea</span>
+                    </button>
+                    <div class="nav-crea-menu" id="nav-crea-menu" role="menu" hidden>
+                        <button type="button" class="nav-crea-menu-item" data-crea="escursione" role="menuitem">
+                            <i data-lucide="mountain"></i> <span data-i18n="crea.nuovaEscursione">Nuova escursione</span>
+                        </button>
+                        <button type="button" class="nav-crea-menu-item" data-crea="percorso" role="menuitem">
+                            <i data-lucide="route"></i> <span data-i18n="crea.nuovoPercorso">Nuovo percorso</span>
+                        </button>
+                    </div>
+                </div>
 
                 <p class="nav-block-label" data-i18n="nav.blocco.personale">Area personale</p>
                 <!-- V2 UX PASSO 11: la pagina "Badge" diventa "Progressi" (id sezione
@@ -1145,7 +1157,7 @@
                                  l'ultima cosa che si imposta prima di partire, questa la prima che
                                  si fa quando si programma.
                                  Il contenuto lo disegna public/js/routeplanner.js. -->
-                            <div class="glass-card route-planner-card">
+                            <div class="glass-card route-planner-card" id="route-planner-card">
                                 <h4><i data-lucide="route"></i> <span data-i18n="rp.cardTitolo">Progetta un percorso</span></h4>
                                 <div id="route-planner-body"></div>
                             </div>

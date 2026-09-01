@@ -750,13 +750,54 @@ function setupNavigation() {
         if (ricordato) impostaGruppo(ricordato, { persist: false });
     }
 
-    // V2 UX PASSO 7 - "＋ Crea" (blocco AZIONE): per ora apre solo il modale "nuova
-    // escursione" (funzione condivisa col tasto dentro Escursioni, definita in
-    // social.js). Menu a comparsa con "nuovo percorso"/"nuova squadra" a PASSO 13.
+    // V2 UX PASSO 13 - "＋ Crea" (blocco AZIONE): popover con 2 voci. "Nuova escursione"
+    // apre create-hike-modal (window.apriModaleNuovaEscursione, social.js). "Nuovo
+    // percorso" porta sulla Mappa e scrolla alla card "Progetta un percorso" (nessun
+    // "avvio", e' la card sempre presente - routeplanner.js). Chiude su click-fuori/Esc.
     const btnCrea = document.getElementById("btn-nav-crea");
-    if (btnCrea) {
-        btnCrea.addEventListener("click", () => {
-            if (window.apriModaleNuovaEscursione) window.apriModaleNuovaEscursione();
+    const creaMenu = document.getElementById("nav-crea-menu");
+    if (btnCrea && creaMenu) {
+        const chiudiCreaMenu = () => {
+            creaMenu.hidden = true;
+            btnCrea.setAttribute("aria-expanded", "false");
+        };
+        const apriCreaMenu = () => {
+            creaMenu.hidden = false;
+            btnCrea.setAttribute("aria-expanded", "true");
+            // La .nav-menu ha overflow-y:auto: se il popover verso il basso sfora il
+            // suo fondo viene tagliato -> in quel caso si apre verso l'alto.
+            creaMenu.classList.remove("nav-crea-menu--up");
+            const nav = btnCrea.closest(".nav-menu");
+            if (nav && creaMenu.getBoundingClientRect().bottom > nav.getBoundingClientRect().bottom) {
+                creaMenu.classList.add("nav-crea-menu--up");
+            }
+            const primo = creaMenu.querySelector(".nav-crea-menu-item");
+            if (primo) primo.focus();
+        };
+        btnCrea.addEventListener("click", (e) => {
+            e.stopPropagation();
+            if (creaMenu.hidden) apriCreaMenu(); else chiudiCreaMenu();
+        });
+        creaMenu.addEventListener("click", (e) => {
+            const item = e.target.closest(".nav-crea-menu-item");
+            if (!item) return;
+            chiudiCreaMenu();
+            if (item.dataset.crea === "escursione") {
+                if (window.apriModaleNuovaEscursione) window.apriModaleNuovaEscursione();
+            } else if (item.dataset.crea === "percorso") {
+                navigateTo("map-section", "route-planner-card");
+            }
+        });
+        document.addEventListener("click", (e) => {
+            if (!creaMenu.hidden && !creaMenu.contains(e.target) && !btnCrea.contains(e.target)) {
+                chiudiCreaMenu();
+            }
+        });
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "Escape" && !creaMenu.hidden) {
+                chiudiCreaMenu();
+                btnCrea.focus();
+            }
         });
     }
 

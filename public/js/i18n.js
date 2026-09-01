@@ -100,6 +100,9 @@
             // Via 'nav.peopleSearch' - la voce "Cerca Persone" non esiste piu'.
             'nav.amici': 'Friends',
             'nav.crea': 'Create',
+            // V2 UX PASSO 13: le 2 voci del popover "＋ Crea".
+            'crea.nuovaEscursione': 'New hike',
+            'crea.nuovoPercorso': 'New route',
             // V2 UX PASSO 11: 'nav.badges' -> 'nav.progressi' (la voce "Badge" diventa "Progressi").
             'nav.progressi': 'Progress',
             // V2 UX PASSO 12: #my-profile si sdoppia in "Profilo" (vista) + "Impostazioni" (#settings).
