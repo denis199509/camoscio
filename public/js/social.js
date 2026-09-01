@@ -150,6 +150,26 @@ window.openEditHikeModal = function(hikeId) {
     if (window.lucide) window.lucide.createIcons();
 };
 
+// V2 UX PASSO 7: apertura del modale "nuova escursione" estratta dal listener di
+// #btn-open-create-hike, cosi' anche "＋ Crea" nella barra (app.js, agganciato
+// presto) la riusa senza simulare un click su un bottone che si collega tardi.
+// Stessa forma di window.openEditHikeModal qui sopra (definita a file caricato).
+window.apriModaleNuovaEscursione = function() {
+    const modal = document.getElementById('create-hike-modal');
+    if (!modal) return;
+    // Punto 54: sempre una NUOVA escursione, anche se il modulo era rimasto in
+    // modalita' modifica da un'apertura precedente mai inviata.
+    setHikeModalMode('create');
+    modal.classList.remove('hidden');
+    // Data minima a oggi.
+    document.getElementById('hike-date').min = new Date().toISOString().split('T')[0];
+    // Punto 8: form.reset() non basta a ripulire il punto di ritrovo scelto,
+    // perche' nome/coordinate/avvisi stanno anche fuori dai campi del modulo.
+    if (window.resetTrailheadPicker) window.resetTrailheadPicker();
+    resetHikeRouteSourcePicker();
+    if (window.lucide) window.lucide.createIcons();
+};
+
 function initSocialModule() {
     setupSocialEvents();
     renderSocialModule();
@@ -187,18 +207,9 @@ function setupSocialEvents() {
     const modal = document.getElementById("create-hike-modal");
 
     if (btnOpenModal && modal) {
-        btnOpenModal.addEventListener("click", () => {
-            // Punto 54: questo tasto crea sempre una NUOVA escursione, anche se il modulo
-            // era rimasto in modalita' modifica da un'apertura precedente mai inviata.
-            setHikeModalMode('create');
-            modal.classList.remove("hidden");
-            // Imposta la data minima a oggi
-            document.getElementById("hike-date").min = new Date().toISOString().split("T")[0];
-            // Punto 8: form.reset() non basta a ripulire il punto di ritrovo scelto,
-            // perche' nome/coordinate/avvisi stanno anche fuori dai campi del modulo.
-            if (window.resetTrailheadPicker) window.resetTrailheadPicker();
-            resetHikeRouteSourcePicker();
-        });
+        // Corpo estratto in window.apriModaleNuovaEscursione (in cima al file),
+        // condiviso con "＋ Crea" della barra: una sola copia della logica.
+        btnOpenModal.addEventListener("click", () => window.apriModaleNuovaEscursione());
     }
 
     if (btnCloseModal && modal) {

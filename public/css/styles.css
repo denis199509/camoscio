@@ -203,6 +203,115 @@ h1, h2, h3, h4, h5, h6 {
     box-shadow: 0 4px 15px var(--accent-orange-glow-soft);
 }
 
+/* --- V2 UX PASSO 7: barra di navigazione a gruppi -----------------------------
+   Intestazioni di blocco non cliccabili, gruppi a fisarmonica (un solo gruppo
+   aperto per volta, gestito da app.js), sottovoci rientrate. Solo il minimo per
+   far funzionare la struttura - colori/animazioni fuori da questa fase. La
+   versione mobile (drawer) e' PASSO 8: nella @media 900 piu' in basso c'e' solo
+   una regola-ponte che riporta tutto al rail a icone di oggi. */
+.nav-block-label {
+    margin: 16px 16px 4px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+}
+.nav-menu > .nav-block-label:first-child {
+    margin-top: 4px;
+}
+
+.nav-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.nav-group-head {
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--color-text-secondary);
+    padding: 12px 16px;
+    border-radius: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    text-align: left;
+    transition: all var(--transition-speed);
+}
+
+.nav-group-head:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--color-text-primary);
+}
+
+.nav-group-head > span {
+    flex: 1;
+}
+
+.nav-group-head > svg:last-child {
+    width: 16px;
+    height: 16px;
+    opacity: 0.55;
+    transition: transform var(--transition-speed);
+}
+
+.nav-group-head[aria-expanded="true"] > svg:last-child {
+    transform: rotate(180deg);
+}
+
+/* Gruppo che contiene la sezione attiva: accento tenue, NON il pieno arancione
+   della foglia .nav-btn.active. */
+.nav-group-head.is-current {
+    color: var(--accent-orange);
+}
+
+.nav-group-body {
+    flex-direction: column;
+    gap: 8px;
+    margin-left: 18px;
+    padding-left: 6px;
+    border-left: 1px solid var(--border-color);
+}
+/* Chiuso di default: l'attributo [hidden] da solo non basta perche' una qualsiasi
+   regola d'autore su .nav-group-body batterebbe il display:none dello UA sheet.
+   Il corpo appare solo quando app.js toglie [hidden] (impostaGruppo). */
+.nav-group-body:not([hidden]) {
+    display: flex;
+}
+
+.nav-btn.nav-sub {
+    padding-left: 12px;
+}
+
+/* + Crea: azione, non navigazione. Accento pieno. */
+.nav-crea {
+    background: var(--accent-orange-glow);
+    border: none;
+    outline: none;
+    color: var(--accent-orange);
+    padding: 12px 16px;
+    border-radius: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-align: left;
+    width: 100%;
+    transition: all var(--transition-speed);
+}
+
+.nav-crea:hover {
+    color: var(--color-text-primary);
+}
+/* -------------------------------------------------------------------------- */
+
 .sidebar-footer {
     padding: 16px 24px;
     border-top: 1px solid var(--border-color);
@@ -4960,6 +5069,36 @@ option {
     .nav-btn.active {
         border-left: none;
         border-radius: 12px;
+    }
+
+    /* V2 UX PASSO 7 - REGOLA-PONTE: a <=900px il menu a gruppi collassa nel rail
+       a sole icone di oggi. Spariscono le intestazioni di blocco e le teste dei
+       gruppi; i corpi dei gruppi restano sempre aperti (niente fisarmonica in
+       modalita' rail). PASSO 8 sostituisce tutto questo con il drawer a
+       scomparsa e riscrive questa @media. */
+    .nav-block-label,
+    .nav-group-head {
+        display: none;
+    }
+    .nav-group,
+    .nav-group-body {
+        gap: 8px;
+        margin-left: 0;
+        padding-left: 0;
+        border-left: none;
+    }
+    .nav-group-body {
+        display: flex !important;
+    }
+    .nav-btn.nav-sub {
+        padding-left: 0;
+    }
+    .nav-crea {
+        justify-content: center;
+        padding: 12px 0;
+    }
+    .nav-crea span {
+        display: none;
     }
 
     /* --- Intestazione: deve stare su UNA riga sola ---

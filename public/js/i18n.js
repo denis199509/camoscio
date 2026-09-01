@@ -70,25 +70,30 @@
 
             // Etichette della barra laterale (public/index.html, <nav class="nav-menu">) -
             // segnalato da Denis il 22/08/2026: restavano in italiano anche a pagina
-            // tradotta, perche' non erano mai state marcate, nemmeno nella prova originale
-            // sulla sola pagina Badge. Chiavi separate da sectionTitle.* perche' sono due
-            // punti diversi nel codice (voce di menu vs #section-title dell'header, che ha
-            // un meccanismo suo, updateSectionTitle, che parte da prettyNames in app.js).
-            // Dalla revisione UX v2 (PASSO 6, 01/09/2026) portano di proposito LO STESSO
-            // testo: i titoli lunghi dell'header ("Sicurezza & Mesh Simulator", "Carpooling
-            // & Spese Viaggio"...) sono stati accorciati alla forma del menu perche' su
-            // telefono venivano troncati coi "...". Se un domani un titolo di pagina deve
-            // tornare piu' esteso del menu, si cambia qui il valore di sectionTitle.* (e
-            // prettyNames per l'italiano) senza toccare nav.*.
-            'nav.dashboard': 'Dashboard',
+            // tradotta, perche' non erano mai state marcate. Chiavi separate da
+            // sectionTitle.* perche' sono due punti diversi nel codice (voce di menu vs
+            // #section-title dell'header, che ha un meccanismo suo, updateSectionTitle,
+            // che parte da prettyNames in app.js).
+            // PASSO 6: header = voce di menu. PASSO 7 (01/09/2026): il menu passa a
+            // gruppi. "Home"/"Ispirazioni"/"Community" sono RINOMINE (prima Dashboard/
+            // Feed/Tribu' & Squadre) - i data-target restano dashboard/feed/social.
+            // "Esplora" e' l'intestazione del gruppo, non naviga. nav.ispirazioni sta
+            // piu' in basso, accanto alle altre voci della parte social (punto 113).
+            'nav.blocco.navigazione': 'Navigation',
+            'nav.blocco.azione': 'Action',
+            'nav.blocco.personale': 'Personal area',
+            'nav.blocco.strumenti': 'Tools',
+            'nav.home': 'Home',
+            'nav.esplora': 'Explore',
             'nav.hikes': 'Hikes',
+            'nav.map': 'Map',
             'nav.myHikes': 'My Hikes',
+            'nav.community': 'Community',
+            'nav.peopleSearch': 'Search People',
+            'nav.crea': 'Create',
             'nav.badges': 'Badges',
-            'nav.map': 'Map & Trails',
             'nav.backpack': 'Smart Backpack',
             'nav.safety': 'Safety & Mesh',
-            'nav.social': 'Tribe & Squads',
-            'nav.peopleSearch': 'Search People',
 
             // Sezione Badge - testo statico nell'HTML (data-i18n / data-i18n-html)
             'badges.howto': 'Badges are earned on location: open the <b>Map</b> with your position active and get within 150 meters of the point. Each badge is earned once and kept forever.',
@@ -745,16 +750,16 @@
             //    e i messaggi nuovi escono gia' nella lingua attiva.
             // 3) Data col nome del mese in rigaInvitoSquadra (riquadro "Invita a
             //    Gita"): locale 'en-GB'/'it-IT' come per le altre date estese.
-            // 4) sectionTitle.social e nav.social portano lo stesso testo
-            //    ("Tribe & Squads") dalla revisione UX v2 (PASSO 6). Prima l'header
-            //    era piu' lungo ("Tribe, Reviews & Squads"), accorciato perche' su
-            //    telefono si troncava - vedi il commento di nav.* piu' sopra.
+            // 4) sectionTitle.social e la voce di menu portano lo stesso testo.
+            //    PASSO 6 lo accorcio' da "Tribe, Reviews & Squads"; PASSO 7 (01/09)
+            //    rinomina la sezione "Community" (data-target resta 'social') - vedi
+            //    nav.community nel commento di nav.* piu' sopra.
             // 5) Un residuo del secondo lotto corretto qui perche' trovato
             //    lavorando nel file: il tooltip "Esperto locale: <zona>" sugli
             //    avatar dei partecipanti in buildHikeCard, ora dietro T()
             //    (riusa profile.espertoLocale del primo lotto). Il badge "Admin"
             //    su squadpage.js resta invariato: e' gia' inglese, come "Carpooling".
-            'sectionTitle.social': 'Tribe & Squads',
+            'sectionTitle.social': 'Community',
 
             // --- #social: card "Le tue Squadre Ricorrenti" (HTML statico) ---
             'social.squadsTitle': 'Your Recurring Squads',
@@ -1224,7 +1229,7 @@
             // 5) Conferma "risolvi segnalazione" allineata agli altri "cancella
             //    per sempre" (cancelLabel common.cancella + danger:true), come
             //    la gemella rejectPendingReport del settimo lotto.
-            'sectionTitle.map-section': 'Map & Trails',
+            'sectionTitle.map-section': 'Map',
 
             // --- .map-overlay-instructions + tasto "Dove sono" (#btn-use-real-gps) ---
             'map.overlay.istruzioni': 'Click the map to report hazards or simulate your GPS position to stamp the peak.',
@@ -2036,16 +2041,20 @@
             // proprio), e il testo delle notifiche (lo genera il server, come tutte le altre).
             // ============================================================
 
-            // Voce di barra + titolo di sezione
-            'nav.feed': 'Feed',
-            'sectionTitle.feed': 'Feed',
+            // Voce di barra + titolo di sezione. PASSO 7 (01/09/2026): "Feed" ->
+            // "Ispirazioni" (rinomina; data-target e id di sezione restano 'feed').
+            // La voce ora vive dentro il gruppo "Esplora" della sidebar.
+            'nav.ispirazioni': 'Inspiration',
+            'sectionTitle.feed': 'Inspiration',
             // #section-title dell'uscita: disegnaTestata (outingpage.js) ci scrive poi il nome
             // dell'autore (come #user-profile con lo username) - questa e' la parola di
             // ripiego per l'istante prima, e per il picker della barra dove la sezione non ha voce.
             'sectionTitle.outing-page': 'Outing',
 
-            // Pagina Feed (feed.js + intro statica in index.html)
-            'feed.titolo': 'Feed',
+            // Pagina Feed (feed.js + intro statica in index.html). PASSO 7: il titolo
+            // interno segue la rinomina "Feed" -> "Ispirazioni" (id sezione resta 'feed';
+            // "il feed" come nome comune del flusso resta nei testi di publish.*).
+            'feed.titolo': 'Inspiration',
             'feed.sottotitolo': 'Outings published by the people you follow, most recent first. Tap an outing to open it.',
             'feed.caricamento': 'Loading...',
             'feed.caricaAltre': 'Load more',

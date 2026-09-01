@@ -489,16 +489,18 @@ function setupNavigation() {
     // la navigazione (sotto) sia il cambio lingua (i18n.js, per rimettere a
     // posto il titolo quando si cambia lingua senza navigare altrove).
     const prettyNames = {
-        "dashboard": "Dashboard",
-        "feed": "Feed",
+        // V2 UX PASSO 7: rinomine. I data-target e gli id di sezione NON cambiano
+        // (restano dashboard/feed/social) - cambia solo l'etichetta a schermo.
+        "dashboard": "Home",
+        "feed": "Ispirazioni",
         "hikes": "Escursioni",
         "my-hikes": "Le mie escursioni",
         "badges": "Badge",
-        "map-section": "Mappa & Sentieri",
+        "map-section": "Mappa",
         "carpool": "Carpooling",
         "backpack": "Zaino Intelligente",
         "safety": "Sicurezza & Mesh",
-        "social": "Tribù & Squadre",
+        "social": "Community",
         "people-search": "Cerca Persone",
         "user-profile": "Profilo",
         // #my-profile ha un titolo FISSO (a differenza di #user-profile, dove
@@ -526,6 +528,54 @@ function setupNavigation() {
     }
     window.CamoscioUpdateSectionTitle = updateSectionTitle;
 
+    // --- V2 UX PASSO 7: gruppi a fisarmonica della sidebar ----------------------
+    // I .nav-group-head NON sono .nav-btn (niente data-target): hanno un listener
+    // proprio, agganciato qui (setupNavigation gira PRESTO, prima di initApp - vedi
+    // il commento sul bug del 26/07). Accordion: un solo gruppo aperto per volta.
+    // Lo stato ("quale gruppo") sta in localStorage: nessun campo MongoDB (vincolo
+    // spazio). All'avvio vince la sezione attiva; se e' una foglia fuori dai
+    // gruppi, si ripiega sul gruppo ricordato.
+    const LS_NAV_GRUPPO = "camoscio.nav.gruppoAperto";
+    const navGroups = Array.prototype.slice.call(document.querySelectorAll(".nav-group"));
+
+    function impostaGruppo(nome, opts) {
+        const persist = !opts || opts.persist !== false;
+        navGroups.forEach(g => {
+            const aperto = g.getAttribute("data-group") === nome;
+            const head = g.querySelector(".nav-group-head");
+            const body = g.querySelector(".nav-group-body");
+            if (head) head.setAttribute("aria-expanded", aperto ? "true" : "false");
+            if (body) body.hidden = !aperto;
+        });
+        if (persist) {
+            try { localStorage.setItem(LS_NAV_GRUPPO, nome || ""); } catch (e) {}
+        }
+    }
+
+    // Apre il gruppo che contiene la sezione attiva e ne segna la testa
+    // "is-current" (accento tenue, diverso dal pieno di .nav-btn.active). Non
+    // persiste: segue la navigazione, non e' una scelta esplicita dell'utente.
+    // Una foglia fuori dai gruppi non forza ne' chiude nessun gruppo.
+    function aggiornaGruppoCorrente(targetId) {
+        const btn = document.querySelector('.nav-btn[data-target="' + targetId + '"]');
+        const gruppo = btn && btn.closest(".nav-group");
+        navGroups.forEach(g => {
+            const head = g.querySelector(".nav-group-head");
+            if (head) head.classList.toggle("is-current", g === gruppo);
+        });
+        if (gruppo) impostaGruppo(gruppo.getAttribute("data-group"), { persist: false });
+    }
+
+    navGroups.forEach(g => {
+        const head = g.querySelector(".nav-group-head");
+        if (!head) return;
+        head.addEventListener("click", () => {
+            const giaAperto = head.getAttribute("aria-expanded") === "true";
+            impostaGruppo(giaAperto ? "" : g.getAttribute("data-group"));
+        });
+    });
+    // --------------------------------------------------------------------------
+
     function navigateTo(targetId) {
         sections.forEach(sec => {
             if (sec.id === targetId) {
@@ -543,6 +593,10 @@ function setupNavigation() {
                 btn.classList.remove("active");
             }
         });
+
+        // V2 UX PASSO 7: se la foglia attiva sta dentro un gruppo, apri quel gruppo
+        // e segnane la testa. Copre anche i .btn-nav-trigger (card della Dashboard).
+        aggiornaGruppoCorrente(targetId);
 
         // Aggiorna il titolo dell'header
         updateSectionTitle(targetId);
@@ -600,6 +654,29 @@ function setupNavigation() {
         profileWidget.addEventListener("click", () => {
             navigateTo("my-profile");
             if (window.renderMyProfilePage) window.renderMyProfilePage();
+        });
+    }
+
+    // V2 UX PASSO 7: stato iniziale dei gruppi. La sezione gia' .active (dashboard
+    // all'avvio) e' una foglia fuori dai gruppi -> si ripiega sul gruppo ricordato.
+    const sezioneAttivaIniziale = document.querySelector(".page-section.active");
+    const targetIniziale = sezioneAttivaIniziale ? sezioneAttivaIniziale.id : "dashboard";
+    const btnIniziale = document.querySelector('.nav-btn[data-target="' + targetIniziale + '"]');
+    if (btnIniziale && btnIniziale.closest(".nav-group")) {
+        aggiornaGruppoCorrente(targetIniziale);
+    } else {
+        let ricordato = "";
+        try { ricordato = localStorage.getItem(LS_NAV_GRUPPO) || ""; } catch (e) {}
+        if (ricordato) impostaGruppo(ricordato, { persist: false });
+    }
+
+    // V2 UX PASSO 7 - "＋ Crea" (blocco AZIONE): per ora apre solo il modale "nuova
+    // escursione" (funzione condivisa col tasto dentro Escursioni, definita in
+    // social.js). Menu a comparsa con "nuovo percorso"/"nuova squadra" a PASSO 13.
+    const btnCrea = document.getElementById("btn-nav-crea");
+    if (btnCrea) {
+        btnCrea.addEventListener("click", () => {
+            if (window.apriModaleNuovaEscursione) window.apriModaleNuovaEscursione();
         });
     }
 

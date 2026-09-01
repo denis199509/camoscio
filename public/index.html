@@ -337,30 +337,69 @@
             </div>
             
             <nav class="nav-menu">
+                <p class="nav-block-label" data-i18n="nav.blocco.navigazione">Navigazione</p>
+
                 <button class="nav-btn active" data-target="dashboard" id="btn-nav-dashboard">
-                    <i data-lucide="layout-dashboard"></i>
-                    <span data-i18n="nav.dashboard">Dashboard</span>
+                    <i data-lucide="home"></i>
+                    <span data-i18n="nav.home">Home</span>
                 </button>
-                <button class="nav-btn" data-target="feed" id="btn-nav-feed">
-                    <i data-lucide="newspaper"></i>
-                    <span data-i18n="nav.feed">Feed</span>
-                </button>
-                <button class="nav-btn" data-target="hikes" id="btn-nav-hikes">
-                    <i data-lucide="compass"></i>
-                    <span data-i18n="nav.hikes">Escursioni</span>
-                </button>
+
+                <!-- V2 UX PASSO 7: gruppo a fisarmonica. La testa NON naviga (nessun
+                     data-target): apre/chiude il corpo. Le sottovoci sono .nav-btn come
+                     prima, con lo stesso data-target di sempre. -->
+                <div class="nav-group" data-group="esplora">
+                    <button class="nav-group-head" aria-expanded="false" aria-controls="nav-group-esplora">
+                        <i data-lucide="compass"></i>
+                        <span data-i18n="nav.esplora">Esplora</span>
+                        <i class="nav-chevron" data-lucide="chevron-down"></i>
+                    </button>
+                    <div class="nav-group-body" id="nav-group-esplora" hidden>
+                        <button class="nav-btn nav-sub" data-target="hikes" id="btn-nav-hikes">
+                            <i data-lucide="mountain"></i>
+                            <span data-i18n="nav.hikes">Escursioni</span>
+                        </button>
+                        <button class="nav-btn nav-sub" data-target="map-section" id="btn-nav-map">
+                            <i data-lucide="map"></i>
+                            <span data-i18n="nav.map">Mappa</span>
+                        </button>
+                        <button class="nav-btn nav-sub" data-target="feed" id="btn-nav-feed">
+                            <i data-lucide="sparkles"></i>
+                            <span data-i18n="nav.ispirazioni">Ispirazioni</span>
+                        </button>
+                    </div>
+                </div>
+
                 <button class="nav-btn" data-target="my-hikes" id="btn-nav-my-hikes">
                     <i data-lucide="footprints"></i>
                     <span data-i18n="nav.myHikes">Le mie escursioni</span>
                 </button>
+                <button class="nav-btn" data-target="social" id="btn-nav-social">
+                    <i data-lucide="users"></i>
+                    <span data-i18n="nav.community">Community</span>
+                </button>
+                <button class="nav-btn" data-target="people-search" id="btn-nav-people-search">
+                    <i data-lucide="search"></i>
+                    <span data-i18n="nav.peopleSearch">Cerca Persone</span>
+                </button>
+
+                <p class="nav-block-label" data-i18n="nav.blocco.azione">Azione</p>
+                <!-- V2 UX PASSO 7: azione, non una sezione. PASSO 7 apre solo il modale
+                     "nuova escursione"; "nuovo percorso"/"nuova squadra" a PASSO 13. -->
+                <button class="nav-crea" id="btn-nav-crea">
+                    <i data-lucide="plus"></i>
+                    <span data-i18n="nav.crea">Crea</span>
+                </button>
+
+                <p class="nav-block-label" data-i18n="nav.blocco.personale">Area personale</p>
                 <button class="nav-btn" data-target="badges" id="btn-nav-badges">
                     <i data-lucide="award"></i>
                     <span data-i18n="nav.badges">Badge</span>
                 </button>
-                <button class="nav-btn" data-target="map-section" id="btn-nav-map">
-                    <i data-lucide="map"></i>
-                    <span data-i18n="nav.map">Mappa & Sentieri</span>
-                </button>
+
+                <!-- V2 UX PASSO 7: blocco PONTE. Carpooling / Zaino / Sicurezza restano
+                     raggiungibili qui finché PASSO 14+ non li sposta dentro hike-page (D1).
+                     Questo blocco sparirà allora. -->
+                <p class="nav-block-label" data-i18n="nav.blocco.strumenti">Strumenti</p>
                 <button class="nav-btn" data-target="carpool" id="btn-nav-carpool">
                     <i data-lucide="car"></i>
                     <span>Carpooling</span>
@@ -372,14 +411,6 @@
                 <button class="nav-btn" data-target="safety" id="btn-nav-safety">
                     <i data-lucide="shield-alert"></i>
                     <span data-i18n="nav.safety">Sicurezza & Mesh</span>
-                </button>
-                <button class="nav-btn" data-target="social" id="btn-nav-social">
-                    <i data-lucide="users"></i>
-                    <span data-i18n="nav.social">Tribù & Squadre</span>
-                </button>
-                <button class="nav-btn" data-target="people-search" id="btn-nav-people-search">
-                    <i data-lucide="search"></i>
-                    <span data-i18n="nav.peopleSearch">Cerca Persone</span>
                 </button>
             </nav>
 
@@ -393,7 +424,7 @@
             <!-- Header Superiore -->
             <header class="top-header">
                 <div class="header-search">
-                    <h2 id="section-title" class="section-title">Dashboard</h2>
+                    <h2 id="section-title" class="section-title">Home</h2>
                 </div>
                 
                 <!-- Profilo Utente Corrente (sessione reale, Fase C) -->
@@ -700,7 +731,7 @@
                      GET /api/feed (paginazione a cursore). -->
                 <section id="feed" class="page-section">
                     <div class="glass-card feed-intro">
-                        <h4><i data-lucide="newspaper"></i> <span data-i18n="feed.titolo">Feed</span></h4>
+                        <h4><i data-lucide="sparkles"></i> <span data-i18n="feed.titolo">Ispirazioni</span></h4>
                         <p class="small text-muted" data-i18n="feed.sottotitolo">Le uscite pubblicate dalle persone che segui, più recenti prima. Tocca un'uscita per aprirla.</p>
                     </div>
                     <div id="feed-list"><!-- renderFeed() --></div>
