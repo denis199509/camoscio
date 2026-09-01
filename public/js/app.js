@@ -594,6 +594,45 @@ function setupNavigation() {
     });
     // --------------------------------------------------------------------------
 
+    // --- V2 UX PASSO 8: drawer mobile (<=900px) --------------------------------
+    // A <=900px la .sidebar e' off-canvas (CSS): l'hamburger nell'header la fa
+    // entrare da sinistra sopra uno scrim, con lo stesso identico menu annidato del
+    // desktop. Navigare o toccare lo scrim / Esc la richiude. Sopra i 900px
+    // l'hamburger e' display:none e questo codice non fa nulla di visibile.
+    const drawerToggle = document.getElementById("btn-nav-drawer");
+    const sidebarEl = document.getElementById("main-sidebar");
+    const navScrim = document.getElementById("nav-scrim");
+    function chiudiDrawer() {
+        if (!sidebarEl || !sidebarEl.classList.contains("is-open")) return;
+        sidebarEl.classList.remove("is-open");
+        if (navScrim) navScrim.hidden = true;
+        document.body.classList.remove("no-scroll");
+        if (drawerToggle) {
+            drawerToggle.setAttribute("aria-expanded", "false");
+            drawerToggle.focus();
+        }
+    }
+    function apriDrawer() {
+        if (!sidebarEl) return;
+        sidebarEl.classList.add("is-open");
+        if (navScrim) navScrim.hidden = false;
+        document.body.classList.add("no-scroll");
+        if (drawerToggle) drawerToggle.setAttribute("aria-expanded", "true");
+        const primo = sidebarEl.querySelector(".nav-btn, .nav-group-head, .nav-crea");
+        if (primo) primo.focus();
+    }
+    if (drawerToggle && sidebarEl) {
+        drawerToggle.addEventListener("click", () => {
+            if (sidebarEl.classList.contains("is-open")) chiudiDrawer();
+            else apriDrawer();
+        });
+    }
+    if (navScrim) navScrim.addEventListener("click", chiudiDrawer);
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") chiudiDrawer();
+    });
+    // --------------------------------------------------------------------------
+
     function navigateTo(targetId, scrollToId) {
         // V2 UX PASSO 10: alias di navigazione. Alcune sezioni sono state assorbite
         // in un'altra pagina; l'id vecchio resta valido (deep-link, chiamate da altri
@@ -605,6 +644,9 @@ function setupNavigation() {
             scrollToId = scrollToId || "follow-people-card";
         }
         if (targetId === "badges") targetId = "progress";
+
+        // V2 UX PASSO 8: navigare a una sezione chiude il drawer mobile se aperto.
+        chiudiDrawer();
 
         sections.forEach(sec => {
             if (sec.id === targetId) {

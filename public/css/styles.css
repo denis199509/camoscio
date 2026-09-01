@@ -374,17 +374,9 @@ h1, h2, h3, h4, h5, h6 {
     flex-shrink: 0;
 }
 
-/* Sul rail a icone (<=900px, regola-ponte di PASSO 7) il popover a piena larghezza
-   sarebbe largo 62px: si apre invece a fianco dell'icona. PASSO 8 (drawer) rivede
-   tutta la nav mobile. */
-@media (max-width: 900px) {
-    .nav-crea-menu {
-        left: calc(100% + 6px);
-        right: auto;
-        top: 0;
-        min-width: 190px;
-    }
-}
+/* PASSO 8: nel drawer mobile .nav-crea e' una voce a piena larghezza come sul
+   desktop, quindi il popover usa la stessa regola base (sotto/sopra il bottone,
+   left:0/right:0). Nessun override mobile. */
 /* -------------------------------------------------------------------------- */
 
 .sidebar-footer {
@@ -422,6 +414,46 @@ h1, h2, h3, h4, h5, h6 {
 .section-title {
     font-size: 1.6rem;
     color: var(--color-text-primary);
+}
+
+/* V2 UX PASSO 8 - drawer mobile. Sul desktop l'hamburger, lo scrim e la copia
+   delle bandiere nel footer della sidebar NON esistono visivamente; compaiono
+   solo nella @media <=900px piu' in basso. */
+.nav-drawer-toggle {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    background: transparent;
+    border: none;
+    outline: none;
+    border-radius: 10px;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+}
+
+.nav-drawer-toggle:hover,
+.nav-drawer-toggle:focus-visible {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--color-text-primary);
+}
+
+/* Scrim: niente 'display' sulla regola base (elemento con [hidden] - vedi la
+   trappola dello UA sheet). Lo stato "visibile" vive su :not([hidden]), e solo
+   dentro la @media: sul desktop non si apre mai. */
+.nav-scrim {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 190;
+}
+
+/* Specificita' (0,2,0) per battere '.lang-switcher { display:flex }' piu' in basso. */
+.sidebar-footer .sidebar-lang-switch {
+    display: none;
+    margin-bottom: 12px;
 }
 
 /* User Widget & Quick Switch */
@@ -5250,66 +5282,52 @@ option {
         gap: 0;
     }
 
-    /* --- Barra di navigazione: solo icone --- */
+    /* --- V2 UX PASSO 8: DRAWER a scomparsa (sostituisce il rail a icone + la
+       regola-ponte di PASSO 7). La .sidebar e' off-canvas a sinistra; entra con
+       .is-open (app.js). Dentro, lo STESSO menu annidato del desktop - niente e'
+       nascosto: intestazioni di blocco, teste dei gruppi (fisarmonica), ＋ Crea
+       col testo, footer con le bandiere. Prova vera sul telefono di Denis al deploy. */
+    .nav-drawer-toggle {
+        display: inline-flex;
+    }
+
     .sidebar {
-        width: 62px;
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        width: 280px;
+        max-width: 84vw;
+        transform: translateX(-100%);
+        transition: transform 0.25s ease;
+        z-index: 200;
+        overflow-y: auto;
     }
 
-    .brand {
-        padding: 16px 0;
-        justify-content: center;
+    .sidebar.is-open {
+        transform: translateX(0);
     }
 
-    .logo-text,
-    .nav-btn span,
-    .sidebar-footer {
+    /* Lo scrim compare solo mentre il drawer e' aperto (JS toglie [hidden]). */
+    .nav-scrim:not([hidden]) {
+        display: block;
+    }
+
+    /* Le bandiere lingua: fuori dall'header (troppo stretto), in fondo al drawer. */
+    .user-status-widget > .lang-switcher {
         display: none;
     }
-
-    .nav-menu {
-        padding: 12px 8px;
+    .sidebar-footer .sidebar-lang-switch {
+        display: flex;
     }
 
-    .nav-btn {
-        justify-content: center;
-        padding: 12px 0;
+    /* Niente scroll di sfondo mentre il drawer e' aperto (app.js: body.no-scroll).
+       Il vero contenitore che scorre e' .page-container, non il body. */
+    body.no-scroll {
+        overflow: hidden;
     }
-
-    /* Il bordo sinistro dell'elemento attivo, su una colonnina di sole icone,
-       schiaccerebbe l'icona di lato: si sostituisce con il solo sfondo. */
-    .nav-btn.active {
-        border-left: none;
-        border-radius: 12px;
-    }
-
-    /* V2 UX PASSO 7 - REGOLA-PONTE: a <=900px il menu a gruppi collassa nel rail
-       a sole icone di oggi. Spariscono le intestazioni di blocco e le teste dei
-       gruppi; i corpi dei gruppi restano sempre aperti (niente fisarmonica in
-       modalita' rail). PASSO 8 sostituisce tutto questo con il drawer a
-       scomparsa e riscrive questa @media. */
-    .nav-block-label,
-    .nav-group-head {
-        display: none;
-    }
-    .nav-group,
-    .nav-group-body {
-        gap: 8px;
-        margin-left: 0;
-        padding-left: 0;
-        border-left: none;
-    }
-    .nav-group-body {
-        display: flex !important;
-    }
-    .nav-btn.nav-sub {
-        padding-left: 0;
-    }
-    .nav-crea {
-        justify-content: center;
-        padding: 12px 0;
-    }
-    .nav-crea span {
-        display: none;
+    body.no-scroll .page-container {
+        overflow: hidden;
     }
 
     /* --- Intestazione: deve stare su UNA riga sola ---

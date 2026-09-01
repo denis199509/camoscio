@@ -103,6 +103,8 @@
             // V2 UX PASSO 13: le 2 voci del popover "＋ Crea".
             'crea.nuovaEscursione': 'New hike',
             'crea.nuovoPercorso': 'New route',
+            // V2 UX PASSO 8: aria-label dell'hamburger del drawer mobile.
+            'nav.apriMenu': 'Open menu',
             // V2 UX PASSO 11: 'nav.badges' -> 'nav.progressi' (la voce "Badge" diventa "Progressi").
             'nav.progressi': 'Progress',
             // V2 UX PASSO 12: #my-profile si sdoppia in "Profilo" (vista) + "Impostazioni" (#settings).
@@ -2252,6 +2254,16 @@
             }
             const tradotto = t(el.getAttribute('data-i18n-title'));
             el.title = tradotto !== null ? tradotto : el.dataset.i18nTitleFallback;
+        });
+
+        // data-i18n-label: stesso principio per aria-label (V2 UX PASSO 8, hamburger del
+        // drawer - primo controllo con un aria-label da tradurre).
+        document.querySelectorAll('[data-i18n-label]').forEach(function (el) {
+            if (el.dataset.i18nLabelFallback === undefined) {
+                el.dataset.i18nLabelFallback = el.getAttribute('aria-label') || '';
+            }
+            const tradotto = t(el.getAttribute('data-i18n-label'));
+            el.setAttribute('aria-label', tradotto !== null ? tradotto : el.dataset.i18nLabelFallback);
         });
     }
 
