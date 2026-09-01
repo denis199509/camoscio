@@ -4173,6 +4173,46 @@ option {
     margin-bottom: 14px;
 }
 
+/* V2 UX PASSO 11 - "Il tuo cammino per zona" in fondo a #progress. Una riga per
+   zona: nome + "N / M", barra (riusa .badge-progress-track/.badge-progress-bar
+   della Home e del riepilogo Badge), e la frase "ti mancano N vette". */
+.progress-zones {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.progress-zone-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    margin: 0 0 6px;
+}
+
+.progress-zone-name {
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.progress-zone-count {
+    font-variant-numeric: tabular-nums;
+    color: var(--color-text-secondary);
+    flex-shrink: 0;
+}
+
+.progress-zone-left {
+    margin: 6px 0 0;
+}
+
+.progress-zone-row.is-complete .badge-progress-bar {
+    background: var(--accent-green);
+}
+
+.progress-zone-row.is-complete .progress-zone-left {
+    color: var(--accent-green);
+}
+
 .badges-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));

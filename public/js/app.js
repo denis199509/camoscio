@@ -495,7 +495,9 @@ function setupNavigation() {
         "feed": "Ispirazioni",
         "hikes": "Escursioni",
         "my-hikes": "Le mie escursioni",
-        "badges": "Badge",
+        // V2 UX PASSO 11: la pagina "Badge" e' ora "Progressi" (id sezione #progress).
+        // navigateTo rimappa "badges" -> "progress" prima di arrivare qui.
+        "progress": "Progressi",
         "map-section": "Mappa",
         "carpool": "Carpooling",
         "backpack": "Zaino Intelligente",
@@ -595,10 +597,12 @@ function setupNavigation() {
         // in un'altra pagina; l'id vecchio resta valido (deep-link, chiamate da altri
         // file) e viene rimappato qui, in cima all'imbuto unico.
         //   people-search -> vive nella card "Persone" di #social (ex sezione rimossa)
+        //   badges        -> pagina rinominata "Progressi" (id sezione #progress)
         if (targetId === "people-search") {
             targetId = "social";
             scrollToId = scrollToId || "follow-people-card";
         }
+        if (targetId === "badges") targetId = "progress";
 
         sections.forEach(sec => {
             if (sec.id === targetId) {
@@ -764,8 +768,11 @@ function triggerSectionRender(sectionId) {
                 if (window.renderMyHikes) window.renderMyHikes();
                 if (window.renderProgetti) window.renderProgetti(); // punto 13: i miei progetti
                 break;
-            case "badges":
+            case "progress":
+                // V2 UX PASSO 11: "Progressi" = la vecchia pagina Badge (renderBadges,
+                // id figli invariati) + il dettaglio della progressione per zona.
                 if (window.renderBadges) window.renderBadges();
+                if (window.renderProgressoZoneTutte) window.renderProgressoZoneTutte();
                 break;
             case "map-section":
                 if (window.renderWazeReportsList) window.renderWazeReportsList();

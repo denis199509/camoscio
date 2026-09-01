@@ -154,7 +154,11 @@
     // mancano meno cime (quasi completata), poi la percentuale piu' alta, poi quella con la
     // conquista piu' recente. SOLO cime: i rifugi non entrano in questa progressione (punto 4
     // dello spec).
-    function progressoZone() {
+    // opts.tutte === true -> tutte le zone (anche non iniziate o gia' complete): serve
+    // alla pagina "Progressi" (PASSO 11), che mostra il dettaglio per OGNI zona. Senza
+    // l'opzione il comportamento e' quello di sempre (Home: solo le zone a meta').
+    function progressoZone(opts) {
+        const tutte = !!(opts && opts.tutte);
         const perZona = new Map();
         statoBadge().forEach(b => {
             if (b.tipo !== 'cima' || !b.zona) return;
@@ -167,7 +171,7 @@
             perZona.set(b.zona, z);
         });
         return Array.from(perZona.values())
-            .filter(z => z.presi > 0 && z.presi < z.totale)
+            .filter(z => tutte || (z.presi > 0 && z.presi < z.totale))
             .map(z => Object.assign(z, {
                 mancano: z.totale - z.presi,
                 percentuale: Math.round((z.presi / z.totale) * 100)
@@ -394,12 +398,55 @@
         if (window.lucide) window.lucide.createIcons();
     }
 
+    // PASSO 11 (revisione UX v2) - blocco "Il tuo cammino per zona" in fondo alla
+    // pagina "Progressi": la stessa progressione della Home (barra + "ti mancano N
+    // vette") ma per OGNI zona, non solo quella piu' significativa. Riusa
+    // progressoZone({ tutte: true }) e il markup barra di renderBadges.
+    function renderProgressoZoneTutte() {
+        const box = document.getElementById('progress-zones');
+        if (!box) return;
+        if (!window.CamoscioState || !window.CamoscioState.currentUser) return;
+
+        const esc = window.escapeHtml;
+        const zone = progressoZone({ tutte: true });
+
+        if (!zone.length) {
+            box.innerHTML = `<div class="glass-card text-center py-4 text-muted">${esc(T('progress.zoneVuoto') || 'Nessuna zona con vette a catalogo.')}</div>`;
+            return;
+        }
+
+        box.innerHTML = zone.map(z => {
+            const completa = z.mancano === 0;
+            const aria = T('dash.camminoBarraAria', z.presi, z.totale, z.zona)
+                || `${z.presi} vette su ${z.totale} nel ${z.zona}`;
+            const riga = completa
+                ? (T('progress.zoneCompletata') || 'Zona completata.')
+                : (T('dash.camminoMancano', z.mancano, z.zona)
+                    || `Ti ${z.mancano === 1 ? 'manca' : 'mancano'} ${z.mancano} ${z.mancano === 1 ? 'vetta' : 'vette'} per completare ${z.zona}.`);
+            return `
+                <div class="progress-zone-row${completa ? ' is-complete' : ''}">
+                    <p class="progress-zone-head">
+                        <span class="progress-zone-name">${esc(z.zona)}</span>
+                        <span class="progress-zone-count">${z.presi} / ${z.totale}</span>
+                    </p>
+                    <div class="badge-progress-track" role="img" aria-label="${esc(aria)}">
+                        <div class="badge-progress-bar" style="width: ${z.percentuale}%"></div>
+                    </div>
+                    <p class="progress-zone-left small text-muted">${esc(riga)}</p>
+                </div>`;
+        }).join('');
+    }
+
     window.CamoscioBadges = { catalogo, puntiTimbrabili, statoBadge, statoBadgePer, schedaBadge, anteprima, ultimiTraguardi, progressoZone, dataItaliana, montagneEsperienza, render: renderBadges };
     window.renderBadges = renderBadges;
+    window.renderProgressoZoneTutte = renderProgressoZoneTutte;
 
     // Il cambio lingua (i18n.js) ricostruisce l'HTML della pagina invece di
     // fare uno swap di testContent: renderBadges gia' cancella e ridisegna
     // tutto a ogni chiamata, quindi basta ri-agganciarsi qui invece di
     // inventare un secondo percorso di aggiornamento.
     if (window.CamoscioI18n) window.CamoscioI18n.onChange(renderBadges);
+    // PASSO 11: il blocco zone di "Progressi" si ridisegna al cambio lingua come
+    // renderBadges (esce subito se #progress-zones non e' in pagina).
+    if (window.CamoscioI18n) window.CamoscioI18n.onChange(renderProgressoZoneTutte);
 })();

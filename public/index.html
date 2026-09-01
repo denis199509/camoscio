@@ -423,9 +423,12 @@
                 </button>
 
                 <p class="nav-block-label" data-i18n="nav.blocco.personale">Area personale</p>
-                <button class="nav-btn" data-target="badges" id="btn-nav-badges">
-                    <i data-lucide="award"></i>
-                    <span data-i18n="nav.badges">Badge</span>
+                <!-- V2 UX PASSO 11: la pagina "Badge" diventa "Progressi" (id sezione
+                     #badges -> #progress; navigateTo tiene "badges" come alias). Stesso
+                     contenuto + dettaglio della progressione per ogni zona. -->
+                <button class="nav-btn" data-target="progress" id="btn-nav-progress">
+                    <i data-lucide="trophy"></i>
+                    <span data-i18n="nav.progressi">Progressi</span>
                 </button>
 
                 <!-- V2 UX PASSO 7: blocco PONTE. Carpooling / Zaino / Sicurezza restano
@@ -650,7 +653,7 @@
                                          il testo fra "Continua il tuo cammino" e "Scopri le
                                          prossime vette" secondo lo stato, e applyStaticTranslations
                                          lo riporterebbe sempre al primo. Lo scrive sempre il JS. -->
-                                    <button class="btn btn-sm btn-secondary btn-nav-trigger dash-journey-cta" data-target="badges" id="dash-journey-cta">
+                                    <button class="btn btn-sm btn-secondary btn-nav-trigger dash-journey-cta" data-target="progress" id="dash-journey-cta">
                                         <span>Continua il tuo cammino</span> →
                                     </button>
                                 </div>
@@ -676,7 +679,7 @@
                                 </div>
 
                                 <div class="dash-achievements-more hidden" id="dash-achievements-more">
-                                    <button class="btn btn-sm btn-secondary btn-nav-trigger" data-target="badges">
+                                    <button class="btn btn-sm btn-secondary btn-nav-trigger" data-target="progress">
                                         <i data-lucide="award"></i> <span data-i18n="dash.vediTuttiBadge">Vedi tutti i badge</span>
                                     </button>
                                 </div>
@@ -928,7 +931,10 @@
                      Qui sono divisi per genere, con quota e regione, e il conteggio di quelli
                      presi. L'elenco definitivo lo decidera' l'utente: per aggiungerne altri
                      basta una riga in public/js/badges.js. -->
-                <section id="badges" class="page-section">
+                <!-- V2 UX PASSO 11: id "badges" -> "progress" ("Progressi"). Tutti gli id
+                     FIGLI restano invariati (badges-summary, badges-cime, ...) -> renderBadges
+                     non cambia. navigateTo rimappa l'id vecchio "badges" -> "progress". -->
+                <section id="progress" class="page-section">
                     <div class="badges-summary" id="badges-summary">
                         <!-- contatori e barra di avanzamento generati da JS -->
                     </div>
@@ -968,6 +974,16 @@
                         </h3>
                         <p class="small text-muted" data-i18n="badges.rifugi.sottotitolo">Rifugi e punti di appoggio lungo i percorsi.</p>
                         <div class="badges-grid" id="badges-rifugi"></div>
+                    </div>
+
+                    <!-- V2 UX PASSO 11: dettaglio della progressione per OGNI zona (la Home
+                         ne mostra solo una). Riempito da renderProgressoZoneTutte (badges.js). -->
+                    <div class="badges-group">
+                        <h3 class="badges-group-title">
+                            <i data-lucide="footprints"></i> <span data-i18n="progress.zoneTitolo">Il tuo cammino per zona</span>
+                        </h3>
+                        <p class="small text-muted" data-i18n="progress.zoneDesc">Quante vette hai conquistato in ogni zona, e quante te ne mancano per completarla.</p>
+                        <div id="progress-zones" class="progress-zones"></div>
                     </div>
                 </section>
 

@@ -61,7 +61,8 @@
             // Titolo di sezione nell'header (#section-title): la mappa completa
             // sectionId -> titolo resta scritta una volta sola in app.js
             // (updateSectionTitle) - qui solo l'inglese per le sezioni tradotte.
-            'sectionTitle.badges': 'Badges',
+            // V2 UX PASSO 11: 'sectionTitle.badges' -> 'sectionTitle.progress' (pagina "Progressi").
+            'sectionTitle.progress': 'Progress',
             // Rollout punto 102: manca apposta una voce per squad-page/hike-page (non
             // sono nemmeno in prettyNames, app.js - la loro intestazione e' SEMPRE il
             // nome vero della squadra/escursione, mai un titolo fisso da tradurre qui).
@@ -99,9 +100,18 @@
             // Via 'nav.peopleSearch' - la voce "Cerca Persone" non esiste piu'.
             'nav.amici': 'Friends',
             'nav.crea': 'Create',
-            'nav.badges': 'Badges',
+            // V2 UX PASSO 11: 'nav.badges' -> 'nav.progressi' (la voce "Badge" diventa "Progressi").
+            'nav.progressi': 'Progress',
             'nav.backpack': 'Smart Backpack',
             'nav.safety': 'Safety & Mesh',
+
+            // V2 UX PASSO 11 - blocco "Il tuo cammino per zona" in fondo a #progress
+            // (badges.js -> renderProgressoZoneTutte). "Ti mancano N vette..." riusa
+            // 'dash.camminoMancano' (stessa frase della Home).
+            'progress.zoneTitolo': 'Your path, zone by zone',
+            'progress.zoneDesc': 'How many peaks you have earned in each zone, and how many are left to complete it.',
+            'progress.zoneCompletata': 'Zone completed.',
+            'progress.zoneVuoto': 'No zone has catalogued peaks yet.',
 
             // Sezione Badge - testo statico nell'HTML (data-i18n / data-i18n-html)
             'badges.howto': 'Badges are earned on location: open the <b>Map</b> with your position active and get within 150 meters of the point. Each badge is earned once and kept forever.',
