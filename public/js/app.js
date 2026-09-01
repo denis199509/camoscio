@@ -510,7 +510,9 @@ function setupNavigation() {
         // renderUserProfile ci scrive lo username): tenendolo qui, updateSectionTitle
         // lo rimette a posto da solo a ogni cambio lingua - vedi 'sectionTitle.my-profile'
         // in i18n.js e renderMyProfilePage in profile.js (rollout punto 102, terzo lotto).
-        "my-profile": "Il Tuo Profilo",
+        // V2 UX PASSO 12: header = menu, "Profilo" (era "Il Tuo Profilo"); #settings nuova.
+        "my-profile": "Profilo",
+        "settings": "Impostazioni",
         // #pending-reports-page: stesso caso di #my-profile - titolo fisso, nessuna
         // voce in barra. showPendingReportsPage non lo scrive piu' a mano, ci pensa
         // updateSectionTitle via 'sectionTitle.pending-reports-page' (punto 102, settimo lotto).
@@ -822,6 +824,15 @@ function triggerSectionRender(sectionId) {
                 // (ex sezione #people-search). Va ridisegnata quando si apre la pagina
                 // perche' mostri il suo messaggio iniziale ("scrivi almeno N lettere").
                 if (window.renderPeopleSearchModule) window.renderPeopleSearchModule();
+                break;
+            case "my-profile":
+                // V2 UX PASSO 12: prima #my-profile si raggiungeva solo dal widget
+                // dell'header (che chiama gia' renderMyProfilePage a mano); ora ha una
+                // voce di menu, quindi il render va anche qui.
+                if (window.renderMyProfilePage) window.renderMyProfilePage();
+                break;
+            case "settings":
+                if (window.renderSettingsPage) window.renderSettingsPage();
                 break;
         }
     });

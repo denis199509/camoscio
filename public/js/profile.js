@@ -18,6 +18,7 @@ function initProfileModule() {
 function renderMyProfilePage() {
     const usr = window.CamoscioState.currentUser;
     if (!usr) return;
+    const esc = window.escapeHtml;
 
     // Titolo di sezione (#section-title): FISSO, non dinamico come #user-profile (che ci
     // scrive lo username). La mappa id->titolo vive in un solo posto - prettyNames in
@@ -34,6 +35,23 @@ function renderMyProfilePage() {
         }, window.CamoscioState.peakAscents);
     }
 
+    // V2 UX PASSO 12: #my-profile e' sola vista. Bio in sola lettura (nascosta se vuota),
+    // esperto locale = solo lo stato dichiarato, stesso markup di #user-profile-local-expert
+    // (userprofile.js). La modifica di entrambi vive in #settings ("Impostazioni").
+    const bioView = document.getElementById("my-profile-bio-view");
+    if (bioView) {
+        bioView.innerHTML = usr.bio
+            ? `<p class="profile-bio-text">${esc(usr.bio)}</p>`
+            : "";
+    }
+    const localExpertBox = document.getElementById("my-profile-local-expert");
+    if (localExpertBox) {
+        localExpertBox.innerHTML = (usr.localExpert && usr.localExpert.active)
+            ? `<p class="local-expert-line"><i data-lucide="star"></i> ${esc(T('profile.espertoLocale') || 'Esperto locale')}: <b>${esc(usr.localExpert.area)}</b></p>`
+            : "";
+    }
+    if (window.lucide) window.lucide.createIcons();
+
     // Punto 74: a differenza dell'identita' qui sopra, le escursioni non sono gia' in
     // CamoscioState (Completion/ActiveHikeSession non ci vivono) - stesso fetch della
     // pagina dell'altro utente, stessa funzione condivisa.
@@ -46,10 +64,37 @@ function renderMyProfilePage() {
     if (window.CamoscioProfileBookmarks) {
         window.CamoscioProfileBookmarks.render(usr.id, document.getElementById("my-profile-bookmarks"));
     }
-
-    renderProfileCard(usr);
 }
 window.renderMyProfilePage = renderMyProfilePage;
+
+// V2 UX PASSO 12: pagina "Impostazioni" (#settings). Popola i controlli spostati qui
+// da #my-profile (renderProfileCard, in app.js, gli stessi id di prima) e aggancia una
+// volta lingua + logout. I gestori "salva" (foto/bio/esperto/password) restano
+// agganciati da setupProfileCardEvents (per id, invariati).
+function renderSettingsPage() {
+    const usr = window.CamoscioState.currentUser;
+    if (!usr) return;
+
+    if (window.CamoscioUpdateSectionTitle) window.CamoscioUpdateSectionTitle("settings");
+    // renderProfileCard e' un global di app.js (dichiarazione di funzione top-level):
+    // popola foto/bio/esperto e nasconde il cambio password ai demo, tutto per id.
+    if (typeof renderProfileCard === "function") renderProfileCard(usr);
+
+    // Logout: riusa il pulsante dell'header invece di ripetere la logica. Aggancio
+    // unico (dataset) come setupEmailVerifyBanner.
+    const btnLogout = document.getElementById("btn-settings-logout");
+    if (btnLogout && !btnLogout.dataset.collegato) {
+        btnLogout.dataset.collegato = "1";
+        btnLogout.addEventListener("click", () => {
+            const header = document.getElementById("btn-logout");
+            if (header) header.click();
+        });
+    }
+    // Le bandiere in #settings sono gia' agganciate da i18n.js (aggancia TUTTE le
+    // .lang-flag-btn del documento) - niente da fare qui.
+    if (window.lucide) window.lucide.createIcons();
+}
+window.renderSettingsPage = renderSettingsPage;
 
 // Foto scelta ma non ancora salvata (punto 40): come registerPhotoDataUrl in auth.js.
 let newProfilePhotoDataUrl = null;
@@ -151,7 +196,13 @@ async function saveProfilePhotoAndBio() {
             window.showToast(T('myProfile.profiloAggiornato') || "Profilo aggiornato.", "success");
             await refreshState();
             updateHeaderUserWidget();
-            renderMyProfilePage();
+            // V2 UX PASSO 12: il salvataggio parte da #settings - si ripopolano i suoi
+            // controlli; la vista #my-profile si ridisegna da sola alla prossima apertura
+            // (triggerSectionRender case "my-profile"), o subito se e' lei l'attiva.
+            renderProfileCard(window.CamoscioState.currentUser);
+            if (document.getElementById("my-profile") && document.getElementById("my-profile").classList.contains("active")) {
+                renderMyProfilePage();
+            }
         } else {
             const dati = await response.json();
             window.showToast(dati.error || T('myProfile.erroreSalva') || "Non è stato possibile salvare le modifiche.", "error");
@@ -241,7 +292,12 @@ async function saveLocalExpertStatus() {
                 : (T('myProfile.espertoDisattivato') || "Layer esperto locale disattivato."), "success");
 
             await refreshState();
-            renderMyProfilePage();
+            // V2 UX PASSO 12: come per foto/bio - si ripopola #settings; #my-profile
+            // (stato dichiarato + cime col livello) si aggiorna alla prossima apertura.
+            renderProfileCard(window.CamoscioState.currentUser);
+            if (document.getElementById("my-profile") && document.getElementById("my-profile").classList.contains("active")) {
+                renderMyProfilePage();
+            }
         }
     } catch (e) {
         console.error("Errore nel salvataggio dello stato esperto locale:", e);

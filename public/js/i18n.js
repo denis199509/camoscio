@@ -102,6 +102,9 @@
             'nav.crea': 'Create',
             // V2 UX PASSO 11: 'nav.badges' -> 'nav.progressi' (la voce "Badge" diventa "Progressi").
             'nav.progressi': 'Progress',
+            // V2 UX PASSO 12: #my-profile si sdoppia in "Profilo" (vista) + "Impostazioni" (#settings).
+            'nav.profilo': 'Profile',
+            'nav.impostazioni': 'Settings',
             'nav.backpack': 'Smart Backpack',
             'nav.safety': 'Safety & Mesh',
 
@@ -578,9 +581,23 @@
             'dash.chartAscesa': 'Ascent (m/hour)',
             'dash.chartDiscesa': 'Descent (m/hour)',
 
-            // --- PROFILO PROPRIO (#my-profile): testo statico nell'HTML ---
-            'sectionTitle.my-profile': 'Your Profile',
+            // --- PROFILO PROPRIO (#my-profile) + IMPOSTAZIONI (#settings): testo statico ---
+            // V2 UX PASSO 12: header = menu -> "Profile". #settings e' la pagina di config.
+            'sectionTitle.my-profile': 'Profile',
+            'sectionTitle.settings': 'Settings',
             'myProfile.cardTitolo': 'Your Profile',
+            'myProfile.modificaInImpostazioni': 'Edit in Settings',
+            'settings.accountTitolo': 'Account',
+            'settings.linguaTitolo': 'Language',
+            'settings.linguaDesc': 'The same two flags stay in the header too.',
+            'settings.sessioneTitolo': 'Session',
+            'settings.logoutDesc': 'End the session on this device.',
+            'settings.altreTitolo': 'Other settings',
+            'settings.altreDesc': 'Coming soon. Not active yet.',
+            'settings.phNotifiche': 'Notification settings',
+            'settings.phPrivacy': 'Privacy',
+            'settings.phEmail': 'Change email',
+            'settings.phElimina': 'Delete account',
             'myProfile.rimuoviFoto': 'Remove photo',
             'myProfile.bioLabel': 'Bio (max 250 characters):',
             'myProfile.bioPlaceholder': 'Tell us something about yourself...',

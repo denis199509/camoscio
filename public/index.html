@@ -430,6 +430,18 @@
                     <i data-lucide="trophy"></i>
                     <span data-i18n="nav.progressi">Progressi</span>
                 </button>
+                <!-- V2 UX PASSO 12: #my-profile si sdoppia. "Profilo" = sola vista (come mi
+                     vedono gli altri); "Impostazioni" (#settings, nuova) = foto/bio/esperto/
+                     password/lingua/logout + i placeholder. Il widget utente nell'header
+                     porta comunque a "Profilo". -->
+                <button class="nav-btn" data-target="my-profile" id="btn-nav-profile">
+                    <i data-lucide="user"></i>
+                    <span data-i18n="nav.profilo">Profilo</span>
+                </button>
+                <button class="nav-btn" data-target="settings" id="btn-nav-settings">
+                    <i data-lucide="settings"></i>
+                    <span data-i18n="nav.impostazioni">Impostazioni</span>
+                </button>
 
                 <!-- V2 UX PASSO 7: blocco PONTE. Carpooling / Zaino / Sicurezza restano
                      raggiungibili qui finché PASSO 14+ non li sposta dentro hike-page (D1).
@@ -1897,10 +1909,57 @@
                         <!-- Riempito da JS SOLO se ho un badge personale -->
                     </div>
 
-                    <!-- Card Profilo: foto/bio, esperto locale, cambio password - stesso markup
-                         che prima stava nella Dashboard (punto 40, punto 41: KYC tolta). -->
+                    <!-- V2 UX PASSO 12: #my-profile e' SOLA VISTA - come mi vedono gli altri
+                         (stesso schema di #user-profile). Bio in sola lettura (riempita da
+                         renderMyProfilePage), esperto locale = solo lo stato dichiarato +
+                         le cime col livello (renderProfileIdentity, come su #user-profile).
+                         Foto/bio/esperto/password si modificano in "Impostazioni" (#settings). -->
+                    <div id="my-profile-bio-view" class="profile-bio-view"></div>
+                    <div id="my-profile-local-expert"></div>
+                    <!-- Punto 63b: le cime dove ho raggiunto un livello (5+ salite) -
+                         guadagnate, non dichiarate. Riempito da renderProfileIdentity. -->
+                    <div id="my-profile-expert-peaks"></div>
+
+                    <p class="profile-edit-link-row">
+                        <button type="button" class="btn btn-sm btn-secondary btn-nav-trigger" data-target="settings">
+                            <i data-lucide="settings"></i> <span data-i18n="myProfile.modificaInImpostazioni">Modifica in Impostazioni</span> →
+                        </button>
+                    </p>
+
+                    <!-- Punto 74: stesso elenco di #user-profile-hikes qui sopra, riempito dalla
+                         stessa funzione condivisa renderProfileHikes(). -->
+                    <div class="profile-hikes-group">
+                        <h3 class="badges-group-title">
+                            <i data-lucide="footprints"></i> <span data-i18n="profile.escursioni">Escursioni</span>
+                        </h3>
+                        <div id="my-profile-hikes"></div>
+                    </div>
+
+                    <!-- Punto 80/G: stesso elenco di #user-profile-bookmarks qui sopra,
+                         riempito dalla stessa funzione condivisa renderProfileBookmarks(). -->
+                    <div class="profile-hikes-group">
+                        <h3 class="badges-group-title">
+                            <i data-lucide="bookmark"></i> <span data-i18n="profile.sentieriPreferiti">Sentieri preferiti 🐐</span>
+                        </h3>
+                        <div id="my-profile-bookmarks"></div>
+                    </div>
+
+                    <div class="badges-group">
+                        <h3 class="badges-group-title">
+                            <i data-lucide="award"></i> <span data-i18n="profile.badgeGuadagnati">Badge guadagnati</span>
+                        </h3>
+                        <div class="badges-grid" id="my-profile-badges"></div>
+                    </div>
+                </section>
+
+                <!-- V2 UX PASSO 12: IMPOSTAZIONI (#settings, NUOVA). Configurazione
+                     dell'account. Contiene SOLO cio' che gia' esisteva in #my-profile,
+                     SPOSTATO qui verbatim (ids invariati -> profile.js/renderProfileCard
+                     non cambiano) + lingua + logout + i placeholder. Nessuna feature nuova:
+                     le righe placeholder sono inerti, struttura pronta. -->
+                <section id="settings" class="page-section">
                     <div class="glass-card profile-card">
-                        <h4><i data-lucide="user-check"></i> <span data-i18n="myProfile.cardTitolo">Il Tuo Profilo</span></h4>
+                        <h4><i data-lucide="user-check"></i> <span data-i18n="settings.accountTitolo">Account</span></h4>
 
                         <div class="profile-section photo-bio-section">
                             <div class="photo-upload-row">
@@ -1928,17 +1987,10 @@
                                     <button class="btn btn-sm btn-primary" id="btn-save-local-expert" data-i18n="common.salva">Salva</button>
                                 </div>
                             </div>
-                            <!-- Punto 63b, 17/08/2026: le cime dove ho raggiunto un livello
-                                 (5+ salite) - guadagnate, non c'e' niente da dichiarare qui
-                                 sotto come sopra. Riempito da renderProfileIdentity. -->
-                            <div id="my-profile-expert-peaks"></div>
                         </div>
 
-                        <!-- Punto 7 di cose_da_fare.txt: prima di oggi NON esisteva nessuna
-                             schermata per cambiare la password. Chi voleva solo cambiarla
-                             doveva fingere di averla dimenticata e passare dall'email.
-                             Nascosta per gli account demo (entrano senza password, non ne
-                             hanno una da cambiare): la mostra profile.js. -->
+                        <!-- Punto 7: cambio password. Nascosta per gli account demo (entrano
+                             senza password): la mostra renderProfileCard (app.js). -->
                         <div class="profile-section change-password-section hidden" id="change-password-section">
                             <p class="small text-muted" data-i18n="myProfile.cambioPwdDesc">Cambia la password del tuo account. Serve quella attuale.</p>
                             <div class="form-group">
@@ -1957,29 +2009,42 @@
                         </div>
                     </div>
 
-                    <!-- Punto 74: stesso elenco di #user-profile-hikes qui sopra, riempito dalla
-                         stessa funzione condivisa renderProfileHikes(). -->
-                    <div class="profile-hikes-group">
-                        <h3 class="badges-group-title">
-                            <i data-lucide="footprints"></i> <span data-i18n="profile.escursioni">Escursioni</span>
-                        </h3>
-                        <div id="my-profile-hikes"></div>
+                    <div class="glass-card settings-card">
+                        <h4><i data-lucide="languages"></i> <span data-i18n="settings.linguaTitolo">Lingua</span></h4>
+                        <div class="settings-row">
+                            <span class="small text-muted" data-i18n="settings.linguaDesc">Le stesse due bandiere restano anche nell'intestazione.</span>
+                            <div class="lang-switcher" role="group" aria-label="Lingua / Language">
+                                <button type="button" class="lang-flag-btn" data-lang="it" title="Italiano" aria-label="Italiano" aria-pressed="true">
+                                    <svg viewBox="0 0 3 2" aria-hidden="true"><rect width="1" height="2" fill="#009246"/><rect width="1" height="2" x="1" fill="#fff"/><rect width="1" height="2" x="2" fill="#ce2b37"/></svg>
+                                </button>
+                                <button type="button" class="lang-flag-btn" data-lang="en" title="English" aria-label="English" aria-pressed="false">
+                                    <svg viewBox="0 0 60 30" aria-hidden="true"><rect width="60" height="30" fill="#00247d"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" stroke-width="6"/><path d="M30,0 V30 M0,15 H60" stroke="#fff" stroke-width="10"/><path d="M30,0 V30 M0,15 H60" stroke="#cf142b" stroke-width="6"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#cf142b" stroke-width="2"/></svg>
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
-                    <!-- Punto 80/G: stesso elenco di #user-profile-bookmarks qui sopra,
-                         riempito dalla stessa funzione condivisa renderProfileBookmarks(). -->
-                    <div class="profile-hikes-group">
-                        <h3 class="badges-group-title">
-                            <i data-lucide="bookmark"></i> <span data-i18n="profile.sentieriPreferiti">Sentieri preferiti 🐐</span>
-                        </h3>
-                        <div id="my-profile-bookmarks"></div>
+                    <div class="glass-card settings-card">
+                        <h4><i data-lucide="log-out"></i> <span data-i18n="settings.sessioneTitolo">Sessione</span></h4>
+                        <div class="settings-row">
+                            <span class="small text-muted" data-i18n="settings.logoutDesc">Chiudi la sessione su questo dispositivo.</span>
+                            <button type="button" class="btn btn-sm btn-secondary" id="btn-settings-logout">
+                                <i data-lucide="log-out"></i> <span data-i18n="header.esci">Esci</span>
+                            </button>
+                        </div>
                     </div>
 
-                    <div class="badges-group">
-                        <h3 class="badges-group-title">
-                            <i data-lucide="award"></i> <span data-i18n="profile.badgeGuadagnati">Badge guadagnati</span>
-                        </h3>
-                        <div class="badges-grid" id="my-profile-badges"></div>
+                    <!-- Struttura pronta, nessuna feature nuova (deciso nel piano): queste
+                         righe sono inerti finche' non diventano punti a se'. -->
+                    <div class="glass-card settings-card settings-placeholder">
+                        <h4><i data-lucide="sliders-horizontal"></i> <span data-i18n="settings.altreTitolo">Altre impostazioni</span></h4>
+                        <p class="small text-muted" data-i18n="settings.altreDesc">In arrivo. Per ora non sono attive.</p>
+                        <ul class="settings-placeholder-list">
+                            <li data-i18n="settings.phNotifiche">Gestione notifiche</li>
+                            <li data-i18n="settings.phPrivacy">Privacy</li>
+                            <li data-i18n="settings.phEmail">Cambio email</li>
+                            <li data-i18n="settings.phElimina">Elimina account</li>
+                        </ul>
                     </div>
                 </section>
 
