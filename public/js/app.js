@@ -817,18 +817,19 @@ function setupNotificationBell() {
 // Blocco di apertura della Dashboard (revisione UX v2). Due stati:
 //  - senza una prossima avventura: sottotitolo neutro, nessuna card
 //  - con un'escursione CONFERMATA in programma: sottotitolo dedicato + la card
-//    #dash-hero-adventure (titolo, quando + conto alla rovescia, numeri se ci sono, punto di
-//    partenza se c'e', partecipanti, "Apri escursione").
+//    #dash-hero-adventure (titolo, "Organizzata da te" se l'ho creata io, quando + conto alla
+//    rovescia, numeri se ci sono, punto di partenza se c'e', partecipanti, "Apri escursione",
+//    link "vedi tutte" se ne ho piu' di una in programma - le ultime due, FASE 3).
 function renderDashHero(usr) {
     const nome = usr.username.split(" ")[0];
     const greetEl = document.getElementById("dash-hero-greet");
     if (greetEl) greetEl.textContent = T("dash.ciaoNome", nome) || ("Ciao " + nome + " 👋");
 
-    const prossima = prossimaAvventura(usr);
+    const avventura = prossimaAvventura(usr);
 
     const subEl = document.getElementById("dash-hero-sub");
     if (subEl) {
-        subEl.textContent = prossima
+        subEl.textContent = avventura
             ? (T("dash.heroSubProssima") || "La tua prossima avventura è quasi pronta.")
             : (T("dash.heroSubDefault") || "Pronto per la prossima avventura?");
     }
@@ -837,16 +838,25 @@ function renderDashHero(usr) {
     const openBtn = document.getElementById("dash-hero-adventure-open");
     if (!card) return;
 
-    if (!prossima) {
+    if (!avventura) {
         card.classList.add("hidden");
         if (openBtn) openBtn.onclick = null;
         return;
     }
 
+    const prossima = avventura.hike;
     const loc = (window.CamoscioI18n && window.CamoscioI18n.getLang() === "en") ? "en-GB" : "it-IT";
 
     // Titolo: testo scritto dall'utente -> textContent, mai innerHTML.
     document.getElementById("dash-hero-adv-title").textContent = prossima.title;
+
+    // FASE 3: "Organizzata da te", solo se l'ha creata l'utente - qualifica il titolo, quindi
+    // gli sta subito sotto. Stesso meccanismo .hidden di -stats/-from piu' sotto.
+    const orgEl = document.getElementById("dash-hero-adv-org");
+    if (orgEl) {
+        orgEl.textContent = T("dash.avventuraOrganizzata") || "Organizzata da te";
+        orgEl.classList.toggle("hidden", !avventura.organizzata);
+    }
 
     // Quando: "Giorno D mese · <oggi | domani | fra N giorni>".
     const d = new Date(prossima.date + "T12:00:00");
@@ -884,6 +894,11 @@ function renderDashHero(usr) {
     document.getElementById("dash-hero-adv-people").textContent =
         "👥 " + (T("dash.avventuraPartecipanti", n) || (n + (n === 1 ? " partecipante" : " partecipanti")));
 
+    // FASE 3: link "vedi tutte", solo se ce n'e' piu' di una in futuro - con una sola non
+    // porterebbe a vedere niente di diverso da questa stessa card.
+    const moreEl = document.getElementById("dash-hero-adv-more");
+    if (moreEl) moreEl.classList.toggle("hidden", avventura.totale <= 1);
+
     if (openBtn) openBtn.onclick = () => { if (window.showHikePage) window.showHikePage(prossima.id); };
     card.classList.remove("hidden");
 }
@@ -893,14 +908,20 @@ function renderDashHero(usr) {
 // in avanti, la piu' vicina. Date "YYYY-MM-DD" (models/Hike.js), si ordinano come stringhe.
 // NB: non si riusa escursioneDiRiferimento() dello Zaino - quella tiene conto del selettore
 // manuale dello Zaino e dell'activeHikeId, che qui sarebbero effetti collaterali sbagliati.
+// FASE 3: oltre all'escursione, serve sapere quante ce ne sono in futuro (per il link "vedi
+// tutte") e se questa l'ha creata l'utente (per "Organizzata da te") - calcolate qui una volta
+// sola sulla stessa lista "confermate", invece di rifare altrove lo stesso filtro (punti 98/B,
+// 101: mai due copie della stessa logica che possono disallinearsi in silenzio).
 function prossimaAvventura(usr) {
     if (!window.classificaMieEscursioni) return null;
     const { create, partecipo } = window.classificaMieEscursioni();
     const confermate = create.concat(partecipo.filter(h => (h.participants || []).includes(usr.id)));
     const oggi = new Date().toISOString().slice(0, 10);
-    return confermate
+    const future = confermate
         .filter(h => h.date && h.date >= oggi)
-        .sort((a, b) => a.date.localeCompare(b.date))[0] || null;
+        .sort((a, b) => a.date.localeCompare(b.date));
+    if (!future.length) return null;
+    return { hike: future[0], totale: future.length, organizzata: create.includes(future[0]) };
 }
 
 // Giorni interi da oggi alla data "YYYY-MM-DD". Ancorate a mezzogiorno cosi' il passaggio

@@ -1071,6 +1071,14 @@ option {
     line-height: 1.2;
 }
 
+/* FASE 3: qualifica il titolo, quindi le sta appena sotto e attaccata - non e' un dato
+   dell'escursione come le righe sotto, e' un'etichetta su chi l'ha creata. */
+.dash-hero-adv-org {
+    margin: 2px 0 0;
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
+}
+
 .dash-hero-adv-when {
     margin: 4px 0 0;
     color: var(--color-text-primary);
@@ -1103,6 +1111,21 @@ option {
 .dash-hero-adventure .btn i {
     width: 16px;
     height: 16px;
+}
+
+/* FASE 3: link "vedi tutte", discreto per davvero - non un .btn come "Vedi tutti i badge" del
+   Passaporto, competerebbe con "Apri escursione" appena sopra. Bottone reso link (nessun bordo/
+   sfondo), allineato a destra sotto il piede. */
+.dash-hero-adv-more {
+    display: block;
+    margin: 8px 0 0 auto;
+    padding: 0;
+    background: none;
+    border: 0;
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
+    text-decoration: underline;
+    cursor: pointer;
 }
 
 /* Desktop: i due pulsanti affiancati. Su contenitore stretto vanno a capo da soli e

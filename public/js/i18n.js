@@ -498,6 +498,9 @@
             'dash.avventuraFraGiorni': function (n) { return 'in ' + n + ' days'; },
             'dash.avventuraDa': function (nome) { return 'from ' + nome; },
             'dash.avventuraPartecipanti': function (n) { return n + (n === 1 ? ' participant' : ' participants'); },
+            // FASE 3
+            'dash.avventuraOrganizzata': 'Organised by you',
+            'dash.avventuraVediTutte': 'See all my hikes',
             'dash.passaportoTitolo': 'Digital Peak Passport',
             'dash.geofencingAttivo': 'Geofencing Active',
             'dash.passaportoDesc': 'Reach the peaks and huts to unlock collectible digital stamps. Use the map to simulate your GPS position!',

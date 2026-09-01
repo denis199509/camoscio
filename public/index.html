@@ -513,9 +513,13 @@
                              richieste in attesa), data futura, la piu' vicina. Righe numeri e "da"
                              compaiono solo se i dati ci sono. Testo riempito da JS (niente
                              data-i18n, stessa regola del saluto qui sopra); il bottone ha testo
-                             fisso e puo' usare data-i18n. -->
+                             fisso e puo' usare data-i18n.
+                             FASE 3: -adv-org ("Organizzata da te", solo se l'ho creata io) e
+                             -adv-more (link "vedi tutte le mie escursioni", solo se ne ho piu' di
+                             una in programma) - stesso meccanismo .hidden delle righe numeri/"da". -->
                         <div class="dash-hero-adventure hidden" id="dash-hero-adventure">
                             <h3 class="dash-hero-adv-title" id="dash-hero-adv-title"></h3>
+                            <p class="dash-hero-adv-org hidden" id="dash-hero-adv-org"></p>
                             <p class="dash-hero-adv-when" id="dash-hero-adv-when"></p>
                             <p class="dash-hero-adv-stats hidden" id="dash-hero-adv-stats"></p>
                             <p class="dash-hero-adv-from hidden" id="dash-hero-adv-from"></p>
@@ -525,6 +529,9 @@
                                     <span data-i18n="dash.avventuraApri">Apri escursione</span> <i data-lucide="arrow-right"></i>
                                 </button>
                             </div>
+                            <button type="button" class="dash-hero-adv-more hidden btn-nav-trigger" data-target="my-hikes" id="dash-hero-adv-more">
+                                <span data-i18n="dash.avventuraVediTutte">Vedi tutte le mie escursioni</span> →
+                            </button>
                         </div>
 
                         <div class="dash-hero-actions">
