@@ -160,8 +160,18 @@ router.get('/totals', requireAuth, async (req, res) => {
         // Solo le sessioni CONCLUSE: una registrazione ancora aperta e' un'escursione in
         // corso, e farla entrare nei totali li farebbe crescere sotto gli occhi dell'utente
         // mentre cammina, senza che sia ancora "fatta".
+        //
+        // Filtro anno OPZIONALE (?anno=2026, revisione UX v2 - card "Il tuo 2026"): senza il
+        // parametro la risposta resta identica a prima (totale di tutta la vita), cosi' chi
+        // gia' chiama questa rotta non cambia. startedAt e' un vero Date su ogni sessione,
+        // anche quelle importate da file (models/ActiveHikeSession.js).
+        const filtro = { userId: req.session.userId, status: 'ended' };
+        if (/^\d{4}$/.test(req.query.anno || '')) {
+            const anno = Number(req.query.anno);
+            filtro.startedAt = { $gte: new Date(`${anno}-01-01`), $lt: new Date(`${anno + 1}-01-01`) };
+        }
         const sessioni = await ActiveHikeSession
-            .find({ userId: req.session.userId, status: 'ended' })
+            .find(filtro)
             .select('-points -offTrailBuffer');
 
         // DUE COPPIE DI SOMME, e la distinzione e' il punto delicato di tutta questa rotta.

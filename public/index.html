@@ -544,111 +544,148 @@
                         </div>
                     </header>
 
+                    <!-- FASE 4 revisione UX (v2): "Il tuo cammino" prende il posto del Passaporto
+                         (colonna sinistra) e "Ultimi traguardi" quello di "Quanto hai camminato"
+                         (colonna destra). I timbri/vette non spariscono: si leggono come
+                         progressione verso un obiettivo invece di quattro riquadri senza contesto.
+                         Riempiti da renderDashJourney / renderDashAchievements (app.js). Niente
+                         data-i18n su cio' che scrive il JS (numeri, nome zona, l'anno del titolo):
+                         applyStaticTranslations lo azzererebbe al cambio lingua - vale solo per i
+                         testi fissi (titoli, CTA). -->
                     <div class="dashboard-grid">
 
-                        <!-- Colonna Sinistra -->
+                        <!-- Colonna Sinistra: Il tuo cammino -->
                         <div class="dash-col">
-                            <!-- Card Passaporto Digitale Vette -->
-                            <div class="glass-card passport-card">
-                                <div class="card-header-row">
-                                    <h4><i data-lucide="award"></i> <span data-i18n="dash.passaportoTitolo">Passaporto delle Vette Digitale</span></h4>
-                                    <span class="badge badge-accent" data-i18n="dash.geofencingAttivo">Geofencing Attivo</span>
+                            <div class="glass-card dash-journey-card" id="dash-journey">
+                                <h4><i data-lucide="mountain"></i> <span data-i18n="dash.camminoTitolo">Il tuo cammino</span></h4>
+
+                                <!-- Stato normale: conteggi + (se c'e' una zona con progresso
+                                     parziale) barra e prossimo traguardo. -->
+                                <div class="dash-journey-main hidden" id="dash-journey-main">
+                                    <!-- "vette conquistate" senza data-i18n: renderDashJourney lo
+                                         scrive con la concordanza singolare/plurale (1 vetta / N
+                                         vette). -->
+                                    <p class="dash-journey-peaks"><strong id="dash-journey-peaks-n">—</strong> <span id="dash-journey-peaks-l">vette conquistate</span></p>
+                                    <p class="small text-muted" id="dash-journey-sub"></p>
+
+                                    <div class="dash-journey-goal hidden" id="dash-journey-goal">
+                                        <p class="dash-journey-zona" id="dash-journey-zona"></p>
+                                        <div class="badge-progress-track" role="img" id="dash-journey-track">
+                                            <div class="badge-progress-bar" id="dash-journey-bar" style="width:0%"></div>
+                                        </div>
+                                        <p class="dash-journey-count" id="dash-journey-count"></p>
+                                        <p class="dash-journey-left" id="dash-journey-left"></p>
+                                    </div>
+
+                                    <!-- Niente data-i18n sullo span: renderDashJourney gli cambia
+                                         il testo fra "Continua il tuo cammino" e "Scopri le
+                                         prossime vette" secondo lo stato, e applyStaticTranslations
+                                         lo riporterebbe sempre al primo. Lo scrive sempre il JS. -->
+                                    <button class="btn btn-sm btn-secondary btn-nav-trigger dash-journey-cta" data-target="badges" id="dash-journey-cta">
+                                        <span>Continua il tuo cammino</span> →
+                                    </button>
                                 </div>
-                                <p class="small text-muted" data-i18n="dash.passaportoDesc">Raggiungi le vette e i rifugi per sbloccare i timbri digitali collezionabili. Usa la mappa per simulare la tua posizione GPS!</p>
-                                <div class="stamps-grid" id="stamps-collection">
-                                    <!-- Stamp sbloccati renderizzati da JS -->
+
+                                <!-- Stato vuoto: nessuna vetta ancora conquistata. -->
+                                <div class="dash-journey-empty hidden" id="dash-journey-empty">
+                                    <p class="dash-empty-title"><span aria-hidden="true">🏔️</span> <span data-i18n="dash.camminoVuotoTitolo">Inizia il tuo cammino</span></p>
+                                    <p class="small text-muted" data-i18n="dash.camminoVuotoTesto">La tua prima vetta è ancora da conquistare. Completa un'escursione per iniziare a costruire il tuo percorso su Camoscio.</p>
+                                    <button class="btn btn-sm btn-primary btn-nav-trigger" data-target="hikes">
+                                        <span data-i18n="dash.camminoVuotoCta">Trova un'escursione</span> →
+                                    </button>
                                 </div>
-                                <!-- Punto 18: il "tasto Badge" chiesto dall'utente. Sta qui, sotto i
-                                     timbri, perche' e' guardando questi che viene voglia di vedere
-                                     tutti gli altri; la voce nella barra a sinistra serve a chi
-                                     invece li cerca direttamente. La scheda mostra solo i primi
-                                     quattro, il conteggio dice quanti sono in tutto. -->
-                                <div class="passport-more">
-                                    <span class="small text-muted" id="passport-count">—</span>
+                            </div>
+                        </div>
+
+                        <!-- Colonna Destra: Ultimi traguardi -->
+                        <div class="dash-col">
+                            <div class="glass-card dash-achievements-card" id="dash-achievements">
+                                <h4><i data-lucide="award"></i> <span data-i18n="dash.traguardiTitolo">Ultimi traguardi</span></h4>
+
+                                <div class="stamps-grid dash-achievements-grid hidden" id="dash-achievements-grid">
+                                    <!-- .stamp-slot renderizzati da renderDashAchievements (app.js) -->
+                                </div>
+
+                                <div class="dash-achievements-more hidden" id="dash-achievements-more">
                                     <button class="btn btn-sm btn-secondary btn-nav-trigger" data-target="badges">
                                         <i data-lucide="award"></i> <span data-i18n="dash.vediTuttiBadge">Vedi tutti i badge</span>
                                     </button>
                                 </div>
-                                <!-- Punto 19 di cose_da_fare.txt: qui c'era una sezione "Sfide in
-                                     corso" con la voce "Le Vette del Gran Sasso (0/2)" scritta a mano
-                                     nell'HTML. Compariva IDENTICA per chiunque, anche per un utente
-                                     appena registrato che non aveva creato ne' accettato nessuna sfida,
-                                     e il "(0/2)" restava 0 anche dopo aver preso i timbri. Tolta: le
-                                     sfide dovranno essere create o accettate davvero, e finche' non
-                                     esistono e' meglio non mostrarne nessuna che mostrarne una finta.
-                                     Il conteggio vero dei timbri resta qui sopra e in "Timbri Vette". -->
-                            </div>
-                        </div>
 
-                        <!-- Colonna Destra -->
-                        <div class="dash-col">
-                            <!-- Punto 17 di cose_da_fare.txt: qui c'era il riquadro "Sicurezza
-                                 Rapida" col Dead Man's Switch. Spostato nella sezione Mappa, dove
-                                 serve davvero. Non ne resta una copia qui di proposito: due
-                                 comandi per la stessa cosa vogliono dire due stati da tenere
-                                 allineati a mano, ed e' il genere di disallineamento che si
-                                 scopre nel momento sbagliato. Il conto alla rovescia resta
-                                 comunque visibile OVUNQUE, nella fascia #emergency-banner in cima
-                                 alla pagina, che e' il posto giusto per un avviso che non deve
-                                 dipendere dalla schermata aperta. -->
-
-                            <!-- Punto 16 di cose_da_fare.txt: i totali REALI di quanto si e'
-                                 camminato. I dati esistevano gia' (ogni tracciamento salva distanza
-                                 e dislivello veri dalla Fase F), ma la Dashboard non ne mostrava
-                                 mai la somma. Riempiti da renderTrackingTotals in app.js. -->
-                            <div class="glass-card totals-card">
-                                <h4><i data-lucide="mountain-snow"></i> <span data-i18n="dash.totaliTitolo">Quanto hai camminato</span></h4>
-                                <p class="small text-muted" data-i18n="dash.totaliDesc">Somma di tutte le escursioni che hai registrato con il GPS.</p>
-                                <div class="totals-grid" id="dash-totals">
-                                    <div class="total-box">
-                                        <span class="total-val" id="total-distance">—</span>
-                                        <span class="total-lbl" data-i18n="dash.kmPercorsi">km percorsi</span>
-                                    </div>
-                                    <div class="total-box">
-                                        <span class="total-val" id="total-elevation">—</span>
-                                        <span class="total-lbl" data-i18n="dash.mDislivello">m di dislivello</span>
-                                    </div>
-                                    <div class="total-box">
-                                        <span class="total-val" id="total-speed">—</span>
-                                        <span class="total-lbl" data-i18n="dash.kmhMedia">km/h di media</span>
-                                    </div>
-                                </div>
-                                <p class="small text-muted" id="dash-totals-note"></p>
-                            </div>
-
-                            <!-- Card Statistiche Passo Personalizzato -->
-                            <div class="glass-card pace-card">
-                                <h4><i data-lucide="activity"></i> <span data-i18n="dash.passoTitolo">Calcolatore Passo & Fatica</span></h4>
-                                <p class="small text-muted" data-i18n="dash.passoDesc">L'algoritmo impara dalle tue escursioni tracciate per stimare i tempi effettivi di cammino.</p>
-                                <div class="pace-stats">
-                                    <!-- L'unita' di misura sta in uno span suo, non in un
-                                         testo libero accanto al numero: quando il passo non e'
-                                         mai stato misurato il valore diventa "—" e l'unita' va
-                                         nascosta con lui, altrimenti si leggerebbe "— m/h",
-                                         cioe' una misura mancante travestita da misura. -->
-                                    <div class="pace-row">
-                                        <span data-i18n="dash.velocitaAscesa">Velocità Ascesa:</span>
-                                        <strong><span id="pace-up-val">--</span><span class="pace-unit" id="pace-up-unit"> m/h</span></strong>
-                                    </div>
-                                    <div class="pace-row">
-                                        <span data-i18n="dash.velocitaDiscesa">Velocità Discesa:</span>
-                                        <strong><span id="pace-down-val">--</span><span class="pace-unit" id="pace-down-unit"> m/h</span></strong>
-                                    </div>
-                                    <div class="pace-row">
-                                        <span data-i18n="dash.indiceFatica">Indice Fatica Personalizzato:</span>
-                                        <strong><span id="pace-index-val">--</span><span class="pace-unit" id="pace-index-unit" data-i18n="dash.rispettoCai">x rispetto a CAI</span></strong>
-                                    </div>
-                                </div>
-                                <!-- Riempita da renderDashboard (app.js) solo quando non c'e'
-                                     ancora un passo misurato: stessa idea di #dash-totals-note
-                                     qui sopra, dire cosa manca e come si ottiene invece di
-                                     lasciare tre trattini senza spiegazione. -->
-                                <p class="small text-muted" id="dash-pace-note"></p>
-                                <div class="pace-chart-container">
-                                    <canvas id="paceChart"></canvas>
+                                <!-- Stato vuoto: nessun badge ancora. -->
+                                <div class="dash-achievements-empty hidden" id="dash-achievements-empty">
+                                    <p class="dash-empty-title"><span aria-hidden="true">🏅</span> <span data-i18n="dash.traguardiVuotoTitolo">Il tuo primo badge ti aspetta</span></p>
+                                    <p class="small text-muted" data-i18n="dash.traguardiVuotoTesto">Completa un'escursione e inizia a collezionare i tuoi traguardi.</p>
+                                    <button class="btn btn-sm btn-primary btn-nav-trigger" data-target="hikes">
+                                        <span data-i18n="dash.traguardiVuotoCta">Scopri le escursioni</span> →
+                                    </button>
                                 </div>
                             </div>
                         </div>
+                    </div>
+
+                    <!-- FASE 4: "Passo & Fatica" esce dal grid a due colonne (dove restava
+                         appaiata a "Quanto hai camminato", ora rimossa) e va a piena larghezza.
+                         Contenuto invariato. -->
+                    <div class="glass-card pace-card">
+                        <h4><i data-lucide="activity"></i> <span data-i18n="dash.passoTitolo">Calcolatore Passo & Fatica</span></h4>
+                        <p class="small text-muted" data-i18n="dash.passoDesc">L'algoritmo impara dalle tue escursioni tracciate per stimare i tempi effettivi di cammino.</p>
+                        <div class="pace-stats">
+                            <!-- L'unita' di misura sta in uno span suo, non in un
+                                 testo libero accanto al numero: quando il passo non e'
+                                 mai stato misurato il valore diventa "—" e l'unita' va
+                                 nascosta con lui, altrimenti si leggerebbe "— m/h",
+                                 cioe' una misura mancante travestita da misura. -->
+                            <div class="pace-row">
+                                <span data-i18n="dash.velocitaAscesa">Velocità Ascesa:</span>
+                                <strong><span id="pace-up-val">--</span><span class="pace-unit" id="pace-up-unit"> m/h</span></strong>
+                            </div>
+                            <div class="pace-row">
+                                <span data-i18n="dash.velocitaDiscesa">Velocità Discesa:</span>
+                                <strong><span id="pace-down-val">--</span><span class="pace-unit" id="pace-down-unit"> m/h</span></strong>
+                            </div>
+                            <div class="pace-row">
+                                <span data-i18n="dash.indiceFatica">Indice Fatica Personalizzato:</span>
+                                <strong><span id="pace-index-val">--</span><span class="pace-unit" id="pace-index-unit" data-i18n="dash.rispettoCai">x rispetto a CAI</span></strong>
+                            </div>
+                        </div>
+                        <!-- Riempita da renderDashboard (app.js) solo quando non c'e'
+                             ancora un passo misurato: stessa idea della nota di "Il tuo
+                             <anno>" piu' sotto, dire cosa manca e come si ottiene invece
+                             di lasciare tre trattini senza spiegazione. -->
+                        <p class="small text-muted" id="dash-pace-note"></p>
+                        <div class="pace-chart-container">
+                            <canvas id="paceChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- FASE 4: "Il tuo <anno>" prende il posto di "Quanto hai camminato" come
+                         riepilogo, ma per l'anno in corso invece che di tutta la vita. I tre
+                         numeri da GET /api/tracking/totals?anno=, le vette dell'anno calcolate
+                         lato client (renderDashYearSummary in app.js). Niente link "Vedi
+                         statistiche": la pagina statistiche filtrabile e' una fase a parte.
+                         Titolo senza data-i18n: lo scrive il JS con l'anno vero. -->
+                    <div class="glass-card dash-year-card" id="dash-year-summary">
+                        <h4><i data-lucide="bar-chart-2"></i> <span id="dash-year-title">Il tuo 2026</span></h4>
+                        <div class="dash-year-grid" id="dash-year-grid">
+                            <div class="total-box">
+                                <span class="total-val" id="year-hikes">—</span>
+                                <span class="total-lbl" data-i18n="dash.annoEscursioni">escursioni</span>
+                            </div>
+                            <div class="total-box">
+                                <span class="total-val" id="year-distance">—</span>
+                                <span class="total-lbl" data-i18n="dash.kmPercorsi">km percorsi</span>
+                            </div>
+                            <div class="total-box">
+                                <span class="total-val" id="year-elevation">—</span>
+                                <span class="total-lbl" data-i18n="dash.mDislivello">m di dislivello</span>
+                            </div>
+                            <div class="total-box">
+                                <span class="total-val" id="year-peaks">—</span>
+                                <span class="total-lbl" data-i18n="dash.annoVette">vette</span>
+                            </div>
+                        </div>
+                        <p class="small text-muted" id="dash-year-note"></p>
                     </div>
                 </section>
 

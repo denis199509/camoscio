@@ -137,6 +137,48 @@
         return presi.concat(mancanti).slice(0, quanti);
     }
 
+    // Revisione UX v2 - blocco "Ultimi traguardi": SOLO i badge gia' presi, il piu' recente
+    // davanti. Stessa riga di ordinamento di anteprima() qui sopra, ma senza il completamento
+    // coi non-presi: quello serve a una scheda che vuole sempre N riquadri (il vecchio
+    // Passaporto), non a un elenco di "cosa hai conquistato".
+    function ultimiTraguardi(quanti) {
+        return statoBadge()
+            .filter(b => b.sbloccato)
+            .sort((a, b) => String(b.data || '').localeCompare(String(a.data || '')))
+            .slice(0, quanti);
+    }
+
+    // Revisione UX v2 - blocco "Il tuo cammino": quante CIME per zona ha preso l'utente su
+    // quante ne esistono. Le zone senza progresso parziale (zero prese, o tutte prese) non
+    // hanno un "prossimo traguardo" da raccontare e restano fuori. Ordine: prima quelle a cui
+    // mancano meno cime (quasi completata), poi la percentuale piu' alta, poi quella con la
+    // conquista piu' recente. SOLO cime: i rifugi non entrano in questa progressione (punto 4
+    // dello spec).
+    function progressoZone() {
+        const perZona = new Map();
+        statoBadge().forEach(b => {
+            if (b.tipo !== 'cima' || !b.zona) return;
+            const z = perZona.get(b.zona) || { zona: b.zona, presi: 0, totale: 0, ultimaData: '' };
+            z.totale++;
+            if (b.sbloccato) {
+                z.presi++;
+                if (b.data && b.data > z.ultimaData) z.ultimaData = b.data;
+            }
+            perZona.set(b.zona, z);
+        });
+        return Array.from(perZona.values())
+            .filter(z => z.presi > 0 && z.presi < z.totale)
+            .map(z => Object.assign(z, {
+                mancano: z.totale - z.presi,
+                percentuale: Math.round((z.presi / z.totale) * 100)
+            }))
+            .sort((a, b) =>
+                a.mancano - b.mancano
+                || b.percentuale - a.percentuale
+                || String(b.ultimaData).localeCompare(String(a.ultimaData))
+            );
+    }
+
     // "2026-06-15" -> "15/06/2026". Il formato del database e' quello buono per ordinare
     // e confrontare, ma a schermo e' una data da macchina, e nella scheda andava pure a
     // capo in mezzo ("2026-06-" / "15").
@@ -352,7 +394,7 @@
         if (window.lucide) window.lucide.createIcons();
     }
 
-    window.CamoscioBadges = { catalogo, puntiTimbrabili, statoBadge, statoBadgePer, schedaBadge, anteprima, dataItaliana, montagneEsperienza, render: renderBadges };
+    window.CamoscioBadges = { catalogo, puntiTimbrabili, statoBadge, statoBadgePer, schedaBadge, anteprima, ultimiTraguardi, progressoZone, dataItaliana, montagneEsperienza, render: renderBadges };
     window.renderBadges = renderBadges;
 
     // Il cambio lingua (i18n.js) ricostruisce l'HTML della pagina invece di

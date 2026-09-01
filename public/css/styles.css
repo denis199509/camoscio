@@ -1267,6 +1267,85 @@ option {
    (tre riquadri affiancati), cosi' le due schede si somigliano invece di sembrare disegnate
    da persone diverse. La scatola dei riquadri e' quella condivisa piu' sopra
    (.total-box/.pace-row). */
+/* ===== FASE 4 revisione UX: "Il tuo cammino" / "Ultimi traguardi" / "Il tuo <anno>" =====
+   Solo struttura e gerarchia: nessun colore, ombra o animazione nuovi (regola della fase UX).
+   La barra di progresso riusa .badge-progress-track/.badge-progress-bar della pagina Badge;
+   la griglia dei traguardi riusa .stamps-grid; i box numero riusano .total-box. */
+
+/* "Passo & Fatica" e "Il tuo <anno>" stanno FUORI dal grid a due colonne, a piena larghezza,
+   staccati dal blocco sopra (il grid non ha margine verso il fratello che segue). */
+.dashboard-grid ~ .glass-card {
+    margin-top: 24px;
+}
+
+.dash-journey-peaks {
+    margin: 12px 0 0;
+    font-size: 1rem;
+}
+
+.dash-journey-peaks strong {
+    font-family: 'Outfit', sans-serif;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--accent-orange);
+    margin-right: 6px;
+}
+
+.dash-journey-sub {
+    margin: 2px 0 0;
+}
+
+.dash-journey-goal {
+    margin-top: 16px;
+}
+
+.dash-journey-zona {
+    margin: 0 0 6px;
+    font-weight: 600;
+}
+
+.dash-journey-count {
+    margin: 6px 0 0;
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
+}
+
+.dash-journey-left {
+    margin: 4px 0 0;
+    font-weight: 600;
+}
+
+.dash-journey-cta,
+.dash-journey-empty .btn,
+.dash-achievements-empty .btn {
+    margin-top: 16px;
+}
+
+/* Stato vuoto, condiviso da "Il tuo cammino" e "Ultimi traguardi" */
+.dash-empty-title {
+    margin: 12px 0 4px;
+    font-weight: 700;
+}
+
+.dash-achievements-grid {
+    margin-top: 12px;
+}
+
+.dash-achievements-more {
+    margin-top: 12px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+/* Quattro numeri in riga (i box riusano .total-box); su stretto passano a 2x2 nella @media */
+.dash-year-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin: 16px 0 12px;
+}
+/* ===== fine FASE 4 ===== */
+
 .totals-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -4756,6 +4835,16 @@ option {
     .stamps-grid {
         grid-template-columns: 1fr 1fr;
         gap: 12px;
+    }
+
+    /* FASE 4: "Il tuo <anno>" a 2x2 su stretto; "Ultimi traguardi" mostra 3 badge su
+       mobile invece di 4 (spec di Denis, punto 9) - il quarto si nasconde qui. */
+    .dash-year-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .dash-achievements-grid .stamp-slot:nth-child(4) {
+        display: none;
     }
 
     /* Punto 15: lo storico delle uscite e' l'ultima cosa della pagina "Le mie escursioni",

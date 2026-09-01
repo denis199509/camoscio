@@ -475,11 +475,11 @@
             // 3) La Dashboard invece SI ridisegna al cambio lingua
             //    (CamoscioI18n.onChange in fondo ad app.js): quasi tutti i suoi
             //    dati sono gia' in CamoscioState, il re-render sincrono e'
-            //    gratis. L'unico fetch (renderTrackingTotals, 3 numeri) non
+            //    gratis. L'unico fetch (renderDashYearSummary, pochi numeri) non
             //    svuota la card mentre carica, quindi non da' il flicker che ha
             //    sconsigliato l'onChange completo su userprofile.js.
-            // 4) I totali in Dashboard (km/dislivello/media) passano da
-            //    toLocaleString: separatore migliaia italiano vs inglese, va
+            // 4) I numeri della Dashboard (km/dislivello/vette dell'anno) passano
+            //    da toLocaleString: separatore migliaia italiano vs inglese, va
             //    scelto il locale come per le date col nome del mese (en-GB).
 
             // --- DASHBOARD: testo statico nell'HTML (#dashboard) ---
@@ -501,15 +501,23 @@
             // FASE 3
             'dash.avventuraOrganizzata': 'Organised by you',
             'dash.avventuraVediTutte': 'See all my hikes',
-            'dash.passaportoTitolo': 'Digital Peak Passport',
-            'dash.geofencingAttivo': 'Geofencing Active',
-            'dash.passaportoDesc': 'Reach the peaks and huts to unlock collectible digital stamps. Use the map to simulate your GPS position!',
             'dash.vediTuttiBadge': 'See all badges',
-            'dash.totaliTitolo': "How far you've walked",
-            'dash.totaliDesc': 'Total of all the hikes you recorded with GPS.',
             'dash.kmPercorsi': 'km covered',
             'dash.mDislivello': 'm of elevation gain',
-            'dash.kmhMedia': 'km/h average',
+            // FASE 4 - "Il tuo cammino" / "Ultimi traguardi" / "Il tuo <anno>" (testo fisso)
+            'dash.camminoTitolo': 'Your journey',
+            'dash.camminoVette': function (n) { return n === 1 ? 'peak conquered' : 'peaks conquered'; },
+            'dash.camminoCta': 'Continue your journey',
+            'dash.camminoCtaScopri': 'Discover the next peaks',
+            'dash.camminoVuotoTitolo': 'Start your journey',
+            'dash.camminoVuotoTesto': 'Your first peak is still waiting. Complete a hike to start building your path on Camoscio.',
+            'dash.camminoVuotoCta': 'Find a hike',
+            'dash.traguardiTitolo': 'Latest achievements',
+            'dash.traguardiVuotoTitolo': 'Your first badge awaits',
+            'dash.traguardiVuotoTesto': 'Complete a hike and start collecting your achievements.',
+            'dash.traguardiVuotoCta': 'Discover hikes',
+            'dash.annoEscursioni': 'hikes',
+            'dash.annoVette': 'peaks',
             'dash.passoTitolo': 'Pace & Effort Calculator',
             'dash.passoDesc': 'The algorithm learns from your tracked hikes to estimate real walking times.',
             'dash.velocitaAscesa': 'Ascent Speed:',
@@ -519,12 +527,13 @@
 
             // --- DASHBOARD: testo generato da JS (app.js) ---
             'dash.passoNotaVuoto': "Your pace hasn't been measured yet: complete a hike entering the time it took (or attaching the .gpx track) and these numbers will show up.",
-            'dash.totaliNotaVuoto': "You haven't recorded any hikes yet: start GPS tracking from the map and these numbers will start going up.",
-            'dash.totaliNota': function (n, tempo) { return n + (n === 1 ? ' hike recorded' : ' hikes recorded') + ', ' + tempo + ' of walking in total.'; },
-            'dash.totaliSenzaOrari': function (n) { return n === 1 ? " One imported hike has no timestamps: its kilometers are counted, the time and average speed are not." : ' ' + n + ' imported hikes have no timestamps: their kilometers are counted, the time and average speed are not.'; },
             'dash.totaliErrore': 'Could not load the totals. Try again later.',
-            'dash.timbroBloccato': 'Locked',
-            'dash.badgeSuTotale': function (presi, tot) { return presi + ' of ' + tot + ' badges'; },
+            // FASE 4 - testo generato da JS
+            'dash.camminoSub': function (r, b) { return r + (r === 1 ? ' hut visited' : ' huts visited') + ' · ' + b + (b === 1 ? ' badge unlocked' : ' badges unlocked'); },
+            'dash.camminoMancano': function (n, zona) { return (n === 1 ? 'You are 1 peak away' : 'You are ' + n + ' peaks away') + ' from completing ' + zona + '.'; },
+            'dash.camminoBarraAria': function (presi, tot, zona) { return presi + ' of ' + tot + ' peaks in ' + zona; },
+            'dash.annoTitolo': function (a) { return 'Your ' + a; },
+            'dash.annoNotaVuoto': function (a) { return 'No hikes recorded in ' + a + ' yet: these numbers update on their own as you walk.'; },
             'dash.chartTuoPasso': 'Your Measured Pace',
             'dash.chartCaiStandard': 'Alpine CAI Standard',
             'dash.chartAscesa': 'Ascent (m/hour)',

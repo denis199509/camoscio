@@ -222,9 +222,9 @@ window.closeImageLightbox = function() {
 };
 
 document.addEventListener("click", (e) => {
-    // .badge-card-icon-img (pagina Badge/profilo) e .stamp-icon-img (anteprima Passaporto
-    // in Dashboard, renderDashboardStamps in questo stesso file) sono due componenti
-    // diversi sugli stessi dati (badges.js: schedaBadge/anteprima) - stessa icona, nomi di
+    // .badge-card-icon-img (pagina Badge/profilo) e .stamp-icon-img ("Ultimi traguardi" in
+    // Dashboard, renderDashAchievements in questo stesso file) sono due componenti diversi
+    // sugli stessi dati (badges.js: schedaBadge / ultimiTraguardi) - stessa icona, nomi di
     // classe diversi, quindi vanno cercati entrambi qui.
     const img = e.target.closest(".badge-card-icon-img, .stamp-icon-img, .personal-badge-illustration");
     if (!img) return;
@@ -234,7 +234,7 @@ document.addEventListener("click", (e) => {
     // antenati esiste, bloccato resta false.
     const card = img.closest(".badge-card, .stamp-slot");
     const bloccato = !!(card && !card.classList.contains("unlocked"));
-    // stampId (messo da schedaBadge in badges.js e da renderDashboardStamps qui sotto)
+    // stampId (messo da schedaBadge in badges.js e da renderDashAchievements qui sotto)
     // serve alla "i": .personal-badge-illustration non ha una card antenata, quindi resta
     // undefined e il pannello informativo semplicemente non compare.
     const stampId = card ? card.dataset.stampId : null;
@@ -948,9 +948,9 @@ function renderDashboard() {
     // basta guardare se il numero c'e', senza nessun controllo su isDemoAccount: i 4 account
     // demo hanno un passo assegnato a mano apposta ed e' giusto che continuino a vederlo.
     // Prima di oggi ogni utente nasceva con 350/500 gia' scritti e la Dashboard li mostrava
-    // come "passo rilevato" a chi non aveva mai camminato: un'ipotesi travestita da misura,
-    // cioe' la stessa bugia gia' evitata poche righe piu' sotto in renderTrackingTotals per
-    // la velocita' media ("senza tempo registrato non e' zero, e' che non si sa ancora").
+    // come "passo rilevato" a chi non aveva mai camminato: un'ipotesi travestita da misura.
+    // Stessa regola gia' applicata alla velocita' media dei totali ("senza tempo registrato
+    // non e' zero, e' che non si sa ancora").
     const paceUp = Number(usr.averagePaceUp);
     const paceDown = Number(usr.averagePaceDown);
     const passoMisurato = Number.isFinite(paceUp) && paceUp > 0 && Number.isFinite(paceDown) && paceDown > 0;
@@ -977,13 +977,15 @@ function renderDashboard() {
     // Disegna il grafico del passo
     renderPaceChart(usr, passoMisurato);
 
-    // Punto 16: i totali reali di distanza, dislivello e velocita' media. Non si aspetta la
-    // sua risposta (nessun await): il resto della Dashboard deve comparire subito, e i tre
-    // numeri si riempiono da soli un istante dopo.
-    renderTrackingTotals();
+    // FASE 4: "Il tuo <anno>" al posto dei totali di sempre. Nessun await: il resto della
+    // Dashboard compare subito, i pochi numeri si riempiono da soli un istante dopo e la card
+    // non si svuota mentre carica.
+    renderDashYearSummary();
 
-    // Timbri delle Vette
-    renderDashboardStamps();
+    // FASE 4: "Il tuo cammino" (progressione per zona) + "Ultimi traguardi" al posto del
+    // Passaporto. I dati sono gia' in CamoscioState (statoBadge), render sincrono.
+    renderDashJourney();
+    renderDashAchievements();
 
     // Rinfresca lo stato del Dead Man's Switch nella dashboard
     if (window.updateDashboardSafetyCard) {
@@ -991,59 +993,59 @@ function renderDashboard() {
     }
 }
 
-// Punto 16 di cose_da_fare.txt - totali reali di cammino in Dashboard.
-// La somma la fa il server (GET /api/tracking/totals): qui arrivano gia' tre numeri, invece
-// dell'elenco di tutte le sessioni con dentro le tracce GPS complete.
-async function renderTrackingTotals() {
-    const elDistanza = document.getElementById("total-distance");
-    const elDislivello = document.getElementById("total-elevation");
-    const elVelocita = document.getElementById("total-speed");
-    const nota = document.getElementById("dash-totals-note");
-    if (!elDistanza) return;
+// FASE 4 revisione UX - "Il tuo <anno>": riepilogo dell'anno in corso, al posto dei totali di
+// sempre (card "Quanto hai camminato", rimossa). escursioni / km / dislivello dal server
+// (GET /api/tracking/totals?anno=, stessa rotta di prima con un filtro anno opzionale); le
+// vette dell'anno si contano qui dai timbri gia' in memoria (statoBadge), la loro data di
+// sblocco e' "YYYY-MM-DD". Niente velocita' media (non e' nel riepilogo dell'anno) e nessun
+// link "Vedi statistiche" (pagina statistiche filtrabile = fase a parte).
+async function renderDashYearSummary() {
+    const elHikes = document.getElementById("year-hikes");
+    const elDistanza = document.getElementById("year-distance");
+    const elDislivello = document.getElementById("year-elevation");
+    const elVette = document.getElementById("year-peaks");
+    const titolo = document.getElementById("dash-year-title");
+    const nota = document.getElementById("dash-year-note");
+    if (!elHikes) return;
+
+    const anno = new Date().getFullYear();
+    // Separatore migliaia: virgola in inglese, punto in italiano - stessa scelta di locale gia'
+    // fatta altrove (rollout punto 102). useGrouping:true perche' l'italiano da solo non
+    // raggruppa i numeri a 4 cifre (un dislivello annuale ci arriva facile), stesso motivo
+    // della card prossima avventura in Fase 2.
+    const loc = (window.CamoscioI18n && window.CamoscioI18n.getLang() === 'en') ? 'en-GB' : 'it-IT';
+    const raggr = { useGrouping: true };
+
+    if (titolo) titolo.textContent = T('dash.annoTitolo', anno) || ('Il tuo ' + anno);
+
+    // Vette dell'anno: lato client, nessuna rotta. Un timbro "cima" sbloccato con dateUnlocked
+    // nell'anno in corso. Numero diverso da "vette conquistate" di "Il tuo cammino", che e' il
+    // totale di sempre - qui e' solo il 2026.
+    if (elVette && window.CamoscioBadges) {
+        const vetteAnno = window.CamoscioBadges.statoBadge()
+            .filter(b => b.tipo === 'cima' && b.sbloccato && String(b.data || '').slice(0, 4) === String(anno))
+            .length;
+        elVette.textContent = vetteAnno.toLocaleString(loc, raggr);
+    }
 
     try {
-        const res = await fetch('/api/tracking/totals');
+        const res = await fetch('/api/tracking/totals?anno=' + anno);
         if (!res.ok) throw new Error('Richiesta fallita');
         const t = await res.json();
 
-        // Separatore migliaia: virgola in inglese, punto in italiano - stessa scelta di
-        // locale gia' fatta per le date col nome del mese (formattaDataItaliana in
-        // userprofile.js), rollout punto 102 terzo lotto.
-        const loc = (window.CamoscioI18n && window.CamoscioI18n.getLang() === 'en') ? 'en-GB' : 'it-IT';
-        elDistanza.textContent = t.distanzaKm.toLocaleString(loc);
-        elDislivello.textContent = t.dislivelloM.toLocaleString(loc);
-        // La velocita' media a 0 non si scrive "0": senza tempo registrato non e' zero, e'
-        // che non si sa ancora. Sono due cose diverse e mostrarle uguali sarebbe una bugia.
-        elVelocita.textContent = t.velocitaMediaKmh > 0 ? t.velocitaMediaKmh.toLocaleString(loc) : "—";
+        elHikes.textContent = t.sessioni.toLocaleString(loc, raggr);
+        elDistanza.textContent = t.distanzaKm.toLocaleString(loc, raggr);
+        elDislivello.textContent = t.dislivelloM.toLocaleString(loc, raggr);
 
         if (nota) {
-            if (t.sessioni === 0) {
-                nota.textContent = T('dash.totaliNotaVuoto') || "Non hai ancora registrato nessuna escursione: avvia il tracciamento GPS dalla mappa e questi numeri cominceranno a salire.";
-            } else {
-                const ore = Math.floor(t.secondi / 3600);
-                const minuti = Math.round((t.secondi % 3600) / 60);
-                const tempo = ore > 0 ? `${ore}h ${minuti}min` : `${minuti} min`;
-                let testo = T('dash.totaliNota', t.sessioni, tempo)
-                    || `${t.sessioni} ${t.sessioni === 1 ? 'escursione registrata' : 'escursioni registrate'}, ${tempo} di cammino in totale.`;
-
-                // Le uscite importate da un file .gpx senza orari hanno km e dislivello veri
-                // ma nessuna durata, quindi restano fuori dal tempo e dalla velocita' media
-                // (vedi /totals in routes/tracking.js). Va DETTO: chi conosce i propri numeri
-                // e vede una velocita' media che non torna coi chilometri mostrati sopra
-                // penserebbe a un errore del sito, e avrebbe ragione a pensarlo.
-                const senza = t.sessioniSenzaDurata || 0;
-                if (senza > 0) {
-                    testo += T('dash.totaliSenzaOrari', senza) || (senza === 1
-                        ? " Un'uscita importata è senza orari: i suoi chilometri sono contati, il tempo e la velocità media no."
-                        : ` ${senza} uscite importate sono senza orari: i loro chilometri sono contati, il tempo e la velocità media no.`);
-                }
-                nota.textContent = testo;
-            }
+            nota.textContent = t.sessioni === 0
+                ? (T('dash.annoNotaVuoto', anno) || ('Nessuna escursione registrata nel ' + anno + ' per ora: questi numeri si aggiornano da soli mentre cammini.'))
+                : "";
         }
     } catch (e) {
-        console.error("Impossibile calcolare i totali delle escursioni:", e);
-        // Meglio lasciare i trattini e dirlo, che mostrare degli zeri: uno zero verrebbe
-        // letto come "non hai mai camminato", che e' un'informazione sbagliata.
+        console.error("Impossibile calcolare il riepilogo dell'anno:", e);
+        // Meglio i trattini e dirlo, che degli zeri: uno zero si leggerebbe come "non hai
+        // camminato", che e' un'informazione sbagliata.
         if (nota) nota.textContent = T('dash.totaliErrore') || "Non è stato possibile caricare i totali. Riprova più tardi.";
     }
 }
@@ -1189,66 +1191,116 @@ function renderPaceChart(user, passoMisurato) {
     });
 }
 
-// Render dei Timbri sbloccati nella dashboard.
-// PUNTO 18: l'elenco dei quattro timbri era scritto a mano proprio qui. Ora la fonte e'
-// una sola, il catalogo di public/js/badges.js, usato anche dalla pagina Badge e dal
-// geofencing della Mappa: tre copie dello stesso elenco sarebbero divergite alla prima
-// aggiunta, ed e' lo stesso motivo per cui al punto 10 la scheda dell'escursione era
-// stata estratta in buildHikeCard invece di essere copiata.
-// Qui restano solo QUATTRO riquadri anche se i badge sono di piu': questa e' una scheda
-// di riepilogo, l'elenco intero e' la pagina Badge. Quali quattro lo decide anteprima():
-// prima quelli presi, poi i piu' alti da prendere.
-function renderDashboardStamps() {
-    const container = document.getElementById("stamps-collection");
-    if (!container) return;
+// FASE 4 revisione UX - "Il tuo cammino": la progressione dell'utente sulle vette, al posto
+// del Passaporto (quattro riquadri senza contesto). Stessa fonte di sempre - statoBadge() in
+// badges.js, un solo catalogo condiviso con la pagina Badge e il geofencing della Mappa - letta
+// come "quante cime su quante" invece che come elenco. Tre stati, sullo schema .hidden gia' in
+// uso per #dash-hero-adventure:
+//  - nessuna vetta ancora presa       -> riquadro "Inizia il tuo cammino"
+//  - vette prese, una zona a meta'     -> conteggi + barra + "ti mancano N vette"
+//  - vette prese, nessuna zona a meta' -> conteggi, niente barra, CTA "scopri le prossime"
+function renderDashJourney() {
+    const card = document.getElementById("dash-journey");
+    if (!card || !window.CamoscioBadges) return;
 
-    const daMostrare = window.CamoscioBadges
-        ? window.CamoscioBadges.anteprima(4)
-        : [];
+    const stato = window.CamoscioBadges.statoBadge();
+    const vette = stato.filter(b => b.tipo === 'cima' && b.sbloccato).length;
+    const rifugi = stato.filter(b => b.tipo === 'rifugio' && b.sbloccato).length;
+    const badge = stato.filter(b => b.sbloccato).length;
 
-    container.innerHTML = "";
+    const main = document.getElementById("dash-journey-main");
+    const empty = document.getElementById("dash-journey-empty");
 
-    daMostrare.forEach(badge => {
-        const slot = document.createElement("div");
-        slot.className = `stamp-slot ${badge.sbloccato ? 'unlocked' : ''}`;
-        // Come per .badge-card in badges.js: il click sull'icona risale a questo slot per
-        // sapere quale badge aprire e se ha la scheda "i" (badge-info.js).
-        if (badge.stampId) slot.dataset.stampId = badge.stampId;
+    // Stato vuoto: nessuna vetta conquistata (punto 6 dello spec).
+    if (vette === 0) {
+        main.classList.add("hidden");
+        empty.classList.remove("hidden");
+        return;
+    }
+    empty.classList.add("hidden");
+    main.classList.remove("hidden");
 
-        // Punto 91, 18/08/2026: stessa scelta icona/emoji di schedaBadge in badges.js -
-        // stamp-icon resta la classe condivisa col grayscale blocco/sblocco (styles.css).
-        const iconaHtml = badge.icona
-            ? `<img src="${escapeHtml(badge.icona)}" alt="" class="stamp-icon stamp-icon-img">`
-            : `<span class="stamp-icon">${escapeHtml(badge.emoji)}</span>`;
+    const loc = (window.CamoscioI18n && window.CamoscioI18n.getLang() === 'en') ? 'en-GB' : 'it-IT';
+    document.getElementById("dash-journey-peaks-n").textContent = vette.toLocaleString(loc);
+    document.getElementById("dash-journey-peaks-l").textContent =
+        T('dash.camminoVette', vette) || (vette === 1 ? 'vetta conquistata' : 'vette conquistate');
+    document.getElementById("dash-journey-sub").textContent =
+        T('dash.camminoSub', rifugi, badge)
+        || `${rifugi} ${rifugi === 1 ? 'rifugio visitato' : 'rifugi visitati'} · ${badge} ${badge === 1 ? 'badge sbloccato' : 'badge sbloccati'}`;
 
-        slot.innerHTML = `
-            ${iconaHtml}
-            <span class="stamp-name">${escapeHtml(badge.nome)}</span>
-            <span class="stamp-date">${escapeHtml(badge.sbloccato ? window.CamoscioBadges.dataItaliana(badge.data) : (T('dash.timbroBloccato') || "Bloccato"))}</span>
-        `;
-        container.appendChild(slot);
-    });
+    const zone = window.CamoscioBadges.progressoZone();
+    const goal = document.getElementById("dash-journey-goal");
+    const cta = document.getElementById("dash-journey-cta").querySelector("span");
 
-    // "3 badge su 10": senza questa riga la scheda mostrerebbe quattro riquadri senza
-    // far capire che gli altri esistono, e il pulsante qui sotto sembrerebbe portare
-    // alla stessa cosa vista piu' in grande.
-    const contatore = document.getElementById("passport-count");
-    if (contatore && window.CamoscioBadges) {
-        const tutti = window.CamoscioBadges.statoBadge();
-        const presi = tutti.filter(b => b.sbloccato).length;
-        contatore.textContent = T('dash.badgeSuTotale', presi, tutti.length) || `${presi} badge su ${tutti.length}`;
+    if (zone.length) {
+        // La zona piu' significativa (quasi completata > maggior progresso > vista di recente:
+        // l'ordine lo fa progressoZone). Una sola, mai piu' di una in Dashboard.
+        const z = zone[0];
+        goal.classList.remove("hidden");
+        document.getElementById("dash-journey-zona").textContent = z.zona;
+        document.getElementById("dash-journey-bar").style.width = z.percentuale + "%";
+        document.getElementById("dash-journey-track").setAttribute("aria-label",
+            T('dash.camminoBarraAria', z.presi, z.totale, z.zona) || `${z.presi} vette su ${z.totale} nel ${z.zona}`);
+        document.getElementById("dash-journey-count").textContent = `${z.presi} / ${z.totale}`;
+        document.getElementById("dash-journey-left").textContent =
+            T('dash.camminoMancano', z.mancano, z.zona)
+            || `Ti ${z.mancano === 1 ? 'manca' : 'mancano'} ${z.mancano} ${z.mancano === 1 ? 'vetta' : 'vette'} per completare ${z.zona}.`;
+        cta.textContent = T('dash.camminoCta') || "Continua il tuo cammino";
+    } else {
+        // Vette conquistate ma nessuna zona a meta' (una sola presa, o le zone toccate sono
+        // gia' complete): niente barra, il CTA invita a guardare quali vette mancano (punto 7).
+        goal.classList.add("hidden");
+        cta.textContent = T('dash.camminoCtaScopri') || "Scopri le prossime vette";
+    }
+}
+
+// FASE 4 revisione UX - "Ultimi traguardi": anteprima dei badge presi piu' di recente, al
+// posto della vecchia anteprima "presi + i piu' alti da prendere" (che aveva senso quando il
+// riquadro doveva restare sempre pieno). Stesso componente visivo di prima (.stamp-slot),
+// stessa fonte (badges.js); cambia solo la selezione: ultimiTraguardi() da' SOLO i presi.
+function renderDashAchievements() {
+    const grid = document.getElementById("dash-achievements-grid");
+    const more = document.getElementById("dash-achievements-more");
+    const empty = document.getElementById("dash-achievements-empty");
+    if (!grid || !window.CamoscioBadges) return;
+
+    const presi = window.CamoscioBadges.ultimiTraguardi(4);
+
+    if (!presi.length) {
+        // Nessun badge ancora: stato vuoto curato, non quattro riquadri grigi (punto 12).
+        grid.classList.add("hidden");
+        more.classList.add("hidden");
+        empty.classList.remove("hidden");
+    } else {
+        empty.classList.add("hidden");
+        grid.classList.remove("hidden");
+        more.classList.remove("hidden");
+
+        grid.innerHTML = "";
+        presi.forEach(badge => {
+            const slot = document.createElement("div");
+            slot.className = "stamp-slot unlocked";
+            // Come prima: il click sull'icona risale a questo slot per aprire il modale
+            // immagine e la scheda "i" (badge-info.js, delegato in app.js).
+            if (badge.stampId) slot.dataset.stampId = badge.stampId;
+
+            const iconaHtml = badge.icona
+                ? `<img src="${escapeHtml(badge.icona)}" alt="" class="stamp-icon stamp-icon-img">`
+                : `<span class="stamp-icon">${escapeHtml(badge.emoji)}</span>`;
+
+            slot.innerHTML = `
+                ${iconaHtml}
+                <span class="stamp-name">${escapeHtml(badge.nome)}</span>
+                <span class="stamp-date">${escapeHtml(window.CamoscioBadges.dataItaliana(badge.data))}</span>
+            `;
+            grid.appendChild(slot);
+        });
     }
 
-    // La pagina Badge mostra gli stessi dati di questa scheda: si ridisegna insieme,
-    // cosi' chi sblocca un timbro dalla Mappa la ritrova aggiornata senza che ogni
-    // punto che tocca i timbri debba ricordarsi di chiamarla. Stesso criterio gia' in
-    // uso fra renderHikesList e renderMyHikes (punto 10).
+    // La pagina Badge mostra gli stessi timbri: si ridisegna insieme, cosi' chi ne sblocca uno
+    // dalla Mappa la ritrova aggiornata (renderBadges esce subito se la pagina non e' a
+    // schermo). Comportamento ereditato dalla vecchia renderDashboardStamps.
     if (window.renderBadges) window.renderBadges();
-
-    // Punto 19: qui si aggiornava la barra della "sfida Gran Sasso". La percentuale era vera
-    // (contava i timbri sbloccati), ma la sfida NO: nessuno l'aveva mai creata o accettata,
-    // compariva a chiunque appena registrato, e l'etichetta "(0/2)" accanto era scritta a mano
-    // nell'HTML e restava 0 anche dopo aver preso i timbri. Tolta insieme al suo riquadro.
 }
 
 // Rollout traduzione punto 102, terzo lotto (27/08/2026): due ridisegni al cambio lingua.
@@ -1259,10 +1311,10 @@ function renderDashboardStamps() {
 //    e traduce l'etichetta "Livello:". Legge solo currentUser, nessun fetch.
 //
 // 2) DASHBOARD: ridisegno completo solo se e' la sezione aperta. Quasi tutti i suoi
-//    dati sono gia' in CamoscioState: il re-render sincrono e' gratis. renderTrackingTotals
-//    rifa' un fetch di 3 numeri, ma non svuota la card mentre carica - niente flicker, a
+//    dati sono gia' in CamoscioState: il re-render sincrono e' gratis. renderDashYearSummary
+//    rifa' un fetch di pochi numeri, ma non svuota la card mentre carica - niente flicker, a
 //    differenza del caso userprofile.js dove l'onChange completo e' stato sconsigliato.
-//    Nota: renderDashboardStamps chiama renderBadges, che ha gia' un proprio onChange in
+//    Nota: renderDashAchievements chiama renderBadges, che ha gia' un proprio onChange in
 //    badges.js - a un toggle fatto dalla Dashboard renderBadges gira quindi due volte
 //    (~40 nodi ricostruiti, costo trascurabile, non vale codice per evitarlo).
 if (window.CamoscioI18n) {
