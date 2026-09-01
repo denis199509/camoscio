@@ -8673,3 +8673,232 @@ il sito"). RIMANDATA a un lavoro a se': la pagina statistiche filtrabile
 (decisa in Fase 4).
 
 Vault committato e pushato. cronologia.txt non toccato (congelato).
+
+
+=====================================================================
+DICIANNOVESIMA SESSIONE (01/09/2026) - PASSO 6 fatto + due piani nuovi
+(riordino menu, collezione "I 2000 dell'Appennino"). SOLO PIANO per il
+resto, codice alla prossima.
+=====================================================================
+
+Denis riapre dopo un /clear: "manca qualcosa dalla ultima sessione,
+possiamo continuare". Ricostruito lo stato dalle note - la 18a (Dashboard
+Fasi 3-5) era CHIUSA e SALVATA per intero, niente perso. Il "manca
+qualcosa" erano le cose lasciate FUORI dalla Dashboard di proposito.
+Presentati i tre punti; Denis: "possiamo finire i tre punti elencati".
+Ordine: (1) titoli di sezione lunghi su telefono, (2) pagina statistiche
+filtrabile, (3) verifica responsive Dashboard <900px.
+
+
+--- PASSO 6: titoli di sezione = voce di menu (commit 7f8b697 su v2-ux) ---
+
+Parole di Denis, dopo che gli ho mostrato lo stato:
+  "possiamo finire i tre punti elencati"
+  "si, vai" (sull'ordine proposto)
+
+Stato di partenza: header con i nomi lunghi ("Sicurezza & Mesh
+Simulator", "Zaino Intelligente Checklist", "Carpooling & Spese Viaggio",
+"Tribu', Recensioni & Squadre", "I tuoi Badge"); menu laterale gia' con
+le forme corte; divergenza voluta dall'epoca del punto 102. Su telefono
+la barra e' a sole icone -> il titolo dell'header e' l'UNICA scritta che
+dice dove sei, e i 5 lunghi si troncavano coi "...".
+
+DECISO con AskUserQuestion. Opzioni offerte:
+ - "Corto solo su mobile" (header usa la forma breve <600px, re-render a
+   matchMedia; desktop invariato)
+ - "Corto ovunque" <-- SCELTA DI DENIS
+ - "Va a capo su 2 righe" (niente "...", allentando l'altezza fissa
+   dell'header - decisione precedente diceva "sempre una riga")
+ - "Font piu' piccolo" (~0.72rem su mobile, fragile)
+
+"Corto ovunque" = header uguale alla voce di menu ANCHE su desktop. Si
+perde il testo in piu' che l'header dava su desktop ("Simulator",
+"Checklist", "Recensioni", "Spese Viaggio") - accettato.
+
+FATTO (solo stringhe + commenti, ZERO CSS, ZERO logica):
+ - public/js/app.js prettyNames: 5 valori -> "Badge" / "Carpooling" /
+   "Zaino Intelligente" / "Sicurezza & Mesh" / "Tribu' & Squadre".
+ - public/js/i18n.js: 5 valori EN sectionTitle.* allineati a nav.*
+   ("Badges" / "Carpooling" / "Smart Backpack" / "Safety & Mesh" /
+   "Tribe & Squads").
+ - public/js/i18n.js: 3 blocchi di commento che spiegavano la divergenza
+   "voce di menu compatta vs titolo di pagina" riscritti (d'ora in poi
+   combaciano di proposito; se un titolo dovra' tornare piu' esteso del
+   menu si cambia sectionTitle.* + prettyNames senza toccare nav.*).
+
+VERIFICATO in locale (server locale, demo Marco Alpinista, sola lettura):
+giro delle 11 sezioni x IT/EN via click veri + toggle lingua - header =
+voce di menu su TUTTE, console pulita. resize_window inaffidabile su
+questo Chrome (innerWidth resta 1536): larghezza mobile misurata con un
+probe al font 1rem sui testi reali - il piu' largo dei 5 (~116px) contro
+~230px di spazio stimato sull'header a 390px, il troncamento sparisce.
+FUORI SCOPE: "Le mie escursioni" / "Mappa & Sentieri" (il menu li scrive
+gia' uguali, ~114-116px, stanno) e "Moderazione segnalazioni" (pagina da
+moderatori, senza voce di menu). Auto-save 4ed5088 rifuso con reset
+--soft.
+
+NB: il par. 11 del piano riordino menu (sotto) RILAVORA comunque tutta la
+mappa nav.*/sectionTitle.*/prettyNames alle rinomine/raggruppamenti - il
+principio "header = menu" resta, le stringhe si rifanno.
+
+Punti 2 e 3 -> RIMANDATI. Denis: "lascia il punto 2 e 3 per la prossima
+sessione. adesso ti do' delle indicazioni per la barra laterale
+sinistra. da fare solo il piano poi salviamo tutto. il lavoro lo
+facciamo nella prossima sessione".
+
+
+--- PIANO 1: riordino menu / navigazione ("Camoscio v2") ---
+
+Indicazioni di Denis (spec lunga, parole sue in sintesi):
+  "Semplificare il menu laterale [...] presenta troppe voci allo stesso
+  livello e risulta dispersivo."
+  "raggruppando le funzionalita' per area e finalita', senza eliminare le
+  funzioni esistenti."
+  Struttura: Home / Esplora / Le mie escursioni / Community / + Crea ;
+  in fondo: Progressi / Profilo / Impostazioni.
+  "Home" = ex Dashboard ("Dashboard non verra' piu' utilizzato come nome
+  della sezione"). "Esplora" espandibile: Escursioni / Mappa /
+  Ispirazioni (= ex Feed, "descrive meglio la funzione"). "Le mie
+  escursioni" resta separata: Tutte / In programma / Completate ("Non
+  creare una categoria separata Partecipate"). "Community" espandibile,
+  per ora Amici. "+ Crea" azione, "non deve essere necessariamente
+  trattata come una sezione del menu". "Progressi" = gamification e
+  risultati ("Cosa ho fatto e quali progressi ho fatto su Camoscio?").
+  "Profilo" = come mi vedono gli altri. "Impostazioni" = config
+  dell'account (foto/nome/bio, password, email, sicurezza, notifiche,
+  privacy, logout, eliminazione account).
+  "non creare ulteriori livelli di menu. Eventuali filtri e categorie
+  [...] all'interno delle singole pagine."
+  "ridurre il numero di elementi visibili contemporaneamente e creare una
+  gerarchia piu' chiara [...] mantenendo comunque accessibili tutte le
+  funzioni."
+
+4 DECISIONI chiuse con AskUserQuestion:
+
+ D1 - Carpooling / Zaino / Sicurezza & Mesh (ASSENTI dalla struttura di
+   Denis): dove vanno?
+   Opzioni: gruppo "Strumenti" nell'area personale / sottovoci di "Le mie
+   escursioni" / restano top-level / DENTRO la singola escursione.
+   SCELTA DI DENIS: "Dentro la singola escursione" (schede contestuali di
+   QUELLA uscita, in hike-page). E' il pezzo piu' grosso e rischioso
+   (PASSO 14+, ~1 blocco per modulo).
+   CAVEAT che ho segnalato: #safety ha due anime - il timer/Dead Man's
+   Switch (per-uscita, ci sta) E il simulatore mesh (NON per-uscita).
+   Piu' il vincolo 7 del progetto: non seppellire le funzioni di
+   sicurezza. -> dove tenere il mesh e un accesso rapido alla sicurezza
+   va CHIUSO con Denis prima di implementare quel pezzo.
+
+ D2 - Community: come si organizza (la pagina #social oggi ha Persone /
+   Squadre tue+altre / Match Obiettivi / Recensioni)?
+   Opzioni: una pagina con sottovoce "Amici" / tre sottovoci (Amici,
+   Squadre, Recensioni) / solo Amici per ora.
+   SCELTA DI DENIS: "Una pagina, sottovoce Amici". Le card restano tutte
+   nella pagina; nel menu una sola sottovoce "Amici". "Cerca Persone"
+   (#people-search) si FONDE dentro Community.
+
+ D3 - I progressi (Il tuo cammino / Ultimi traguardi / Il tuo <anno>,
+   oggi sulla Home dopo Fasi 4-5): chi li mostra con la nuova Progressi?
+   Opzioni: Home riassunto + Progressi dettaglio / tutto in Progressi /
+   Progressi = Badge rinominato.
+   SCELTA DI DENIS: "Home riassunto, Progressi dettaglio". Home tiene il
+   riassunto motivazionale; Progressi = pagina Badge + statistiche
+   complete filtrabili (QUI atterra il "punto 2" rimandato, backend
+   ?from=&to=) + dettaglio conquiste/cime. I link "Vedi tutti i badge /
+   Vedi statistiche" della Home puntano a Progressi.
+
+ D4 - Gruppi espandibili su mobile (rail 62px a sole icone): come?
+   Opzioni: popover al tap / menu piatto su mobile / drawer a scomparsa.
+   SCELTA DI DENIS: "Drawer a scomparsa" dietro hamburger, menu annidato
+   testuale completo. Il rail 62px sparisce. Cambio di navigazione
+   mobile a se' (PASSO 8).
+
+PIANO COMPLETO in C:\Users\lenovo\.claude\plans\camoscio-v2-menu-
+restructure.md: mappa di ogni sezione attuale -> destinazione,
+meccanismo nav-group accordion (stato in localStorage, zero campi
+MongoDB), stato attivo annidato, disintreccio #hikes (scoperta) da
+#my-hikes (mie), split di #my-profile in Profilo (vista) + Impostazioni
+(config, solo cio' che esiste gia': cambio-password/foto-bio/logout;
+NIENTE feature nuove: notifiche/privacy/email/elimina-account solo
+predisposte), + Crea che apre create-hike-modal / route planner,
+sequenza PASSO 7 (sidebar desktop) -> 8 (drawer mobile) -> 9 (Le mie
+escursioni ri-tagliata) -> 10 (Community) -> 11 (Progressi) -> 12
+(split Profilo/Impostazioni) -> 13 (+ Crea) -> 14+ (i 3 moduli in
+hike-page). 9 DOMANDE MINORI ancora aperte (par. 15 del piano):
+accordion singolo o multiplo, #progress nuova o #badges rinominata,
+#people-search da eliminare o alias, esperto locale in Profilo o
+Impostazioni, + Crea voce vs FAB, dove vive lo "zaino personale" slegato
+da un'uscita, il caveat sicurezza di D1, #hikes-vs-#my-hikes dentro
+PASSO 9 o blocco a se', icone lucide equivalenti alle emoji. Da chiudere
+a inizio prossima sessione.
+
+
+--- PIANO 2: collezione "I 2000 dell'Appennino" ---
+
+Indicazioni di Denis (2a spec della sessione, parole sue in sintesi):
+  Nuova sezione DENTRO la pagina Badge, "I 2000 dell'Appennino" (nome
+  provvisorio), per le vette dell'Appennino oltre i 2000 m.
+  "Questa sezione deve funzionare come una collezione di badge da
+  completare": ogni vetta un badge, l'utente vede conquistate e da
+  conquistare.
+  In alto: titolo + "Conquista tutte le vette dell'Appennino oltre i 2000
+  metri." + progresso ("23 / 100 vette conquistate", "23% completato") +
+  barra.
+  Sotto: lista completa. Ogni vetta: immagine/badge, nome, quota, stato.
+  "Le vette gia' conquistate devono essere chiaramente distinguibili."
+  Filtri: Tutte / Conquistate / Da conquistare; "se possibile" anche per
+  catena montuosa.
+  "La lista delle vette NON deve essere definita dal programmatore:
+  verra' fornita successivamente e sara' quella ufficiale." Il sistema
+  strutturato per aggiungere/modificare vette senza toccare la pagina.
+  "rimane all'interno della pagina Badge e non deve diventare una pagina
+  separata."
+  "ogni vetta conquistata viene registrata automaticamente e contribuisce
+  alla percentuale."
+  CONTRASSEGNO: i badge della collezione 2000 devono avere "un elemento
+  grafico distintivo comune", un "bollino/contrassegno 2000+" in
+  posizione fissa, su tutti e soli i badge della collezione, riconoscibile
+  anche dalla griglia generale. "predisposto per poter utilizzare in
+  futuro altri contrassegni per eventuali collezioni speciali."
+
+COME SI INNESTA (dettaglio nel piano): badge-points.js e' gia' il
+catalogo UNICO letto da browser E server (require) -> aggiungere le vette
+li' = il timbro si assegna da solo all'import/tracciamento, come gli
+altri badge, NESSUNA logica di guadagno nuova. Campo nuovo
+collezioni:['2000-appennino'] sulle entry (al plurale, per collezioni
+future); le ~15 cime >2000 gia' a catalogo ricevono il campo, NON un
+stampId doppione (lista ufficiale da riconciliare con le 24 voci). Nuova
+progressoCollezione(id) in badges.js, generica - terzo concetto distinto
+da progressoZone (cime per zona) e LIVELLI_ASCESA (salite ripetute a una
+cima). Bollino via data-collezione + CSS con mappa collezione->classe
+generalizzata. Filtro catena: zona e' gia' una catena montuosa, si riusa
+se la tassonomia ufficiale combacia.
+
+PUNTO APERTO n.1: ICONE e peso del repo pubblico. ~100 vette; la 14a
+sessione ha compresso le icone perche' erano l'88% del repo (.git gia'
+~89 MB). ~100 icone custom nuove = ~+25 MB anche compresse. 5 strade nel
+piano par. 6 (icona per vetta / GRAFICA "2000+" UNICA col nome a testo /
+poche condivise per fascia / TEMPLATE SVG / raster piccolo).
+Raccomandazione provvisoria: la 2 o la 4 - la collezione ha gia' la sua
+identita' nel bollino. Da chiudere con Denis, puo' aspettare la lista.
+Altre 5 domande minori nel piano par. 7 (filtro catena = riuso zona?,
+vette 2000 fuori dalle 4 regioni di Camoscio, doppio conteggio
+zona/collezione, posizione del blocco nella pagina, denominatore =
+lunghezza lista). Piano: C:\Users\lenovo\.claude\plans\camoscio-2000-
+appennino-collezione.md.
+
+
+--- CHIUSURA SESSIONE ---
+Denis: "per adesso salva tutto e fai la classica chiusura sessione".
+Prima chiesta la spiegazione di cosa comporta la chiusura, poi
+confermato ("confermo, procedi con la chiusura").
+
+Stato: v2-ux = 6 commit (7915762, 48fb101, 5e2c01d, 0f42aa5, 309ab92,
+7f8b697) + 1 di note, tree pulito, NIENTE pushato. master = origin/master
+= efd1290, 0 divergenza. I due file di piano in C:\Users\lenovo\.claude\
+plans\ (fuori dai repo, come i piani delle Fasi 3-5).
+
+DA DOVE SI RIPARTE: chiudere le 9 domande minori del piano menu + la
+decisione icone della collezione 2000, poi PASSO 7 (sidebar desktop).
+Punti 2 e 3 assorbiti nel riordino (2 -> Progressi, 3 -> dopo il drawer).
+
+Vault committato e pushato. cronologia.txt non toccato (congelato).

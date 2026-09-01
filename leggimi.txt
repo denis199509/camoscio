@@ -1,8 +1,9 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-09-01 (DICIOTTESIMA sessione — Fasi 3, 4, 5 della
-revisione UX: la DASHBOARD v2 E' CHIUSA. 5 commit su `v2-ux`, NIENTE
-pushato. Prossimo blocco della revisione = un'altra sezione del sito).
+Aggiornato: 2026-09-01 (DICIANNOVESIMA sessione — PASSO 6 fatto (titoli
+sezione = voce di menu) + DUE PIANI nuovi, solo pianificati: riordino
+menu/navigazione e collezione "I 2000 dell'Appennino". 6 commit su
+`v2-ux`, NIENTE pushato. Codice del riordino: prossima sessione).
 
 >>> LAVORO IN CORSO: revisione UX del sito ("Camoscio v2"). Si lavora
     ESCLUSIVAMENTE IN LOCALE sul branch `v2-ux`, un blocco alla volta.
@@ -14,9 +15,10 @@ pushato. Prossimo blocco della revisione = un'altra sezione del sito).
     `V2 UX PASSO n: ...` su `v2-ux` (locale). Alla fine: merge su
     `master` + push. L'hook di auto-save committa comunque sul branch;
     va rifuso in un commit vero (git reset --soft) prima di ogni tappa.
-    La DASHBOARD e' finita (Fasi 1-5). Da qui si passa a un'altra sezione.
+    La DASHBOARD e' finita (Fasi 1-5). Il blocco successivo = RIORDINO
+    MENU/NAVIGAZIONE (piano pronto, codice da fare - vedi sotto).
 
->>> FATTO su `v2-ux` (5 commit, NON pushati) — la DASHBOARD:
+>>> FATTO su `v2-ux` (6 commit, NON pushati) — DASHBOARD (Fasi 1-5) + PASSO 6:
   - `7915762` PASSO 1 — apertura Dashboard contestuale. Via "Benvenuto" +
     le 3 statistiche; nuovo header .dash-hero (fuori dalla .dashboard-grid):
     "Ciao [Nome] 👋" + sottotitolo contestuale + [🥾 Trova un'escursione]
@@ -43,37 +45,78 @@ pushato. Prossimo blocco della revisione = un'altra sezione del sito).
     non piu' stirato (max-width 640px); "4/7" accanto al nome zona;
     .dashboard-grid align-items:start; 3 fix @media 900 (3 badge in fila,
     "Vedi tutti i badge" fuori dall'angolo del FAB, stacco 16px).
+  - `7f8b697` PASSO 6 (19a sessione) — titoli di sezione dell'header =
+    voce di menu ("corto ovunque", AskUserQuestion). 5 valori prettyNames
+    (app.js) + 5 EN sectionTitle.* (i18n.js) allineati a nav.*, "Badge" /
+    "Carpooling" / "Zaino Intelligente" / "Sicurezza & Mesh" / "Tribu' &
+    Squadre" (prima erano i nomi lunghi che su telefono facevano "..."); 3
+    commenti riscritti. ZERO CSS, ZERO logica. NB: il piano del riordino
+    menu (sotto) rilavora comunque tutta la mappa nav.*/sectionTitle.*/
+    prettyNames alle rinomine - il principio "header = menu" resta.
 
-  Verificato tutto in locale sull'account REALE di Denis (badge veri, sola
-  lettura; escursioni finte solo in memoria del browser): tutti gli stati
-  (inclusi vuoti e "vette ma nessuna zona a meta'"), Gran Sasso 4/7 scelta
-  giusta, IT<->EN, console pulita. Il responsive <900px verificato solo in
-  simulazione (resize_window inaffidabile, Denis non prova da telefono
-  perche' la v2 e' in locale) - da guardare al deploy.
+  Dashboard: verificato in locale sull'account REALE di Denis (badge veri,
+  sola lettura; escursioni finte solo in memoria del browser): tutti gli
+  stati, Gran Sasso 4/7, IT<->EN, console pulita. Responsive <900px solo
+  in simulazione (resize_window inaffidabile) - da guardare al deploy.
+  PASSO 6: verificato in locale (demo Marco Alpinista, 11 sezioni x IT/EN,
+  header = menu su tutte, console pulita; larghezza mobile misurata col
+  font a 1rem - il piu' largo dei 5 ~116px contro ~230px di spazio).
 
->>> DA DOVE SI RIPARTE: la Dashboard v2 e' CHIUSA. Il prossimo blocco della
-    revisione UX e' un'ALTRA SEZIONE del sito ("nei prossimi giorni faremo
-    lavori del genere su tutto il sito") - da concordare quale con Denis.
-    Il merge v2-ux -> master + push lo decide lui a fine v2.
-    RIMANDATO a un lavoro a se' (deciso in Fase 4): la pagina statistiche
-    filtrabile dietro un "Vedi statistiche ->" (nuova pagina, filtri per
-    data). Fuori dalla Dashboard per scelta di Denis.
-    Restano nella revisione UX i titoli di sezione lunghi troncati su
-    telefono (ex "punto 106 residuo") - riguardano l'header di OGNI sezione,
-    non toccati dalle Fasi 3/4/5.
-    NOTA: `efd1290` (hotfix Ju Busciu a 10 m, 17a sessione) e' stato
-    PUSHATO da Denis fra la 17a e la 18a sessione (verificato: reflog
-    origin/master "update by push"). `origin/master` ora e' a `efd1290`
-    - al merge v2-ux -> master si parte da li'. `master` locale = origin,
-    0 divergenza.
+>>> DA DOVE SI RIPARTE: due filoni aperti da Denis dopo la Dashboard.
 
->>> DOVE STA IL DETTAGLIO: i piani delle Fasi 3/4/5 in
-    C:\Users\lenovo\.claude\plans\jiggly-munching-brooks.md (l'ultimo
-    sovrascritto e' la Fase 5). Revisione UX in vault 04-Da-Fare
-    ("PROSSIMO GRANDE LAVORO"); decisioni in vault 03 ("Camoscio v2 —
-    revisione UX della Dashboard", sezioni Fase 3/4/5); due trappole nuove
-    in vault 07; parole di Denis in cose_da_fare.txt ("DICIOTTESIMA
-    SESSIONE"); racconto nel vault 06 ("Diciottesima sessione").
+  A) RIORDINO MENU / NAVIGAZIONE - il prossimo grande blocco. Sessione di
+     SOLO PIANO (19a). Piano completo:
+       C:\Users\lenovo\.claude\plans\camoscio-v2-menu-restructure.md
+     Struttura bersaglio: Home (ex Dashboard) / Esplora v (Escursioni,
+     Mappa, Ispirazioni=ex Feed) / Le mie escursioni v (Tutte, In
+     programma, Completate) / Community v (Amici) / + Crea (azione) /
+     area personale: Progressi, Profilo, Impostazioni.
+     4 DECISIONI gia' prese (AskUserQuestion):
+      D1 Carpooling/Zaino/Sicurezza -> schede DENTRO la pagina della
+         singola escursione (hike-page). CAVEAT vincolo 7: #safety ha
+         anche il simulatore mesh (non per-uscita) + non si seppellisce
+         la sicurezza -> dove tenere mesh/accesso rapido va chiuso con
+         Denis PRIMA di quel pezzo (e' PASSO 14+, il piu' grosso).
+      D2 Community = UNA pagina (l'attuale #social), sottovoce "Amici",
+         "Cerca Persone" fusa dentro.
+      D3 Home tiene il riassunto progressi; PROGRESSI = il dettaglio
+         (pagina Badge + statistiche filtrabili + conquiste).
+      D4 mobile: DRAWER a scomparsa dietro hamburger, menu annidato
+         completo; il rail 62px sparisce.
+     9 domande minori ancora aperte nel piano (par. 15) - da chiudere a
+     inizio prossima sessione, poi PASSO 7 (sidebar desktop).
+
+  B) COLLEZIONE "I 2000 DELL'APPENNINO" - dentro la pagina Badge (che
+     diventa Progressi), NON pagina a se'. Piano:
+       C:\Users\lenovo\.claude\plans\camoscio-2000-appennino-collezione.md
+     Si innesta su badge-points.js (catalogo unico browser+server) con un
+     campo nuovo collezioni:[]; il timbro si assegna da solo come gli
+     altri badge. LA LISTA UFFICIALE DELLE VETTE LA FORNISCE DENIS - il
+     sistema e' gia' data-driven. PUNTO APERTO n.1: icone e peso del repo
+     pubblico (~100 vette; la 14a sessione ha compresso le icone perche'
+     erano l'88% del repo). Raccomandazione: 1 grafica "2000+" unica col
+     nome a testo, o template SVG. Da chiudere con Denis, puo' aspettare
+     la lista.
+
+  PUNTI 2 e 3 dei "tre punti" - RIMANDATI alla prossima sessione:
+   - punto 2 (pagina statistiche filtrabile): NON piu' isolato, diventa
+     il contenuto di PROGRESSI (backend ?from=&to= incluso).
+   - punto 3 (responsive Dashboard <900px): DOPO il riordino menu - il
+     drawer mobile cambia tutta la navigazione, verificarla prima
+     sarebbe lavoro buttato.
+
+  Merge v2-ux -> master + push: lo decide Denis a fine v2. origin/master
+  = master = efd1290, 0 divergenza.
+
+>>> DOVE STA IL DETTAGLIO: i DUE PIANI nuovi in
+    C:\Users\lenovo\.claude\plans\ (camoscio-v2-menu-restructure.md e
+    camoscio-2000-appennino-collezione.md). I piani delle Fasi 3/4/5 (ormai
+    chiuse) in jiggly-munching-brooks.md nella stessa cartella. Nel vault:
+    04-Da-Fare ("PROSSIMO GRANDE LAVORO" + "Da dove si riparte"); decisioni
+    in 03 ("Camoscio v2 — riordino menu e navigazione": PASSO 6 + le 4
+    decisioni + la collezione 2000); parole di Denis in cose_da_fare.txt
+    ("DICIANNOVESIMA SESSIONE"); racconto nel 06 ("Diciannovesima sessione").
+    07 non toccato (resize_window inaffidabile e' gia' li').
 
 >>> GIA' IN PRODUZIONE (fino alla 15a sessione, su `master`,
     8d6990c): traduzione IT/EN (punto 102), timbri con traccia reale
