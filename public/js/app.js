@@ -501,7 +501,8 @@ function setupNavigation() {
         "backpack": "Zaino Intelligente",
         "safety": "Sicurezza & Mesh",
         "social": "Community",
-        "people-search": "Cerca Persone",
+        // V2 UX PASSO 10: #people-search rimossa (ora nella card "Persone" di #social).
+        // navigateTo rimappa l'id vecchio -> "social" prima di arrivare qui.
         "user-profile": "Profilo",
         // #my-profile ha un titolo FISSO (a differenza di #user-profile, dove
         // renderUserProfile ci scrive lo username): tenendolo qui, updateSectionTitle
@@ -589,7 +590,16 @@ function setupNavigation() {
     });
     // --------------------------------------------------------------------------
 
-    function navigateTo(targetId) {
+    function navigateTo(targetId, scrollToId) {
+        // V2 UX PASSO 10: alias di navigazione. Alcune sezioni sono state assorbite
+        // in un'altra pagina; l'id vecchio resta valido (deep-link, chiamate da altri
+        // file) e viene rimappato qui, in cima all'imbuto unico.
+        //   people-search -> vive nella card "Persone" di #social (ex sezione rimossa)
+        if (targetId === "people-search") {
+            targetId = "social";
+            scrollToId = scrollToId || "follow-people-card";
+        }
+
         sections.forEach(sec => {
             if (sec.id === targetId) {
                 sec.classList.add("active");
@@ -659,18 +669,26 @@ function setupNavigation() {
 
         // Ri-esegui il rendering della sezione specifica per aggiornare i dati freschi
         triggerSectionRender(targetId);
+
+        // V2 UX PASSO 10: meccanismo generico data-scroll. Una voce puo' chiedere,
+        // dopo la navigazione, di portare in vista un elemento della pagina (es.
+        // "Amici" -> card "Persone"). Fatto in coda, dopo che la sezione e' .active.
+        if (scrollToId) {
+            const bersaglio = document.getElementById(scrollToId);
+            if (bersaglio) bersaglio.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
     }
 
     // V2 UX PASSO 9: un elemento di navigazione puo' portare un data-view (le viste
-    // di "Le mie escursioni"). Si fissa la vista PRIMA di navigare: navigateTo poi
-    // richiama impostaVistaMieEscursioni(vistaCorrente()) e trova gia' il valore nuovo,
-    // senza sfarfallio. Gli elementi senza data-view si comportano come prima.
+    // di "Le mie escursioni") e/o un data-scroll (PASSO 10, elemento da portare in
+    // vista dopo). Si fissa la vista PRIMA di navigare: navigateTo poi richiama
+    // impostaVistaMieEscursioni(vistaCorrente()) e trova gia' il valore nuovo.
     function navigaDaElemento(el) {
         if (!el) return;
         if (el.dataset.view && window.impostaVistaMieEscursioni) {
             window.impostaVistaMieEscursioni(el.dataset.view);
         }
-        navigateTo(el.getAttribute("data-target"));
+        navigateTo(el.getAttribute("data-target"), el.dataset.scroll);
     }
 
     // Navigazione tramite pulsanti della sidebar
@@ -771,8 +789,9 @@ function triggerSectionRender(sectionId) {
                 break;
             case "social":
                 if (window.renderSocialModule) window.renderSocialModule();
-                break;
-            case "people-search":
+                // V2 UX PASSO 10: la ricerca persone vive ora in una card di #social
+                // (ex sezione #people-search). Va ridisegnata quando si apre la pagina
+                // perche' mostri il suo messaggio iniziale ("scrivi almeno N lettere").
                 if (window.renderPeopleSearchModule) window.renderPeopleSearchModule();
                 break;
         }

@@ -65,7 +65,7 @@
             // Rollout punto 102: manca apposta una voce per squad-page/hike-page (non
             // sono nemmeno in prettyNames, app.js - la loro intestazione e' SEMPRE il
             // nome vero della squadra/escursione, mai un titolo fisso da tradurre qui).
-            'sectionTitle.people-search': 'Search People',
+            // V2 UX PASSO 10: via 'sectionTitle.people-search' (sezione rimossa).
             'sectionTitle.user-profile': 'Profile',
 
             // Etichette della barra laterale (public/index.html, <nav class="nav-menu">) -
@@ -94,7 +94,10 @@
             'nav.mieProgramma': 'Upcoming',
             'nav.mieCompletate': 'Completed',
             'nav.community': 'Community',
-            'nav.peopleSearch': 'Search People',
+            // V2 UX PASSO 10: "Community" e' ora un gruppo con la sotto-voce "Amici"
+            // (porta alla card "Persone", che ha assorbito la ricerca per nome utente).
+            // Via 'nav.peopleSearch' - la voce "Cerca Persone" non esiste piu'.
+            'nav.amici': 'Friends',
             'nav.crea': 'Create',
             'nav.badges': 'Badges',
             'nav.backpack': 'Smart Backpack',

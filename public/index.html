@@ -396,14 +396,23 @@
                         </button>
                     </div>
                 </div>
-                <button class="nav-btn" data-target="social" id="btn-nav-social">
-                    <i data-lucide="users"></i>
-                    <span data-i18n="nav.community">Community</span>
-                </button>
-                <button class="nav-btn" data-target="people-search" id="btn-nav-people-search">
-                    <i data-lucide="search"></i>
-                    <span data-i18n="nav.peopleSearch">Cerca Persone</span>
-                </button>
+                <!-- V2 UX PASSO 10: Community diventa un gruppo. Come "Le mie escursioni"
+                     la testa naviga (data-target). Unica sotto-voce "Amici" -> scroll
+                     alla card "Persone" di #social, che ora ospita anche la ricerca per
+                     nome utente (ex sezione #people-search, rimossa). -->
+                <div class="nav-group" data-group="community">
+                    <button class="nav-group-head" data-target="social" aria-expanded="false" aria-controls="nav-group-community" id="btn-nav-social">
+                        <i data-lucide="users"></i>
+                        <span data-i18n="nav.community">Community</span>
+                        <i class="nav-chevron" data-lucide="chevron-down"></i>
+                    </button>
+                    <div class="nav-group-body" id="nav-group-community" hidden>
+                        <button class="nav-btn nav-sub" data-target="social" data-scroll="follow-people-card">
+                            <i data-lucide="user-round-plus"></i>
+                            <span data-i18n="nav.amici">Amici</span>
+                        </button>
+                    </div>
+                </div>
 
                 <p class="nav-block-label" data-i18n="nav.blocco.azione">Azione</p>
                 <!-- V2 UX PASSO 7: azione, non una sezione. PASSO 7 apre solo il modale
@@ -1604,9 +1613,23 @@
                                  (richiesta di Denis). Riempite da renderFollowLists()
                                  (public/js/social.js): "chi seguo" da CamoscioState.following,
                                  "chi mi segue" da GET /api/follow/followers. -->
-                            <div class="glass-card follow-people-card">
+                            <div class="glass-card follow-people-card" id="follow-people-card">
                                 <h4><i data-lucide="users"></i> <span data-i18n="follow.sezioneTitolo">Persone</span></h4>
                                 <p class="small text-muted" data-i18n="follow.sezioneDesc">Chi segui e chi ti segue. Tocca un nome per aprire il profilo.</p>
+
+                                <!-- V2 UX PASSO 10: la ex-pagina "Cerca Persone" (#people-search, rimossa)
+                                     vive qui dentro. Id invariati (#people-search-input /
+                                     #people-search-results) -> peoplesearch.js non cambia. -->
+                                <div class="follow-people-search">
+                                    <p class="small text-muted" data-i18n="peopleSearch.sottotitolo">Scrivi il nome utente di una persona (es. DaniWoll).</p>
+                                    <div class="trailhead-search-row">
+                                        <div class="trailhead-search-field">
+                                            <i data-lucide="search"></i>
+                                            <input type="text" id="people-search-input" autocomplete="off" maxlength="60" placeholder="Es. DaniWoll" data-i18n-placeholder="peopleSearch.placeholder">
+                                        </div>
+                                    </div>
+                                    <div id="people-search-results" class="hike-carpools-list"></div>
+                                </div>
 
                                 <button type="button" class="follow-list-toggle" data-follow-toggle="following" aria-expanded="false">
                                     <span><span data-i18n="follow.seguitiTitolo">Persone che segui</span> <span class="small text-muted" id="following-count"></span></span>
@@ -1739,24 +1762,11 @@
                     </div>
                 </section>
 
-                <!-- Ricerca persone - chiesta da Denis in sessione (01/08/2026), non in
-                     cose_da_fare.txt. Filtro client-side su window.CamoscioState.users (gia'
-                     l'elenco completo, nessuna rotta nuova): vedi public/js/peoplesearch.js.
-                     La ricerca parte al quarto carattere scritto (confermato con Denis,
-                     esempio "Dani" -> "DaniWoll"). -->
-                <section id="people-search" class="page-section">
-                    <div class="glass-card">
-                        <h4><i data-lucide="search"></i> <span data-i18n="peopleSearch.titolo">Cerca Persone</span></h4>
-                        <p class="small text-muted" data-i18n="peopleSearch.sottotitolo">Scrivi il nome utente di una persona (es. DaniWoll).</p>
-                        <div class="trailhead-search-row">
-                            <div class="trailhead-search-field">
-                                <i data-lucide="search"></i>
-                                <input type="text" id="people-search-input" autocomplete="off" maxlength="60" placeholder="Es. DaniWoll" data-i18n-placeholder="peopleSearch.placeholder">
-                            </div>
-                        </div>
-                        <div id="people-search-results" class="hike-carpools-list"></div>
-                    </div>
-                </section>
+                <!-- V2 UX PASSO 10: la sezione #people-search e' stata rimossa. La ricerca
+                     persone (idea di Denis, 01/08/2026 - filtro client-side su
+                     window.CamoscioState.users, vedi public/js/peoplesearch.js, parte al
+                     quarto carattere) vive ora nella card "Persone" di #social qui sopra.
+                     navigateTo('people-search') fa da alias -> #social + scroll alla card. -->
 
                 <!-- Pagina profilo di UN ALTRO utente - non richiesta in cose_da_fare.txt,
                      chiesta da Denis in sessione (01/08/2026). Non ha una voce nella barra
