@@ -232,7 +232,7 @@ wss.on('connection', async (ws, request) => {
 
 connectMongo()
     .then(() => {
-        server.listen(port, () => {
+        server.listen(port, async () => {
             console.log(`===================================================`);
             console.log(` Camoscio Hiking Web App in esecuzione!`);
             console.log(` Portale locale: http://localhost:${port}`);
@@ -246,6 +246,22 @@ connectMongo()
             console.log(` NODE_ENV=${process.env.NODE_ENV || '(non impostata)'} - rate limiter ${prod ? 'ATTIVI' : 'SPENTI'}, cookie secure ${prod ? 'si' : 'no'}`);
             if (prod && !process.env.SAFETY_CRON_SECRET) {
                 console.error(' ATTENZIONE: SAFETY_CRON_SECRET vuota in produzione - /api/safety/controlla-scadenze risponde 403 a ogni chiamata: il Dead Man\'s Switch NON scattera\' mai. Impostare il segreto e puntarci il cron esterno.');
+            }
+            // Punto A-3.4: stesso ragionamento per ACCOUNT_SCRUB_SECRET (/api/users/scrub-eliminati).
+            // Se manca in produzione, gli account eliminati restano "Account eliminato" a
+            // tempo indeterminato e i dati personali non vengono mai cancellati - promessa
+            // non mantenuta, in silenzio. Piu' una rete di sicurezza che non dipende da
+            // cron-job.org: quanti account hanno gia' superato i 30 giorni senza scrub.
+            if (prod && !process.env.ACCOUNT_SCRUB_SECRET) {
+                console.error(' ATTENZIONE: ACCOUNT_SCRUB_SECRET vuota in produzione - /api/users/scrub-eliminati risponde 403 a ogni chiamata: i dati personali degli account eliminati NON verranno mai cancellati. Impostare il segreto e puntarci il cron esterno.');
+            }
+            try {
+                const inRitardo = await User.countDocuments({ deletionScrubAt: { $lte: new Date() }, deletedAt: { $exists: false } });
+                if (inRitardo) {
+                    console.error(` ATTENZIONE: ${inRitardo} account hanno superato i 30 giorni di grazia e non sono ancora stati scrubati (il cron di /api/users/scrub-eliminati non sta girando).`);
+                }
+            } catch (e) {
+                console.error(' Non e\' stato possibile controllare gli account in attesa di scrub:', e.message);
             }
             console.log(`===================================================`);
         });

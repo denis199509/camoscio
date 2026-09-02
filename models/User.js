@@ -221,7 +221,22 @@ const userSchema = new mongoose.Schema({
     // solo Denis, per sua decisione esplicita ("solo al mio account", non "a tutti i
     // moderatori"). Stessa convenzione di canModerateReports: default undefined, nessuna
     // interfaccia, si scrive con scripts/set-report-alerts.js.
-    receivesReportAlerts: { type: Boolean, default: undefined }
+    receivesReportAlerts: { type: Boolean, default: undefined },
+
+    // --- 14. Eliminazione account (punto A-3.4) ---
+    // Soft-delete in due tempi (deciso con Denis il 02/09/2026). pendingDeletionAt:
+    // l'utente ha chiesto di eliminare l'account - da quell'istante e' pseudonimizzato
+    // ("Account eliminato") per tutti e sloggato, ma per 30 giorni puo' ANNULLARE
+    // rientrando col login. deletionScrubAt: quando il trigger esterno
+    // (GET|POST /api/users/scrub-eliminati, stesso schema del Dead Man's Switch - vedi
+    // routes/safety.js) puo' cancellare per davvero i dati personali. deletedAt: lo scrub
+    // e' stato fatto. I contenuti (escursioni, messaggi, badge, percorsi, tracce) restano
+    // sempre: cambia solo il nome mostrato. default: undefined su tutti e tre - quasi
+    // nessun documento li avra' mai, come i campi Dead Man's Switch qui sopra (vincolo
+    // spazio, vedi 02-Vincoli-Hard del vault).
+    pendingDeletionAt: { type: Date, default: undefined },
+    deletionScrubAt: { type: Date, default: undefined },
+    deletedAt: { type: Date, default: undefined }
 });
 
 const User = mongoose.models.User || mongoose.model('User', userSchema);

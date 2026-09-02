@@ -98,6 +98,9 @@ function showGenericModal(message, { showInput = false, defaultValue = "", showC
             modal.classList.add("hidden");
             btnConfirm.removeEventListener("click", onConfirm);
             btnCancel.removeEventListener("click", onCancel);
+            // Il campo e' UNO SOLO riusato da tutto il sito: non lasciarci dentro il valore
+            // appena digitato (una password, per l'eliminazione account - punto A-3.4).
+            input.value = "";
             resolve(result);
         };
 
@@ -123,6 +126,13 @@ window.showConfirmModal = function(message, confirmLabel = "OK", { cancelLabel =
 // Sostituisce prompt(): risolve al testo inserito, o null se annullato
 window.showPromptModal = function(message, defaultValue = "") {
     return showGenericModal(message, { showInput: true, defaultValue });
+};
+
+// Come showPromptModal ma con un campo PASSWORD (caratteri mascherati) e il bottone di
+// conferma rosso: per un'azione distruttiva che richiede la ri-digitazione della
+// password (punto A-3.4, eliminazione account). Risolve alla password, o null se annullato.
+window.showPasswordModal = function(message, { confirmLabel = "Conferma", cancelLabel = "Annulla" } = {}) {
+    return showGenericModal(message, { showInput: true, inputType: "password", confirmLabel, cancelLabel, danger: true });
 };
 
 // Punto 114: un file .fit e' binario, non si puo' mandare come testo dentro il JSON come
@@ -367,6 +377,21 @@ async function initApp() {
         // Forza il render della dashboard iniziale
         renderDashboard();
 
+        // Punto A-3.4: se il login ha annullato un'eliminazione in corso, il segno e' in
+        // sessionStorage (il toast al momento del login sarebbe sparito col reload).
+        try {
+            if (sessionStorage.getItem("camoscio_msg_ripristino")) {
+                sessionStorage.removeItem("camoscio_msg_ripristino");
+                if (window.showToast) {
+                    window.showToast(
+                        T("settings.ripristinoFatto") ||
+                        "Bentornato: l'eliminazione dell'account è stata annullata. Il timer di sicurezza era stato disarmato (riattivalo se ti serve); se eri l'unico amministratore di una squadra, il ruolo è passato a un altro membro.",
+                        "success"
+                    );
+                }
+            }
+        } catch (e) {}
+
     } catch (e) {
         console.error("Errore durante l'inizializzazione dell'app:", e);
     }
@@ -376,6 +401,20 @@ async function initApp() {
 // Segnala una sola volta che la sessione e' scaduta: refreshState viene richiamato a ogni
 // cambio di sezione, quindi senza questo l'avviso comparirebbe a ripetizione.
 let sessioneScadutaGiaSegnalata = false;
+
+// Punto A-3.4: mette l'etichetta tradotta ("Account eliminato" / "Deleted account") sullo
+// username degli account eliminati, in un punto solo. Il server manda gia' deleted:true e
+// un username di ripiego italiano; qui lo si allinea alla lingua scelta.
+function applicaNomeEliminati(users) {
+    const etichetta = (window.CamoscioI18n && window.CamoscioI18n.t("common.accountEliminato")) || "Account eliminato";
+    (users || []).forEach(u => { if (u && u.deleted) u.username = etichetta; });
+}
+// Al cambio lingua: ri-etichetta lo store (il prossimo render la prende). Non forza
+// re-render: la differenza IT/EN su un nome "Account eliminato" gia' a schermo si allinea
+// alla navigazione successiva - lag cosmetico trascurabile su un caso raro.
+if (window.CamoscioI18n) {
+    window.CamoscioI18n.onChange(() => applicaNomeEliminati(window.CamoscioState.users));
+}
 
 async function refreshState() {
     // Ogni risposta va controllata PRIMA di usarla (punto 35). Con la sessione scaduta il
@@ -407,6 +446,12 @@ async function refreshState() {
         window.CamoscioState.reports = reports;
         window.CamoscioState.squads = squads;
         window.CamoscioState.bookmarks = bookmarks;
+
+        // Punto A-3.4: gli account eliminati arrivano dal server gia' senza dati personali
+        // e con username = "Account eliminato" (ripiego) + deleted:true. Qui si mette la
+        // traduzione, cosi' OGNI punto che legge .username dallo store (chat, feed, righe
+        // squadra, creatore escursione, liste follow) la mostra giusta senza modifiche.
+        applicaNomeEliminati(window.CamoscioState.users);
 
         // Sotto-tendina "Squadre" della sidebar: si tiene allineata ai dati freschi
         // (una richiesta di ingresso approvata da un admin la fa comparire).

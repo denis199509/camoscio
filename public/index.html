@@ -1820,15 +1820,27 @@
                     </div>
 
                     <!-- Struttura pronta, nessuna feature nuova: queste righe sono inerti
-                         finche' non diventano punti a se' ("Elimina account" e' il prossimo). -->
+                         finche' non diventano punti a se'. -->
                     <div class="glass-card settings-card settings-placeholder">
                         <h4><i data-lucide="sliders-horizontal"></i> <span data-i18n="settings.altreTitolo">Altre impostazioni</span></h4>
                         <p class="small text-muted" data-i18n="settings.altreDesc">In arrivo. Per ora non sono attive.</p>
                         <ul class="settings-placeholder-list">
                             <li data-i18n="settings.phNotifiche">Gestione notifiche</li>
                             <li data-i18n="settings.phEmail">Cambio email</li>
-                            <li data-i18n="settings.phElimina">Elimina account</li>
                         </ul>
+                    </div>
+
+                    <!-- Punto A-3.4: eliminazione account. Soft-delete in due tempi - la
+                         richiesta pseudonimizza subito l'account ("Account eliminato"),
+                         30 giorni per annullare rientrando col login, poi scrub
+                         definitivo. Nascosta per gli account demo (renderSettingsPage). -->
+                    <div class="glass-card settings-card settings-danger" id="settings-delete-card">
+                        <h4><i data-lucide="user-x"></i> <span data-i18n="settings.eliminaTitolo">Elimina account</span></h4>
+                        <p class="small text-muted" data-i18n="settings.eliminaDesc">Quello che hai pubblicato — escursioni, messaggi, badge, percorsi, tracce — resta visibile, ma al posto del tuo nome comparirà «Account eliminato». Spariscono nome, foto, bio, email e contatti di emergenza. Hai 30 giorni per ripensarci: per annullare basta rientrare con le tue credenziali. Dopo, i dati personali vengono cancellati per sempre.</p>
+                        <p class="small text-muted" data-i18n="settings.eliminaNotaEscursioni">Se hai escursioni in programma organizzate da te, prima annullale o passale a un altro organizzatore.</p>
+                        <button type="button" class="btn btn-sm btn-danger" id="btn-delete-account">
+                            <i data-lucide="user-x"></i> <span data-i18n="settings.eliminaBtn">Elimina il mio account</span>
+                        </button>
                     </div>
                 </section>
 

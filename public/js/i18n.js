@@ -295,6 +295,9 @@
             'common.elimina': 'Delete',
             'common.cancella': 'Cancel',
             'common.rimuovi': 'Remove',
+            // Punto A-3.4: nome mostrato al posto di quello di un account eliminato. E'
+            // interfaccia (non contenuto utente), quindi si traduce.
+            'common.accountEliminato': 'Deleted account',
             'common.erroreServer': 'Could not reach the server.',
             'common.copia': 'Copy',
 
@@ -615,7 +618,6 @@
             'settings.altreDesc': 'Coming soon. Not active yet.',
             'settings.phNotifiche': 'Notification settings',
             'settings.phEmail': 'Change email',
-            'settings.phElimina': 'Delete account',
             // A-3.1: revoca del consenso alla geolocalizzazione (#settings, "Privacy e posizione")
             'settings.privacyTitolo': 'Privacy & location',
             'settings.revocaGeo': 'Withdraw location consent',
@@ -633,6 +635,19 @@
             'settings.esportaInCorso': 'Preparing the file…',
             'settings.esportaFatto': 'Export downloaded.',
             'settings.esportaErrore': "I couldn't prepare the export. Try again.",
+            // A-3.4: eliminazione account (soft-delete in due tempi + 30 giorni di grazia)
+            'settings.eliminaTitolo': 'Delete account',
+            'settings.eliminaDesc': "What you've posted — hikes, messages, badges, routes, tracks — stays visible, but «Deleted account» will show instead of your name. Your name, photo, bio, email and emergency contacts are removed. You have 30 days to change your mind: just log back in to cancel. After that, your personal data is deleted for good.",
+            'settings.eliminaNotaEscursioni': 'If you have upcoming hikes you organised, cancel them or hand them to another organiser first.',
+            'settings.eliminaBtn': 'Delete my account',
+            'settings.eliminaModaleTesto': "Type your password to delete the account. Your content stays visible under «Deleted account». You have 30 days to cancel: just log back in.",
+            'settings.eliminaScriviPwd': 'Type your password to confirm.',
+            'settings.eliminaPwdErrata': 'Wrong password.',
+            'settings.eliminaBloccoEscursioni': 'You have upcoming hikes you organised. Cancel them or hand them to another organiser, then try again:',
+            'settings.eliminaErrore': "The account could not be deleted. Try again.",
+            'settings.eliminatoTitolo': 'Account deleted',
+            'settings.eliminatoTesto': 'Your account has been deleted. You have 30 days to change your mind: log back in with your credentials to cancel. After that, your personal data will be permanently erased.',
+            'settings.ripristinoFatto': "Welcome back: the account deletion has been cancelled. The safety timer had been switched off (turn it back on if you need it); if you were the only admin of a squad, the role passed to another member.",
             'myProfile.rimuoviFoto': 'Remove photo',
             'myProfile.bioLabel': 'Bio (max 250 characters):',
             'myProfile.bioPlaceholder': 'Tell us something about yourself...',

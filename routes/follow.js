@@ -4,6 +4,7 @@ const { mongoose } = require('../db/mongo');
 const Follow = require('../models/Follow');
 const User = require('../models/User');
 const { requireAuth } = require('../middleware/auth');
+const { eliminato } = require('../lib/accountDeletion');
 
 // Punto 113 - "Segui" una persona. Unidirezionale e senza conferma (decisione di Denis del
 // 29/08/2026): seguire non chiede il permesso a nessuno, come su Instagram/Twitter.
@@ -32,8 +33,12 @@ router.post('/:userId', requireAuth, async (req, res) => {
 
     try {
         // Che l'utente da seguire esista davvero: senza, un id a caso creerebbe un follow
-        // verso il nulla che poi conterebbe nei "seguiti".
-        if (!(await User.exists({ _id: followingId }))) {
+        // verso il nulla che poi conterebbe nei "seguiti". Un account eliminato (punto
+        // A-3.4) conta come inesistente: seguirlo aprirebbe la via alle sue (ex) tracce
+        // via GET /api/tracking/sessions/:id/points, e comunque non c'e' un profilo da
+        // seguire.
+        const bersaglio = await User.findById(followingId).select('pendingDeletionAt deletedAt');
+        if (!bersaglio || eliminato(bersaglio)) {
             return res.status(404).json({ error: 'Questa persona non esiste.' });
         }
 

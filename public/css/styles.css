@@ -6198,3 +6198,40 @@ option {
     margin-top: 12px;
     justify-content: center;
 }
+
+/* Punto A-3.4: card "zona pericolosa" (Elimina account) in Impostazioni + schermata
+   mostrata subito dopo l'eliminazione. */
+.settings-card.settings-danger {
+    border: 1px solid var(--accent-red);
+}
+.settings-card.settings-danger h4 {
+    color: var(--accent-red);
+}
+
+.account-deleted-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: var(--bg-dark);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+.account-deleted-box {
+    max-width: 460px;
+    text-align: center;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 32px 28px;
+}
+.account-deleted-box h2 {
+    margin: 0 0 12px;
+    color: var(--color-text-primary);
+}
+.account-deleted-box p {
+    color: var(--color-text-secondary);
+    margin: 0 0 20px;
+    line-height: 1.5;
+}

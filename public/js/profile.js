@@ -103,6 +103,15 @@ function renderSettingsPage() {
         btnExport.addEventListener("click", esportaMieiDati);
     }
 
+    // A-3.4: eliminazione account. La card e' nascosta per i demo (condivisi, senza password).
+    const cardDelete = document.getElementById("settings-delete-card");
+    if (cardDelete) cardDelete.classList.toggle("hidden", !!usr.isDemoAccount);
+    const btnDelete = document.getElementById("btn-delete-account");
+    if (btnDelete && !btnDelete.dataset.collegato) {
+        btnDelete.dataset.collegato = "1";
+        btnDelete.addEventListener("click", eliminaMioAccount);
+    }
+
     if (window.lucide) window.lucide.createIcons();
 }
 window.renderSettingsPage = renderSettingsPage;
@@ -138,6 +147,98 @@ async function esportaMieiDati() {
         btn.disabled = false;
         btn.textContent = etichetta;
     }
+}
+
+// A-3.4: eliminazione del proprio account. Chiede la ri-digitazione della password (come
+// il cambio password), poi DELETE /api/users/me. Il soft-delete e la chiusura delle
+// sessioni li fa il server; qui si mostra solo l'esito e si torna alla porta d'accesso.
+async function eliminaMioAccount() {
+    const usr = window.CamoscioState && window.CamoscioState.currentUser;
+    if (!usr || usr.isDemoAccount) return;
+
+    const pwd = await window.showPasswordModal(
+        T('settings.eliminaModaleTesto') || "Scrivi la tua password per eliminare l'account. I tuoi contenuti restano visibili col nome «Account eliminato». Hai 30 giorni per annullare: basta rientrare col login.",
+        {
+            confirmLabel: T('settings.eliminaBtn') || 'Elimina il mio account',
+            cancelLabel: T('common.cancella') || 'Annulla'
+        }
+    );
+    if (pwd === null) return; // annullato
+    if (!pwd) {
+        window.showToast(T('settings.eliminaScriviPwd') || 'Scrivi la password per confermare.', 'error');
+        return;
+    }
+
+    try {
+        const res = await fetch('/api/users/me', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password: pwd })
+        });
+        const dati = await res.json().catch(() => ({}));
+
+        if (res.status === 401) {
+            window.showToast(T('settings.eliminaPwdErrata') || 'Password non corretta.', 'error');
+            return;
+        }
+        if (res.status === 409 && Array.isArray(dati.escursioni)) {
+            const righe = dati.escursioni.map(h => `• ${h.title} (${h.date})`).join('\n');
+            await window.showAlertModal(
+                (T('settings.eliminaBloccoEscursioni') || "Hai escursioni in programma organizzate da te. Annullale o passale a un altro organizzatore, poi riprova:")
+                + '\n\n' + righe
+            );
+            return;
+        }
+        if (!res.ok) {
+            window.showToast(dati.error || T('settings.eliminaErrore') || "Non è stato possibile eliminare l'account. Riprova.", 'error');
+            return;
+        }
+
+        mostraSchermataAccountEliminato();
+    } catch (e) {
+        console.error('Eliminazione account fallita:', e);
+        window.showToast(T('common.erroreServer') || 'Impossibile contattare il server. Riprova.', 'error');
+    }
+}
+
+// Toglie dal DISPOSITIVO i dati che la cache locale conserva sull'utente: su un computer
+// condiviso sono esattamente quello che l'eliminazione doveva rimuovere. Le tracce GPS in
+// coda (IndexedDB), la zona di partenza da casa, il punto meteo, il conto alla rovescia
+// del timer di sicurezza, gli extra dello zaino. NON tocca le preferenze pure di
+// interfaccia (lingua, gruppi di menu aperti): non sono dati personali.
+function pulisciDatiLocaliDelDispositivo() {
+    try { if (window.indexedDB) indexedDB.deleteDatabase('camoscio-tracking'); } catch (e) {}
+    try {
+        const daTogliere = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            const k = localStorage.key(i);
+            if (!k) continue;
+            if (k === 'camoscio_punto_meteo' || k === 'deadman_active' || k === 'deadman_timestamp'
+                || k.indexOf('home_city_') === 0 || k.indexOf('backpack_') === 0) {
+                daTogliere.push(k);
+            }
+        }
+        daTogliere.forEach(k => localStorage.removeItem(k));
+    } catch (e) {}
+}
+
+// Schermata a tutto schermo dopo l'eliminazione: la sessione e' gia' chiusa dal server,
+// il tasto "OK" ricarica la pagina -> checkAuthAndShowGate non trova sessione -> porta
+// d'accesso, dove rientrare (entro 30 giorni) annulla l'eliminazione.
+function mostraSchermataAccountEliminato() {
+    if (document.querySelector('.account-deleted-overlay')) return;
+    pulisciDatiLocaliDelDispositivo();
+    const esc = window.escapeHtml;
+    const ov = document.createElement('div');
+    ov.className = 'account-deleted-overlay';
+    ov.innerHTML = `
+        <div class="account-deleted-box">
+            <h2>${esc(T('settings.eliminatoTitolo') || 'Account eliminato')}</h2>
+            <p>${esc(T('settings.eliminatoTesto') || 'Il tuo account è stato eliminato. Hai 30 giorni per ripensarci: rientra con le tue credenziali per annullare. Dopo, i dati personali verranno cancellati definitivamente.')}</p>
+            <button type="button" class="btn btn-primary" id="account-deleted-ok">OK</button>
+        </div>`;
+    document.body.appendChild(ov);
+    document.getElementById('account-deleted-ok').addEventListener('click', () => window.location.reload());
 }
 
 // A-3.1: mostra lo stato del consenso GPS e, se e' attivo, il tasto per revocarlo. I demo

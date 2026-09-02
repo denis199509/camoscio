@@ -23,6 +23,7 @@ const { recalculateAndApplyPace } = require('../lib/hikeStats');
 // col conteggio salite (/peak-ascents qui sotto) e col tasto ⬆ di routes/completions.js.
 const { puntiTimbrabili, tracciaToccaPunto, assegnaTimbriDallaTraccia } = require('../lib/geofenceTimbri');
 const { guardiaUscitaVisibile } = require('../lib/uscitaVisibile'); // punto 113: guardia autore-o-follower, condivisa con routes/routing.js
+const { nomeVisibile } = require('../lib/accountDeletion'); // A-3.4: nome pseudonimizzato per gli account eliminati
 
 const MAX_POINTS_PER_BATCH = 500; // un client onesto ne manda ~60-180 ogni 20-30s, mai a uno a uno
 // LA SOGLIA DEL DISLIVELLO DAL VIVO NON ESISTE PIU' COME NUMERO A PARTE. Fino al 2026-07-28
@@ -560,8 +561,8 @@ router.post('/sessions/:id/like', requireAuth, async (req, res) => {
         // non deve invalidare il like (che e' gia' salvato): si logga e si prosegue.
         if (creato && String(sessione.userId) !== String(req.session.userId)) {
             try {
-                const autoreLike = await User.findById(req.session.userId).select('username');
-                const nome = (autoreLike && autoreLike.username) ? autoreLike.username : 'Qualcuno';
+                const autoreLike = await User.findById(req.session.userId).select('username pendingDeletionAt deletedAt');
+                const nome = nomeVisibile(autoreLike) || 'Qualcuno';
                 const etichetta = sessione.importedName
                     ? `"${sessione.importedName}"`
                     : 'del ' + new Date(sessione.startedAt).toLocaleDateString('it-IT');

@@ -16,6 +16,7 @@ const { calcolaDaPercorso, risolviPercorso } = require('../lib/percorso');
 const { mongoose } = require('../db/mongo');
 // Ri-review sicurezza (2° giro): limiter mirati su una rotta di campionamento e su due scritture.
 const { matchLimiter, scritturaLimiter } = require('../middleware/rateLimit');
+const { nomeVisibile } = require('../lib/accountDeletion'); // A-3.4: nome pseudonimizzato per gli account eliminati
 
 // Punto 55: usato da /:id/complete (gia' esistente, riscritto per riusare questa) e dalle
 // nuove rotte di chat. Non ci si fida al 100% che il creatore sia sempre dentro
@@ -498,11 +499,14 @@ router.put('/:id', requireAuth, async (req, res) => {
         try {
             const propostiDaAltri = newPendingRequesterIds.some(id => id !== String(userId));
             const chiPropone = propostiDaAltri ? await User.findById(userId) : null;
-            const nomeChiPropone = chiPropone ? chiPropone.username : 'Un altro partecipante';
+            // A-3.4: mai lo username vero di un account eliminato dentro il testo di una
+            // notifica (chi propone e' un terzo: puo' proporre un membro-tombstone di una
+            // squadra). nomeVisibile legge pendingDeletionAt/deletedAt dal documento pieno.
+            const nomeChiPropone = nomeVisibile(chiPropone) || 'Un altro partecipante';
 
             for (const requesterId of newPendingRequesterIds) {
                 const requester = await User.findById(requesterId);
-                const nome = requester ? requester.username : 'Un utente';
+                const nome = nomeVisibile(requester) || 'Un utente';
                 const text = requesterId === String(userId)
                     ? `${nome} ha chiesto di partecipare alla tua escursione "${hike.title}"`
                     : `${nomeChiPropone} propone ${nome} per la tua escursione "${hike.title}"`;

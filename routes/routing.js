@@ -18,6 +18,7 @@ const RouteDraft = require('../models/RouteDraft');
 const SavedRoute = require('../models/SavedRoute'); // punto 113, passo 8: percorso copiato da una traccia
 const User = require('../models/User');
 const { guardiaUscitaVisibile } = require('../lib/uscitaVisibile'); // punto 113: guardia autore-o-follower
+const { nomeVisibile } = require('../lib/accountDeletion'); // A-3.4: nome pseudonimizzato per gli account eliminati
 const { mongoose } = require('../db/mongo');
 
 // Campione per il controllo delle quattro regioni su una traccia: mirror di CAMPIONE_REGIONE
@@ -245,14 +246,18 @@ router.post('/saved-routes', requireAuth, async (req, res) => {
             return res.status(400).json({ error: 'La traccia di questa uscita e\' troppo corta per un percorso.' });
         }
 
-        const autore = sessione.userId ? await User.findById(sessione.userId).select('username') : null;
+        const autore = sessione.userId ? await User.findById(sessione.userId).select('username pendingDeletionAt deletedAt') : null;
+        // A-3.4: origineUsername viene COPIATO dentro la SavedRoute e da li' esce a ogni
+        // GET /api/routing/saved-routes - nessuno scrub futuro lo toccherebbe. Se l'autore
+        // della traccia e' un account eliminato, si salva "Account eliminato".
+        const nomeAutore = nomeVisibile(autore);
 
         const percorso = await SavedRoute.create({
             userId: req.session.userId,
             nome,
             punti,
             ...(sessione.userId ? { origineUserId: sessione.userId } : {}),
-            ...(autore && autore.username ? { origineUsername: autore.username } : {}),
+            ...(nomeAutore ? { origineUsername: nomeAutore } : {}),
             ...(typeof sessione.distanceKm === 'number' ? { distanzaKm: sessione.distanceKm } : {}),
             ...(typeof sessione.elevationGainM === 'number' ? { dislivelloM: Math.round(sessione.elevationGainM) } : {}),
             ...(quotaMaxM !== undefined ? { quotaMaxM: Math.round(quotaMaxM) } : {})

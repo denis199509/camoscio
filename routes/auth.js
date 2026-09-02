@@ -16,6 +16,8 @@ const {
 const { requireAuth } = require('../middleware/auth');
 // A-2 (revisione sicurezza 21a): forza bruta su credenziali + bombardamento email.
 const { authLimiter, emailLimiter } = require('../middleware/rateLimit');
+// Punto A-3.4: rientrare col login entro i 30 giorni annulla l'eliminazione dell'account.
+const { ripristinaAccount } = require('../lib/accountDeletion');
 
 const MAX_PHOTO_LENGTH = 2 * 1024 * 1024; // ~1.5MB decodificati: "piccola immagine", non un file pesante
 const MIN_PASSWORD = 8; // stessa regola della registrazione, in un posto solo
@@ -202,8 +204,23 @@ router.post('/login', authLimiter, async (req, res) => {
             return res.status(401).json({ error: 'Email o password non corretti' });
         }
 
+        // Punto A-3.4: account gia' scrubato -> come inesistente (l'email e' comunque
+        // null dopo lo scrub, quindi non si arriva nemmeno qui: resta per sicurezza).
+        if (user.deletedAt) {
+            return res.status(401).json({ error: 'Email o password non corretti' });
+        }
+        // Punto A-3.4: account in eliminazione -> rientrare entro i 30 giorni la ANNULLA.
+        const eraInEliminazione = !!user.pendingDeletionAt;
+        if (eraInEliminazione) {
+            await ripristinaAccount(user);
+        }
+
         req.session.userId = user._id.toString();
-        res.json(user);
+        const risposta = user.toJSON();
+        delete risposta.pendingDeletionAt;
+        delete risposta.deletionScrubAt;
+        if (eraInEliminazione) risposta.eliminazioneAnnullata = true;
+        res.json(risposta);
     } catch (e) {
         console.error('Errore login:', e);
         res.status(500).json({ error: 'Errore interno' });
@@ -261,6 +278,11 @@ router.get('/me', async (req, res) => {
     }
     const user = await User.findById(req.session.userId);
     if (!user) {
+        return req.session.destroy(() => res.status(401).json({ error: 'Non autenticato' }));
+    }
+    // Punto A-3.4: account in eliminazione o gia' scrubato -> una sessione superstite non
+    // rientra senza passare dal login (che, entro i 30 giorni, annulla l'eliminazione).
+    if (user.pendingDeletionAt || user.deletedAt) {
         return req.session.destroy(() => res.status(401).json({ error: 'Non autenticato' }));
     }
     res.json(user);
@@ -470,6 +492,20 @@ router.post('/reset-password', authLimiter, async (req, res) => {
         if (!user) {
             await PasswordReset.deleteOne({ _id: documento._id });
             return res.status(400).json({ error: 'Questo link non è più valido. Chiedine un altro.' });
+        }
+
+        // Punto A-3.4: account gia' scrubato -> il link non vale piu' (l'email e' comunque
+        // null, quindi il token non dovrebbe nemmeno esistere: difesa in profondita').
+        if (user.deletedAt) {
+            await PasswordReset.deleteOne({ _id: documento._id });
+            return res.status(400).json({ error: 'Questo link non è più valido. Chiedine un altro.' });
+        }
+        // Account in eliminazione: dimostrare di possedere la casella E scegliere una
+        // password nuova vale quanto un login -> l'eliminazione si ANNULLA. Senza, chi ha
+        // dimenticato la password userebbe questo link, si ritroverebbe dentro credendo di
+        // aver annullato, e 30 giorni dopo perderebbe comunque i dati (vincolo hard 7).
+        if (user.pendingDeletionAt) {
+            await ripristinaAccount(user);
         }
 
         // updateOne e non save(): save() rivaliderebbe TUTTO il documento, quindi un campo

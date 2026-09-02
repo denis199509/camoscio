@@ -481,9 +481,18 @@ function restoreDeadManState() {
     // diverso mentre il timer corre gia'), riallineando prima localStorage cosi' il resto
     // della funzione non cambia.
     const utente = window.CamoscioState && window.CamoscioState.currentUser;
-    if (utente && utente.deadManActive && utente.deadManExpiresAt) {
-        localStorage.setItem("deadman_active", "true");
-        localStorage.setItem("deadman_timestamp", new Date(utente.deadManExpiresAt).getTime().toString());
+    if (utente) {
+        if (utente.deadManActive && utente.deadManExpiresAt) {
+            localStorage.setItem("deadman_active", "true");
+            localStorage.setItem("deadman_timestamp", new Date(utente.deadManExpiresAt).getTime().toString());
+        } else {
+            // Il server e' l'unico a contare a pagina chiusa: se li' il timer non c'e' piu'
+            // (check-in da un altro dispositivo, o eliminazione account annullata col login -
+            // punto A-3.4 disarma il DMS), qui NON deve restare un conto alla rovescia che
+            // non fara' scattare nessun allarme. Prima si sincronizzava in una direzione sola.
+            localStorage.removeItem("deadman_active");
+            localStorage.removeItem("deadman_timestamp");
+        }
     }
 
     const isActive = localStorage.getItem("deadman_active") === "true";

@@ -1,9 +1,18 @@
 const express = require('express');
+const bcrypt = require('bcryptjs');
 const router = express.Router();
 const User = require('../models/User');
 const Squad = require('../models/Squad');
 const { requireAuth } = require('../middleware/auth');
-const { exportLimiter } = require('../middleware/rateLimit');
+const { exportLimiter, scritturaLimiter } = require('../middleware/rateLimit');
+const { chiudiTutteLeSessioni } = require('../db/sessionStore');
+// Punto A-3.4: eliminazione account. La logica sta in lib/accountDeletion.js (serve
+// anche al trigger esterno dello scrub, e non va duplicata).
+const {
+    escursioniFutureDaCreatore, avviaEliminazione, scrubAccount,
+    serializzaUtentePubblico, eliminato
+} = require('../lib/accountDeletion');
+const { segretoCronValido } = require('../lib/cronSecret');
 // A-3.3 (revisione sicurezza 21a): export dei propri dati - servono tutte le collezioni
 // che portano un riferimento all'utente.
 const ActiveHikeSession = require('../models/ActiveHikeSession');
@@ -85,6 +94,14 @@ async function areSquadmates(userIdA, userIdB) {
 // Prepara il profilo di targetUser per gli occhi di viewerId, nascondendo i campi
 // sensibili quando chi guarda non e' il proprietario del profilo.
 async function serializeUserForViewer(targetUser, viewerId) {
+    // Punto A-3.4: account eliminato (in grazia o gia' scrubato) -> nessun dato personale
+    // a nessuno, nome fisso "Account eliminato". Vale anche per il "se stesso" nominale:
+    // durante la grazia non esistono sessioni attive di quell'utente (chiuse alla
+    // richiesta) e un login le annullerebbe comunque l'eliminazione.
+    if (eliminato(targetUser)) {
+        return serializzaUtentePubblico(targetUser);
+    }
+
     const json = targetUser.toJSON();
     const isSelf = viewerId && String(viewerId) === String(targetUser._id);
     if (isSelf) return json;
@@ -125,6 +142,15 @@ router.get('/users/me/export', requireAuth, exportLimiter, async (req, res) => {
     try {
         const uid = req.session.userId;
         const me = String(uid);
+
+        // Punto A-3.4, difesa in profondita': un account in eliminazione non deve avere
+        // sessioni attive (le chiude la richiesta), e il ripristino via login/reset annulla
+        // subito lo stato. Se pero' una sessione arrivasse qui, questa e' la rotta che
+        // concentra TUTTO (email, nome, homeCity, contatti di emergenza): non serve.
+        const statoMe = await User.findById(uid).select('pendingDeletionAt deletedAt');
+        if (eliminato(statoMe)) {
+            return res.status(404).json({ error: 'Utente non trovato' });
+        }
 
         const [
             profilo, tracce, completamenti, hikeCreate, hikePartecipate,
@@ -221,6 +247,91 @@ router.get('/users/me/export', requireAuth, exportLimiter, async (req, res) => {
         res.status(500).json({ error: "Impossibile generare l'export dei dati" });
     }
 });
+
+// Punto A-3.4: eliminazione del PROPRIO account. Soft-delete in due tempi - qui parte
+// solo la RICHIESTA: pseudonimizzazione immediata ("Account eliminato" ovunque) + 30
+// giorni per annullare rientrando col login. Lo scrub definitivo dei dati personali lo
+// fa POST /users/scrub-eliminati (trigger esterno). SOLO req.session.userId, mai un id
+// dal client. Percorso a 3 segmenti come /users/me/export: non lo intercetta /users/:id.
+router.delete('/users/me', requireAuth, scritturaLimiter, async (req, res) => {
+    try {
+        const user = await User.findById(req.session.userId).select('+passwordHash');
+        if (!user) return res.status(404).json({ error: 'Utente non trovato' });
+
+        // Gli account demo sono condivisi e si usano senza password: non si eliminano.
+        if (user.isDemoAccount) {
+            return res.status(403).json({ error: 'Gli account demo non si possono eliminare' });
+        }
+        if (user.pendingDeletionAt) {
+            return res.status(409).json({ error: "L'eliminazione di questo account è già in corso" });
+        }
+
+        // Ri-autenticazione, come il cambio password (routes/auth.js): ferma chi trovasse
+        // una sessione aperta su un dispositivo altrui.
+        const password = String((req.body && req.body.password) || '');
+        if (!user.passwordHash || !(await bcrypt.compare(password, user.passwordHash))) {
+            return res.status(401).json({ error: 'Password non corretta' });
+        }
+
+        // Blocco (decisione di Denis): le escursioni in programma organizzate da lui vanno
+        // annullate o passate a un altro organizzatore prima - senza un organizzatore non
+        // possono funzionare.
+        const future = await escursioniFutureDaCreatore(user._id);
+        if (future.length) {
+            return res.status(409).json({
+                error: "Hai escursioni in programma organizzate da te. Annullale o passale a un altro organizzatore prima di eliminare l'account.",
+                escursioni: future.map(h => ({ id: String(h._id), title: h.title, date: h.date }))
+            });
+        }
+
+        await avviaEliminazione(user);
+
+        // Tutte le sessioni dell'utente, su ogni dispositivo (come dopo il reset password).
+        await chiudiTutteLeSessioni(user._id);
+        req.session.destroy(() => {
+            res.clearCookie('connect.sid');
+            res.json({ ok: true });
+        });
+    } catch (e) {
+        console.error('Errore richiesta eliminazione account:', e);
+        res.status(500).json({ error: "Impossibile eliminare l'account" });
+    }
+});
+
+// Punto A-3.4: scrub definitivo degli account la cui grazia di 30 giorni e' scaduta.
+// Chiamata da un trigger ESTERNO (cron-job.org), come /api/safety/controlla-scadenze:
+// nessuna sessione, segreto condiviso (ACCOUNT_SCRUB_SECRET, fail-closed in produzione -
+// vedi lib/cronSecret.js). Idempotente: uno scrub gia' fatto (deletedAt) viene saltato.
+// GET e POST: non tutti i servizi di ping permettono di scegliere il metodo, e non c'e'
+// nessun corpo da leggere. VA REGISTRATA PRIMA di GET /users/:id (2 segmenti: senza
+// questo ordine ':id' catturerebbe "scrub-eliminati").
+async function scrubEliminatiHandler(req, res) {
+    if (!segretoCronValido(req, 'ACCOUNT_SCRUB_SECRET')) {
+        return res.status(403).json({ error: 'Non autorizzato' });
+    }
+    try {
+        // .select minimale (scrubAccount usa solo _id e deletedAt) + tetto: senza,
+        // User.find carica i documenti interi, profilePhoto base64 compreso (fino a 2 MB
+        // l'uno) su un'istanza Render da 512 MB. Un arretrato oltre 200 lo smaltisce il
+        // ping successivo.
+        const daScrubare = await User.find({
+            deletionScrubAt: { $lte: new Date() },
+            deletedAt: { $exists: false }
+        }).select('_id deletedAt').limit(200);
+        let scrubati = 0;
+        for (const user of daScrubare) {
+            if (await scrubAccount(user)) scrubati++;
+        }
+        res.json({ scrubati });
+    } catch (e) {
+        console.error('Errore scrub account eliminati:', e);
+        res.status(500).json({ error: 'Errore nello scrub degli account eliminati' });
+    }
+}
+// scritturaLimiter come su /api/safety/activate: la rotta e' senza sessione e ogni colpo
+// fa una scansione su deletionScrubAt. Gated su NODE_ENV=production (skip in dev/test).
+router.get('/users/scrub-eliminati', scritturaLimiter, scrubEliminatiHandler);
+router.post('/users/scrub-eliminati', scritturaLimiter, scrubEliminatiHandler);
 
 // Ottieni dettagli utente
 router.get('/users/:id', requireAuth, async (req, res) => {

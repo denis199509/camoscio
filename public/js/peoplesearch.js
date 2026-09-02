@@ -37,7 +37,7 @@ function renderPeopleSearchModule() {
     // startsWith(): gli username reali sono spesso due parole ("Luca TrailRunner"), e la
     // parte piu' distintiva non e' sempre la prima.
     const trovati = db.users.filter(u =>
-        u.id !== db.currentUser.id && (u.username || "").toLowerCase().includes(query)
+        u.id !== db.currentUser.id && !u.deleted && (u.username || "").toLowerCase().includes(query)
     );
 
     if (trovati.length === 0) {

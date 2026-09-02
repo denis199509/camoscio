@@ -26,6 +26,12 @@ var seguitiDiMe = [];
 
 async function showUserProfile(userId) {
     if (!userId) return;
+    // Punto A-3.4: un account eliminato ("Account eliminato") non ha una pagina profilo -
+    // il nome resta solo testo, non porta da nessuna parte. Copre in un punto solo tutti
+    // i chiamanti (feed, card escursione, righe squadra, liste follow, ricerca persone).
+    const db = window.CamoscioState;
+    const bersaglio = db && db.users && db.users.find(u => String(u.id) === String(userId));
+    if (bersaglio && bersaglio.deleted) return;
     if (window.navigateTo) window.navigateTo("user-profile");
     await renderUserProfile(userId);
 }

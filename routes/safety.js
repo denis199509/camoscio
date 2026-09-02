@@ -7,6 +7,10 @@ const { requireAuth } = require('../middleware/auth');
 const { inviaEmail, emailAllarmeDeadMan } = require('../lib/mailer');
 // A-NUOVO-1 (ri-review sicurezza, 2° giro): tetto agli armamenti del timer per IP.
 const { scritturaLimiter } = require('../middleware/rateLimit');
+// Segreto condiviso per il trigger esterno (nessuno scheduler nel progetto). Estratto in
+// lib/cronSecret.js perche' serve la stessa logica anche allo scrub degli account
+// eliminati (routes/users.js), con una variabile d'ambiente sua.
+const { segretoCronValido } = require('../lib/cronSecret');
 
 // Punto 37 (Dead Man's Switch, seconda meta'): il conto alla rovescia vive anche sul server,
 // cosi' l'allarme puo' scattare per davvero anche a pagina chiusa. public/js/safety.js tiene
@@ -146,26 +150,16 @@ async function gestisciScadenza(user) {
     });
 }
 
-// Verifica il segreto condiviso. Fail-closed in produzione se non e' configurato (stesso
-// principio di indirizzoBaseUtilizzabile in lib/mailer.js): senza, chiunque su internet
-// potrebbe far scattare l'invio di allarmi veri chiamando questa rotta a ripetizione. In
-// locale invece si accetta senza, per poter provare a mano senza configurare niente.
-function segretoCronValido(req) {
-    const segreto = process.env.SAFETY_CRON_SECRET;
-    if (!segreto) return process.env.NODE_ENV !== 'production';
-    const fornito = req.query.chiave || req.get('X-Safety-Cron-Secret');
-    return fornito === segreto;
-}
-
 // Chiamata da un trigger ESTERNO (nessuno scheduler in questo progetto): un cron non ha una
-// sessione utente, quindi NON usa requireAuth ma il segreto condiviso sopra. Idempotente per
-// design: chiamarla piu' volte di fila, o piu' volte sullo stesso utente scaduto, non manda
-// email doppie - il primo giro che trova un utente scaduto lo disattiva subito.
+// sessione utente, quindi NON usa requireAuth ma il segreto condiviso (lib/cronSecret.js,
+// variabile SAFETY_CRON_SECRET). Idempotente per design: chiamarla piu' volte di fila, o
+// piu' volte sullo stesso utente scaduto, non manda email doppie - il primo giro che trova
+// un utente scaduto lo disattiva subito.
 // Risponde sia a GET sia a POST: non tutti i servizi di ping gratuiti (cron-job.org e simili)
 // permettono di scegliere il metodo, e qui non c'e' nessun corpo da leggere - l'azione la fa
 // scattare la chiamata stessa, non cosa contiene.
 async function controllaScadenzeHandler(req, res) {
-    if (!segretoCronValido(req)) {
+    if (!segretoCronValido(req, 'SAFETY_CRON_SECRET')) {
         return res.status(403).json({ error: 'Non autorizzato' });
     }
     try {

@@ -326,6 +326,12 @@ async function submitLogin(e) {
             return;
         }
         hideAuthError('auth-login-error');
+        // Punto A-3.4: rientrare entro i 30 giorni annulla l'eliminazione. onAuthSuccess
+        // ricarica la pagina, quindi un toast qui sparirebbe: si lascia un segno in
+        // sessionStorage e lo mostra initApp() dopo il reload.
+        if (data.eliminazioneAnnullata) {
+            try { sessionStorage.setItem('camoscio_msg_ripristino', '1'); } catch (err) {}
+        }
         if (window.onAuthSuccess) window.onAuthSuccess();
     } catch (e) {
         console.error('Errore login:', e);

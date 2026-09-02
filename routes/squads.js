@@ -5,6 +5,7 @@ const SquadMessage = require('../models/SquadMessage');
 const User = require('../models/User');
 const Notification = require('../models/Notification');
 const { requireAuth } = require('../middleware/auth');
+const { nomeVisibile } = require('../lib/accountDeletion'); // A-3.4: nome pseudonimizzato per gli account eliminati
 
 const MAX_PHOTO_LENGTH = 2 * 1024 * 1024;
 const MAX_MESSAGES = 50;
@@ -133,7 +134,7 @@ router.post('/:id/request-join', requireAuth, async (req, res) => {
         squad.pendingRequests.push(userId);
         await squad.save();
 
-        const richiedente = await User.findById(userId).select('username');
+        const richiedente = await User.findById(userId).select('username pendingDeletionAt deletedAt');
         // Tutti gli amministratori, creatore compreso ("richiesta inviata all'admin, a tutti
         // gli admin se più di uno", parole di Denis) - stesso schema di notifica a più
         // persone già in uso in routes/hikes.js per l'invito automatico di una squadra.
@@ -141,7 +142,7 @@ router.post('/:id/request-join', requireAuth, async (req, res) => {
         for (const adminId of destinatari) {
             await Notification.create({
                 userId: adminId,
-                text: `${richiedente ? richiedente.username : 'Qualcuno'} ha chiesto di entrare nella squadra "${squad.name}"`,
+                text: `${nomeVisibile(richiedente) || 'Qualcuno'} ha chiesto di entrare nella squadra "${squad.name}"`,
                 read: false
             });
         }
