@@ -1,40 +1,84 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-09-02 (VENTIDUESIMA sessione — BLOCCO 0 (zaino/carpooling
-per-partecipanti) + TUTTO IL LOTTO SICUREZZA (C-1/C-2/C-3/A-1/A-2/A-3.1-3)
-+ i FIX della ri-review dell'agente security-privacy (1 critico + 6 alti +
-5 medi) CODIFICATI, verificati in locale, committati su `v2-ux` (auto-save),
-NIENTE pushato. La ri-review (1o giro) aveva dato "NON pronto": tutti i
-blocchi chiusi in sessione, il critico era C-NUOVO-1 (`PUT /api/hikes/:id`
-con update vuoto in Mongoose degrada a LETTURA e restituisce il doc intero).
-Suite prove/ non-Puppeteer COMPLETA VERDE (~950 controlli). Denis ha fermato
-la sessione qui: la 23a PARTE DAL 2o GIRO DELL'AGENTE security-privacy
-(verifica dei fix), poi prova mobile + responsive <900px + merge.
-Dettaglio completo: vault 04-Da-Fare ("Ri-review 22a"), 06 ("Ventiduesima
-sessione"), 03 (nuovi paragrafi), 07 (3 trappole nuove).)
+Aggiornato: 2026-09-02 (VENTITREESIMA sessione — la REVISIONE UX "Camoscio
+v2" E' FINITA ED E' IN PRODUZIONE. 2o giro dell'agente security-privacy:
+trovati 7 punti (fra cui R-1, una REGRESSIONE dei fix del 22 stessi),
+chiusi tutti; 4o passaggio dell'agente -> VERDETTO GO. I 10 auto-save del
+02/09 collassati in un commit vero (`885ee00`), merge `--no-ff` di `v2-ux`
+in `master` (`c8fb13a`, ZERO conflitti), push `efd1290..c8fb13a`, deploy
+Render verificato LIVE. Backup pre-collasso: branch `v2-ux-preref-23a`.
+Dettaglio: vault 04-Da-Fare + 06 ("Ventitreesima sessione"); parole di
+Denis in cose_da_fare.txt ("VENTITREESIMA SESSIONE").)
 
->>> LAVORO IN CORSO: revisione UX del sito ("Camoscio v2"). Si lavora
-    ESCLUSIVAMENTE IN LOCALE sul branch `v2-ux`. NIENTE push, NIENTE deploy:
-    Denis manda online solo quando l'intera v2 lo convince. `master` (su
-    `origin` = `efd1290`) resta intatto = la produzione attuale.
-    Metodo: un commit vero `V2 UX PASSO n: ...` per blocco (locale su
-    `v2-ux`). L'hook di auto-save committa comunque: si rifonde (rebase
-    --onto / reset --soft) in un commit vero (la rifusione dei ~13 auto-save
-    di questa sessione la fa Denis). La DASHBOARD (Fasi 1-5), il RIORDINO
-    MENU/NAVIGAZIONE (PASSO 6->14c), il BLOCCO 0 (zaino/carpooling
-    per-partecipanti) e TUTTO IL LOTTO SICUREZZA sono FATTI. `v2-ux` = 33
-    avanti / 1 indietro a `origin/master` (`efd1290` Ju Busciu, il merge lo
-    riconcilia).
+>>> LA v2 NON E' PIU' "IN CORSO": e' su `master` e online su
+    camoscio.onrender.com. Il branch `v2-ux` e' interamente dentro `master`
+    (si puo' lasciare li' come storico, o cancellare). NON si lavora piu'
+    "solo in locale": da ora gli aggiustamenti vanno su `master` come
+    hotfix normali (commit vero + push -> Render ridistribuisce da solo).
+    L'hook di auto-save resta: committa in locale, va rifuso prima di un
+    push.
 
->>> FATTO E COMMITTATO su `v2-ux` (NON pushato). Struttura finale:
+>>> APERTO dopo il deploy (NON blocca niente, la v2 e' gia' su):
+  1. PROVA MOBILE sul telefono di Denis, SUL SITO LIVE
+     (camoscio.onrender.com): drawer/hamburger, i 4 tab di hike-page
+     (Dettagli/Chat/Carpooling/Zaino), la nuova #settings, il layout
+     stretto. Il drawer (PASSO 8) non e' MAI stato provato su un telefono
+     vero, solo in simulazione. Ritocchi = hotfix su `master`.
+  2. Verifica responsive Dashboard <900px (le regole @media di Fasi 4-5
+     viste solo in simulazione): 3 badge in fila, "Il tuo <anno>" a 2x2,
+     "Vedi tutti i badge" a piena larghezza fuori dall'angolo del FAB.
+  3. NOTA LEGALE (l'ha detto l'agente): index.html fa accettare "Termini +
+     Informativa privacy" ma il documento NON esiste. E' l'unico punto da
+     chiudere con un professionista prima di un uso pubblico vero
+     (informativa / base giuridica / registro trattamenti). Gia' cosi'
+     sulla produzione pre-v2, non e' una regressione - ma da non
+     dimenticare.
+
+>>> STRUTTURA MENU DELLA v2 (ora in produzione):
     Home / Esplora v (Escursioni, Mappa, Ispirazioni) / Le mie escursioni v
     (Tutte, In programma, Completate) / Community v (Amici) / + Crea /
     AREA PERSONALE: Progressi, Profilo, Impostazioni, Sicurezza.
+    Rinomine (solo etichette): Dashboard->Home, Feed->Ispirazioni,
+    Mappa & Sentieri->Mappa, Tribu' & Squadre->Community.
 
-  DASHBOARD (Fasi 1-5, `7915762`..`309ab92`) + PASSO 6 (`7f8b697`, header =
-  voce di menu) + PASSO 7 (`e33be1b`, sidebar a gruppi a fisarmonica +
-  rinomine). Dettaglio nel vault 06 ("Sedicesima"..."Ventesima sessione").
+>>> COSA C'ERA NELLA v2 (dettaglio: vault 03/06, cose_da_fare.txt
+    "SEDICESIMA"..."VENTITREESIMA SESSIONE"):
+  - DASHBOARD rifatta (Fasi 1-5): apertura contestuale, card "prossima
+    avventura", "Il tuo cammino" per zona, "Ultimi traguardi", "Il tuo
+    <anno>". Unico tocco backend: GET /api/tracking/totals accetta
+    ?anno=YYYY e ?from=&to= (nessun modello/indice/migrazione).
+  - RIORDINO MENU (PASSO 6->14c): sidebar a gruppi a fisarmonica, drawer
+    mobile, "Le mie escursioni" a viste-filtro, #badges->#progress
+    "Progressi", #my-profile sdoppiata in Profilo (vista) + #settings
+    (config), "+ Crea" popover, Sicurezza in area personale, Carpooling e
+    Zaino come TAB di hike-page (#carpool e #backpack .page-section
+    ritirate).
+  - BLOCCO 0 zaino/carpooling per-partecipanti: Hike.multiDay (creator-set),
+    zaino personale sempre privato (localStorage), gate isHikeParticipant
+    sui write carpool/backpack, tab nascosti ai non-partecipanti.
+  - LOTTO SICUREZZA (C-1/C-2/C-3/A-1/A-2/A-3.1-3 + fix di 2 giri di
+    ri-review): homeCity privato + home-match solo-conteggio; mesh WS ai
+    soli co-partecipanti + anti-spoofing; express-rate-limit@8.7.0 (MIT,
+    dip. nuova, limiter gated su NODE_ENV=production); revoca consenso GPS
+    + enforcement server-side (middleware/consensoGeo.js); DMS avvisa TUTTI
+    i contatti con email (via deadManContactIndex), email HTML escapata,
+    tetto 5 contatti, demo fuori dal DMS; export dati GET
+    /api/users/me/export (exportLimiter, senza array di punti); PUT
+    /api/hikes/:id: 400 su update vuoto + hikeVisibileA() (toJSON) unica
+    su GET e PUT + 404 concluse ai non-partecipanti.
 
+  RIMANDATI (non bloccanti, decide Denis): A-3.4 elimina account (blocco a
+  se': "chiusura + scrub PII + tombstone"); M-5 race cancella-contatto con
+  2 schede.
+
+>>> FILONE B (indipendente, non iniziato) - COLLEZIONE "I 2000
+    DELL'APPENNINO", dentro la pagina Progressi (ex Badge), NON pagina a
+    se'. Piano:
+      C:\Users\lenovo\.claude\plans\camoscio-2000-appennino-collezione.md
+    Bloccato: LA LISTA UFFICIALE DELLE VETTE LA FORNISCE DENIS. Punto
+    aperto: icone/peso repo (~100 vette) -> 1 grafica "2000+" unica.
+
+--- STORICO v2 (dettaglio, non serve per orientarsi) --------------------
   RIORDINO MENU (21a sessione, 10 commit `4ea24df`..`77fcaf8` sopra
   `a34b5f1`):
   - PASSO 9  — "Le mie escursioni" a 3 viste-filtro (Tutte / In programma /
@@ -130,31 +174,12 @@ sessione"), 03 (nuovi paragrafi), 07 (3 trappole nuove).)
   con 2 schede; NOTA LEGALE - l'accettazione "Termini + Informativa privacy"
   in index.html non ha un documento dietro (serve un professionista).
 
->>> DA DOVE SI RIPARTE: la 23a sessione PARTE DA QUI, in ordine (Denis ha
-    fermato la 22a prima del punto 1):
+  [STORICO] La 23a sessione doveva partire da: 2o giro agente sicurezza ->
+  prova mobile -> responsive <900px -> merge. Fatto tutto tranne prova
+  mobile e responsive, che ora si fanno sul sito LIVE (vedi "APERTO dopo il
+  deploy" in cima). Il merge e' avvenuto (`c8fb13a`).
 
-  1. 2o GIRO DELL'AGENTE `security-privacy` - verifica che i fix chiudano
-     davvero i 6 blocchi + niente di nuovo. Diff da rivedere:
-     `git diff 4f39fb1`. Il prompt del 1o giro e' nel vault 06
-     ("Ventiduesima sessione"). L'agente ha memoria in
-     .claude/agent-memory/security-privacy/.
-  2. PROVA MOBILE sul telefono di Denis (drawer, tab di hike-page,
-     #settings nuovo, layout stretto). Senza deployare: server sulla LAN
-     (cookie secure:false in locale, login regge in HTTP) -> telefono
-     stesso wifi http://<ip-pc>:3000. Fallback: tunnel effimero.
-  3. Verifica responsive Dashboard <900px (ex "punto 3").
-  4. MERGE `v2-ux` -> `master` + push (lo decide Denis). `v2-ux` = 33
-     avanti / 1 indietro a `origin/master` (`efd1290` Ju Busciu `sogliaM`)
-     - il merge lo riconcilia; v2-ux NON tocca geofenceTimbri.js/
-     badge-points.js/map.js/stamps.js quindi atteso conflict-free.
-     Backup pre-rifusione: `v2-ux-backup-preref`. La rifusione dei ~13
-     auto-save in commit veri `V2 UX ...` la fa Denis.
-
-  FILONE B (indipendente) - COLLEZIONE "I 2000 DELL'APPENNINO", dentro la
-  pagina Progressi (ex Badge), NON pagina a se'. Piano:
-    C:\Users\lenovo\.claude\plans\camoscio-2000-appennino-collezione.md
-  Bloccato: LA LISTA UFFICIALE DELLE VETTE LA FORNISCE DENIS. Punto aperto:
-  icone/peso repo (~100 vette) - raccomandazione: 1 grafica "2000+" unica.
+--- fine STORICO v2 -----------------------------------------------------
 
 >>> DOVE STA IL DETTAGLIO: i PIANI in C:\Users\lenovo\.claude\plans\ -
     camoscio-zaino-carpool-partecipanti.md (IL PROSSIMO BLOCCO, da fare
@@ -169,12 +194,14 @@ sessione"), 03 (nuovi paragrafi), 07 (3 trappole nuove).)
     ("Ventunesima sessione"). In 07 le trappole nuove (scroll "smooth"
     interrotto dai render async; race di risposte in un fetch con debounce).
 
->>> GIA' IN PRODUZIONE (fino alla 15a sessione, su `master`, ora
-    `origin` = `efd1290`): traduzione IT/EN (punto 102), timbri con traccia
-    reale (108), moderazione segnalazioni sentiero (111), parte social —
-    Segui/Feed/"mi piace"/"crea percorso" (113), import .fit (114), nome
-    uscita editabile (115), + 4 rifiniture del 31/08, + hotfix Ju Busciu
-    `sogliaM` (17a sessione, `efd1290`). Dettaglio: cose_da_fare.txt, vault.
+>>> GIA' IN PRODUZIONE (`origin/master` = `c8fb13a`, 23a sessione):
+    TUTTA LA REVISIONE UX "Camoscio v2" (merge `c8fb13a` del 02/09) - vedi
+    sopra. Prima (fino alla 15a-17a, giu' fino a `efd1290`): traduzione
+    IT/EN (102), timbri con traccia reale (108), moderazione segnalazioni
+    (111), parte social — Segui/Feed/"mi piace"/"crea percorso" (113),
+    import .fit (114), nome uscita editabile (115), + 4 rifiniture del
+    31/08, + hotfix Ju Busciu `sogliaM` (17a, `efd1290`). Dettaglio:
+    cose_da_fare.txt, vault.
     >>> LIMITE .fit/.gpx, e' il FILE non il codice: un file "smart" (o da
         Garmin Connect) ha buchi -> niente split cammino/pause. Serve 1 Hz.
     >>> DENIS DEVE RICARICARE il .gpx/.fit col ⬆ per le escursioni gia'

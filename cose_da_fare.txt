@@ -9271,3 +9271,72 @@ trattamenti - serve un professionista, l'ha detto l'agente).
 
 Vault (04/03/06/07) e leggimi.txt aggiornati. Vault committato e pushato.
 cronologia.txt NON toccato (congelato dal 6/08).
+
+
+=====================================================================
+VENTITREESIMA SESSIONE (02/09/2026) - 2o giro agente sicurezza (verifica
+fix) -> GO. v2-ux MERGIATA in master e IN PRODUZIONE su Render.
+=====================================================================
+
+Parole di Denis, in ordine:
+- "possiamo continuare il lavoro"
+- "puoi mandare la gente per la verifica della sicurezza. sempre per la
+  conferma se e' possibile mandarlo online"
+- AskUserQuestion "come procediamo sui rilievi del 2o giro?" -> "Tutti e
+  7 ora"
+- AskUserQuestion "come procediamo verso il merge?" -> "Merge + push ora"
+  (la prova mobile la fa sul sito deployato; ritocchi eventuali = hotfix)
+- AskUserQuestion "come sistemo i 10 auto-save?" -> "Li collasso io in 1
+  commit"
+
+COSA E' STATO FATTO (dettaglio nel vault 06 "Ventitreesima sessione"):
+- 2o giro agente security-privacy (in realta' 2 passaggi: 3o = trova, 4o
+  = verifica). Il 3o ha trovato 7 punti azionabili, fra cui 1 REGRESSIONE
+  INTRODOTTA DAI NOSTRI STESSI FIX del 22: R-1, hikeVisibileA usava
+  toObject() invece di toJSON() -> GET /api/hikes/ restituiva un array
+  misto (le tue con .id, le altrui con ._id) e il client non agganciava
+  piu' schede/marker/Partecipa sulle escursioni altrui.
+- Chiusi tutti e 7 in un blocco unico:
+  R-1 toObject()->toJSON() in hikeVisibileA (routes/hikes.js)
+  R-2 esc() sui 2 template email che ne erano sprovvisti (conferma
+      indirizzo, recupero password) + maxlength 40/60/60 su
+      username/nome/cognome (lo schema + check in rotta) - il "Ciao
+      <nome>," era un secondo relay email verso terzi, piu' comodo del DMS
+  R-3 tetto 5 contatti di emergenza MANCAVA in registrazione (c'era solo
+      nel PUT profilo) -> helper condiviso User.validaContattiEmergenza
+  A-NUOVO-4 residuo: tetto al NUMERO di autisti (50) / articoli zaino
+      (100) + maxlength su backpackItemSchema.category (40)
+  R-4 un SOS mesh senza coordinate spariva in silenzio (null->0->distanza
+      da 0,0 sempre >100m) -> ora sempre mostrato
+  A-NUOVO-3 residuo: export non carica piu' RouteDraft.punti /
+      SavedRoute.punti / TrailCandidate.points
+  R-7 il messaggio d'avvio M-2 diceva il contrario del vero (fail-closed,
+      non "aperta a chiunque")
+- Verifica locale: 11 suite prove/ verdi (394 controlli: punto77, punto37,
+  invito-squadra, punto113, registrazione-senza-email, configurazione,
+  punto93, punto115, punto7, verifica-email, passo-non-misurato) + 4
+  controlli funzionali (i nuovi 400, la forma .id di GET /api/hikes/, il
+  400 su PUT vuoto).
+- 4o passaggio agente security-privacy: VERDETTO GO per merge + deploy.
+  npm audit --omit=dev = 0. Nessuna regressione dai fix.
+- 10 auto-save del 02/09 collassati in UN commit vero (885ee00), tree
+  verificato identico. merge --no-ff v2-ux -> master (c8fb13a), ZERO
+  conflitti (le modifiche di efd1290 "Ju Busciu" convivono in
+  routes/tracking.js e map.js). Push origin master efd1290..c8fb13a.
+  Backup pre-collasso: branch v2-ux-preref-23a.
+- Deploy Render verificato LIVE: rotte nuove v2 rispondono 401 (non 404),
+  menu vecchio sparito, marcatori v2 presenti.
+
+APERTO (non bloccante, la v2 e' gia' online):
+- prova mobile sul telefono di Denis, sul sito LIVE (drawer/hamburger,
+  tab di hike-page, #settings nuovo, layout stretto). Ritocchi = hotfix
+  su master.
+- verifica responsive Dashboard <900px.
+RIMANDATI (invariati): A-3.4 elimina account; M-5 race cancella-contatto
+con 2 schede; NOTA LEGALE - index.html fa accettare "Termini +
+Informativa privacy" ma il documento non esiste: l'agente lo indica come
+l'unico punto da chiudere con un professionista prima di un uso pubblico
+vero (informativa / base giuridica / registro trattamenti).
+
+Vault (04/06) e leggimi.txt aggiornati. Vault committato e pushato.
+cronologia.txt NON toccato (congelato dal 6/08).
