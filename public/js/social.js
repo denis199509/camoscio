@@ -526,10 +526,21 @@ function classificaMieEscursioni(lista) {
     const fatte = [];
 
     (lista || db.hikes || []).forEach(h => {
-        const completata = idFatte.has(h.id);
         const sonoIscritto = (h.participants || []).includes(utente.id);
         const inAttesa = (h.pendingApproval || []).includes(utente.id);
         const laHoCreata = h.creatorId === utente.id;
+
+        // "Completata" per QUESTO utente: ha un suo Completion, OPPURE il creatore ha
+        // chiuso l'escursione in gruppo (groupCompletedAt) e lui e' fra i confermati -
+        // creatore, o dentro participants, che complete-group (routes/hikes.js) riscrive
+        // coi soli presenti. Il secondo ramo serve quando il Completion manca (mai
+        // creato, o cancellato per errore dalla lista "Completate"): senza, l'escursione
+        // resterebbe per sempre "In programma" fra le organizzate. Il server manda
+        // un'escursione chiusa solo a creatore/partecipanti (punto 77), quindi la
+        // guardia laHoCreata/sonoIscritto e' gia' implicita: resta esplicita per non
+        // fidarsi di uno stato vecchio rimasto in pagina.
+        const completata = idFatte.has(h.id) ||
+            (h.groupCompletedAt && (laHoCreata || sonoIscritto));
 
         // "Gia' fatta" vince su tutto: una volta completata non ha piu' senso mostrarla
         // tra quelle in programma, indipendentemente dal fatto che l'avessi creata tu.

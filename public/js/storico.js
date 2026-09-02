@@ -218,18 +218,28 @@
 
         const vociHike = (fatte || []).map(h => {
             const completion = (db.completions || []).find(c => c.hikeId === h.id);
-            if (!completion) return null; // non dovrebbe succedere: 'fatte' viene proprio da lì
+            // Di norma un'escursione in 'fatte' ha un Completion di questo utente.
+            // Eccezione: quella chiusa in gruppo dal creatore (groupCompletedAt) di cui
+            // il Completion manca - mai creato, o cancellato per errore dalla lista
+            // "Completate". classificaMieEscursioni (social.js) la tiene comunque fra le
+            // completate; qui va disegnata lo stesso o sparirebbe da ogni vista. Senza
+            // Completion si tolgono solo '⬆ carica gpx' e cestino (agiscono su un
+            // completion.id che non c'è) - il resto della card è identico.
+            if (!completion && !h.groupCompletedAt) return null;
             // Punto 113: la traccia GPS di questa escursione (dedotta dal hikeId). Se c'è, è
             // lei l'oggetto pubblicabile - è anche quella che usciteVisibili toglie qui sotto
             // per non mostrarla due volte. Se non c'è, il tasto lo spiega.
             const tracciaCollegata = sessioni.find(s => s.hikeId === h.id && (s.distanceKm || 0) > 0.05);
-            const azioni = `
-                ${bottonePubblica(tracciaCollegata ? tracciaCollegata.id : null, tracciaCollegata ? tracciaCollegata.publishedAt : null, tracciaCollegata ? tracciaCollegata.importedName : null)}
-                ${tracciaCollegata ? bottoneRinomina(tracciaCollegata.id, tracciaCollegata.importedName) : ''}
+            const azioniCompletion = completion ? `
                 <button class="btn btn-sm btn-secondary" style="padding:2px 6px;" onclick="uploadCompletionGpx('${completion.id}')" title="${esc(T('hikeCard.caricaGpxTitle') || 'Carica un file .gpx per avere il tempo reale di questa escursione')}">
                     <i data-lucide="upload"></i>
                 </button>
                 <button class="outing-card-del" onclick="deleteCompletion('${completion.id}', '${h.id}')" title="${esc(T('hikeCard.cancellaGiaFattaTitle') || "Cancella questa escursione dalle tue 'già fatte'")}" aria-label="${esc(T('hikeCard.cancellaGiaFattaTitle') || "Cancella questa escursione dalle tue 'già fatte'")}"><i data-lucide="trash-2"></i></button>
+            ` : '';
+            const azioni = `
+                ${bottonePubblica(tracciaCollegata ? tracciaCollegata.id : null, tracciaCollegata ? tracciaCollegata.publishedAt : null, tracciaCollegata ? tracciaCollegata.importedName : null)}
+                ${tracciaCollegata ? bottoneRinomina(tracciaCollegata.id, tracciaCollegata.importedName) : ''}
+                ${azioniCompletion}
             `;
             return {
                 ordinamento: Date.parse(h.date) || 0,
