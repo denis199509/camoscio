@@ -18,7 +18,17 @@ e' segnato presente senza essere iscritto (`85d537b`). Dettaglio: vault
     ridistribuisce). L'hook di auto-save committa in locale (mai push):
     va rifuso in UN commit vero (`git reset <base>` + commit per pezzo)
     prima di ogni push. Fatto cosi' per il lavoro di oggi.
-    origin/master = `85d537b`.
+
+    STATO A FINE 26a SESSIONE (chiusura in sicurezza):
+      - camoscio       origin/master = `7c25ec2` (codice a `85d537b`,
+                       sopra solo il commit di note). Working tree PULITO.
+      - camoscio memoria (vault) origin/master = `a34e844`. Working tree PULITO.
+      - Tutto pushato in entrambi i repo, niente in coda.
+      - Prove verdi: prova-partecipanti-forzati 21/21, prova-invito-squadra
+        59/59, prova-elimina-escursione 52/52, prova-punto77 17/17.
+      - PROSSIMA SESSIONE: candidati -> "invito squadra direzionale"
+        (grosso, vedi sotto in APERTO) oppure M-5 (piccolo). Nessun
+        lavoro a meta': si riparte da zero sul punto scelto.
 
 >>> AZIONI MANUALI DI DENIS, aperte:
   1. NUOVA — ACCOUNT_SCRUB_SECRET su Render (stringa a scelta, DIVERSA da
