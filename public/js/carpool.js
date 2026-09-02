@@ -228,8 +228,12 @@ async function renderAddressPrivacyMatch(hike) {
         const user = db.users.find(u => u.id === pId);
         if (!user) return;
 
-        const otherHomeCity = user.homeCity || localStorage.getItem(`home_city_${pId}`) || "";
-        
+        // Solo user.homeCity (dal server). Il ripiego su localStorage
+        // `home_city_<altroId>` era residuo del mock originale - non ha mai un valore
+        // (quella chiave la scrive solo il proprio profilo, per il proprio id) e leggere
+        // "la citta' di un altro" dal localStorage locale confonde la lettura della privacy.
+        const otherHomeCity = user.homeCity || "";
+
         // Verifica se c'è corrispondenza di stringa (es. "Milano Loreto" e "Milano Lambrate" contengono entrambe "Milano")
         const isMatch = checkCityMatch(myHomeCity, otherHomeCity);
         if (isMatch && otherHomeCity) {

@@ -1383,8 +1383,8 @@ async function renderProgressStats() {
     const reqId = ++_statsReqId;
     try {
         const qs = [];
-        if (from) qs.push("from=" + from);
-        if (to) qs.push("to=" + to);
+        if (from) qs.push("from=" + encodeURIComponent(from));
+        if (to) qs.push("to=" + encodeURIComponent(to));
         const res = await fetch('/api/tracking/totals' + (qs.length ? '?' + qs.join('&') : ''));
         if (!res.ok) throw new Error('Richiesta fallita');
         const t = await res.json();

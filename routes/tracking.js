@@ -171,7 +171,11 @@ router.get('/totals', requireAuth, async (req, res) => {
         // giorno "to" per intero, quindi $lt del giorno dopo. Se arrivano sia from/to sia
         // anno, vincono from/to. I confini sono in UTC come il filtro ?anno qui sotto -
         // stessa (im)precisione di fuso, per coerenza fra i due. Forma della risposta invariata.
-        const isData = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s || '');
+        // La regex da sola accetta date sintatticamente valide ma inesistenti
+        // (9999-99-99, 2026-13-45): new Date() le rende Invalid Date -> CastError
+        // Mongoose -> 500 su input utente. Si controlla anche che la data esista.
+        const isData = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s || '') &&
+            !Number.isNaN(new Date(`${s}T00:00:00.000Z`).getTime());
         if (isData(req.query.from) || isData(req.query.to)) {
             const range = {};
             if (isData(req.query.from)) range.$gte = new Date(`${req.query.from}T00:00:00.000Z`);
