@@ -369,14 +369,15 @@
                     </div>
                 </div>
 
-                <!-- V2 UX PASSO 9: "Le mie escursioni" diventa un gruppo a fisarmonica.
-                     A differenza di "Esplora", la testa HA un data-target: un click
-                     naviga (alla vista corrente, "Tutte" la prima volta) E apre il
-                     gruppo - non lo chiude mai. Le tre sotto-voci sono viste-filtro
-                     della STESSA pagina (data-view), non sezioni diverse: le governa
+                <!-- "Le mie escursioni" e' un gruppo a fisarmonica come "Esplora": la
+                     testa NON naviga (nessun data-target), un click apre/chiude solo la
+                     tendina. Aveva provato la variante "la testa naviga E apre il gruppo"
+                     (PASSO 9), ritirata perche' su telefono navigare chiude il drawer e la
+                     tendina non si vedeva. Le tre sotto-voci sono viste-filtro della STESSA
+                     pagina (data-view), non sezioni diverse: le governa
                      impostaVistaMieEscursioni (social.js), non il ciclo .active. -->
                 <div class="nav-group" data-group="mie">
-                    <button class="nav-group-head" data-target="my-hikes" aria-expanded="false" aria-controls="nav-group-mie" id="btn-nav-my-hikes">
+                    <button class="nav-group-head" aria-expanded="false" aria-controls="nav-group-mie" id="btn-nav-my-hikes">
                         <i data-lucide="footprints"></i>
                         <span data-i18n="nav.myHikes">Le mie escursioni</span>
                         <i class="nav-chevron" data-lucide="chevron-down"></i>
@@ -396,12 +397,13 @@
                         </button>
                     </div>
                 </div>
-                <!-- V2 UX PASSO 10: Community diventa un gruppo. Come "Le mie escursioni"
-                     la testa naviga (data-target). Unica sotto-voce "Amici" -> scroll
-                     alla card "Persone" di #social, che ora ospita anche la ricerca per
-                     nome utente (ex sezione #people-search, rimossa). -->
+                <!-- Community e' un gruppo a fisarmonica come "Esplora": la testa NON
+                     naviga (nessun data-target), un click apre/chiude solo la tendina.
+                     Si entra nella pagina #social dalle sotto-voci: "Amici" -> scroll
+                     alla card "Persone" (che ospita anche la ricerca per nome utente,
+                     ex sezione #people-search rimossa), "Squadre" -> pagina squadra. -->
                 <div class="nav-group" data-group="community">
-                    <button class="nav-group-head" data-target="social" aria-expanded="false" aria-controls="nav-group-community" id="btn-nav-social">
+                    <button class="nav-group-head" aria-expanded="false" aria-controls="nav-group-community" id="btn-nav-social">
                         <i data-lucide="users"></i>
                         <span data-i18n="nav.community">Community</span>
                         <i class="nav-chevron" data-lucide="chevron-down"></i>

@@ -613,11 +613,12 @@ function setupNavigation() {
     // persiste: segue la navigazione, non e' una scelta esplicita dell'utente.
     // Una foglia fuori dai gruppi non forza ne' chiude nessun gruppo.
     function aggiornaGruppoCorrente(targetId) {
-        // V2 UX PASSO 9: la foglia puo' essere un .nav-btn (sottovoce di gruppo o
-        // voce diretta) OPPURE la testa di un gruppo che naviga (es. "Le mie
-        // escursioni", .nav-group-head con data-target).
+        // La foglia attiva e' sempre un .nav-btn: una sotto-voce dentro un gruppo
+        // ("Tutte" di "Le mie escursioni", "Amici" di "Community", le voci di
+        // "Esplora") o una voce diretta fuori dai gruppi. Le teste di gruppo non
+        // navigano piu' (solo toggle), quindi non entrano in questa ricerca.
         const sel = '[data-target="' + targetId + '"]';
-        const btn = document.querySelector('.nav-btn' + sel + ', .nav-group-head' + sel);
+        const btn = document.querySelector('.nav-btn' + sel);
         const gruppo = btn && btn.closest(".nav-group");
         navGroups.forEach(g => {
             const head = g.querySelector(".nav-group-head");
@@ -630,15 +631,12 @@ function setupNavigation() {
         const head = g.querySelector(".nav-group-head");
         if (!head) return;
         head.addEventListener("click", () => {
-            // V2 UX PASSO 9: una testa CON data-target (es. "Le mie escursioni")
-            // naviga e apre il gruppo - mai un toggle che lo chiude. navigateTo
-            // richiama aggiornaGruppoCorrente, che lo apre. Una testa SENZA
-            // data-target ("Esplora") resta un semplice toggle come in PASSO 7.
-            const target = head.getAttribute("data-target");
-            if (target) {
-                navigateTo(target);
-                return;
-            }
+            // Ogni testa di gruppo e' un semplice toggle: apre/chiude il corpo e
+            // basta, non naviga - a navigare sono le sotto-voci. Era gia' cosi' per
+            // "Esplora" (PASSO 7). "Le mie escursioni" e "Community" avevano provato
+            // la variante "la testa naviga E apre il gruppo" (PASSO 9/10), ma su
+            // telefono navigare chiude il drawer e la tendina non si vede mai:
+            // Denis ha chiesto di renderle uguali a "Esplora" (clic = solo apri/chiudi).
             const giaAperto = head.getAttribute("aria-expanded") === "true";
             impostaGruppo(giaAperto ? "" : g.getAttribute("data-group"));
         });
