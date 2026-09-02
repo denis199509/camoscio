@@ -1,12 +1,15 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
 Aggiornato: 2026-09-02 (VENTUNESIMA sessione — TUTTO IL RIORDINO MENU v2
-CODIFICATO, verificato in locale, committato su `v2-ux`. NIENTE pushato.
-10 blocchi in fila (Denis: "parti coi passi in fila senza fermarti"):
-PASSO 9 -> 10 -> 11 -> 11b -> 12 -> 13 -> 8 (drawer) -> 14a -> 14b -> 14c.
-Poi rifusi i 2 auto-save di note (-> `a34b5f1`). Prossimo: prova mobile
-sul telefono + responsive Dashboard <900px + suite `prove/` + giro
-security-privacy, POI merge `v2-ux`->`master` + push (lo decide Denis).)
+CODIFICATO (PASSO 9 -> 14c), verificato in locale, committato su `v2-ux`,
+NIENTE pushato. Poi: rifusi i 2 auto-save di note (-> `a34b5f1`); girato
+l'agente security-privacy (C-1 homeCity pubblico + C-2 IDOR bloccano il
+merge - dettaglio in vault 04-Da-Fare); fissati i 3 punti bassi (B-1/B-2/
+B-3, `2bab030`). NUOVA DECISIONE di Denis a fine sessione: la 22a PARTE
+dal blocco "zaino/carpooling per-escursione, visibili solo ai
+partecipanti + zaino personale privato" (piano:
+camoscio-zaino-carpool-partecipanti.md) - assorbe C-2 e A-1. Poi prova
+mobile + responsive + prove/ + merge (lo decide Denis).)
 
 >>> LAVORO IN CORSO: revisione UX del sito ("Camoscio v2"). Si lavora
     ESCLUSIVAMENTE IN LOCALE sul branch `v2-ux`. NIENTE push, NIENTE deploy:
@@ -70,16 +73,45 @@ security-privacy, POI merge `v2-ux`->`master` + push (lo decide Denis).)
   desktop: nessun errore. Le scritture DB (pubblica offerta carpool,
   conferma zaino, salva profilo, cambia password) NON esercitate.
 
->>> DA DOVE SI RIPARTE: la v2 e' codificata. Prima del push vero, in ordine:
+>>> DA DOVE SI RIPARTE: la 22a sessione PARTE DA QUESTA MODIFICA (deciso
+    con Denis a fine 21a, dopo la security review):
+
+  >>> BLOCCO "ZAINO/CARPOOLING PER-ESCURSIONE, VISIBILI SOLO AI
+      PARTECIPANTI + ZAINO PERSONALE PRIVATO". Piano esecutivo file-per-file:
+        C:\Users\lenovo\.claude\plans\camoscio-zaino-carpool-partecipanti.md
+      Questo blocco ASSORBE i fix di sicurezza C-2 (IDOR su
+      PUT /api/hikes/:id carpool/backpackTemplate) e A-1 (tab di hike-page
+      ai non-partecipanti) - NON farli separati.
+      Modello deciso: carpooling = tab e dati solo per i partecipanti
+      (server toglie hike.carpool ai non-partecipanti in GET /api/hikes +
+      rifiuta i PUT). Zaino: SEMPRE personale/privato (checklist generata +
+      le mie aggiunte = solo mie, gia' in localStorage, non passano dal
+      server). SOLO escursioni di piu' giorni -> compare in piu' "Zaino
+      condivisibile" (tenda per N, ripartizione pesi). Il "piu' giorni" lo
+      decide il CREATORE (campo nuovo Hike.multiDay, default:undefined).
+      Sparisce il menu a tendina giornata/piu'-giorni nel generatore.
+      5 passi: models/Hike.js (+multiDay) -> create-hike-modal (spunta) ->
+      routes/hikes.js (gate isHikeParticipant sui write + strip carpool/
+      backpackTemplate dai read dei non-partecipanti + sotto-bug passeggeri
+      + maxlength departureCity/name) -> backpack.js (split personale/
+      condivisibile su multiDay, via il select durata) -> hikepage.js+CSS (A-1).
+
+  POI, prima del push vero, in ordine:
   1. PROVA MOBILE sul telefono di Denis (drawer, tab di hike-page, layout
      stretto). Senza deployare: server in ascolto sulla LAN (cookie in
      locale e' secure:false, il login regge in HTTP) -> telefono sullo
      stesso wifi apre http://<ip-pc>:3000. Fallback: tunnel effimero
      (cloudflared/ngrok), da chiudere subito.
   2. Verifica responsive Dashboard <900px (ex "punto 3", accorpata qui).
-  3. Suite `prove/` (PASSO 12 tocca UI vicino all'auth, 11b una rotta).
-  4. Giro dell'agente security-privacy sul diff v2-ux (lanciato in 21a
-     sessione: leggere l'esito prima del merge).
+  3. Suite `prove/` (PASSO 12 tocca UI vicino all'auth, 11b + il blocco
+     zaino/carpool toccano routes/ e lo schema: rilanciare TUTTA la suite).
+  4. Security review 21a: esito completo nel vault 04-Da-Fare "Esito agente
+     security-privacy". C-1/C-2 bloccano il merge (C-2 dentro il blocco
+     qui sopra; C-1 = 1 riga, 'homeCity' in ALWAYS_PRIVATE_FIELDS +
+     opzionale rotta di match server-side). Restano come task a se':
+     C-3 (broadcast mesh), A-2 (rate-limiting = dipendenza nuova),
+     A-3 (revoca consenso GPS / cancella contatto / elimina account).
+     Mappa dati sensibili in .claude/agent-memory/security-privacy/.
   5. MERGE `v2-ux` -> `master` + push (lo decide Denis). NOTA: `v2-ux` e'
      1 commit indietro a `origin/master` (l'hotfix Ju Busciu `efd1290`,
      `sogliaM` per-punto) - il merge lo riconcilia; v2-ux NON tocca
@@ -93,15 +125,17 @@ security-privacy, POI merge `v2-ux`->`master` + push (lo decide Denis).)
   icone/peso repo (~100 vette) - raccomandazione: 1 grafica "2000+" unica.
 
 >>> DOVE STA IL DETTAGLIO: i PIANI in C:\Users\lenovo\.claude\plans\ -
-    delegated-gathering-forest.md (il piano esecutivo file-per-file di
-    9->14c, ESEGUITO), camoscio-v2-menu-restructure.md (decisioni + §15),
-    camoscio-2000-appennino-collezione.md (filone B). Nel vault:
-    04-Da-Fare ("PROSSIMO GRANDE LAVORO" + "Da dove si riparte"); decisioni
-    in 03 ("Camoscio v2 — riordino menu e navigazione", con l'opzione A del
-    14b); parole di Denis in cose_da_fare.txt ("VENTUNESIMA SESSIONE");
-    racconto nel 06 ("Ventunesima sessione"). In 07 le trappole nuove
-    (scroll "smooth" interrotto dai render async; race di risposte in un
-    fetch con debounce).
+    camoscio-zaino-carpool-partecipanti.md (IL PROSSIMO BLOCCO, da fare
+    per primo nella 22a), delegated-gathering-forest.md (il piano
+    esecutivo file-per-file di 9->14c, ESEGUITO), camoscio-v2-menu-
+    restructure.md (decisioni + §15), camoscio-2000-appennino-collezione.md
+    (filone B). Nel vault: 04-Da-Fare ("PROSSIMO GRANDE LAVORO" + "Da dove
+    si riparte" + "Esito agente security-privacy"); decisioni in 03
+    ("Camoscio v2 — riordino menu e navigazione", con l'opzione A del 14b e
+    il modello zaino/carpool per-partecipanti); parole di Denis in
+    cose_da_fare.txt ("VENTUNESIMA SESSIONE"); racconto nel 06
+    ("Ventunesima sessione"). In 07 le trappole nuove (scroll "smooth"
+    interrotto dai render async; race di risposte in un fetch con debounce).
 
 >>> GIA' IN PRODUZIONE (fino alla 15a sessione, su `master`, ora
     `origin` = `efd1290`): traduzione IT/EN (punto 102), timbri con traccia

@@ -9175,3 +9175,42 @@ DA FARE PRIMA DEL PUSH (lo decide Denis):
 
 Vault (04/06/03/07) aggiornato, committato e pushato. leggimi.txt
 aggiornato. cronologia.txt non toccato (congelato).
+
+
+--- CODA 21a SESSIONE: security review + decisione zaino/carpooling ---
+
+Girato l'agente security-privacy sul diff v2-ux. Trovati (dettaglio nel
+vault 04-Da-Fare "Esito agente security-privacy"):
+- C-1 critico: homeCity ("il tuo indirizzo / zona di partenza da casa")
+  restituito da GET /api/users a ogni utente loggato, ignorando il
+  privacy setting. Il carpooling promette il contrario. v2 lo rende molto
+  piu' raggiungibile. Fix minimo: 1 riga (homeCity in
+  ALWAYS_PRIVATE_FIELDS).
+- C-2 critico: IDOR. PUT /api/hikes/:id (carpool/backpackTemplate) non
+  chiama isHikeParticipant -> un estraneo si mette come autista o appende
+  roba allo zaino di un'escursione altrui.
+- A-1/A-2/A-3, C-3 (mesh, non v2), M-1/M-2/M-3 - vedi vault.
+- B-1/B-2/B-3 (bassi, codice v2) GIA' FATTI (commit 2bab030): regex data
+  ?from/to che accettava 9999-99-99 -> 500; encodeURIComponent; tolto
+  codice morto localStorage home_city_<altroId>.
+
+Parole di Denis sul redesign zaino/carpooling:
+- "il carpooling si deve collegare solo alla escursione visibile solo ai
+  partecipanti"
+- "lo zaino diventa personale per escursioni. io posso aggiungere cose
+  che compaiono solo nel mio zaino. gli altri partecipanti hanno il loro
+  zaino. se io voglio portare 3 litri di acqua, nessuno dei partecipanti
+  o non deve vedere cosa porto io. a meno che non entriamo nel escursione
+  di piu' giorni in quel caso compare una sezione tipo 'zaino
+  condivisibile' dove posso portare magari la tenda per due o tre persone
+  e altre cose che si possono condividere"
+- Confermato: il "piu' giorni" lo decide il CREATORE dell'escursione
+  (campo nuovo Hike.multiDay).
+- "ok per me va bene cosi'" (sul piano proposto)
+
+QUINDI la 22a sessione parte da questo blocco. Piano esecutivo:
+C:\Users\lenovo\.claude\plans\camoscio-zaino-carpool-partecipanti.md
+Il blocco ASSORBE C-2 e A-1. C-1 resta a se' (1 riga + eventuale rotta
+di match server-side). C-3/A-2/A-3 = task a se', preesistenti.
+
+Vault (04/03/06) e leggimi.txt aggiornati di nuovo per questa coda.
