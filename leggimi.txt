@@ -1,18 +1,21 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-09-02 (VENTIQUATTRESIMA sessione — prima dopo il merge
-della v2, di nuovo su `master`. Tre cose chiuse: menu "Squadre" nella
-sidebar (`122cb15`); punto A-3.4 eliminazione account (`543cc4c`, giro
-agente security-privacy: 1 critico + 5 alti trovati e chiusi); password
-temporanea per Camilla. Dettaglio: vault 04-Da-Fare (frontmatter) + 06
-("Ventiquattresima sessione"); parole di Denis in cose_da_fare.txt
-("VENTIQUATTRESIMA SESSIONE").)
+Aggiornato: 2026-09-02 (VENTICINQUESIMA sessione — tre rifiniture
+segnalate da Denis provando la v2, tutte su `master`, push
+`54474ee..d363eea` (3 commit veri rifusi dai 3 auto-save, `diff`
+verificato identico): (1) menu "Le mie escursioni"/"Community" ora
+aprono la tendina e basta, come "Esplora" (`c0de245`); (2) la Terminillo
+chiusa in gruppo non resta piu' "In programma" anche senza `Completion`
+(`c278e25`); (3) niente iscrizioni oltre il giorno previsto
+dell'escursione, 409 lato server (`d363eea`). Dettaglio: vault
+04-Da-Fare (frontmatter) + 06 ("Venticinquesima sessione"); parole di
+Denis in cose_da_fare.txt ("VENTICINQUESIMA SESSIONE").)
 
 >>> SI LAVORA SU `master`, hotfix normali (commit vero + push -> Render
     ridistribuisce). L'hook di auto-save committa in locale (mai push):
-    va rifuso in UN commit vero (`git reset --soft <base>` + commit)
-    prima di ogni push. Fatto cosi' per entrambi i lavori di oggi.
-    origin/master = `543cc4c`.
+    va rifuso in UN commit vero (`git reset <base>` + commit per pezzo)
+    prima di ogni push. Fatto cosi' per i tre lavori di oggi.
+    origin/master = `d363eea`.
 
 >>> AZIONI MANUALI DI DENIS, aperte:
   1. NUOVA — ACCOUNT_SCRUB_SECRET su Render (stringa a scelta, DIVERSA da
@@ -50,43 +53,52 @@ temporanea per Camilla. Dettaglio: vault 04-Da-Fare (frontmatter) + 06
     app-wide + migrazione -> a se'.
 
 >>> COSA E' STATO FATTO OGGI (dettaglio: vault 03/06/07, cose_da_fare.txt
-    "VENTIQUATTRESIMA SESSIONE"):
+    "VENTICINQUESIMA SESSIONE"):
 
-  MENU "SQUADRE" — dentro il gruppo Community della sidebar, dopo
-  "Amici", una voce "Squadre" con una sotto-tendina annidata delle
-  squadre a cui l'utente appartiene (creatore o membro); un clic apre la
-  pagina della squadra. `.nav-subgroup` (toggle a se', NON .nav-btn ne'
-  .nav-group; stato in localStorage), `renderNavSquadre()` in app.js.
-  i18n `nav.squadre`->"Squads".
+  (1) MENU — "Le mie escursioni" e "Community" avevano un data-target
+  sulla testa: un clic navigava, e su telefono navigateTo chiude il
+  drawer -> la tendina delle viste non si vedeva mai. Tolto il
+  data-target da index.html + ramo morto in app.js: ora sono toggle puri
+  come "Esplora", naviga chi clicca una sotto-voce. "Community" non ha
+  piu' un ingresso diretto a #social: ci si entra da "Amici". (c0de245)
 
-  PUNTO A-3.4 — ELIMINAZIONE ACCOUNT — soft-delete in due tempi:
-  - RICHIESTA: DELETE /api/users/me (ri-digita la password). Subito:
-    "Account eliminato" per tutti + sloggato; DMS disarmato; squadre di
-    cui era l'unico admin -> promuovo il membro piu' anziano (o sciolgo).
-    Blocco 409 se ha escursioni in programma organizzate da lui.
-  - GRAZIA 30 giorni: login O recupero password entro i 30 gg annullano
-    l'eliminazione (ripristinaAccount).
-  - SCRUB (giorno 30): GET|POST /api/users/scrub-eliminati, trigger
-    esterno stile DMS, segreto ACCOUNT_SCRUB_SECRET. Dati personali
-    sovrascritti (nome/cognome -> SEGNAPOSTO, non $unset: sono required),
-    email liberata, password rimossa, tracce svuotate della polilinea,
-    follow e percorsi privati cancellati. I CONTENUTI restano, col nome
-    "Account eliminato".
-  File nuovi: lib/accountDeletion.js, lib/cronSecret.js (segreto cron
-  condiviso con safety.js). Il perno: serializeUserForViewer +
-  nomeVisibile() sono l'UNICO modo di rendere il nome di un utente.
-  Giro agente security-privacy: 1 critico (tracce scaricabili dopo lo
-  scrub via follow di un tombstone) + 5 alti, tutti chiusi.
-  Prova: prove/prova-eliminazione-account.js (57 controlli) + 9 suite di
-  regressione verdi + E2E dal vivo con account usa-e-getta.
+  (2) TERMINILLO "IN PROGRAMMA" — classificaMieEscursioni (social.js)
+  guardava solo il Completion personale, mai hike.groupCompletedAt. La
+  Terminillo ha groupCompletedAt ma ZERO Completion (cancellato dalla
+  lista "Completate", che non ha guardie). Scelta di Denis: SOLO
+  classificazione, nessuna scrittura DB. Ora completata = Completion ||
+  (groupCompletedAt && (creatore || in participants)); renderCompletate
+  (storico.js) disegna la card anche senza Completion (via solo il tasto
+  carica-gpx e il cestino). Simulazione sui dati veri: cambia bucket solo
+  "Monte Terminillo". Consapevole: cancellare il Completion di
+  un'escursione chiusa in gruppo NON la ristrappa in "In programma", la
+  card torna (senza carica-gpx/cestino). (c278e25)
 
-  >>> Prove che FALLISCONO d'ambiente in questa sessione (server di prova
-      che non si avvia in tempo, ECONNREFUSED — identico su master
-      pulito, tutte fuori dal diff): prova-punto7, prova-verifica-email,
-      prova-punto35, prova-guasto-invio, prova-punto33, prova-punto108.
-      Riprovare a mente fredda.
+  (3) NIENTE ISCRIZIONI OLTRE LA DATA — nato da Sheldon auto-approvato il
+  02/09 sulla Terminillo del 22/08 (manualApproval:false, nessun
+  controllo). Scelta di Denis ("nessuno, in nessun modo"): hike.date <
+  oggi (fuso Europe/Rome) -> PUT /api/hikes/:id risponde 409
+  HIKE_DATE_PASSED su OGNI aggiunta a participants/pendingApproval
+  (auto-iscrizione, richiesta, invito squadra, aggiunta a mano del
+  creatore). Rimozioni sempre libere. complete-group e' un'altra rotta,
+  non toccata. REVOCA la vecchia scelta "nessun filtro sulla data di
+  proposito" su mieEscursioniAperte. oggiRomaISO esportato da
+  lib/accountDeletion.js. Client: badge "Iscrizioni chiuse", avviso con
+  la data prevista, res.ok ORA letto in joinHikeRequest/approveParticipant
+  (prima ignoravano gli errori HTTP). (d363eea)
 
->>> GIA' IN PRODUZIONE prima di oggi (origin/master era `c8fb13a`):
+  Prove aggiornate: prova-punto77 (data della hike -> futura: il passo 3
+  aggiunge un partecipante, ora 409 con data passata), prova-invito-
+  squadra (asserzione "una data passata NON esclude" -> invertita).
+  Verdi: prova-punto77 17/17, prova-invito-squadra 59/59,
+  prova-eliminazione-account 57/57, prova-punto93 28/28. node --check OK
+  su tutti e 6 i file toccati.
+
+>>> GIA' IN PRODUZIONE prima di oggi (origin/master era `54474ee`):
+    24a sessione — menu "Squadre" nella sidebar (122cb15); punto A-3.4
+    eliminazione account, soft-delete in due tempi + giro agente
+    security-privacy 1 critico + 5 alti chiusi (543cc4c); password
+    temporanea per Camilla (camilla2026, DA CAMBIARE). Prima ancora:
     TUTTA LA REVISIONE UX "Camoscio v2" (merge del 02/09) — Dashboard
     rifatta, riordino menu a gruppi + drawer mobile, Blocco 0
     zaino/carpooling per-partecipanti, lotto sicurezza. Dettaglio:

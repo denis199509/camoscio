@@ -9436,3 +9436,134 @@ temporanea, va cambiata.
 
 Vault (03/04/06/07) e leggimi.txt aggiornati. Vault committato e pushato.
 cronologia.txt NON toccato (congelato dal 6/08).
+
+
+===================================================================
+VENTICINQUESIMA SESSIONE (02/09/2026) — tre rifiniture segnalate da
+Denis provando la v2 dal vivo
+===================================================================
+
+Parole di Denis, messaggio unico:
+
+  "L'escursione sul monte Terminillo completata in gruppo la trovo
+  ancora nella parte organizzata da me, quindi risulta ancora in
+  programma e non in completate. In piu' l'escursione era prevista per
+  il 22 agosto oggi 2 settembre Sheldon ha richiesto di partecipare ed
+  e' risultato come partecipante. Se superiamo il giorno dell'escursione
+  chi chiede di partecipare dovrebbe ricevere un messaggio con
+  escursione era prevista per il giorno in cui era prevista quindi oltre
+  quel giorno non si possono piu' accettare partecipazioni alle
+  escursioni
+
+  Le mie escursioni e community aprono direttamente la pagina Non
+  aprono il menu a tendina per scegliere ad esempio le escursioni
+  completate organizzate da me o tutte apri direttamente la pagina
+  escursioni poi devo ricliccare sui tre puntini in alto a sinistra per
+  scegliere quella che volevo. Stessa cosa per community cliccando si
+  apre direttamente la pagina poi cliccando sui tre... Posso scegliere
+  amici o squadra Esplora e' l'unico che funziona il modo corretto"
+
+Ordine di lavoro deciso con Denis (AskUserQuestion): prima il menu, poi
+Terminillo, poi il blocco iscrizioni. Un commit vero per pezzo.
+
+
+--- (1) MENU: "Le mie escursioni" e "Community" aprono la tendina ---
+    [c0de245, pushato]
+
+Diagnosi: nella v2 (PASSO 9/10) quelle due teste avevano un data-target.
+Un clic chiamava navigateTo(target), che di rimbalzo apriva anche la
+fisarmonica. Su desktop si vedeva. Su telefono navigateTo chiama
+chiudiDrawer(): la sidebar scorre via nell'istante in cui la tendina si
+apre, quindi non si vede, e i "tre puntini" di Denis sono l'hamburger da
+riaprire. "Esplora" non ha il problema perche' la sua testa NON naviga.
+
+Scelta di Denis (AskUserQuestion): "Si', come Esplora" - la testa apre
+solo la tendina, si naviga dalle sotto-voci. Accettata la conseguenza:
+"Community" non ha piu' una voce che porta dritto alla pagina, ci si
+entra da "Amici".
+
+Fatto: tolto il data-target dalle due teste (index.html) + rimosso il
+ramo morto nel gestore del clic (app.js). Trappola annotata in vault 07
+("Una testa di menu che naviga E apre la fisarmonica non si vede aprire
+su telefono").
+
+
+--- (2) TERMINILLO RESTA "IN PROGRAMMA" DOPO IL COMPLETAMENTO ---
+    [c278e25, pushato]
+
+Diagnosi (script di sola lettura, poi cancellato): sul DB la Terminillo
+ha groupCompletedAt valorizzato (Denis ha premuto "Completa escursione"
+il 02/09) ma ZERO documenti Completion, nemmeno il suo. Probabile
+cancellazione dalla lista "Completate" - DELETE /api/completions/:id non
+ha nessuna guardia su un'escursione chiusa in gruppo.
+classificaMieEscursioni (social.js) decideva "completata" SOLO dal
+Completion personale, ignorando groupCompletedAt: senza Completion
+l'escursione ricadeva in "organizzate da me" -> "In programma", per
+sempre.
+
+Scelta di Denis (AskUserQuestion): "Solo classificazione" - nessuna
+scrittura sul DB, niente ricreazione del Completion mancante.
+
+Fatto: completata = (ho un Completion) || (groupCompletedAt && (sono il
+creatore || sono fra i participants)). renderCompletate (storico.js)
+disegna la card anche quando il Completion manca: cadono solo i tasti
+"carica gpx" e cestino (agiscono su completion.id), il resto e'
+identico, badge verde "in gruppo" compreso. Verificato con una
+simulazione sui dati reali di Denis: cambia bucket SOLO "Monte
+Terminillo" (organizzate 2->1, completate 3->4), nient'altro si sposta.
+
+Consapevole, detto a Denis: da ora la classificazione e' ancorata a
+groupCompletedAt, quindi cancellare il Completion di un'escursione
+chiusa in gruppo NON la ristrappa in "In programma" - la card torna
+(senza carica-gpx/cestino). Offerto di nascondere anche il cestino sulle
+card "in gruppo": Denis puo' chiederlo, per ora rimandato.
+
+
+--- (3) NIENTE ISCRIZIONI OLTRE IL GIORNO PREVISTO ---
+    [d363eea, pushato]
+
+Il caso: Terminillo ha manualApproval:false, quindi la richiesta di
+Sheldon del 02/09 (11 giorni dopo la data) e' stata AUTO-APPROVATA senza
+nessun filtro. Non esisteva nessun controllo sulla data, ne' lato server
+ne' lato client.
+
+Scelta di Denis (AskUserQuestion, opzione "nessuno, in nessun modo"):
+dal giorno DOPO quello previsto (hike.date < oggi; il giorno stesso e'
+ancora buono) l'escursione non accetta piu' NESSUNO - auto-iscrizioni,
+richieste, inviti squadra E aggiunte a mano del creatore. Chi chiede
+vede "l'escursione era prevista per il <data>". Per aggiungere qualcuno
+dopo la data l'organizzatore sposta prima la data.
+
+Fatto:
+- Server (routes/hikes.js, PUT /:id): 409 { code:'HIKE_DATE_PASSED',
+  hikeDate } se la modifica AGGIUNGE qualcuno a participants o
+  pendingApproval e hike.date < oggiRomaISO(). Le rimozioni (ritirarsi,
+  rifiutare un pendente) restano libere. complete-group e' un'altra
+  rotta, non toccata. oggiRomaISO esportato da lib/accountDeletion.js.
+- Client (social.js, i18n.js): badge "Iscrizioni chiuse" al posto di
+  "Iscriviti"; joinHikeRequest mostra la data prevista senza chiamare il
+  server; mieEscursioniAperte esclude le passate; joinHikeRequest e
+  approveParticipant ora leggono res.ok e mostrano l'errore del server
+  (prima lo ignoravano - un "Accetta" oltre la data mandava anche una
+  notifica fasulla). Helper escursioneNonPiuAperta/oggiLocaleISO.
+- Confronti SEMPRE fra stringhe "YYYY-MM-DD" (mai new Date(a)<new
+  Date(b), trappola del punto 58). Qui pero' confrontare la data SERVE:
+  la domanda non e' "e' successa?" ma "il giorno e' finito?".
+
+Questo REVOCA una decisione presa apposta: mieEscursioniAperte aveva
+"nessun filtro sulla data, di proposito". Rivista - il confronto fra
+stringhe di calendario e' sicuro. La prova prova-invito-squadra.js aveva
+un'asserzione che lo verificava: invertita. In piu' prova-punto77.js
+usava una hike datata 2026-08-01 e al passo 3 le aggiungeva un
+partecipante -> ora 409: data della hike spostata al futuro (il punto 77
+- visibilita' delle escursioni concluse - resta identico, complete-group
+non guarda la data).
+
+Prove verdi: prova-punto77 17/17, prova-invito-squadra 59/59,
+prova-eliminazione-account 57/57 (tocco a accountDeletion.js = solo un
+export), prova-punto93 28/28. node --check OK su tutti e 6 i file.
+
+Dettaglio: vault 06 ("Venticinquesima sessione"), 03 ("Niente iscrizioni
+oltre il giorno previsto"), 07 (2 trappole nuove). leggimi.txt
+aggiornato. Vault committato e pushato. cronologia.txt NON toccato
+(congelato).
