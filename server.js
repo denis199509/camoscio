@@ -8,6 +8,10 @@ const session = require('express-session');
 const { sessionStore } = require('./db/sessionStore');
 const { connectMongo } = require('./db/mongo');
 const { loadTrailIndex } = require('./lib/trailIndex');
+// C-3 (revisione sicurezza 21a): serve al WebSocket del mesh per instradare i messaggi
+// solo ai co-partecipanti del mittente, invece che a tutti i client connessi.
+const Hike = require('./models/Hike');
+const User = require('./models/User'); // M-1: nome mittente dei pacchetti mesh, dal DB non dal client
 
 const authRouter = require('./routes/auth');
 const usersRouter = require('./routes/users');
@@ -81,6 +85,12 @@ app.get('/conferma-email', (req, res) => {
 
 // --- REST API ENDPOINTS ---
 
+// A-2 (revisione sicurezza 21a): rete di sicurezza generale su tutto /api. Larga a
+// sufficienza da non toccare nessun uso umano reale; ferma solo lo script che martella.
+// I limiti stretti su login/password/email stanno dentro routes/auth.js.
+const { apiLimiter } = require('./middleware/rateLimit');
+app.use('/api', apiLimiter);
+
 app.use('/api/auth', authRouter);
 
 // /api/login e /api/users* (vedi routes/users.js sul perche' sono nello stesso router)
@@ -128,22 +138,94 @@ server.on('upgrade', (request, socket, head) => {
 });
 
 // Gestione dei messaggi WebSocket per il mesh networking locale
-wss.on('connection', (ws) => {
-    console.log('Nuova sessione client connessa al Mesh Network Simulator.');
+wss.on('connection', async (ws, request) => {
+    // L'upgrade qui sopra ha gia' verificato la sessione: si tiene da parte CHI e' questo
+    // socket, per instradare i messaggi mesh (C-3, revisione sicurezza 21a). Dal cookie di
+    // sessione, MAI da un campo mandato dal client.
+    ws.camoscioUserId = (request.session && request.session.userId)
+        ? String(request.session.userId) : null;
+    ws.camoscioUserName = null;
+    ws.meshMsgFinestra = 0;      // M-1: contatore messaggi nella finestra corrente
+    ws.meshMsgFinestraDa = 0;    //      inizio finestra (ms)
+    // M-1: il nome del mittente lo mette il server, quindi va letto dal DB una volta alla
+    // connessione (la sessione tiene solo lo userId). Se la lettura fallisce si ripiega su
+    // un nome generico - un messaggio senza nome e' meglio di nessuna chat.
+    if (ws.camoscioUserId) {
+        try {
+            const u = await User.findById(ws.camoscioUserId).select('username');
+            ws.camoscioUserName = (u && u.username) || null;
+        } catch (e) { /* ripiego sul generico sotto */ }
+    }
+    console.log('Nuova sessione client connessa al Mesh Network.');
 
-    ws.on('message', (message) => {
+    ws.on('message', async (message) => {
         try {
             const parsed = JSON.parse(message);
-            console.log('Ricevuto pacchetto mesh:', parsed);
+            // C-3: NON stampare il pacchetto intero - contiene lat/lng reali del mittente,
+            // finirebbero nei log di Render. Solo il tipo.
+            console.log('Ricevuto pacchetto mesh, tipo:', parsed && parsed.type);
 
-            // Broadcast a tutti i client connessi eccetto il mittente
+            const mittenteId = ws.camoscioUserId;
+            if (!mittenteId) return;
+
+            // M-1 (ri-review sicurezza, 2° giro): il WebSocket non passa da apiLimiter, e ogni
+            // messaggio fa una query su Hike. Tetto grezzo: 20 messaggi ogni 10 secondi per
+            // socket. Oltre, si scartano in silenzio.
+            const ora = Date.now();
+            if (ora - ws.meshMsgFinestraDa > 10000) { ws.meshMsgFinestraDa = ora; ws.meshMsgFinestra = 0; }
+            if (++ws.meshMsgFinestra > 20) return;
+
+            // M-1: il payload NON si inoltra verbatim - senderId/senderName li mette il server
+            // dalla sessione (un co-partecipante non deve poter far comparire un "[SOS] <nome
+            // di un altro>"), e lat/lng devono essere numeri finiti o il client che li disegna
+            // (displayMeshMessage -> toFixed) va in errore. Si passa avanti solo un oggetto
+            // ricostruito, coi soli campi previsti.
+            // Un client legittimo (sendMeshChatMessage in safety.js) manda lat/lng come
+            // NUMERI: si accettano solo quelli, tutto il resto (stringa, null, boolean...)
+            // diventa null - il client che li disegna non deve mai chiamare .toFixed su null.
+            const rawLat = parsed && parsed.lat;
+            const rawLng = parsed && parsed.lng;
+            const pacchetto = {
+                type: 'mesh_packet',
+                senderId: mittenteId,
+                senderName: ws.camoscioUserName || 'Un escursionista',
+                text: String((parsed && parsed.text) || '').slice(0, 1000),
+                lat: (typeof rawLat === 'number' && Number.isFinite(rawLat)) ? rawLat : null,
+                lng: (typeof rawLng === 'number' && Number.isFinite(rawLng)) ? rawLng : null,
+                isSos: !!(parsed && parsed.isSos),
+                timestamp: String((parsed && parsed.timestamp) || '').slice(0, 40)
+            };
+            if (!parsed || parsed.type !== 'mesh_packet' || (!pacchetto.text && !pacchetto.isSos)) return;
+
+            // C-3: prima il pacchetto (con la posizione GPS reale dentro) andava in
+            // broadcast a OGNI client connesso, e il filtro "raggio 100 m" viveva solo
+            // lato client, aggirabile. Ora il server inoltra SOLO a chi condivide col
+            // mittente un'escursione non ancora conclusa (come partecipante o creatore).
+            // Chi e' fuori da quel gruppo non riceve nulla - il pacchetto non parte.
+            const escursioni = await Hike.find(
+                { groupCompletedAt: null, $or: [{ participants: mittenteId }, { creatorId: mittenteId }] },
+                { participants: 1, creatorId: 1 }
+            ).lean();
+
+            const destinatari = new Set();
+            for (const h of escursioni) {
+                if (h.creatorId) destinatari.add(String(h.creatorId));
+                for (const p of (h.participants || [])) destinatari.add(String(p));
+            }
+            destinatari.delete(mittenteId); // il proprio messaggio il client lo mostra gia' da se'
+            if (!destinatari.size) return;
+
+            const payload = JSON.stringify(pacchetto);
             wss.clients.forEach((client) => {
-                if (client !== ws && client.readyState === WebSocket.OPEN) {
-                    client.send(JSON.stringify(parsed));
+                if (client !== ws
+                    && client.readyState === WebSocket.OPEN
+                    && client.camoscioUserId
+                    && destinatari.has(client.camoscioUserId)) {
+                    client.send(payload);
                 }
             });
         } catch (e) {
-            console.error('Errore decodifica messaggio WS:', e);
+            console.error('Errore gestione messaggio mesh:', e);
         }
     });
 });
@@ -154,6 +236,17 @@ connectMongo()
             console.log(`===================================================`);
             console.log(` Camoscio Hiking Web App in esecuzione!`);
             console.log(` Portale locale: http://localhost:${port}`);
+            // M-2 (ri-review sicurezza, 2° giro): NODE_ENV regge da solo quattro controlli
+            // (cookie.secure, base URL email, fail-closed del segreto cron, i rate limiter) e
+            // nessuno di questi ha un sintomo visibile se il valore e' sbagliato. Lo si stampa
+            // all'avvio, e si urla se in produzione manca il segreto del cron: in quel caso
+            // segretoCronValido (routes/safety.js) e' fail-closed e /api/safety/controlla-scadenze
+            // risponde 403 a OGNI chiamata - il Dead Man's Switch non scatterebbe mai, in silenzio.
+            const prod = process.env.NODE_ENV === 'production';
+            console.log(` NODE_ENV=${process.env.NODE_ENV || '(non impostata)'} - rate limiter ${prod ? 'ATTIVI' : 'SPENTI'}, cookie secure ${prod ? 'si' : 'no'}`);
+            if (prod && !process.env.SAFETY_CRON_SECRET) {
+                console.error(' ATTENZIONE: SAFETY_CRON_SECRET vuota in produzione - /api/safety/controlla-scadenze risponde 403 a ogni chiamata: il Dead Man\'s Switch NON scattera\' mai. Impostare il segreto e puntarci il cron esterno.');
+            }
             console.log(`===================================================`);
         });
 

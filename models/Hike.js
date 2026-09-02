@@ -11,7 +11,10 @@ const peakSchema = new mongoose.Schema({
 const driverSchema = new mongoose.Schema({
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     seats: Number,
-    departureCity: String,
+    // maxlength: A-2 della security review 21a - senza un tetto, un client che chiama la
+    // rotta a mano puo' scrivere stringhe enormi qui e riempire i 512 MB di Atlas. 100 e'
+    // largo per un "comune / zona di partenza" vero.
+    departureCity: { type: String, maxlength: 100 },
     distanceKm: Number,
     pricePerPassenger: Number,
     // Trovato per strada al punto 98/C (non richiesto all'epoca, annotato per dopo): il
@@ -23,8 +26,13 @@ const driverSchema = new mongoose.Schema({
 }, { _id: false });
 
 const backpackItemSchema = new mongoose.Schema({
-    name: String,
-    category: String,
+    // maxlength: A-2 della security review 21a - stesso motivo di driverSchema.departureCity,
+    // un articolo dello zaino ha un nome corto, 80 e' gia' abbondante.
+    name: { type: String, maxlength: 80 },
+    // maxlength: A-NUOVO-4 residuo (3° giro) - `category` era l'ultimo campo testo dei
+    // sotto-doc zaino senza tetto. Etichetta corta ("Cucina", "Sicurezza"): 40 e' largo.
+    // Come per `name`, sui findByIdAndUpdate il controllo vero e' nella rotta (routes/hikes.js).
+    category: { type: String, maxlength: 40 },
     mandatory: Boolean,
     assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     weight: Number,
@@ -51,8 +59,12 @@ const backpackItemSchema = new mongoose.Schema({
 }, { _id: false });
 
 const hikeSchema = new mongoose.Schema({
-    title: { type: String, required: true },
-    description: String,
+    // maxlength: A-NUOVO-4 della ri-review sicurezza (2° giro). title/description erano gli
+    // unici campi testo di Hike senza tetto, ed e' da li' che si riempirebbero i 512 MB di
+    // Atlas (POST /api/hikes). Qui Hike.create() li applica davvero (a differenza dei
+    // sotto-documenti degli array su findByIdAndUpdate - vedi routes/hikes.js).
+    title: { type: String, required: true, maxlength: 120 },
+    description: { type: String, maxlength: 2000 },
     creatorId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     difficulty: {
         type: String,
@@ -64,6 +76,13 @@ const hikeSchema = new mongoose.Schema({
     date: String, // "YYYY-MM-DD", stesso formato usato oggi dal frontend
     tribeTags: [String],
     manualApproval: { type: Boolean, default: false },
+    // Escursione di piu' giorni (rifugio/tenda): la decide il CREATORE in creazione/modifica.
+    // Sblocca nel tab Zaino di hike-page la sezione "Zaino condivisibile" (tenda per N,
+    // ripartizione dei pesi fra il gruppo). Assente = escursione in giornata: lo zaino resta
+    // solo la lista personale privata di ognuno. default: undefined e NON false di proposito -
+    // con false Mongoose scriverebbe il campo su OGNI documento anche quando non aggiunge
+    // informazione, e c'e' il vincolo hard sullo spazio MongoDB (vedi 02-Vincoli-Hard del vault).
+    multiDay: { type: Boolean, default: undefined },
     participants: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     pendingApproval: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     trailhead: {

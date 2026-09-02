@@ -2523,6 +2523,15 @@ option {
     display: block;
 }
 
+/* A-1 (security review 21a): a un non-partecipante restano solo i Dettagli. impostaTabHikePage
+   (hikepage.js) forza comunque data-hp-tab="dettagli"; qui si nascondono i bottoni degli
+   altri tab. Il gate vero e' lato server (routes/hikes.js). */
+#hike-page.hp-non-partecipo .hp-tab[data-hp-tab="chat"],
+#hike-page.hp-non-partecipo .hp-tab[data-hp-tab="carpool"],
+#hike-page.hp-non-partecipo .hp-tab[data-hp-tab="backpack"] {
+    display: none;
+}
+
 .carpool-layout {
     display: grid;
     grid-template-columns: 1fr 1fr;

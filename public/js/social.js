@@ -136,6 +136,9 @@ window.openEditHikeModal = function(hikeId) {
     document.getElementById('hike-elev').value = hike.elevationGain;
     document.getElementById('hike-dist').value = hike.distanceKm;
     document.getElementById('hike-approval').value = hike.manualApproval ? 'true' : 'false';
+    // Blocco zaino/carpooling per-partecipanti: la spunta "più giorni" e' creator-only e
+    // precompila lo stato attuale dell'escursione.
+    document.getElementById('hike-multi-day').checked = !!hike.multiDay;
 
     document.querySelectorAll("input[name='hike-tags']").forEach(cb => {
         cb.checked = hike.tribeTags.includes(cb.value);
@@ -167,6 +170,11 @@ window.apriModaleNuovaEscursione = function() {
     // perche' nome/coordinate/avvisi stanno anche fuori dai campi del modulo.
     if (window.resetTrailheadPicker) window.resetTrailheadPicker();
     resetHikeRouteSourcePicker();
+    // Blocco zaino/carpooling per-partecipanti: form.reset() gira solo dopo un invio
+    // riuscito, quindi la spunta "più giorni" va azzerata a mano all'apertura (poteva
+    // essere rimasta accesa da una modifica precedente mai inviata).
+    const multiDayCb = document.getElementById('hike-multi-day');
+    if (multiDayCb) multiDayCb.checked = false;
     if (window.lucide) window.lucide.createIcons();
 };
 
@@ -1355,6 +1363,7 @@ async function submitCreateHike() {
     const lng = parseFloat(document.getElementById("hike-trailhead-lng").value);
     const name = document.getElementById("hike-trailhead-name").value;
     const manualApproval = document.getElementById("hike-approval").value === "true";
+    const multiDay = document.getElementById("hike-multi-day").checked;
 
     // Punto 8: le coordinate non si scrivono piu' a mano, arrivano dalla ricerca per nome
     // o dalla scelta sulla mappa. Se sono vuote vuol dire che quel passaggio e' stato
@@ -1402,6 +1411,16 @@ async function submitCreateHike() {
     // Punto 54: creatorId ha senso solo alla creazione - in modifica lo decide la
     // sessione lato server (hike.creatorId non cambia mai), non un campo del payload.
     if (!editingHikeId) payload.creatorId = db.currentUser.id;
+
+    // Blocco zaino/carpooling per-partecipanti. In creazione si manda multiDay SOLO se
+    // spuntata: mai multiDay:false sul POST, lo schema ha default:undefined (vincolo
+    // spazio MongoDB). In modifica si manda sempre il booleano, cosi' togliere la spunta
+    // fa $unset lato server (routes/hikes.js PUT /:id).
+    if (editingHikeId) {
+        payload.multiDay = multiDay;
+    } else if (multiDay) {
+        payload.multiDay = true;
+    }
 
     const inModifica = !!editingHikeId;
 

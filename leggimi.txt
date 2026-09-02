@@ -1,15 +1,17 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-09-02 (VENTUNESIMA sessione — TUTTO IL RIORDINO MENU v2
-CODIFICATO (PASSO 9 -> 14c), verificato in locale, committato su `v2-ux`,
-NIENTE pushato. Poi: rifusi i 2 auto-save di note (-> `a34b5f1`); girato
-l'agente security-privacy (C-1 homeCity pubblico + C-2 IDOR bloccano il
-merge - dettaglio in vault 04-Da-Fare); fissati i 3 punti bassi (B-1/B-2/
-B-3, `2bab030`). NUOVA DECISIONE di Denis a fine sessione: la 22a PARTE
-dal blocco "zaino/carpooling per-escursione, visibili solo ai
-partecipanti + zaino personale privato" (piano:
-camoscio-zaino-carpool-partecipanti.md) - assorbe C-2 e A-1. Poi prova
-mobile + responsive + prove/ + merge (lo decide Denis).)
+Aggiornato: 2026-09-02 (VENTIDUESIMA sessione — BLOCCO 0 (zaino/carpooling
+per-partecipanti) + TUTTO IL LOTTO SICUREZZA (C-1/C-2/C-3/A-1/A-2/A-3.1-3)
++ i FIX della ri-review dell'agente security-privacy (1 critico + 6 alti +
+5 medi) CODIFICATI, verificati in locale, committati su `v2-ux` (auto-save),
+NIENTE pushato. La ri-review (1o giro) aveva dato "NON pronto": tutti i
+blocchi chiusi in sessione, il critico era C-NUOVO-1 (`PUT /api/hikes/:id`
+con update vuoto in Mongoose degrada a LETTURA e restituisce il doc intero).
+Suite prove/ non-Puppeteer COMPLETA VERDE (~950 controlli). Denis ha fermato
+la sessione qui: la 23a PARTE DAL 2o GIRO DELL'AGENTE security-privacy
+(verifica dei fix), poi prova mobile + responsive <900px + merge.
+Dettaglio completo: vault 04-Da-Fare ("Ri-review 22a"), 06 ("Ventiduesima
+sessione"), 03 (nuovi paragrafi), 07 (3 trappole nuove).)
 
 >>> LAVORO IN CORSO: revisione UX del sito ("Camoscio v2"). Si lavora
     ESCLUSIVAMENTE IN LOCALE sul branch `v2-ux`. NIENTE push, NIENTE deploy:
@@ -17,8 +19,12 @@ mobile + responsive + prove/ + merge (lo decide Denis).)
     `origin` = `efd1290`) resta intatto = la produzione attuale.
     Metodo: un commit vero `V2 UX PASSO n: ...` per blocco (locale su
     `v2-ux`). L'hook di auto-save committa comunque: si rifonde (rebase
-    --onto / reset --soft) in un commit vero. La DASHBOARD (Fasi 1-5) e il
-    RIORDINO MENU/NAVIGAZIONE (PASSO 6->14c) sono FATTI.
+    --onto / reset --soft) in un commit vero (la rifusione dei ~13 auto-save
+    di questa sessione la fa Denis). La DASHBOARD (Fasi 1-5), il RIORDINO
+    MENU/NAVIGAZIONE (PASSO 6->14c), il BLOCCO 0 (zaino/carpooling
+    per-partecipanti) e TUTTO IL LOTTO SICUREZZA sono FATTI. `v2-ux` = 33
+    avanti / 1 indietro a `origin/master` (`efd1290` Ju Busciu, il merge lo
+    riconcilia).
 
 >>> FATTO E COMMITTATO su `v2-ux` (NON pushato). Struttura finale:
     Home / Esplora v (Escursioni, Mappa, Ispirazioni) / Le mie escursioni v
@@ -69,54 +75,80 @@ mobile + responsive + prove/ + merge (lo decide Denis).)
     legato all'hikeId (escursioneDiRiferimento semplificata).
 
   Verifica: ogni blocco provato dal vivo (account reale, sola lettura, DB
-  demo dove serviva, IT+EN, zero errori JS). Sweep finale di TUTTA la nav
-  desktop: nessun errore. Le scritture DB (pubblica offerta carpool,
-  conferma zaino, salva profilo, cambia password) NON esercitate.
+  demo dove serviva, IT+EN, zero errori JS). Sweep finale nav desktop: ok.
 
->>> DA DOVE SI RIPARTE: la 22a sessione PARTE DA QUESTA MODIFICA (deciso
-    con Denis a fine 21a, dopo la security review):
+  BLOCCO 0 (zaino/carpooling per-partecipanti) - piano
+  camoscio-zaino-carpool-partecipanti.md, ESEGUITO in 2 checkpoint:
+  - Hike.multiDay (Boolean, default:undefined) - lo decide il CREATORE
+    (spunta in create-hike-modal). Zaino personale SEMPRE in localStorage,
+    non passa dal server. "Zaino condivisibile" (hike.backpackTemplate) +
+    ripartizione pesi SOLO se hike.multiDay. Via il <select> durata.
+  - routes/hikes.js: gate isHikeParticipant sui rami carpool/backpackTemplate
+    di PUT /:id (C-2); !hike.multiDay -> 403 sui write zaino; GET / strippa
+    carpool/backpackTemplate per i non-partecipanti; sotto-bug passeggeri
+    (sulla propria voce driver possono solo calare).
+  - hikepage.js+CSS: tab Chat/Carpooling/Zaino nascosti ai non-partecipanti
+    (A-1, difesa in profondita').
 
-  >>> BLOCCO "ZAINO/CARPOOLING PER-ESCURSIONE, VISIBILI SOLO AI
-      PARTECIPANTI + ZAINO PERSONALE PRIVATO". Piano esecutivo file-per-file:
-        C:\Users\lenovo\.claude\plans\camoscio-zaino-carpool-partecipanti.md
-      Questo blocco ASSORBE i fix di sicurezza C-2 (IDOR su
-      PUT /api/hikes/:id carpool/backpackTemplate) e A-1 (tab di hike-page
-      ai non-partecipanti) - NON farli separati.
-      Modello deciso: carpooling = tab e dati solo per i partecipanti
-      (server toglie hike.carpool ai non-partecipanti in GET /api/hikes +
-      rifiuta i PUT). Zaino: SEMPRE personale/privato (checklist generata +
-      le mie aggiunte = solo mie, gia' in localStorage, non passano dal
-      server). SOLO escursioni di piu' giorni -> compare in piu' "Zaino
-      condivisibile" (tenda per N, ripartizione pesi). Il "piu' giorni" lo
-      decide il CREATORE (campo nuovo Hike.multiDay, default:undefined).
-      Sparisce il menu a tendina giornata/piu'-giorni nel generatore.
-      5 passi: models/Hike.js (+multiDay) -> create-hike-modal (spunta) ->
-      routes/hikes.js (gate isHikeParticipant sui write + strip carpool/
-      backpackTemplate dai read dei non-partecipanti + sotto-bug passeggeri
-      + maxlength departureCity/name) -> backpack.js (split personale/
-      condivisibile su multiDay, via il select durata) -> hikepage.js+CSS (A-1).
+  LOTTO SICUREZZA (decisioni con AskUserQuestion):
+  - C-1: 'homeCity' in ALWAYS_PRIVATE_FIELDS + maxlength 100; GET
+    /api/hikes/:id/home-match (solo partecipanti) risponde SOLO {quanti:N}
+    - MAI i nomi (coi nomi era un oracolo sulla zona di casa).
+  - C-3: mesh WS -> log ridotto a parsed.type; broadcast SOLO ai
+    co-partecipanti (Hike non conclusa); mittente/nome dal cookie di
+    sessione, non dal pacchetto; lat/lng validati -> null; cap 20 msg/10s.
+  - A-2: express-rate-limit@8.7.0 (MIT, DIPENDENZA NUOVA approvata da Denis);
+    middleware/rateLimit.js, tutti i limiter GATED su NODE_ENV=='production'
+    (skip in dev/test). npm audit --omit=dev = 0 (spostato @capacitor/cli
+    in devDependencies).
+  - A-3.1: revoca consenso GPS in #settings + ENFORCEMENT server-side
+    (middleware/consensoGeo.js su tracking.js /start,/:id/points,/:id/resume).
+  - A-3.2: RIMOSSO deadManContactIndex (0 utenti). Alla scadenza l'allarme
+    va a TUTTI i contatti con email. safety.js: lista contatti con "Rimuovi"
+    per riga. Demo NON armano il DMS. Email HTML escapata + tetto 5 contatti.
+    prova-punto37 riscritta (account reale temporaneo, non demo).
+  - A-3.3: GET /api/users/me/export -> bundle JSON scaricabile da #settings
+    (exportLimiter 3/giorno, .select('-points -offTrailBuffer'), no indent).
 
-  POI, prima del push vero, in ordine:
-  1. PROVA MOBILE sul telefono di Denis (drawer, tab di hike-page, layout
-     stretto). Senza deployare: server in ascolto sulla LAN (cookie in
-     locale e' secure:false, il login regge in HTTP) -> telefono sullo
-     stesso wifi apre http://<ip-pc>:3000. Fallback: tunnel effimero
-     (cloudflared/ngrok), da chiudere subito.
-  2. Verifica responsive Dashboard <900px (ex "punto 3", accorpata qui).
-  3. Suite `prove/` (PASSO 12 tocca UI vicino all'auth, 11b + il blocco
-     zaino/carpool toccano routes/ e lo schema: rilanciare TUTTA la suite).
-  4. Security review 21a: esito completo nel vault 04-Da-Fare "Esito agente
-     security-privacy". C-1/C-2 bloccano il merge (C-2 dentro il blocco
-     qui sopra; C-1 = 1 riga, 'homeCity' in ALWAYS_PRIVATE_FIELDS +
-     opzionale rotta di match server-side). Restano come task a se':
-     C-3 (broadcast mesh), A-2 (rate-limiting = dipendenza nuova),
-     A-3 (revoca consenso GPS / cancella contatto / elimina account).
-     Mappa dati sensibili in .claude/agent-memory/security-privacy/.
-  5. MERGE `v2-ux` -> `master` + push (lo decide Denis). NOTA: `v2-ux` e'
-     1 commit indietro a `origin/master` (l'hotfix Ju Busciu `efd1290`,
-     `sogliaM` per-punto) - il merge lo riconcilia; v2-ux NON tocca
-     geofenceTimbri.js/badge-points.js/map.js/stamps.js quindi atteso
-     conflict-free. Branch di backup pre-rifusione: `v2-ux-backup-preref`.
+  FIX DELLA RI-REVIEW (1o giro = "NON pronto", tutti chiusi):
+  - C-NUOVO-1 (CRITICO): PUT /api/hikes/:id con update {} -> Mongoose
+    findByIdAndUpdate degrada a _findOne() e RESTITUISCE IL DOC INTERO
+    (riapriva C-2 lettura + C-1 + A-1 + punto 77). -> hikeVisibileA()
+    unica su GET / E risposta PUT /:id; 400 su update vuoto PRIMA di
+    findByIdAndUpdate; 404 sulle concluse ai non-partecipanti nel PUT.
+  - A-NUOVO-1: DMS come relay email verso terzi (demo + N contatti-HTML).
+    -> esc() HTML + tetto 5 contatti + demo fuori dal DMS + scritturaLimiter.
+  - A-NUOVO-2: home-match era un oracolo -> solo {quanti}, no nomi.
+  - A-NUOVO-3: export = DoS memoria -> .select senza points + exportLimiter.
+  - A-NUOVO-4: runValidators NON valida i sotto-doc degli array su
+    findByIdAndUpdate -> lunghezze validate NELLA rotta; maxlength su
+    Hike.title/description; scritturaLimiter su POST /api/hikes.
+  - medi: M-1 mesh anti-spoofing, M-2 log NODE_ENV all'avvio, M-3 export
+    minimizza le proprie hike, M-4 capacitor/cli in devDeps.
+  RIMANDATI (non bloccanti, decide Denis): A-3.4 elimina account (blocco a
+  se', scelta = chiusura + scrub PII + tombstone); M-5 race cancella-contatto
+  con 2 schede; NOTA LEGALE - l'accettazione "Termini + Informativa privacy"
+  in index.html non ha un documento dietro (serve un professionista).
+
+>>> DA DOVE SI RIPARTE: la 23a sessione PARTE DA QUI, in ordine (Denis ha
+    fermato la 22a prima del punto 1):
+
+  1. 2o GIRO DELL'AGENTE `security-privacy` - verifica che i fix chiudano
+     davvero i 6 blocchi + niente di nuovo. Diff da rivedere:
+     `git diff 4f39fb1`. Il prompt del 1o giro e' nel vault 06
+     ("Ventiduesima sessione"). L'agente ha memoria in
+     .claude/agent-memory/security-privacy/.
+  2. PROVA MOBILE sul telefono di Denis (drawer, tab di hike-page,
+     #settings nuovo, layout stretto). Senza deployare: server sulla LAN
+     (cookie secure:false in locale, login regge in HTTP) -> telefono
+     stesso wifi http://<ip-pc>:3000. Fallback: tunnel effimero.
+  3. Verifica responsive Dashboard <900px (ex "punto 3").
+  4. MERGE `v2-ux` -> `master` + push (lo decide Denis). `v2-ux` = 33
+     avanti / 1 indietro a `origin/master` (`efd1290` Ju Busciu `sogliaM`)
+     - il merge lo riconcilia; v2-ux NON tocca geofenceTimbri.js/
+     badge-points.js/map.js/stamps.js quindi atteso conflict-free.
+     Backup pre-rifusione: `v2-ux-backup-preref`. La rifusione dei ~13
+     auto-save in commit veri `V2 UX ...` la fa Denis.
 
   FILONE B (indipendente) - COLLEZIONE "I 2000 DELL'APPENNINO", dentro la
   pagina Progressi (ex Badge), NON pagina a se'. Piano:

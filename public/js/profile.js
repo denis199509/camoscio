@@ -92,9 +92,116 @@ function renderSettingsPage() {
     }
     // Le bandiere in #settings sono gia' agganciate da i18n.js (aggancia TUTTE le
     // .lang-flag-btn del documento) - niente da fare qui.
+
+    // A-3.1 (revisione sicurezza 21a): revoca del consenso alla geolocalizzazione.
+    renderStatoConsensoGps(usr);
+
+    // A-3.3: export dei propri dati (GDPR).
+    const btnExport = document.getElementById("btn-export-my-data");
+    if (btnExport && !btnExport.dataset.collegato) {
+        btnExport.dataset.collegato = "1";
+        btnExport.addEventListener("click", esportaMieiDati);
+    }
+
     if (window.lucide) window.lucide.createIcons();
 }
 window.renderSettingsPage = renderSettingsPage;
+
+// A-3.3: scarica un JSON con tutti i propri dati. Si passa da fetch + blob (non una semplice
+// navigazione all'URL) per poter gestire un errore senza lasciare la pagina.
+async function esportaMieiDati() {
+    const btn = document.getElementById("btn-export-my-data");
+    if (!btn) return;
+    const etichetta = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = T('settings.esportaInCorso') || 'Preparo il file…';
+    try {
+        const res = await fetch('/api/users/me/export');
+        if (!res.ok) throw new Error('Export rifiutato: ' + res.status);
+        const blob = await res.blob();
+        const cd = res.headers.get('Content-Disposition') || '';
+        const m = cd.match(/filename="([^"]+)"/);
+        const nome = (m && m[1]) || 'camoscio-dati.json';
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = nome;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        window.showToast(T('settings.esportaFatto') || 'Export scaricato.', 'success');
+    } catch (e) {
+        console.error('Export dati fallito:', e);
+        window.showToast(T('settings.esportaErrore') || "Non sono riuscito a preparare l'export. Riprova.", 'error');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = etichetta;
+    }
+}
+
+// A-3.1: mostra lo stato del consenso GPS e, se e' attivo, il tasto per revocarlo. I demo
+// non hanno un consenso vero da gestire (entrano senza registrarsi) - per loro niente tasto.
+function renderStatoConsensoGps(usr) {
+    const stato = document.getElementById("settings-geo-consent-state");
+    const btn = document.getElementById("btn-revoke-geo-consent");
+    if (!stato || !btn) return;
+
+    if (usr.isDemoAccount) {
+        stato.textContent = T('settings.geoConsentDemo') || "Il consenso alla posizione non si applica agli account demo.";
+        btn.classList.add("hidden");
+        return;
+    }
+
+    if (usr.geolocationConsent) {
+        stato.textContent = T('settings.geoConsentDato') || "Hai dato il consenso all'uso della tua posizione.";
+        btn.classList.remove("hidden");
+    } else {
+        stato.textContent = T('settings.geoConsentNon') || "Non hai dato (o hai revocato) il consenso all'uso della posizione: ti verrà richiesto quando servirà.";
+        btn.classList.add("hidden");
+    }
+
+    if (!btn.dataset.collegato) {
+        btn.dataset.collegato = "1";
+        btn.addEventListener("click", revocaConsensoGps);
+    }
+}
+
+async function revocaConsensoGps() {
+    const usr = window.CamoscioState && window.CamoscioState.currentUser;
+    if (!usr) return;
+
+    // Non si revoca mentre una registrazione GPS e' in corso: perderebbe senso a meta'.
+    // Si chiede all'utente di fermarla prima, invece di ucciderla noi (rischio perdita dati).
+    if (window.CamoscioTrackingIsRecording && window.CamoscioTrackingIsRecording()) {
+        window.showToast(T('settings.geoRevocaTracciamento') || "C'è una registrazione GPS in corso: fermala prima di revocare il consenso.", "error");
+        return;
+    }
+
+    const procedi = await window.showConfirmModal(
+        T('settings.geoRevocaConferma') || "Revocare il consenso all'uso della tua posizione? Le funzioni che ne hanno bisogno (registrazione percorsi, «dove sono», escursioni vicine) te lo richiederanno di nuovo.",
+        T('settings.revocaGeo') || 'Revoca il consenso alla posizione',
+        { cancelLabel: T('common.cancella') || 'Annulla', danger: true }
+    );
+    if (!procedi) return;
+
+    try {
+        const res = await fetch(`/api/users/${usr.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ geolocationConsent: false })
+        });
+        if (!res.ok) throw new Error('Revoca rifiutata');
+        usr.geolocationConsent = false;
+        renderStatoConsensoGps(usr);
+        // Rimette l'avviso "serve il consenso" nella pagina di tracciamento.
+        if (window.toggleGeoConsentAlert) window.toggleGeoConsentAlert();
+        window.showToast(T('settings.geoRevocaFatto') || "Consenso revocato. Ricordati di togliere anche il permesso del sito dalle impostazioni del browser, se vuoi bloccarlo del tutto.", "success");
+    } catch (e) {
+        console.error("Revoca consenso GPS fallita:", e);
+        window.showToast(T('settings.geoRevocaErrore') || "Non sono riuscito a revocare il consenso. Riprova.", "error");
+    }
+}
 
 // Foto scelta ma non ancora salvata (punto 40): come registerPhotoDataUrl in auth.js.
 let newProfilePhotoDataUrl = null;

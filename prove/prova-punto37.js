@@ -21,6 +21,7 @@
 require('dotenv').config({ path: __dirname + '/../.env' });
 const { spawn } = require('child_process');
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 
 const PORTA = 3102;
 const BASE = `http://localhost:${PORTA}`;
@@ -59,8 +60,7 @@ async function chiama(metodo, percorso, corpo, cookie) {
 
     let server;
     let logServer = '';
-    let demoId = null;
-    let contattiOriginali = null;
+    let utenteId = null;   // account REALE temporaneo (il DMS non e' disponibile sui demo - A-NUOVO-1)
     const inizioProva = new Date();
 
     try {
@@ -85,57 +85,64 @@ async function chiama(metodo, percorso, corpo, cookie) {
         ok('il server di prova e\' partito', pronto);
         if (!pronto) throw new Error('il server di prova non risponde');
 
-        // --- 1. Accesso con un account demo ---
-        // /api/auth/demo-accounts espone "id", non "_id" (trappola gia' pagata piu' volte).
-        const elenco = await (await fetch(BASE + '/api/auth/demo-accounts')).json();
-        ok('almeno un account demo disponibile', Array.isArray(elenco) && elenco.length > 0);
-        demoId = elenco[0].id;
-
-        const accesso = await fetch(BASE + '/api/auth/demo-login', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: demoId })
+        // --- 1. Account REALE temporaneo + accesso ---
+        // Il Dead Man's Switch non e' piu' disponibile sugli account demo (A-NUOVO-1: erano
+        // il primo anello della catena "armo il timer con N contatti finti e uso l'invio
+        // come relay"). Si crea un utente vero, dritti sul database, e lo si cancella nel
+        // finally. Marca riconoscibile nell'username e email @esempio-di-prova.invalid.
+        const pwd = `pw-${MARCA}-Xk`;
+        const utente = await User.create({
+            username: `PROVA-37-${MARCA}`,
+            email: `prova-37-${MARCA}@esempio-di-prova.invalid`,
+            passwordHash: bcrypt.hashSync(pwd, 10),
+            nome: 'Prova', cognome: 'Trentasette',
+            termsAcceptedAt: new Date(),
+            emailVerified: true
         });
-        ok('accesso demo riuscito', accesso.status === 200, `status ${accesso.status}`);
+        utenteId = String(utente._id);
+
+        const accesso = await fetch(BASE + '/api/auth/login', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: utente.email, password: pwd })
+        });
+        ok('accesso all\'account di prova riuscito', accesso.status === 200, `status ${accesso.status}`);
         const cookie = (accesso.headers.getSetCookie ? accesso.headers.getSetCookie() : [accesso.headers.get('set-cookie')])
             .filter(Boolean).map(c => c.split(';')[0]).join('; ');
-        console.log(`     (account demo usato: ${elenco[0].username})`);
 
-        // --- 2. Due contatti temporanei: uno SENZA email (simula un contatto vecchio, pre
-        //        punto 37) e uno CON - serve a provare sia il rifiuto sia il caso buono.
-        const demoAttuale = await User.findById(demoId);
-        contattiOriginali = (demoAttuale.emergencyContacts || []).map(c => c.toObject());
-
-        const emailProva = `contatto-prova-37-${MARCA}@esempio-di-prova.invalid`;
-        const nuoviContatti = contattiOriginali.concat([
+        // --- 2. A-3.2: niente piu' "contatto scelto" - alla scadenza l'allarme va a TUTTI i
+        //        contatti che hanno un'email. Si preparano: uno SENZA email (non conta) e DUE
+        //        con email (devono essere avvisati entrambi).
+        const demoId = utenteId; // il resto della prova usa "demoId" come id dell'account
+        const emailProvaA = `contatto-prova-37a-${MARCA}@esempio-di-prova.invalid`;
+        const emailProvaB = `contatto-prova-37b-${MARCA}@esempio-di-prova.invalid`;
+        const soloSenzaEmail = [{ name: 'Contatto Prova SenzaEmail', relationship: 'Prova' }];
+        const conDueEmail = [
             { name: 'Contatto Prova SenzaEmail', relationship: 'Prova' },
-            { name: 'Contatto Prova ConEmail', relationship: 'Prova', email: emailProva }
-        ]);
-        const indiceSenzaEmail = contattiOriginali.length;
-        const indiceConEmail = contattiOriginali.length + 1;
+            { name: 'Contatto Prova ConEmail A', relationship: 'Prova', email: emailProvaA },
+            { name: 'Contatto Prova ConEmail B', relationship: 'Prova', email: emailProvaB }
+        ];
 
-        const salvataggio = await chiama('PUT', `/api/users/${demoId}`, { emergencyContacts: nuoviContatti }, cookie);
-        ok('contatti di prova salvati', salvataggio.status === 200, JSON.stringify(salvataggio.corpo));
-
-        // --- 3. Attivazione: rifiutata senza cookie, rifiutata su un contatto senza email,
-        //        accettata su un contatto con email ---
+        // --- 3. Attivazione: rifiutata senza cookie; rifiutata se NESSUN contatto ha
+        //        un'email; accettata appena ce n'e' almeno uno ---
         const scadenzaFutura = new Date(Date.now() + 3600000).toISOString();
 
-        const senzaSessione = await chiama('POST', '/api/safety/activate',
-            { expiresAt: scadenzaFutura, contactIndex: indiceConEmail }, null);
+        const senzaSessione = await chiama('POST', '/api/safety/activate', { expiresAt: scadenzaFutura }, null);
         ok('attivare senza sessione viene rifiutato (401)', senzaSessione.status === 401, `status ${senzaSessione.status}`);
 
-        const conContattoSenzaEmail = await chiama('POST', '/api/safety/activate',
-            { expiresAt: scadenzaFutura, contactIndex: indiceSenzaEmail }, cookie);
-        ok('attivare su un contatto SENZA email viene rifiutato',
-            conContattoSenzaEmail.status === 400, `status ${conContattoSenzaEmail.status}`);
+        await chiama('PUT', `/api/users/${demoId}`, { emergencyContacts: soloSenzaEmail }, cookie);
+        const senzaEmail = await chiama('POST', '/api/safety/activate', { expiresAt: scadenzaFutura }, cookie);
+        ok('attivare senza NESSUN contatto con email viene rifiutato (400)',
+            senzaEmail.status === 400, `status ${senzaEmail.status}`);
 
-        const attivazione = await chiama('POST', '/api/safety/activate',
-            { expiresAt: scadenzaFutura, contactIndex: indiceConEmail }, cookie);
-        ok('attivazione su un contatto CON email accettata', attivazione.status === 200, JSON.stringify(attivazione.corpo));
+        const salvataggio = await chiama('PUT', `/api/users/${demoId}`, { emergencyContacts: conDueEmail }, cookie);
+        ok('contatti di prova salvati (uno senza email, due con)', salvataggio.status === 200, JSON.stringify(salvataggio.corpo));
+
+        const attivazione = await chiama('POST', '/api/safety/activate', { expiresAt: scadenzaFutura }, cookie);
+        ok('attivazione accettata con almeno un contatto con email', attivazione.status === 200, JSON.stringify(attivazione.corpo));
 
         const dopoAttivazione = await User.findById(demoId);
         ok('deadManActive salvato sul database', dopoAttivazione.deadManActive === true);
-        ok('deadManContactIndex salvato correttamente', dopoAttivazione.deadManContactIndex === indiceConEmail);
+        ok('deadManContactIndex NON viene piu\' scritto (A-3.2)', dopoAttivazione.deadManContactIndex === undefined);
         ok('deadManExpiresAt salvato correttamente',
             !!dopoAttivazione.deadManExpiresAt && Math.abs(dopoAttivazione.deadManExpiresAt.getTime() - new Date(scadenzaFutura).getTime()) < 1000);
 
@@ -157,7 +164,7 @@ async function chiama(metodo, percorso, corpo, cookie) {
 
         // --- 5. Riattiva e simula il tempo che passa (retrodatando sul database: /activate
         //        rifiuta apposta una scadenza nel passato, quel controllo e' per l'utente) ---
-        await chiama('POST', '/api/safety/activate', { expiresAt: scadenzaFutura, contactIndex: indiceConEmail }, cookie);
+        await chiama('POST', '/api/safety/activate', { expiresAt: scadenzaFutura }, cookie);
         await User.findByIdAndUpdate(demoId, { deadManExpiresAt: new Date(Date.now() - 60000) });
 
         // --- 6. La rotta del cron: rifiutata senza segreto e col segreto sbagliato ---
@@ -182,12 +189,17 @@ async function chiama(metodo, percorso, corpo, cookie) {
             ok('la notifica parla di un avviso mandato', /avviso.*email|email.*fallit/i.test(notificaAllarme.text), notificaAllarme.text);
         }
 
-        // Si aspetta che il contenuto arrivi nel log del server, invece di leggerlo a tempo fisso.
-        for (let i = 0; i < 20 && !logServer.includes(emailProva); i++) {
+        // A-3.2: l'allarme va a TUTTI i contatti con email - devono comparire ENTRAMBI gli
+        // indirizzi di prova nel log del server, non solo uno.
+        for (let i = 0; i < 20 && !(logServer.includes(emailProvaA) && logServer.includes(emailProvaB)); i++) {
             await new Promise(r => setTimeout(r, 250));
         }
-        ok('l\'email vera e\' stata composta per il contatto giusto (letta dal log del server)',
-            logServer.includes(emailProva));
+        ok('l\'email e\' stata composta per il PRIMO contatto con email (log del server)',
+            logServer.includes(emailProvaA));
+        ok('...e anche per il SECONDO contatto con email (avvisati tutti, A-3.2)',
+            logServer.includes(emailProvaB));
+        ok('con piu\' contatti, l\'email dice di coordinarsi con gli altri (A-3.2)',
+            /coordinatevi/i.test(logServer) && /uno dei contatti di emergenza/i.test(logServer));
         ok('l\'oggetto dell\'email parla del check-in mancato',
             /non ha fatto il check-in/i.test(logServer));
 
@@ -204,19 +216,15 @@ async function chiama(metodo, percorso, corpo, cookie) {
     } finally {
         if (server) server.kill();
 
-        if (demoId && contattiOriginali) {
-            try {
-                await User.findByIdAndUpdate(demoId, {
-                    emergencyContacts: contattiOriginali,
-                    $unset: { deadManActive: 1, deadManExpiresAt: 1, deadManContactIndex: 1 }
-                });
-            } catch (e) {
-                console.error('ATTENZIONE: ripristino dei contatti demo fallito a mano:', e.message);
+        // L'account di prova e' NOSTRO (creato in questo run): si cancella per intero, con
+        // tutte le notifiche che ha generato. Filtrato per _id, mai per qualcos'altro.
+        if (utenteId) {
+            const oid = new mongoose.Types.ObjectId(utenteId);
+            try { await User.deleteOne({ _id: oid }); } catch (e) {
+                console.error('ATTENZIONE: cancellazione account di prova fallita:', e.message);
             }
-            await mongoose.connection.collection('notifications').deleteMany({
-                userId: new mongoose.Types.ObjectId(demoId),
-                createdAt: { $gte: inizioProva }
-            });
+            await mongoose.connection.collection('notifications').deleteMany({ userId: oid });
+            await mongoose.connection.collection('activehikesessions').deleteMany({ userId: oid });
         }
 
         const fine = {
@@ -224,14 +232,12 @@ async function chiama(metodo, percorso, corpo, cookie) {
             notifiche: await mongoose.connection.collection('notifications').countDocuments()
         };
         console.log('\nConteggi finali:', fine);
-        ok('nessun utente creato o perso', fine.utenti === partenza.utenti, `${partenza.utenti} -> ${fine.utenti}`);
+        ok('nessun utente di prova rimasto', fine.utenti === partenza.utenti, `${partenza.utenti} -> ${fine.utenti}`);
         ok('nessuna notifica di prova rimasta', fine.notifiche === partenza.notifiche, `${partenza.notifiche} -> ${fine.notifiche}`);
 
-        if (demoId) {
-            const demoFinale = await User.findById(demoId);
-            const contattiTornatiUguali = JSON.stringify((demoFinale.emergencyContacts || []).map(c => c.toObject()))
-                === JSON.stringify(contattiOriginali || []);
-            ok('i contatti demo sono tornati esattamente come prima', contattiTornatiUguali);
+        if (utenteId) {
+            const rimasto = await User.findById(utenteId);
+            ok('l\'account di prova e\' stato cancellato', !rimasto);
         }
 
         await mongoose.disconnect();

@@ -5,6 +5,8 @@ const ActiveHikeSession = require('../models/ActiveHikeSession');
 const Notification = require('../models/Notification');
 const { requireAuth } = require('../middleware/auth');
 const { inviaEmail, emailAllarmeDeadMan } = require('../lib/mailer');
+// A-NUOVO-1 (ri-review sicurezza, 2° giro): tetto agli armamenti del timer per IP.
+const { scritturaLimiter } = require('../middleware/rateLimit');
 
 // Punto 37 (Dead Man's Switch, seconda meta'): il conto alla rovescia vive anche sul server,
 // cosi' l'allarme puo' scattare per davvero anche a pagina chiusa. public/js/safety.js tiene
@@ -14,33 +16,36 @@ const { inviaEmail, emailAllarmeDeadMan } = require('../lib/mailer');
 // sotto, pensata per essere chiamata da un trigger esterno: questo progetto non ha nessuno
 // scheduler, vedi il commento gia' in routes/notifications.js).
 
-// Attiva il timer: SOLO il proprietario, richiede un contatto scelto CON un'email salvata
-// (il canale dell'allarme). Il client filtra gia' i contatti senza email dal menu (vedi
-// popolaContattiEmergenza in safety.js), questo e' il controllo vero - il client si puo'
-// sempre aggirare.
-router.post('/activate', requireAuth, async (req, res) => {
+// Attiva il timer: SOLO il proprietario. A-3.2 (revisione sicurezza 21a): alla scadenza
+// l'allarme va a TUTTI i contatti di emergenza che hanno un'email (il canale dell'allarme),
+// non a uno scelto - quindi qui basta che ce ne sia almeno uno raggiungibile. Il client
+// disabilita gia' il tasto quando non ce n'e' nessuno (renderContattiEmergenza in
+// safety.js), questo e' il controllo vero - il client si puo' sempre aggirare.
+router.post('/activate', requireAuth, scritturaLimiter, async (req, res) => {
     try {
         const scadenza = new Date(req.body.expiresAt);
         if (!req.body.expiresAt || isNaN(scadenza.getTime()) || scadenza.getTime() <= Date.now()) {
             return res.status(400).json({ error: 'Scadenza non valida' });
         }
-        const indice = Number(req.body.contactIndex);
-        if (!Number.isInteger(indice) || indice < 0) {
-            return res.status(400).json({ error: 'Contatto non valido' });
-        }
 
         const user = await User.findById(req.session.userId);
         if (!user) return res.status(404).json({ error: 'Utente non trovato' });
 
-        const contatto = user.emergencyContacts[indice];
-        if (!contatto || !contatto.email) {
-            return res.status(400).json({ error: 'Scegli un contatto di emergenza che abbia un\'email salvata' });
+        // A-NUOVO-1: gli account demo entrano senza password e sono condivisi da chiunque -
+        // il Dead Man's Switch su un account cosi' non ha senso funzionale, ed e' il primo
+        // anello della catena "armo il timer con N contatti finti e uso l'invio come relay".
+        if (user.isDemoAccount) {
+            return res.status(403).json({ error: 'Il timer di sicurezza non è disponibile sugli account demo' });
+        }
+
+        const raggiungibili = (user.emergencyContacts || []).filter(c => c && c.email);
+        if (!raggiungibili.length) {
+            return res.status(400).json({ error: "Aggiungi un contatto di emergenza con un'email prima di attivare il timer" });
         }
 
         await User.findByIdAndUpdate(req.session.userId, {
             deadManActive: true,
-            deadManExpiresAt: scadenza,
-            deadManContactIndex: indice
+            deadManExpiresAt: scadenza
         });
         res.json({ ok: true });
     } catch (e) {
@@ -55,7 +60,7 @@ router.post('/activate', requireAuth, async (req, res) => {
 router.post('/deactivate', requireAuth, async (req, res) => {
     try {
         await User.findByIdAndUpdate(req.session.userId, {
-            $unset: { deadManActive: 1, deadManExpiresAt: 1, deadManContactIndex: 1 }
+            $unset: { deadManActive: 1, deadManExpiresAt: 1 }
         });
         res.json({ ok: true });
     } catch (e) {
@@ -88,35 +93,56 @@ async function ultimaPosizioneNota(userId) {
 // disattiva. Disattiva SEMPRE, anche se l'invio fallisce: altrimenti lo stesso allarme
 // ripartirebbe a ogni giro del cron finche' qualcuno non controlla a mano.
 async function gestisciScadenza(user) {
-    const contatto = user.emergencyContacts[user.deadManContactIndex];
     const oraAttesa = user.deadManExpiresAt.toLocaleString('it-IT', {
         day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome'
     });
 
+    // A-3.2: l'allarme va a TUTTI i contatti di emergenza che hanno un'email, non a uno
+    // scelto. L'array puo' essere cambiato fra l'attivazione e la scadenza (altra scheda,
+    // contatto rimosso): si rilegge qui e basta.
+    const raggiungibili = (user.emergencyContacts || []).filter(c => c && c.email);
+
     let esito;
-    if (!contatto || !contatto.email) {
-        // Non dovrebbe succedere (il client non permette di attivare senza), ma l'array dei
-        // contatti puo' cambiare fra l'attivazione e la scadenza (es. altra scheda aperta).
-        esito = "Il timer di sicurezza è scaduto, ma il contatto scelto non ha (più) un'email salvata: nessun avviso è partito. Aggiorna i tuoi contatti di emergenza.";
-        console.error(`Dead Man's Switch scaduto per ${user.username} ma il contatto (indice ${user.deadManContactIndex}) non ha email.`);
+    if (!raggiungibili.length) {
+        esito = "Il timer di sicurezza è scaduto, ma non hai (più) nessun contatto di emergenza con un'email: nessun avviso è partito. Aggiungi un contatto e ricontrolla i tuoi dati.";
+        console.error(`Dead Man's Switch scaduto per ${user.username} ma nessun contatto ha un'email.`);
     } else {
         const posizioneTesto = await ultimaPosizioneNota(user._id);
         const nomeEscursionista = `${user.nome || ''} ${user.cognome || ''}`.trim() || user.username;
-        const { oggetto, testo, html } = emailAllarmeDeadMan({
-            nomeContatto: contatto.name,
-            nomeEscursionista,
-            oraAttesa,
-            posizioneTesto
-        });
-        const inviata = await inviaEmail({ a: contatto.email, oggetto, testo, html });
-        esito = inviata
-            ? `Il timer di sicurezza è scaduto: è partito un avviso via email a ${contatto.name} (${contatto.email}).`
-            : `Il timer di sicurezza è scaduto, ma l'invio dell'email a ${contatto.name} è fallito. Avvisalo/a direttamente se non l'hai già fatto.`;
+
+        const inviati = [];
+        const falliti = [];
+        for (const contatto of raggiungibili) {
+            // A-3.2: ogni destinatario sa chi sono gli ALTRI contatti avvisati, cosi' puo'
+            // coordinarsi (se uno non risponde o non riesce a chiamare il 112, si muove un altro).
+            const altriContatti = raggiungibili.filter(c => c !== contatto).map(c => c.name);
+            const { oggetto, testo, html } = emailAllarmeDeadMan({
+                nomeContatto: contatto.name,
+                nomeEscursionista,
+                oraAttesa,
+                posizioneTesto,
+                altriContatti
+            });
+            const ok = await inviaEmail({ a: contatto.email, oggetto, testo, html });
+            (ok ? inviati : falliti).push(contatto.name);
+        }
+
+        // BASSO (ri-review sicurezza, 2° giro): la Notification resta per sempre e finisce
+        // nell'export - non ci si mettono i nomi dei contatti quando e' andato tutto bene
+        // (dato di terzi che sopravvive alla rimozione del contatto). I nomi restano solo
+        // nel caso di FALLIMENTO, dove servono all'utente per sapere chi avvisare a mano.
+        if (inviati.length && !falliti.length) {
+            esito = `Il timer di sicurezza è scaduto: è partito un avviso via email ai tuoi contatti di emergenza (${inviati.length}).`;
+        } else if (inviati.length) {
+            esito = `Il timer di sicurezza è scaduto: avviso partito a ${inviati.length} contatti, ma l'invio a ${falliti.join(', ')} è fallito. Avvisali/e direttamente se non l'hai già fatto.`;
+        } else {
+            esito = `Il timer di sicurezza è scaduto, ma l'invio dell'email a ${falliti.join(', ')} è fallito. Avvisali/e direttamente se non l'hai già fatto.`;
+        }
     }
 
     await Notification.create({ userId: user._id, text: esito });
     await User.findByIdAndUpdate(user._id, {
-        $unset: { deadManActive: 1, deadManExpiresAt: 1, deadManContactIndex: 1 }
+        $unset: { deadManActive: 1, deadManExpiresAt: 1 }
     });
 }
 

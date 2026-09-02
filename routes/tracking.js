@@ -8,6 +8,9 @@ const User = require('../models/User'); // punto 42b: recognizedAscents
 const Like = require('../models/Like'); // punto 113: "mi piace" su un'uscita pubblicata
 const Notification = require('../models/Notification'); // punto 113: notifica all'autore per il "mi piace"
 const { requireAuth } = require('../middleware/auth');
+// A-3.1 (ri-review sicurezza, 2° giro): dopo la revoca del consenso GPS il server smette di
+// raccogliere posizioni - applicato a /start, /:id/points, /:id/resume qui sotto.
+const richiedeConsensoGeo = require('../middleware/consensoGeo');
 const { isFiniteNum, haversineKm, simplifyTrack } = require('../lib/geometry');
 const { regionForPoint } = require('../lib/regions');
 const { parseGpx, statisticheTraccia, ErroreGpx, SOGLIA_DISLIVELLO_M, movimentoSecAttendibile } = require('../lib/gpx');
@@ -908,7 +911,7 @@ router.post('/import-gpx', requireAuth, async (req, res) => {
     }
 });
 
-router.post('/start', requireAuth, async (req, res) => {
+router.post('/start', requireAuth, richiedeConsensoGeo, async (req, res) => {
     try {
         const existing = await ActiveHikeSession.findOne({ userId: req.session.userId, openSession: true });
         if (existing) {
@@ -938,7 +941,7 @@ router.post('/start', requireAuth, async (req, res) => {
 // Aggiunge un GRUPPO di punti (mai un punto alla volta: troppo dispendioso in montagna
 // con poco campo). L'identita' di chi possiede la sessione e' sempre quella della sessione
 // di login, mai un valore mandato dal client, stesso criterio gia' usato in tutto il resto dell'app.
-router.post('/:id/points', requireAuth, async (req, res) => {
+router.post('/:id/points', requireAuth, richiedeConsensoGeo, async (req, res) => {
     try {
         // Solo i campi che servono davvero: non serve leggere l'intera traccia
         // (potenzialmente lunga ore) solo per aggiungere un piccolo gruppo di punti nuovi.
@@ -1064,7 +1067,7 @@ router.post('/:id/pause', requireAuth, async (req, res) => {
     }
 });
 
-router.post('/:id/resume', requireAuth, async (req, res) => {
+router.post('/:id/resume', requireAuth, richiedeConsensoGeo, async (req, res) => {
     try {
         const session = await ActiveHikeSession.findById(req.params.id);
         if (!session || String(session.userId) !== req.session.userId) {

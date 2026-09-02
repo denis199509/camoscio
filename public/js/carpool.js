@@ -204,8 +204,7 @@ async function renderAddressPrivacyMatch(hike) {
     const db = window.CamoscioState;
     const currentUser = db.currentUser;
 
-    // Vediamo se l'utente corrente ha inserito una città/zona di partenza
-    // In questo mock memorizziamo la partenza in un oggetto globale o nel profilo utente nel DB
+    // La PROPRIA zona resta disponibile: currentUser viene da /api/auth/me, non filtrato.
     const myHomeCity = currentUser.homeCity || localStorage.getItem(`home_city_${currentUser.id}`) || "";
     document.getElementById("user-home-city").value = myHomeCity;
 
@@ -219,35 +218,25 @@ async function renderAddressPrivacyMatch(hike) {
         return;
     }
 
-    // Otteniamo gli indirizzi degli altri partecipanti dell'escursione corrente
-    const matches = [];
-    
-    hike.participants.forEach(pId => {
-        if (pId === currentUser.id) return; // Escludo me stesso
-
-        const user = db.users.find(u => u.id === pId);
-        if (!user) return;
-
-        // Solo user.homeCity (dal server). Il ripiego su localStorage
-        // `home_city_<altroId>` era residuo del mock originale - non ha mai un valore
-        // (quella chiave la scrive solo il proprio profilo, per il proprio id) e leggere
-        // "la citta' di un altro" dal localStorage locale confonde la lettura della privacy.
-        const otherHomeCity = user.homeCity || "";
-
-        // Verifica se c'è corrispondenza di stringa (es. "Milano Loreto" e "Milano Lambrate" contengono entrambe "Milano")
-        const isMatch = checkCityMatch(myHomeCity, otherHomeCity);
-        if (isMatch && otherHomeCity) {
-            matches.push({ user, city: otherHomeCity });
+    // C-1 + A-NUOVO-2 (ri-review sicurezza): il confronto lo fa il SERVER e risponde SOLO col
+    // CONTEGGIO. Le zone e i nomi degli altri non escono (coi nomi la rotta era un oracolo
+    // sulla zona di casa). Per sapere CHI: la lista partecipanti e "Offri un Passaggio".
+    let quanti = 0;
+    try {
+        const res = await fetch(`/api/hikes/${hike.id}/home-match`);
+        if (res.ok) {
+            const dati = await res.json();
+            quanti = Number(dati.quanti) || 0;
         }
-    });
+    } catch (e) {
+        console.error("Match zona di partenza non riuscito:", e);
+    }
 
-    if (matches.length > 0) {
+    if (quanti > 0) {
         statusBox.className = "privacy-status matching";
-        
-        const matchedNames = matches.map(m => `<b>${escapeHtml(m.user.username.split(" ")[0])}</b> (${escapeHtml(m.city)})`).join(", ");
         statusBox.innerHTML = `
             <i data-lucide="check-circle" style="color:var(--accent-green)"></i>
-            <span>${T('carpool.js.matchTrovato', matchedNames) || `<strong>CORRISPONDENZA PARTENZA TROVATA!</strong> Anche tu e ${matchedNames} partiti dalla stessa zona. Potete viaggiare insieme!`}</span>
+            <span>${T('carpool.js.matchTrovato', quanti) || `<strong>CORRISPONDENZA PARTENZA TROVATA!</strong> ${quanti} ${quanti === 1 ? 'altro partecipante parte' : 'altri partecipanti partono'} dalla tua stessa zona. Guarda la lista partecipanti o usa "Offri un Passaggio" per organizzarvi.`}</span>
         `;
     } else {
         statusBox.className = "privacy-status isolated";
@@ -258,29 +247,6 @@ async function renderAddressPrivacyMatch(hike) {
     }
 
     if (window.lucide) window.lucide.createIcons();
-}
-
-// Funzione helper per verificare se due indirizzi corrispondono (es. stessa città)
-function checkCityMatch(city1, city2) {
-    const clean1 = city1.toLowerCase().trim();
-    const clean2 = city2.toLowerCase().trim();
-    
-    if (clean1 === clean2) return true;
-    
-    // Controlla se una parola principale (es. Milano, Bergamo, Roma) è contenuta in entrambe
-    const words1 = clean1.split(/\s+/);
-    const words2 = clean2.split(/\s+/);
-    
-    // Vediamo se ci sono parole comuni lunghe più di 3 lettere (escludendo via, viale, etc.)
-    const exclude = ["via", "viale", "piazza", "corso", "alto", "basso", "nord", "sud"];
-    for (let w1 of words1) {
-        if (w1.length > 3 && !exclude.includes(w1)) {
-            if (words2.some(w2 => w2.includes(w1) || w1.includes(w2))) {
-                return true;
-            }
-        }
-    }
-    return false;
 }
 
 // Salva la città di partenza dell'utente e sincronizza il server

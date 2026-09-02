@@ -289,6 +289,7 @@
             'common.e': ' and ',
             'common.elimina': 'Delete',
             'common.cancella': 'Cancel',
+            'common.rimuovi': 'Remove',
             'common.erroreServer': 'Could not reach the server.',
             'common.copia': 'Copy',
 
@@ -360,6 +361,8 @@
             'hikeModal.diffIntermedio': 'Intermediate (Up to 1000m gain, steep sections)',
             'hikeModal.diffEsperto': 'Expert (Over 1000m gain, technical/exposed terrain)',
             'hikeModal.dataLabel': 'Hike Date:',
+            'hikeModal.multiDayCheck': 'Multi-day hike (hut/tent)',
+            'hikeModal.multiDayHint': 'Enables the "shareable backpack" for participants: tent for several people, weight split.',
             'hikeModal.routeSourceLabel': 'Max altitude, elevation gain and distance:',
             'hikeModal.routeManuale': "I'll enter them myself",
             'hikeModal.routeDraft': 'Calculate from an existing project',
@@ -606,9 +609,25 @@
             'settings.altreTitolo': 'Other settings',
             'settings.altreDesc': 'Coming soon. Not active yet.',
             'settings.phNotifiche': 'Notification settings',
-            'settings.phPrivacy': 'Privacy',
             'settings.phEmail': 'Change email',
             'settings.phElimina': 'Delete account',
+            // A-3.1: revoca del consenso alla geolocalizzazione (#settings, "Privacy e posizione")
+            'settings.privacyTitolo': 'Privacy & location',
+            'settings.revocaGeo': 'Withdraw location consent',
+            'settings.geoConsentNota': "If you withdraw it, the site will ask for your consent again next time a feature uses your location. To stop the browser from sharing it at all, also revoke the site's permission in your browser settings. GPS tracks already recorded are kept: you can delete them one by one from «My hikes».",
+            'settings.geoConsentDemo': "Location consent doesn't apply to demo accounts.",
+            'settings.geoConsentDato': "You've consented to the use of your location.",
+            'settings.geoConsentNon': "You haven't given (or you've withdrawn) consent to use your location: you'll be asked when it's needed.",
+            'settings.geoRevocaTracciamento': 'A GPS recording is in progress: stop it before withdrawing consent.',
+            'settings.geoRevocaConferma': 'Withdraw consent to use your location? Features that need it (route recording, «where am I», nearby hikes) will ask again.',
+            'settings.geoRevocaFatto': "Consent withdrawn. Remember to also remove the site's permission from your browser settings if you want to block it entirely.",
+            'settings.geoRevocaErrore': "I couldn't withdraw consent. Try again.",
+            // A-3.3: export dei propri dati
+            'settings.esportaDati': 'Download my data',
+            'settings.esportaDesc': 'Download a single JSON file with all the data the site keeps about your account.',
+            'settings.esportaInCorso': 'Preparing the file…',
+            'settings.esportaFatto': 'Export downloaded.',
+            'settings.esportaErrore': "I couldn't prepare the export. Try again.",
             'myProfile.rimuoviFoto': 'Remove photo',
             'myProfile.bioLabel': 'Bio (max 250 characters):',
             'myProfile.bioPlaceholder': 'Tell us something about yourself...',
@@ -715,6 +734,7 @@
             'safety.mesh.inputPlaceholder': 'Write a message or SOS...',
             'safety.mesh.invia': 'Send',
             'safety.mesh.sosText': 'SOS! IMMEDIATE ASSISTANCE NEEDED / ACCIDENT ON THE TRAIL!',
+            'safety.mesh.posNonDisp': 'position not available',
 
             // --- Tasto SOS 112 (barra laterale Mappa, safety.js -> chiamaSos) ---
             'safety.sos.btnTitle': 'Call the 112 emergency number',
@@ -734,8 +754,8 @@
 
             // --- Form Dead Man's Switch (barra laterale Mappa): testo statico HTML ---
             'safety.dms.titolo': 'Safety Timer (Dead Man\'s Switch)',
-            'safety.dms.desc': 'Set the time you expect to be back. If you don\'t check in by then, an alert goes out to your emergency contact.',
-            'safety.dms.chiAvvisare': 'Who to alert:',
+            'safety.dms.desc': "Set the time you expect to be back. If you don't check in by then, an email alert goes out to all your emergency contacts.",
+            'safety.dms.contattiTitolo': 'Emergency contacts (all alerted at expiry):',
             'safety.dms.nome': 'Name',
             'safety.dms.nomePlaceholder': 'E.g. Anna',
             'safety.dms.chiE': 'Relationship',
@@ -749,15 +769,19 @@
             'safety.dms.oppureCheOra': 'Or at what time:',
             'safety.dms.attiva': 'Start the timer',
             'safety.dms.disattiva': 'I\'m safe (turn off)',
-            'safety.dms.notaOnesta': 'The alert really works, even with the phone off or the page closed: if the timer runs out, within a few minutes a real email goes to the chosen contact. It\'s still not your only safety net: always tell someone where you\'re going.',
+            'safety.dms.notaOnesta': "The alert really works, even with the phone off or the page closed: if the timer runs out, within a few minutes a real email goes to all your emergency contacts. It's still not your only safety net: always tell someone where you're going.",
 
             // --- Form Dead Man's Switch: testo generato da JS (safety.js) ---
-            'safety.dms.hintContatto': function (nome, email) { return 'When the timer runs out, the alert would go to ' + nome + '’s email (' + email + ').'; },
-            'safety.dms.nessunContattoSalvato': 'No saved contact',
-            'safety.dms.nessunContattoEmail': 'No contact with an email',
+            // A-3.2: niente piu' "contatto scelto" - l'allarme va a tutti quelli con un'email.
+            'safety.dms.senzaEmail': 'no email',
+            'safety.dms.avvisaTuttiPrefix': 'At expiry the alert goes by email to all your contacts:',
+            'safety.dms.confermaRimuovi': function (nome) { return 'Remove ' + nome + ' from your emergency contacts?'; },
+            'safety.dms.contattoRimosso': 'Contact removed.',
+            'safety.dms.rimossoUltimoConEmail': 'You removed the last contact with an email while the timer is active: no alert will go out at expiry.',
+            'safety.dms.erroreRimozione': "I couldn't remove the contact. Try again.",
             'safety.dms.avvisoNessunContatto': 'You have no emergency contact: without one, the timer would have nobody to alert. Add one below.',
-            'safety.dms.avvisoNessunaEmail': 'Your saved contacts have no email, which is needed to send the real alert: add a new one below.',
-            'safety.dms.scegliContatto': 'Choose who to alert before starting the timer.',
+            'safety.dms.avvisoNessunaEmail': 'None of your contacts has an email, which is needed to send the alert: add one below.',
+            'safety.dms.serveContattoEmail': 'Add an emergency contact with an email before starting the timer.',
             'safety.dms.campiObbligatori': 'All three fields are needed: name, relationship and email.',
             'safety.dms.emailNonValida': 'That email doesn\'t look valid.',
             'safety.dms.contattoSalvato': 'Emergency contact saved.',
@@ -1000,8 +1024,8 @@
             // --- Abbinamenti & privacy partenze (HTML statico) ---
             'carpool.match.titolo': 'Smart Matching & Departure Privacy',
             'carpool.match.desc': 'Share your home departure area. The algorithm shows matches only if 2 or more people are from the same area, to protect privacy.',
-            'carpool.match.homeLabel': 'Your home address / departure area:',
-            'carpool.match.homePlaceholder': 'E.g. Milan Loreto, Bergamo Alta...',
+            'carpool.match.homeLabel': "Town / departure area (not your exact address):",
+            'carpool.match.homePlaceholder': "E.g. Roma Nord, L'Aquila, Rieti...",
             'carpool.match.salvaZonaBtn': 'Save Area',
             'carpool.match.dispTitolo': 'Available cars and rides:',
 
@@ -1015,7 +1039,7 @@
             'carpool.js.confermaCancella': 'Delete this listing?',
             'carpool.js.annuncioCancellato': 'Listing deleted.',
             'carpool.js.nessunaZona': 'No departure area entered. Enter your area to find nearby companions.',
-            'carpool.js.matchTrovato': function (nomi) { return '<strong>DEPARTURE MATCH FOUND!</strong> You and ' + nomi + ' are also leaving from the same area. You can travel together!'; },
+            'carpool.js.matchTrovato': function (quanti) { return '<strong>DEPARTURE MATCH FOUND!</strong> ' + quanti + (quanti === 1 ? ' other participant leaves' : ' other participants leave') + ' from your same area. Check the participant list or use "Offer a Ride" to sort it out.'; },
             'carpool.js.posizioneProtetta': function (citta) { return '<strong>Position protected:</strong> You\'re leaving from <i>"' + citta + '"</i>. Right now no other participant leaves from your area. Your departure will stay hidden for privacy.'; },
             'carpool.js.nessunaAuto': 'No car registered for this hike yet. Be the first to offer a ride!',
             'carpool.js.passeggeroFallback': 'Passenger',
@@ -1032,7 +1056,7 @@
             // ================== ZAINO INTELLIGENTE (#backpack) =================
             // --- Generatore checklist (HTML statico) ---
             'backpack.gen.titolo': 'Smart Checklist Generator',
-            'backpack.gen.desc': "Enter the hike's environmental data to get a recommended checklist and split the weight with the group.",
+            'backpack.gen.desc': "Enter the environmental data to get a recommended checklist. Your list is private: other participants don't see it.",
             // V2 UX PASSO 14c: ritirate backpack.gen.perQualeLabel / perAuto / grpOrganizzate /
             // grpPartecipo / perPersonale - non c'e' piu' il selettore "prepara lo zaino per"
             // ne' lo "zaino personale" (Q6): il tab e' gia' di una singola escursione.
@@ -1041,9 +1065,9 @@
             'backpack.gen.stagioneInverno': 'Winter (Deep cold, ice, snow)',
             'backpack.gen.stagioneMezza': 'Shoulder Season (Wind, rain, layering)',
             'backpack.gen.quotaLabel': 'Max Altitude (meters):',
-            'backpack.gen.durataLabel': 'Hike Duration:',
-            'backpack.gen.durataGiornata': 'Single Day',
-            'backpack.gen.durataPluri': 'Multi-Day (Hut/Tent)',
+            // Blocco zaino/carpooling per-partecipanti: ritirate backpack.gen.durataLabel /
+            // durataGiornata / durataPluri - non c'e' piu' il <select> "durata escursione",
+            // la durata la dice l'escursione del tab (hike.multiDay).
             'backpack.gen.pioggiaCheck': 'Rain / Bad Weather Forecast',
             'backpack.gen.generaBtn': 'Generate Dynamic Checklist',
 
@@ -1140,6 +1164,8 @@
             'backpack.js.quotaMassimaLabel': 'max altitude',
             'backpack.js.organizzataDaTe': 'organized by you',
             'backpack.js.aCuiPartecipi': "you're joining",
+            'backpack.js.piuGiorni': 'multi-day',
+            'backpack.js.listaPrivata': "Your list is private: other participants don't see what you carry.",
 
             // --- backpack.js: nota previsione pioggia (mostraNotaPioggia) ---
             'backpack.js.meteoTroppoLontano': "Forecast not available yet: it's more than two weeks away. Check the backpack again in the days before you leave.",

@@ -15,8 +15,13 @@ const requiredUnlessDemo = function () {
     return !this.isDemoAccount;
 };
 
+// A-NUOVO-1 (ri-review sicurezza, 2° giro): maxlength su ogni campo. L'array e' sostituito
+// per intero via PUT /api/users/:id, e senza tetto un `name` enorme (o pieno di HTML) finisce
+// nell'email dell'allarme DMS. Il tetto al NUMERO di contatti e il vero controllo di
+// lunghezza stanno nella rotta (routes/users.js) - Mongoose non valida in modo affidabile i
+// sotto-documenti degli array su findByIdAndUpdate; questo qui protegge Hike.create/save.
 const emergencyContactSchema = new mongoose.Schema({
-    name: { type: String, required: true },
+    name: { type: String, required: true, maxlength: 80 },
     // Non piu' chiesto dai form dal 16/08/2026 (richiesta di Denis: "il numero del telefono
     // al momento non serve quindi cancelliamo quella voce. basta il nome, relazione e la
     // mail"). Due scelte separate, entrambe volute:
@@ -31,17 +36,18 @@ const emergencyContactSchema = new mongoose.Schema({
     //    chiesto. Chi ce l'ha se lo tiene (lo mostra ancora triggerEmergencyAlarm in
     //    public/js/safety.js), chi non ce l'ha non scrive niente: nessun default, come da
     //    vincolo spazio.
-    phone: { type: String },
-    relationship: { type: String, required: true },
+    phone: { type: String, maxlength: 30 },
+    relationship: { type: String, required: true, maxlength: 60 },
     // Punto 37: canale scelto per l'allarme vero del Dead Man's Switch. NON required a
     // livello di schema apposta - i contatti reali gia' salvati (Denis compreso) non ne
     // hanno uno, e questo campo vive dentro un array sostituito per intero a ogni salvataggio
     // (vedi salvaNuovoContatto in public/js/safety.js): required:true qui bloccherebbe anche
     // l'aggiunta di un contatto NUOVO finche' quelli vecchi non vengono sistemati, e non
     // esiste (ancora) una schermata per modificarli. Obbligatoria invece nei form (wizard di
-    // registrazione e "Aggiungi un contatto"), e i contatti senza email restano selezionabili
-    // ma non usabili per attivare il timer (vedi popolaContattiEmergenza in safety.js).
-    email: { type: String, lowercase: true, trim: true }
+    // registrazione e "Aggiungi un contatto"). A-3.2: alla scadenza l'allarme va a TUTTI i
+    // contatti che hanno un'email; quelli senza restano in lista ma non contano (vedi
+    // renderContattiEmergenza in safety.js).
+    email: { type: String, lowercase: true, trim: true, maxlength: 120 }
 }, { _id: false });
 
 // Punto 42b: _id:false come sopra - un ObjectId per voce non aggiungerebbe niente, sono
@@ -53,7 +59,11 @@ const recognizedAscentSchema = new mongoose.Schema({
 }, { _id: false });
 
 const userSchema = new mongoose.Schema({
-    username: { type: String, required: true, unique: true, trim: true },
+    // maxlength: R-2 della ri-review sicurezza (3° giro). username/nome/cognome finiscono nel
+    // "Ciao <nome>," delle email (lib/mailer.js) e, senza tetto, in un documento che si puo'
+    // gonfiare a piacere via POST /api/auth/register. Qui Mongoose li applica davvero
+    // (User.create), il controllo con messaggio in chiaro sta anche nella rotta.
+    username: { type: String, required: true, unique: true, trim: true, maxlength: 40 },
     reputation: { type: Number, default: 50 },
     completedHikes: { type: Number, default: 0 },
     // IL CAMPO ASSENTE VUOL DIRE "MAI MISURATO", e non e' la stessa cosa di "350".
@@ -90,7 +100,11 @@ const userSchema = new mongoose.Schema({
     // mancava dallo schema (bug trovato in Fase H) - veniva scartato silenziosamente ad ogni
     // salvataggio, cosi' il matching per citta' funzionava solo per coincidenza tra account
     // diversi sullo stesso browser (via il fallback localStorage), mai tra utenti veri.
-    homeCity: { type: String, default: '' },
+    // C-1 (revisione sicurezza 21a): "comune / zona di partenza" per il match carpooling.
+    // ALWAYS_PRIVATE_FIELDS (routes/users.js): esce solo al proprietario, il confronto con
+    // gli altri partecipanti lo fa il server (GET /api/hikes/:id/home-match). maxlength:
+    // stesso tappo anti-riempimento DB di driver.departureCity (A-2).
+    homeCity: { type: String, default: '', maxlength: 100 },
     localExpert: {
         type: new mongoose.Schema({
             area: String,
@@ -102,8 +116,9 @@ const userSchema = new mongoose.Schema({
     isDemoAccount: { type: Boolean, default: false },
 
     // --- 1. Dati base (obbligatori alla registrazione reale) ---
-    nome: { type: String, required: requiredUnlessDemo },
-    cognome: { type: String, required: requiredUnlessDemo },
+    // maxlength: R-2 della ri-review sicurezza (3° giro) - vedi il commento su `username`.
+    nome: { type: String, required: requiredUnlessDemo, maxlength: 60 },
+    cognome: { type: String, required: requiredUnlessDemo, maxlength: 60 },
     email: { type: String, unique: true, sparse: true, lowercase: true, trim: true },
     // L'indirizzo e' stato DIMOSTRATO, cliccando il link di conferma mandato in
     // registrazione. In Fase C si era deciso "email solo salvata, nessuna verifica": quella
@@ -182,11 +197,13 @@ const userSchema = new mongoose.Schema({
     // Questi tre campi rispecchiano lo stesso stato gia' tenuto li' - duplicato qui perche'
     // solo il server puo' controllarlo a pagina chiusa (routes/safety.js, chiamata da un
     // trigger esterno: questo progetto non ha nessuno scheduler, vedi 04-Da-Fare.md del vault).
-    // default: undefined su tutti e tre (vincolo spazio, come recognizedAscents sopra): quasi
+    // default: undefined su entrambi (vincolo spazio, come recognizedAscents sopra): quasi
     // nessun utente ha il timer attivo nello stesso istante in cui il documento viene letto.
+    // A-3.2 (revisione sicurezza 21a): via deadManContactIndex - alla scadenza l'allarme va
+    // a TUTTI i contatti di emergenza che hanno un'email, non a uno scelto. Cosi' cancellare
+    // un contatto non sposta piu' nessun puntatore posizionale (fragilita' chiusa).
     deadManActive: { type: Boolean, default: undefined },
     deadManExpiresAt: { type: Date, default: undefined },
-    deadManContactIndex: { type: Number, default: undefined },
 
     // --- 12. Moderazione segnalazioni sentiero (punto 45) ---
     // Ruolo DI SITO, non scoped a una singola squadra come Squad.admins (punto 48, vedi
@@ -210,4 +227,27 @@ const userSchema = new mongoose.Schema({
 const User = mongoose.models.User || mongoose.model('User', userSchema);
 User.INTERESSI = INTERESSI;
 User.REGIONI = REGIONI;
+
+// A-NUOVO-1 (2° giro) + R-3 (3° giro): le stesse regole su emergencyContacts servono in due
+// rotte - PUT /api/users/:id (salva profilo) e POST /api/auth/register. Mongoose non valida
+// in modo affidabile ne' il NUMERO di elementi di un array ne' i sotto-documenti su
+// findByIdAndUpdate, quindi il controllo vero e' a mano; una funzione sola perche' due copie
+// (una per rotta) divergerebbero in silenzio - stessa lezione di usciteVisibili/uscitaVisibile.
+// Ritorna un messaggio d'errore pronto da mandare al client, o null se l'elenco va bene.
+User.MAX_CONTATTI_EMERGENZA = 5;
+User.validaContattiEmergenza = function (ec) {
+    if (!Array.isArray(ec) || ec.length > User.MAX_CONTATTI_EMERGENZA) {
+        return `Puoi salvare al massimo ${User.MAX_CONTATTI_EMERGENZA} contatti di emergenza`;
+    }
+    const troppoLungo = ec.some(c => !c || typeof c !== 'object'
+        || String(c.name || '').length > 80
+        || String(c.relationship || '').length > 60
+        || String(c.email || '').length > 120
+        || String(c.phone || '').length > 30);
+    if (troppoLungo) {
+        return 'Un contatto di emergenza ha un campo troppo lungo';
+    }
+    return null;
+};
+
 module.exports = User;

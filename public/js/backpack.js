@@ -293,8 +293,11 @@ async function generateChecklistFromHike(hike) {
     // rete), e la pioggia si aggiunge quando la previsione arriva: in montagna la connessione
     // e' quello che e', e una lista che non compare finche' non risponde un server esterno
     // sarebbe peggio di una lista senza la riga della mantella.
-    // Nessun campo "durata" esiste ancora sull'escursione: resta "giornata" (vedi models/Hike.js).
-    applyBackpackRules(stagione, hike.maxAltitude, "giornata", false, hike);
+    // Blocco zaino/carpooling per-partecipanti: la durata la dice l'escursione. hike.multiDay
+    // (deciso dal creatore, vedi models/Hike.js) sblocca gli articoli da plurigiorno (sacco a
+    // pelo, materassino, torcia frontale...).
+    const durata = hike.multiDay ? "plurigiorno" : "giornata";
+    applyBackpackRules(stagione, hike.maxAltitude, durata, false, hike);
     aggiornaFormDaEscursione(stagione, hike.maxAltitude, false);
 
     const pioggia = await pioggiaPrevista(hike);
@@ -302,7 +305,7 @@ async function generateChecklistFromHike(hike) {
         mostraNotaPioggia(null, hike);
         return;
     }
-    applyBackpackRules(stagione, hike.maxAltitude, "giornata", pioggia, hike);
+    applyBackpackRules(stagione, hike.maxAltitude, durata, pioggia, hike);
     aggiornaFormDaEscursione(stagione, hike.maxAltitude, pioggia);
     mostraNotaPioggia(pioggia, hike);
 }
@@ -322,8 +325,12 @@ function aggiornaFormDaEscursione(stagione, altitudine, pioggia) {
 function generateChecklistFromInputs() {
     const season = document.getElementById("backpack-season").value;
     const altitude = parseInt(document.getElementById("backpack-altitude").value);
-    const duration = document.getElementById("backpack-duration").value;
     const rainExpected = document.getElementById("backpack-rain-expected").checked;
+    // Blocco zaino/carpooling per-partecipanti: via il <select> "durata", la dice
+    // l'escursione del tab (hike.multiDay). Il generatore manuale resta solo per
+    // stagione / quota / pioggia.
+    const hike = escursioneDiRiferimento();
+    const duration = (hike && hike.multiDay) ? "plurigiorno" : "giornata";
 
     // Scelte fatte a mano: la nota sulla previsione va tolta, altrimenti resterebbe a
     // raccontare un meteo che non c'entra piu' con la lista appena generata.
@@ -527,7 +534,12 @@ function applyBackpackRules(season, altitude, duration, rainExpected, hike) {
     // classificato: i personali entrano nella lista di chiunque come tutti gli altri, i
     // condivisibili solo se c'e' davvero un gruppo con cui dividerli.
     const template = (hike && hike.backpackTemplate) || [];
-    const diGruppo = eDiGruppo(hike);
+    // Blocco zaino/carpooling per-partecipanti: lo "zaino condivisibile" (oggetti che uno
+    // porta per tutti, con "chi lo porta" e ripartizione pesi) esiste SOLO per le escursioni
+    // di piu' giorni. Su una gita in giornata gli articoli del template si mostrano come roba
+    // personale di ognuno - stesso ramo gia' usato quando si e' da soli - senza assegnazioni
+    // ne' ripartizione, e nessun avviso di copertura.
+    const diGruppo = !!(hike && hike.multiDay) && eDiGruppo(hike);
     const condivisi = [];
 
     template.forEach(tItem => {
@@ -714,10 +726,14 @@ function mostraEscursioneDiRiferimento(hike) {
     const mia = hike.creatorId === (db.currentUser || {}).id;
     // Data col nome del mese: locale en-GB (EN) / it-IT, come le altre date estese.
     const loc = (window.CamoscioI18n && window.CamoscioI18n.getLang() === 'en') ? 'en-GB' : 'it-IT';
+    // Blocco zaino/carpooling per-partecipanti: si segnala se e' un'uscita di piu' giorni
+    // (contesto per la sezione "Zaino condivisibile") e si ricorda che la checklist e' privata.
+    const notaPiuGiorni = hike.multiDay ? ` · ${T('backpack.js.piuGiorni') || 'più giorni'}` : '';
     box.className = "backpack-context-box";
     box.innerHTML = `<strong>${T('backpack.js.zainoPerLabel') || 'Zaino per:'} ${escapeHtml(hike.title)}</strong>
         <span class="small">${hike.date ? new Date(hike.date + 'T12:00:00').toLocaleDateString(loc, { day: 'numeric', month: 'long', year: 'numeric' }) : (T('backpack.js.dataNonIndicata') || 'data non indicata')}
-        · ${T('backpack.js.quotaMassimaLabel') || 'quota massima'} ${hike.maxAltitude || '?'} m · ${mia ? (T('backpack.js.organizzataDaTe') || 'organizzata da te') : (T('backpack.js.aCuiPartecipi') || 'a cui partecipi')}</span>`;
+        · ${T('backpack.js.quotaMassimaLabel') || 'quota massima'} ${hike.maxAltitude || '?'} m · ${mia ? (T('backpack.js.organizzataDaTe') || 'organizzata da te') : (T('backpack.js.aCuiPartecipi') || 'a cui partecipi')}${notaPiuGiorni}</span>
+        <span class="small text-muted">${T('backpack.js.listaPrivata') || 'La tua lista è privata: gli altri partecipanti non vedono cosa porti.'}</span>`;
 }
 
 // Nota sulla previsione di pioggia. Il caso "non lo so" va detto, non nascosto: e' la
@@ -793,11 +809,17 @@ function renderWeightDistribution(hike) {
     container.innerHTML = "";
     const db = window.CamoscioState;
 
-    if (!hike) {
-        container.innerHTML = `<p class="small text-muted">${T('backpack.js.wdNessunaGruppo') || "Nessuna escursione di gruppo in programma: non c'è nulla da ripartire."}</p>`;
+    // Blocco zaino/carpooling per-partecipanti: la sezione "Zaino condivisibile" (tenda per
+    // N, ripartizione pesi, "porto io una cosa per tutti") esiste SOLO per le escursioni di
+    // piu' giorni. Su una gita in giornata il tab Zaino e' solo la lista personale privata:
+    // tutta la card resta nascosta.
+    const sezione = document.getElementById("backpack-shared-section");
+    if (!hike || !hike.multiDay) {
+        if (sezione) sezione.classList.add("hidden");
         if (box) box.classList.add("hidden");
         return;
     }
+    if (sezione) sezione.classList.remove("hidden");
 
     const membri = gruppoDi(hike);
     if (!eDiGruppo(hike)) {

@@ -1186,17 +1186,16 @@
                                  dire tre stati da tenere allineati a mano. -->
                             <div class="glass-card dead-man-card">
                                 <h4><i data-lucide="heart-pulse"></i> <span data-i18n="safety.dms.titolo">Timer di Sicurezza (Dead Man's Switch)</span></h4>
-                                <p class="small text-muted" data-i18n="safety.dms.desc">Imposta l'orario in cui pensi di essere rientrato. Se non fai il check-in entro quell'ora, scatta l'allarme verso il tuo contatto di emergenza.</p>
+                                <p class="small text-muted" data-i18n="safety.dms.desc">Imposta l'orario in cui pensi di essere rientrato. Se non fai il check-in entro quell'ora, scatta l'allarme via email verso tutti i tuoi contatti di emergenza.</p>
 
-                                <!-- Punto 21 di cose_da_fare.txt: qui c'era una casella di testo
-                                     libera, con dentro un numero di esempio scritto a mano, e il
-                                     valore finiva in localStorage - cioe' valeva solo su quel
-                                     browser. I contatti di emergenza sono obbligatori in
-                                     registrazione e stanno gia' sul database (Fase C): si scelgono
-                                     da li'. Riempita da popolaContattiEmergenza() in safety.js. -->
+                                <!-- A-3.2 (revisione sicurezza 21a): niente piu' selettore "chi
+                                     avvisare" - alla scadenza l'allarme va a TUTTI i contatti con
+                                     un'email. Qui la lista dei contatti, ognuno con "Rimuovi"
+                                     (dati di terzi che non hanno acconsentito a nulla). Disegnata
+                                     da renderContattiEmergenza() in safety.js. -->
                                 <div class="form-group">
-                                    <label for="safety-contact" data-i18n="safety.dms.chiAvvisare">Chi avvisare:</label>
-                                    <select id="safety-contact"></select>
+                                    <label data-i18n="safety.dms.contattiTitolo">Contatti di emergenza (avvisati tutti alla scadenza):</label>
+                                    <div id="safety-contacts-list" class="safety-contacts-list"></div>
                                     <p class="small text-muted" id="safety-contact-hint"></p>
                                 </div>
 
@@ -1264,8 +1263,8 @@
                                     <i data-lucide="check-circle"></i>
                                     <span data-i18n="safety.dms.notaOnesta">L'allarme funziona davvero, anche a telefono spento o pagina
                                     chiusa: se il timer scade, entro pochi minuti parte un'email
-                                    vera al contatto scelto. Non è comunque l'unica sicurezza: dì
-                                    sempre a qualcuno dove vai.</span>
+                                    vera a tutti i tuoi contatti di emergenza. Non è comunque
+                                    l'unica sicurezza: dì sempre a qualcuno dove vai.</span>
                                 </p>
                             </div>
 
@@ -1789,14 +1788,30 @@
                         </div>
                     </div>
 
-                    <!-- Struttura pronta, nessuna feature nuova (deciso nel piano): queste
-                         righe sono inerti finche' non diventano punti a se'. -->
+                    <!-- A-3 (revisione sicurezza 21a): privacy e posizione. Revoca del consenso
+                         alla geolocalizzazione (GDPR: il consenso deve essere ritirabile con la
+                         stessa facilita' con cui e' stato dato). -->
+                    <div class="glass-card settings-card">
+                        <h4><i data-lucide="shield"></i> <span data-i18n="settings.privacyTitolo">Privacy e posizione</span></h4>
+                        <div class="settings-row">
+                            <span class="small text-muted" id="settings-geo-consent-state"></span>
+                            <button type="button" class="btn btn-sm btn-secondary hidden" id="btn-revoke-geo-consent" data-i18n="settings.revocaGeo">Revoca il consenso alla posizione</button>
+                        </div>
+                        <p class="small text-muted" data-i18n="settings.geoConsentNota">Revocando, il sito ti richiederà di nuovo il consenso la prossima volta che una funzione usa la posizione. Per impedire del tutto al browser di condividerla, revoca anche il permesso del sito dalle impostazioni del browser. Le tracce GPS già registrate restano: puoi cancellarle una per una da «Le mie escursioni».</p>
+
+                        <div class="settings-row">
+                            <span class="small text-muted" data-i18n="settings.esportaDesc">Scarica in un unico file JSON tutti i dati che il sito conserva sul tuo account.</span>
+                            <button type="button" class="btn btn-sm btn-secondary" id="btn-export-my-data" data-i18n="settings.esportaDati">Scarica i miei dati</button>
+                        </div>
+                    </div>
+
+                    <!-- Struttura pronta, nessuna feature nuova: queste righe sono inerti
+                         finche' non diventano punti a se' ("Elimina account" e' il prossimo). -->
                     <div class="glass-card settings-card settings-placeholder">
                         <h4><i data-lucide="sliders-horizontal"></i> <span data-i18n="settings.altreTitolo">Altre impostazioni</span></h4>
                         <p class="small text-muted" data-i18n="settings.altreDesc">In arrivo. Per ora non sono attive.</p>
                         <ul class="settings-placeholder-list">
                             <li data-i18n="settings.phNotifiche">Gestione notifiche</li>
-                            <li data-i18n="settings.phPrivacy">Privacy</li>
                             <li data-i18n="settings.phEmail">Cambio email</li>
                             <li data-i18n="settings.phElimina">Elimina account</li>
                         </ul>
@@ -1962,9 +1977,9 @@
                                     <div class="address-privacy-box">
                                         <form id="privacy-address-form">
                                             <div class="form-group">
-                                                <label for="user-home-city" data-i18n="carpool.match.homeLabel">Il tuo indirizzo / zona di partenza da casa:</label>
+                                                <label for="user-home-city" data-i18n="carpool.match.homeLabel">Comune / zona di partenza (non l'indirizzo esatto):</label>
                                                 <div class="input-with-btn">
-                                                    <input type="text" id="user-home-city" placeholder="Es. Milano Loreto, Bergamo Alta..." data-i18n-placeholder="carpool.match.homePlaceholder" required>
+                                                    <input type="text" id="user-home-city" maxlength="100" placeholder="Es. Roma Nord, L'Aquila, Rieti..." data-i18n-placeholder="carpool.match.homePlaceholder" required>
                                                     <button type="submit" class="btn btn-primary" data-i18n="carpool.match.salvaZonaBtn">Salva Zona</button>
                                                 </div>
                                             </div>
@@ -1990,7 +2005,7 @@
                         <div class="backpack-config">
                             <div class="glass-card config-backpack-card">
                                 <h4><i data-lucide="settings"></i> <span data-i18n="backpack.gen.titolo">Generatore Checklist Intelligente</span></h4>
-                                <p class="small text-muted" data-i18n="backpack.gen.desc">Inserisci i dati ambientali dell'escursione per ottenere una checklist consigliata e dividere i pesi con il gruppo.</p>
+                                <p class="small text-muted" data-i18n="backpack.gen.desc">Inserisci i dati ambientali per ottenere una checklist consigliata. La tua lista è privata: gli altri partecipanti non la vedono.</p>
 
                                 <!-- V2 UX PASSO 14c: niente piu' selettore "prepara lo zaino
                                      per" - lo Zaino e' un tab della singola escursione, il
@@ -2006,18 +2021,13 @@
                                             <option value="autunno-primavera" data-i18n="backpack.gen.stagioneMezza">Mezza Stagione (Vento, pioggia, strati termici)</option>
                                         </select>
                                     </div>
-                                    <div class="form-row">
-                                        <div class="form-group">
-                                            <label for="backpack-altitude" data-i18n="backpack.gen.quotaLabel">Quota Massima (metri):</label>
-                                            <input type="number" id="backpack-altitude" value="2600" min="0">
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="backpack-duration" data-i18n="backpack.gen.durataLabel">Durata Escursione:</label>
-                                            <select id="backpack-duration">
-                                                <option value="giornata" data-i18n="backpack.gen.durataGiornata">Giornata Singola</option>
-                                                <option value="plurigiorno" data-i18n="backpack.gen.durataPluri">Più Giorni (Rifugio/Tenda)</option>
-                                            </select>
-                                        </div>
+                                    <!-- Blocco zaino/carpooling per-partecipanti: via il <select>
+                                         "durata escursione" - la durata la dice l'escursione
+                                         (hike.multiDay), non l'utente. Il generatore manuale
+                                         resta per stagione / quota / pioggia. -->
+                                    <div class="form-group">
+                                        <label for="backpack-altitude" data-i18n="backpack.gen.quotaLabel">Quota Massima (metri):</label>
+                                        <input type="number" id="backpack-altitude" value="2600" min="0">
                                     </div>
                                     <div class="form-group">
                                         <label><input type="checkbox" id="backpack-rain-expected" checked> <span data-i18n="backpack.gen.pioggiaCheck">Previsione Pioggia / Maltempo</span></label>
@@ -2026,8 +2036,12 @@
                                 </form>
                             </div>
 
-                            <!-- Reputazione Pesi Condivisi -->
-                            <div class="glass-card weight-distribution-card">
+                            <!-- "Zaino condivisibile" - blocco zaino/carpooling per-partecipanti:
+                                 tutta questa card compare SOLO per le escursioni di più giorni
+                                 (hike.multiDay). Su una gita in giornata il tab Zaino è solo la
+                                 lista personale privata. Mostrata/nascosta da
+                                 renderWeightDistribution (backpack.js); parte nascosta. -->
+                            <div class="glass-card weight-distribution-card hidden" id="backpack-shared-section">
                                 <h4><i data-lucide="scale"></i> <span data-i18n="backpack.weight.titolo">Ripartizione dei Pesi del Gruppo</span></h4>
                                 <p class="small text-muted" data-i18n="backpack.weight.desc">Solo gli oggetti che si dividono: tenda, fornello, kit di primo soccorso. Le cose personali (giacca, acqua, cibo) le porta ognuno e non compaiono qui.</p>
                                 <div id="backpack-weight-distribution" class="weight-dist-list">
@@ -2217,6 +2231,14 @@
                         <label for="hike-date" data-i18n="hikeModal.dataLabel">Data Uscita:</label>
                         <input type="date" id="hike-date" required>
                     </div>
+                </div>
+                <!-- Blocco zaino/carpooling per-partecipanti: "più giorni" lo decide il
+                     CREATORE. Sblocca lo "zaino condivisibile" (tenda per N persone,
+                     ripartizione dei pesi) nel tab Zaino di hike-page, visibile ai soli
+                     partecipanti. Assente = escursione in giornata. -->
+                <div class="form-group">
+                    <label><input type="checkbox" id="hike-multi-day"> <span data-i18n="hikeModal.multiDayCheck">Escursione di più giorni (rifugio/tenda)</span></label>
+                    <p class="small text-muted" data-i18n="hikeModal.multiDayHint">Attiva lo "zaino condivisibile" per i partecipanti: tenda per più persone, ripartizione dei pesi.</p>
                 </div>
                 <!-- Punto 43: quota/dislivello/distanza restano scrivibili a mano (l'utente
                      l'ha chiesto esplicitamente), ma si puo' anche scegliere un progetto

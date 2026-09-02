@@ -46,6 +46,16 @@ async function renderHikePage(hikeId) {
         return;
     }
 
+    // A-1 (security review 21a): Chat / Carpooling / Zaino sono roba di gruppo. Normalmente
+    // un non-partecipante non arriva nemmeno qui (il tasto "Chat" sulla card e' gated in
+    // social.js), ma showHikePage e' su window - difesa in profondita'. Stessa condizione
+    // usata altrove in social.js ("creatore o in participants"). Il gate vero resta lato
+    // server (routes/hikes.js): qui si nasconde solo la UI degli altri tab.
+    const io = db.currentUser && db.currentUser.id;
+    const partecipo = !!io && (hike.creatorId === io || (hike.participants || []).includes(io));
+    const hpSection = document.getElementById("hike-page");
+    if (hpSection) hpSection.classList.toggle("hp-non-partecipo", !partecipo);
+
     const sectionTitle = document.getElementById("section-title");
     if (sectionTitle) sectionTitle.textContent = hike.title;
 
@@ -65,6 +75,9 @@ function impostaTabHikePage(tab) {
     const section = document.getElementById("hike-page");
     if (!section) return;
     if (["dettagli", "chat", "carpool", "backpack"].indexOf(tab) === -1) tab = "dettagli";
+    // A-1: un non-partecipante resta sui Dettagli anche chiamando impostaTabHikePage da
+    // console o cliccando un bottone (che il CSS gli nasconde). Vedi renderHikePage.
+    if (section.classList.contains("hp-non-partecipo") && tab !== "dettagli") tab = "dettagli";
     section.setAttribute("data-hp-tab", tab);
     section.querySelectorAll(".hike-page-tabs .hp-tab").forEach(b => {
         b.classList.toggle("active", b.dataset.hpTab === tab);

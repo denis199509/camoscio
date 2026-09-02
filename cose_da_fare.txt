@@ -9214,3 +9214,60 @@ Il blocco ASSORBE C-2 e A-1. C-1 resta a se' (1 riga + eventuale rotta
 di match server-side). C-3/A-2/A-3 = task a se', preesistenti.
 
 Vault (04/03/06) e leggimi.txt aggiornati di nuovo per questa coda.
+
+
+=====================================================================
+VENTIDUESIMA SESSIONE (02/09/2026) - Blocco 0 + lotto sicurezza + fix
+ri-review. Tutto codificato su v2-ux, NIENTE pushato. Denis ferma prima
+del 2o giro dell'agente sicurezza.
+=====================================================================
+
+Parole di Denis, in ordine:
+- "possiamo continuare" (riprende dal Blocco 0)
+- "possiamo risolvere pure C3, A2 e A3? voglio mandare tutto online.
+  quindi vorrei chiudere questi punti. poi un altro controllo di
+  sicurezza e se tutto va bene mandiamo online l'aggiornamento"
+- Sul Dead Man's Switch (dopo la mia domanda): "il contatto di emergenza
+  se e' piu' di uno vanno avvisati tutti quanti che nel momento in cui
+  uno dei contatti di emergenza non riesce a rispondere o non riesce a
+  contattare il 112 per emergenza si possono attivare gli altri"
+- "si chiudi c1"
+- "per adesso ci fermiamo qui, riprendiamo nella prossima sessione.
+  quindi salva tutto prepara tutto per riprendere il lavoro nella
+  prossima sessione, aggiorna i file necessari poi fai un ultimo
+  controllo e confermami la chiusura sessione in sicurezza"
+
+Decisioni prese con AskUserQuestion:
+- A-2: aggiunta dipendenza express-rate-limit (MIT) -> SI
+- C-3 mesh: broadcast ristretto AI CO-PARTECIPANTI dell'escursione
+- A-3.4 elimina account: RIMANDATO a un blocco a se'
+  (quando si fara': "chiusura + scrub PII, riga tombstone")
+- A-3.2 Dead Man's Switch: AVVISA TUTTI i contatti con email
+  (niente piu' "contatto scelto"; deadManContactIndex rimosso)
+- home-match del carpooling (dopo la ri-review): SOLO CONTEGGIO, niente
+  nomi (coi nomi era un oracolo sulla zona di casa)
+
+COSA E' STATO FATTO (dettaglio nel vault 06 "Ventiduesima sessione"):
+- Blocco 0 zaino/carpooling per-partecipanti (assorbe C-2 + A-1)
+- C-1 homeCity non piu' pubblico + rotta di match server-side
+- C-3 mesh ai co-partecipanti + log sanato
+- A-2 rate limiting (express-rate-limit, gated NODE_ENV=production)
+- A-3.1 revoca consenso GPS (+ enforcement server-side)
+- A-3.2 cancella contatto emergenza + rework DMS "avvisa tutti"
+- A-3.3 export dati (GET /api/users/me/export)
+- ri-review agente security-privacy: 1o giro "NON pronto" (1 critico +
+  6 alti + 5 medi) -> TUTTI chiusi in sessione. Il critico: PUT
+  /api/hikes/:id con body vuoto restituiva il documento intero.
+- suite prove/ non-Puppeteer COMPLETA VERDE (~950 controlli)
+
+APERTO per la 23a sessione, in ordine:
+1. 2o giro dell'agente security-privacy (verifica dei fix)
+2. prova mobile sul telefono di Denis
+3. responsive Dashboard <900px
+4. merge v2-ux -> master + push (lo decide Denis)
+RIMANDATI: A-3.4 elimina account; M-5 race cancella-contatto con 2
+schede; nota legale (informativa privacy / base giuridica / registro
+trattamenti - serve un professionista, l'ha detto l'agente).
+
+Vault (04/03/06/07) e leggimi.txt aggiornati. Vault committato e pushato.
+cronologia.txt NON toccato (congelato dal 6/08).

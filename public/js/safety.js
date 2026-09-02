@@ -14,10 +14,9 @@ function initSafetyModule() {
     // Inizializza WebSocket per il Mesh Network Simulator
     initMeshWebSocket();
 
-    // Punto 21 - PRIMA di ripristinare lo stato: il contatto non e' piu' una stringa scritta
-    // a mano in localStorage ma una scelta fra i contatti veri dell'utente, e restoreDeadManState
-    // deve trovare l'elenco gia' pronto per poter riselezionare quello di prima.
-    popolaContattiEmergenza();
+    // Disegna la lista dei contatti di emergenza (con i tasti "Rimuovi", A-3.2) e il
+    // riepilogo di chi verra' avvisato alla scadenza.
+    renderContattiEmergenza();
 
     // Ripristina lo stato del Dead Man's Switch da LocalStorage se attivo
     restoreDeadManState();
@@ -48,9 +47,15 @@ function setupSafetyEvents() {
     const btnSos = document.getElementById("btn-sos-112");
     if (btnSos) btnSos.addEventListener("click", chiamaSos);
 
-    // Punto 21 - scelta del contatto e aggiunta di uno nuovo.
-    const selContatto = document.getElementById("safety-contact");
-    if (selContatto) selContatto.addEventListener("change", aggiornaHintContatto);
+    // A-3.2 - tasto "Rimuovi" su ogni riga contatto. La lista si ridisegna (nuovo
+    // contatto, cambio lingua), quindi un handler delegato sul contenitore statico.
+    const listaContatti = document.getElementById("safety-contacts-list");
+    if (listaContatti) {
+        listaContatti.addEventListener("click", (e) => {
+            const btn = e.target.closest(".btn-rimuovi-contatto");
+            if (btn) rimuoviContatto(Number(btn.dataset.idx));
+        });
+    }
 
     const btnMostraForm = document.getElementById("btn-toggle-add-contact");
     if (btnMostraForm) {
@@ -166,10 +171,10 @@ function contattiUtente() {
     return (u && Array.isArray(u.emergencyContacts)) ? u.emergencyContacts : [];
 }
 
-function contattoScelto() {
-    const sel = document.getElementById("safety-contact");
-    if (!sel || sel.value === "") return null;
-    return contattiUtente()[Number(sel.value)] || null;
+// A-3.2 (revisione sicurezza 21a): alla scadenza l'allarme va a TUTTI i contatti di
+// emergenza che hanno un'email, non a uno scelto. Niente piu' selettore "chi avvisare".
+function contattiConEmail() {
+    return contattiUtente().filter(c => c && c.email);
 }
 
 function mostraFormContatto(mostra) {
@@ -180,83 +185,57 @@ function mostraFormContatto(mostra) {
     if (btn) btn.classList.toggle("hidden", mostra);
 }
 
-function aggiornaHintContatto() {
-    const hint = document.getElementById("safety-contact-hint");
-    if (!hint) return;
-    const c = contattoScelto();
-    // textContent, mai innerHTML: nome ed email li scrive l'utente (regola della Fase H).
-    // Punto 37: l'email, non il telefono - e' il canale vero dell'allarme automatico. Dal
-    // 16/08/2026 il telefono non si chiede piu' affatto (richiesta di Denis): resta salvato
-    // solo sui contatti inseriti prima di allora, e nessuna funzione del sito lo compone -
-    // il tasto SOS chiama il 112, mai il contatto personale (vedi chiamaSos qui sopra).
-    hint.textContent = c
-        ? (T('safety.dms.hintContatto', c.name, c.email) || `Alla scadenza l'allarme andrebbe all'email di ${c.name} (${c.email}).`)
-        : "";
-}
-
-function popolaContattiEmergenza() {
-    const sel = document.getElementById("safety-contact");
-    if (!sel) return;
-
+// Disegna la lista dei contatti di emergenza: una riga per contatto con un tasto "Rimuovi"
+// (A-3.2 - sono dati di terzi che non hanno acconsentito a nulla, ci deve essere un modo per
+// toglierli), + il riepilogo di chi verra' avvisato alla scadenza. Il tasto "Attiva" e'
+// abilitato solo se c'e' almeno un contatto con un'email (il canale dell'allarme).
+function renderContattiEmergenza() {
+    const lista = document.getElementById("safety-contacts-list");
+    if (!lista) return;
     const btnAttiva = document.getElementById("btn-activate-switch");
     const hint = document.getElementById("safety-contact-hint");
     const contatti = contattiUtente();
-    const sceltaPrecedente = sel.value;
+    const conEmail = contattiConEmail();
 
-    sel.innerHTML = "";
-
-    if (!contatti.length) {
-        const opt = document.createElement("option");
-        opt.value = "";
-        opt.textContent = T('safety.dms.nessunContattoSalvato') || "Nessun contatto salvato";
-        sel.appendChild(opt);
-        sel.disabled = true;
-        if (btnAttiva) btnAttiva.disabled = true;
-        if (hint) {
-            hint.textContent = T('safety.dms.avvisoNessunContatto') || "Non hai nessun contatto di emergenza: senza, il timer non avrebbe nessuno da avvisare. Aggiungine uno qui sotto.";
-        }
-        mostraFormContatto(true);
-        return;
-    }
-
-    // Punto 37: un contatto senza email non puo' ricevere l'allarme vero (l'email e' il
-    // canale scelto) - capita solo ai contatti salvati prima di questo punto, dato che il
-    // form ora la richiede sempre. Resta in contattiUtente() (serve intatto altrove, es. per
-    // non perderlo mandando l'array completo al server) ma qui non e' selezionabile: mostrarlo
-    // come scelta possibile prometterebbe un allarme che non puo' partire (vincolo hard 7).
-    const usabili = contatti.filter(c => c && c.email);
-    if (!usabili.length) {
-        const opt = document.createElement("option");
-        opt.value = "";
-        opt.textContent = T('safety.dms.nessunContattoEmail') || "Nessun contatto con email";
-        sel.appendChild(opt);
-        sel.disabled = true;
-        if (btnAttiva) btnAttiva.disabled = true;
-        if (hint) {
-            hint.textContent = T('safety.dms.avvisoNessunaEmail') || "I tuoi contatti salvati non hanno un'email, serve per mandare l'allarme vero: aggiungine uno nuovo qui sotto.";
-        }
-        mostraFormContatto(true);
-        return;
-    }
-
-    sel.disabled = false;
-    if (btnAttiva) btnAttiva.disabled = false;
+    lista.innerHTML = "";
     contatti.forEach((c, i) => {
-        if (!c || !c.email) return;
-        const opt = document.createElement("option");
-        opt.value = String(i); // indice VERO nell'array completo, non nella lista filtrata
-        opt.textContent = `${c.name} (${c.relationship})`;
-        sel.appendChild(opt);
+        if (!c) return;
+        const riga = document.createElement("div");
+        riga.className = "safety-contact-row";
+        // Nome/relazione/email li scrive l'utente: sempre da escapeHtml (regola della Fase H).
+        const dettaglio = c.email
+            ? ' · ' + escapeHtml(c.email)
+            : ` · <span class="text-muted">${T('safety.dms.senzaEmail') || 'senza email'}</span>`;
+        riga.innerHTML = `<span class="safety-contact-info">${escapeHtml(c.name)}
+            <span class="small text-muted">(${escapeHtml(c.relationship || '')})</span>${dettaglio}</span>`;
+        const del = document.createElement("button");
+        del.type = "button";
+        del.className = "btn btn-sm btn-danger btn-rimuovi-contatto";
+        del.dataset.idx = String(i);
+        del.textContent = T('common.rimuovi') || 'Rimuovi';
+        riga.appendChild(del);
+        lista.appendChild(riga);
     });
 
-    // Conserva la scelta precedente se e' ancora valida: popolaContattiEmergenza() viene
-    // richiamata anche dopo aver aggiunto un contatto, e non deve far ricominciare da capo.
-    const precedente = contatti[Number(sceltaPrecedente)];
-    if (sceltaPrecedente !== "" && precedente && precedente.email) {
-        sel.value = sceltaPrecedente;
+    if (!contatti.length) {
+        if (btnAttiva) btnAttiva.disabled = true;
+        if (hint) hint.textContent = T('safety.dms.avvisoNessunContatto') || "Non hai nessun contatto di emergenza: senza, il timer non avrebbe nessuno da avvisare. Aggiungine uno qui sotto.";
+        mostraFormContatto(true);
+        return;
+    }
+    if (!conEmail.length) {
+        if (btnAttiva) btnAttiva.disabled = true;
+        if (hint) hint.textContent = T('safety.dms.avvisoNessunaEmail') || "Nessuno dei tuoi contatti ha un'email, e serve per mandare l'allarme: aggiungine uno qui sotto.";
+        mostraFormContatto(true);
+        return;
+    }
+
+    if (btnAttiva) btnAttiva.disabled = false;
+    if (hint) {
+        const nomi = conEmail.map(c => c.name).join(', ');
+        hint.textContent = (T('safety.dms.avvisaTuttiPrefix') || "Alla scadenza l'allarme va via email a tutti i tuoi contatti:") + ' ' + nomi + '.';
     }
     mostraFormContatto(false);
-    aggiornaHintContatto();
 }
 
 async function salvaNuovoContatto() {
@@ -271,7 +250,7 @@ async function salvaNuovoContatto() {
     // L'email (punto 37, canale dell'allarme vero) NON e' obbligatoria a livello di schema -
     // altrimenti un contatto vecchio senza email dentro lo stesso array bloccherebbe questo
     // salvataggio - ma lo e' qui: senza, il contatto verrebbe salvato e basta comparire nel
-    // menu "Chi avvisare" senza poter mai ricevere nulla (vedi popolaContattiEmergenza).
+    // riepilogo "chi verra' avvisato" senza poter mai ricevere nulla (vedi renderContattiEmergenza).
     if (!nome || !relazione || !email) {
         window.showToast(T('safety.dms.campiObbligatori') || "Servono tutti e tre i campi: nome, chi è ed email.", "error");
         return;
@@ -306,11 +285,7 @@ async function salvaNuovoContatto() {
         document.getElementById("safety-new-name").value = "";
         document.getElementById("safety-new-rel").value = "";
         document.getElementById("safety-new-email").value = "";
-        popolaContattiEmergenza();
-        // Si sceglie da solo quello appena aggiunto: e' quasi sempre quello che si voleva.
-        const sel = document.getElementById("safety-contact");
-        sel.value = String(nuovi.length - 1);
-        aggiornaHintContatto();
+        renderContattiEmergenza();
         window.showToast(T('safety.dms.contattoSalvato') || "Contatto di emergenza salvato.", "success");
     } catch (e) {
         console.error("Salvataggio contatto di emergenza fallito:", e);
@@ -321,6 +296,48 @@ async function salvaNuovoContatto() {
     }
 }
 
+// A-3.2: cancellare un contatto di emergenza. Sono dati di terzi che non hanno acconsentito
+// a nulla, quindi deve esserci un modo per toglierli. Alla scadenza l'allarme va comunque a
+// TUTTI i contatti con email rimasti: se era l'unico, il timer semplicemente non avra' piu'
+// nessuno da avvisare (e renderContattiEmergenza disabilita il tasto "Attiva").
+async function rimuoviContatto(idx) {
+    const usr = window.CamoscioState && window.CamoscioState.currentUser;
+    if (!usr) return;
+    const contatti = contattiUtente();
+    const c = contatti[idx];
+    if (!c) return;
+
+    const procedi = await window.showConfirmModal(
+        (T('safety.dms.confermaRimuovi', c.name) || `Rimuovere ${c.name} dai tuoi contatti di emergenza?`),
+        T('common.rimuovi') || 'Rimuovi',
+        { cancelLabel: T('common.cancella') || 'Annulla', danger: true }
+    );
+    if (!procedi) return;
+
+    // Si manda l'array COMPLETO senza quello rimosso: il server sostituisce l'intero campo
+    // (SELF_EDITABLE_FIELDS in routes/users.js), come gia' fa salvaNuovoContatto.
+    const nuovi = contatti.filter((_, i) => i !== idx);
+    try {
+        const res = await fetch(`/api/users/${usr.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ emergencyContacts: nuovi })
+        });
+        if (!res.ok) throw new Error('Rimozione rifiutata');
+        usr.emergencyContacts = nuovi;
+        renderContattiEmergenza();
+
+        if (deadManActive && !contattiConEmail().length) {
+            window.showToast(T('safety.dms.rimossoUltimoConEmail') || "Hai rimosso l'ultimo contatto con email mentre il timer è attivo: alla scadenza non partirà nessun avviso.", "error");
+        } else {
+            window.showToast(T('safety.dms.contattoRimosso') || "Contatto rimosso.", "success");
+        }
+    } catch (e) {
+        console.error("Rimozione contatto di emergenza fallita:", e);
+        window.showToast(T('safety.dms.erroreRimozione') || "Non sono riuscito a rimuovere il contatto. Riprova.", "error");
+    }
+}
+
 // --- DEAD MAN'S SWITCH LOGIC ---
 
 // Punto 37: prova ad armare il conto alla rovescia anche sul server, l'unico che puo'
@@ -328,15 +345,12 @@ async function salvaNuovoContatto() {
 // magari senza linea proprio nel momento in cui si attiva): se fallisce il timer VISIBILE
 // funziona comunque come prima, ma senza la rete di sicurezza vera - va detto a schermo,
 // non taciuto (vincolo hard 7).
-async function attivaSulServer(targetTimeMs, contactIndex) {
+async function attivaSulServer(targetTimeMs) {
     try {
         const res = await fetch('/api/safety/activate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                expiresAt: new Date(targetTimeMs).toISOString(),
-                contactIndex: Number(contactIndex)
-            })
+            body: JSON.stringify({ expiresAt: new Date(targetTimeMs).toISOString() })
         });
         return res.ok;
     } catch (e) {
@@ -356,9 +370,12 @@ async function disattivaSulServer() {
 }
 
 async function activateDeadManSwitch() {
-    const contatto = contattoScelto();
-    if (!contatto) {
-        window.showToast(T('safety.dms.scegliContatto') || "Scegli chi avvisare prima di attivare il timer.", "error");
+    // A-3.2: non si sceglie piu' un contatto - l'allarme va a tutti quelli con un'email.
+    // Serve che ce ne sia almeno uno (il tasto e' gia' disabilitato senza, questo e' il
+    // secondo controllo; il terzo, vero, e' lato server in routes/safety.js).
+    const raggiungibili = contattiConEmail();
+    if (!raggiungibili.length) {
+        window.showToast(T('safety.dms.serveContattoEmail') || "Aggiungi un contatto di emergenza con un'email prima di attivare il timer.", "error");
         return;
     }
     const durationHours = parseFloat(document.getElementById("safety-duration").value) || 0;
@@ -380,22 +397,18 @@ async function activateDeadManSwitch() {
         targetTimeMs = Date.now() + (durationHours * 3600 * 1000);
     }
 
-    const contactIndex = document.getElementById("safety-contact").value;
-    const armatoSulServer = await attivaSulServer(targetTimeMs, contactIndex);
+    const armatoSulServer = await attivaSulServer(targetTimeMs);
 
     deadManActive = true;
     returnTimestamp = targetTimeMs;
 
-    // Salva lo stato in local storage.
-    // PUNTO 21 - qui finiva il NUMERO DI TELEFONO del contatto, copiato per intero. Ora si
-    // salva solo la POSIZIONE nell'elenco: il dato vero sta sul database e si rilegge da li'.
-    // Meno copie di un numero di telefono altrui in giro, e soprattutto una sola copia da
-    // tenere aggiornata - correggendo il contatto nel profilo, il timer gia' attivo usera'
-    // il numero nuovo invece di uno vecchio congelato al momento dell'attivazione.
+    // Stato locale per il conto alla rovescia visivo. A-3.2: niente piu' "indice del
+    // contatto scelto" - non c'e' piu' una scelta, l'allarme (lato server) va a tutti i
+    // contatti con email, riletti dal database al momento della scadenza.
     localStorage.setItem("deadman_active", "true");
     localStorage.setItem("deadman_timestamp", returnTimestamp.toString());
-    localStorage.setItem("deadman_contact_index", contactIndex);
-    localStorage.removeItem("deadman_contact"); // vecchia chiave col numero dentro: si toglie
+    localStorage.removeItem("deadman_contact_index"); // vecchia chiave (pre A-3.2): si toglie
+    localStorage.removeItem("deadman_contact");       // chiave ancora piu' vecchia (col numero)
 
     aggiornaStatoTimer();
 
@@ -403,8 +416,9 @@ async function activateDeadManSwitch() {
     // lingua attiva ('en-GB'/'it-IT'), come per le date col nome del mese.
     const locOra = (window.CamoscioI18n && window.CamoscioI18n.getLang() === 'en') ? 'en-GB' : 'it-IT';
     const oraRientro = new Date(returnTimestamp).toLocaleTimeString(locOra);
-    logSimulatedSms("SYSTEM", T('safety.log.timerAttivato', oraRientro, escapeHtml(contatto.name))
-        || `Timer attivato. Rientro atteso: ${oraRientro}. Da avvisare: ${escapeHtml(contatto.name)}.`);
+    const nomiAvvisati = raggiungibili.map(c => c.name).join(', ');
+    logSimulatedSms("SYSTEM", T('safety.log.timerAttivato', oraRientro, escapeHtml(nomiAvvisati))
+        || `Timer attivato. Rientro atteso: ${oraRientro}. Da avvisare: ${escapeHtml(nomiAvvisati)}.`);
 
     if (!armatoSulServer) {
         window.showToast(
@@ -470,27 +484,14 @@ function restoreDeadManState() {
     if (utente && utente.deadManActive && utente.deadManExpiresAt) {
         localStorage.setItem("deadman_active", "true");
         localStorage.setItem("deadman_timestamp", new Date(utente.deadManExpiresAt).getTime().toString());
-        if (utente.deadManContactIndex !== undefined && utente.deadManContactIndex !== null) {
-            localStorage.setItem("deadman_contact_index", String(utente.deadManContactIndex));
-        }
     }
 
     const isActive = localStorage.getItem("deadman_active") === "true";
     const ts = parseInt(localStorage.getItem("deadman_timestamp")) || 0;
-    const indiceContatto = localStorage.getItem("deadman_contact_index");
 
     if (isActive && ts > Date.now()) {
         deadManActive = true;
         returnTimestamp = ts;
-        // Riseleziona il contatto scelto all'attivazione. Se nel frattempo e' stato tolto
-        // dal profilo, l'elenco non ha piu' quella posizione e resta selezionato il primo:
-        // meglio avvisare qualcuno che nessuno.
-        const sel = document.getElementById("safety-contact");
-        if (sel && indiceContatto !== null && contattiUtente()[Number(indiceContatto)]) {
-            sel.value = indiceContatto;
-        }
-        aggiornaHintContatto();
-
         aggiornaStatoTimer();
         startSafetyCountdown();
     } else if (isActive && ts <= Date.now()) {
@@ -527,19 +528,11 @@ function startSafetyCountdown() {
 
 // Scadenza del timer.
 function triggerEmergencyAlarm() {
-    // Punto 21 - il contatto si rilegge dal database attraverso l'indice salvato, non da una
-    // stringa congelata in localStorage.
-    const indice = localStorage.getItem("deadman_contact_index");
-    const contatto = contattiUtente()[Number(indice)] || null;
-    // Il telefono non si chiede piu' dai form (16/08/2026): un contatto salvato da allora ha
-    // solo nome/relazione/email, uno piu' vecchio puo' ancora avere un numero. Senza questo
-    // controllo qui si leggerebbe "Anna (undefined)" a schermo. Si mostra il recapito che
-    // c'e' davvero - il numero se salvato, altrimenti l'email - e se non c'e' nessuno dei
-    // due solo il nome, invece di una parentesi vuota.
-    const recapito = contatto ? (contatto.phone || contatto.email || "") : "";
-    const aChi = contatto
-        ? (recapito ? `${contatto.name} (${recapito})` : contatto.name)
-        : (T('safety.alarm.nessunContatto') || "nessun contatto salvato");
+    // A-3.2: l'invio vero (lato server, routes/safety.js) va a TUTTI i contatti con un'email,
+    // riletti dal database alla scadenza. Qui, nel testo locale, si elencano i loro nomi - o
+    // si dice che non ce n'e' nessuno raggiungibile.
+    const nomiAvvisati = contattiConEmail().map(c => c.name).join(', ');
+    const aChi = nomiAvvisati || (T('safety.alarm.nessunContatto') || "nessun contatto con email");
 
     // Punto 21 - la posizione VERA del GPS quando c'e' (punto 26). Prima si usava sempre e
     // solo il segnaposto trascinabile, che di norma e' fermo a Campo Imperatore: un allarme
@@ -624,11 +617,6 @@ function aggiornaStatoTimer() {
     btnDisattiva.classList.toggle("hidden", !deadManActive);
     if (banner) banner.classList.toggle("hidden", !deadManActive);
     if (contatore) contatore.classList.toggle("hidden", !deadManActive);
-
-    // Mentre il timer corre non si cambia chi avvisare: sarebbe una modifica che non ha
-    // effetto sul conto alla rovescia gia' partito, e farebbe credere il contrario.
-    const sel = document.getElementById("safety-contact");
-    if (sel) sel.disabled = deadManActive || !contattiUtente().length;
 }
 
 // --- MESH NETWORKING SIMULATOR ---
@@ -726,19 +714,29 @@ function sendMeshChatMessage(isSos) {
 
 // Gestione dei pacchetti ricevuti da altri utenti in tempo reale
 function handleMeshMessageReceived(packet) {
-    if (packet.type === "mesh_packet") {
-        // Ricalcola il radar per vedere se l'utente che trasmette è vicino
-        const distance = calculateDistance(
-            window.userSimulatedLocation.lat,
-            window.userSimulatedLocation.lng,
-            packet.lat,
-            packet.lng
-        );
+    if (!packet || packet.type !== "mesh_packet") return;
 
-        // La rete mesh offline locale ha raggio massimo di 100m
-        if (distance <= 100) {
-            displayMeshMessage(packet, false);
-        }
+    // R-4 (ri-review sicurezza, 3° giro): un SOS senza coordinate valide NON deve sparire.
+    // packet.lat/lng possono essere null (il server li azzera se il mittente non ha mandato
+    // numeri validi, vedi server.js): calculateDistance(null, ...) calcola la distanza da
+    // (0°,0°), sempre > 100, e il pacchetto non veniva mai mostrato. Il filtro dei 100 m e'
+    // un aiuto di visualizzazione ("la mesh ha raggio ~100 m"), NON un controllo di sicurezza:
+    // quello lo fa il server, che instrada solo ai co-partecipanti. Quindi: un SOS si mostra
+    // sempre; un messaggio senza posizione (mia o sua) non e' filtrabile e si mostra; il
+    // raggio si applica solo ai messaggi normali con coordinate vere da entrambe le parti.
+    const mia = window.userSimulatedLocation;
+    const haPosPacchetto = typeof packet.lat === 'number' && typeof packet.lng === 'number';
+    const haPosMia = mia && typeof mia.lat === 'number' && typeof mia.lng === 'number';
+
+    if (packet.isSos || !haPosPacchetto || !haPosMia) {
+        displayMeshMessage(packet, false);
+        return;
+    }
+
+    // La rete mesh offline locale ha raggio massimo di 100m
+    const distance = calculateDistance(mia.lat, mia.lng, packet.lat, packet.lng);
+    if (distance <= 100) {
+        displayMeshMessage(packet, false);
     }
 }
 
@@ -761,8 +759,13 @@ function displayMeshMessage(packet, isSentByMe) {
     const text = escapeHtml(typeof packet.text === 'string' ? packet.text : '');
 
     if (packet.isSos) {
+        // M-1 (ri-review sicurezza, 2° giro): lat/lng possono essere null (il server li mette
+        // a null se il mittente non ha inviato numeri validi) - niente .toFixed su null.
+        const posTxt = (typeof packet.lat === 'number' && typeof packet.lng === 'number')
+            ? `${packet.lat.toFixed(5)}, ${packet.lng.toFixed(5)}`
+            : (T('safety.mesh.posNonDisp') || 'posizione non disponibile');
         msgDiv.className = "message sos blink";
-        msgDiv.innerHTML = `🚨 <strong>[SOS] ${senderFirstName}</strong>: ${text} <span class="small" style="display:block; font-weight:normal; opacity:0.8;">Pos: ${packet.lat.toFixed(5)}, ${packet.lng.toFixed(5)}</span>`;
+        msgDiv.innerHTML = `🚨 <strong>[SOS] ${senderFirstName}</strong>: ${text} <span class="small" style="display:block; font-weight:normal; opacity:0.8;">Pos: ${escapeHtml(posTxt)}</span>`;
     } else {
         msgDiv.className = `message ${isSentByMe ? 'sent' : 'received'}`;
         msgDiv.innerHTML = `<strong>${senderFirstName}</strong>: ${text} <span class="small" style="font-size:0.6rem; display:block; opacity:0.6; text-align:right;">${escapeHtml(typeof packet.timestamp === 'string' ? packet.timestamp : '')}</span>`;
@@ -812,12 +815,11 @@ if (window.CamoscioI18n && window.CamoscioI18n.onChange) {
                 ? (T('safety.mesh.statoAttivo') || "Attivo (Connesso al Server Mesh)")
                 : (T('safety.mesh.statoOffline') || "Offline (Tentativo riconnessione...)");
         }
-        // 2) Menu "chi avvisare" + hint + messaggi di stato vuoto: testo nostro,
-        //    dati in CamoscioState. popolaContattiEmergenza conserva gia' la
-        //    scelta corrente; aggiornaStatoTimer subito dopo rimette il select
-        //    disabilitato se il conto alla rovescia e' in corso.
-        if (document.getElementById("safety-contact")) {
-            popolaContattiEmergenza();
+        // 2) Lista contatti + hint + messaggi di stato vuoto: testo nostro, dati in
+        //    CamoscioState. Si ridisegna cosi' "nessun contatto"/"chi verra' avvisato"
+        //    escono nella lingua nuova.
+        if (document.getElementById("safety-contacts-list")) {
+            renderContattiEmergenza();
             aggiornaStatoTimer();
         }
     });
