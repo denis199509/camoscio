@@ -1,168 +1,114 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-09-01 (VENTESIMA sessione — PASSO 7 fatto e committato
-(`e33be1b`): sidebar a GRUPPI + rinomine menu (Home / Ispirazioni /
-Mappa / Community). Verificato in locale IT+EN. Poi: SCRITTI I PIANI
-ESECUTIVI DI TUTTI I BLOCCHI RIMANENTI (9 -> 14c) e chiuse tutte le
-domande §15. 7 commit veri su `v2-ux`, NIENTE pushato. PROSSIMA
-SESSIONE: CODICE, si parte da PASSO 9. Piano esecutivo:
-.claude/plans/delegated-gathering-forest.md).
+Aggiornato: 2026-09-02 (VENTUNESIMA sessione — TUTTO IL RIORDINO MENU v2
+CODIFICATO, verificato in locale, committato su `v2-ux`. NIENTE pushato.
+10 blocchi in fila (Denis: "parti coi passi in fila senza fermarti"):
+PASSO 9 -> 10 -> 11 -> 11b -> 12 -> 13 -> 8 (drawer) -> 14a -> 14b -> 14c.
+Poi rifusi i 2 auto-save di note (-> `a34b5f1`). Prossimo: prova mobile
+sul telefono + responsive Dashboard <900px + suite `prove/` + giro
+security-privacy, POI merge `v2-ux`->`master` + push (lo decide Denis).)
 
 >>> LAVORO IN CORSO: revisione UX del sito ("Camoscio v2"). Si lavora
-    ESCLUSIVAMENTE IN LOCALE sul branch `v2-ux`, un blocco alla volta.
-    NIENTE push, NIENTE deploy: Denis manda online solo quando l'intera
-    v2 lo convince ("quando vedo che stiamo per finire mando online").
-    `master` resta intatto = la produzione attuale.
-    Metodo: per ogni blocco approvato -> prima il piano (EnterPlanMode +
-    AskUserQuestion per le ambiguita'), poi UN commit vero
-    `V2 UX PASSO n: ...` su `v2-ux` (locale). Alla fine: merge su
-    `master` + push. L'hook di auto-save committa comunque sul branch;
-    va rifuso in un commit vero (git reset --soft) prima di ogni tappa.
-    La DASHBOARD e' finita (Fasi 1-5). Il RIORDINO MENU/NAVIGAZIONE e'
-    in corso: PASSO 7 fatto (sidebar desktop). I PIANI DI TUTTI I BLOCCHI
-    RIMANENTI SONO GIA' SCRITTI (Denis: "prima i piani, poi il codice") -
-    dettaglio file-per-file in .claude/plans/delegated-gathering-forest.md.
-    Ordine: 7 -> 9 -> 10 -> 11 -> 11b -> 12 -> 13 -> 8 (drawer mobile) ->
-    14a/b/c. Da qui in poi la prossima sessione FA CODICE, non piani.
+    ESCLUSIVAMENTE IN LOCALE sul branch `v2-ux`. NIENTE push, NIENTE deploy:
+    Denis manda online solo quando l'intera v2 lo convince. `master` (su
+    `origin` = `efd1290`) resta intatto = la produzione attuale.
+    Metodo: un commit vero `V2 UX PASSO n: ...` per blocco (locale su
+    `v2-ux`). L'hook di auto-save committa comunque: si rifonde (rebase
+    --onto / reset --soft) in un commit vero. La DASHBOARD (Fasi 1-5) e il
+    RIORDINO MENU/NAVIGAZIONE (PASSO 6->14c) sono FATTI.
 
->>> FATTO su `v2-ux` (7 commit, NON pushati) — DASHBOARD (Fasi 1-5) + PASSO 6-7:
-  - `7915762` PASSO 1 — apertura Dashboard contestuale. Via "Benvenuto" +
-    le 3 statistiche; nuovo header .dash-hero (fuori dalla .dashboard-grid):
-    "Ciao [Nome] 👋" + sottotitolo contestuale + [🥾 Trova un'escursione]
-    [🗺️ Esplora]. Titolo sez. "Esplora Escursioni di Gruppo" -> "Escursioni
-    di Gruppo".
-  - `48fb101` PASSO 2 (Fase 2) — card "La tua prossima avventura":
-    titolo, giorno+data+conto alla rovescia, i 3 numeri SOLO se presenti,
-    "da <trailhead>", "👥 N partecipanti", [Apri escursione ->]. Solo con
-    un'escursione CONFERMATA in programma (prossimaAvventura).
-  - `5e2c01d` PASSO 3 (Fase 3) — due aggiunte alla card (il resto era gia'
-    coperto da Fase 2): link "Vedi tutte le mie escursioni ->" (solo se
-    >1 futura confermata); "Organizzata da te" se l'ho creata io.
-  - `0f42aa5` PASSO 4 (Fase 4) — "Il tuo cammino" (N vette/rifugi/badge +
-    progressione per ZONA: barra + "Ti mancano N vette per completare X")
-    SOSTITUISCE il Passaporto. "Ultimi traguardi" (ultimi N badge per data)
-    al posto dell'anteprima. "Il tuo <anno>" (escursioni/km/D+/vette
-    dell'anno) SOSTITUISCE "Quanto hai camminato". "Passo & Fatica" resta,
-    esce dal grid a piena larghezza. Nuove progressoZone()/ultimiTraguardi()
-    in badges.js su statoBadge() - NON il sistema LIVELLI_ASCESA (punti
-    86/87). UNICO tocco backend della revisione: GET /api/tracking/totals
-    accetta ?anno=YYYY opzionale (senza -> risposta identica). map.js
-    aggiornato (chiamava renderDashboardStamps, rimossa).
-  - `309ab92` PASSO 5 (Fase 5) — rifinitura CSS: grafico Passo & Fatica
-    non piu' stirato (max-width 640px); "4/7" accanto al nome zona;
-    .dashboard-grid align-items:start; 3 fix @media 900 (3 badge in fila,
-    "Vedi tutti i badge" fuori dall'angolo del FAB, stacco 16px).
-  - `7f8b697` PASSO 6 (19a sessione) — titoli di sezione dell'header =
-    voce di menu ("corto ovunque", AskUserQuestion). 5 valori prettyNames
-    (app.js) + 5 EN sectionTitle.* (i18n.js) allineati a nav.*, "Badge" /
-    "Carpooling" / "Zaino Intelligente" / "Sicurezza & Mesh" / "Tribu' &
-    Squadre" (prima erano i nomi lunghi che su telefono facevano "..."); 3
-    commenti riscritti. ZERO CSS, ZERO logica. NB: il piano del riordino
-    menu (sotto) rilavora comunque tutta la mappa nav.*/sectionTitle.*/
-    prettyNames alle rinomine - il principio "header = menu" resta.
-  - `e33be1b` PASSO 7 (20a sessione) — sidebar a GRUPPI. <nav> in 4
-    blocchi (NAVIGAZIONE / AZIONE / AREA PERSONALE / STRUMENTI); gruppo
-    "Esplora" a fisarmonica (Escursioni/Mappa/Ispirazioni); voce "+ Crea"
-    (apre create-hike-modal, corpo estratto in
-    window.apriModaleNuovaEscursione); blocco PONTE "Strumenti" =
-    Carpooling/Zaino/Sicurezza finche' PASSO 14+ non li sposta in
-    hike-page. Rinomine (SOLO etichette, data-target invariati):
-    Dashboard->Home, Feed->Ispirazioni (anche il titolo interno della
-    pagina Feed + icona sparkles), Mappa & Sentieri->Mappa, Tribu' &
-    Squadre->Community. app.js: accordion UNO alla volta + stato in
-    localStorage; navigateTo apre il gruppo della foglia attiva e ne
-    segna la testa "is-current". CSS: .nav-group/.nav-crea + regola-PONTE
-    @media 900 = rail a icone di oggi (drawer vero = PASSO 8). Decisioni
-    §15: accordion singolo, #progress+alias (PASSO 11), + Crea voce non
-    FAB, #people-search redirect (PASSO 10), Q8/Q9 chiuse; Q4->PASSO 12,
-    Q6/Q7->PASSO 14+.
+>>> FATTO E COMMITTATO su `v2-ux` (NON pushato). Struttura finale:
+    Home / Esplora v (Escursioni, Mappa, Ispirazioni) / Le mie escursioni v
+    (Tutte, In programma, Completate) / Community v (Amici) / + Crea /
+    AREA PERSONALE: Progressi, Profilo, Impostazioni, Sicurezza.
 
-  Dashboard: verificato in locale sull'account REALE di Denis (badge veri,
-  sola lettura; escursioni finte solo in memoria del browser): tutti gli
-  stati, Gran Sasso 4/7, IT<->EN, console pulita. Responsive <900px solo
-  in simulazione (resize_window inaffidabile) - da guardare al deploy.
-  PASSO 6: verificato in locale (demo Marco Alpinista, 11 sezioni x IT/EN,
-  header = menu su tutte, console pulita).
-  PASSO 7: verificato in locale (account reale, sola lettura, zero
-  scritture DB) - 11 destinazioni IT+EN, fisarmonica, stato annidato,
-  deep-link Dashboard, + Crea, localStorage. Console NON leggibile
-  (l'estensione Chrome blocca javascript/console su questo localhost);
-  nessun errore visibile in ~25 interazioni. <900px solo simulato.
-  Bug trovato e corretto in verifica: prettyNames["social"] era rimasto
-  "Tribu' & Squadre" (una rinomina = 2 modifiche: prettyNames IT +
-  sectionTitle EN).
+  DASHBOARD (Fasi 1-5, `7915762`..`309ab92`) + PASSO 6 (`7f8b697`, header =
+  voce di menu) + PASSO 7 (`e33be1b`, sidebar a gruppi a fisarmonica +
+  rinomine). Dettaglio nel vault 06 ("Sedicesima"..."Ventesima sessione").
 
->>> DA DOVE SI RIPARTE: CODICE, si parte da PASSO 9. I PIANI CI SONO GIA'.
+  RIORDINO MENU (21a sessione, 10 commit `4ea24df`..`77fcaf8` sopra
+  `a34b5f1`):
+  - PASSO 9  — "Le mie escursioni" a 3 viste-filtro (Tutte / In programma /
+    Completate, attributo data-view + CSS); #hikes (Esplora>Escursioni) =
+    solo scoperta. `classificaMieEscursioni` intatta.
+  - PASSO 10 — Community diventa gruppo con sotto-voce "Amici"; la ex
+    sezione #people-search RITIRATA, la ricerca per nome utente e' nella
+    card "Persone" di #social (id invariati, peoplesearch.js non cambia);
+    navigateTo alias people-search -> social + data-scroll generico.
+  - PASSO 11 — #badges -> #progress ("Progressi"), TUTTI gli id figli
+    invariati (renderBadges non si tocca) + nuovo blocco "Il tuo cammino
+    per zona" (progressoZone({tutte:true})). #badges resta alias.
+  - PASSO 11b — statistiche personali filtrabili in #progress: intervallo
+    date + 3 intervalli rapidi. UNICO tocco backend: `GET
+    /api/tracking/totals` ora accetta anche `?from=&to=` (oltre `?anno=`).
+    Nessun modello/indice/migrazione.
+  - PASSO 12 — #my-profile SDOPPIATA: "Profilo" = sola vista (bio + esperto
+    read-only); "Impostazioni" (#settings, NUOVA) = foto/bio/esperto/
+    password/lingua/logout + card placeholder inerte. I controlli SPOSTATI,
+    id invariati (renderProfileCard/setupProfileCardEvents non cambiano).
+  - PASSO 13 — "+ Crea" apre un popover (2 voci: nuova escursione / nuovo
+    percorso). Flip verso l'alto se sfora il fondo della .nav-menu.
+  - PASSO 8  — DRAWER MOBILE (<=900px): hamburger nell'header + sidebar
+    off-canvas + scrim. Riscritta la @media <=900 (via il rail 62px + la
+    regola-ponte di PASSO 7). Bandiere lingua -> in fondo al drawer.
+    VERIFICATO SOLO IN SIMULAZIONE (resize_window inaffidabile): PROVA VERA
+    SUL TELEFONO DI DENIS AL DEPLOY.
+  - PASSO 14a — via il blocco "STRUMENTI"; "Sicurezza" (era "& Mesh") =
+    foglia dell'AREA PERSONALE. #safety internamente invariato.
+  - PASSO 14b — Carpooling = TAB dentro hike-page (4 tab: Dettagli/Chat/
+    Carpooling/Zaino). Scelta di Denis = OPZIONE A: il tab e' SOLO
+    per-escursione (annuncio della singola uscita, non piu' "tutte";
+    "Offri un Passaggio" senza selettore escursione; Split Spese generico
+    resta). #carpool .page-section RITIRATA. carpool.js legato all'hikeId.
+  - PASSO 14c — Zaino = TAB dentro hike-page. Niente piu' selettore
+    "prepara lo zaino per" ne' "zaino personale" (Q6): contesto sempre =
+    l'escursione del tab. #backpack .page-section RITIRATA. backpack.js
+    legato all'hikeId (escursioneDiRiferimento semplificata).
 
-  Piano ESECUTIVO di tutti i blocchi (file-per-file, meccanismi condivisi
-  di PASSO 7 in testa, verifica): quello e' il documento da seguire ->
-    C:\Users\lenovo\.claude\plans\delegated-gathering-forest.md
-  Decisioni + mappa sezioni + §15 (tutte chiuse):
-    C:\Users\lenovo\.claude\plans\camoscio-v2-menu-restructure.md
+  Verifica: ogni blocco provato dal vivo (account reale, sola lettura, DB
+  demo dove serviva, IT+EN, zero errori JS). Sweep finale di TUTTA la nav
+  desktop: nessun errore. Le scritture DB (pubblica offerta carpool,
+  conferma zaino, salva profilo, cambia password) NON esercitate.
 
-  Struttura bersaglio: Home / Esplora v (Escursioni, Mappa, Ispirazioni) /
-  Le mie escursioni v (Tutte, In programma, Completate) / Community v
-  (Amici) / + Crea (azione) / area personale: Progressi, Profilo,
-  Impostazioni, Sicurezza.
-
-  ORDINE: 7 (fatto, `e33be1b`) -> 9 -> 10 -> 11 -> 11b -> 12 -> 13 ->
-  8 (drawer mobile) -> 14a -> 14b -> 14c.
-  Il DRAWER MOBILE (PASSO 8) e' in FONDO: non verificabile in locale ora
-  (resize_window inaffidabile, v2 non deployata) e i blocchi 9-13 cambiano
-  ancora le voci -> fatto per ultimo, sul menu definitivo, provato sul
-  telefono al deploy. La regola-PONTE in @media 900 tiene il rail nel
-  frattempo.
-
-  PROSSIMO - PASSO 9 (CODICE): #hikes (Esplora > Escursioni) resta SOLO
-  scoperta ("A cui puoi partecipare" + ricerca + filtri); #my-hikes
-  guadagna 3 viste-filtro nel menu (Tutte / In programma / Completate) che
-  mostrano/nascondono i .my-hikes-group. classificaMieEscursioni()
-  (social.js) NON si tocca. "In programma" = non completate, niente
-  confronto date. Testa "Le mie escursioni" naviga (vista Tutte) + espande.
-
-  DOMANDE §15: TUTTE CHIUSE. Le decisive:
-   - Q4 esperto locale -> Profilo MOSTRA, Impostazioni MODIFICA.
-   - Q5 + Crea -> popover 2 voci: nuova escursione + nuovo percorso
-     (NO "nuova squadra": resta in Community).
-   - Q6 zaino personale slegato da un'uscita -> NON serve. Tutto in
-     hike-page, #backpack si ritira per intero.
-   - Q7 #safety -> resta a se', foglia "Sicurezza" in AREA PERSONALE
-     (mesh sim + registro + rimando timer). SOLO Carpooling e Zaino
-     vanno in hike-page (14b/14c). Il timer e' gia' in Mappa.
-   - blocco "STRUMENTI" (ponte) sparisce a PASSO 14a.
-
-  Punto 3 (responsive Dashboard <900px): si accorpa alla verifica di fine
-  riordino, dopo il drawer (PASSO 8).
+>>> DA DOVE SI RIPARTE: la v2 e' codificata. Prima del push vero, in ordine:
+  1. PROVA MOBILE sul telefono di Denis (drawer, tab di hike-page, layout
+     stretto). Senza deployare: server in ascolto sulla LAN (cookie in
+     locale e' secure:false, il login regge in HTTP) -> telefono sullo
+     stesso wifi apre http://<ip-pc>:3000. Fallback: tunnel effimero
+     (cloudflared/ngrok), da chiudere subito.
+  2. Verifica responsive Dashboard <900px (ex "punto 3", accorpata qui).
+  3. Suite `prove/` (PASSO 12 tocca UI vicino all'auth, 11b una rotta).
+  4. Giro dell'agente security-privacy sul diff v2-ux (lanciato in 21a
+     sessione: leggere l'esito prima del merge).
+  5. MERGE `v2-ux` -> `master` + push (lo decide Denis). NOTA: `v2-ux` e'
+     1 commit indietro a `origin/master` (l'hotfix Ju Busciu `efd1290`,
+     `sogliaM` per-punto) - il merge lo riconcilia; v2-ux NON tocca
+     geofenceTimbri.js/badge-points.js/map.js/stamps.js quindi atteso
+     conflict-free. Branch di backup pre-rifusione: `v2-ux-backup-preref`.
 
   FILONE B (indipendente) - COLLEZIONE "I 2000 DELL'APPENNINO", dentro la
-  pagina Badge (poi Progressi), NON pagina a se'. Piano:
+  pagina Progressi (ex Badge), NON pagina a se'. Piano:
     C:\Users\lenovo\.claude\plans\camoscio-2000-appennino-collezione.md
-  Si innesta su badge-points.js con un campo collezioni:[]; il timbro si
-  assegna da solo. LA LISTA UFFICIALE DELLE VETTE LA FORNISCE DENIS.
-  PUNTO APERTO n.1: icone e peso del repo (~100 vette). Raccomandazione:
-  1 grafica "2000+" unica col nome a testo, o template SVG. Puo'
-  aspettare la lista.
-
-  Merge v2-ux -> master + push: lo decide Denis a fine v2. origin/master
-  = master = efd1290, 0 divergenza.
+  Bloccato: LA LISTA UFFICIALE DELLE VETTE LA FORNISCE DENIS. Punto aperto:
+  icone/peso repo (~100 vette) - raccomandazione: 1 grafica "2000+" unica.
 
 >>> DOVE STA IL DETTAGLIO: i PIANI in C:\Users\lenovo\.claude\plans\ -
-    camoscio-v2-menu-restructure.md (il riordino, §15 con lo stato delle
-    domande), camoscio-2000-appennino-collezione.md (filone B),
-    delegated-gathering-forest.md (il piano di PASSO 7, gia' eseguito).
-    I piani delle Fasi 3/4/5 in jiggly-munching-brooks.md. Nel vault:
+    delegated-gathering-forest.md (il piano esecutivo file-per-file di
+    9->14c, ESEGUITO), camoscio-v2-menu-restructure.md (decisioni + §15),
+    camoscio-2000-appennino-collezione.md (filone B). Nel vault:
     04-Da-Fare ("PROSSIMO GRANDE LAVORO" + "Da dove si riparte"); decisioni
-    in 03 ("Camoscio v2 — riordino menu e navigazione": PASSO 6-7 + le 4
-    decisioni + la collezione 2000); parole di Denis in cose_da_fare.txt
-    ("VENTESIMA SESSIONE"); racconto nel 06 ("Ventesima sessione"). In 07
-    la trappola "[hidden] battuto da una regola d'autore su .nav-group-body".
+    in 03 ("Camoscio v2 — riordino menu e navigazione", con l'opzione A del
+    14b); parole di Denis in cose_da_fare.txt ("VENTUNESIMA SESSIONE");
+    racconto nel 06 ("Ventunesima sessione"). In 07 le trappole nuove
+    (scroll "smooth" interrotto dai render async; race di risposte in un
+    fetch con debounce).
 
->>> GIA' IN PRODUZIONE (fino alla 15a sessione, su `master`,
-    8d6990c): traduzione IT/EN (punto 102), timbri con traccia reale
-    (108), moderazione segnalazioni sentiero (111), parte social —
+>>> GIA' IN PRODUZIONE (fino alla 15a sessione, su `master`, ora
+    `origin` = `efd1290`): traduzione IT/EN (punto 102), timbri con traccia
+    reale (108), moderazione segnalazioni sentiero (111), parte social —
     Segui/Feed/"mi piace"/"crea percorso" (113), import .fit (114), nome
-    uscita editabile (115), + 4 rifiniture del 31/08. Dettaglio:
-    cose_da_fare.txt, vault 03/06/07.
+    uscita editabile (115), + 4 rifiniture del 31/08, + hotfix Ju Busciu
+    `sogliaM` (17a sessione, `efd1290`). Dettaglio: cose_da_fare.txt, vault.
     >>> LIMITE .fit/.gpx, e' il FILE non il codice: un file "smart" (o da
         Garmin Connect) ha buchi -> niente split cammino/pause. Serve 1 Hz.
     >>> DENIS DEVE RICARICARE il .gpx/.fit col ⬆ per le escursioni gia'
@@ -178,8 +124,7 @@ SESSIONE: CODICE, si parte da PASSO 9. Piano esecutivo:
 >>> RESTA VALIDO:
   - Hook "Stop" di auto-save: commit locale (MAI push) a fine di ogni
     risposta se ci sono modifiche non salvate in questo repo. Va rifuso
-    in un commit vero prima di ogni push/tappa (git reset --soft
-    sull'ultimo commit vero se gli auto-save sono piu' di uno).
+    in un commit vero prima di ogni push/tappa.
   - Traduzione IT/EN (punto 102, CHIUSO): resta ITALIANO di proposito
     tutto il testo scritto dagli utenti (didascalie del feed comprese),
     i nomi propri di luogo, i nomi dei percorsi salvati e l'etichetta

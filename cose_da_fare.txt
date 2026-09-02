@@ -9085,3 +9085,93 @@ pronto in delegated-gathering-forest.md). Niente piu' piani.
 
 Vault (04/06/03/07) aggiornato, committato e pushato. leggimi.txt
 aggiornato. cronologia.txt non toccato (congelato).
+
+
+================================================================
+VENTUNESIMA SESSIONE (02/09/2026) - V2 UX: tutto il riordino menu
+(PASSO 9 -> 14c), codice
+================================================================
+
+Parole di Denis:
+- "con l'ultima sessione abbiamo fatto tutti i piani, in questa
+  possiamo cominciare il lavoro"
+- "parti coi passi in fila senza fermarti. fermati solo se c'e' una
+  decisione che spetta a me o per un vincolo. altrimenti prosegui
+  avanti" (via libera in blocco)
+- PASSO 14b (Carpooling in hike-page): gli avevo posto la scelta,
+  perche' #carpool ha pezzi trasversali (calcolatore Split Spese
+  generico; "I Tuoi Annunci Auto" su TUTTE le uscite - punto 46;
+  form con selettore escursione). Opzioni: A) tab solo
+  per-escursione; B) tutto dentro il tab com'e'; C) ibrido.
+  Denis: "Carpooling proviamo con a"
+- PASSO 14c (Zaino): "per lo zaino vale la stessa risposta" (opzione A)
+- Sul mandare online: "ok, che dici tu possiamo mandare online tutto
+  l'aggiornamento fatto fin ora?" -> risposta: non ancora, prima
+  prova mobile + salvataggi + prove/ + security + merge. "senza push
+  come faccio la prova sul telefono?" -> LAN o tunnel effimero.
+  "intanto vai con questi punti" (rifusione auto-save, merge da
+  preparare, vault, agente security-privacy)
+
+FATTO (tutto su v2-ux, locale, NIENTE pushato; un commit vero per
+blocco, verifica dal vivo dopo ognuno):
+
+PASSO 9  - "Le mie escursioni" a 3 viste-filtro (Tutte / In programma
+  / Completate), attributo data-view + CSS, scelta in localStorage.
+  #hikes (Esplora > Escursioni) = solo scoperta. classificaMieEscursioni
+  intatta.
+PASSO 10 - Community a gruppo + sotto-voce "Amici". Ex sezione
+  #people-search RITIRATA: la ricerca per nome utente e' nella card
+  "Persone" di #social (id invariati -> peoplesearch.js non cambia).
+  navigateTo con alias + data-scroll generico.
+PASSO 11 - #badges -> #progress ("Progressi"), tutti gli id figli
+  invariati (renderBadges non si tocca) + "Il tuo cammino per zona"
+  (tutte le zone). #badges resta alias.
+PASSO 11b - statistiche filtrabili per data in #progress (intervallo
+  + rapidi). UNICO tocco backend: GET /api/tracking/totals ora anche
+  ?from=&to= (oltre ?anno=). Nessun modello/indice/migrazione.
+PASSO 12 - #my-profile SDOPPIATA: "Profilo" sola vista / "Impostazioni"
+  (#settings, nuova) = foto/bio/esperto/password/lingua/logout +
+  placeholder inerti. Controlli SPOSTATI, id invariati.
+PASSO 13 - "+ Crea" apre un popover (nuova escursione / nuovo
+  percorso). Chiude su click-fuori/Esc; flip verso l'alto.
+PASSO 8  - DRAWER MOBILE (<=900px): hamburger + sidebar off-canvas +
+  scrim; riscritta la @media (via il rail e la regola-ponte);
+  bandiere lingua nel drawer. VERIFICATO SOLO IN SIMULAZIONE - prova
+  vera sul telefono al deploy.
+PASSO 14a - via il blocco "STRUMENTI"; "Sicurezza" foglia dell'AREA
+  PERSONALE. #safety internamente invariato.
+PASSO 14b - Carpooling = TAB di hike-page (4 tab). OPZIONE A: solo
+  per-escursione. "Offri un Passaggio" senza selettore; "I Tuoi
+  Annunci" -> annuncio della singola uscita; Split Spese generico
+  resta. #carpool ritirata.
+PASSO 14c - Zaino = TAB di hike-page. Niente selettore ne' "zaino
+  personale" (Q6): contesto sempre = l'escursione del tab. #backpack
+  ritirata.
+
+Struttura finale: Home / Esplora v / Le mie escursioni v / Community
+v / + Crea / AREA PERSONALE: Progressi, Profilo, Impostazioni,
+Sicurezza. Sezioni ritirate: #carpool, #backpack, #people-search.
+hike-page con 4 tab interni.
+
+Verifica: ogni blocco dal vivo (account reale sola lettura / DB demo,
+IT+EN, zero errori JS); sweep finale nav desktop pulito. NON
+esercitate le scritture DB (pubblica offerta carpool, join/leave,
+conferma zaino, salva profilo/foto/bio/esperto, cambia password).
+
+Git: rifusi i 2 auto-save di note (130cfd8 + 0f4a68f -> a34b5f1) con
+rebase --onto (conflict-free). Backup: v2-ux-backup-preref. v2-ux e'
+1 commit indietro a origin/master = efd1290 (hotfix Ju Busciu) - il
+merge lo riconcilia, atteso conflict-free.
+
+DA FARE PRIMA DEL PUSH (lo decide Denis):
+1. prova mobile sul telefono di Denis (drawer, tab di hike-page,
+   layout stretto) - senza deploy: server sulla LAN (secure:false in
+   locale, login regge in HTTP) o tunnel effimero
+2. verifica responsive Dashboard <900px (ex "punto 3")
+3. suite prove/
+4. leggere l'esito dell'agente security-privacy (lanciato in questa
+   sessione sul diff v2-ux)
+5. merge v2-ux -> master + push
+
+Vault (04/06/03/07) aggiornato, committato e pushato. leggimi.txt
+aggiornato. cronologia.txt non toccato (congelato).
