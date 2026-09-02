@@ -1,21 +1,24 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-09-02 (VENTICINQUESIMA sessione — tre rifiniture
-segnalate da Denis provando la v2, tutte su `master`, push
-`54474ee..d363eea` (3 commit veri rifusi dai 3 auto-save, `diff`
-verificato identico): (1) menu "Le mie escursioni"/"Community" ora
-aprono la tendina e basta, come "Esplora" (`c0de245`); (2) la Terminillo
-chiusa in gruppo non resta piu' "In programma" anche senza `Completion`
-(`c278e25`); (3) niente iscrizioni oltre il giorno previsto
-dell'escursione, 409 lato server (`d363eea`). Dettaglio: vault
-04-Da-Fare (frontmatter) + 06 ("Venticinquesima sessione"); parole di
-Denis in cose_da_fare.txt ("VENTICINQUESIMA SESSIONE").)
+Aggiornato: 2026-09-02 (VENTISEIESIMA sessione — cancellazione escursione
++ due vulnerabilita' preesistenti chiuse. Sessione INTERROTTA da uno
+spegnimento del PC; niente perso (auto-save `14f7596` col codice giusto,
+rifuso in `85d537b`). Push `655af09..85d537b` su `master`. (1) DELETE
+/api/hikes/:id: il creatore cancella una sua escursione, anche dopo la
+chiusura di gruppo, con cascata completa (`7d2de46`, era gia' committato
+prima del crash). (2) Due falle trovate dall'agente security-privacy su
+`7d2de46`: PUT /api/hikes/:id lasciava il creatore aggiungere UNO
+SCONOSCIUTO a participants -> gruppo mesh/SOS -> GPS reale; ora solo
+richiedenti / gia'-dentro / compagni di una sua squadra. E complete-group
+senza limiter/tetto: aggiunti scritturaLimiter + tetto 200 + avviso a chi
+e' segnato presente senza essere iscritto (`85d537b`). Dettaglio: vault
+04-Da-Fare (frontmatter) + 06 ("Ventiseiesima sessione") + 03 + 07.)
 
 >>> SI LAVORA SU `master`, hotfix normali (commit vero + push -> Render
     ridistribuisce). L'hook di auto-save committa in locale (mai push):
     va rifuso in UN commit vero (`git reset <base>` + commit per pezzo)
-    prima di ogni push. Fatto cosi' per i tre lavori di oggi.
-    origin/master = `d363eea`.
+    prima di ogni push. Fatto cosi' per il lavoro di oggi.
+    origin/master = `85d537b`.
 
 >>> AZIONI MANUALI DI DENIS, aperte:
   1. NUOVA — ACCOUNT_SCRUB_SECRET su Render (stringa a scelta, DIVERSA da
@@ -48,54 +51,68 @@ Denis in cose_da_fare.txt ("VENTICINQUESIMA SESSIONE").)
     piccolo punto aperto — buon candidato per la prossima sessione.
   - TTL sulle Notification che nominano un utente (dall'agente): un
     "Mario Rossi ha chiesto di..." resta per sempre nelle notifiche
-    altrui, col nome vero anche dopo l'eliminazione di Mario. Il fix di
-    oggi (nomeVisibile) copre solo le notifiche NUOVE. Cambio schema
-    app-wide + migrazione -> a se'.
+    altrui, col nome vero anche dopo l'eliminazione di Mario. Il fix
+    (nomeVisibile, 24a sessione) copre solo le notifiche NUOVE. Cambio
+    schema app-wide + migrazione -> a se'.
+  - INVITO SQUADRA DIREZIONALE "decide l'invitato" (dalla 26a, parole di
+    Denis): creatore invita la squadra -> notifica a TUTTI i membri ->
+    solo chi accetta diventa partecipante, chi rifiuta no. Oggi il
+    creatore puo' ancora aggiungere lui un compagno di squadra: la falla
+    e' chiusa (niente estranei) ma manca il passo "accetta". Serve campo
+    Hike.pendingInvites, rotta invite-response, UI Accetta/Rifiuta,
+    riscrittura di prova-invito-squadra (59 asserzioni). Sessione intera,
+    valutare l'agente architect. Piano: vault 04 + 03 + 06.
 
->>> COSA E' STATO FATTO OGGI (dettaglio: vault 03/06/07, cose_da_fare.txt
-    "VENTICINQUESIMA SESSIONE"):
+>>> COSA E' STATO FATTO OGGI (dettaglio: vault 03/06/07):
 
-  (1) MENU — "Le mie escursioni" e "Community" avevano un data-target
-  sulla testa: un clic navigava, e su telefono navigateTo chiude il
-  drawer -> la tendina delle viste non si vedeva mai. Tolto il
-  data-target da index.html + ramo morto in app.js: ora sono toggle puri
-  come "Esplora", naviga chi clicca una sotto-voce. "Community" non ha
-  piu' un ingresso diretto a #social: ci si entra da "Amici". (c0de245)
+  Sessione INTERROTTA a meta' da uno spegnimento del PC (il terzo). Alla
+  ripresa: procedura da vault 07 ("dopo un'interruzione, git prima delle
+  note"). Niente perso — l'hook Stop aveva committato un auto-save
+  (14f7596) col codice giusto, rifuso poi in un commit vero.
 
-  (2) TERMINILLO "IN PROGRAMMA" — classificaMieEscursioni (social.js)
-  guardava solo il Completion personale, mai hike.groupCompletedAt. La
-  Terminillo ha groupCompletedAt ma ZERO Completion (cancellato dalla
-  lista "Completate", che non ha guardie). Scelta di Denis: SOLO
-  classificazione, nessuna scrittura DB. Ora completata = Completion ||
-  (groupCompletedAt && (creatore || in participants)); renderCompletate
-  (storico.js) disegna la card anche senza Completion (via solo il tasto
-  carica-gpx e il cestino). Simulazione sui dati veri: cambia bucket solo
-  "Monte Terminillo". Consapevole: cancellare il Completion di
-  un'escursione chiusa in gruppo NON la ristrappa in "In programma", la
-  card torna (senza carica-gpx/cestino). (c278e25)
+  (1) DELETE /api/hikes/:id — il creatore cancella una sua escursione,
+  anche dopo la chiusura di gruppo. Richiesta di Denis ("poter togliere
+  le escursioni di prova"), nata dalla 25a (il cestino sulle card
+  "completate in gruppo" toglieva il Completion ma la card restava).
+  cancellazioneLimiter a se' (NON scritturaLimiter, che arma il DMS);
+  409 se c'e' una ActiveHikeSession viva; cascata su tracce concluse +
+  Like/Notification/TrailCandidate loro, Completion di tutti, chat,
+  Notification(relatedHikeId), RouteBookmark; completedHikes-1 in bulk;
+  passo ricalcolato; avviso ai partecipanti; seconda passata dopo
+  Hike.deleteOne (TOCTOU). Client: conferma rossa col conteggio iscritti.
+  Prova prova-elimina-escursione 52/52. (7d2de46 — era gia' committato
+  prima del crash, pushato ora)
 
-  (3) NIENTE ISCRIZIONI OLTRE LA DATA — nato da Sheldon auto-approvato il
-  02/09 sulla Terminillo del 22/08 (manualApproval:false, nessun
-  controllo). Scelta di Denis ("nessuno, in nessun modo"): hike.date <
-  oggi (fuso Europe/Rome) -> PUT /api/hikes/:id risponde 409
-  HIKE_DATE_PASSED su OGNI aggiunta a participants/pendingApproval
-  (auto-iscrizione, richiesta, invito squadra, aggiunta a mano del
-  creatore). Rimozioni sempre libere. complete-group e' un'altra rotta,
-  non toccata. REVOCA la vecchia scelta "nessun filtro sulla data di
-  proposito" su mieEscursioniAperte. oggiRomaISO esportato da
-  lib/accountDeletion.js. Client: badge "Iscrizioni chiuse", avviso con
-  la data prevista, res.ok ORA letto in joinHikeRequest/approveParticipant
-  (prima ignoravano gli errori HTTP). (d363eea)
+  (2) DUE VULNERABILITA' PREESISTENTI (agente security-privacy su
+  7d2de46, NON regressioni):
+   (a) PUT /api/hikes/:id — il creatore NON aveva nessun filtro su chi
+   aggiungere a participants/pendingApproval: un PUT {participants:[<id>]}
+   con un id preso da GET /api/users bastava per infilare uno sconosciuto
+   nel gruppo mesh/SOS di un'escursione non conclusa e riceverne il GPS
+   reale (server.js). Ora il creatore puo' aggiungere solo: chi ha gia'
+   chiesto, chi e' gia' dentro, o un membro di una squadra di cui LUI fa
+   parte (Squad.find({members}), di proposito piu' largo del creatorId
+   dell'invito-squadra di POST /). 403 HIKE_AGGIUNTA_NON_CONSENTITA.
+   Rimozioni sempre libere.
+   (b) POST /:id/complete-group — nessun rate limiter, nessun tetto alla
+   lista, nessun avviso a chi era "segnato presente" senza essere
+   iscritto. Aggiunti scritturaLimiter, tetto 200, Notification a chi e'
+   confermato ex novo.
+   (85d537b)
 
-  Prove aggiornate: prova-punto77 (data della hike -> futura: il passo 3
-  aggiunge un partecipante, ora 409 con data passata), prova-invito-
-  squadra (asserzione "una data passata NON esclude" -> invertita).
-  Verdi: prova-punto77 17/17, prova-invito-squadra 59/59,
-  prova-eliminazione-account 57/57, prova-punto93 28/28. node --check OK
-  su tutti e 6 i file toccati.
+  Prova nuova prove/prova-partecipanti-forzati.js (21/21). Era rossa NON
+  per il codice: usava Sofia (demo[2]) come estraneo, ma i 4 demo non
+  sono scollegati — Marco/Luca/Sofia stanno tutti in "I Camosci della
+  Val Brembana". Giulia (demo[3]) e' l'unica libera. Trappola in vault 07.
+  Regressioni verdi: prova-invito-squadra 59/59, prova-elimina-escursione
+  52/52, prova-punto77 17/17. node --check OK.
 
->>> GIA' IN PRODUZIONE prima di oggi (origin/master era `54474ee`):
-    24a sessione — menu "Squadre" nella sidebar (122cb15); punto A-3.4
+>>> GIA' IN PRODUZIONE prima di oggi (origin/master era `d363eea`):
+    25a sessione — tre rifiniture v2 (menu "Le mie escursioni"/"Community"
+    aprono solo la tendina c0de245; Terminillo chiusa in gruppo non resta
+    "In programma" c278e25; niente iscrizioni oltre il giorno previsto,
+    409 HIKE_DATE_PASSED d363eea). 24a sessione — menu "Squadre" nella
+    sidebar (122cb15); punto A-3.4
     eliminazione account, soft-delete in due tempi + giro agente
     security-privacy 1 critico + 5 alti chiusi (543cc4c); password
     temporanea per Camilla (camilla2026, DA CAMBIARE). Prima ancora:

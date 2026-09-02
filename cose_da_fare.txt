@@ -9567,3 +9567,112 @@ Dettaglio: vault 06 ("Venticinquesima sessione"), 03 ("Niente iscrizioni
 oltre il giorno previsto"), 07 (2 trappole nuove). leggimi.txt
 aggiornato. Vault committato e pushato. cronologia.txt NON toccato
 (congelato).
+
+
+===================================================================
+VENTISEIESIMA SESSIONE (02/09/2026) — cancellazione escursione + due
+vulnerabilita' preesistenti. Sessione interrotta a meta' da uno
+spegnimento del PC, ripresa senza perdite. Push 655af09..85d537b.
+===================================================================
+
+--- CANCELLAZIONE ESCURSIONE (DELETE /api/hikes/:id) ---
+    [7d2de46, committato prima del crash, pushato ora]
+
+Richiesta di Denis: poter davvero togliere le escursioni (nasce dalla
+25a — offerto di nascondere il cestino sulle card "completate in
+gruppo", Denis ha invece chiesto la cancellazione vera). Prima non
+esisteva nessun modo di cancellare una Hike: creata = per sempre, e dopo
+la chiusura di gruppo spariva anche "Modifica".
+
+Fatto:
+- Server (routes/hikes.js): DELETE /api/hikes/:id, solo il creatore (403
+  agli altri), funziona anche dopo la chiusura di gruppo. Limiter suo
+  (cancellazioneLimiter 20/ora) e NON scritturaLimiter, che e' condiviso
+  con POST /api/safety/activate: ripulire escursioni di prova non deve
+  poter esaurire il secchio che arma il Dead Man's Switch. 409 se c'e'
+  una ActiveHikeSession non 'ended' su quella hike (il DMS legge la
+  posizione da li'). Cascata: tracce concluse collegate coi loro Like /
+  Notification / TrailCandidate; Completion di tutti; chat;
+  Notification(relatedHikeId); RouteBookmark; TrailCandidate(hikeId).
+  completedHikes-1 in bulk ($inc); passo personale ricalcolato a chi
+  aveva solo la traccia. Avviso a ogni partecipante. Seconda passata
+  dopo Hike.deleteOne (TOCTOU). Badge di vetta e SavedRoute non toccati.
+- Client: social.js deleteHike() con conferma rossa (quanti altri
+  iscritti, cosa sparisce); "Elimina escursione" nel menu della card e
+  nelle card "Completate" per il creatore. storico.js: il cestino
+  "personale" resta solo dove ha un effetto visibile.
+- Prova: prove/prova-elimina-escursione.js 52/52.
+
+--- DUE VULNERABILITA' PREESISTENTI ---
+    [85d537b] Trovate dall'agente security-privacy rivedendo 7d2de46.
+    NON sono regressioni: erano li' da prima.
+
+(1) PUT /api/hikes/:id — il CREATORE non aveva NESSUN filtro su chi
+    aggiungere a participants/pendingApproval. Un PUT {participants:[<id
+    sconosciuto>]} bastava per infilare quella persona nel gruppo
+    mesh/SOS di un'escursione non conclusa e riceverne le coordinate GPS
+    reali quando manda un pacchetto mesh (server.js). Il filtro c'era
+    solo per i NON creatori.
+    Ora il creatore puo' aggiungere solo: chi ha gia' chiesto di
+    partecipare, chi e' gia' dentro, o un membro di una squadra di cui
+    fa parte. Le rimozioni restano libere. 403
+    HIKE_AGGIUNTA_NON_CONSENTITA.
+
+    Decisione di Denis su QUALI squadre (chiesto con AskUserQuestion +
+    chiarito a voce): "qualsiasi squadra di cui e' membro [...] se io
+    faccio parte di una squadra posso inviare richiesta di
+    partecipazione, non aggiungerli e basta". Quindi Squad.find({
+    members: userId }) — di proposito PIU' LARGO del creatorId usato
+    dall'invito-squadra automatico di POST /api/hikes. Incoerenza voluta
+    fra le due rotte.
+
+(2) POST /api/hikes/:id/complete-group — nessun rate limiter, nessun
+    tetto alla lista confirmedUserIds, e chi veniva "segnato presente"
+    senza essere iscritto non ne sapeva niente. Ora: scritturaLimiter,
+    tetto 200 (una lista lunga e' l'unico vettore per creare Completion
+    in massa per utenti scelti a piacere), e un avviso (Notification,
+    best-effort) a chi viene aggiunto ex novo.
+
+Prova nuova: prove/prova-partecipanti-forzati.js 21/21. Era rossa NON
+per il codice ma per i dati: usava Sofia (demo[2]) come "estraneo", ma i
+4 account demo non sono scollegati fra loro — Marco/Luca/Sofia stanno
+tutti nella squadra reale "I Camosci della Val Brembana". Giulia
+(demo[3]) e' l'unica in nessuna squadra. Corretta usandola come
+estraneo, + prova della causalita' (stessa aggiunta: 403 prima di
+entrare in una squadra di A, 200 dopo). Trappola in vault 07.
+Regressioni verdi: prova-invito-squadra 59/59, prova-elimina-escursione
+52/52, prova-punto77 17/17.
+
+--- RIMANDATO: INVITO SQUADRA DIREZIONALE ("decide l'invitato") ---
+    NUOVO PUNTO APERTO, parole di Denis:
+
+"se io creatore dei 'Merenderos in Vetta' creo un escursione e invito la
+squadra. a tutti i partecipanti della squadra arriva la notifica del mio
+invito a partecipare al escursione. solo chi accetta diventa
+partecipante. chi rifiuta no. saranno gli invitati a decidere se possono
+o vogliono partecipare. non io come creatore della squadra"
+
+La versione minima di questa sessione chiude la vulnerabilita' (niente
+estranei) ma NON fa questo: il creatore puo' ancora aggiungere lui un
+compagno di squadra, o metterlo in pendingApproval e approvarlo dal
+pannello Veto. Il modello direzionale e' lavoro a se':
+- nuovo campo Hike.pendingInvites, separato da pendingApproval
+  (semantica opposta: la' finalizza il creatore, qui l'invitato).
+  default: undefined per il vincolo spazio.
+- rotta POST /api/hikes/:id/invite-response { accept }: solo chi e' in
+  pendingInvites si sposta da se' in participants (accetta) o esce
+  (rifiuta). Blocca se conclusa o data passata. Notifica al creatore.
+- client: confermaInvitoSquadra scrive pendingInvites anche per il
+  creatore; UI Accetta/Rifiuta per l'invitato; classificaMieEscursioni
+  conta gli inviti come "in attesa"; il pannello Veto NON mostra
+  accetta/rifiuta per gli invitati.
+- riscrittura di prove/prova-invito-squadra.js (59 asserzioni, oggi
+  costruite attorno a "creatore/partecipante invita -> participants
+  diretto", casi A4/A5/B8 — si invertono) e prova-partecipanti-forzati.
+- valutare l'agente architect. E' il lavoro di una sessione intera.
+
+Dettaglio: vault 06 ("Ventiseiesima sessione"), 03 ("Aggiunta manuale di
+partecipanti dal creatore + tetto a complete-group"), 07 ("I 4 account
+demo non sono estranei fra loro"), 04 (frontmatter + punto rimandato).
+leggimi.txt aggiornato. Vault committato e pushato. cronologia.txt NON
+toccato (congelato).
