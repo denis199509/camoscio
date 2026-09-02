@@ -8902,3 +8902,186 @@ decisione icone della collezione 2000, poi PASSO 7 (sidebar desktop).
 Punti 2 e 3 assorbiti nel riordino (2 -> Progressi, 3 -> dopo il drawer).
 
 Vault committato e pushato. cronologia.txt non toccato (congelato).
+
+
+================================================================
+VENTESIMA SESSIONE (01/09/2026) - V2 UX PASSO 7: sidebar a gruppi
+================================================================
+
+Denis: "possiamo continuare con il lavoro. abbiamo gia il piano.
+possiamo continuare o hai altre cose da chiarire?"
+
+Ricaricata la memoria (sessione nuova). Il piano del riordino menu
+(19a sessione) e' completo ma lascia 9 domande minori (§15) "da
+chiudere a inizio sessione, poi PASSO 7". Triage: 4 chiuse con Denis
+via AskUserQuestion, 3 decise da me con la proposta del piano, 2
+rimandate a PASSO 14+.
+
+LE 4 DOMANDE CHIUSE (AskUserQuestion, tutte "consigliato"):
+- Q1 accordion: UNO alla volta (apre uno, chiude gli altri). Meno
+  rumore, coerente con "menu corto". Stato in localStorage.
+- Q2 pagina Progressi: NUOVA sezione #progress, #badges tenuta come
+  ALIAS/redirect (non rompe link/segnalibri). Realizzata a PASSO 11.
+- Q5 "+ Crea": VOCE NEL MENU (blocco AZIONE), non un FAB globale - un
+  FAB "+" si confonderebbe col #report-fab arancione della Mappa.
+- Q3 "Cerca Persone": la vecchia #people-search -> REDIRECT a Community
+  (intercettazione in navigateTo). Realizzato a PASSO 10.
+
+DECISE DA ME (proposta del piano, non disturbato Denis):
+- Q9 icone data-lucide: mappa gia' nel piano (home/compass/mountain/
+  users/plus/trophy/user/settings, Ispirazioni->sparkles).
+- Q8 disintreccio hikes/my-hikes: dentro PASSO 9, scorporato solo se
+  cresce troppo.
+- voci-ponte: Carpooling/Zaino/Sicurezza restano raggiungibili in un
+  blocco "STRUMENTI" della sidebar finche' PASSO 14+ (D1) non li
+  sposta dentro hike-page. Cosi' il sito resta navigabile a ogni tappa.
+
+RIMANDATE:
+- Q4 esperto locale (Profilo vista vs Impostazioni config): a inizio
+  PASSO 12. Proposta ferma: Profilo in lettura, modifica in Impost.
+- Q6 (zaino personale slegato da un'uscita) e Q7 (sicurezza: timer nel
+  contesto uscita + dove tengo mesh simulator e accesso rapido -
+  tocca il vincolo 7): a PASSO 14+, con discussione dedicata con Denis
+  PRIMA di implementare.
+
+---
+
+Interruzione: Denis "quando puoi mi fai una lista delle persone
+registrate". Fatto con scripts/utenti-registrati.js (sola lettura,
+data ricavata dall'_id, ora italiana): 12 persone reali + 4 demo. Dal
+30/08 (10 reali) sono arrivati Denis08 e Sakka. Camilla ferma da 3
+settimane senza confermare l'email.
+
+---
+
+Denis: "si prosegui pure" (dopo aver chiesto se preparare il piano di
+PASSO 7). Poi, ad approvazione: piano PASSO 7 scritto (EnterPlanMode,
+file delegated-gathering-forest.md), approvato.
+
+PASSO 7 - SIDEBAR DESKTOP A GRUPPI (commit e33be1b su v2-ux, locale,
+NON pushato). 5 file, +332/-65:
+
+- index.html: <nav> da lista piatta a 4 BLOCCHI (NAVIGAZIONE / AZIONE
+  / AREA PERSONALE / STRUMENTI). Gruppo "Esplora" a fisarmonica
+  (Escursioni/Mappa/Ispirazioni): la testa NON naviga, apre/chiude il
+  corpo. Voce "+ Crea". Blocco STRUMENTI = PONTE (Carpooling/Zaino/
+  Sicurezza fino a PASSO 14+). #section-title di default "Dashboard"
+  -> "Home".
+- app.js (setupNavigation, gia' agganciato presto): prettyNames 4
+  rinomine; accordion UNO alla volta + stato in localStorage;
+  navigateTo apre il gruppo della foglia attiva e ne segna la testa
+  "is-current" (accento tenue, non il pieno di .active); una foglia
+  fuori dai gruppi NON chiude quello aperto; copre anche i
+  .btn-nav-trigger delle card della Dashboard. Wiring di "+ Crea".
+- i18n.js: nuove chiavi nav.home/esplora/ispirazioni/community/crea +
+  4 nav.blocco.*; nav.map "Map & Trails" -> "Map"; sectionTitle.*
+  allineati (feed->Inspiration, map->Map, social->Community);
+  feed.titolo "Feed" -> "Inspiration".
+- styles.css: .nav-group / .nav-group-head (chevron che ruota) /
+  .nav-block-label / .nav-crea. REGOLA-PONTE nella @media 900:
+  intestazioni e teste sparite, corpi sempre aperti = identico al rail
+  a icone di oggi. Il drawer vero e' PASSO 8.
+- social.js: apertura del modale "nuova escursione" estratta in
+  window.apriModaleNuovaEscursione (era chiusa nel listener di
+  #btn-open-create-hike, agganciato tardi); il tasto vecchio e "+ Crea"
+  chiamano la stessa funzione.
+
+RINOMINE (SOLO etichette, data-target e id di sezione INVARIATI -
+restano dashboard/feed/social; rinominare i data-target farebbe
+ricadere il lavoro su ogni .btn-nav-trigger sparso): Dashboard->Home,
+Feed->Ispirazioni, Mappa & Sentieri->Mappa, Tribu' & Squadre->Community.
+
+VERIFICATO IN LOCALE (account REALE di Denis, sola lettura, ZERO
+scritture su Atlas): 11 destinazioni raggiungibili col menu nuovo
+IT+EN; fisarmonica apre/chiude senza navigare, una alla volta; stato
+annidato corretto; navigare su una foglia non chiude il gruppo;
+deep-link della Dashboard aprono il gruppo giusto; "+ Crea" apre il
+modale e il tasto dentro Escursioni funziona ancora; localStorage
+ricorda il gruppo al reload; header = voce di menu ovunque.
+
+BUG TROVATO E CORRETTO DURANTE LA VERIFICA: prettyNames["social"] era
+rimasto "Tribu' & Squadre" - avevo aggiornato solo la chiave EN
+sectionTitle.social. In ITALIANO l'header non seguiva il menu.
+Lezione: una rinomina di sezione = DUE modifiche, prettyNames (IT,
+app.js) + sectionTitle.* (EN, i18n.js).
+
+Denis: "allinea anche il titolo interno del Feed a Ispirazioni".
+Fatto: feed.titolo (l'<h4> della card intro) -> "Ispirazioni" /
+"Inspiration", icona newspaper -> sparkles. NON toccato "il feed" come
+nome comune del flusso nei testi publish.* ("Pubblica nel feed", "Togli
+dal feed", messaggi d'errore) - la' "feed" e' la parola giusta e
+rinominarla peggiorerebbe la UX; se lo vuole anche li' e' un lavoretto
+a se' su publish.* + storico.js.
+
+LIMITI DELLA VERIFICA: console non leggibile - l'estensione Chrome
+blocca javascript_tool e read_console_messages su questo localhost
+("Cookie/query string data"). Nessun errore visibile in ~25
+interazioni, e un errore in setupNavigation avrebbe ucciso del tutto
+la navigazione (che invece funziona). <900px SOLO simulato
+(resize_window inaffidabile, noto): la regola-ponte tiene il rail
+attuale, prova vera a PASSO 8 + telefono di Denis al deploy.
+
+TRAPPOLA NUOVA (in 07-Trappole-Tecniche.md): .nav-group-body {
+display:flex } come regola d'autore batte il display:none di [hidden]
+dello UA sheet (stessa specificita', autore > UA) -> il corpo del
+gruppo restava sempre aperto. Fix: display solo su
+.nav-group-body:not([hidden]).
+
+CHIUSURA: Denis "dai l'ok per il commit di PASSO 7", poi "registra
+chiusura passo 7 e vai con il prossimo". Auto-save 537d4a3 + e115932
+rifusi con git reset --soft 1dd4957 in un unico commit e33be1b
+"V2 UX PASSO 7: sidebar a gruppi + rinomine menu (fase locale)".
+
+STATO: v2-ux = 7 commit veri (7915762, 48fb101, 5e2c01d, 0f42aa5,
+309ab92, 7f8b697, e33be1b) + note, working tree pulito, NIENTE
+PUSHATO. master = efd1290; v2-ux 11 avanti / 1 indietro (l'hotfix Ju
+Busciu, da riallineare al merge di fine v2).
+
+--- SECONDA PARTE: tutti i piani rimanenti scritti ---
+
+Denis: "direi che possiamo prima scrivere i piani per tutti i punti poi
+cominciamo con il codice".
+
+Scritto il PIANO ESECUTIVO di tutti i blocchi rimanenti - 9 -> 10 ->
+11 -> 11b -> 12 -> 13 -> 8 (drawer) -> 14a/b/c - file per file, con i
+meccanismi condivisi di PASSO 7 in testa (riusati ovunque):
+  C:\Users\lenovo\.claude\plans\delegated-gathering-forest.md
+
+Prima erano stati approvati (ExitPlanMode) i piani di PASSO 9 (poi
+"parcheggiato" e ripreso qui), 10 e 11; poi Denis ha chiesto di
+scrivere anche 11b/12/13/8/14 prima di toccare codice.
+
+TUTTE LE DOMANDE §15 CHIUSE (AskUserQuestion):
+- Q4 esperto locale (interruttore + zona): PROFILO MOSTRA lo stato in
+  sola lettura, IMPOSTAZIONI ha l'interruttore + il campo per cambiarlo.
+- Q5 "+ Crea": popover con 2 voci - Nuova escursione + Nuovo percorso.
+  NIENTE "nuova squadra" (la squadra si crea dalla sua card in
+  Community, e' un flusso diverso con ricerca membri).
+- Q6 zaino personale slegato da un'escursione: Denis - "in teoria non
+  serve. la funzione zaino personale in teoria serve proprio per
+  escursioni quindi va bene cosi". -> Zaino va TUTTO in hike-page
+  (PASSO 14c), #backpack .page-section si ritira PER INTERO, nessuna
+  sezione ne' voce residua.
+- Q7 #safety: esplorando si e' visto che il timer Dead Man's Switch e'
+  GIA' nella sezione Mappa - #safety ha solo un RIMANDO al timer, +
+  il registro avvisi + il Simulatore Mesh (NON per-escursione).
+  Decisione: #safety RESTA una sezione a se', spostata come foglia
+  "Sicurezza" in AREA PERSONALE. SOLO Carpooling e Zaino vanno in
+  hike-page (14b/14c). Il blocco "STRUMENTI" (ponte di PASSO 7)
+  sparisce a PASSO 14a.
+- Q8/Q9: viste "mie" e icone data-lucide dentro PASSO 9.
+
+hike-page (14b/c) cresce da 3 card (header/membri/chat) a TAB interni
+(Dettagli / Chat / Carpooling / Zaino), una vista per volta, init
+pigra per tab.
+
+STATO FINALE 20a SESSIONE: v2-ux = 7 commit veri (7915762 ... e33be1b)
++ auto-save di note (130cfd8, da rifondere con git reset --soft),
+working tree pulito, NIENTE PUSHATO. master = efd1290; v2-ux 11
+avanti / 1 indietro (hotfix Ju Busciu).
+
+PROSSIMA SESSIONE: CODICE - si parte da PASSO 9 (piano esecutivo
+pronto in delegated-gathering-forest.md). Niente piu' piani.
+
+Vault (04/06/03/07) aggiornato, committato e pushato. leggimi.txt
+aggiornato. cronologia.txt non toccato (congelato).

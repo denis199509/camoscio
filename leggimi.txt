@@ -1,9 +1,12 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-09-01 (DICIANNOVESIMA sessione — PASSO 6 fatto (titoli
-sezione = voce di menu) + DUE PIANI nuovi, solo pianificati: riordino
-menu/navigazione e collezione "I 2000 dell'Appennino". 6 commit su
-`v2-ux`, NIENTE pushato. Codice del riordino: prossima sessione).
+Aggiornato: 2026-09-01 (VENTESIMA sessione — PASSO 7 fatto e committato
+(`e33be1b`): sidebar a GRUPPI + rinomine menu (Home / Ispirazioni /
+Mappa / Community). Verificato in locale IT+EN. Poi: SCRITTI I PIANI
+ESECUTIVI DI TUTTI I BLOCCHI RIMANENTI (9 -> 14c) e chiuse tutte le
+domande §15. 7 commit veri su `v2-ux`, NIENTE pushato. PROSSIMA
+SESSIONE: CODICE, si parte da PASSO 9. Piano esecutivo:
+.claude/plans/delegated-gathering-forest.md).
 
 >>> LAVORO IN CORSO: revisione UX del sito ("Camoscio v2"). Si lavora
     ESCLUSIVAMENTE IN LOCALE sul branch `v2-ux`, un blocco alla volta.
@@ -15,10 +18,14 @@ menu/navigazione e collezione "I 2000 dell'Appennino". 6 commit su
     `V2 UX PASSO n: ...` su `v2-ux` (locale). Alla fine: merge su
     `master` + push. L'hook di auto-save committa comunque sul branch;
     va rifuso in un commit vero (git reset --soft) prima di ogni tappa.
-    La DASHBOARD e' finita (Fasi 1-5). Il blocco successivo = RIORDINO
-    MENU/NAVIGAZIONE (piano pronto, codice da fare - vedi sotto).
+    La DASHBOARD e' finita (Fasi 1-5). Il RIORDINO MENU/NAVIGAZIONE e'
+    in corso: PASSO 7 fatto (sidebar desktop). I PIANI DI TUTTI I BLOCCHI
+    RIMANENTI SONO GIA' SCRITTI (Denis: "prima i piani, poi il codice") -
+    dettaglio file-per-file in .claude/plans/delegated-gathering-forest.md.
+    Ordine: 7 -> 9 -> 10 -> 11 -> 11b -> 12 -> 13 -> 8 (drawer mobile) ->
+    14a/b/c. Da qui in poi la prossima sessione FA CODICE, non piani.
 
->>> FATTO su `v2-ux` (6 commit, NON pushati) — DASHBOARD (Fasi 1-5) + PASSO 6:
+>>> FATTO su `v2-ux` (7 commit, NON pushati) — DASHBOARD (Fasi 1-5) + PASSO 6-7:
   - `7915762` PASSO 1 — apertura Dashboard contestuale. Via "Benvenuto" +
     le 3 statistiche; nuovo header .dash-hero (fuori dalla .dashboard-grid):
     "Ciao [Nome] 👋" + sottotitolo contestuale + [🥾 Trova un'escursione]
@@ -53,70 +60,102 @@ menu/navigazione e collezione "I 2000 dell'Appennino". 6 commit su
     commenti riscritti. ZERO CSS, ZERO logica. NB: il piano del riordino
     menu (sotto) rilavora comunque tutta la mappa nav.*/sectionTitle.*/
     prettyNames alle rinomine - il principio "header = menu" resta.
+  - `e33be1b` PASSO 7 (20a sessione) — sidebar a GRUPPI. <nav> in 4
+    blocchi (NAVIGAZIONE / AZIONE / AREA PERSONALE / STRUMENTI); gruppo
+    "Esplora" a fisarmonica (Escursioni/Mappa/Ispirazioni); voce "+ Crea"
+    (apre create-hike-modal, corpo estratto in
+    window.apriModaleNuovaEscursione); blocco PONTE "Strumenti" =
+    Carpooling/Zaino/Sicurezza finche' PASSO 14+ non li sposta in
+    hike-page. Rinomine (SOLO etichette, data-target invariati):
+    Dashboard->Home, Feed->Ispirazioni (anche il titolo interno della
+    pagina Feed + icona sparkles), Mappa & Sentieri->Mappa, Tribu' &
+    Squadre->Community. app.js: accordion UNO alla volta + stato in
+    localStorage; navigateTo apre il gruppo della foglia attiva e ne
+    segna la testa "is-current". CSS: .nav-group/.nav-crea + regola-PONTE
+    @media 900 = rail a icone di oggi (drawer vero = PASSO 8). Decisioni
+    §15: accordion singolo, #progress+alias (PASSO 11), + Crea voce non
+    FAB, #people-search redirect (PASSO 10), Q8/Q9 chiuse; Q4->PASSO 12,
+    Q6/Q7->PASSO 14+.
 
   Dashboard: verificato in locale sull'account REALE di Denis (badge veri,
   sola lettura; escursioni finte solo in memoria del browser): tutti gli
   stati, Gran Sasso 4/7, IT<->EN, console pulita. Responsive <900px solo
   in simulazione (resize_window inaffidabile) - da guardare al deploy.
   PASSO 6: verificato in locale (demo Marco Alpinista, 11 sezioni x IT/EN,
-  header = menu su tutte, console pulita; larghezza mobile misurata col
-  font a 1rem - il piu' largo dei 5 ~116px contro ~230px di spazio).
+  header = menu su tutte, console pulita).
+  PASSO 7: verificato in locale (account reale, sola lettura, zero
+  scritture DB) - 11 destinazioni IT+EN, fisarmonica, stato annidato,
+  deep-link Dashboard, + Crea, localStorage. Console NON leggibile
+  (l'estensione Chrome blocca javascript/console su questo localhost);
+  nessun errore visibile in ~25 interazioni. <900px solo simulato.
+  Bug trovato e corretto in verifica: prettyNames["social"] era rimasto
+  "Tribu' & Squadre" (una rinomina = 2 modifiche: prettyNames IT +
+  sectionTitle EN).
 
->>> DA DOVE SI RIPARTE: due filoni aperti da Denis dopo la Dashboard.
+>>> DA DOVE SI RIPARTE: CODICE, si parte da PASSO 9. I PIANI CI SONO GIA'.
 
-  A) RIORDINO MENU / NAVIGAZIONE - il prossimo grande blocco. Sessione di
-     SOLO PIANO (19a). Piano completo:
-       C:\Users\lenovo\.claude\plans\camoscio-v2-menu-restructure.md
-     Struttura bersaglio: Home (ex Dashboard) / Esplora v (Escursioni,
-     Mappa, Ispirazioni=ex Feed) / Le mie escursioni v (Tutte, In
-     programma, Completate) / Community v (Amici) / + Crea (azione) /
-     area personale: Progressi, Profilo, Impostazioni.
-     4 DECISIONI gia' prese (AskUserQuestion):
-      D1 Carpooling/Zaino/Sicurezza -> schede DENTRO la pagina della
-         singola escursione (hike-page). CAVEAT vincolo 7: #safety ha
-         anche il simulatore mesh (non per-uscita) + non si seppellisce
-         la sicurezza -> dove tenere mesh/accesso rapido va chiuso con
-         Denis PRIMA di quel pezzo (e' PASSO 14+, il piu' grosso).
-      D2 Community = UNA pagina (l'attuale #social), sottovoce "Amici",
-         "Cerca Persone" fusa dentro.
-      D3 Home tiene il riassunto progressi; PROGRESSI = il dettaglio
-         (pagina Badge + statistiche filtrabili + conquiste).
-      D4 mobile: DRAWER a scomparsa dietro hamburger, menu annidato
-         completo; il rail 62px sparisce.
-     9 domande minori ancora aperte nel piano (par. 15) - da chiudere a
-     inizio prossima sessione, poi PASSO 7 (sidebar desktop).
+  Piano ESECUTIVO di tutti i blocchi (file-per-file, meccanismi condivisi
+  di PASSO 7 in testa, verifica): quello e' il documento da seguire ->
+    C:\Users\lenovo\.claude\plans\delegated-gathering-forest.md
+  Decisioni + mappa sezioni + §15 (tutte chiuse):
+    C:\Users\lenovo\.claude\plans\camoscio-v2-menu-restructure.md
 
-  B) COLLEZIONE "I 2000 DELL'APPENNINO" - dentro la pagina Badge (che
-     diventa Progressi), NON pagina a se'. Piano:
-       C:\Users\lenovo\.claude\plans\camoscio-2000-appennino-collezione.md
-     Si innesta su badge-points.js (catalogo unico browser+server) con un
-     campo nuovo collezioni:[]; il timbro si assegna da solo come gli
-     altri badge. LA LISTA UFFICIALE DELLE VETTE LA FORNISCE DENIS - il
-     sistema e' gia' data-driven. PUNTO APERTO n.1: icone e peso del repo
-     pubblico (~100 vette; la 14a sessione ha compresso le icone perche'
-     erano l'88% del repo). Raccomandazione: 1 grafica "2000+" unica col
-     nome a testo, o template SVG. Da chiudere con Denis, puo' aspettare
-     la lista.
+  Struttura bersaglio: Home / Esplora v (Escursioni, Mappa, Ispirazioni) /
+  Le mie escursioni v (Tutte, In programma, Completate) / Community v
+  (Amici) / + Crea (azione) / area personale: Progressi, Profilo,
+  Impostazioni, Sicurezza.
 
-  PUNTI 2 e 3 dei "tre punti" - RIMANDATI alla prossima sessione:
-   - punto 2 (pagina statistiche filtrabile): NON piu' isolato, diventa
-     il contenuto di PROGRESSI (backend ?from=&to= incluso).
-   - punto 3 (responsive Dashboard <900px): DOPO il riordino menu - il
-     drawer mobile cambia tutta la navigazione, verificarla prima
-     sarebbe lavoro buttato.
+  ORDINE: 7 (fatto, `e33be1b`) -> 9 -> 10 -> 11 -> 11b -> 12 -> 13 ->
+  8 (drawer mobile) -> 14a -> 14b -> 14c.
+  Il DRAWER MOBILE (PASSO 8) e' in FONDO: non verificabile in locale ora
+  (resize_window inaffidabile, v2 non deployata) e i blocchi 9-13 cambiano
+  ancora le voci -> fatto per ultimo, sul menu definitivo, provato sul
+  telefono al deploy. La regola-PONTE in @media 900 tiene il rail nel
+  frattempo.
+
+  PROSSIMO - PASSO 9 (CODICE): #hikes (Esplora > Escursioni) resta SOLO
+  scoperta ("A cui puoi partecipare" + ricerca + filtri); #my-hikes
+  guadagna 3 viste-filtro nel menu (Tutte / In programma / Completate) che
+  mostrano/nascondono i .my-hikes-group. classificaMieEscursioni()
+  (social.js) NON si tocca. "In programma" = non completate, niente
+  confronto date. Testa "Le mie escursioni" naviga (vista Tutte) + espande.
+
+  DOMANDE §15: TUTTE CHIUSE. Le decisive:
+   - Q4 esperto locale -> Profilo MOSTRA, Impostazioni MODIFICA.
+   - Q5 + Crea -> popover 2 voci: nuova escursione + nuovo percorso
+     (NO "nuova squadra": resta in Community).
+   - Q6 zaino personale slegato da un'uscita -> NON serve. Tutto in
+     hike-page, #backpack si ritira per intero.
+   - Q7 #safety -> resta a se', foglia "Sicurezza" in AREA PERSONALE
+     (mesh sim + registro + rimando timer). SOLO Carpooling e Zaino
+     vanno in hike-page (14b/14c). Il timer e' gia' in Mappa.
+   - blocco "STRUMENTI" (ponte) sparisce a PASSO 14a.
+
+  Punto 3 (responsive Dashboard <900px): si accorpa alla verifica di fine
+  riordino, dopo il drawer (PASSO 8).
+
+  FILONE B (indipendente) - COLLEZIONE "I 2000 DELL'APPENNINO", dentro la
+  pagina Badge (poi Progressi), NON pagina a se'. Piano:
+    C:\Users\lenovo\.claude\plans\camoscio-2000-appennino-collezione.md
+  Si innesta su badge-points.js con un campo collezioni:[]; il timbro si
+  assegna da solo. LA LISTA UFFICIALE DELLE VETTE LA FORNISCE DENIS.
+  PUNTO APERTO n.1: icone e peso del repo (~100 vette). Raccomandazione:
+  1 grafica "2000+" unica col nome a testo, o template SVG. Puo'
+  aspettare la lista.
 
   Merge v2-ux -> master + push: lo decide Denis a fine v2. origin/master
   = master = efd1290, 0 divergenza.
 
->>> DOVE STA IL DETTAGLIO: i DUE PIANI nuovi in
-    C:\Users\lenovo\.claude\plans\ (camoscio-v2-menu-restructure.md e
-    camoscio-2000-appennino-collezione.md). I piani delle Fasi 3/4/5 (ormai
-    chiuse) in jiggly-munching-brooks.md nella stessa cartella. Nel vault:
+>>> DOVE STA IL DETTAGLIO: i PIANI in C:\Users\lenovo\.claude\plans\ -
+    camoscio-v2-menu-restructure.md (il riordino, §15 con lo stato delle
+    domande), camoscio-2000-appennino-collezione.md (filone B),
+    delegated-gathering-forest.md (il piano di PASSO 7, gia' eseguito).
+    I piani delle Fasi 3/4/5 in jiggly-munching-brooks.md. Nel vault:
     04-Da-Fare ("PROSSIMO GRANDE LAVORO" + "Da dove si riparte"); decisioni
-    in 03 ("Camoscio v2 — riordino menu e navigazione": PASSO 6 + le 4
+    in 03 ("Camoscio v2 — riordino menu e navigazione": PASSO 6-7 + le 4
     decisioni + la collezione 2000); parole di Denis in cose_da_fare.txt
-    ("DICIANNOVESIMA SESSIONE"); racconto nel 06 ("Diciannovesima sessione").
-    07 non toccato (resize_window inaffidabile e' gia' li').
+    ("VENTESIMA SESSIONE"); racconto nel 06 ("Ventesima sessione"). In 07
+    la trappola "[hidden] battuto da una regola d'autore su .nav-group-body".
 
 >>> GIA' IN PRODUZIONE (fino alla 15a sessione, su `master`,
     8d6990c): traduzione IT/EN (punto 102), timbri con traccia reale
