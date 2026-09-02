@@ -1,223 +1,119 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-09-02 (VENTITREESIMA sessione — la REVISIONE UX "Camoscio
-v2" E' FINITA ED E' IN PRODUZIONE. 2o giro dell'agente security-privacy:
-trovati 7 punti (fra cui R-1, una REGRESSIONE dei fix del 22 stessi),
-chiusi tutti; 4o passaggio dell'agente -> VERDETTO GO. I 10 auto-save del
-02/09 collassati in un commit vero (`885ee00`), merge `--no-ff` di `v2-ux`
-in `master` (`c8fb13a`, ZERO conflitti), push `efd1290..c8fb13a`, deploy
-Render verificato LIVE. Backup pre-collasso: branch `v2-ux-preref-23a`.
-Dettaglio: vault 04-Da-Fare + 06 ("Ventitreesima sessione"); parole di
-Denis in cose_da_fare.txt ("VENTITREESIMA SESSIONE").)
+Aggiornato: 2026-09-02 (VENTIQUATTRESIMA sessione — prima dopo il merge
+della v2, di nuovo su `master`. Tre cose chiuse: menu "Squadre" nella
+sidebar (`122cb15`); punto A-3.4 eliminazione account (`543cc4c`, giro
+agente security-privacy: 1 critico + 5 alti trovati e chiusi); password
+temporanea per Camilla. Dettaglio: vault 04-Da-Fare (frontmatter) + 06
+("Ventiquattresima sessione"); parole di Denis in cose_da_fare.txt
+("VENTIQUATTRESIMA SESSIONE").)
 
->>> LA v2 NON E' PIU' "IN CORSO": e' su `master` e online su
-    camoscio.onrender.com. Il branch `v2-ux` e' interamente dentro `master`
-    (si puo' lasciare li' come storico, o cancellare). NON si lavora piu'
-    "solo in locale": da ora gli aggiustamenti vanno su `master` come
-    hotfix normali (commit vero + push -> Render ridistribuisce da solo).
-    L'hook di auto-save resta: committa in locale, va rifuso prima di un
-    push.
+>>> SI LAVORA SU `master`, hotfix normali (commit vero + push -> Render
+    ridistribuisce). L'hook di auto-save committa in locale (mai push):
+    va rifuso in UN commit vero (`git reset --soft <base>` + commit)
+    prima di ogni push. Fatto cosi' per entrambi i lavori di oggi.
+    origin/master = `543cc4c`.
 
->>> APERTO dopo il deploy (NON blocca niente, la v2 e' gia' su):
-  1. PROVA MOBILE sul telefono di Denis, SUL SITO LIVE
-     (camoscio.onrender.com): drawer/hamburger, i 4 tab di hike-page
-     (Dettagli/Chat/Carpooling/Zaino), la nuova #settings, il layout
-     stretto. Il drawer (PASSO 8) non e' MAI stato provato su un telefono
-     vero, solo in simulazione. Ritocchi = hotfix su `master`.
-  2. Verifica responsive Dashboard <900px (le regole @media di Fasi 4-5
-     viste solo in simulazione): 3 badge in fila, "Il tuo <anno>" a 2x2,
-     "Vedi tutti i badge" a piena larghezza fuori dall'angolo del FAB.
-  3. NOTA LEGALE (l'ha detto l'agente): index.html fa accettare "Termini +
-     Informativa privacy" ma il documento NON esiste. E' l'unico punto da
-     chiudere con un professionista prima di un uso pubblico vero
-     (informativa / base giuridica / registro trattamenti). Gia' cosi'
-     sulla produzione pre-v2, non e' una regressione - ma da non
-     dimenticare.
+>>> AZIONI MANUALI DI DENIS, aperte:
+  1. NUOVA — ACCOUNT_SCRUB_SECRET su Render (stringa a scelta, DIVERSA da
+     SAFETY_CRON_SECRET) + un job giornaliero su cron-job.org (stesso
+     account del ping DMS) verso:
+       https://camoscio.onrender.com/api/users/scrub-eliminati?chiave=<segreto>
+     Senza, gli account eliminati restano "Account eliminato" PER SEMPRE
+     (nessuno scrub dei dati personali al giorno 30). Il server lo urla
+     nei log all'avvio in produzione. Fail-safe, ma da fare.
+  2. Ricaricare il .gpx/.fit col ⬆ per le vecchie escursioni da
+     pubblicare nel feed (l'originale non era stato conservato).
+  3. Camilla: `camilla2026` e' TEMPORANEA. Deve cambiarla da
+     Impostazioni > Cambia password. Accede con EMAIL
+     camilla.orsini@gmail.com (il login e' per email, non per username).
 
->>> STRUTTURA MENU DELLA v2 (ora in produzione):
-    Home / Esplora v (Escursioni, Mappa, Ispirazioni) / Le mie escursioni v
-    (Tutte, In programma, Completate) / Community v (Amici) / + Crea /
-    AREA PERSONALE: Progressi, Profilo, Impostazioni, Sicurezza.
-    Rinomine (solo etichette): Dashboard->Home, Feed->Ispirazioni,
-    Mappa & Sentieri->Mappa, Tribu' & Squadre->Community.
+>>> APERTO, non bloccante:
+  - PROVA MOBILE v2 sul telefono, SUL SITO LIVE: drawer/hamburger, i 4
+    tab di hike-page (Dettagli/Chat/Carpooling/Zaino), la nuova
+    #settings, il layout stretto. Il drawer non e' MAI stato provato su
+    un telefono vero. Ritocchi = hotfix su `master`.
+  - RESPONSIVE Dashboard <900px (regole @media di Fasi 4-5 viste solo in
+    simulazione): 3 badge in fila, "Il tuo <anno>" a 2x2, "Vedi tutti i
+    badge" a piena larghezza fuori dall'angolo del FAB.
+  - NOTA LEGALE: index.html fa accettare "Termini + Informativa privacy"
+    senza documento dietro. Serve un professionista. Gia' cosi' da prima,
+    non e' una regressione — ma da non dimenticare prima di un uso
+    pubblico vero.
+  - M-5: race del cancella-contatto emergenza con 2 schede aperte (serve
+    una DELETE per contenuto/id, non per indice posizionale). E' il piu'
+    piccolo punto aperto — buon candidato per la prossima sessione.
+  - TTL sulle Notification che nominano un utente (dall'agente): un
+    "Mario Rossi ha chiesto di..." resta per sempre nelle notifiche
+    altrui, col nome vero anche dopo l'eliminazione di Mario. Il fix di
+    oggi (nomeVisibile) copre solo le notifiche NUOVE. Cambio schema
+    app-wide + migrazione -> a se'.
 
->>> COSA C'ERA NELLA v2 (dettaglio: vault 03/06, cose_da_fare.txt
-    "SEDICESIMA"..."VENTITREESIMA SESSIONE"):
-  - DASHBOARD rifatta (Fasi 1-5): apertura contestuale, card "prossima
-    avventura", "Il tuo cammino" per zona, "Ultimi traguardi", "Il tuo
-    <anno>". Unico tocco backend: GET /api/tracking/totals accetta
-    ?anno=YYYY e ?from=&to= (nessun modello/indice/migrazione).
-  - RIORDINO MENU (PASSO 6->14c): sidebar a gruppi a fisarmonica, drawer
-    mobile, "Le mie escursioni" a viste-filtro, #badges->#progress
-    "Progressi", #my-profile sdoppiata in Profilo (vista) + #settings
-    (config), "+ Crea" popover, Sicurezza in area personale, Carpooling e
-    Zaino come TAB di hike-page (#carpool e #backpack .page-section
-    ritirate).
-  - BLOCCO 0 zaino/carpooling per-partecipanti: Hike.multiDay (creator-set),
-    zaino personale sempre privato (localStorage), gate isHikeParticipant
-    sui write carpool/backpack, tab nascosti ai non-partecipanti.
-  - LOTTO SICUREZZA (C-1/C-2/C-3/A-1/A-2/A-3.1-3 + fix di 2 giri di
-    ri-review): homeCity privato + home-match solo-conteggio; mesh WS ai
-    soli co-partecipanti + anti-spoofing; express-rate-limit@8.7.0 (MIT,
-    dip. nuova, limiter gated su NODE_ENV=production); revoca consenso GPS
-    + enforcement server-side (middleware/consensoGeo.js); DMS avvisa TUTTI
-    i contatti con email (via deadManContactIndex), email HTML escapata,
-    tetto 5 contatti, demo fuori dal DMS; export dati GET
-    /api/users/me/export (exportLimiter, senza array di punti); PUT
-    /api/hikes/:id: 400 su update vuoto + hikeVisibileA() (toJSON) unica
-    su GET e PUT + 404 concluse ai non-partecipanti.
+>>> COSA E' STATO FATTO OGGI (dettaglio: vault 03/06/07, cose_da_fare.txt
+    "VENTIQUATTRESIMA SESSIONE"):
 
-  RIMANDATI (non bloccanti, decide Denis): A-3.4 elimina account (blocco a
-  se': "chiusura + scrub PII + tombstone"); M-5 race cancella-contatto con
-  2 schede.
+  MENU "SQUADRE" — dentro il gruppo Community della sidebar, dopo
+  "Amici", una voce "Squadre" con una sotto-tendina annidata delle
+  squadre a cui l'utente appartiene (creatore o membro); un clic apre la
+  pagina della squadra. `.nav-subgroup` (toggle a se', NON .nav-btn ne'
+  .nav-group; stato in localStorage), `renderNavSquadre()` in app.js.
+  i18n `nav.squadre`->"Squads".
 
->>> FILONE B (indipendente, non iniziato) - COLLEZIONE "I 2000
-    DELL'APPENNINO", dentro la pagina Progressi (ex Badge), NON pagina a
-    se'. Piano:
-      C:\Users\lenovo\.claude\plans\camoscio-2000-appennino-collezione.md
-    Bloccato: LA LISTA UFFICIALE DELLE VETTE LA FORNISCE DENIS. Punto
-    aperto: icone/peso repo (~100 vette) -> 1 grafica "2000+" unica.
+  PUNTO A-3.4 — ELIMINAZIONE ACCOUNT — soft-delete in due tempi:
+  - RICHIESTA: DELETE /api/users/me (ri-digita la password). Subito:
+    "Account eliminato" per tutti + sloggato; DMS disarmato; squadre di
+    cui era l'unico admin -> promuovo il membro piu' anziano (o sciolgo).
+    Blocco 409 se ha escursioni in programma organizzate da lui.
+  - GRAZIA 30 giorni: login O recupero password entro i 30 gg annullano
+    l'eliminazione (ripristinaAccount).
+  - SCRUB (giorno 30): GET|POST /api/users/scrub-eliminati, trigger
+    esterno stile DMS, segreto ACCOUNT_SCRUB_SECRET. Dati personali
+    sovrascritti (nome/cognome -> SEGNAPOSTO, non $unset: sono required),
+    email liberata, password rimossa, tracce svuotate della polilinea,
+    follow e percorsi privati cancellati. I CONTENUTI restano, col nome
+    "Account eliminato".
+  File nuovi: lib/accountDeletion.js, lib/cronSecret.js (segreto cron
+  condiviso con safety.js). Il perno: serializeUserForViewer +
+  nomeVisibile() sono l'UNICO modo di rendere il nome di un utente.
+  Giro agente security-privacy: 1 critico (tracce scaricabili dopo lo
+  scrub via follow di un tombstone) + 5 alti, tutti chiusi.
+  Prova: prove/prova-eliminazione-account.js (57 controlli) + 9 suite di
+  regressione verdi + E2E dal vivo con account usa-e-getta.
 
---- STORICO v2 (dettaglio, non serve per orientarsi) --------------------
-  RIORDINO MENU (21a sessione, 10 commit `4ea24df`..`77fcaf8` sopra
-  `a34b5f1`):
-  - PASSO 9  — "Le mie escursioni" a 3 viste-filtro (Tutte / In programma /
-    Completate, attributo data-view + CSS); #hikes (Esplora>Escursioni) =
-    solo scoperta. `classificaMieEscursioni` intatta.
-  - PASSO 10 — Community diventa gruppo con sotto-voce "Amici"; la ex
-    sezione #people-search RITIRATA, la ricerca per nome utente e' nella
-    card "Persone" di #social (id invariati, peoplesearch.js non cambia);
-    navigateTo alias people-search -> social + data-scroll generico.
-  - PASSO 11 — #badges -> #progress ("Progressi"), TUTTI gli id figli
-    invariati (renderBadges non si tocca) + nuovo blocco "Il tuo cammino
-    per zona" (progressoZone({tutte:true})). #badges resta alias.
-  - PASSO 11b — statistiche personali filtrabili in #progress: intervallo
-    date + 3 intervalli rapidi. UNICO tocco backend: `GET
-    /api/tracking/totals` ora accetta anche `?from=&to=` (oltre `?anno=`).
-    Nessun modello/indice/migrazione.
-  - PASSO 12 — #my-profile SDOPPIATA: "Profilo" = sola vista (bio + esperto
-    read-only); "Impostazioni" (#settings, NUOVA) = foto/bio/esperto/
-    password/lingua/logout + card placeholder inerte. I controlli SPOSTATI,
-    id invariati (renderProfileCard/setupProfileCardEvents non cambiano).
-  - PASSO 13 — "+ Crea" apre un popover (2 voci: nuova escursione / nuovo
-    percorso). Flip verso l'alto se sfora il fondo della .nav-menu.
-  - PASSO 8  — DRAWER MOBILE (<=900px): hamburger nell'header + sidebar
-    off-canvas + scrim. Riscritta la @media <=900 (via il rail 62px + la
-    regola-ponte di PASSO 7). Bandiere lingua -> in fondo al drawer.
-    VERIFICATO SOLO IN SIMULAZIONE (resize_window inaffidabile): PROVA VERA
-    SUL TELEFONO DI DENIS AL DEPLOY.
-  - PASSO 14a — via il blocco "STRUMENTI"; "Sicurezza" (era "& Mesh") =
-    foglia dell'AREA PERSONALE. #safety internamente invariato.
-  - PASSO 14b — Carpooling = TAB dentro hike-page (4 tab: Dettagli/Chat/
-    Carpooling/Zaino). Scelta di Denis = OPZIONE A: il tab e' SOLO
-    per-escursione (annuncio della singola uscita, non piu' "tutte";
-    "Offri un Passaggio" senza selettore escursione; Split Spese generico
-    resta). #carpool .page-section RITIRATA. carpool.js legato all'hikeId.
-  - PASSO 14c — Zaino = TAB dentro hike-page. Niente piu' selettore
-    "prepara lo zaino per" ne' "zaino personale" (Q6): contesto sempre =
-    l'escursione del tab. #backpack .page-section RITIRATA. backpack.js
-    legato all'hikeId (escursioneDiRiferimento semplificata).
+  >>> Prove che FALLISCONO d'ambiente in questa sessione (server di prova
+      che non si avvia in tempo, ECONNREFUSED — identico su master
+      pulito, tutte fuori dal diff): prova-punto7, prova-verifica-email,
+      prova-punto35, prova-guasto-invio, prova-punto33, prova-punto108.
+      Riprovare a mente fredda.
 
-  Verifica: ogni blocco provato dal vivo (account reale, sola lettura, DB
-  demo dove serviva, IT+EN, zero errori JS). Sweep finale nav desktop: ok.
-
-  BLOCCO 0 (zaino/carpooling per-partecipanti) - piano
-  camoscio-zaino-carpool-partecipanti.md, ESEGUITO in 2 checkpoint:
-  - Hike.multiDay (Boolean, default:undefined) - lo decide il CREATORE
-    (spunta in create-hike-modal). Zaino personale SEMPRE in localStorage,
-    non passa dal server. "Zaino condivisibile" (hike.backpackTemplate) +
-    ripartizione pesi SOLO se hike.multiDay. Via il <select> durata.
-  - routes/hikes.js: gate isHikeParticipant sui rami carpool/backpackTemplate
-    di PUT /:id (C-2); !hike.multiDay -> 403 sui write zaino; GET / strippa
-    carpool/backpackTemplate per i non-partecipanti; sotto-bug passeggeri
-    (sulla propria voce driver possono solo calare).
-  - hikepage.js+CSS: tab Chat/Carpooling/Zaino nascosti ai non-partecipanti
-    (A-1, difesa in profondita').
-
-  LOTTO SICUREZZA (decisioni con AskUserQuestion):
-  - C-1: 'homeCity' in ALWAYS_PRIVATE_FIELDS + maxlength 100; GET
-    /api/hikes/:id/home-match (solo partecipanti) risponde SOLO {quanti:N}
-    - MAI i nomi (coi nomi era un oracolo sulla zona di casa).
-  - C-3: mesh WS -> log ridotto a parsed.type; broadcast SOLO ai
-    co-partecipanti (Hike non conclusa); mittente/nome dal cookie di
-    sessione, non dal pacchetto; lat/lng validati -> null; cap 20 msg/10s.
-  - A-2: express-rate-limit@8.7.0 (MIT, DIPENDENZA NUOVA approvata da Denis);
-    middleware/rateLimit.js, tutti i limiter GATED su NODE_ENV=='production'
-    (skip in dev/test). npm audit --omit=dev = 0 (spostato @capacitor/cli
-    in devDependencies).
-  - A-3.1: revoca consenso GPS in #settings + ENFORCEMENT server-side
-    (middleware/consensoGeo.js su tracking.js /start,/:id/points,/:id/resume).
-  - A-3.2: RIMOSSO deadManContactIndex (0 utenti). Alla scadenza l'allarme
-    va a TUTTI i contatti con email. safety.js: lista contatti con "Rimuovi"
-    per riga. Demo NON armano il DMS. Email HTML escapata + tetto 5 contatti.
-    prova-punto37 riscritta (account reale temporaneo, non demo).
-  - A-3.3: GET /api/users/me/export -> bundle JSON scaricabile da #settings
-    (exportLimiter 3/giorno, .select('-points -offTrailBuffer'), no indent).
-
-  FIX DELLA RI-REVIEW (1o giro = "NON pronto", tutti chiusi):
-  - C-NUOVO-1 (CRITICO): PUT /api/hikes/:id con update {} -> Mongoose
-    findByIdAndUpdate degrada a _findOne() e RESTITUISCE IL DOC INTERO
-    (riapriva C-2 lettura + C-1 + A-1 + punto 77). -> hikeVisibileA()
-    unica su GET / E risposta PUT /:id; 400 su update vuoto PRIMA di
-    findByIdAndUpdate; 404 sulle concluse ai non-partecipanti nel PUT.
-  - A-NUOVO-1: DMS come relay email verso terzi (demo + N contatti-HTML).
-    -> esc() HTML + tetto 5 contatti + demo fuori dal DMS + scritturaLimiter.
-  - A-NUOVO-2: home-match era un oracolo -> solo {quanti}, no nomi.
-  - A-NUOVO-3: export = DoS memoria -> .select senza points + exportLimiter.
-  - A-NUOVO-4: runValidators NON valida i sotto-doc degli array su
-    findByIdAndUpdate -> lunghezze validate NELLA rotta; maxlength su
-    Hike.title/description; scritturaLimiter su POST /api/hikes.
-  - medi: M-1 mesh anti-spoofing, M-2 log NODE_ENV all'avvio, M-3 export
-    minimizza le proprie hike, M-4 capacitor/cli in devDeps.
-  RIMANDATI (non bloccanti, decide Denis): A-3.4 elimina account (blocco a
-  se', scelta = chiusura + scrub PII + tombstone); M-5 race cancella-contatto
-  con 2 schede; NOTA LEGALE - l'accettazione "Termini + Informativa privacy"
-  in index.html non ha un documento dietro (serve un professionista).
-
-  [STORICO] La 23a sessione doveva partire da: 2o giro agente sicurezza ->
-  prova mobile -> responsive <900px -> merge. Fatto tutto tranne prova
-  mobile e responsive, che ora si fanno sul sito LIVE (vedi "APERTO dopo il
-  deploy" in cima). Il merge e' avvenuto (`c8fb13a`).
-
---- fine STORICO v2 -----------------------------------------------------
-
->>> DOVE STA IL DETTAGLIO: i PIANI in C:\Users\lenovo\.claude\plans\ -
-    camoscio-zaino-carpool-partecipanti.md (IL PROSSIMO BLOCCO, da fare
-    per primo nella 22a), delegated-gathering-forest.md (il piano
-    esecutivo file-per-file di 9->14c, ESEGUITO), camoscio-v2-menu-
-    restructure.md (decisioni + §15), camoscio-2000-appennino-collezione.md
-    (filone B). Nel vault: 04-Da-Fare ("PROSSIMO GRANDE LAVORO" + "Da dove
-    si riparte" + "Esito agente security-privacy"); decisioni in 03
-    ("Camoscio v2 — riordino menu e navigazione", con l'opzione A del 14b e
-    il modello zaino/carpool per-partecipanti); parole di Denis in
-    cose_da_fare.txt ("VENTUNESIMA SESSIONE"); racconto nel 06
-    ("Ventunesima sessione"). In 07 le trappole nuove (scroll "smooth"
-    interrotto dai render async; race di risposte in un fetch con debounce).
-
->>> GIA' IN PRODUZIONE (`origin/master` = `c8fb13a`, 23a sessione):
-    TUTTA LA REVISIONE UX "Camoscio v2" (merge `c8fb13a` del 02/09) - vedi
-    sopra. Prima (fino alla 15a-17a, giu' fino a `efd1290`): traduzione
-    IT/EN (102), timbri con traccia reale (108), moderazione segnalazioni
-    (111), parte social — Segui/Feed/"mi piace"/"crea percorso" (113),
-    import .fit (114), nome uscita editabile (115), + 4 rifiniture del
-    31/08, + hotfix Ju Busciu `sogliaM` (17a, `efd1290`). Dettaglio:
-    cose_da_fare.txt, vault.
+>>> GIA' IN PRODUZIONE prima di oggi (origin/master era `c8fb13a`):
+    TUTTA LA REVISIONE UX "Camoscio v2" (merge del 02/09) — Dashboard
+    rifatta, riordino menu a gruppi + drawer mobile, Blocco 0
+    zaino/carpooling per-partecipanti, lotto sicurezza. Dettaglio:
+    vault 04-Da-Fare ("[ARCHIVIO] revisione UX del sito") + 06
+    ("Sedicesima"..."Ventitreesima sessione"). Prima ancora: traduzione
+    IT/EN (102), timbri con traccia reale (108), moderazione
+    segnalazioni (111), parte social — Segui/Feed/"mi piace"/"crea
+    percorso" (113), import .fit (114), nome uscita editabile (115),
+    hotfix Ju Busciu sogliaM (efd1290).
     >>> LIMITE .fit/.gpx, e' il FILE non il codice: un file "smart" (o da
         Garmin Connect) ha buchi -> niente split cammino/pause. Serve 1 Hz.
-    >>> DENIS DEVE RICARICARE il .gpx/.fit col ⬆ per le escursioni gia'
-        fatte che vuole pubblicare (l'originale non era stato conservato).
     >>> Smartwatch (Garmin/Suunto/Amazfit): valutato e SCARTATO.
 
 >>> ALTRE APERTE, non urgenti (dettaglio in vault 04-Da-Fare.md):
     livelli ORIGINALI del punto 63b (gradini per la ZONA dichiarata a
     mano, DIVERSI dai livelli gia' fatti del punto 86) + calcolo
-    automatico del raggio (punto 42a) - Denis deve ancora pensarci, non
-    richiederlo; dominio email proprio (rimandato da lui, "non ora").
+    automatico del raggio (punto 42a) — Denis deve ancora pensarci, non
+    richiederlo; dominio email proprio (rimandato da lui, "non ora") —
+    e' anche la causa vera delle email che non arrivano (spam).
+    FILONE B: collezione "I 2000 dell'Appennino" dentro la pagina
+    Progressi — bloccato, LA LISTA UFFICIALE DELLE VETTE LA FORNISCE
+    DENIS. Piano: C:\Users\lenovo\.claude\plans\camoscio-2000-appennino-collezione.md
 
 >>> RESTA VALIDO:
   - Hook "Stop" di auto-save: commit locale (MAI push) a fine di ogni
-    risposta se ci sono modifiche non salvate in questo repo. Va rifuso
-    in un commit vero prima di ogni push/tappa.
+    risposta se ci sono modifiche non salvate. Va rifuso in un commit
+    vero prima di ogni push/tappa.
   - Traduzione IT/EN (punto 102, CHIUSO): resta ITALIANO di proposito
     tutto il testo scritto dagli utenti (didascalie del feed comprese),
     i nomi propri di luogo, i nomi dei percorsi salvati e l'etichetta
@@ -225,7 +121,9 @@ Denis in cose_da_fare.txt ("VENTITREESIMA SESSIONE").)
     dei badge (punto 112), il testo delle notifiche (lo genera il
     server), il segnaposto nativo di <input type=date>/<input type=file>,
     e componiRapporto() dentro diagnostica-gps.html. Le chiavi EN dei
-    blocchi v2 UX si aggiungono mano a mano (scelta di Denis).
+    blocchi nuovi si aggiungono mano a mano (scelta di Denis).
+  - "Account eliminato" (punto A-3.4) SI traduce (e' interfaccia):
+    common.accountEliminato -> "Deleted account".
 
 ===================================================================
 
@@ -238,8 +136,7 @@ DOVE STA IL RESTO, in ordine di lettura:
  1. ../camoscio memoria/  — IL VAULT, ed e' la fonte principale.
     Vincoli che valgono sempre, decisioni gia' prese e perche', trappole gia' pagate,
     cosa e' davvero aperto. Si legge PRIMA di questo file. Sta in una cartella
-    sorella apposta: NON e' su GitHub PUBBLICO (ha un remoto privato tutto suo,
-    vedi 04-Da-Fare.md del vault).
+    sorella apposta: NON e' su GitHub PUBBLICO (ha un remoto privato tutto suo).
  2. cose_da_fare.txt      — le richieste di Denis CON LE SUE PAROLE, e il ragionamento
     di ogni punto chiuso. E' l'archivio: cresce, e va bene cosi'.
  3. cronologia.txt        — congelato dal 6/08/2026: da quella data il racconto
@@ -250,15 +147,10 @@ DOVE STA IL RESTO, in ordine di lettura:
 REGOLA DI FINE SESSIONE: si aggiornano il vault e questo file SEMPRE; cronologia.txt
 MAI piu' (congelato); cose_da_fare.txt quando un punto si chiude o ne arriva uno nuovo.
 
->>> I PUNTI CHIUSI FINO AL 103 (piu' 94 e 98) non sono piu' elencati qui: erano
-    diventati un appello di 190 righe, cioe' esattamente "qualcosa che appartiene a
-    un altro file". Tutti chiusi, committati e pushati, molti confermati dal vivo da
-    Denis. Il dettaglio con le sue parole e' in cose_da_fare.txt (cercare il numero);
-    il racconto per sessione in ../camoscio memoria/06-Cronologia-Sessioni.md.
-    Compressione fatta il 28/08/2026, stesso criterio dello sfoltimento del 18/08.
-
->>> LEZIONI OPERATIVE (git dopo un'interruzione, moduli che si collegano
-    tardi, componenti condivisi fra piu' pagine, trappole Android/Gradle):
-    tutte in ../camoscio memoria/07-Trappole-Tecniche.md, non ripetute qui -
-    quella e' la sede dove si guarda prima di toccare codice a rischio.
+>>> LEZIONI OPERATIVE (git dopo un'interruzione, moduli che si collegano tardi,
+    componenti condivisi fra piu' pagine, .toObject vs .toJSON, $unset di campi
+    required, select('username') che scavalca la pseudonimizzazione, recupero
+    password vs grazia dell'eliminazione): tutte in
+    ../camoscio memoria/07-Trappole-Tecniche.md — quella e' la sede dove si guarda
+    prima di toccare codice a rischio.
 ===================================================================

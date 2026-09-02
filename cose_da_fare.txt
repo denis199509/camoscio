@@ -9340,3 +9340,99 @@ vero (informativa / base giuridica / registro trattamenti).
 
 Vault (04/06) e leggimi.txt aggiornati. Vault committato e pushato.
 cronologia.txt NON toccato (congelato dal 6/08).
+
+
+========================================================================
+VENTIQUATTRESIMA SESSIONE - 02/09/2026
+========================================================================
+
+Tre cose, tutte chiuse e in produzione su master.
+
+--- MENU SQUADRE (richiesta nuova) ---
+
+Parole di Denis:
+"Nel menu a sinistra nella parte community adesso abbiamo solo amici.
+Quando si apre il menu a tenda voglio inserire pure la voce squadre e la
+voce squadre avra' sotto un'altra tendina con le squadre a cui appartengo
+io in modo da potermi collegare direttamente alla squadra per entrare
+nella pagina."
+
+FATTO. Dentro il gruppo "Community" della sidebar, dopo "Amici", una voce
+"Squadre" che apre una sotto-tendina annidata con le squadre dell'utente
+(creatore o membro, stesso filtro di renderSquadsList); un clic apre la
+pagina della squadra (showSquadPage).
+- index.html: .nav-subgroup dentro #nav-group-community. La testa NON e'
+  .nav-btn (navigateTo(null) svuoterebbe la pagina) ne' .nav-group
+  (l'accordion la chiuderebbe col parent): toggle a se', stato in
+  localStorage.
+- app.js: renderNavSquadre() popola da CamoscioState.squads, richiamata da
+  refreshState() e da renderSquadsList() (social.js).
+- styles.css: .nav-subgroup* (un gradino piu' rientrata, nomi lunghi con
+  ellissi). i18n.js: nav.squadre -> "Squads".
+- Verificato dal vivo (account Denis, 2 squadre), IT/EN, zero errori.
+Commit camoscio: 122cb15. Pushato.
+COSMETICO NOTO (non fatto): la squadra aperta non e' evidenziata nel menu
+mentre sei sulla sua pagina - come gia' per profilo/squadra (pagine "senza
+voce di menu").
+
+--- PUNTO A-3.4: ELIMINAZIONE ACCOUNT (era RIMANDATO, ora CHIUSO) ---
+
+Modello scelto da Denis (AskUserQuestion):
+"Quando qualcuno decide di eliminare il suo account, tutte le escursioni
+pubblicate da lui, tutti i commenti e tutto il resto con cui ha interagito
+sul sito rimane. L'unica cosa visibile: sparisce il nome suo. Al posto del
+nome verra' visualizzato 'account eliminato'."
++ periodo di grazia 30 giorni (ripristinabile rientrando); blocco
+l'eliminazione finche' non annulla/cede le escursioni future organizzate
+da lui; squadre dove era l'unico admin -> promuovo il membro piu' anziano
+(o sciolgo se vuota); "Account eliminato" = solo testo, non cliccabile.
+Contatti di emergenza cancellati al giorno 30 (non alla richiesta).
+
+Soft-delete in due tempi. Dettaglio in vault 03 ("Eliminazione account
+(punto A-3.4)"), 06 ("Ventiquattresima sessione"), 07 (tre trappole
+nuove). Commit camoscio: 543cc4c (23 file, +1150). Pushato.
+
+Giro dell'agente security-privacy: modello di base solido, ma 1 CRITICO +
+5 ALTI, tutti chiusi nella stessa sessione (tracce GPS scaricabili dopo lo
+scrub via follow di un tombstone; username vero in 2 rotte che scavalcano
+il serializzatore; reset-password che apriva una sessione su un account in
+eliminazione senza annullarla - il caso di chi non ricorda la password;
+DMS "fantasma" lato client dopo il ripristino; scrub che poteva non
+partire mai in silenzio; $unset di nome/cognome required che rompeva le
+rotte di ALTRI utenti). Verifica: prova-eliminazione-account.js nuovo,
+57 controlli, + regressione verde su 9 suite + prova E2E dal vivo con
+account usa-e-getta.
+
+AZIONE MANUALE APERTA (come per il DMS): impostare ACCOUNT_SCRUB_SECRET su
+Render (diversa da SAFETY_CRON_SECRET) + job giornaliero su cron-job.org
+verso https://camoscio.onrender.com/api/users/scrub-eliminati?chiave=<segreto>.
+Senza, gli account eliminati restano "Account eliminato" per sempre
+(nessuno scrub). Il server lo segnala nei log all'avvio (in produzione).
+
+--- CAMILLA: RECUPERO ACCESSO (supporto, non codice) ---
+
+Camilla non riceveva l'email di recupero password (diagnosi: email in
+realta' GIA' verificata -> problema di RECAPITO, non del flusso; e' il
+solito punto 3 rimandato, invio da un Gmail via Mailjet senza dominio
+proprio -> spam). Non ricordava nemmeno la password.
+Su richiesta esplicita di Denis ("fai una password temporanea. la
+password temporanea e' questa: camilla2026"): impostata camilla2026
+sull'account username "Camilla" (una sola corrispondenza, non demo),
+scritto SOLO passwordHash, verificato con bcrypt.compare. Script usa-e-
+getta nello scratchpad, cancellato dopo.
+Camilla accede con EMAIL camilla.orsini@gmail.com + camilla2026, poi la
+cambia da Impostazioni > Cambia password. DA RICORDARE: e' una password
+temporanea, va cambiata.
+
+--- APERTO / RIMANDATO dopo questa sessione ---
+- prova mobile v2 sul telefono, sul sito LIVE (invariato)
+- responsive Dashboard <900px (invariato)
+- NOTA LEGALE - informativa privacy, serve un professionista (invariato)
+- ACCOUNT_SCRUB_SECRET su Render + cron-job.org (NUOVO, azione di Denis)
+- M-5 race cancella-contatto con 2 schede (invariato - il piu' piccolo
+  aperto, buon candidato per la prossima sessione)
+- TTL sulle Notification che nominano un utente (NUOVO, dall'agente -
+  cambio schema app-wide, meglio a se')
+
+Vault (03/04/06/07) e leggimi.txt aggiornati. Vault committato e pushato.
+cronologia.txt NON toccato (congelato dal 6/08).
