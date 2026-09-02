@@ -564,8 +564,29 @@ function classificaMieEscursioni(lista) {
     return { create, partecipo, fatte };
 }
 
-// "Aperte" = si puo' ancora agire su di esse (usata da "Invita a Gita", punto nuovo). Due
-// condizioni, per due motivi diversi:
+// "YYYY-MM-DD" di oggi in ora locale (il browser sta in Italia). Componenti locali, MAI
+// toISOString() che passa a UTC e vicino a mezzanotte sposta il giorno - stessa cautela
+// gia' presa nel tasto "Completa escursione" (buildHikeCard) e nel promemoria server-side.
+function oggiLocaleISO() {
+    const o = new Date();
+    return `${o.getFullYear()}-${String(o.getMonth() + 1).padStart(2, '0')}-${String(o.getDate()).padStart(2, '0')}`;
+}
+
+// L'escursione ha una data prevista e quel giorno E' GIA' FINITO (confronto STRETTO: il
+// giorno stesso e' ancora buono, si chiude da quello dopo). Decisione di Denis
+// (02/09/2026): "oltre quel giorno non si possono piu' accettare partecipazioni" - niente
+// auto-iscrizioni, richieste, inviti squadra ne' aggiunte a mano. Confronto fra stringhe
+// di calendario "YYYY-MM-DD", MAI new Date(a) < new Date(b): la trappola del punto 58 e'
+// una data senza ora confrontata con un istante, che mente a favore del passato dalla
+// mezzanotte. Il server ripete lo stesso controllo (routes/hikes.js, oggiRomaISO) - qui e'
+// solo per non offrire un'azione che verrebbe respinta.
+function escursioneNonPiuAperta(hike) {
+    return !!(hike && hike.date && hike.date < oggiLocaleISO());
+}
+window.escursioneNonPiuAperta = escursioneNonPiuAperta;
+
+// "Aperte" = si puo' ancora agire su di esse (usata da "Invita a Gita", punto nuovo). Tre
+// condizioni, per motivi diversi:
 //  1) !groupCompletedAt - il gruppo "fatte" di classificaMieEscursioni guarda il MIO
 //     Completion, non lo stato dell'escursione: chi e' stato aggiunto a un'escursione gia'
 //     chiusa non ne ha nessuno, e per lui la chiusa ricadrebbe comunque in "partecipo";
@@ -573,15 +594,18 @@ function classificaMieEscursioni(lista) {
 //     su un'escursione dove sono solo in pendingApproval il server rifiuta qualunque modifica
 //     alla lista partecipanti (wasParticipant falso, routes/hikes.js): sarebbe un bersaglio
 //     che risponde sempre 403.
-// Nessun filtro sulla data, di proposito: un'escursione passata ma non ancora chiusa resta un
-// bersaglio legittimo, e confrontare una data senza ora con "adesso" e' la trappola del punto 58.
+//  3) !escursioneNonPiuAperta - passato il giorno previsto non si invita piu' nessuno
+//     (decisione di Denis, vedi sopra). Prima qui non c'era filtro sulla data "di
+//     proposito": quel proposito e' stato rivisto - il confronto fra stringhe di
+//     calendario e' sicuro, non e' la trappola del punto 58.
 function mieEscursioniAperte() {
     const db = window.CamoscioState;
     const me = db.currentUser ? db.currentUser.id : null;
     if (!me) return [];
     const { create, partecipo } = classificaMieEscursioni();
     return create.concat(partecipo).filter(h =>
-        !h.groupCompletedAt && (h.creatorId === me || (h.participants || []).includes(me))
+        !h.groupCompletedAt && !escursioneNonPiuAperta(h) &&
+        (h.creatorId === me || (h.participants || []).includes(me))
     );
 }
 window.mieEscursioniAperte = mieEscursioniAperte;
@@ -852,6 +876,10 @@ function buildHikeCard(hike) {
         actionBtnHtml = `<span class="badge badge-green">${escapeHtml(T('hikeCard.partecipiCheck') || 'Partecipi ✓')}</span>`;
     } else if (isPending) {
         actionBtnHtml = `<span class="badge badge-primary">${escapeHtml(T('hikeCard.inAttesaApprovazione') || 'In attesa approvazione...')}</span>`;
+    } else if (escursioneNonPiuAperta(hike)) {
+        // Passato il giorno previsto niente piu' "Iscriviti" (decisione di Denis). Dopo
+        // isParticipant/isPending: chi era gia' dentro continua a vedere il suo stato.
+        actionBtnHtml = `<span class="badge" title="${escapeHtml(T('hikeCard.iscrizioniChiuseTitle') || 'Il giorno previsto è passato: non si accettano più iscrizioni')}">${escapeHtml(T('hikeCard.iscrizioniChiuse') || 'Iscrizioni chiuse')}</span>`;
     } else {
         actionBtnHtml = `<button class="btn btn-sm btn-primary" onclick="joinHikeRequest('${hike.id}', ${eligibility.eligible})">${escapeHtml(T('hikeCard.iscrivitiBtn') || 'Iscriviti')}</button>`;
     }
@@ -894,8 +922,7 @@ function buildHikeCard(hike) {
     // promemoria, per lasciare un margine prima di ricordarlo).
     let completeGroupBtnHtml = "";
     if (isCreatorMe) {
-        const oggi = new Date();
-        const oggiStr = `${oggi.getFullYear()}-${String(oggi.getMonth() + 1).padStart(2, '0')}-${String(oggi.getDate()).padStart(2, '0')}`;
+        const oggiStr = oggiLocaleISO();
         if (hike.groupCompletedAt) {
             completeGroupBtnHtml = `<span class="badge badge-green">${escapeHtml(T('hikeCard.completataGruppo') || 'Completata in gruppo ✓')}</span>`;
         } else if (hike.date <= oggiStr) {
@@ -1032,6 +1059,20 @@ window.joinHikeRequest = async function(hikeId, isEligible) {
     const hike = db.hikes.find(h => h.id === hikeId);
     if (!hike) return;
 
+    // Passato il giorno previsto le iscrizioni sono chiuse (decisione di Denis): lo si dice
+    // subito, con la data prevista, senza nemmeno chiamare il server (che risponderebbe
+    // comunque 409, vedi routes/hikes.js). Il tasto "Iscriviti" di norma qui non c'e'
+    // nemmeno - questo copre un clic su una scheda rimasta vecchia in pagina.
+    if (escursioneNonPiuAperta(hike)) {
+        const dateLocale = (window.CamoscioI18n && window.CamoscioI18n.getLang() === 'en') ? 'en-GB' : 'it-IT';
+        const dataFmt = new Date(hike.date + 'T12:00:00').toLocaleDateString(dateLocale, { day: 'numeric', month: 'long', year: 'numeric' });
+        window.showAlertModal(
+            T('hikeCard.iscrizioniChiuseData', dataFmt) ||
+            `Questa escursione era prevista per il ${dataFmt}: da quel giorno in poi non accetta più iscrizioni.`
+        );
+        return;
+    }
+
     if (!isEligible) {
         const confirmJoin = await window.showConfirmModal(T('hikeConfirm.avvisoIdoneita') || "⚠️ ATTENZIONE: Questa escursione richiede un passo superiore al tuo attuale storico rilevato.\n\nVuoi comunque inviare una richiesta al capogruppo e discuterne in chat?");
         if (!confirmJoin) return;
@@ -1049,7 +1090,7 @@ window.joinHikeRequest = async function(hikeId, isEligible) {
     }
 
     try {
-        await fetch(`/api/hikes/${hikeId}`, {
+        const res = await fetch(`/api/hikes/${hikeId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -1057,6 +1098,10 @@ window.joinHikeRequest = async function(hikeId, isEligible) {
                 pendingApproval: hike.pendingApproval
             })
         });
+        if (!res.ok) {
+            const body = await res.json().catch(() => ({}));
+            if (window.showToast) window.showToast(body.error || (T('common.erroreServer') || 'Non è stato possibile contattare il server.'), 'error');
+        }
 
         await refreshState();
         renderHikesList();
@@ -1095,11 +1140,22 @@ window.approveParticipant = async function(hikeId, userId) {
         : hike.participants.concat(userId);
 
     try {
-        await fetch(`/api/hikes/${hikeId}`, {
+        const res = await fetch(`/api/hikes/${hikeId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ participants, pendingApproval })
         });
+        if (!res.ok) {
+            // Es. 409 "escursione era prevista per il <data>": accettare una richiesta
+            // rimasta in sospeso e' un'aggiunta a participants, vietata oltre il giorno
+            // previsto come ogni altra. Niente notifica "sei tra i partecipanti" se il
+            // server ha rifiutato.
+            const body = await res.json().catch(() => ({}));
+            if (window.showToast) window.showToast(body.error || (T('common.erroreServer') || 'Non è stato possibile contattare il server.'), 'error');
+            await refreshState();
+            renderHikesList();
+            return;
+        }
 
         // Testo neutro apposta: da quando l'aggiunta a pendingApproval puo' arrivare anche da un
         // invito squadra (non solo da una richiesta propria), "la tua richiesta" sarebbe falso

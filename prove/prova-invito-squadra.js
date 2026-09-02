@@ -158,9 +158,9 @@ async function sezioneA() {
     ok('un\'escursione dove sono solo IN ATTESA non e\' proponibile (il server la rifiuterebbe sempre)',
         !aperte.includes('altrui-solo-in-attesa'), aperte.join(', '));
     ok('un\'escursione di cui non faccio parte non e\' proponibile', !aperte.includes('altrui-estranea'), aperte.join(', '));
-    ok('una data gia\' passata NON esclude un\'escursione ancora aperta (nessun confronto con "adesso", punto 58)',
-        aperte.includes('mia-passata-non-chiusa'), aperte.join(', '));
-    ok('nessun\'altra escursione finisce nell\'elenco', aperte.length === 3, `${aperte.length}: ${aperte.join(', ')}`);
+    ok('passato il giorno previsto un\'escursione NON e\' piu\' proponibile per un invito (Denis 02/09/2026: rivista la scelta di non guardare la data - il confronto fra stringhe di calendario e\' sicuro, non e\' la trappola del punto 58)',
+        !aperte.includes('mia-passata-non-chiusa'), aperte.join(', '));
+    ok('nessun\'altra escursione finisce nell\'elenco', aperte.length === 2, `${aperte.length}: ${aperte.join(', ')}`);
 
     // --- A2. una completata NON e' piu' raggiungibile nemmeno chiamando la conferma a mano ---
     {

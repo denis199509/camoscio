@@ -103,7 +103,11 @@ function vedeEscursione(risposta, hikeId) {
         const creazione = await chiama('POST', '/api/hikes', {
             title: `PROVA-77-${MARCA}`,
             difficulty: 'Principiante',
-            date: '2026-08-01',
+            // Data FUTURA: dal 02/09/2026 il server rifiuta di aggiungere partecipanti a
+            // un'escursione il cui giorno previsto e' passato (routes/hikes.js), e il
+            // passo 3 qui sotto fa proprio quello. complete-group (passo 5) non guarda la
+            // data, quindi la prova del punto 77 resta identica.
+            date: new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10),
             tribeTags: [],
             trailhead: { lat: 42.45, lng: 13.55, name: `Prova-77-${MARCA}` }
         }, cookieA);

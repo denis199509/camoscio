@@ -16,7 +16,7 @@ const { calcolaDaPercorso, risolviPercorso } = require('../lib/percorso');
 const { mongoose } = require('../db/mongo');
 // Ri-review sicurezza (2° giro): limiter mirati su una rotta di campionamento e su due scritture.
 const { matchLimiter, scritturaLimiter } = require('../middleware/rateLimit');
-const { nomeVisibile } = require('../lib/accountDeletion'); // A-3.4: nome pseudonimizzato per gli account eliminati
+const { nomeVisibile, oggiRomaISO } = require('../lib/accountDeletion'); // A-3.4: nome pseudonimizzato; oggiRomaISO: blocco iscrizioni oltre il giorno previsto
 
 // Punto 55: usato da /:id/complete (gia' esistente, riscritto per riusare questa) e dalle
 // nuove rotte di chat. Non ci si fida al 100% che il creatore sia sempre dentro
@@ -416,6 +416,29 @@ router.put('/:id', requireAuth, async (req, res) => {
             if (!isCreator && !canNonCreatorEditParticipation(hike, userId, body)) {
                 return res.status(403).json({ error: 'Non puoi modificare così la lista partecipanti' });
             }
+
+            // Decisione di Denis (02/09/2026): passato il giorno previsto, l'escursione
+            // non accetta più NESSUNO - né auto-iscrizioni, né richieste, né inviti
+            // squadra, né aggiunte a mano del creatore. Vale solo per le AGGIUNTE:
+            // ritirarsi, ritirare una richiesta o rifiutare un pendente resta sempre
+            // possibile. Il creatore che deve davvero aggiungere qualcuno sposta prima
+            // la data (campo `date`, poche righe sopra). Il completamento di gruppo passa
+            // da POST /:id/complete-group, non da qui, quindi non è toccato.
+            // Confronto fra stringhe "YYYY-MM-DD" nel fuso Europe/Rome: MAI
+            // new Date(hike.date) < new Date(), che segnerebbe "passato" dalla mezzanotte
+            // del giorno stesso (trappola del punto 58). `<` e non `<=`: il giorno
+            // previsto è ancora buono, si chiude da quello dopo.
+            const aggiungeQualcuno =
+                (body.participants !== undefined && diffIdLists(hike.participants, body.participants).added.length > 0) ||
+                (body.pendingApproval !== undefined && diffIdLists(hike.pendingApproval, body.pendingApproval).added.length > 0);
+            if (aggiungeQualcuno && hike.date && hike.date < oggiRomaISO()) {
+                return res.status(409).json({
+                    error: `Questa escursione era prevista per il ${hike.date}: da quel giorno in poi non accetta più iscrizioni.`,
+                    code: 'HIKE_DATE_PASSED',
+                    hikeDate: hike.date
+                });
+            }
+
             if (body.participants !== undefined) update.participants = body.participants;
             if (body.pendingApproval !== undefined) {
                 update.pendingApproval = body.pendingApproval;

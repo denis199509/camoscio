@@ -447,6 +447,9 @@
             'hikeCard.opzioniTitle': 'Hike options',
             'hikeCard.modificaBtn': 'Edit',
             'hikeCard.partecipantiLabel': function (n) { return 'Participants (' + n + '):'; },
+            'hikeCard.iscrizioniChiuse': 'Sign-ups closed',
+            'hikeCard.iscrizioniChiuseTitle': 'The scheduled day has passed: no more sign-ups',
+            'hikeCard.iscrizioniChiuseData': function (data) { return 'This hike was scheduled for ' + data + ': it no longer accepts sign-ups after that day.'; },
 
             // --- Messaggi/conferme azioni escursione (social.js) ---
             'hikeToast.scegliProgetto': 'Choose a project from the list.',
