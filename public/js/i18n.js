@@ -251,6 +251,10 @@
             'hikePage.nonTrovata': 'Hike not found.',
             'hikePage.partecipanti': 'Participants',
             'hikePage.chatTitolo': 'Hike Chat',
+            // V2 UX PASSO 14b: tab interni di hike-page (PASSO 14c aggiunge "Zaino").
+            'hikePage.tabDettagli': 'Details',
+            'hikePage.tabChat': 'Chat',
+            'hikePage.tabCarpool': 'Carpooling',
 
             // ==================================================================
             // Rollout punto 102, secondo lotto (22/08/2026): Escursioni + Le mie
@@ -957,7 +961,8 @@
             //    T('common.cancella') + danger:true. Le altre showConfirmModal
             //    del sito (Mappa, tracciamento, moderazione) restano in
             //    italiano: sono lotti futuri.
-            'sectionTitle.carpool': 'Carpooling',
+            // V2 UX PASSO 14b: 'sectionTitle.carpool' ritirata - #carpool e' un tab di
+            // hike-page, il cui header e' sempre il nome dell'escursione.
             'sectionTitle.backpack': 'Smart Backpack',
 
             // Etichette generiche riusabili (come common.elimina/cancella dei
@@ -980,10 +985,11 @@
             'carpool.calc.resTotalLabel': 'Total Trip Cost (round trip):',
             'carpool.calc.resShareLabel': 'Share per Person:',
 
-            // --- I tuoi annunci auto / Offri un passaggio (HTML statico) ---
-            'carpool.offers.titolo': 'Your Car Listings',
+            // --- Il tuo annuncio auto / Offri un passaggio (HTML statico) ---
+            // V2 UX PASSO 14b: annuncio per-uscita (era "Your Car Listings", tutte le
+            // escursioni); via 'carpool.driver.hikeLabel' (il selettore escursione e' sparito).
+            'carpool.offers.titoloUscita': 'Your ride offer',
             'carpool.driver.titolo': 'Offer a Ride',
-            'carpool.driver.hikeLabel': 'For which hike?',
             'carpool.driver.cityLabel': 'Departure City:',
             'carpool.driver.cityPlaceholder': 'E.g. Milan, Bergamo...',
             'carpool.driver.seatsLabel': 'Free Seats in the Car:',
@@ -999,7 +1005,8 @@
             'carpool.match.dispTitolo': 'Available cars and rides:',
 
             // --- carpool.js: testo generato da JS ---
-            'carpool.js.nessunAnnuncio': "You haven't offered any ride yet. Use the form below.",
+            // V2 UX PASSO 14b: messaggio per-uscita (era 'carpool.js.nessunAnnuncio', su tutte).
+            'carpool.js.nessunAnnuncioUscita': "You haven't offered a ride for this outing yet. Use the form below.",
             'carpool.js.postiOccupati': function (n, tot) { return n + '/' + tot + ' seats taken'; },
             'carpool.js.partenzaDaLabel': 'Departure from:',
             'carpool.js.cancellaAnnuncio': 'Delete listing',

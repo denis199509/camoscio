@@ -2471,6 +2471,58 @@ option {
 /* ==========================================================================
    4. SECTION: CARPOOLING
    ========================================================================== */
+/* V2 UX PASSO 14b - tab interni di hike-page (Dettagli / Chat / Carpooling; 14c: Zaino).
+   Filtro CSS via l'attributo data-hp-tab sulla <section> - nessun [hidden], quindi
+   nessuna trappola con lo UA sheet. */
+.hike-page-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 18px;
+}
+
+.hp-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+    color: var(--color-text-secondary);
+    font-size: 0.88rem;
+    cursor: pointer;
+    transition: background var(--transition-speed), color var(--transition-speed), border-color var(--transition-speed);
+}
+
+.hp-tab:hover,
+.hp-tab:focus-visible {
+    color: var(--color-text-primary);
+}
+
+.hp-tab.active {
+    background: var(--accent-orange-glow);
+    border-color: var(--accent-orange);
+    color: var(--accent-orange);
+}
+
+.hp-tab i,
+.hp-tab svg {
+    width: 15px;
+    height: 15px;
+}
+
+.hp-panel {
+    display: none;
+}
+
+#hike-page[data-hp-tab="dettagli"] .hp-panel[data-hp-panel="dettagli"],
+#hike-page[data-hp-tab="chat"] .hp-panel[data-hp-panel="chat"],
+#hike-page[data-hp-tab="carpool"] .hp-panel[data-hp-panel="carpool"],
+#hike-page[data-hp-tab="backpack"] .hp-panel[data-hp-panel="backpack"] {
+    display: block;
+}
+
 .carpool-layout {
     display: grid;
     grid-template-columns: 1fr 1fr;

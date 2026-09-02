@@ -1430,7 +1430,8 @@ async function submitCreateHike() {
 
             await refreshState();
             renderHikesList(); // ridisegna anche "Le mie escursioni", vedi commento li'
-            if (window.populateHikeSelects) window.populateHikeSelects();
+            // V2 UX PASSO 14b: niente piu' populateHikeSelects (il selettore escursione
+            // del carpooling e' sparito - il tab e' gia' di una singola uscita).
 
             if (avevamoMandatoQuoteManuali && hikeSalvata && hikeSalvata.routeSource && !hikeSalvata.routeSource.dislivelloManuale) {
                 window.showToast(

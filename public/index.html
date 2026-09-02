@@ -463,13 +463,9 @@
                     <span data-i18n="nav.sicurezza">Sicurezza</span>
                 </button>
 
-                <!-- Carpooling e Zaino: qui in modo TRANSITORIO finche' PASSO 14b/14c non
-                     li sposta come tab dentro hike-page (poi #btn-nav-carpool /
-                     #btn-nav-backpack e le due .page-section si ritirano). -->
-                <button class="nav-btn" data-target="carpool" id="btn-nav-carpool">
-                    <i data-lucide="car"></i>
-                    <span>Carpooling</span>
-                </button>
+                <!-- V2 UX PASSO 14b: Carpooling e' ora un tab dentro hike-page (della
+                     singola escursione) - #btn-nav-carpool e la .page-section #carpool
+                     si sono ritirati. Zaino resta qui in TRANSITORIO fino a PASSO 14c. -->
                 <button class="nav-btn" data-target="backpack" id="btn-nav-backpack">
                     <i data-lucide="backpack"></i>
                     <span data-i18n="nav.backpack">Zaino Intelligente</span>
@@ -1367,135 +1363,6 @@
                     </div>
                 </section>
 
-                <!-- 4. CARPOOLING -->
-                <section id="carpool" class="page-section">
-                    <div class="carpool-layout">
-                        <!-- Colonna di Sinistra: Calcolatore Pedaggi e Spese Generali -->
-                        <div class="carpool-column">
-                            <div class="glass-card carpool-calc-card">
-                                <h4><i data-lucide="calculator"></i> <span data-i18n="carpool.calc.titolo">Split Spese Viaggio</span></h4>
-                                <p class="small text-muted" data-i18n="carpool.calc.desc">Inserisci solo i dati di andata: il ritorno lo calcola da solo, sugli stessi numeri.</p>
-
-                                <form id="carpool-calc-form">
-                                    <div class="form-row">
-                                        <div class="form-group">
-                                            <label for="calc-dist" data-i18n="carpool.calc.distLabel">Distanza Andata (km):</label>
-                                            <input type="number" id="calc-dist" value="60" min="1" required>
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="calc-consumption" data-i18n="carpool.calc.consumoLabel">Consumo (L/100km):</label>
-                                            <input type="number" id="calc-consumption" value="6.5" step="0.1" required>
-                                        </div>
-                                    </div>
-                                    <div class="form-row">
-                                        <div class="form-group">
-                                            <label for="calc-fuel-price" data-i18n="carpool.calc.benzinaLabel">Costo Benzina (€/L):</label>
-                                            <input type="number" id="calc-fuel-price" value="1.82" step="0.01" required>
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="calc-toll" data-i18n="carpool.calc.pedaggioLabel">Pedaggio Andata (€):</label>
-                                            <input type="number" id="calc-toll" value="6.20" step="0.1" required>
-                                        </div>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="calc-extra" data-i18n="carpool.calc.extraLabel">Costi Aggiuntivi (es. parcheggio, rifugio):</label>
-                                        <input type="number" id="calc-extra" value="0" step="1">
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="calc-passengers" data-i18n="carpool.calc.personeLabel">Numero Totale Persone in Auto:</label>
-                                        <input type="number" id="calc-passengers" value="4" min="1" required>
-                                    </div>
-                                    <button type="button" class="btn btn-primary btn-block" id="btn-calculate-expenses" data-i18n="carpool.calc.ricalcolaBtn">Ricalcola Divisione Spese</button>
-                                </form>
-
-                                <div class="calc-results-box" id="calc-results">
-                                    <div class="result-row">
-                                        <span data-i18n="carpool.calc.resFuelLabel">Costo Carburante Totale:</span>
-                                        <strong id="res-fuel-cost">€ 14.19</strong>
-                                    </div>
-                                    <div class="result-row">
-                                        <span data-i18n="carpool.calc.resTotalLabel">Costo Totale Viaggio (andata e ritorno):</span>
-                                        <strong id="res-total-cost">€ 26.59</strong>
-                                    </div>
-                                    <div class="result-row highlight">
-                                        <span data-i18n="carpool.calc.resShareLabel">Quota a Persona:</span>
-                                        <strong id="res-share-cost">€ 6.65</strong>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Punto 46 di cose_da_fare.txt: gli annunci stanno DENTRO l'escursione
-                                 (hike.carpool.drivers), quindi si vedevano solo aprendo quella singola
-                                 escursione - non si ritrovavano piu'. Stesso difetto gia' risolto per
-                                 le escursioni (punto 10) e i progetti: le cose proprie in un posto solo. -->
-                            <div class="glass-card carpool-my-offers-card">
-                                <h4><i data-lucide="car"></i> <span data-i18n="carpool.offers.titolo">I Tuoi Annunci Auto</span></h4>
-                                <div id="my-carpool-offers-list">
-                                    <!-- Renderizzato da JS -->
-                                </div>
-                            </div>
-
-                            <!-- Sezione Offerta Passaggi -->
-                            <div class="glass-card carpool-driver-card">
-                                <h4><i data-lucide="plus-circle"></i> <span data-i18n="carpool.driver.titolo">Offri un Passaggio</span></h4>
-                                <form id="offer-carpool-form">
-                                    <div class="form-group">
-                                        <label for="offer-hike-select" data-i18n="carpool.driver.hikeLabel">Per quale escursione?</label>
-                                        <select id="offer-hike-select" class="form-control" required>
-                                            <!-- Popolato da JS -->
-                                        </select>
-                                    </div>
-                                    <div class="form-row">
-                                        <div class="form-group">
-                                            <label for="offer-city" data-i18n="carpool.driver.cityLabel">Città di Partenza:</label>
-                                            <input type="text" id="offer-city" placeholder="Es. Milano, Bergamo..." data-i18n-placeholder="carpool.driver.cityPlaceholder" required>
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="offer-seats" data-i18n="carpool.driver.seatsLabel">Posti Liberi in Auto:</label>
-                                            <input type="number" id="offer-seats" value="3" min="1" max="8" required>
-                                        </div>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="offer-distance" data-i18n="carpool.driver.distLabel">Distanza A/R stimata (km):</label>
-                                        <input type="number" id="offer-distance" value="120" min="1" required>
-                                    </div>
-                                    <button type="submit" class="btn btn-success btn-block" data-i18n="carpool.driver.pubblicaBtn">Pubblica Auto Disponibile</button>
-                                </form>
-                            </div>
-                        </div>
-
-                        <!-- Colonna di Destra: Matching Intelligente e Privacy Partenza -->
-                        <div class="carpool-column">
-                            <div class="glass-card carpool-match-card">
-                                <h4><i data-lucide="git-merge"></i> <span data-i18n="carpool.match.titolo">Abbinamenti Intelligenti & Privacy Partenze</span></h4>
-                                <p class="small text-muted" data-i18n="carpool.match.desc">Condividi la tua zona di partenza da casa. L'algoritmo mostrerà gli accoppiamenti solo se ci sono 2 o più persone della stessa zona per tutelare la privacy.</p>
-
-                                <div class="address-privacy-box">
-                                    <form id="privacy-address-form">
-                                        <div class="form-group">
-                                            <label for="user-home-city" data-i18n="carpool.match.homeLabel">Il tuo indirizzo / zona di partenza da casa:</label>
-                                            <div class="input-with-btn">
-                                                <input type="text" id="user-home-city" placeholder="Es. Milano Loreto, Bergamo Alta..." data-i18n-placeholder="carpool.match.homePlaceholder" required>
-                                                <button type="submit" class="btn btn-primary" data-i18n="carpool.match.salvaZonaBtn">Salva Zona</button>
-                                            </div>
-                                        </div>
-                                    </form>
-                                    <div class="privacy-status" id="privacy-match-status">
-                                        <!-- Mostrato da JS -->
-                                    </div>
-                                </div>
-
-                                <div class="hike-carpools-section">
-                                    <h5 data-i18n="carpool.match.dispTitolo">Auto e Passaggi disponibili:</h5>
-                                    <div id="hike-carpools-list">
-                                        <!-- Renderizzato da JS -->
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
                 <!-- 5. ZAINO INTELLIGENTE -->
                 <section id="backpack" class="page-section">
                     <div class="backpack-layout">
@@ -2110,17 +1977,155 @@
                      sopra: nessuna voce in barra laterale, si apre cliccando "Chat" sulla card
                      di un'escursione (vedi public/js/hikepage.js, window.showHikePage(hikeId)).
                      Niente foto ne' ruoli admin, a differenza della pagina squadra. -->
-                <section id="hike-page" class="page-section">
-                    <div class="glass-card" id="hike-page-header">
-                        <!-- Riempito da JS: titolo dell'escursione -->
+                <section id="hike-page" class="page-section" data-hp-tab="dettagli">
+                    <!-- V2 UX PASSO 14b: hike-page a tab interni. Una sola vista per volta
+                         (attributo data-hp-tab sulla <section>, CSS). "Carpooling" e' il
+                         contenuto della ex .page-section #carpool, ora legato a QUESTA
+                         escursione (niente selettore "per quale escursione"). PASSO 14c
+                         aggiunge il tab "Zaino". -->
+                    <div class="hike-page-tabs" role="tablist">
+                        <button type="button" class="hp-tab" data-hp-tab="dettagli" role="tab">
+                            <i data-lucide="info"></i> <span data-i18n="hikePage.tabDettagli">Dettagli</span>
+                        </button>
+                        <button type="button" class="hp-tab" data-hp-tab="chat" role="tab">
+                            <i data-lucide="message-circle"></i> <span data-i18n="hikePage.tabChat">Chat</span>
+                        </button>
+                        <button type="button" class="hp-tab" data-hp-tab="carpool" role="tab">
+                            <i data-lucide="car"></i> <span data-i18n="hikePage.tabCarpool">Carpooling</span>
+                        </button>
                     </div>
 
-                    <div class="glass-card" id="hike-page-members">
-                        <!-- Riempito da JS: elenco partecipanti -->
+                    <div class="hp-panel" data-hp-panel="dettagli">
+                        <div class="glass-card" id="hike-page-header">
+                            <!-- Riempito da JS: titolo dell'escursione -->
+                        </div>
+                        <div class="glass-card" id="hike-page-members">
+                            <!-- Riempito da JS: elenco partecipanti -->
+                        </div>
                     </div>
 
-                    <div class="glass-card" id="hike-page-chat">
-                        <!-- Riempito da JS: chat riservata ai soli partecipanti dell'escursione -->
+                    <div class="hp-panel" data-hp-panel="chat">
+                        <div class="glass-card" id="hike-page-chat">
+                            <!-- Riempito da JS: chat riservata ai soli partecipanti dell'escursione -->
+                        </div>
+                    </div>
+
+                    <div class="hp-panel" data-hp-panel="carpool">
+                        <div class="carpool-layout">
+                            <div class="carpool-column">
+                                <!-- Il tuo annuncio auto PER QUESTA uscita (era "I Tuoi Annunci
+                                     Auto", su tutte le escursioni - punto 46). 0 o 1 annuncio:
+                                     submitCarpoolOffer sostituisce sempre il precedente. -->
+                                <div class="glass-card carpool-my-offers-card">
+                                    <h4><i data-lucide="car"></i> <span data-i18n="carpool.offers.titoloUscita">Il tuo annuncio auto</span></h4>
+                                    <div id="my-carpool-offers-list">
+                                        <!-- Renderizzato da JS -->
+                                    </div>
+                                </div>
+
+                                <div class="glass-card carpool-driver-card">
+                                    <h4><i data-lucide="plus-circle"></i> <span data-i18n="carpool.driver.titolo">Offri un Passaggio</span></h4>
+                                    <form id="offer-carpool-form">
+                                        <div class="form-row">
+                                            <div class="form-group">
+                                                <label for="offer-city" data-i18n="carpool.driver.cityLabel">Città di Partenza:</label>
+                                                <input type="text" id="offer-city" placeholder="Es. Milano, Bergamo..." data-i18n-placeholder="carpool.driver.cityPlaceholder" required>
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="offer-seats" data-i18n="carpool.driver.seatsLabel">Posti Liberi in Auto:</label>
+                                                <input type="number" id="offer-seats" value="3" min="1" max="8" required>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="offer-distance" data-i18n="carpool.driver.distLabel">Distanza A/R stimata (km):</label>
+                                            <input type="number" id="offer-distance" value="120" min="1" required>
+                                        </div>
+                                        <button type="submit" class="btn btn-success btn-block" data-i18n="carpool.driver.pubblicaBtn">Pubblica Auto Disponibile</button>
+                                    </form>
+                                </div>
+
+                                <div class="glass-card carpool-calc-card">
+                                    <h4><i data-lucide="calculator"></i> <span data-i18n="carpool.calc.titolo">Split Spese Viaggio</span></h4>
+                                    <p class="small text-muted" data-i18n="carpool.calc.desc">Inserisci solo i dati di andata: il ritorno lo calcola da solo, sugli stessi numeri.</p>
+
+                                    <form id="carpool-calc-form">
+                                        <div class="form-row">
+                                            <div class="form-group">
+                                                <label for="calc-dist" data-i18n="carpool.calc.distLabel">Distanza Andata (km):</label>
+                                                <input type="number" id="calc-dist" value="60" min="1" required>
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="calc-consumption" data-i18n="carpool.calc.consumoLabel">Consumo (L/100km):</label>
+                                                <input type="number" id="calc-consumption" value="6.5" step="0.1" required>
+                                            </div>
+                                        </div>
+                                        <div class="form-row">
+                                            <div class="form-group">
+                                                <label for="calc-fuel-price" data-i18n="carpool.calc.benzinaLabel">Costo Benzina (€/L):</label>
+                                                <input type="number" id="calc-fuel-price" value="1.82" step="0.01" required>
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="calc-toll" data-i18n="carpool.calc.pedaggioLabel">Pedaggio Andata (€):</label>
+                                                <input type="number" id="calc-toll" value="6.20" step="0.1" required>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="calc-extra" data-i18n="carpool.calc.extraLabel">Costi Aggiuntivi (es. parcheggio, rifugio):</label>
+                                            <input type="number" id="calc-extra" value="0" step="1">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="calc-passengers" data-i18n="carpool.calc.personeLabel">Numero Totale Persone in Auto:</label>
+                                            <input type="number" id="calc-passengers" value="4" min="1" required>
+                                        </div>
+                                        <button type="button" class="btn btn-primary btn-block" id="btn-calculate-expenses" data-i18n="carpool.calc.ricalcolaBtn">Ricalcola Divisione Spese</button>
+                                    </form>
+
+                                    <div class="calc-results-box" id="calc-results">
+                                        <div class="result-row">
+                                            <span data-i18n="carpool.calc.resFuelLabel">Costo Carburante Totale:</span>
+                                            <strong id="res-fuel-cost">€ 14.19</strong>
+                                        </div>
+                                        <div class="result-row">
+                                            <span data-i18n="carpool.calc.resTotalLabel">Costo Totale Viaggio (andata e ritorno):</span>
+                                            <strong id="res-total-cost">€ 26.59</strong>
+                                        </div>
+                                        <div class="result-row highlight">
+                                            <span data-i18n="carpool.calc.resShareLabel">Quota a Persona:</span>
+                                            <strong id="res-share-cost">€ 6.65</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="carpool-column">
+                                <div class="glass-card carpool-match-card">
+                                    <h4><i data-lucide="git-merge"></i> <span data-i18n="carpool.match.titolo">Abbinamenti Intelligenti & Privacy Partenze</span></h4>
+                                    <p class="small text-muted" data-i18n="carpool.match.desc">Condividi la tua zona di partenza da casa. L'algoritmo mostrerà gli accoppiamenti solo se ci sono 2 o più persone della stessa zona per tutelare la privacy.</p>
+
+                                    <div class="address-privacy-box">
+                                        <form id="privacy-address-form">
+                                            <div class="form-group">
+                                                <label for="user-home-city" data-i18n="carpool.match.homeLabel">Il tuo indirizzo / zona di partenza da casa:</label>
+                                                <div class="input-with-btn">
+                                                    <input type="text" id="user-home-city" placeholder="Es. Milano Loreto, Bergamo Alta..." data-i18n-placeholder="carpool.match.homePlaceholder" required>
+                                                    <button type="submit" class="btn btn-primary" data-i18n="carpool.match.salvaZonaBtn">Salva Zona</button>
+                                                </div>
+                                            </div>
+                                        </form>
+                                        <div class="privacy-status" id="privacy-match-status">
+                                            <!-- Mostrato da JS -->
+                                        </div>
+                                    </div>
+
+                                    <div class="hike-carpools-section">
+                                        <h5 data-i18n="carpool.match.dispTitolo">Auto e Passaggi disponibili:</h5>
+                                        <div id="hike-carpools-list">
+                                            <!-- Renderizzato da JS -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </section>
 

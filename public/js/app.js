@@ -499,7 +499,8 @@ function setupNavigation() {
         // navigateTo rimappa "badges" -> "progress" prima di arrivare qui.
         "progress": "Progressi",
         "map-section": "Mappa",
-        "carpool": "Carpooling",
+        // V2 UX PASSO 14b: #carpool ritirata (ora tab di hike-page); l'header di
+        // hike-page e' sempre il nome dell'escursione, non un titolo fisso.
         "backpack": "Zaino Intelligente",
         // V2 UX PASSO 14a: "Sicurezza & Mesh" -> "Sicurezza" (header = menu), foglia
         // dell'area personale. #safety internamente invariato.
@@ -893,9 +894,6 @@ function triggerSectionRender(sectionId) {
                 if (window.renderHikeSelectOptions) window.renderHikeSelectOptions();
                 if (window.renderRouteToFollowOptions) window.renderRouteToFollowOptions();
                 if (window.toggleGeoConsentAlert) window.toggleGeoConsentAlert();
-                break;
-            case "carpool":
-                if (window.renderCarpoolModule) window.renderCarpoolModule();
                 break;
             case "backpack":
                 if (window.renderBackpackModule) window.renderBackpackModule();
