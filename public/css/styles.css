@@ -5326,10 +5326,11 @@ option {
     }
 
     /* "Quota Massima" e "Durata Escursione" affiancate escono dallo schermo (la seconda
-       restava tagliata a meta'). Limitato a #backpack di proposito: .form-row la usano
+       restava tagliata a meta'). Limitato allo Zaino di proposito: .form-row la usano
        anche altri moduli del sito, che non sono stati provati in questa sessione - meglio
-       una correzione che si sa dove arriva che una che tocca schermate mai guardate. */
-    #backpack .form-row {
+       una correzione che si sa dove arriva. V2 UX PASSO 14c: lo Zaino e' un tab di
+       hike-page, il selettore e' .hp-panel[data-hp-panel="backpack"]. */
+    .hp-panel[data-hp-panel="backpack"] .form-row {
         flex-direction: column;
         gap: 0;
     }

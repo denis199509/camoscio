@@ -463,13 +463,10 @@
                     <span data-i18n="nav.sicurezza">Sicurezza</span>
                 </button>
 
-                <!-- V2 UX PASSO 14b: Carpooling e' ora un tab dentro hike-page (della
-                     singola escursione) - #btn-nav-carpool e la .page-section #carpool
-                     si sono ritirati. Zaino resta qui in TRANSITORIO fino a PASSO 14c. -->
-                <button class="nav-btn" data-target="backpack" id="btn-nav-backpack">
-                    <i data-lucide="backpack"></i>
-                    <span data-i18n="nav.backpack">Zaino Intelligente</span>
-                </button>
+                <!-- V2 UX PASSO 14b/14c: Carpooling e Zaino sono ora tab dentro hike-page
+                     (della singola escursione). #btn-nav-carpool / #btn-nav-backpack e le
+                     .page-section #carpool / #backpack si sono ritirati. Il blocco
+                     "STRUMENTI" non esiste piu' (Sicurezza e' in AREA PERSONALE, PASSO 14a). -->
             </nav>
 
             <div class="sidebar-footer">
@@ -1363,149 +1360,6 @@
                     </div>
                 </section>
 
-                <!-- 5. ZAINO INTELLIGENTE -->
-                <section id="backpack" class="page-section">
-                    <div class="backpack-layout">
-                        <!-- Configurazione Zaino -->
-                        <div class="backpack-config">
-                            <div class="glass-card config-backpack-card">
-                                <h4><i data-lucide="settings"></i> <span data-i18n="backpack.gen.titolo">Generatore Checklist Intelligente</span></h4>
-                                <p class="small text-muted" data-i18n="backpack.gen.desc">Inserisci i dati ambientali dell'escursione per ottenere una checklist consigliata e dividere i pesi con il gruppo.</p>
-
-                                <!-- Punto 23: dire per QUALE escursione e' questa lista. Prima il
-                                     sistema sceglieva da solo, arrivando a prendere l'escursione di
-                                     un altro utente, e dallo schermo non c'era modo di accorgersene.
-                                     Il selettore (aggiunto dopo) lascia scegliere: prima sceglieva
-                                     sempre la prossima in programma, senza alternativa. -->
-                                <div class="form-group">
-                                    <label for="backpack-hike-select" data-i18n="backpack.gen.perQualeLabel">Prepara lo zaino per:</label>
-                                    <select id="backpack-hike-select"></select>
-                                </div>
-                                <div id="backpack-hike-context" class="backpack-context-box"></div>
-
-                                <form id="backpack-generator-form">
-                                    <div class="form-group">
-                                        <label for="backpack-season" data-i18n="backpack.gen.stagioneLabel">Stagione:</label>
-                                        <select id="backpack-season">
-                                            <option value="estate" data-i18n="backpack.gen.stagioneEstate">Estate (Caldo, temporali improvvisi)</option>
-                                            <option value="inverno" data-i18n="backpack.gen.stagioneInverno">Inverno (Freddo intenso, ghiaccio, neve)</option>
-                                            <option value="autunno-primavera" data-i18n="backpack.gen.stagioneMezza">Mezza Stagione (Vento, pioggia, strati termici)</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-row">
-                                        <div class="form-group">
-                                            <label for="backpack-altitude" data-i18n="backpack.gen.quotaLabel">Quota Massima (metri):</label>
-                                            <input type="number" id="backpack-altitude" value="2600" min="0">
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="backpack-duration" data-i18n="backpack.gen.durataLabel">Durata Escursione:</label>
-                                            <select id="backpack-duration">
-                                                <option value="giornata" data-i18n="backpack.gen.durataGiornata">Giornata Singola</option>
-                                                <option value="plurigiorno" data-i18n="backpack.gen.durataPluri">Più Giorni (Rifugio/Tenda)</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="form-group">
-                                        <label><input type="checkbox" id="backpack-rain-expected" checked> <span data-i18n="backpack.gen.pioggiaCheck">Previsione Pioggia / Maltempo</span></label>
-                                    </div>
-                                    <button type="button" class="btn btn-primary btn-block" id="btn-generate-backpack" data-i18n="backpack.gen.generaBtn">Genera Checklist Dinamica</button>
-                                </form>
-                            </div>
-
-                            <!-- Reputazione Pesi Condivisi -->
-                            <div class="glass-card weight-distribution-card">
-                                <h4><i data-lucide="scale"></i> <span data-i18n="backpack.weight.titolo">Ripartizione dei Pesi del Gruppo</span></h4>
-                                <p class="small text-muted" data-i18n="backpack.weight.desc">Solo gli oggetti che si dividono: tenda, fornello, kit di primo soccorso. Le cose personali (giacca, acqua, cibo) le porta ognuno e non compaiono qui.</p>
-                                <div id="backpack-weight-distribution" class="weight-dist-list">
-                                    <!-- Renderizzato da JS -->
-                                </div>
-
-                                <!-- Punto 25 di cose_da_fare.txt: dichiarare un oggetto che
-                                     porti TU per il gruppo, con quante persone copre. Prima del
-                                     blocco 3 nessuna schermata permetteva di aggiungere un
-                                     articolo alla lista dell'escursione - i due template
-                                     esistenti arrivavano dallo script di popolamento - quindi
-                                     "porto io una tenda da 3 posti" non si poteva proprio dire.
-                                     Riempito e mostrato/nascosto da renderWeightDistribution. -->
-                                <div id="backpack-add-shared" class="backpack-add-shared hidden">
-                                    <h5><i data-lucide="plus-circle"></i> <span data-i18n="backpack.shared.titolo">Porto io una cosa per tutti</span></h5>
-                                    <div class="form-group">
-                                        <label for="shared-item-name" data-i18n="backpack.form.cosaLabel">Che cosa:</label>
-                                        <input type="text" id="shared-item-name" maxlength="60" placeholder="Es. Tenda 3 posti" data-i18n-placeholder="backpack.shared.nomePlaceholder">
-                                    </div>
-                                    <div class="form-row">
-                                        <div class="form-group">
-                                            <label for="shared-item-weight" data-i18n="backpack.form.pesoLabel">Peso (grammi):</label>
-                                            <input type="number" id="shared-item-weight" min="1" max="30000" placeholder="Es. 2400" data-i18n-placeholder="backpack.shared.pesoPlaceholder">
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="shared-item-covers" data-i18n="backpack.shared.copreLabel">Per quante persone:</label>
-                                            <input type="number" id="shared-item-covers" min="1" max="20" placeholder="Vuoto = tutti" data-i18n-placeholder="backpack.shared.coprePlaceholder">
-                                        </div>
-                                    </div>
-                                    <p class="small text-muted" data-i18n="backpack.shared.hint">Il numero di persone serve alle cose che bastano per pochi, come la tenda. Un fornello basta al gruppo: lascia vuoto.</p>
-                                    <button type="button" class="btn btn-secondary btn-sm btn-block" id="btn-add-shared-item" data-i18n="backpack.shared.aggiungiBtn">Aggiungi alla lista del gruppo</button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Lista Articoli dello Zaino -->
-                        <div class="backpack-list-area">
-                            <div class="glass-card backpack-list-card">
-                                <div class="card-header-row">
-                                    <h4><i data-lucide="check-square"></i> <span data-i18n="backpack.list.titolo">La tua Checklist</span></h4>
-                                    <span class="badge badge-accent" id="backpack-badge-rules">Altitudine > 2500m</span>
-                                </div>
-                                <div class="backpack-rules-notice warning" id="backpack-rules-alert">
-                                    <i data-lucide="alert-triangle"></i>
-                                    <span>Quota superiore a 2500 metri ed è prevista pioggia: <strong>Guscio Impermeabile</strong> e <strong>Ramponcini</strong> sono stati inseriti come obbligatori!</span>
-                                </div>
-
-                                <!-- Punto 25: avviso quando un oggetto condiviso non basta per
-                                     tutti (la tenda da 3 posti mentre si e' in 4). Riempito da
-                                     mostraAvvisiCopertura in backpack.js. -->
-                                <div class="backpack-rules-notice danger hidden" id="backpack-coverage-alert"></div>
-
-                                <!-- Punto 23: prima la pioggia era data SEMPRE per prevista. Ora la
-                                     previsione e' vera, e quando non si puo' sapere (escursione troppo
-                                     lontana nel tempo) lo si dice invece di inventare. -->
-                                <p class="small text-muted hidden" id="backpack-weather-note"></p>
-                                
-                                <div class="backpack-items-categories" id="backpack-categories-container">
-                                    <!-- Renderizzato da JS in categorie: Abbigliamento, Attrezzatura, Alimentazione, Sicurezza/Emergenza -->
-                                </div>
-
-                                <!-- Punto 47 di cose_da_fare.txt: aggiungere un oggetto PERSONALE a
-                                     mano, non solo condiviso (gia' fatto al punto 25). Piu' semplice
-                                     del modulo condiviso: niente "per quante persone", e' solo tuo. -->
-                                <div class="backpack-add-personal">
-                                    <h5><i data-lucide="plus-circle"></i> <span data-i18n="backpack.personal.titolo">Aggiungi una tua cosa</span></h5>
-                                    <div class="form-row">
-                                        <div class="form-group">
-                                            <label for="personal-item-name" data-i18n="backpack.form.cosaLabel">Che cosa:</label>
-                                            <input type="text" id="personal-item-name" maxlength="60" placeholder="Es. Bastoncini da trekking" data-i18n-placeholder="backpack.personal.nomePlaceholder">
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="personal-item-weight" data-i18n="backpack.form.pesoLabel">Peso (grammi):</label>
-                                            <input type="number" id="personal-item-weight" min="1" max="30000" placeholder="Es. 400" data-i18n-placeholder="backpack.personal.pesoPlaceholder">
-                                        </div>
-                                    </div>
-                                    <button type="button" class="btn btn-secondary btn-sm btn-block" id="btn-add-personal-item" data-i18n="backpack.personal.aggiungiBtn">Aggiungi alla mia lista</button>
-                                </div>
-
-                                <!-- Punto 47: tasto finale. Non e' solo un applauso: controlla che
-                                     tutto cio' che le regole hanno reso OBBLIGATORIO sia gia' spuntato
-                                     prima di dire che lo zaino e' pronto. -->
-                                <div class="backpack-confirmed-banner hidden" id="backpack-confirmed-banner">
-                                    <i data-lucide="check-circle"></i>
-                                    <span data-i18n="backpack.list.confermatoBanner">Zaino confermato: hai tutto l'obbligatorio.</span>
-                                </div>
-                                <button type="button" class="btn btn-success btn-block" id="btn-confirm-backpack" data-i18n="backpack.list.confermaBtn">Conferma zaino</button>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
                 <!-- 6. SICUREZZA & MESH -->
                 <section id="safety" class="page-section">
                     <div class="safety-layout">
@@ -1993,6 +1847,9 @@
                         <button type="button" class="hp-tab" data-hp-tab="carpool" role="tab">
                             <i data-lucide="car"></i> <span data-i18n="hikePage.tabCarpool">Carpooling</span>
                         </button>
+                        <button type="button" class="hp-tab" data-hp-tab="backpack" role="tab">
+                            <i data-lucide="backpack"></i> <span data-i18n="hikePage.tabZaino">Zaino</span>
+                        </button>
                     </div>
 
                     <div class="hp-panel" data-hp-panel="dettagli">
@@ -2126,6 +1983,141 @@
                                 </div>
                             </div>
                         </div>
+                    </div>
+                    <div class="hp-panel" data-hp-panel="backpack">
+                    <div class="backpack-layout">
+                        <!-- Configurazione Zaino -->
+                        <div class="backpack-config">
+                            <div class="glass-card config-backpack-card">
+                                <h4><i data-lucide="settings"></i> <span data-i18n="backpack.gen.titolo">Generatore Checklist Intelligente</span></h4>
+                                <p class="small text-muted" data-i18n="backpack.gen.desc">Inserisci i dati ambientali dell'escursione per ottenere una checklist consigliata e dividere i pesi con il gruppo.</p>
+
+                                <!-- V2 UX PASSO 14c: niente piu' selettore "prepara lo zaino
+                                     per" - lo Zaino e' un tab della singola escursione, il
+                                     contesto e' sempre QUESTA uscita. -->
+                                <div id="backpack-hike-context" class="backpack-context-box"></div>
+
+                                <form id="backpack-generator-form">
+                                    <div class="form-group">
+                                        <label for="backpack-season" data-i18n="backpack.gen.stagioneLabel">Stagione:</label>
+                                        <select id="backpack-season">
+                                            <option value="estate" data-i18n="backpack.gen.stagioneEstate">Estate (Caldo, temporali improvvisi)</option>
+                                            <option value="inverno" data-i18n="backpack.gen.stagioneInverno">Inverno (Freddo intenso, ghiaccio, neve)</option>
+                                            <option value="autunno-primavera" data-i18n="backpack.gen.stagioneMezza">Mezza Stagione (Vento, pioggia, strati termici)</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="backpack-altitude" data-i18n="backpack.gen.quotaLabel">Quota Massima (metri):</label>
+                                            <input type="number" id="backpack-altitude" value="2600" min="0">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="backpack-duration" data-i18n="backpack.gen.durataLabel">Durata Escursione:</label>
+                                            <select id="backpack-duration">
+                                                <option value="giornata" data-i18n="backpack.gen.durataGiornata">Giornata Singola</option>
+                                                <option value="plurigiorno" data-i18n="backpack.gen.durataPluri">Più Giorni (Rifugio/Tenda)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label><input type="checkbox" id="backpack-rain-expected" checked> <span data-i18n="backpack.gen.pioggiaCheck">Previsione Pioggia / Maltempo</span></label>
+                                    </div>
+                                    <button type="button" class="btn btn-primary btn-block" id="btn-generate-backpack" data-i18n="backpack.gen.generaBtn">Genera Checklist Dinamica</button>
+                                </form>
+                            </div>
+
+                            <!-- Reputazione Pesi Condivisi -->
+                            <div class="glass-card weight-distribution-card">
+                                <h4><i data-lucide="scale"></i> <span data-i18n="backpack.weight.titolo">Ripartizione dei Pesi del Gruppo</span></h4>
+                                <p class="small text-muted" data-i18n="backpack.weight.desc">Solo gli oggetti che si dividono: tenda, fornello, kit di primo soccorso. Le cose personali (giacca, acqua, cibo) le porta ognuno e non compaiono qui.</p>
+                                <div id="backpack-weight-distribution" class="weight-dist-list">
+                                    <!-- Renderizzato da JS -->
+                                </div>
+
+                                <!-- Punto 25 di cose_da_fare.txt: dichiarare un oggetto che
+                                     porti TU per il gruppo, con quante persone copre. Prima del
+                                     blocco 3 nessuna schermata permetteva di aggiungere un
+                                     articolo alla lista dell'escursione - i due template
+                                     esistenti arrivavano dallo script di popolamento - quindi
+                                     "porto io una tenda da 3 posti" non si poteva proprio dire.
+                                     Riempito e mostrato/nascosto da renderWeightDistribution. -->
+                                <div id="backpack-add-shared" class="backpack-add-shared hidden">
+                                    <h5><i data-lucide="plus-circle"></i> <span data-i18n="backpack.shared.titolo">Porto io una cosa per tutti</span></h5>
+                                    <div class="form-group">
+                                        <label for="shared-item-name" data-i18n="backpack.form.cosaLabel">Che cosa:</label>
+                                        <input type="text" id="shared-item-name" maxlength="60" placeholder="Es. Tenda 3 posti" data-i18n-placeholder="backpack.shared.nomePlaceholder">
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="shared-item-weight" data-i18n="backpack.form.pesoLabel">Peso (grammi):</label>
+                                            <input type="number" id="shared-item-weight" min="1" max="30000" placeholder="Es. 2400" data-i18n-placeholder="backpack.shared.pesoPlaceholder">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="shared-item-covers" data-i18n="backpack.shared.copreLabel">Per quante persone:</label>
+                                            <input type="number" id="shared-item-covers" min="1" max="20" placeholder="Vuoto = tutti" data-i18n-placeholder="backpack.shared.coprePlaceholder">
+                                        </div>
+                                    </div>
+                                    <p class="small text-muted" data-i18n="backpack.shared.hint">Il numero di persone serve alle cose che bastano per pochi, come la tenda. Un fornello basta al gruppo: lascia vuoto.</p>
+                                    <button type="button" class="btn btn-secondary btn-sm btn-block" id="btn-add-shared-item" data-i18n="backpack.shared.aggiungiBtn">Aggiungi alla lista del gruppo</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Lista Articoli dello Zaino -->
+                        <div class="backpack-list-area">
+                            <div class="glass-card backpack-list-card">
+                                <div class="card-header-row">
+                                    <h4><i data-lucide="check-square"></i> <span data-i18n="backpack.list.titolo">La tua Checklist</span></h4>
+                                    <span class="badge badge-accent" id="backpack-badge-rules">Altitudine > 2500m</span>
+                                </div>
+                                <div class="backpack-rules-notice warning" id="backpack-rules-alert">
+                                    <i data-lucide="alert-triangle"></i>
+                                    <span>Quota superiore a 2500 metri ed è prevista pioggia: <strong>Guscio Impermeabile</strong> e <strong>Ramponcini</strong> sono stati inseriti come obbligatori!</span>
+                                </div>
+
+                                <!-- Punto 25: avviso quando un oggetto condiviso non basta per
+                                     tutti (la tenda da 3 posti mentre si e' in 4). Riempito da
+                                     mostraAvvisiCopertura in backpack.js. -->
+                                <div class="backpack-rules-notice danger hidden" id="backpack-coverage-alert"></div>
+
+                                <!-- Punto 23: prima la pioggia era data SEMPRE per prevista. Ora la
+                                     previsione e' vera, e quando non si puo' sapere (escursione troppo
+                                     lontana nel tempo) lo si dice invece di inventare. -->
+                                <p class="small text-muted hidden" id="backpack-weather-note"></p>
+                                
+                                <div class="backpack-items-categories" id="backpack-categories-container">
+                                    <!-- Renderizzato da JS in categorie: Abbigliamento, Attrezzatura, Alimentazione, Sicurezza/Emergenza -->
+                                </div>
+
+                                <!-- Punto 47 di cose_da_fare.txt: aggiungere un oggetto PERSONALE a
+                                     mano, non solo condiviso (gia' fatto al punto 25). Piu' semplice
+                                     del modulo condiviso: niente "per quante persone", e' solo tuo. -->
+                                <div class="backpack-add-personal">
+                                    <h5><i data-lucide="plus-circle"></i> <span data-i18n="backpack.personal.titolo">Aggiungi una tua cosa</span></h5>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="personal-item-name" data-i18n="backpack.form.cosaLabel">Che cosa:</label>
+                                            <input type="text" id="personal-item-name" maxlength="60" placeholder="Es. Bastoncini da trekking" data-i18n-placeholder="backpack.personal.nomePlaceholder">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="personal-item-weight" data-i18n="backpack.form.pesoLabel">Peso (grammi):</label>
+                                            <input type="number" id="personal-item-weight" min="1" max="30000" placeholder="Es. 400" data-i18n-placeholder="backpack.personal.pesoPlaceholder">
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn btn-secondary btn-sm btn-block" id="btn-add-personal-item" data-i18n="backpack.personal.aggiungiBtn">Aggiungi alla mia lista</button>
+                                </div>
+
+                                <!-- Punto 47: tasto finale. Non e' solo un applauso: controlla che
+                                     tutto cio' che le regole hanno reso OBBLIGATORIO sia gia' spuntato
+                                     prima di dire che lo zaino e' pronto. -->
+                                <div class="backpack-confirmed-banner hidden" id="backpack-confirmed-banner">
+                                    <i data-lucide="check-circle"></i>
+                                    <span data-i18n="backpack.list.confermatoBanner">Zaino confermato: hai tutto l'obbligatorio.</span>
+                                </div>
+                                <button type="button" class="btn btn-success btn-block" id="btn-confirm-backpack" data-i18n="backpack.list.confermaBtn">Conferma zaino</button>
+                            </div>
+                        </div>
+                    </div>
                     </div>
                 </section>
 

@@ -27,18 +27,16 @@ function nomeOggettoTradotto(nome) { return T('backpack.item.' + nome) || nome; 
 function catLabel(cat) { return T('backpack.cat.' + cat) || cat; }
 function genereLabel(g) { return T('backpack.genere.' + g) || g; }
 
-// L'escursione scelta A MANO dal selettore in cima allo Zaino. Tre valori:
-//  - undefined  -> nessuna scelta esplicita: vale l'automatico (escursioneDiRiferimento)
-//  - ''         -> "Zaino personale" scelto apposta (nessuna escursione)
-//  - una stringa -> l'id dell'escursione scelta
-// Resta per la sessione. Prima non esisteva: lo Zaino prendeva sempre la prossima in
-// programma (o l'escursione attiva globale) senza alternativa.
-var zainoHikeIdScelto;
+// V2 UX PASSO 14c: lo Zaino e' un tab di hike-page, legato a UNA escursione. L'id
+// arriva da renderBackpackModule(hikeId) (chiamata pigra da hikepage.js quando si
+// apre il tab). Q6 chiusa: niente piu' "zaino personale" slegato da un'uscita, e
+// niente selettore "prepara lo zaino per" - il contesto e' sempre QUESTA uscita.
+var backpackHikeId = null;
 
-// Inizializzatore del modulo zaino
+// Inizializzatore del modulo zaino - solo l'aggancio dei listener: il primo render
+// e' pigro, lo fa hikepage.js all'apertura del tab con l'hikeId corrente.
 function initBackpackModule() {
     setupBackpackEvents();
-    renderBackpackModule();
 }
 
 function setupBackpackEvents() {
@@ -57,13 +55,8 @@ function setupBackpackEvents() {
     const btnAddPersonal = document.getElementById("btn-add-personal-item");
     if (btnAddPersonal) btnAddPersonal.addEventListener("click", aggiungiOggettoPersonale);
 
-    // Selettore "prepara lo zaino per": la scelta a mano vince sull'automatico.
-    const hikeSelect = document.getElementById("backpack-hike-select");
-    if (hikeSelect) hikeSelect.addEventListener("change", () => {
-        const v = hikeSelect.value;
-        zainoHikeIdScelto = (v === "__auto__") ? undefined : v;
-        renderBackpackModule();
-    });
+    // V2 UX PASSO 14c: niente piu' selettore "prepara lo zaino per" - il tab e' gia'
+    // di una singola escursione.
 
     const btnConfirm = document.getElementById("btn-confirm-backpack");
     if (btnConfirm) btnConfirm.addEventListener("click", confermaZaino);
@@ -76,38 +69,14 @@ function setupBackpackEvents() {
 // e ne mostrava perfino la lista degli oggetti condivisi e la ripartizione dei pesi fra
 // persone mai viste. Ora si guarda solo fra le proprie, e se non ce ne sono si mostra lo
 // zaino personale invece di quello di uno sconosciuto.
+// V2 UX PASSO 14c: lo Zaino e' un tab di hike-page - il contesto e' SEMPRE
+// l'escursione corrente (backpackHikeId, passato da renderBackpackModule). Prima
+// c'erano tre ripieghi (selettore a mano, db.activeHikeId, la prossima in
+// programma) piu' il caso "zaino personale" (null): tolti tutti, Q6 chiusa.
 function escursioneDiRiferimento() {
     const db = window.CamoscioState;
-    if (!db.currentUser) return null;
-
-    // Stessi criteri della pagina "Le mie escursioni" (punto 10): organizzate da me + quelle
-    // a cui partecipo. Riusare quella funzione, invece di riscrivere i confronti, evita che
-    // un domani "mia escursione" voglia dire due cose diverse in due punti del sito.
-    const mie = window.classificaMieEscursioni
-        ? (() => { const c = window.classificaMieEscursioni(); return c.create.concat(c.partecipo); })()
-        : [];
-
-    // Scelta A MANO dal selettore in cima allo Zaino: vince su tutto il resto.
-    if (zainoHikeIdScelto !== undefined) {
-        if (zainoHikeIdScelto === '') return null; // "Zaino personale" scelto apposta
-        const sceltaManuale = mie.find(h => h.id === zainoHikeIdScelto);
-        if (sceltaManuale) return sceltaManuale;
-        // id non piu' valido (escursione cancellata o completata nel frattempo): si ricade
-        // sull'automatico qui sotto invece di restare bloccati su niente.
-    }
-
-    // Se l'utente ha scelto un'escursione (es. dal pulsante "Mappa" di una scheda) vale solo
-    // se e' davvero sua: altrimenti si tornerebbe a mostrare lo zaino di un altro.
-    const scelta = mie.find(h => h.id === db.activeHikeId);
-    if (scelta) return scelta;
-
-    // Altrimenti la PROSSIMA in programma: e' quella per cui uno sta preparando lo zaino.
-    // Le date sono stringhe "YYYY-MM-DD" (vedi models/Hike.js), quindi si ordinano da sole.
-    // NIENTE ripiego sull'ultima escursione PASSATA: per lo Zaino una gia' fatta non ha
-    // senso (deciso con Denis). Senza nulla in programma si mostra lo zaino personale.
-    const oggi = new Date().toISOString().slice(0, 10);
-    const future = mie.filter(h => h.date && h.date >= oggi).sort((a, b) => a.date.localeCompare(b.date));
-    return future.length ? future[0] : null;
+    if (!db || !db.currentUser) return null;
+    return (db.hikes || []).find(h => h.id === backpackHikeId) || null;
 }
 
 // =====================================================================
@@ -238,45 +207,13 @@ function verificaCoperture(condivisi, personeNelGruppo) {
     return avvisi;
 }
 
-// Popola il selettore "prepara lo zaino per": Automatico + le mie escursioni IN PROGRAMMA
-// (organizzate da me / a cui partecipo, in due gruppi) + Zaino personale. Le escursioni
-// GIA' FATTE non ci sono di proposito (deciso con Denis: per lo zaino non hanno senso);
-// classificaMieEscursioni le tiene gia' fuori, qui si filtrano anche quelle con data
-// passata. Il valore selezionato riflette la scelta a mano, o "Automatico" se non c'e'.
-function popolaZainoHikeSelect() {
-    const select = document.getElementById("backpack-hike-select");
-    if (!select) return;
+// V2 UX PASSO 14c: popolaZainoHikeSelect rimossa - non c'e' piu' un selettore
+// "prepara lo zaino per" (il tab e' gia' di una singola escursione).
 
-    const c = window.classificaMieEscursioni ? window.classificaMieEscursioni() : { create: [], partecipo: [] };
-    const oggi = new Date().toISOString().slice(0, 10);
-    // Stessa regola di escursioneDiRiferimento: solo con una data futura (le gia' fatte
-    // classificaMieEscursioni le tiene gia' fuori; qui si escludono anche le passate).
-    const inProgramma = arr => (arr || []).filter(h => h.date && h.date >= oggi);
-    const create = inProgramma(c.create);
-    const partecipo = inProgramma(c.partecipo);
-
-    const loc = (window.CamoscioI18n && window.CamoscioI18n.getLang() === 'en') ? 'en-GB' : 'it-IT';
-    const opt = h => {
-        const quando = h.date ? ` · ${new Date(h.date + 'T12:00:00').toLocaleDateString(loc, { day: 'numeric', month: 'short' })}` : '';
-        return `<option value="${escapeHtml(h.id)}">${escapeHtml(h.title)}${quando}</option>`;
-    };
-    let html = `<option value="__auto__">${escapeHtml(T('backpack.gen.perAuto') || 'Automatico (la prossima in programma)')}</option>`;
-    if (create.length) html += `<optgroup label="${escapeHtml(T('backpack.gen.grpOrganizzate') || 'Organizzate da me')}">${create.map(opt).join('')}</optgroup>`;
-    if (partecipo.length) html += `<optgroup label="${escapeHtml(T('backpack.gen.grpPartecipo') || 'A cui partecipo')}">${partecipo.map(opt).join('')}</optgroup>`;
-    html += `<option value="">${escapeHtml(T('backpack.gen.perPersonale') || 'Zaino personale (nessuna escursione)')}</option>`;
-    select.innerHTML = html;
-
-    // "" e' un valore valido (Zaino personale), quindi si distingue da undefined con typeof.
-    if (typeof zainoHikeIdScelto === 'string' && [...select.options].some(o => o.value === zainoHikeIdScelto)) {
-        select.value = zainoHikeIdScelto;
-    } else {
-        select.value = "__auto__"; // nessuna scelta, o id non piu' valido
-    }
-}
-
-// Renderizza il modulo zaino in base all'escursione attiva o a input dell'utente
-function renderBackpackModule() {
-    popolaZainoHikeSelect();
+// Renderizza il modulo zaino per l'escursione del tab (hikeId opzionale: se assente
+// si riusa l'ultimo, utile ai ridisegni post-azione).
+function renderBackpackModule(hikeId) {
+    if (hikeId) backpackHikeId = hikeId;
     const hike = escursioneDiRiferimento();
 
     renderWeightDistribution(hike);
@@ -765,15 +702,11 @@ function mostraEscursioneDiRiferimento(hike) {
     if (!box) return;
 
     if (!hike) {
-        box.className = "backpack-context-box personale";
-        // Due casi diversi: nessuna escursione in programma, oppure "Zaino personale"
-        // scelto apposta dal selettore. Il messaggio "non hai escursioni" era fuorviante
-        // nel secondo caso.
-        const desc = (zainoHikeIdScelto === '')
-            ? (T('backpack.js.zainoPersonaleScelto') || "Hai scelto di non collegarlo a un'escursione: e' la lista delle tue cose, senza oggetti da dividere col gruppo.")
-            : (T('backpack.js.zainoPersonaleDesc') || "Non hai escursioni in programma: questa e' la lista delle tue cose. Iscriviti a un'escursione per vedere anche gli oggetti da dividere col gruppo.");
-        box.innerHTML = `<strong>${T('backpack.js.zainoPersonaleTitolo') || 'Zaino personale'}</strong>
-            <span class="small">${desc}</span>`;
+        // V2 UX PASSO 14c: dentro hike-page il contesto e' sempre un'escursione vera;
+        // ci si arriva qui solo per uno stato d'errore (id non risolto). Messaggio
+        // neutro, niente piu' UI "zaino personale" (Q6 chiusa).
+        box.className = "backpack-context-box";
+        box.innerHTML = "";
         return;
     }
 
@@ -1032,19 +965,21 @@ window.reassignSharedGear = async function(hikeId, newAssigneeId, itemName) {
 // riquadro dell'escursione sono costruiti via innerHTML - applyStaticTranslations
 // non li raggiunge, resterebbero in italiano sotto gli occhi. Si ridisegnano, ma
 // SENZA rifare il fetch meteo di open-meteo: si rigiocano gli ultimi input veri
-// (ultimoInputZaino, catturati nell'imbuto sincrono applyBackpackRules) e si
-// riscrive la nota meteo con l'ultimo valore gia' noto. Stessa logica della
-// Dashboard al terzo lotto: ridisegna, non rifetch. Solo se #backpack e' attiva
-// (navigateTo lo ridisegna comunque all'ingresso), come renderCompletate.
+// (ultimoInputZaino) e si riscrive la nota meteo con l'ultimo valore gia' noto.
+// V2 UX PASSO 14c: lo Zaino e' un tab di hike-page - si ridisegna solo se hike-page
+// e' attiva E il tab Zaino e' quello aperto (data-hp-tab).
 if (window.CamoscioI18n && window.CamoscioI18n.onChange) {
     window.CamoscioI18n.onChange(function () {
-        const sec = document.getElementById("backpack");
-        if (!sec || !sec.classList.contains("active")) return;
-        popolaZainoHikeSelect(); // le option/optgroup del selettore sono costruite via T()||italiano
+        const hp = document.getElementById("hike-page");
+        if (!hp || !hp.classList.contains("active") || hp.getAttribute("data-hp-tab") !== "backpack") return;
         if (!ultimoInputZaino) return;
         const i = ultimoInputZaino;
+        // V2 UX PASSO 14c: il riquadro contesto e' SEMPRE l'escursione del tab (anche
+        // dopo un "Genera Checklist" manuale, che passa hike=null alle regole ma non
+        // cambia in quale escursione ci si trova). Ripartizione pesi e regole restano
+        // sull'ultimo input vero (i.hike puo' essere null in modalita' manuale).
         renderWeightDistribution(i.hike);
-        mostraEscursioneDiRiferimento(i.hike);
+        mostraEscursioneDiRiferimento(escursioneDiRiferimento());
         applyBackpackRules(i.season, i.altitude, i.duration, i.rainExpected, i.hike);
         if (ultimaNotaPioggia.visibile) {
             mostraNotaPioggia(ultimaNotaPioggia.pioggia, ultimaNotaPioggia.hike);

@@ -110,7 +110,7 @@
             // V2 UX PASSO 12: #my-profile si sdoppia in "Profilo" (vista) + "Impostazioni" (#settings).
             'nav.profilo': 'Profile',
             'nav.impostazioni': 'Settings',
-            'nav.backpack': 'Smart Backpack',
+            // V2 UX PASSO 14c: 'nav.backpack' ritirata - lo Zaino e' un tab di hike-page.
             // V2 UX PASSO 14a: 'nav.safety' -> 'nav.sicurezza', etichetta accorciata.
             'nav.sicurezza': 'Safety',
 
@@ -255,6 +255,7 @@
             'hikePage.tabDettagli': 'Details',
             'hikePage.tabChat': 'Chat',
             'hikePage.tabCarpool': 'Carpooling',
+            'hikePage.tabZaino': 'Backpack',
 
             // ==================================================================
             // Rollout punto 102, secondo lotto (22/08/2026): Escursioni + Le mie
@@ -963,7 +964,7 @@
             //    italiano: sono lotti futuri.
             // V2 UX PASSO 14b: 'sectionTitle.carpool' ritirata - #carpool e' un tab di
             // hike-page, il cui header e' sempre il nome dell'escursione.
-            'sectionTitle.backpack': 'Smart Backpack',
+            // V2 UX PASSO 14c: 'sectionTitle.backpack' ritirata - lo Zaino e' un tab di hike-page.
 
             // Etichette generiche riusabili (come common.elimina/cancella dei
             // lotti precedenti) - stanno qui per i lotti futuri.
@@ -1032,11 +1033,9 @@
             // --- Generatore checklist (HTML statico) ---
             'backpack.gen.titolo': 'Smart Checklist Generator',
             'backpack.gen.desc': "Enter the hike's environmental data to get a recommended checklist and split the weight with the group.",
-            'backpack.gen.perQualeLabel': 'Pack for:',
-            'backpack.gen.perAuto': 'Automatic (the next scheduled one)',
-            'backpack.gen.grpOrganizzate': 'Organized by me',
-            'backpack.gen.grpPartecipo': "I'm joining",
-            'backpack.gen.perPersonale': 'Personal backpack (no hike)',
+            // V2 UX PASSO 14c: ritirate backpack.gen.perQualeLabel / perAuto / grpOrganizzate /
+            // grpPartecipo / perPersonale - non c'e' piu' il selettore "prepara lo zaino per"
+            // ne' lo "zaino personale" (Q6): il tab e' gia' di una singola escursione.
             'backpack.gen.stagioneLabel': 'Season:',
             'backpack.gen.stagioneEstate': 'Summer (Heat, sudden storms)',
             'backpack.gen.stagioneInverno': 'Winter (Deep cold, ice, snow)',
@@ -1134,9 +1133,8 @@
             'backpack.js.posti': function (n) { return n + (n === 1 ? ' spot' : ' spots'); },
 
             // --- backpack.js: riquadro escursione di riferimento (mostraEscursioneDiRiferimento) ---
-            'backpack.js.zainoPersonaleTitolo': 'Personal backpack',
-            'backpack.js.zainoPersonaleDesc': 'You have no upcoming hikes: this is the list of your own things. Join a hike to also see the items to share with the group.',
-            'backpack.js.zainoPersonaleScelto': "You chose not to link it to a hike: it's the list of your own things, with no items to share with the group.",
+            // V2 UX PASSO 14c: ritirate backpack.js.zainoPersonaleTitolo/Desc/Scelto (Q6:
+            // niente piu' "zaino personale" - il tab e' sempre di un'escursione vera).
             'backpack.js.zainoPerLabel': 'Backpack for:',
             'backpack.js.dataNonIndicata': 'date not set',
             'backpack.js.quotaMassimaLabel': 'max altitude',

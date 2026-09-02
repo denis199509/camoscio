@@ -17,9 +17,10 @@ var T = (window.CamoscioI18n && window.CamoscioI18n.t) || function () { return n
 // Ultima escursione aperta, stesso principio di squadIdAperta in squadpage.js:
 // un cambio lingua ridisegna SOLO intestazione/partecipanti, mai la chat.
 var hikeIdAperta = null;
-// Per quale escursione e' gia' stato disegnato il tab Carpooling (render pigro:
-// si rifa' solo alla prima apertura del tab o se cambia l'escursione).
+// Per quale escursione sono gia' stati disegnati i tab pesanti (render pigro: si
+// rifanno solo alla prima apertura del tab o se cambia l'escursione).
 var carpoolResoPerHikeId = null;
+var backpackResoPerHikeId = null;
 
 async function showHikePage(hikeId) {
     if (!hikeId) return;
@@ -29,7 +30,8 @@ async function showHikePage(hikeId) {
 
 async function renderHikePage(hikeId) {
     hikeIdAperta = hikeId;
-    carpoolResoPerHikeId = null; // escursione cambiata: il tab Carpooling va rifatto
+    carpoolResoPerHikeId = null; // escursione cambiata: i tab pesanti vanno rifatti
+    backpackResoPerHikeId = null;
     const db = window.CamoscioState;
     const hike = db.hikes.find(h => h.id === hikeId);
     const headerBox = document.getElementById("hike-page-header");
@@ -72,6 +74,12 @@ function impostaTabHikePage(tab) {
         if (window.renderCarpoolModule) {
             window.renderCarpoolModule(hikeIdAperta);
             carpoolResoPerHikeId = hikeIdAperta;
+        }
+    }
+    if (tab === "backpack" && hikeIdAperta && backpackResoPerHikeId !== hikeIdAperta) {
+        if (window.renderBackpackModule) {
+            window.renderBackpackModule(hikeIdAperta);
+            backpackResoPerHikeId = hikeIdAperta;
         }
     }
     if (window.lucide) window.lucide.createIcons();
