@@ -411,6 +411,20 @@
                             <i data-lucide="user-round-plus"></i>
                             <span data-i18n="nav.amici">Amici</span>
                         </button>
+                        <!-- "Squadre": sotto-tendina annidata dentro Community. La testa e' un
+                             semplice toggle - classe propria, NON .nav-btn (navButtons la
+                             aggancerebbe e navigateTo(null) svuoterebbe la pagina) ne'
+                             .nav-group (l'accordion la chiuderebbe insieme al parent). Le
+                             voci sono le squadre dell'utente, iniettate da renderNavSquadre()
+                             (app.js) da CamoscioState.squads; un clic apre la pagina squadra. -->
+                        <div class="nav-subgroup" data-subgroup="squadre">
+                            <button type="button" class="nav-subgroup-head" aria-expanded="false" aria-controls="nav-subgroup-squadre">
+                                <i data-lucide="users-round"></i>
+                                <span data-i18n="nav.squadre">Squadre</span>
+                                <i class="nav-chevron" data-lucide="chevron-down"></i>
+                            </button>
+                            <div class="nav-subgroup-body" id="nav-subgroup-squadre" hidden></div>
+                        </div>
                     </div>
                 </div>
 

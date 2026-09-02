@@ -288,6 +288,82 @@ h1, h2, h3, h4, h5, h6 {
     padding-left: 12px;
 }
 
+/* "Squadre": tendina annidata dentro il gruppo Community. Stessa estetica di
+   .nav-group-head, un gradino piu' rientrata e piu' piccola. La lista sotto la
+   riempie renderNavSquadre() (app.js) con le squadre dell'utente. */
+.nav-subgroup {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.nav-subgroup-head {
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--color-text-secondary);
+    padding: 10px 12px;
+    border-radius: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-align: left;
+    transition: all var(--transition-speed);
+}
+
+.nav-subgroup-head:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--color-text-primary);
+}
+
+.nav-subgroup-head > span {
+    flex: 1;
+}
+
+.nav-subgroup-head > svg:last-child {
+    width: 14px;
+    height: 14px;
+    opacity: 0.55;
+    transition: transform var(--transition-speed);
+}
+
+.nav-subgroup-head[aria-expanded="true"] > svg:last-child {
+    transform: rotate(180deg);
+}
+
+.nav-subgroup-body {
+    flex-direction: column;
+    gap: 8px;
+    margin-left: 14px;
+    padding-left: 6px;
+    border-left: 1px solid var(--border-color);
+}
+/* Stesso motivo di .nav-group-body: [hidden] da solo non basta, una regola
+   d'autore col display batterebbe il display:none dello UA sheet. */
+.nav-subgroup-body:not([hidden]) {
+    display: flex;
+}
+
+.nav-squad-item {
+    font-size: 0.9rem;
+}
+.nav-squad-item > span {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.nav-squad-empty {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+    font-style: italic;
+    color: var(--color-text-muted);
+}
+
 /* + Crea: azione, non navigazione. Accento pieno. */
 .nav-crea {
     background: var(--accent-orange-glow);

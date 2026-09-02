@@ -1777,6 +1777,10 @@ function renderSquadsList() {
         `;
         container.appendChild(item);
     });
+
+    // Stessa lista, stesso filtro: tiene allineata la sotto-tendina "Squadre"
+    // della sidebar quando si crea/lascia una squadra senza un refreshState().
+    if (window.renderNavSquadre) window.renderNavSquadre();
 }
 
 // Punto 75: senza questa lista non c'era alcun modo di TROVARE una squadra a cui non si

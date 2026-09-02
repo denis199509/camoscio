@@ -408,6 +408,10 @@ async function refreshState() {
         window.CamoscioState.squads = squads;
         window.CamoscioState.bookmarks = bookmarks;
 
+        // Sotto-tendina "Squadre" della sidebar: si tiene allineata ai dati freschi
+        // (una richiesta di ingresso approvata da un admin la fa comparire).
+        if (window.renderNavSquadre) window.renderNavSquadre();
+
         // activeHikeId resta null finché l'utente non sceglie DAVVERO un'escursione (clic sul
         // tasto "Mappa" di una scheda -> loadActiveHikeOnMap in map.js). Prima qui c'era un
         // default su hikes[0], cioè la PRIMA escursione del database di chiunque: ogni
@@ -594,6 +598,76 @@ function setupNavigation() {
             impostaGruppo(giaAperto ? "" : g.getAttribute("data-group"));
         });
     });
+    // --------------------------------------------------------------------------
+
+    // --- "Squadre": sotto-tendina annidata dentro il gruppo Community ----------
+    // Voce chiesta da Denis: sotto "Community" (che aveva solo "Amici") una voce
+    // "Squadre" che si apre sull'elenco delle squadre dell'utente, per saltare
+    // dritti alla pagina di una squadra. La lista e' dinamica (crea/entra/esci la
+    // cambiano): la ridisegna renderNavSquadre() da CamoscioState.squads, con lo
+    // STESSO filtro di renderSquadsList (social.js) - creatore o membro. Chiamata
+    // da refreshState() (a ogni cambio sezione) e da renderSquadsList().
+    // La testa NON e' .nav-btn (navigateTo(null) svuoterebbe la pagina) ne'
+    // .nav-group (l'accordion la chiuderebbe insieme a Community): e' un toggle a
+    // se', con stato aperto/chiuso in localStorage (nessun campo MongoDB).
+    const LS_NAV_SQUADRE = "camoscio.nav.squadreAperta";
+    const navSquadreHead = document.querySelector('.nav-subgroup[data-subgroup="squadre"] .nav-subgroup-head');
+    const navSquadreBody = document.getElementById("nav-subgroup-squadre");
+
+    function impostaSquadreAperta(aperta, opts) {
+        const persist = !opts || opts.persist !== false;
+        if (navSquadreHead) navSquadreHead.setAttribute("aria-expanded", aperta ? "true" : "false");
+        if (navSquadreBody) navSquadreBody.hidden = !aperta;
+        if (persist) {
+            try { localStorage.setItem(LS_NAV_SQUADRE, aperta ? "1" : "0"); } catch (e) {}
+        }
+    }
+
+    if (navSquadreHead) {
+        navSquadreHead.addEventListener("click", () => {
+            impostaSquadreAperta(navSquadreHead.getAttribute("aria-expanded") !== "true");
+        });
+    }
+    if (navSquadreBody) {
+        navSquadreBody.addEventListener("click", (e) => {
+            const riga = e.target.closest(".nav-squad-item");
+            if (!riga) return;
+            const id = riga.getAttribute("data-squad-id");
+            if (id && window.showSquadPage) window.showSquadPage(id);
+        });
+    }
+
+    function renderNavSquadre() {
+        if (!navSquadreBody) return;
+        const st = window.CamoscioState;
+        const me = st && st.currentUser;
+        const squads = (st && st.squads) || [];
+        const mie = me
+            ? squads.filter(s => s.creatorId === me.id || (s.members || []).indexOf(me.id) !== -1)
+            : [];
+        mie.sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), "it", { sensitivity: "base" }));
+
+        if (mie.length === 0) {
+            const vuoto = (window.CamoscioI18n && window.CamoscioI18n.t("nav.squadreVuoto")) || "Nessuna squadra";
+            navSquadreBody.innerHTML = '<p class="nav-squad-empty">' + window.escapeHtml(vuoto) + "</p>";
+        } else {
+            navSquadreBody.innerHTML = mie.map(s => {
+                const nome = window.escapeHtml(s.name || "");
+                return '<button type="button" class="nav-btn nav-sub nav-squad-item" data-squad-id="'
+                    + window.escapeHtml(s.id) + '" title="' + nome + '">'
+                    + '<i data-lucide="users"></i><span>' + nome + "</span></button>";
+            }).join("");
+        }
+
+        // Stato aperto/chiuso ricordato (default: chiuso).
+        let ricordato = "0";
+        try { ricordato = localStorage.getItem(LS_NAV_SQUADRE) || "0"; } catch (e) {}
+        impostaSquadreAperta(ricordato === "1", { persist: false });
+
+        if (window.lucide) window.lucide.createIcons();
+    }
+    window.renderNavSquadre = renderNavSquadre;
+    renderNavSquadre();
     // --------------------------------------------------------------------------
 
     // --- V2 UX PASSO 8: drawer mobile (<=900px) --------------------------------

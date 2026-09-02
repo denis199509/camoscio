@@ -99,6 +99,11 @@
             // (porta alla card "Persone", che ha assorbito la ricerca per nome utente).
             // Via 'nav.peopleSearch' - la voce "Cerca Persone" non esiste piu'.
             'nav.amici': 'Friends',
+            // Sotto-tendina "Squadre" dentro Community: elenco delle proprie squadre,
+            // scorciatoia alla pagina di ognuna. I nomi delle squadre restano com'e'
+            // (contenuto utente). "Squads" come social.squadsTitle & co.
+            'nav.squadre': 'Squads',
+            'nav.squadreVuoto': 'No squads',
             'nav.crea': 'Create',
             // V2 UX PASSO 13: le 2 voci del popover "＋ Crea".
             'crea.nuovaEscursione': 'New hike',
