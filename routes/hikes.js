@@ -425,6 +425,40 @@ router.put('/:id', requireAuth, async (req, res) => {
                 return res.status(403).json({ error: 'Non puoi modificare così la lista partecipanti' });
             }
 
+            // Il CREATORE non aveva nessun filtro qui: un semplice PUT {participants:[<id>]}
+            // bastava per infilare un id qualsiasi (uno sconosciuto, uno preso da GET /api/users)
+            // nel gruppo mesh/SOS di un'escursione non ancora conclusa, e da lì ricevere le
+            // coordinate GPS reali di quella persona quando manda un pacchetto mesh (server.js).
+            // Ora un'aggiunta del creatore a participants/pendingApproval deve avere senso: chi
+            // ha già chiesto di partecipare, chi è già dentro, o un membro di una sua squadra
+            // (l'unico modo legittimo di aggiungere qualcuno "a mano" - l'invito squadra).
+            // Le RIMOZIONI restano libere (il creatore gestisce la sua escursione).
+            if (isCreator) {
+                const aggiuntiDalCreatore = [...new Set([
+                    ...(body.participants !== undefined ? diffIdLists(hike.participants, body.participants).added : []),
+                    ...(body.pendingApproval !== undefined ? diffIdLists(hike.pendingApproval, body.pendingApproval).added : [])
+                ])].map(String);
+                const giaInRelazione = new Set([
+                    ...(hike.participants || []).map(String),
+                    ...(hike.pendingApproval || []).map(String),
+                    String(hike.creatorId)
+                ]);
+                const daVerificare = aggiuntiDalCreatore.filter(id => !giaInRelazione.has(id));
+                if (daVerificare.length) {
+                    const squadreDelCreatore = await Squad.find({ members: userId }).select('members').lean();
+                    const compagniDiSquadra = new Set();
+                    for (const s of squadreDelCreatore) {
+                        for (const m of (s.members || [])) compagniDiSquadra.add(String(m));
+                    }
+                    if (daVerificare.some(id => !compagniDiSquadra.has(id))) {
+                        return res.status(403).json({
+                            error: 'Puoi aggiungere solo chi ha chiesto di partecipare o un membro di una tua squadra.',
+                            code: 'HIKE_AGGIUNTA_NON_CONSENTITA'
+                        });
+                    }
+                }
+            }
+
             // Decisione di Denis (02/09/2026): passato il giorno previsto, l'escursione
             // non accetta più NESSUNO - né auto-iscrizioni, né richieste, né inviti
             // squadra, né aggiunte a mano del creatore. Vale solo per le AGGIUNTE:
@@ -776,7 +810,7 @@ router.post('/:id/complete', requireAuth, async (req, res) => {
 // viste (avatar sulla scheda, zaino di gruppo) presumono gia' che "condiviso l'escursione"
 // equivalga a stare in participants: un Completion senza participants aggiornato
 // romperebbe silenziosamente quelle funzionalita'.
-router.post('/:id/complete-group', requireAuth, async (req, res) => {
+router.post('/:id/complete-group', requireAuth, scritturaLimiter, async (req, res) => {
     try {
         const hike = await Hike.findById(req.params.id);
         if (!hike) {
@@ -793,6 +827,14 @@ router.post('/:id/complete-group', requireAuth, async (req, res) => {
         if (!Array.isArray(confirmedUserIds) || confirmedUserIds.length === 0) {
             return res.status(400).json({ error: 'Conferma almeno una persona presente.' });
         }
+        // Tetto: una lista lunga qui e' l'unico vettore per creare Completion (e quindi
+        // completedHikes/experienceLevel) in massa per utenti scelti a piacere - il creatore
+        // e' il solo che puo' arrivare qui, ma nulla gli impedisce di creare una hike apposta.
+        // Un'escursione di gruppo vera sta molto sotto 200. Chiude anche il caso "poi la
+        // cancello": DELETE /api/hikes/:id itererebbe su tutti quei Completion.
+        if (confirmedUserIds.length > 200) {
+            return res.status(400).json({ error: 'Troppe persone da confermare in una volta.' });
+        }
 
         // Ogni ID deve corrispondere a un utente vero: evita di infilare in participants ID
         // inventati mandati a mano (la lista qui non passa da nessun'altra convalida).
@@ -800,6 +842,11 @@ router.post('/:id/complete-group', requireAuth, async (req, res) => {
         if (utentiConfermati.length !== confirmedUserIds.length) {
             return res.status(400).json({ error: 'Uno degli utenti confermati non esiste.' });
         }
+
+        // Chi era gia' iscritto PRIMA di questa chiamata: serve sotto per avvisare solo chi
+        // viene aggiunto ex novo (la ricerca "aggiungi chi non era in lista" e' una funzione
+        // vera, ma non deve poter creare un completamento fantasma in silenzio).
+        const partecipantiPrima = new Set((hike.participants || []).map(String));
 
         // Punto 67: un file .gpx facoltativo, "per avere i dati veri dell'escursione" (parole
         // di Denis) - non chiede mai le ore a mano, quelle il file le porta gia' con se'.
@@ -860,6 +907,26 @@ router.post('/:id/complete-group', requireAuth, async (req, res) => {
         hike.pendingApproval = [];
         hike.groupCompletedAt = new Date();
         await hike.save();
+
+        // Avvisa chi viene segnato presente pur non essendo fra gli iscritti: la ricerca
+        // "aggiungi chi non era in lista" e' una funzione voluta, ma un Completion creato per
+        // qualcuno che non ne sa niente non deve restare silenzioso (finisce nel suo "Escursioni
+        // fatte" e nel gate recensioni). I gia' iscritti non ricevono nulla: per loro non
+        // aggiunge informazione. Best-effort: l'escursione e' gia' chiusa, un errore qui non
+        // deve far fallire il completamento.
+        try {
+            const nuoviConfermati = [...new Set(confirmedUserIds.map(String))]
+                .filter(id => !partecipantiPrima.has(id) && id !== String(hike.creatorId));
+            if (nuoviConfermati.length) {
+                await Notification.insertMany(nuoviConfermati.map(userId => ({
+                    userId,
+                    text: `Sei stato segnato come presente all'escursione "${hike.title}".`,
+                    relatedHikeId: hike._id
+                })));
+            }
+        } catch (e) {
+            console.error('Avvisi "segnato presente" non inviati:', e);
+        }
 
         res.json(hike);
     } catch (e) {
