@@ -128,6 +128,29 @@ dell'APPROVAZIONE MANUALE che si poteva scavalcare:
     quel giorno stesso. I tre controlli B11 lo presidiano, e pretendono 409 e non un 403
     qualunque: deve fermarsi perche' l'escursione e' CHIUSA, non per un caso dei permessi.
 
+La prova della CANCELLAZIONE DI UN'ESCURSIONE (DELETE /api/hikes/:id, nata il 02/09/2026:
+prima una hike creata era per sempre, e dopo la chiusura di gruppo spariva anche "Modifica"):
+
+    node prove/prova-elimina-escursione.js          52 controlli  (ne avvia uno suo, sulla 3126)
+
+    Tre account demo: A crea e cancella, B partecipa+completa+ha una traccia, C ha SOLO una
+    traccia (nessun Completion). Quattro sezioni: (1) guardie - id non valido 400, inesistente
+    404, non-creatore 403, anonimo 401; (2) BLOCCO 409 se c'e' una ActiveHikeSession non
+    'ended' su quella hike (il Dead Man's Switch legge la posizione da li' - routes/safety.js -
+    e routes/tracking.js rifiuta gia' cosi' di cancellare una sessione aperta), poi a
+    registrazione conclusa la cancellazione passa; (3) cascata completa su fixture inserite a
+    mano - Completion, 2 tracce coi loro Like/Notification(relatedSessionId)/TrailCandidate,
+    chat, RouteBookmark, Notification(relatedHikeId), TrailCandidate(hikeId), avvisi ai
+    partecipanti (B) e a chi aveva solo la traccia (C), completedHikes-1 a chi aveva un
+    Completion; (4) idempotenza - una seconda DELETE risponde 404.
+    Sorveglia anche: che la risposta NON esponga i conteggi privati (segnalibri/mi piace
+    altrui); che il passo venga ricalcolato anche a chi aveva solo la traccia; che il
+    contatore scenda in un colpo solo (bulk $inc) e mai sotto zero.
+    CONTROPROVA fatta il 02/09/2026 (path della rotta neutralizzato, router.delete('/:id_OFF')):
+    24 passati / 28 falliti - la cascata intera cade con la rotta. Ripristino della pace dei
+    tre account demo nel finally (istantaneaPace/ripristinaPace): la rotta chiama
+    recalculateAndApplyPace, che a zero osservazioni TOGLIE il passo assegnato a mano dei demo.
+
 La prova del PUNTO 111 ("risolvi" e scadenza delle segnalazioni sentiero passano da
 Denis - la richiesta di un utente diventa una RICHIESTA che il moderatore conferma o
 tiene ancora; alla scadenza dei 90 giorni parte un avviso, non una cancellazione):

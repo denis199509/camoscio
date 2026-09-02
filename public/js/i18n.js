@@ -450,6 +450,8 @@
             'hikeCard.iscrizioniChiuse': 'Sign-ups closed',
             'hikeCard.iscrizioniChiuseTitle': 'The scheduled day has passed: no more sign-ups',
             'hikeCard.iscrizioniChiuseData': function (data) { return 'This hike was scheduled for ' + data + ': it no longer accepts sign-ups after that day.'; },
+            'hikeCard.eliminaEscursione': 'Delete hike',
+            'hikeCard.eliminaEscursioneTitle': 'Delete this hike for every participant',
 
             // --- Messaggi/conferme azioni escursione (social.js) ---
             'hikeToast.scegliProgetto': 'Choose a project from the list.',
@@ -473,6 +475,13 @@
             'hikeConfirm.cancellaTracciaSeparata': 'If you had also recorded the route via GPS, that track stays separate in your history.',
             'hikeToast.erroreCancellaEscursione': 'Could not delete this hike.',
             'hikeToast.escursioneCancellata': 'Hike removed from your "completed" list.',
+            'hikeConfirm.eliminaHikeTitolo': function (t) { return 'Delete "' + t + '" for everyone?'; },
+            'hikeConfirm.eliminaHikeAltri': function (n) { return 'There are ' + n + ' people signed up besides you: they will lose it from their list, along with their completions, the chat, the linked GPS tracks and any "likes" those tracks had received in the feed.'; },
+            'hikeConfirm.eliminaHikeSolo': 'The chat, any linked GPS tracks (with the "likes" they received in the feed) and the notifications will be removed too.',
+            'hikeConfirm.eliminaHikeIrreversibile': 'This cannot be undone.',
+            'hikeToast.hikeEliminata': 'Hike deleted.',
+            'hikeToast.erroreEliminaHike': 'Could not delete this hike.',
+            'hikeToast.escursioneNonPiuEsiste': 'This hike no longer exists.',
             'hikeToast.filePesa': function (mb, limite) { return 'The file is ' + mb + ' MB, over the ' + (limite || 10) + ' MB limit.'; },
             'hikeToast.erroreAggiuntaFile': 'Could not add the file.',
             'hikeToast.tempoRealeAggiunto': 'Real time added',

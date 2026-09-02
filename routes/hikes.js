@@ -5,7 +5,12 @@ const User = require('../models/User');
 const Squad = require('../models/Squad');
 const Notification = require('../models/Notification');
 const HikeMessage = require('../models/HikeMessage'); // punto 55: chat tra partecipanti
-const { applyHikeCompletionStats } = require('../lib/hikeStats'); // punto 64: condivisa con /:id/complete-group
+const Completion = require('../models/Completion');
+const ActiveHikeSession = require('../models/ActiveHikeSession');
+const RouteBookmark = require('../models/RouteBookmark');
+const Like = require('../models/Like');
+const TrailCandidate = require('../models/TrailCandidate');
+const { applyHikeCompletionStats, recalculateAndApplyPace } = require('../lib/hikeStats'); // punto 64: condivisa con /:id/complete-group; recalc: cancellazione escursione
 const { requireAuth } = require('../middleware/auth');
 const { regionForPoint } = require('../lib/regions');
 const { haversineKm } = require('../lib/geometry');
@@ -15,7 +20,7 @@ const { movimentoSecAttendibile } = require('../lib/gpx');
 const { calcolaDaPercorso, risolviPercorso } = require('../lib/percorso');
 const { mongoose } = require('../db/mongo');
 // Ri-review sicurezza (2° giro): limiter mirati su una rotta di campionamento e su due scritture.
-const { matchLimiter, scritturaLimiter } = require('../middleware/rateLimit');
+const { matchLimiter, scritturaLimiter, cancellazioneLimiter } = require('../middleware/rateLimit');
 const { nomeVisibile, oggiRomaISO } = require('../lib/accountDeletion'); // A-3.4: nome pseudonimizzato; oggiRomaISO: blocco iscrizioni oltre il giorno previsto
 
 // Punto 55: usato da /:id/complete (gia' esistente, riscritto per riusare questa) e dalle
@@ -282,7 +287,10 @@ router.post('/', requireAuth, scritturaLimiter, async (req, res) => {
                 await Notification.create({
                     userId: memberId,
                     text: `La tua squadra "${squad.name}" ha una nuova escursione: "${hike.title}"`,
-                    read: false
+                    read: false,
+                    // relatedHikeId: cosi' DELETE /api/hikes/:id la porta via con l'escursione,
+                    // invece di lasciare in giro il titolo di una hike cancellata.
+                    relatedHikeId: hike._id
                 });
             }
         }
@@ -533,7 +541,8 @@ router.put('/:id', requireAuth, async (req, res) => {
                 const text = requesterId === String(userId)
                     ? `${nome} ha chiesto di partecipare alla tua escursione "${hike.title}"`
                     : `${nomeChiPropone} propone ${nome} per la tua escursione "${hike.title}"`;
-                await Notification.create({ userId: hike.creatorId, text, read: false });
+                // relatedHikeId: la porta via DELETE /api/hikes/:id con l'escursione.
+                await Notification.create({ userId: hike.creatorId, text, read: false, relatedHikeId: hike._id });
             }
         } catch (notifErr) {
             console.error('Errore invio notifica richiesta partecipazione:', notifErr);
@@ -545,6 +554,179 @@ router.put('/:id', requireAuth, async (req, res) => {
     } catch (e) {
         console.error('Errore aggiornamento escursione:', e);
         res.status(400).json({ error: "Impossibile aggiornare l'escursione" });
+    }
+});
+
+// --- CANCELLAZIONE DI UN'ESCURSIONE (solo il creatore) ---
+//
+// Non esisteva: una hike, una volta creata, era per sempre - e dopo la chiusura di gruppo
+// spariva anche il menu "Modifica", quindi il creatore non aveva piu' nessun controllo.
+// Serve a togliere le escursioni di prova (richiesta di Denis, 02/09/2026).
+//
+// Distruttiva e multi-utente: cancella l'escursione PER TUTTI i partecipanti, con tutto
+// quello che le sta attaccato. Scelta di Denis: si cancellano anche le tracce GPS collegate
+// (ActiveHikeSession) e quindi i loro "mi piace" e la loro presenza nel feed dei follower;
+// gli utenti colpiti ricevono una notifica.
+// Blocca (409) se c'e' un tracciamento GPS ancora in corso su questa escursione.
+// A cascata, in quest'ordine (i figli prima, la hike per ultima: se qualcosa si rompe a
+// meta' la hike resta e la si puo' ritentare), poi una seconda passata dopo la cancellazione
+// per chiudere la finestra in cui qualcosa di nuovo puo' essersi agganciato:
+//   1. tracce collegate -> con ognuna: Like, Notification(relatedSessionId), TrailCandidate
+//   2. Completion di tutti -> completedHikes-1 (a chi ne aveva uno) + ricalcolo passo
+//   3. chat (HikeMessage), notifiche (relatedHikeId), segnalibri (RouteBookmark),
+//      TrailCandidate agganciati alla hike; avvisi ai partecipanti
+//   4. la hike
+// I badge di vetta NON si toccano (stesso criterio di ogni altro cestino del progetto: non
+// e' registrato PERCHE' un timbro e' stato preso, revocarlo rischia di togliere un badge
+// vero). ReviewLock/Review non hanno un hikeId diretto (recensioni anonime): eventuali lock
+// restano ma sono innocui. Un SavedRoute creato da una traccia collegata NON si tocca: e' una
+// COPIA indipendente per scelta (models/SavedRoute.js, punto 113), sopravvive di proposito.
+router.delete('/:id', requireAuth, cancellazioneLimiter, async (req, res) => {
+    try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(400).json({ error: 'Identificativo non valido.' });
+        }
+        const hike = await Hike.findById(req.params.id);
+        if (!hike) {
+            return res.status(404).json({ error: 'Escursione non trovata' });
+        }
+        // Confronto con req.session.userId, MAI con un id del client - regola di tutte le
+        // rotte del progetto. Solo il creatore: un partecipante che vuole solo uscirne toglie
+        // se stesso da participants (PUT /:id), non passa di qui.
+        if (!hike.creatorId.equals(req.session.userId)) {
+            return res.status(403).json({ error: "Solo chi ha creato l'escursione può cancellarla." });
+        }
+
+        const hikeId = hike._id;
+
+        // Una registrazione GPS ANCORA IN CORSO su questa escursione blocca la cancellazione,
+        // come routes/tracking.js DELETE /sessions/:id rifiuta una sessione non 'ended'. Motivo
+        // in piu' qui: il Dead Man's Switch manda ai contatti d'emergenza la posizione presa
+        // proprio da quella sessione aperta (routes/safety.js) - cancellarla mentre qualcuno
+        // cammina degraderebbe un avviso di soccorso. Il creatore ritenta a registrazione finita.
+        const tracciamentoInCorso = await ActiveHikeSession.countDocuments({ hikeId, status: { $ne: 'ended' } });
+        if (tracciamentoInCorso) {
+            return res.status(409).json({
+                error: "C'è ancora un tracciamento GPS in corso su questa escursione: non si può cancellare adesso. Riprova quando la registrazione è terminata.",
+                code: 'HIKE_TRACKING_IN_CORSO'
+            });
+        }
+
+        // 1. Tracce GPS collegate (tutte 'ended', per il controllo qui sopra) + cio' che pende
+        // da loro. sessionId di TrailCandidate e' 'required': lasciarle orfane sarebbe uno
+        // schema rotto, quindi si tolgono (dati di servizio per il routing, si ri-raccolgono).
+        const sessioni = await ActiveHikeSession.find({ hikeId }).select('_id userId movingTimeSec').lean();
+        const sessionIds = sessioni.map(s => s._id);
+        if (sessionIds.length) {
+            await Like.deleteMany({ sessionId: { $in: sessionIds } });
+            await Notification.deleteMany({ relatedSessionId: { $in: sessionIds } });
+            await TrailCandidate.deleteMany({ sessionId: { $in: sessionIds } });
+            await ActiveHikeSession.deleteMany({ _id: { $in: sessionIds } });
+        }
+
+        // 2. Completion di tutti i partecipanti. Si raccolgono PRIMA gli utenti da aggiornare.
+        const comps = await Completion.find({ hikeId }).select('userId').lean();
+        await Completion.deleteMany({ hikeId });
+
+        // 3. Chat, notifiche legate alla hike, segnalibri, candidati sentiero agganciati.
+        const messaggiTolti = (await HikeMessage.deleteMany({ hikeId })).deletedCount || 0;
+        await Notification.deleteMany({ relatedHikeId: hikeId });
+        await RouteBookmark.deleteMany({ hikeId });
+        await TrailCandidate.deleteMany({ hikeId });
+
+        // Avviso a chi ne faceva parte (iscritti + chi aveva solo la traccia), tranne il
+        // creatore: senza, si ritroverebbero escursione, chat, completamento, "mi piace"
+        // ricevuti e voce nel feed spariti senza un messaggio - e magari sono gia' in viaggio
+        // verso il ritrovo. Niente relatedHikeId: la hike sta per non esistere, il click
+        // aprirebbe un fantasma.
+        const daAvvisare = [...new Set([
+            ...(hike.participants || []).map(String),
+            ...sessioni.map(s => String(s.userId))
+        ])].filter(id => id !== String(hike.creatorId));
+        if (daAvvisare.length) {
+            try {
+                await Notification.insertMany(daAvvisare.map(userId => ({
+                    userId,
+                    text: `L'organizzatore ha cancellato l'escursione "${hike.title}": sono state rimosse anche la chat, i completamenti e le tracce GPS collegate.`
+                })));
+            } catch (e) {
+                console.error('Invio notifiche di cancellazione escursione fallito:', e);
+            }
+        }
+
+        // Passo personale + contatore completamenti. Due insiemi DIVERSI:
+        //  - il contatore "Escursioni fatte" scende solo a chi aveva un Completion vero;
+        //  - il passo personale va ricalcolato anche a chi aveva SOLO la traccia (senza mai
+        //    segnare "fatta"): recalculatePersonalPace legge le osservazioni pure dalle
+        //    ActiveHikeSession con movingTimeSec > 0 (lib/hikeStats.js) - stesso motivo per
+        //    cui lo fa il cestino delle uscite in routes/tracking.js (punto 92).
+        const idsConCompletion = [...new Set(comps.map(c => String(c.userId)))];
+        const utentiColpiti = [...new Set([...idsConCompletion, ...sessioni.map(s => String(s.userId))])];
+        // Tetto difensivo: e' la rotta piu' lenta del progetto (per ogni utente: 1 findById +
+        // il ricalcolo, che dentro fa 3 query + un save). Un'escursione vera ne ha una
+        // manciata; 200 e' irraggiungibile in buona fede e protegge l'istanza Render da 512 MB.
+        if (utentiColpiti.length > 200) {
+            return res.status(409).json({ error: 'Troppi partecipanti da aggiornare in una volta.' });
+        }
+        // Decremento del contatore in un colpo solo (atomico) subito dopo la cancellazione dei
+        // Completion: se il processo muore nel ciclo qui sotto, i contatori restano comunque
+        // giusti (un retry non li recupererebbe, i Completion non ci sono gia' piu'). Il ciclo
+        // resta best-effort per il solo passo, che si auto-corregge al prossimo
+        // completamento/cancellazione dell'utente. Il try per utente serve anche perche' su un
+        // account-tombstone (A-3.4) u.save() solleva ValidationError (nome/cognome tolti dallo
+        // scrub): qui fallisce in sicurezza.
+        if (idsConCompletion.length) {
+            const idObj = idsConCompletion.map(id => new mongoose.Types.ObjectId(id));
+            await User.updateMany({ _id: { $in: idObj } }, { $inc: { completedHikes: -1 } });
+            await User.updateMany({ _id: { $in: idObj }, completedHikes: { $lt: 0 } }, { $set: { completedHikes: 0 } });
+        }
+        for (const uid of utentiColpiti) {
+            try {
+                const u = await User.findById(uid);
+                if (!u) continue;
+                await recalculateAndApplyPace(u); // salva lui (vedi lib/hikeStats.js)
+            } catch (e) {
+                console.error('Ricalcolo passo dopo cancellazione escursione fallito per', uid, e);
+            }
+        }
+
+        // 4. La hike, per ultima.
+        await Hike.deleteOne({ _id: hikeId });
+
+        // Seconda passata: chiude la finestra fra la cascata e la riga qui sopra (un
+        // POST /:id/complete, un /tracking/start, un messaggio in chat arrivati nel frattempo
+        // trovavano la hike ancora viva). Best-effort: la hike e' gia' sparita, un errore qui
+        // non deve trasformare una cancellazione riuscita in un 500.
+        try {
+            const tardive = await ActiveHikeSession.find({ hikeId }).select('_id').lean();
+            if (tardive.length) {
+                const ids = tardive.map(s => s._id);
+                await Like.deleteMany({ sessionId: { $in: ids } });
+                await Notification.deleteMany({ relatedSessionId: { $in: ids } });
+                await TrailCandidate.deleteMany({ sessionId: { $in: ids } });
+                await ActiveHikeSession.deleteMany({ _id: { $in: ids } });
+            }
+            await Completion.deleteMany({ hikeId });
+            await HikeMessage.deleteMany({ hikeId });
+            await Notification.deleteMany({ relatedHikeId: hikeId });
+            await RouteBookmark.deleteMany({ hikeId });
+            await TrailCandidate.deleteMany({ hikeId });
+        } catch (e) {
+            console.error('Seconda passata di pulizia dopo cancellazione escursione fallita:', e);
+        }
+
+        res.json({
+            success: true,
+            rimosse: {
+                iscritti: (hike.participants || []).length,
+                completamenti: comps.length,
+                tracce: sessioni.length,
+                messaggi: messaggiTolti
+            }
+        });
+    } catch (e) {
+        console.error('Errore cancellazione escursione:', e);
+        res.status(500).json({ error: "Non è stato possibile cancellare l'escursione. Riprova." });
     }
 });
 

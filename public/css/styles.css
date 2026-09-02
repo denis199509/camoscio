@@ -1987,6 +1987,13 @@ option {
     background: rgba(255, 255, 255, 0.06);
 }
 
+/* "Elimina escursione": voce distruttiva del menu. Un rosso PIU' CHIARO di --accent-red
+   (#A83B2E): quello su fondo tendina #1A2436 sta sotto la soglia di leggibilità per il
+   testo (~2,5:1); regge sull'icona .outing-card-del ma non su una riga di testo a 0.85rem. */
+.hike-card-menu-item-danger {
+    color: #ee7361;
+}
+
 .hike-meta-row {
     display: grid;
     grid-template-columns: repeat(3, 1fr);

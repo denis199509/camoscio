@@ -930,19 +930,29 @@ function buildHikeCard(hike) {
         }
     }
 
-    // Punto 54: solo il creatore vede il tasto "tre puntini" -> Modifica. Riusa il
-    // create-hike-modal gia' esistente (openEditHikeModal lo precompila).
-    // Punto 76: una volta completata in gruppo il menu sparisce del tutto - l'unica voce
-    // che contiene, Modifica, non e' piu' permessa (guardia vera lato server in hikes.js).
-    const editMenuHtml = (isCreatorMe && !hike.groupCompletedAt) ? `
+    // Punto 54: solo il creatore vede il tasto "tre puntini". Contiene Modifica (riusa il
+    // create-hike-modal esistente, openEditHikeModal lo precompila) e Elimina escursione.
+    // Punto 76: una volta completata in gruppo Modifica non e' piu' permessa (guardia vera
+    // lato server), quindi cade - ma "Elimina" resta (cancellazione richiesta da Denis il
+    // 02/09/2026 per togliere le escursioni di prova, anche quelle gia' chiuse in gruppo).
+    let vociMenu = "";
+    if (isCreatorMe && !hike.groupCompletedAt) {
+        vociMenu += `<button type="button" class="hike-card-menu-item" onclick="openEditHikeModal('${hike.id}')">
+                    <i data-lucide="pencil"></i> ${escapeHtml(T('hikeCard.modificaBtn') || 'Modifica')}
+                </button>`;
+    }
+    if (isCreatorMe) {
+        vociMenu += `<button type="button" class="hike-card-menu-item hike-card-menu-item-danger" onclick="deleteHike('${hike.id}')">
+                    <i data-lucide="trash-2"></i> ${escapeHtml(T('hikeCard.eliminaEscursione') || 'Elimina escursione')}
+                </button>`;
+    }
+    const editMenuHtml = vociMenu ? `
         <div class="hike-card-menu">
             <button type="button" class="hike-card-menu-btn" title="${escapeHtml(T('hikeCard.opzioniTitle') || 'Opzioni escursione')}" aria-label="${escapeHtml(T('hikeCard.opzioniTitle') || 'Opzioni escursione')}">
                 <i data-lucide="more-vertical"></i>
             </button>
             <div class="hike-card-menu-dropdown hidden">
-                <button type="button" class="hike-card-menu-item" onclick="openEditHikeModal('${hike.id}')">
-                    <i data-lucide="pencil"></i> ${escapeHtml(T('hikeCard.modificaBtn') || 'Modifica')}
-                </button>
+                ${vociMenu}
             </div>
         </div>
     ` : "";
@@ -1353,6 +1363,67 @@ window.deleteCompletion = async function(completionId, hikeId) {
         renderHikesList();
     } catch (e) {
         console.error('Errore cancellazione completamento:', e);
+        if (window.showToast) window.showToast(T('common.erroreServer') || 'Non è stato possibile contattare il server.', 'error');
+    }
+};
+
+// --- CANCELLA UN'ESCURSIONE (solo il creatore) - DELETE /api/hikes/:id ---
+//
+// Diverso da deleteCompletion qui sopra: quello toglie solo il MIO segno "fatta"; questo
+// cancella l'escursione PER TUTTI, con Completion, chat, tracce GPS collegate (e i loro "mi
+// piace" / la voce nel feed), notifiche e segnalibri. Irreversibile. La conferma lo dice per
+// esteso, con quante altre persone ne fanno parte, invece di un generico "sei sicuro?".
+// Riceve hikeId, MAI il titolo (un apostrofo nel titolo romperebbe la stringa dentro
+// l'onclick) - il titolo si recupera qui da window.CamoscioState.
+window.deleteHike = async function(hikeId) {
+    // Il menu ⋮ (o il cestino) da cui si arriva qui va chiuso a mano: l'ascoltatore delegato
+    // non lo fa, e altrimenti resta aperto dietro la finestra di conferma / dopo un annullo.
+    document.querySelectorAll('.hike-card-menu-dropdown').forEach(d => d.classList.add('hidden'));
+
+    const db = window.CamoscioState;
+    const hike = (db.hikes || []).find(h => h.id === hikeId);
+    if (!hike) {
+        if (window.showToast) window.showToast(T('hikeToast.escursioneNonPiuEsiste') || 'Questa escursione non esiste più.', 'error');
+        return;
+    }
+    const titolo = hike.title || (T('hikeConfirm.questaEscursione') || 'questa escursione');
+    const mioId = db.currentUser && db.currentUser.id;
+    const altriIscritti = (hike.participants || []).filter(id => id !== mioId).length;
+
+    const righe = [
+        T('hikeConfirm.eliminaHikeTitolo', titolo) || `Cancellare "${titolo}" per tutti?`,
+        ''
+    ];
+    if (altriIscritti > 0) {
+        righe.push(T('hikeConfirm.eliminaHikeAltri', altriIscritti) || `Ci sono ${altriIscritti} iscritti oltre a te: la perderanno dal loro elenco, con i completamenti, la chat, le tracce GPS collegate e i "mi piace" che quelle tracce avevano ricevuto nel feed.`);
+    } else {
+        righe.push(T('hikeConfirm.eliminaHikeSolo') || 'Spariranno anche la chat, le tracce GPS collegate (con i "mi piace" ricevuti nel feed) e le notifiche.');
+    }
+    righe.push('');
+    righe.push(T('hikeConfirm.cancellaBadgeRestano') || 'I badge che hai conquistato restano nel passaporto.');
+    righe.push(T('hikeConfirm.eliminaHikeIrreversibile') || 'Non si può annullare.');
+
+    // Ripiego a false, non a true: e' l'unica azione del sito che distrugge dati di terzi, se
+    // per qualche motivo la finestra di conferma non c'e' meglio non fare niente. (showConfirmModal
+    // e' comunque sempre caricata da app.js - questo e' solo cintura di sicurezza.)
+    const procedi = window.showConfirmModal
+        ? await window.showConfirmModal(righe.join('\n'), T('common.elimina') || 'Elimina', { cancelLabel: T('common.cancella') || 'Cancella', danger: true })
+        : window.confirm(righe.join('\n'));
+    if (!procedi) return;
+
+    try {
+        const res = await fetch(`/api/hikes/${encodeURIComponent(hikeId)}`, { method: 'DELETE' });
+        const dati = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            if (window.showToast) window.showToast(dati.error || T('hikeToast.erroreEliminaHike') || 'Non è stato possibile cancellare questa escursione.', 'error');
+            return;
+        }
+        if (window.showToast) window.showToast(T('hikeToast.hikeEliminata') || 'Escursione eliminata.', 'success');
+        await refreshState();
+        renderHikesList();
+        if (window.renderDashboard) window.renderDashboard();
+    } catch (e) {
+        console.error('Errore cancellazione escursione:', e);
         if (window.showToast) window.showToast(T('common.erroreServer') || 'Non è stato possibile contattare il server.', 'error');
     }
 };

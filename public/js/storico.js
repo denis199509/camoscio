@@ -230,12 +230,30 @@
             // lei l'oggetto pubblicabile - è anche quella che usciteVisibili toglie qui sotto
             // per non mostrarla due volte. Se non c'è, il tasto lo spiega.
             const tracciaCollegata = sessioni.find(s => s.hikeId === h.id && (s.distanceKm || 0) > 0.05);
-            const azioniCompletion = completion ? `
+            // Il ⬆ per allegare un .gpx a posteriori vale finché c'è un mio Completion a cui
+            // agganciarlo.
+            const bottoneCaricaGpx = completion ? `
                 <button class="btn btn-sm btn-secondary" style="padding:2px 6px;" onclick="uploadCompletionGpx('${completion.id}')" title="${esc(T('hikeCard.caricaGpxTitle') || 'Carica un file .gpx per avere il tempo reale di questa escursione')}">
                     <i data-lucide="upload"></i>
-                </button>
-                <button class="outing-card-del" onclick="deleteCompletion('${completion.id}', '${h.id}')" title="${esc(T('hikeCard.cancellaGiaFattaTitle') || "Cancella questa escursione dalle tue 'già fatte'")}" aria-label="${esc(T('hikeCard.cancellaGiaFattaTitle') || "Cancella questa escursione dalle tue 'già fatte'")}"><i data-lucide="trash-2"></i></button>
-            ` : '';
+                </button>` : '';
+            // Il cestino cambia significato secondo chi guarda (02/09/2026):
+            //  - creatore -> "Elimina escursione" (deleteHike, DELETE /api/hikes/:id): cancella
+            //    PER TUTTI. È l'unico modo di togliere una hike chiusa in gruppo, che
+            //    altrimenti resta qui per sempre (era il micro-rimando della 25ª sessione).
+            //  - partecipante con un mio Completion su una hike NON chiusa in gruppo -> come
+            //    prima: toglie solo il mio segno "fatta" (deleteCompletion), effetto visibile.
+            //  - partecipante di una hike chiusa in gruppo -> niente cestino: deleteCompletion
+            //    NON toglierebbe la card (ci pensa groupCompletedAt), farebbe solo sparire in
+            //    silenzio il proprio tempo misurato + il proprio conteggio. L'azione resta
+            //    disponibile sulla card intera in "Escursioni" (buildHikeCard), non qui.
+            const sonoCreatore = !!(db.currentUser && h.creatorId === db.currentUser.id);
+            let bottoneCestino = '';
+            if (sonoCreatore) {
+                bottoneCestino = `<button class="outing-card-del" onclick="deleteHike('${h.id}')" title="${esc(T('hikeCard.eliminaEscursioneTitle') || 'Elimina questa escursione per tutti i partecipanti')}" aria-label="${esc(T('hikeCard.eliminaEscursione') || 'Elimina escursione')}"><i data-lucide="trash-2"></i></button>`;
+            } else if (completion && !h.groupCompletedAt) {
+                bottoneCestino = `<button class="outing-card-del" onclick="deleteCompletion('${completion.id}', '${h.id}')" title="${esc(T('hikeCard.cancellaGiaFattaTitle') || "Cancella questa escursione dalle tue 'già fatte'")}" aria-label="${esc(T('hikeCard.cancellaGiaFattaTitle') || "Cancella questa escursione dalle tue 'già fatte'")}"><i data-lucide="trash-2"></i></button>`;
+            }
+            const azioniCompletion = bottoneCaricaGpx + bottoneCestino;
             const azioni = `
                 ${bottonePubblica(tracciaCollegata ? tracciaCollegata.id : null, tracciaCollegata ? tracciaCollegata.publishedAt : null, tracciaCollegata ? tracciaCollegata.importedName : null)}
                 ${tracciaCollegata ? bottoneRinomina(tracciaCollegata.id, tracciaCollegata.importedName) : ''}

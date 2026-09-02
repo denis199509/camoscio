@@ -99,4 +99,18 @@ const scritturaLimiter = rateLimit({
     message: messaggioTroppiTentativi
 });
 
-module.exports = { authLimiter, emailLimiter, apiLimiter, matchLimiter, exportLimiter, scritturaLimiter };
+// DELETE /api/hikes/:id: secchio SEPARATO da scritturaLimiter di proposito. Quella rotta la
+// condivide con POST /api/safety/activate (armare il Dead Man's Switch): se la cancellazione
+// - il cui caso d'uso dichiarato e' ripulire piu' escursioni di prova di fila - esaurisse
+// quel secchio, armare il timer di sicurezza risponderebbe 429. Qui 20/ora, per IP: molto
+// oltre qualunque pulizia in buona fede, e non intacca il secchio del soccorso.
+const cancellazioneLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    limit: 20,
+    skip: soloInProduzione,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: messaggioTroppiTentativi
+});
+
+module.exports = { authLimiter, emailLimiter, apiLimiter, matchLimiter, exportLimiter, scritturaLimiter, cancellazioneLimiter };
