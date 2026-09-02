@@ -222,9 +222,9 @@ window.closeImageLightbox = function() {
 };
 
 document.addEventListener("click", (e) => {
-    // .badge-card-icon-img (pagina Badge/profilo) e .stamp-icon-img (anteprima Passaporto
-    // in Dashboard, renderDashboardStamps in questo stesso file) sono due componenti
-    // diversi sugli stessi dati (badges.js: schedaBadge/anteprima) - stessa icona, nomi di
+    // .badge-card-icon-img (pagina Badge/profilo) e .stamp-icon-img ("Ultimi traguardi" in
+    // Dashboard, renderDashAchievements in questo stesso file) sono due componenti diversi
+    // sugli stessi dati (badges.js: schedaBadge / ultimiTraguardi) - stessa icona, nomi di
     // classe diversi, quindi vanno cercati entrambi qui.
     const img = e.target.closest(".badge-card-icon-img, .stamp-icon-img, .personal-badge-illustration");
     if (!img) return;
@@ -234,7 +234,7 @@ document.addEventListener("click", (e) => {
     // antenati esiste, bloccato resta false.
     const card = img.closest(".badge-card, .stamp-slot");
     const bloccato = !!(card && !card.classList.contains("unlocked"));
-    // stampId (messo da schedaBadge in badges.js e da renderDashboardStamps qui sotto)
+    // stampId (messo da schedaBadge in badges.js e da renderDashAchievements qui sotto)
     // serve alla "i": .personal-badge-illustration non ha una card antenata, quindi resta
     // undefined e il pannello informativo semplicemente non compare.
     const stampId = card ? card.dataset.stampId : null;
@@ -489,23 +489,32 @@ function setupNavigation() {
     // la navigazione (sotto) sia il cambio lingua (i18n.js, per rimettere a
     // posto il titolo quando si cambia lingua senza navigare altrove).
     const prettyNames = {
-        "dashboard": "Dashboard",
-        "feed": "Feed",
+        // V2 UX PASSO 7: rinomine. I data-target e gli id di sezione NON cambiano
+        // (restano dashboard/feed/social) - cambia solo l'etichetta a schermo.
+        "dashboard": "Home",
+        "feed": "Ispirazioni",
         "hikes": "Escursioni",
         "my-hikes": "Le mie escursioni",
-        "badges": "I tuoi Badge",
-        "map-section": "Mappa & Sentieri",
-        "carpool": "Carpooling & Spese Viaggio",
-        "backpack": "Zaino Intelligente Checklist",
-        "safety": "Sicurezza & Mesh Simulator",
-        "social": "Tribù, Recensioni & Squadre",
-        "people-search": "Cerca Persone",
+        // V2 UX PASSO 11: la pagina "Badge" e' ora "Progressi" (id sezione #progress).
+        // navigateTo rimappa "badges" -> "progress" prima di arrivare qui.
+        "progress": "Progressi",
+        "map-section": "Mappa",
+        // V2 UX PASSO 14b/14c: #carpool e #backpack ritirate (ora tab di hike-page);
+        // l'header di hike-page e' sempre il nome dell'escursione, non un titolo fisso.
+        // V2 UX PASSO 14a: "Sicurezza & Mesh" -> "Sicurezza" (header = menu), foglia
+        // dell'area personale. #safety internamente invariato.
+        "safety": "Sicurezza",
+        "social": "Community",
+        // V2 UX PASSO 10: #people-search rimossa (ora nella card "Persone" di #social).
+        // navigateTo rimappa l'id vecchio -> "social" prima di arrivare qui.
         "user-profile": "Profilo",
         // #my-profile ha un titolo FISSO (a differenza di #user-profile, dove
         // renderUserProfile ci scrive lo username): tenendolo qui, updateSectionTitle
         // lo rimette a posto da solo a ogni cambio lingua - vedi 'sectionTitle.my-profile'
         // in i18n.js e renderMyProfilePage in profile.js (rollout punto 102, terzo lotto).
-        "my-profile": "Il Tuo Profilo",
+        // V2 UX PASSO 12: header = menu, "Profilo" (era "Il Tuo Profilo"); #settings nuova.
+        "my-profile": "Profilo",
+        "settings": "Impostazioni",
         // #pending-reports-page: stesso caso di #my-profile - titolo fisso, nessuna
         // voce in barra. showPendingReportsPage non lo scrive piu' a mano, ci pensa
         // updateSectionTitle via 'sectionTitle.pending-reports-page' (punto 102, settimo lotto).
@@ -526,7 +535,121 @@ function setupNavigation() {
     }
     window.CamoscioUpdateSectionTitle = updateSectionTitle;
 
-    function navigateTo(targetId) {
+    // --- V2 UX PASSO 7: gruppi a fisarmonica della sidebar ----------------------
+    // I .nav-group-head NON sono .nav-btn (niente data-target): hanno un listener
+    // proprio, agganciato qui (setupNavigation gira PRESTO, prima di initApp - vedi
+    // il commento sul bug del 26/07). Accordion: un solo gruppo aperto per volta.
+    // Lo stato ("quale gruppo") sta in localStorage: nessun campo MongoDB (vincolo
+    // spazio). All'avvio vince la sezione attiva; se e' una foglia fuori dai
+    // gruppi, si ripiega sul gruppo ricordato.
+    const LS_NAV_GRUPPO = "camoscio.nav.gruppoAperto";
+    const navGroups = Array.prototype.slice.call(document.querySelectorAll(".nav-group"));
+
+    function impostaGruppo(nome, opts) {
+        const persist = !opts || opts.persist !== false;
+        navGroups.forEach(g => {
+            const aperto = g.getAttribute("data-group") === nome;
+            const head = g.querySelector(".nav-group-head");
+            const body = g.querySelector(".nav-group-body");
+            if (head) head.setAttribute("aria-expanded", aperto ? "true" : "false");
+            if (body) body.hidden = !aperto;
+        });
+        if (persist) {
+            try { localStorage.setItem(LS_NAV_GRUPPO, nome || ""); } catch (e) {}
+        }
+    }
+
+    // Apre il gruppo che contiene la sezione attiva e ne segna la testa
+    // "is-current" (accento tenue, diverso dal pieno di .nav-btn.active). Non
+    // persiste: segue la navigazione, non e' una scelta esplicita dell'utente.
+    // Una foglia fuori dai gruppi non forza ne' chiude nessun gruppo.
+    function aggiornaGruppoCorrente(targetId) {
+        // V2 UX PASSO 9: la foglia puo' essere un .nav-btn (sottovoce di gruppo o
+        // voce diretta) OPPURE la testa di un gruppo che naviga (es. "Le mie
+        // escursioni", .nav-group-head con data-target).
+        const sel = '[data-target="' + targetId + '"]';
+        const btn = document.querySelector('.nav-btn' + sel + ', .nav-group-head' + sel);
+        const gruppo = btn && btn.closest(".nav-group");
+        navGroups.forEach(g => {
+            const head = g.querySelector(".nav-group-head");
+            if (head) head.classList.toggle("is-current", g === gruppo);
+        });
+        if (gruppo) impostaGruppo(gruppo.getAttribute("data-group"), { persist: false });
+    }
+
+    navGroups.forEach(g => {
+        const head = g.querySelector(".nav-group-head");
+        if (!head) return;
+        head.addEventListener("click", () => {
+            // V2 UX PASSO 9: una testa CON data-target (es. "Le mie escursioni")
+            // naviga e apre il gruppo - mai un toggle che lo chiude. navigateTo
+            // richiama aggiornaGruppoCorrente, che lo apre. Una testa SENZA
+            // data-target ("Esplora") resta un semplice toggle come in PASSO 7.
+            const target = head.getAttribute("data-target");
+            if (target) {
+                navigateTo(target);
+                return;
+            }
+            const giaAperto = head.getAttribute("aria-expanded") === "true";
+            impostaGruppo(giaAperto ? "" : g.getAttribute("data-group"));
+        });
+    });
+    // --------------------------------------------------------------------------
+
+    // --- V2 UX PASSO 8: drawer mobile (<=900px) --------------------------------
+    // A <=900px la .sidebar e' off-canvas (CSS): l'hamburger nell'header la fa
+    // entrare da sinistra sopra uno scrim, con lo stesso identico menu annidato del
+    // desktop. Navigare o toccare lo scrim / Esc la richiude. Sopra i 900px
+    // l'hamburger e' display:none e questo codice non fa nulla di visibile.
+    const drawerToggle = document.getElementById("btn-nav-drawer");
+    const sidebarEl = document.getElementById("main-sidebar");
+    const navScrim = document.getElementById("nav-scrim");
+    function chiudiDrawer() {
+        if (!sidebarEl || !sidebarEl.classList.contains("is-open")) return;
+        sidebarEl.classList.remove("is-open");
+        if (navScrim) navScrim.hidden = true;
+        document.body.classList.remove("no-scroll");
+        if (drawerToggle) {
+            drawerToggle.setAttribute("aria-expanded", "false");
+            drawerToggle.focus();
+        }
+    }
+    function apriDrawer() {
+        if (!sidebarEl) return;
+        sidebarEl.classList.add("is-open");
+        if (navScrim) navScrim.hidden = false;
+        document.body.classList.add("no-scroll");
+        if (drawerToggle) drawerToggle.setAttribute("aria-expanded", "true");
+        const primo = sidebarEl.querySelector(".nav-btn, .nav-group-head, .nav-crea");
+        if (primo) primo.focus();
+    }
+    if (drawerToggle && sidebarEl) {
+        drawerToggle.addEventListener("click", () => {
+            if (sidebarEl.classList.contains("is-open")) chiudiDrawer();
+            else apriDrawer();
+        });
+    }
+    if (navScrim) navScrim.addEventListener("click", chiudiDrawer);
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") chiudiDrawer();
+    });
+    // --------------------------------------------------------------------------
+
+    function navigateTo(targetId, scrollToId) {
+        // V2 UX PASSO 10: alias di navigazione. Alcune sezioni sono state assorbite
+        // in un'altra pagina; l'id vecchio resta valido (deep-link, chiamate da altri
+        // file) e viene rimappato qui, in cima all'imbuto unico.
+        //   people-search -> vive nella card "Persone" di #social (ex sezione rimossa)
+        //   badges        -> pagina rinominata "Progressi" (id sezione #progress)
+        if (targetId === "people-search") {
+            targetId = "social";
+            scrollToId = scrollToId || "follow-people-card";
+        }
+        if (targetId === "badges") targetId = "progress";
+
+        // V2 UX PASSO 8: navigare a una sezione chiude il drawer mobile se aperto.
+        chiudiDrawer();
+
         sections.forEach(sec => {
             if (sec.id === targetId) {
                 sec.classList.add("active");
@@ -537,12 +660,35 @@ function setupNavigation() {
 
         // Aggiorna i pulsanti sidebar
         document.querySelectorAll(".nav-btn").forEach(btn => {
+            // V2 UX PASSO 9: le sotto-voci con data-view (viste di "Le mie escursioni")
+            // NON le governa questo ciclo - la singola accesa la sceglie
+            // impostaVistaMieEscursioni, e solo mentre my-hikes e' la sezione attiva.
+            if (btn.dataset.view) return;
             if (btn.getAttribute("data-target") === targetId) {
                 btn.classList.add("active");
             } else {
                 btn.classList.remove("active");
             }
         });
+
+        // V2 UX PASSO 9: uscendo da "Le mie escursioni" si spengono anche le sue
+        // viste-filtro (come ogni altra .nav-btn), cosi' il gruppo, se resta aperto,
+        // non mostra una sotto-voce accesa da un'altra sezione.
+        if (targetId !== "my-hikes") {
+            document.querySelectorAll('.nav-group[data-group="mie"] .nav-sub[data-view]')
+                .forEach(b => b.classList.remove("active"));
+        }
+
+        // V2 UX PASSO 7: se la foglia attiva sta dentro un gruppo, apri quel gruppo
+        // e segnane la testa. Copre anche i .btn-nav-trigger (card della Dashboard).
+        aggiornaGruppoCorrente(targetId);
+
+        // V2 UX PASSO 9: "Le mie escursioni" e' una pagina a viste-filtro - riapplica
+        // quella corrente (data-view sulla <section> + .active sulla sotto-voce). Un
+        // trigger con data-view l'ha gia' scritta in localStorage prima di chiamarci.
+        if (targetId === "my-hikes" && window.impostaVistaMieEscursioni) {
+            window.impostaVistaMieEscursioni(window.vistaCorrente ? window.vistaCorrente() : "tutte");
+        }
 
         // Aggiorna il titolo dell'header
         updateSectionTitle(targetId);
@@ -572,24 +718,56 @@ function setupNavigation() {
         }
 
         // Ri-esegui il rendering della sezione specifica per aggiornare i dati freschi
-        triggerSectionRender(targetId);
+        const renderFatto = triggerSectionRender(targetId);
+
+        // V2 UX PASSO 10: meccanismo generico data-scroll. Una voce puo' chiedere,
+        // dopo la navigazione, di portare in vista un elemento della pagina (es.
+        // "Amici" -> card "Persone", "Vedi statistiche" -> blocco statistiche).
+        // Va fatto DOPO il render sincrono della sezione: un bersaglio in fondo alla
+        // pagina (es. #progress-stats, sotto 15 schede badge + 8 zone) si sposta
+        // mentre la sezione si riempie, e uno scroll fatto subito atterrerebbe corto.
+        if (scrollToId) {
+            const scrollaAlBersaglio = () => {
+                const bersaglio = document.getElementById(scrollToId);
+                // "auto" e non "smooth": uno scroll animato di ~2500px (bersaglio in
+                // fondo alla pagina) viene interrotto dai render async che seguono la
+                // navigazione (createIcons, fetch delle statistiche) e resta a meta'.
+                if (bersaglio) bersaglio.scrollIntoView({ behavior: "auto", block: "start" });
+            };
+            // Due rAF dopo il render sincrono della sezione: il primo lascia
+            // completare il layout dopo gli innerHTML/createIcons, il secondo scrolla
+            // sulla posizione ormai definitiva (un bersaglio in fondo si sposta di
+            // migliaia di px mentre la sezione si riempie).
+            const scrollaDopoLayout = () => requestAnimationFrame(() => requestAnimationFrame(scrollaAlBersaglio));
+            if (renderFatto && typeof renderFatto.then === "function") {
+                renderFatto.then(scrollaDopoLayout, scrollaDopoLayout);
+            } else {
+                scrollaDopoLayout();
+            }
+        }
+    }
+
+    // V2 UX PASSO 9: un elemento di navigazione puo' portare un data-view (le viste
+    // di "Le mie escursioni") e/o un data-scroll (PASSO 10, elemento da portare in
+    // vista dopo). Si fissa la vista PRIMA di navigare: navigateTo poi richiama
+    // impostaVistaMieEscursioni(vistaCorrente()) e trova gia' il valore nuovo.
+    function navigaDaElemento(el) {
+        if (!el) return;
+        if (el.dataset.view && window.impostaVistaMieEscursioni) {
+            window.impostaVistaMieEscursioni(el.dataset.view);
+        }
+        navigateTo(el.getAttribute("data-target"), el.dataset.scroll);
     }
 
     // Navigazione tramite pulsanti della sidebar
     navButtons.forEach(btn => {
-        btn.addEventListener("click", () => {
-            const target = btn.getAttribute("data-target");
-            navigateTo(target);
-        });
+        btn.addEventListener("click", () => navigaDaElemento(btn));
     });
 
     // Delegazione dei click per pulsanti interni di navigazione dinamici
     document.addEventListener("click", (e) => {
         const trigger = e.target.closest(".btn-nav-trigger");
-        if (trigger) {
-            const target = trigger.getAttribute("data-target");
-            navigateTo(target);
-        }
+        if (trigger) navigaDaElemento(trigger);
     });
 
     // Punto 59 di cose_da_fare.txt: l'icona del profilo in alto a destra porta alla
@@ -603,6 +781,70 @@ function setupNavigation() {
         });
     }
 
+    // V2 UX PASSO 7: stato iniziale dei gruppi. La sezione gia' .active (dashboard
+    // all'avvio) e' una foglia fuori dai gruppi -> si ripiega sul gruppo ricordato.
+    const sezioneAttivaIniziale = document.querySelector(".page-section.active");
+    const targetIniziale = sezioneAttivaIniziale ? sezioneAttivaIniziale.id : "dashboard";
+    const btnIniziale = document.querySelector('.nav-btn[data-target="' + targetIniziale + '"]');
+    if (btnIniziale && btnIniziale.closest(".nav-group")) {
+        aggiornaGruppoCorrente(targetIniziale);
+    } else {
+        let ricordato = "";
+        try { ricordato = localStorage.getItem(LS_NAV_GRUPPO) || ""; } catch (e) {}
+        if (ricordato) impostaGruppo(ricordato, { persist: false });
+    }
+
+    // V2 UX PASSO 13 - "＋ Crea" (blocco AZIONE): popover con 2 voci. "Nuova escursione"
+    // apre create-hike-modal (window.apriModaleNuovaEscursione, social.js). "Nuovo
+    // percorso" porta sulla Mappa e scrolla alla card "Progetta un percorso" (nessun
+    // "avvio", e' la card sempre presente - routeplanner.js). Chiude su click-fuori/Esc.
+    const btnCrea = document.getElementById("btn-nav-crea");
+    const creaMenu = document.getElementById("nav-crea-menu");
+    if (btnCrea && creaMenu) {
+        const chiudiCreaMenu = () => {
+            creaMenu.hidden = true;
+            btnCrea.setAttribute("aria-expanded", "false");
+        };
+        const apriCreaMenu = () => {
+            creaMenu.hidden = false;
+            btnCrea.setAttribute("aria-expanded", "true");
+            // La .nav-menu ha overflow-y:auto: se il popover verso il basso sfora il
+            // suo fondo viene tagliato -> in quel caso si apre verso l'alto.
+            creaMenu.classList.remove("nav-crea-menu--up");
+            const nav = btnCrea.closest(".nav-menu");
+            if (nav && creaMenu.getBoundingClientRect().bottom > nav.getBoundingClientRect().bottom) {
+                creaMenu.classList.add("nav-crea-menu--up");
+            }
+            const primo = creaMenu.querySelector(".nav-crea-menu-item");
+            if (primo) primo.focus();
+        };
+        btnCrea.addEventListener("click", (e) => {
+            e.stopPropagation();
+            if (creaMenu.hidden) apriCreaMenu(); else chiudiCreaMenu();
+        });
+        creaMenu.addEventListener("click", (e) => {
+            const item = e.target.closest(".nav-crea-menu-item");
+            if (!item) return;
+            chiudiCreaMenu();
+            if (item.dataset.crea === "escursione") {
+                if (window.apriModaleNuovaEscursione) window.apriModaleNuovaEscursione();
+            } else if (item.dataset.crea === "percorso") {
+                navigateTo("map-section", "route-planner-card");
+            }
+        });
+        document.addEventListener("click", (e) => {
+            if (!creaMenu.hidden && !creaMenu.contains(e.target) && !btnCrea.contains(e.target)) {
+                chiudiCreaMenu();
+            }
+        });
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "Escape" && !creaMenu.hidden) {
+                chiudiCreaMenu();
+                btnCrea.focus();
+            }
+        });
+    }
+
     // Esposta per la pagina profilo di un altro utente (public/js/userprofile.js):
     // "user-profile" non ha una voce nella barra laterale (cambia contenuto in base
     // a CHI si e' cliccato), ma deve comunque passare da qui per nascondere le altre
@@ -610,9 +852,11 @@ function setupNavigation() {
     window.navigateTo = navigateTo;
 }
 
-// Innesca il render corretto della sezione aperta
+// Innesca il render corretto della sezione aperta. Ritorna la promise del ciclo
+// (refreshState + render sincroni della sezione): navigateTo la usa per fare lo
+// scroll data-scroll DOPO che la pagina si e' riempita.
 function triggerSectionRender(sectionId) {
-    refreshState().then(() => {
+    return refreshState().then(() => {
         switch (sectionId) {
             case "dashboard":
                 renderDashboard();
@@ -631,8 +875,13 @@ function triggerSectionRender(sectionId) {
                 if (window.renderMyHikes) window.renderMyHikes();
                 if (window.renderProgetti) window.renderProgetti(); // punto 13: i miei progetti
                 break;
-            case "badges":
+            case "progress":
+                // V2 UX PASSO 11: "Progressi" = la vecchia pagina Badge (renderBadges,
+                // id figli invariati) + il dettaglio della progressione per zona.
                 if (window.renderBadges) window.renderBadges();
+                if (window.renderProgressoZoneTutte) window.renderProgressoZoneTutte();
+                // PASSO 11b: statistiche filtrabili per intervallo di date.
+                if (window.renderProgressStats) window.renderProgressStats();
                 break;
             case "map-section":
                 if (window.renderWazeReportsList) window.renderWazeReportsList();
@@ -645,20 +894,24 @@ function triggerSectionRender(sectionId) {
                 if (window.renderRouteToFollowOptions) window.renderRouteToFollowOptions();
                 if (window.toggleGeoConsentAlert) window.toggleGeoConsentAlert();
                 break;
-            case "carpool":
-                if (window.renderCarpoolModule) window.renderCarpoolModule();
-                break;
-            case "backpack":
-                if (window.renderBackpackModule) window.renderBackpackModule();
-                break;
             case "safety":
                 if (window.renderSafetyModule) window.renderSafetyModule();
                 break;
             case "social":
                 if (window.renderSocialModule) window.renderSocialModule();
-                break;
-            case "people-search":
+                // V2 UX PASSO 10: la ricerca persone vive ora in una card di #social
+                // (ex sezione #people-search). Va ridisegnata quando si apre la pagina
+                // perche' mostri il suo messaggio iniziale ("scrivi almeno N lettere").
                 if (window.renderPeopleSearchModule) window.renderPeopleSearchModule();
+                break;
+            case "my-profile":
+                // V2 UX PASSO 12: prima #my-profile si raggiungeva solo dal widget
+                // dell'header (che chiama gia' renderMyProfilePage a mano); ora ha una
+                // voce di menu, quindi il render va anche qui.
+                if (window.renderMyProfilePage) window.renderMyProfilePage();
+                break;
+            case "settings":
+                if (window.renderSettingsPage) window.renderSettingsPage();
                 break;
         }
     });
@@ -814,16 +1067,132 @@ function setupNotificationBell() {
     });
 }
 
+// Blocco di apertura della Dashboard (revisione UX v2). Due stati:
+//  - senza una prossima avventura: sottotitolo neutro, nessuna card
+//  - con un'escursione CONFERMATA in programma: sottotitolo dedicato + la card
+//    #dash-hero-adventure (titolo, "Organizzata da te" se l'ho creata io, quando + conto alla
+//    rovescia, numeri se ci sono, punto di partenza se c'e', partecipanti, "Apri escursione",
+//    link "vedi tutte" se ne ho piu' di una in programma - le ultime due, FASE 3).
+function renderDashHero(usr) {
+    const nome = usr.username.split(" ")[0];
+    const greetEl = document.getElementById("dash-hero-greet");
+    if (greetEl) greetEl.textContent = T("dash.ciaoNome", nome) || ("Ciao " + nome + " 👋");
+
+    const avventura = prossimaAvventura(usr);
+
+    const subEl = document.getElementById("dash-hero-sub");
+    if (subEl) {
+        subEl.textContent = avventura
+            ? (T("dash.heroSubProssima") || "La tua prossima avventura è quasi pronta.")
+            : (T("dash.heroSubDefault") || "Pronto per la prossima avventura?");
+    }
+
+    const card = document.getElementById("dash-hero-adventure");
+    const openBtn = document.getElementById("dash-hero-adventure-open");
+    if (!card) return;
+
+    if (!avventura) {
+        card.classList.add("hidden");
+        if (openBtn) openBtn.onclick = null;
+        return;
+    }
+
+    const prossima = avventura.hike;
+    const loc = (window.CamoscioI18n && window.CamoscioI18n.getLang() === "en") ? "en-GB" : "it-IT";
+
+    // Titolo: testo scritto dall'utente -> textContent, mai innerHTML.
+    document.getElementById("dash-hero-adv-title").textContent = prossima.title;
+
+    // FASE 3: "Organizzata da te", solo se l'ha creata l'utente - qualifica il titolo, quindi
+    // gli sta subito sotto. Stesso meccanismo .hidden di -stats/-from piu' sotto.
+    const orgEl = document.getElementById("dash-hero-adv-org");
+    if (orgEl) {
+        orgEl.textContent = T("dash.avventuraOrganizzata") || "Organizzata da te";
+        orgEl.classList.toggle("hidden", !avventura.organizzata);
+    }
+
+    // Quando: "Giorno D mese · <oggi | domani | fra N giorni>".
+    const d = new Date(prossima.date + "T12:00:00");
+    let quando = d.toLocaleDateString(loc, { weekday: "long", day: "numeric", month: "long" });
+    quando = quando.charAt(0).toUpperCase() + quando.slice(1);
+    const g = giorniAllaData(prossima.date);
+    const rel = g <= 0
+        ? (T("dash.avventuraOggi") || "oggi")
+        : g === 1
+            ? (T("dash.avventuraDomani") || "domani")
+            : (T("dash.avventuraFraGiorni", g) || ("fra " + g + " giorni"));
+    document.getElementById("dash-hero-adv-when").textContent = quando + " · " + rel;
+
+    // Numeri: solo quelli davvero presenti (quota / distanza / dislivello sono tutti opzionali
+    // nello schema; "mai un numero finto senza dati veri", punto 85).
+    // useGrouping:true forza il separatore migliaia: l'italiano da solo NON raggruppa i numeri
+    // a 4 cifre (2912 -> "2912"), e una quota o un dislivello stanno quasi sempre in quel range.
+    const raggr = { useGrouping: true };
+    const nums = [];
+    if (Number.isFinite(prossima.maxAltitude) && prossima.maxAltitude > 0) nums.push(prossima.maxAltitude.toLocaleString(loc, raggr) + " m");
+    if (Number.isFinite(prossima.distanceKm) && prossima.distanceKm > 0) nums.push(prossima.distanceKm.toLocaleString(loc, raggr) + " km");
+    if (Number.isFinite(prossima.elevationGain) && prossima.elevationGain > 0) nums.push("+" + prossima.elevationGain.toLocaleString(loc, raggr) + " m");
+    const statsEl = document.getElementById("dash-hero-adv-stats");
+    statsEl.textContent = nums.join(" · ");
+    statsEl.classList.toggle("hidden", nums.length === 0);
+
+    // Punto di partenza, solo se l'escursione ce l'ha.
+    const fromEl = document.getElementById("dash-hero-adv-from");
+    const partenza = prossima.trailhead && prossima.trailhead.name;
+    if (partenza) fromEl.textContent = T("dash.avventuraDa", partenza) || ("da " + partenza);
+    fromEl.classList.toggle("hidden", !partenza);
+
+    // Partecipanti.
+    const n = (prossima.participants || []).length;
+    document.getElementById("dash-hero-adv-people").textContent =
+        "👥 " + (T("dash.avventuraPartecipanti", n) || (n + (n === 1 ? " partecipante" : " partecipanti")));
+
+    // FASE 3: link "vedi tutte", solo se ce n'e' piu' di una in futuro - con una sola non
+    // porterebbe a vedere niente di diverso da questa stessa card.
+    const moreEl = document.getElementById("dash-hero-adv-more");
+    if (moreEl) moreEl.classList.toggle("hidden", avventura.totale <= 1);
+
+    if (openBtn) openBtn.onclick = () => { if (window.showHikePage) window.showHikePage(prossima.id); };
+    card.classList.remove("hidden");
+}
+
+// La PROSSIMA AVVENTURA: fra le escursioni CONFERMATE (create da me, o dove sono gia' fra i
+// participants - non le semplici richieste ancora in pendingApproval), quelle con data da oggi
+// in avanti, la piu' vicina. Date "YYYY-MM-DD" (models/Hike.js), si ordinano come stringhe.
+// NB: non si riusa escursioneDiRiferimento() dello Zaino - quella tiene conto del selettore
+// manuale dello Zaino e dell'activeHikeId, che qui sarebbero effetti collaterali sbagliati.
+// FASE 3: oltre all'escursione, serve sapere quante ce ne sono in futuro (per il link "vedi
+// tutte") e se questa l'ha creata l'utente (per "Organizzata da te") - calcolate qui una volta
+// sola sulla stessa lista "confermate", invece di rifare altrove lo stesso filtro (punti 98/B,
+// 101: mai due copie della stessa logica che possono disallinearsi in silenzio).
+function prossimaAvventura(usr) {
+    if (!window.classificaMieEscursioni) return null;
+    const { create, partecipo } = window.classificaMieEscursioni();
+    const confermate = create.concat(partecipo.filter(h => (h.participants || []).includes(usr.id)));
+    const oggi = new Date().toISOString().slice(0, 10);
+    const future = confermate
+        .filter(h => h.date && h.date >= oggi)
+        .sort((a, b) => a.date.localeCompare(b.date));
+    if (!future.length) return null;
+    return { hike: future[0], totale: future.length, organizzata: create.includes(future[0]) };
+}
+
+// Giorni interi da oggi alla data "YYYY-MM-DD". Ancorate a mezzogiorno cosi' il passaggio
+// all'ora legale non sposta il conteggio di un giorno (stesso accorgimento di backpack.js).
+function giorniAllaData(dateStr) {
+    const oggi = new Date().toISOString().slice(0, 10);
+    return Math.round((new Date(dateStr + "T12:00:00") - new Date(oggi + "T12:00:00")) / 86400000);
+}
+
 // Renderizzazione Dashboard
 function renderDashboard() {
     const usr = window.CamoscioState.currentUser;
     if (!usr) return;
 
-    // Statistiche generali
-    document.getElementById("dash-welcome-name").textContent = usr.username.split(" ")[0];
-    document.getElementById("stat-completed-hikes").textContent = usr.completedHikes;
-    document.getElementById("stat-stamps-count").textContent = window.CamoscioState.stamps.length;
-    document.getElementById("stat-reputation").textContent = `${usr.reputation}%`;
+    // PASSO 1 revisione UX: l'apertura e' "Ciao [Nome] + un'azione", non piu' tre statistiche.
+    // Saluto, sottotitolo e riga della prossima escursione sono contestuali: li riscrive
+    // renderDashHero a ogni render (quindi anche a ogni cambio lingua - onChange in fondo).
+    renderDashHero(usr);
 
     // Sezione Passo Personalizzato.
     // IL PASSO SI MOSTRA SOLO SE E' STATO MISURATO. Il campo esiste sul documento utente solo
@@ -832,9 +1201,9 @@ function renderDashboard() {
     // basta guardare se il numero c'e', senza nessun controllo su isDemoAccount: i 4 account
     // demo hanno un passo assegnato a mano apposta ed e' giusto che continuino a vederlo.
     // Prima di oggi ogni utente nasceva con 350/500 gia' scritti e la Dashboard li mostrava
-    // come "passo rilevato" a chi non aveva mai camminato: un'ipotesi travestita da misura,
-    // cioe' la stessa bugia gia' evitata poche righe piu' sotto in renderTrackingTotals per
-    // la velocita' media ("senza tempo registrato non e' zero, e' che non si sa ancora").
+    // come "passo rilevato" a chi non aveva mai camminato: un'ipotesi travestita da misura.
+    // Stessa regola gia' applicata alla velocita' media dei totali ("senza tempo registrato
+    // non e' zero, e' che non si sa ancora").
     const paceUp = Number(usr.averagePaceUp);
     const paceDown = Number(usr.averagePaceDown);
     const passoMisurato = Number.isFinite(paceUp) && paceUp > 0 && Number.isFinite(paceDown) && paceDown > 0;
@@ -861,13 +1230,15 @@ function renderDashboard() {
     // Disegna il grafico del passo
     renderPaceChart(usr, passoMisurato);
 
-    // Punto 16: i totali reali di distanza, dislivello e velocita' media. Non si aspetta la
-    // sua risposta (nessun await): il resto della Dashboard deve comparire subito, e i tre
-    // numeri si riempiono da soli un istante dopo.
-    renderTrackingTotals();
+    // FASE 4: "Il tuo <anno>" al posto dei totali di sempre. Nessun await: il resto della
+    // Dashboard compare subito, i pochi numeri si riempiono da soli un istante dopo e la card
+    // non si svuota mentre carica.
+    renderDashYearSummary();
 
-    // Timbri delle Vette
-    renderDashboardStamps();
+    // FASE 4: "Il tuo cammino" (progressione per zona) + "Ultimi traguardi" al posto del
+    // Passaporto. I dati sono gia' in CamoscioState (statoBadge), render sincrono.
+    renderDashJourney();
+    renderDashAchievements();
 
     // Rinfresca lo stato del Dead Man's Switch nella dashboard
     if (window.updateDashboardSafetyCard) {
@@ -875,62 +1246,171 @@ function renderDashboard() {
     }
 }
 
-// Punto 16 di cose_da_fare.txt - totali reali di cammino in Dashboard.
-// La somma la fa il server (GET /api/tracking/totals): qui arrivano gia' tre numeri, invece
-// dell'elenco di tutte le sessioni con dentro le tracce GPS complete.
-async function renderTrackingTotals() {
-    const elDistanza = document.getElementById("total-distance");
-    const elDislivello = document.getElementById("total-elevation");
-    const elVelocita = document.getElementById("total-speed");
-    const nota = document.getElementById("dash-totals-note");
-    if (!elDistanza) return;
+// FASE 4 revisione UX - "Il tuo <anno>": riepilogo dell'anno in corso, al posto dei totali di
+// sempre (card "Quanto hai camminato", rimossa). escursioni / km / dislivello dal server
+// (GET /api/tracking/totals?anno=, stessa rotta di prima con un filtro anno opzionale); le
+// vette dell'anno si contano qui dai timbri gia' in memoria (statoBadge), la loro data di
+// sblocco e' "YYYY-MM-DD". Niente velocita' media (non e' nel riepilogo dell'anno) e nessun
+// link "Vedi statistiche" (pagina statistiche filtrabile = fase a parte).
+async function renderDashYearSummary() {
+    const elHikes = document.getElementById("year-hikes");
+    const elDistanza = document.getElementById("year-distance");
+    const elDislivello = document.getElementById("year-elevation");
+    const elVette = document.getElementById("year-peaks");
+    const titolo = document.getElementById("dash-year-title");
+    const nota = document.getElementById("dash-year-note");
+    if (!elHikes) return;
+
+    const anno = new Date().getFullYear();
+    // Separatore migliaia: virgola in inglese, punto in italiano - stessa scelta di locale gia'
+    // fatta altrove (rollout punto 102). useGrouping:true perche' l'italiano da solo non
+    // raggruppa i numeri a 4 cifre (un dislivello annuale ci arriva facile), stesso motivo
+    // della card prossima avventura in Fase 2.
+    const loc = (window.CamoscioI18n && window.CamoscioI18n.getLang() === 'en') ? 'en-GB' : 'it-IT';
+    const raggr = { useGrouping: true };
+
+    if (titolo) titolo.textContent = T('dash.annoTitolo', anno) || ('Il tuo ' + anno);
+
+    // Vette dell'anno: lato client, nessuna rotta. Un timbro "cima" sbloccato con dateUnlocked
+    // nell'anno in corso. Numero diverso da "vette conquistate" di "Il tuo cammino", che e' il
+    // totale di sempre - qui e' solo il 2026.
+    if (elVette && window.CamoscioBadges) {
+        const vetteAnno = window.CamoscioBadges.statoBadge()
+            .filter(b => b.tipo === 'cima' && b.sbloccato && String(b.data || '').slice(0, 4) === String(anno))
+            .length;
+        elVette.textContent = vetteAnno.toLocaleString(loc, raggr);
+    }
 
     try {
-        const res = await fetch('/api/tracking/totals');
+        const res = await fetch('/api/tracking/totals?anno=' + anno);
         if (!res.ok) throw new Error('Richiesta fallita');
         const t = await res.json();
 
-        // Separatore migliaia: virgola in inglese, punto in italiano - stessa scelta di
-        // locale gia' fatta per le date col nome del mese (formattaDataItaliana in
-        // userprofile.js), rollout punto 102 terzo lotto.
-        const loc = (window.CamoscioI18n && window.CamoscioI18n.getLang() === 'en') ? 'en-GB' : 'it-IT';
-        elDistanza.textContent = t.distanzaKm.toLocaleString(loc);
-        elDislivello.textContent = t.dislivelloM.toLocaleString(loc);
-        // La velocita' media a 0 non si scrive "0": senza tempo registrato non e' zero, e'
-        // che non si sa ancora. Sono due cose diverse e mostrarle uguali sarebbe una bugia.
-        elVelocita.textContent = t.velocitaMediaKmh > 0 ? t.velocitaMediaKmh.toLocaleString(loc) : "—";
+        elHikes.textContent = t.sessioni.toLocaleString(loc, raggr);
+        elDistanza.textContent = t.distanzaKm.toLocaleString(loc, raggr);
+        elDislivello.textContent = t.dislivelloM.toLocaleString(loc, raggr);
 
         if (nota) {
-            if (t.sessioni === 0) {
-                nota.textContent = T('dash.totaliNotaVuoto') || "Non hai ancora registrato nessuna escursione: avvia il tracciamento GPS dalla mappa e questi numeri cominceranno a salire.";
-            } else {
-                const ore = Math.floor(t.secondi / 3600);
-                const minuti = Math.round((t.secondi % 3600) / 60);
-                const tempo = ore > 0 ? `${ore}h ${minuti}min` : `${minuti} min`;
-                let testo = T('dash.totaliNota', t.sessioni, tempo)
-                    || `${t.sessioni} ${t.sessioni === 1 ? 'escursione registrata' : 'escursioni registrate'}, ${tempo} di cammino in totale.`;
-
-                // Le uscite importate da un file .gpx senza orari hanno km e dislivello veri
-                // ma nessuna durata, quindi restano fuori dal tempo e dalla velocita' media
-                // (vedi /totals in routes/tracking.js). Va DETTO: chi conosce i propri numeri
-                // e vede una velocita' media che non torna coi chilometri mostrati sopra
-                // penserebbe a un errore del sito, e avrebbe ragione a pensarlo.
-                const senza = t.sessioniSenzaDurata || 0;
-                if (senza > 0) {
-                    testo += T('dash.totaliSenzaOrari', senza) || (senza === 1
-                        ? " Un'uscita importata è senza orari: i suoi chilometri sono contati, il tempo e la velocità media no."
-                        : ` ${senza} uscite importate sono senza orari: i loro chilometri sono contati, il tempo e la velocità media no.`);
-                }
-                nota.textContent = testo;
-            }
+            nota.textContent = t.sessioni === 0
+                ? (T('dash.annoNotaVuoto', anno) || ('Nessuna escursione registrata nel ' + anno + ' per ora: questi numeri si aggiornano da soli mentre cammini.'))
+                : "";
         }
     } catch (e) {
-        console.error("Impossibile calcolare i totali delle escursioni:", e);
-        // Meglio lasciare i trattini e dirlo, che mostrare degli zeri: uno zero verrebbe
-        // letto come "non hai mai camminato", che e' un'informazione sbagliata.
+        console.error("Impossibile calcolare il riepilogo dell'anno:", e);
+        // Meglio i trattini e dirlo, che degli zeri: uno zero si leggerebbe come "non hai
+        // camminato", che e' un'informazione sbagliata.
         if (nota) nota.textContent = T('dash.totaliErrore') || "Non è stato possibile caricare i totali. Riprova più tardi.";
     }
 }
+
+// V2 UX PASSO 11b - "Le tue statistiche" nella pagina Progressi: gli stessi numeri
+// della card "Il tuo <anno>" (escursioni / km / D+ / vette) ma su un intervallo di
+// date scelto. escursioni/km/D+ dal server (GET /api/tracking/totals?from=&to=,
+// estremi vuoti = tutta la vita); le vette si contano qui dai timbri gia' in
+// memoria (statoBadge, data "YYYY-MM-DD"), stessa scelta di renderDashYearSummary.
+let _statsDebounce = null;
+// La rotta si chiama a raffica (debounce sui due input + i tre bottoni rapidi): le
+// risposte possono tornare fuori ordine e una vecchia sovrascriverebbe i numeri di
+// una piu' recente. Ogni chiamata prende un id; alla risposta si scarta se nel
+// frattempo ne e' partita un'altra.
+let _statsReqId = 0;
+
+function _rangeRapido(tipo) {
+    const oggi = new Date();
+    const iso = (d) => d.toISOString().slice(0, 10);
+    if (tipo === 'anno') return { from: oggi.getFullYear() + '-01-01', to: iso(oggi) };
+    if (tipo === '12mesi') {
+        const p = new Date(oggi);
+        p.setFullYear(p.getFullYear() - 1);
+        return { from: iso(p), to: iso(oggi) };
+    }
+    return { from: '', to: '' }; // "sempre" = nessun parametro
+}
+
+async function renderProgressStats() {
+    const grid = document.getElementById("progress-stats-grid");
+    if (!grid) return;
+    if (!window.CamoscioState || !window.CamoscioState.currentUser) return;
+
+    const fromEl = document.getElementById("progress-stats-from");
+    const toEl = document.getElementById("progress-stats-to");
+    const note = document.getElementById("progress-stats-note");
+    const elHikes = document.getElementById("stats-hikes");
+    const elDist = document.getElementById("stats-distance");
+    const elDisl = document.getElementById("stats-elevation");
+    const elVette = document.getElementById("stats-peaks");
+
+    // Aggancio unico dei listener: input date con debounce + i tre intervalli rapidi.
+    // Stesso schema di setupEmailVerifyBanner (dataset per non agganciare due volte).
+    const box = document.getElementById("progress-stats");
+    if (box && !box.dataset.wired) {
+        box.dataset.wired = "1";
+        const onChange = () => {
+            clearTimeout(_statsDebounce);
+            _statsDebounce = setTimeout(renderProgressStats, 250);
+        };
+        if (fromEl) fromEl.addEventListener("input", onChange);
+        if (toEl) toEl.addEventListener("input", onChange);
+        box.querySelectorAll(".progress-stats-quick button[data-range]").forEach(b => {
+            b.addEventListener("click", () => {
+                const r = _rangeRapido(b.dataset.range);
+                if (fromEl) fromEl.value = r.from;
+                if (toEl) toEl.value = r.to;
+                renderProgressStats();
+            });
+        });
+    }
+
+    const loc = (window.CamoscioI18n && window.CamoscioI18n.getLang() === 'en') ? 'en-GB' : 'it-IT';
+    const raggr = { useGrouping: true };
+    const from = (fromEl && fromEl.value) || "";
+    const to = (toEl && toEl.value) || "";
+
+    // Vette nell'intervallo: lato client, dai timbri (b.data = "YYYY-MM-DD", ordina come
+    // stringa = ordina per data). Un estremo vuoto = aperto da quel lato, coerente col
+    // server (from/to vuoti = tutta la vita).
+    if (elVette && window.CamoscioBadges) {
+        const n = window.CamoscioBadges.statoBadge().filter(b => {
+            if (b.tipo !== 'cima' || !b.sbloccato || !b.data) return false;
+            const d = String(b.data).slice(0, 10);
+            if (from && d < from) return false;
+            if (to && d > to) return false;
+            return true;
+        }).length;
+        elVette.textContent = n.toLocaleString(loc, raggr);
+    }
+
+    const reqId = ++_statsReqId;
+    try {
+        const qs = [];
+        if (from) qs.push("from=" + encodeURIComponent(from));
+        if (to) qs.push("to=" + encodeURIComponent(to));
+        const res = await fetch('/api/tracking/totals' + (qs.length ? '?' + qs.join('&') : ''));
+        if (!res.ok) throw new Error('Richiesta fallita');
+        const t = await res.json();
+        if (reqId !== _statsReqId) return; // una richiesta piu' recente e' partita: scarta
+
+        elHikes.textContent = t.sessioni.toLocaleString(loc, raggr);
+        elDist.textContent = t.distanzaKm.toLocaleString(loc, raggr);
+        elDisl.textContent = t.dislivelloM.toLocaleString(loc, raggr);
+
+        if (note) {
+            if (t.sessioni === 0) {
+                note.textContent = T('progress.statsVuoto') || "Nessuna escursione registrata in questo intervallo.";
+            } else if (t.sessioniSenzaDurata > 0) {
+                note.textContent = T('progress.statsSenzaDurata', t.sessioniSenzaDurata)
+                    || (t.sessioniSenzaDurata + " uscite senza durata registrata: km e dislivello le contano comunque.");
+            } else {
+                note.textContent = "";
+            }
+        }
+    } catch (e) {
+        if (reqId !== _statsReqId) return;
+        console.error("Impossibile calcolare le statistiche filtrate:", e);
+        if (note) note.textContent = T('dash.totaliErrore') || "Non è stato possibile caricare i totali. Riprova più tardi.";
+    }
+}
+window.renderProgressStats = renderProgressStats;
 
 // Fascia in cima al sito per chi non ha ancora confermato l'indirizzo email.
 // LA REGOLA: si vede solo se l'utente NON ha confermato E non e' un account demo. I 4
@@ -1073,66 +1553,116 @@ function renderPaceChart(user, passoMisurato) {
     });
 }
 
-// Render dei Timbri sbloccati nella dashboard.
-// PUNTO 18: l'elenco dei quattro timbri era scritto a mano proprio qui. Ora la fonte e'
-// una sola, il catalogo di public/js/badges.js, usato anche dalla pagina Badge e dal
-// geofencing della Mappa: tre copie dello stesso elenco sarebbero divergite alla prima
-// aggiunta, ed e' lo stesso motivo per cui al punto 10 la scheda dell'escursione era
-// stata estratta in buildHikeCard invece di essere copiata.
-// Qui restano solo QUATTRO riquadri anche se i badge sono di piu': questa e' una scheda
-// di riepilogo, l'elenco intero e' la pagina Badge. Quali quattro lo decide anteprima():
-// prima quelli presi, poi i piu' alti da prendere.
-function renderDashboardStamps() {
-    const container = document.getElementById("stamps-collection");
-    if (!container) return;
+// FASE 4 revisione UX - "Il tuo cammino": la progressione dell'utente sulle vette, al posto
+// del Passaporto (quattro riquadri senza contesto). Stessa fonte di sempre - statoBadge() in
+// badges.js, un solo catalogo condiviso con la pagina Badge e il geofencing della Mappa - letta
+// come "quante cime su quante" invece che come elenco. Tre stati, sullo schema .hidden gia' in
+// uso per #dash-hero-adventure:
+//  - nessuna vetta ancora presa       -> riquadro "Inizia il tuo cammino"
+//  - vette prese, una zona a meta'     -> conteggi + barra + "ti mancano N vette"
+//  - vette prese, nessuna zona a meta' -> conteggi, niente barra, CTA "scopri le prossime"
+function renderDashJourney() {
+    const card = document.getElementById("dash-journey");
+    if (!card || !window.CamoscioBadges) return;
 
-    const daMostrare = window.CamoscioBadges
-        ? window.CamoscioBadges.anteprima(4)
-        : [];
+    const stato = window.CamoscioBadges.statoBadge();
+    const vette = stato.filter(b => b.tipo === 'cima' && b.sbloccato).length;
+    const rifugi = stato.filter(b => b.tipo === 'rifugio' && b.sbloccato).length;
+    const badge = stato.filter(b => b.sbloccato).length;
 
-    container.innerHTML = "";
+    const main = document.getElementById("dash-journey-main");
+    const empty = document.getElementById("dash-journey-empty");
 
-    daMostrare.forEach(badge => {
-        const slot = document.createElement("div");
-        slot.className = `stamp-slot ${badge.sbloccato ? 'unlocked' : ''}`;
-        // Come per .badge-card in badges.js: il click sull'icona risale a questo slot per
-        // sapere quale badge aprire e se ha la scheda "i" (badge-info.js).
-        if (badge.stampId) slot.dataset.stampId = badge.stampId;
+    // Stato vuoto: nessuna vetta conquistata (punto 6 dello spec).
+    if (vette === 0) {
+        main.classList.add("hidden");
+        empty.classList.remove("hidden");
+        return;
+    }
+    empty.classList.add("hidden");
+    main.classList.remove("hidden");
 
-        // Punto 91, 18/08/2026: stessa scelta icona/emoji di schedaBadge in badges.js -
-        // stamp-icon resta la classe condivisa col grayscale blocco/sblocco (styles.css).
-        const iconaHtml = badge.icona
-            ? `<img src="${escapeHtml(badge.icona)}" alt="" class="stamp-icon stamp-icon-img">`
-            : `<span class="stamp-icon">${escapeHtml(badge.emoji)}</span>`;
+    const loc = (window.CamoscioI18n && window.CamoscioI18n.getLang() === 'en') ? 'en-GB' : 'it-IT';
+    document.getElementById("dash-journey-peaks-n").textContent = vette.toLocaleString(loc);
+    document.getElementById("dash-journey-peaks-l").textContent =
+        T('dash.camminoVette', vette) || (vette === 1 ? 'vetta conquistata' : 'vette conquistate');
+    document.getElementById("dash-journey-sub").textContent =
+        T('dash.camminoSub', rifugi, badge)
+        || `${rifugi} ${rifugi === 1 ? 'rifugio visitato' : 'rifugi visitati'} · ${badge} ${badge === 1 ? 'badge sbloccato' : 'badge sbloccati'}`;
 
-        slot.innerHTML = `
-            ${iconaHtml}
-            <span class="stamp-name">${escapeHtml(badge.nome)}</span>
-            <span class="stamp-date">${escapeHtml(badge.sbloccato ? window.CamoscioBadges.dataItaliana(badge.data) : (T('dash.timbroBloccato') || "Bloccato"))}</span>
-        `;
-        container.appendChild(slot);
-    });
+    const zone = window.CamoscioBadges.progressoZone();
+    const goal = document.getElementById("dash-journey-goal");
+    const cta = document.getElementById("dash-journey-cta").querySelector("span");
 
-    // "3 badge su 10": senza questa riga la scheda mostrerebbe quattro riquadri senza
-    // far capire che gli altri esistono, e il pulsante qui sotto sembrerebbe portare
-    // alla stessa cosa vista piu' in grande.
-    const contatore = document.getElementById("passport-count");
-    if (contatore && window.CamoscioBadges) {
-        const tutti = window.CamoscioBadges.statoBadge();
-        const presi = tutti.filter(b => b.sbloccato).length;
-        contatore.textContent = T('dash.badgeSuTotale', presi, tutti.length) || `${presi} badge su ${tutti.length}`;
+    if (zone.length) {
+        // La zona piu' significativa (quasi completata > maggior progresso > vista di recente:
+        // l'ordine lo fa progressoZone). Una sola, mai piu' di una in Dashboard.
+        const z = zone[0];
+        goal.classList.remove("hidden");
+        document.getElementById("dash-journey-zona-name").textContent = z.zona;
+        document.getElementById("dash-journey-bar").style.width = z.percentuale + "%";
+        document.getElementById("dash-journey-track").setAttribute("aria-label",
+            T('dash.camminoBarraAria', z.presi, z.totale, z.zona) || `${z.presi} vette su ${z.totale} nel ${z.zona}`);
+        document.getElementById("dash-journey-count").textContent = `${z.presi} / ${z.totale}`;
+        document.getElementById("dash-journey-left").textContent =
+            T('dash.camminoMancano', z.mancano, z.zona)
+            || `Ti ${z.mancano === 1 ? 'manca' : 'mancano'} ${z.mancano} ${z.mancano === 1 ? 'vetta' : 'vette'} per completare ${z.zona}.`;
+        cta.textContent = T('dash.camminoCta') || "Continua il tuo cammino";
+    } else {
+        // Vette conquistate ma nessuna zona a meta' (una sola presa, o le zone toccate sono
+        // gia' complete): niente barra, il CTA invita a guardare quali vette mancano (punto 7).
+        goal.classList.add("hidden");
+        cta.textContent = T('dash.camminoCtaScopri') || "Scopri le prossime vette";
+    }
+}
+
+// FASE 4 revisione UX - "Ultimi traguardi": anteprima dei badge presi piu' di recente, al
+// posto della vecchia anteprima "presi + i piu' alti da prendere" (che aveva senso quando il
+// riquadro doveva restare sempre pieno). Stesso componente visivo di prima (.stamp-slot),
+// stessa fonte (badges.js); cambia solo la selezione: ultimiTraguardi() da' SOLO i presi.
+function renderDashAchievements() {
+    const grid = document.getElementById("dash-achievements-grid");
+    const more = document.getElementById("dash-achievements-more");
+    const empty = document.getElementById("dash-achievements-empty");
+    if (!grid || !window.CamoscioBadges) return;
+
+    const presi = window.CamoscioBadges.ultimiTraguardi(4);
+
+    if (!presi.length) {
+        // Nessun badge ancora: stato vuoto curato, non quattro riquadri grigi (punto 12).
+        grid.classList.add("hidden");
+        more.classList.add("hidden");
+        empty.classList.remove("hidden");
+    } else {
+        empty.classList.add("hidden");
+        grid.classList.remove("hidden");
+        more.classList.remove("hidden");
+
+        grid.innerHTML = "";
+        presi.forEach(badge => {
+            const slot = document.createElement("div");
+            slot.className = "stamp-slot unlocked";
+            // Come prima: il click sull'icona risale a questo slot per aprire il modale
+            // immagine e la scheda "i" (badge-info.js, delegato in app.js).
+            if (badge.stampId) slot.dataset.stampId = badge.stampId;
+
+            const iconaHtml = badge.icona
+                ? `<img src="${escapeHtml(badge.icona)}" alt="" class="stamp-icon stamp-icon-img">`
+                : `<span class="stamp-icon">${escapeHtml(badge.emoji)}</span>`;
+
+            slot.innerHTML = `
+                ${iconaHtml}
+                <span class="stamp-name">${escapeHtml(badge.nome)}</span>
+                <span class="stamp-date">${escapeHtml(window.CamoscioBadges.dataItaliana(badge.data))}</span>
+            `;
+            grid.appendChild(slot);
+        });
     }
 
-    // La pagina Badge mostra gli stessi dati di questa scheda: si ridisegna insieme,
-    // cosi' chi sblocca un timbro dalla Mappa la ritrova aggiornata senza che ogni
-    // punto che tocca i timbri debba ricordarsi di chiamarla. Stesso criterio gia' in
-    // uso fra renderHikesList e renderMyHikes (punto 10).
+    // La pagina Badge mostra gli stessi timbri: si ridisegna insieme, cosi' chi ne sblocca uno
+    // dalla Mappa la ritrova aggiornata (renderBadges esce subito se la pagina non e' a
+    // schermo). Comportamento ereditato dalla vecchia renderDashboardStamps.
     if (window.renderBadges) window.renderBadges();
-
-    // Punto 19: qui si aggiornava la barra della "sfida Gran Sasso". La percentuale era vera
-    // (contava i timbri sbloccati), ma la sfida NO: nessuno l'aveva mai creata o accettata,
-    // compariva a chiunque appena registrato, e l'etichetta "(0/2)" accanto era scritta a mano
-    // nell'HTML e restava 0 anche dopo aver preso i timbri. Tolta insieme al suo riquadro.
 }
 
 // Rollout traduzione punto 102, terzo lotto (27/08/2026): due ridisegni al cambio lingua.
@@ -1143,10 +1673,10 @@ function renderDashboardStamps() {
 //    e traduce l'etichetta "Livello:". Legge solo currentUser, nessun fetch.
 //
 // 2) DASHBOARD: ridisegno completo solo se e' la sezione aperta. Quasi tutti i suoi
-//    dati sono gia' in CamoscioState: il re-render sincrono e' gratis. renderTrackingTotals
-//    rifa' un fetch di 3 numeri, ma non svuota la card mentre carica - niente flicker, a
+//    dati sono gia' in CamoscioState: il re-render sincrono e' gratis. renderDashYearSummary
+//    rifa' un fetch di pochi numeri, ma non svuota la card mentre carica - niente flicker, a
 //    differenza del caso userprofile.js dove l'onChange completo e' stato sconsigliato.
-//    Nota: renderDashboardStamps chiama renderBadges, che ha gia' un proprio onChange in
+//    Nota: renderDashAchievements chiama renderBadges, che ha gia' un proprio onChange in
 //    badges.js - a un toggle fatto dalla Dashboard renderBadges gira quindi due volte
 //    (~40 nodi ricostruiti, costo trascurabile, non vale codice per evitarlo).
 if (window.CamoscioI18n) {
@@ -1154,5 +1684,9 @@ if (window.CamoscioI18n) {
         if (window.CamoscioState.currentUser) updateHeaderUserWidget();
         const dash = document.getElementById("dashboard");
         if (dash && dash.classList.contains("active")) renderDashboard();
+        // PASSO 11b: la nota e i numeri localizzati del blocco statistiche di #progress
+        // (renderBadges/renderProgressoZoneTutte hanno gia' il loro onChange in badges.js).
+        const prog = document.getElementById("progress");
+        if (prog && prog.classList.contains("active") && window.renderProgressStats) window.renderProgressStats();
     });
 }

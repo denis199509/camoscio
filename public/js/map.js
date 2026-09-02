@@ -649,9 +649,14 @@ window.unlockStampDirectly = async function(stampId, peakName) {
                 </div>
             `).openPopup();
 
-            // Aggiorna la dashboard se aperta
+            // Aggiorna la dashboard se aperta. FASE 4 revisione UX: "Il tuo cammino" (la
+            // progressione e i conteggi cambiano se ho appena preso una vetta/rifugio),
+            // "Ultimi traguardi" (il nuovo timbro entra fra i piu' recenti) e "Il tuo <anno>"
+            // (la voce "vette" e' per l'anno in corso). Prima era la sola renderDashboardStamps.
             if (document.getElementById("dashboard").classList.contains("active")) {
-                window.renderDashboardStamps();
+                if (window.renderDashJourney) window.renderDashJourney();
+                if (window.renderDashAchievements) window.renderDashAchievements();
+                if (window.renderDashYearSummary) window.renderDashYearSummary();
             }
         } else {
             // Punto 108: il server puo' rifiutare (nessuna traccia reale entro 150 m dalla

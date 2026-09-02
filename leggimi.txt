@@ -1,78 +1,185 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-08-31 (quindicesima sessione).
+Aggiornato: 2026-09-02 (VENTIDUESIMA sessione — BLOCCO 0 (zaino/carpooling
+per-partecipanti) + TUTTO IL LOTTO SICUREZZA (C-1/C-2/C-3/A-1/A-2/A-3.1-3)
++ i FIX della ri-review dell'agente security-privacy (1 critico + 6 alti +
+5 medi) CODIFICATI, verificati in locale, committati su `v2-ux` (auto-save),
+NIENTE pushato. La ri-review (1o giro) aveva dato "NON pronto": tutti i
+blocchi chiusi in sessione, il critico era C-NUOVO-1 (`PUT /api/hikes/:id`
+con update vuoto in Mongoose degrada a LETTURA e restituisce il doc intero).
+Suite prove/ non-Puppeteer COMPLETA VERDE (~950 controlli). Denis ha fermato
+la sessione qui: la 23a PARTE DAL 2o GIRO DELL'AGENTE security-privacy
+(verifica dei fix), poi prova mobile + responsive <900px + merge.
+Dettaglio completo: vault 04-Da-Fare ("Ri-review 22a"), 06 ("Ventiduesima
+sessione"), 03 (nuovi paragrafi), 07 (3 trappole nuove).)
 
->>> NIENTE IN CORSO. Tutto pushato e in produzione (Render redeploy
-    automatico ai push).
+>>> LAVORO IN CORSO: revisione UX del sito ("Camoscio v2"). Si lavora
+    ESCLUSIVAMENTE IN LOCALE sul branch `v2-ux`. NIENTE push, NIENTE deploy:
+    Denis manda online solo quando l'intera v2 lo convince. `master` (su
+    `origin` = `efd1290`) resta intatto = la produzione attuale.
+    Metodo: un commit vero `V2 UX PASSO n: ...` per blocco (locale su
+    `v2-ux`). L'hook di auto-save committa comunque: si rifonde (rebase
+    --onto / reset --soft) in un commit vero (la rifusione dei ~13 auto-save
+    di questa sessione la fa Denis). La DASHBOARD (Fasi 1-5), il RIORDINO
+    MENU/NAVIGAZIONE (PASSO 6->14c), il BLOCCO 0 (zaino/carpooling
+    per-partecipanti) e TUTTO IL LOTTO SICUREZZA sono FATTI. `v2-ux` = 33
+    avanti / 1 indietro a `origin/master` (`efd1290` Ju Busciu, il merge lo
+    riconcilia).
 
->>> LA PROSSIMA SESSIONE SI PARTE DALLA REVISIONE UX (deciso da Denis a
-    fine 15a sessione: "nella prossima sessione passiamo al aggiornamento
-    ux"). Un amico ha valutato il sito - giudizio buono, ma "User
-    Experience" poco intuitiva. NON iniziata, nessun dettaglio concordato:
-    a inizio sessione chiedere a Denis i consigli dell'amico e da dove
-    vuole partire, PRIMA di proporre modifiche. Dentro ci ricadono i
-    titoli di sezione lunghi troncati su telefono (ex "punto 106
-    residuo") - non toccarli a pezzi. Dettaglio in vault 04-Da-Fare
-    ("PROSSIMO GRANDE LAVORO - revisione UX").
+>>> FATTO E COMMITTATO su `v2-ux` (NON pushato). Struttura finale:
+    Home / Esplora v (Escursioni, Mappa, Ispirazioni) / Le mie escursioni v
+    (Tutte, In programma, Completate) / Community v (Amici) / + Crea /
+    AREA PERSONALE: Progressi, Profilo, Impostazioni, Sicurezza.
 
-  ULTIMO LAVORO — QUATTRO RIFINITURE, chiuse e in produzione il 31/08
-  (push 57697ac..152fb7a su camoscio/master, 2 commit).
+  DASHBOARD (Fasi 1-5, `7915762`..`309ab92`) + PASSO 6 (`7f8b697`, header =
+  voce di menu) + PASSO 7 (`e33be1b`, sidebar a gruppi a fisarmonica +
+  rinomine). Dettaglio nel vault 06 ("Sedicesima"..."Ventesima sessione").
 
-  1. "Pubblica nel feed" si spezzava su card strette (commit fbf340a):
-     .outing-card-actions ora flex-wrap + i bottoni white-space:nowrap.
-  2. Due date nella card del feed (commit fbf340a): la riga autore ha
-     gia' la data di pubblicazione. schedaUscitaProfilo prende
-     {perFeed, dataUscitaDiversa}: nel feed il titolo senza nome e'
-     "Uscita"/"Outing" e la data compare SOLO se l'escursione e' di un
-     altro giorno (giorno di calendario). Chiave EN feed.uscitaSenzaNome.
-     Verificato dal vivo (demo Marco): post di Denis ok, console pulita.
-  3. Punto 115 residuo (commit fbf340a): sulla card "escursione
-     completata" con traccia collegata, se la traccia e' stata
-     RINOMINATA con la matita e' quel nome a fare da titolo (titolo
-     escursione sulla riga della data). Se i nomi COINCIDONO (default)
-     la card e' identica a prima. schedaEscursioneCompletata prende
-     {nomeUscita} da storico.js. NON verificato dal vivo il ramo
-     rinominato (nessun demo ce l'ha) - da guardare sul telefono.
-  4. Coda punto 113 (commit 152fb7a): il ⬆ su un'escursione completata
-     assegna i BADGE DI VETTA come /import-gpx. assegnaTimbriDallaTraccia
-     spostata VERBATIM da routes/tracking.js a lib/geofenceTimbri.js
-     (equivalenza: prova-punto108 24/24). routes/completions.js la
-     chiama sui punti COMPLETI, badge nuovi nel campo "badge" della
-     risposta; social.js mostra un toast. prova-punto113-gpx sez.7 nuova
-     (35->43), prova-punto92 84/84, prova-punto113 103/103 (corretta
-     un'asserzione fragile: i 4 demo seguono Denis davvero sul DB).
+  RIORDINO MENU (21a sessione, 10 commit `4ea24df`..`77fcaf8` sopra
+  `a34b5f1`):
+  - PASSO 9  — "Le mie escursioni" a 3 viste-filtro (Tutte / In programma /
+    Completate, attributo data-view + CSS); #hikes (Esplora>Escursioni) =
+    solo scoperta. `classificaMieEscursioni` intatta.
+  - PASSO 10 — Community diventa gruppo con sotto-voce "Amici"; la ex
+    sezione #people-search RITIRATA, la ricerca per nome utente e' nella
+    card "Persone" di #social (id invariati, peoplesearch.js non cambia);
+    navigateTo alias people-search -> social + data-scroll generico.
+  - PASSO 11 — #badges -> #progress ("Progressi"), TUTTI gli id figli
+    invariati (renderBadges non si tocca) + nuovo blocco "Il tuo cammino
+    per zona" (progressoZone({tutte:true})). #badges resta alias.
+  - PASSO 11b — statistiche personali filtrabili in #progress: intervallo
+    date + 3 intervalli rapidi. UNICO tocco backend: `GET
+    /api/tracking/totals` ora accetta anche `?from=&to=` (oltre `?anno=`).
+    Nessun modello/indice/migrazione.
+  - PASSO 12 — #my-profile SDOPPIATA: "Profilo" = sola vista (bio + esperto
+    read-only); "Impostazioni" (#settings, NUOVA) = foto/bio/esperto/
+    password/lingua/logout + card placeholder inerte. I controlli SPOSTATI,
+    id invariati (renderProfileCard/setupProfileCardEvents non cambiano).
+  - PASSO 13 — "+ Crea" apre un popover (2 voci: nuova escursione / nuovo
+    percorso). Flip verso l'alto se sfora il fondo della .nav-menu.
+  - PASSO 8  — DRAWER MOBILE (<=900px): hamburger nell'header + sidebar
+    off-canvas + scrim. Riscritta la @media <=900 (via il rail 62px + la
+    regola-ponte di PASSO 7). Bandiere lingua -> in fondo al drawer.
+    VERIFICATO SOLO IN SIMULAZIONE (resize_window inaffidabile): PROVA VERA
+    SUL TELEFONO DI DENIS AL DEPLOY.
+  - PASSO 14a — via il blocco "STRUMENTI"; "Sicurezza" (era "& Mesh") =
+    foglia dell'AREA PERSONALE. #safety internamente invariato.
+  - PASSO 14b — Carpooling = TAB dentro hike-page (4 tab: Dettagli/Chat/
+    Carpooling/Zaino). Scelta di Denis = OPZIONE A: il tab e' SOLO
+    per-escursione (annuncio della singola uscita, non piu' "tutte";
+    "Offri un Passaggio" senza selettore escursione; Split Spese generico
+    resta). #carpool .page-section RITIRATA. carpool.js legato all'hikeId.
+  - PASSO 14c — Zaino = TAB dentro hike-page. Niente piu' selettore
+    "prepara lo zaino per" ne' "zaino personale" (Q6): contesto sempre =
+    l'escursione del tab. #backpack .page-section RITIRATA. backpack.js
+    legato all'hikeId (escursioneDiRiferimento semplificata).
 
-  DECISIONI DI DENIS in questa sessione (NON riproporre):
-  - togliere+rimettere "mi piace" -> seconda notifica all'autore:
-    LASCIATO com'e' (raro, innocuo; un flag costerebbe un campo).
-  - titoli di sezione lunghi (punto 106): RIMANDATI alla revisione UX.
+  Verifica: ogni blocco provato dal vivo (account reale, sola lettura, DB
+  demo dove serviva, IT+EN, zero errori JS). Sweep finale nav desktop: ok.
 
-  Dettaglio: cose_da_fare.txt "QUINDICESIMA SESSIONE"; decisioni nel
-  vault 03 "Coda punto 113: badge dal ⬆"; racconto nel vault 06;
-  prove/LEGGIMI-PROVE.txt (sez.7 di prova-punto113-gpx).
+  BLOCCO 0 (zaino/carpooling per-partecipanti) - piano
+  camoscio-zaino-carpool-partecipanti.md, ESEGUITO in 2 checkpoint:
+  - Hike.multiDay (Boolean, default:undefined) - lo decide il CREATORE
+    (spunta in create-hike-modal). Zaino personale SEMPRE in localStorage,
+    non passa dal server. "Zaino condivisibile" (hike.backpackTemplate) +
+    ripartizione pesi SOLO se hike.multiDay. Via il <select> durata.
+  - routes/hikes.js: gate isHikeParticipant sui rami carpool/backpackTemplate
+    di PUT /:id (C-2); !hike.multiDay -> 403 sui write zaino; GET / strippa
+    carpool/backpackTemplate per i non-partecipanti; sotto-bug passeggeri
+    (sulla propria voce driver possono solo calare).
+  - hikepage.js+CSS: tab Chat/Carpooling/Zaino nascosti ai non-partecipanti
+    (A-1, difesa in profondita').
 
->>> GIA' IN PRODUZIONE (14a sessione, 30/08, push a2a53a5..0d0ecc3):
-    PUNTO 114 import file .fit (lib/fit.js, parseFit stessa forma di
-    parseGpx; dep fit-file-parser@5.0.2). PUNTO 115 nome dell'uscita
-    modificabile (ActiveHikeSession.importedName editabile, PATCH
-    /sessions/:id/name). Compressione icone badge (46->8,8 MB,
-    scripts/comprimi-badge.js). Verifica dal vivo permesso GPS + coda
-    A/B/C (guida GPS per PC; activeHikeId senza default globale; selettore
-    escursione nello Zaino). Smartwatch (Garmin/Suunto/Amazfit): valutato
-    e SCARTATO - non riproporre "colleghiamo Garmin".
+  LOTTO SICUREZZA (decisioni con AskUserQuestion):
+  - C-1: 'homeCity' in ALWAYS_PRIVATE_FIELDS + maxlength 100; GET
+    /api/hikes/:id/home-match (solo partecipanti) risponde SOLO {quanti:N}
+    - MAI i nomi (coi nomi era un oracolo sulla zona di casa).
+  - C-3: mesh WS -> log ridotto a parsed.type; broadcast SOLO ai
+    co-partecipanti (Hike non conclusa); mittente/nome dal cookie di
+    sessione, non dal pacchetto; lat/lng validati -> null; cap 20 msg/10s.
+  - A-2: express-rate-limit@8.7.0 (MIT, DIPENDENZA NUOVA approvata da Denis);
+    middleware/rateLimit.js, tutti i limiter GATED su NODE_ENV=='production'
+    (skip in dev/test). npm audit --omit=dev = 0 (spostato @capacitor/cli
+    in devDependencies).
+  - A-3.1: revoca consenso GPS in #settings + ENFORCEMENT server-side
+    (middleware/consensoGeo.js su tracking.js /start,/:id/points,/:id/resume).
+  - A-3.2: RIMOSSO deadManContactIndex (0 utenti). Alla scadenza l'allarme
+    va a TUTTI i contatti con email. safety.js: lista contatti con "Rimuovi"
+    per riga. Demo NON armano il DMS. Email HTML escapata + tetto 5 contatti.
+    prova-punto37 riscritta (account reale temporaneo, non demo).
+  - A-3.3: GET /api/users/me/export -> bundle JSON scaricabile da #settings
+    (exportLimiter 3/giorno, .select('-points -offTrailBuffer'), no indent).
+
+  FIX DELLA RI-REVIEW (1o giro = "NON pronto", tutti chiusi):
+  - C-NUOVO-1 (CRITICO): PUT /api/hikes/:id con update {} -> Mongoose
+    findByIdAndUpdate degrada a _findOne() e RESTITUISCE IL DOC INTERO
+    (riapriva C-2 lettura + C-1 + A-1 + punto 77). -> hikeVisibileA()
+    unica su GET / E risposta PUT /:id; 400 su update vuoto PRIMA di
+    findByIdAndUpdate; 404 sulle concluse ai non-partecipanti nel PUT.
+  - A-NUOVO-1: DMS come relay email verso terzi (demo + N contatti-HTML).
+    -> esc() HTML + tetto 5 contatti + demo fuori dal DMS + scritturaLimiter.
+  - A-NUOVO-2: home-match era un oracolo -> solo {quanti}, no nomi.
+  - A-NUOVO-3: export = DoS memoria -> .select senza points + exportLimiter.
+  - A-NUOVO-4: runValidators NON valida i sotto-doc degli array su
+    findByIdAndUpdate -> lunghezze validate NELLA rotta; maxlength su
+    Hike.title/description; scritturaLimiter su POST /api/hikes.
+  - medi: M-1 mesh anti-spoofing, M-2 log NODE_ENV all'avvio, M-3 export
+    minimizza le proprie hike, M-4 capacitor/cli in devDeps.
+  RIMANDATI (non bloccanti, decide Denis): A-3.4 elimina account (blocco a
+  se', scelta = chiusura + scrub PII + tombstone); M-5 race cancella-contatto
+  con 2 schede; NOTA LEGALE - l'accettazione "Termini + Informativa privacy"
+  in index.html non ha un documento dietro (serve un professionista).
+
+>>> DA DOVE SI RIPARTE: la 23a sessione PARTE DA QUI, in ordine (Denis ha
+    fermato la 22a prima del punto 1):
+
+  1. 2o GIRO DELL'AGENTE `security-privacy` - verifica che i fix chiudano
+     davvero i 6 blocchi + niente di nuovo. Diff da rivedere:
+     `git diff 4f39fb1`. Il prompt del 1o giro e' nel vault 06
+     ("Ventiduesima sessione"). L'agente ha memoria in
+     .claude/agent-memory/security-privacy/.
+  2. PROVA MOBILE sul telefono di Denis (drawer, tab di hike-page,
+     #settings nuovo, layout stretto). Senza deployare: server sulla LAN
+     (cookie secure:false in locale, login regge in HTTP) -> telefono
+     stesso wifi http://<ip-pc>:3000. Fallback: tunnel effimero.
+  3. Verifica responsive Dashboard <900px (ex "punto 3").
+  4. MERGE `v2-ux` -> `master` + push (lo decide Denis). `v2-ux` = 33
+     avanti / 1 indietro a `origin/master` (`efd1290` Ju Busciu `sogliaM`)
+     - il merge lo riconcilia; v2-ux NON tocca geofenceTimbri.js/
+     badge-points.js/map.js/stamps.js quindi atteso conflict-free.
+     Backup pre-rifusione: `v2-ux-backup-preref`. La rifusione dei ~13
+     auto-save in commit veri `V2 UX ...` la fa Denis.
+
+  FILONE B (indipendente) - COLLEZIONE "I 2000 DELL'APPENNINO", dentro la
+  pagina Progressi (ex Badge), NON pagina a se'. Piano:
+    C:\Users\lenovo\.claude\plans\camoscio-2000-appennino-collezione.md
+  Bloccato: LA LISTA UFFICIALE DELLE VETTE LA FORNISCE DENIS. Punto aperto:
+  icone/peso repo (~100 vette) - raccomandazione: 1 grafica "2000+" unica.
+
+>>> DOVE STA IL DETTAGLIO: i PIANI in C:\Users\lenovo\.claude\plans\ -
+    camoscio-zaino-carpool-partecipanti.md (IL PROSSIMO BLOCCO, da fare
+    per primo nella 22a), delegated-gathering-forest.md (il piano
+    esecutivo file-per-file di 9->14c, ESEGUITO), camoscio-v2-menu-
+    restructure.md (decisioni + §15), camoscio-2000-appennino-collezione.md
+    (filone B). Nel vault: 04-Da-Fare ("PROSSIMO GRANDE LAVORO" + "Da dove
+    si riparte" + "Esito agente security-privacy"); decisioni in 03
+    ("Camoscio v2 — riordino menu e navigazione", con l'opzione A del 14b e
+    il modello zaino/carpool per-partecipanti); parole di Denis in
+    cose_da_fare.txt ("VENTUNESIMA SESSIONE"); racconto nel 06
+    ("Ventunesima sessione"). In 07 le trappole nuove (scroll "smooth"
+    interrotto dai render async; race di risposte in un fetch con debounce).
+
+>>> GIA' IN PRODUZIONE (fino alla 15a sessione, su `master`, ora
+    `origin` = `efd1290`): traduzione IT/EN (punto 102), timbri con traccia
+    reale (108), moderazione segnalazioni sentiero (111), parte social —
+    Segui/Feed/"mi piace"/"crea percorso" (113), import .fit (114), nome
+    uscita editabile (115), + 4 rifiniture del 31/08, + hotfix Ju Busciu
+    `sogliaM` (17a sessione, `efd1290`). Dettaglio: cose_da_fare.txt, vault.
     >>> LIMITE .fit/.gpx, e' il FILE non il codice: un file "smart" (o da
         Garmin Connect) ha buchi -> niente split cammino/pause. Serve 1 Hz.
-        Distanza/dislivello/durata totale/badge: sempre giusti.
     >>> DENIS DEVE RICARICARE il .gpx/.fit col ⬆ per le escursioni gia'
         fatte che vuole pubblicare (l'originale non era stato conservato).
-    NON fatto dalla compressione icone: sgonfiare il .git da 89 MB (git
-    filter-repo, delicato su repo pubblico); WebP; alleggerire lucide.js.
-
->>> GIA' IN PRODUZIONE (sessioni precedenti): Punto 113 (parte social:
-    Segui, Feed, uscita apribile, "mi piace", "crea percorso"); Punto 111
-    (segnalazioni sentiero: "risolvi" e scadenza a 90gg passano dal
-    moderatore); Punto 108 (un timbro richiede una traccia reale entro la
-    soglia). Dettaglio: cose_da_fare.txt punti 113/111/108, vault 03/06/07.
+    >>> Smartwatch (Garmin/Suunto/Amazfit): valutato e SCARTATO.
 
 >>> ALTRE APERTE, non urgenti (dettaglio in vault 04-Da-Fare.md):
     livelli ORIGINALI del punto 63b (gradini per la ZONA dichiarata a
@@ -83,9 +190,7 @@ Aggiornato: 2026-08-31 (quindicesima sessione).
 >>> RESTA VALIDO:
   - Hook "Stop" di auto-save: commit locale (MAI push) a fine di ogni
     risposta se ci sono modifiche non salvate in questo repo. Va rifuso
-    in un commit vero prima di ogni push (git reset --soft sull'ultimo
-    commit vero se gli auto-save sono piu' di uno) - fatto per i passi
-    7-10 (b7afa35, reset --soft 629476f sui 4 auto-save).
+    in un commit vero prima di ogni push/tappa.
   - Traduzione IT/EN (punto 102, CHIUSO): resta ITALIANO di proposito
     tutto il testo scritto dagli utenti (didascalie del feed comprese),
     i nomi propri di luogo, i nomi dei percorsi salvati e l'etichetta
@@ -93,12 +198,7 @@ Aggiornato: 2026-08-31 (quindicesima sessione).
     dei badge (punto 112), il testo delle notifiche (lo genera il
     server), il segnaposto nativo di <input type=date>/<input type=file>,
     e componiRapporto() dentro diagnostica-gps.html. Le chiavi EN dei
-    punti 113/114/115 sono state aggiunte tutte. Restano IT anche i NOMI
-    delle uscite (punto 115: li scrive l'utente).
-  - Punti 102, 108, 111, 112, 113, 114, 115 CHIUSI E IN PRODUZIONE
-    (+ le 4 rifiniture del 31/08). Il punto 106 e' chiuso per la parte
-    fatta il 28/08; il residuo (titoli sezione lunghi) e' nella revisione
-    UX. Il ⬆ ora assegna i badge di vetta (coda 113).
+    blocchi v2 UX si aggiungono mano a mano (scelta di Denis).
 
 ===================================================================
 

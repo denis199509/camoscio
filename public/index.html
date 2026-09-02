@@ -330,70 +330,175 @@
 
     <div class="app-container hidden" id="main-app-container">
         <!-- Sidebar di Navigazione -->
-        <aside class="sidebar">
+        <aside class="sidebar" id="main-sidebar">
             <div class="brand">
                 <img src="img/logo.png" alt="Camoscio" class="logo-icon logo-icon-img">
                 <h1 class="logo-text">CAMOSCIO</h1>
             </div>
             
             <nav class="nav-menu">
+                <p class="nav-block-label" data-i18n="nav.blocco.navigazione">Navigazione</p>
+
                 <button class="nav-btn active" data-target="dashboard" id="btn-nav-dashboard">
-                    <i data-lucide="layout-dashboard"></i>
-                    <span data-i18n="nav.dashboard">Dashboard</span>
+                    <i data-lucide="home"></i>
+                    <span data-i18n="nav.home">Home</span>
                 </button>
-                <button class="nav-btn" data-target="feed" id="btn-nav-feed">
-                    <i data-lucide="newspaper"></i>
-                    <span data-i18n="nav.feed">Feed</span>
+
+                <!-- V2 UX PASSO 7: gruppo a fisarmonica. La testa NON naviga (nessun
+                     data-target): apre/chiude il corpo. Le sottovoci sono .nav-btn come
+                     prima, con lo stesso data-target di sempre. -->
+                <div class="nav-group" data-group="esplora">
+                    <button class="nav-group-head" aria-expanded="false" aria-controls="nav-group-esplora">
+                        <i data-lucide="compass"></i>
+                        <span data-i18n="nav.esplora">Esplora</span>
+                        <i class="nav-chevron" data-lucide="chevron-down"></i>
+                    </button>
+                    <div class="nav-group-body" id="nav-group-esplora" hidden>
+                        <button class="nav-btn nav-sub" data-target="hikes" id="btn-nav-hikes">
+                            <i data-lucide="mountain"></i>
+                            <span data-i18n="nav.hikes">Escursioni</span>
+                        </button>
+                        <button class="nav-btn nav-sub" data-target="map-section" id="btn-nav-map">
+                            <i data-lucide="map"></i>
+                            <span data-i18n="nav.map">Mappa</span>
+                        </button>
+                        <button class="nav-btn nav-sub" data-target="feed" id="btn-nav-feed">
+                            <i data-lucide="sparkles"></i>
+                            <span data-i18n="nav.ispirazioni">Ispirazioni</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- V2 UX PASSO 9: "Le mie escursioni" diventa un gruppo a fisarmonica.
+                     A differenza di "Esplora", la testa HA un data-target: un click
+                     naviga (alla vista corrente, "Tutte" la prima volta) E apre il
+                     gruppo - non lo chiude mai. Le tre sotto-voci sono viste-filtro
+                     della STESSA pagina (data-view), non sezioni diverse: le governa
+                     impostaVistaMieEscursioni (social.js), non il ciclo .active. -->
+                <div class="nav-group" data-group="mie">
+                    <button class="nav-group-head" data-target="my-hikes" aria-expanded="false" aria-controls="nav-group-mie" id="btn-nav-my-hikes">
+                        <i data-lucide="footprints"></i>
+                        <span data-i18n="nav.myHikes">Le mie escursioni</span>
+                        <i class="nav-chevron" data-lucide="chevron-down"></i>
+                    </button>
+                    <div class="nav-group-body" id="nav-group-mie" hidden>
+                        <button class="nav-btn nav-sub" data-target="my-hikes" data-view="tutte">
+                            <i data-lucide="list"></i>
+                            <span data-i18n="nav.mieTutte">Tutte</span>
+                        </button>
+                        <button class="nav-btn nav-sub" data-target="my-hikes" data-view="programma">
+                            <i data-lucide="calendar-clock"></i>
+                            <span data-i18n="nav.mieProgramma">In programma</span>
+                        </button>
+                        <button class="nav-btn nav-sub" data-target="my-hikes" data-view="completate">
+                            <i data-lucide="circle-check-big"></i>
+                            <span data-i18n="nav.mieCompletate">Completate</span>
+                        </button>
+                    </div>
+                </div>
+                <!-- V2 UX PASSO 10: Community diventa un gruppo. Come "Le mie escursioni"
+                     la testa naviga (data-target). Unica sotto-voce "Amici" -> scroll
+                     alla card "Persone" di #social, che ora ospita anche la ricerca per
+                     nome utente (ex sezione #people-search, rimossa). -->
+                <div class="nav-group" data-group="community">
+                    <button class="nav-group-head" data-target="social" aria-expanded="false" aria-controls="nav-group-community" id="btn-nav-social">
+                        <i data-lucide="users"></i>
+                        <span data-i18n="nav.community">Community</span>
+                        <i class="nav-chevron" data-lucide="chevron-down"></i>
+                    </button>
+                    <div class="nav-group-body" id="nav-group-community" hidden>
+                        <button class="nav-btn nav-sub" data-target="social" data-scroll="follow-people-card">
+                            <i data-lucide="user-round-plus"></i>
+                            <span data-i18n="nav.amici">Amici</span>
+                        </button>
+                    </div>
+                </div>
+
+                <p class="nav-block-label" data-i18n="nav.blocco.azione">Azione</p>
+                <!-- V2 UX PASSO 13: "＋ Crea" apre un popover con 2 voci - nuova escursione
+                     (window.apriModaleNuovaEscursione) e nuovo percorso (Mappa + scroll
+                     alla card "Progetta un percorso"). NIENTE "nuova squadra": si crea
+                     dalla sua card in Community. Il menu si chiude su click-fuori / Esc. -->
+                <div class="nav-crea-wrap">
+                    <button class="nav-crea" id="btn-nav-crea" aria-haspopup="true" aria-expanded="false">
+                        <i data-lucide="plus"></i>
+                        <span data-i18n="nav.crea">Crea</span>
+                    </button>
+                    <div class="nav-crea-menu" id="nav-crea-menu" role="menu" hidden>
+                        <button type="button" class="nav-crea-menu-item" data-crea="escursione" role="menuitem">
+                            <i data-lucide="mountain"></i> <span data-i18n="crea.nuovaEscursione">Nuova escursione</span>
+                        </button>
+                        <button type="button" class="nav-crea-menu-item" data-crea="percorso" role="menuitem">
+                            <i data-lucide="route"></i> <span data-i18n="crea.nuovoPercorso">Nuovo percorso</span>
+                        </button>
+                    </div>
+                </div>
+
+                <p class="nav-block-label" data-i18n="nav.blocco.personale">Area personale</p>
+                <!-- V2 UX PASSO 11: la pagina "Badge" diventa "Progressi" (id sezione
+                     #badges -> #progress; navigateTo tiene "badges" come alias). Stesso
+                     contenuto + dettaglio della progressione per ogni zona. -->
+                <button class="nav-btn" data-target="progress" id="btn-nav-progress">
+                    <i data-lucide="trophy"></i>
+                    <span data-i18n="nav.progressi">Progressi</span>
                 </button>
-                <button class="nav-btn" data-target="hikes" id="btn-nav-hikes">
-                    <i data-lucide="compass"></i>
-                    <span data-i18n="nav.hikes">Escursioni</span>
+                <!-- V2 UX PASSO 12: #my-profile si sdoppia. "Profilo" = sola vista (come mi
+                     vedono gli altri); "Impostazioni" (#settings, nuova) = foto/bio/esperto/
+                     password/lingua/logout + i placeholder. Il widget utente nell'header
+                     porta comunque a "Profilo". -->
+                <button class="nav-btn" data-target="my-profile" id="btn-nav-profile">
+                    <i data-lucide="user"></i>
+                    <span data-i18n="nav.profilo">Profilo</span>
                 </button>
-                <button class="nav-btn" data-target="my-hikes" id="btn-nav-my-hikes">
-                    <i data-lucide="footprints"></i>
-                    <span data-i18n="nav.myHikes">Le mie escursioni</span>
+                <button class="nav-btn" data-target="settings" id="btn-nav-settings">
+                    <i data-lucide="settings"></i>
+                    <span data-i18n="nav.impostazioni">Impostazioni</span>
                 </button>
-                <button class="nav-btn" data-target="badges" id="btn-nav-badges">
-                    <i data-lucide="award"></i>
-                    <span data-i18n="nav.badges">Badge</span>
-                </button>
-                <button class="nav-btn" data-target="map-section" id="btn-nav-map">
-                    <i data-lucide="map"></i>
-                    <span data-i18n="nav.map">Mappa & Sentieri</span>
-                </button>
-                <button class="nav-btn" data-target="carpool" id="btn-nav-carpool">
-                    <i data-lucide="car"></i>
-                    <span>Carpooling</span>
-                </button>
-                <button class="nav-btn" data-target="backpack" id="btn-nav-backpack">
-                    <i data-lucide="backpack"></i>
-                    <span data-i18n="nav.backpack">Zaino Intelligente</span>
-                </button>
+                <!-- V2 UX PASSO 14a: via il blocco "STRUMENTI" (ponte di PASSO 7).
+                     "Sicurezza" (era "Sicurezza & Mesh") e' ora una foglia dell'area
+                     personale: #safety resta invariato internamente (rimando timer +
+                     registro avvisi + Simulatore Mesh) - il timer vero vive in Mappa. -->
                 <button class="nav-btn" data-target="safety" id="btn-nav-safety">
                     <i data-lucide="shield-alert"></i>
-                    <span data-i18n="nav.safety">Sicurezza & Mesh</span>
+                    <span data-i18n="nav.sicurezza">Sicurezza</span>
                 </button>
-                <button class="nav-btn" data-target="social" id="btn-nav-social">
-                    <i data-lucide="users"></i>
-                    <span data-i18n="nav.social">Tribù & Squadre</span>
-                </button>
-                <button class="nav-btn" data-target="people-search" id="btn-nav-people-search">
-                    <i data-lucide="search"></i>
-                    <span data-i18n="nav.peopleSearch">Cerca Persone</span>
-                </button>
+
+                <!-- V2 UX PASSO 14b/14c: Carpooling e Zaino sono ora tab dentro hike-page
+                     (della singola escursione). #btn-nav-carpool / #btn-nav-backpack e le
+                     .page-section #carpool / #backpack si sono ritirati. Il blocco
+                     "STRUMENTI" non esiste piu' (Sicurezza e' in AREA PERSONALE, PASSO 14a). -->
             </nav>
 
             <div class="sidebar-footer">
+                <!-- V2 UX PASSO 8: a <=900px le bandiere lingua dell'header si spostano
+                     qui, in fondo al drawer (Q3). i18n.js aggancia TUTTE le .lang-flag-btn
+                     del documento -> niente JS in piu'. -->
+                <div class="lang-switcher sidebar-lang-switch" role="group" aria-label="Lingua / Language">
+                    <button type="button" class="lang-flag-btn" data-lang="it" title="Italiano" aria-label="Italiano" aria-pressed="true">
+                        <svg viewBox="0 0 3 2" aria-hidden="true"><rect width="1" height="2" fill="#009246"/><rect width="1" height="2" x="1" fill="#fff"/><rect width="1" height="2" x="2" fill="#ce2b37"/></svg>
+                    </button>
+                    <button type="button" class="lang-flag-btn" data-lang="en" title="English" aria-label="English" aria-pressed="false">
+                        <svg viewBox="0 0 60 30" aria-hidden="true"><rect width="60" height="30" fill="#00247d"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" stroke-width="6"/><path d="M30,0 V30 M0,15 H60" stroke="#fff" stroke-width="10"/><path d="M30,0 V30 M0,15 H60" stroke="#cf142b" stroke-width="6"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#cf142b" stroke-width="2"/></svg>
+                    </button>
+                </div>
                 <div class="app-version">v1.0.0 Local</div>
             </div>
         </aside>
+
+        <!-- V2 UX PASSO 8: scrim sotto il drawer mobile. Tap -> chiude (app.js). -->
+        <div class="nav-scrim" id="nav-scrim" hidden></div>
 
         <!-- Contenuto Principale -->
         <main class="main-content">
             <!-- Header Superiore -->
             <header class="top-header">
+                <!-- V2 UX PASSO 8: hamburger del drawer mobile, a sinistra del titolo.
+                     Visibile solo <=900px (CSS). -->
+                <button type="button" class="nav-drawer-toggle" id="btn-nav-drawer" aria-expanded="false" aria-controls="main-sidebar" aria-label="Apri il menu" data-i18n-label="nav.apriMenu">
+                    <i data-lucide="menu"></i>
+                </button>
                 <div class="header-search">
-                    <h2 id="section-title" class="section-title">Dashboard</h2>
+                    <h2 id="section-title" class="section-title">Home</h2>
                 </div>
                 
                 <!-- Profilo Utente Corrente (sessione reale, Fase C) -->
@@ -492,131 +597,212 @@
                 
                 <!-- 1. DASHBOARD -->
                 <section id="dashboard" class="page-section active">
+
+                    <!-- PASSO 1 revisione UX (v2): l'apertura della Dashboard non parte piu' da tre
+                         statistiche ma da "chi sei / cosa fai adesso". Blocco a tutta larghezza,
+                         FUORI da .dashboard-grid: deve sembrare l'inizio naturale della pagina, non
+                         un pannello di controllo. E' contestuale - renderDashHero() in app.js
+                         riscrive saluto, sottotitolo e la riga della prossima escursione, e la rifa'
+                         a ogni cambio lingua (onChange gia' agganciato in fondo ad app.js). -->
+                    <header class="dash-hero">
+                        <!-- Niente data-i18n su questi due: li scrive SEMPRE renderDashHero (app.js)
+                             in entrambe le lingue. Con data-i18n, applyStaticTranslations li
+                             riporterebbe al testo statico a ogni cambio lingua, perdendo il nome e
+                             il sottotitolo contestuale. Il testo qui e' solo il guscio pre-render. -->
+                        <h2 class="dash-hero-greet" id="dash-hero-greet">Ciao 👋</h2>
+                        <p class="dash-hero-sub" id="dash-hero-sub">Pronto per la prossima avventura?</p>
+
+                        <!-- FASE 2 revisione UX: la card della prossima avventura. Mostrata da
+                             renderDashHero SOLO se c'e' un'escursione CONFERMATA in programma
+                             (creata da me o dove sono gia' fra i partecipanti - non le semplici
+                             richieste in attesa), data futura, la piu' vicina. Righe numeri e "da"
+                             compaiono solo se i dati ci sono. Testo riempito da JS (niente
+                             data-i18n, stessa regola del saluto qui sopra); il bottone ha testo
+                             fisso e puo' usare data-i18n.
+                             FASE 3: -adv-org ("Organizzata da te", solo se l'ho creata io) e
+                             -adv-more (link "vedi tutte le mie escursioni", solo se ne ho piu' di
+                             una in programma) - stesso meccanismo .hidden delle righe numeri/"da". -->
+                        <div class="dash-hero-adventure hidden" id="dash-hero-adventure">
+                            <h3 class="dash-hero-adv-title" id="dash-hero-adv-title"></h3>
+                            <p class="dash-hero-adv-org hidden" id="dash-hero-adv-org"></p>
+                            <p class="dash-hero-adv-when" id="dash-hero-adv-when"></p>
+                            <p class="dash-hero-adv-stats hidden" id="dash-hero-adv-stats"></p>
+                            <p class="dash-hero-adv-from hidden" id="dash-hero-adv-from"></p>
+                            <div class="dash-hero-adv-foot">
+                                <span class="dash-hero-adv-people" id="dash-hero-adv-people"></span>
+                                <button type="button" class="btn btn-primary" id="dash-hero-adventure-open">
+                                    <span data-i18n="dash.avventuraApri">Apri escursione</span> <i data-lucide="arrow-right"></i>
+                                </button>
+                            </div>
+                            <button type="button" class="dash-hero-adv-more hidden btn-nav-trigger" data-target="my-hikes" data-view="tutte" id="dash-hero-adv-more">
+                                <span data-i18n="dash.avventuraVediTutte">Vedi tutte le mie escursioni</span> →
+                            </button>
+                        </div>
+
+                        <div class="dash-hero-actions">
+                            <button class="btn btn-primary btn-nav-trigger dash-hero-cta" data-target="hikes">
+                                <span aria-hidden="true">🥾</span> <span data-i18n="dash.ctaTrova">Trova un'escursione</span>
+                            </button>
+                            <button class="btn btn-secondary btn-nav-trigger dash-hero-cta" data-target="map-section">
+                                <span aria-hidden="true">🗺️</span> <span data-i18n="dash.ctaEsplora">Esplora</span>
+                            </button>
+                        </div>
+                    </header>
+
+                    <!-- FASE 4 revisione UX (v2): "Il tuo cammino" prende il posto del Passaporto
+                         (colonna sinistra) e "Ultimi traguardi" quello di "Quanto hai camminato"
+                         (colonna destra). I timbri/vette non spariscono: si leggono come
+                         progressione verso un obiettivo invece di quattro riquadri senza contesto.
+                         Riempiti da renderDashJourney / renderDashAchievements (app.js). Niente
+                         data-i18n su cio' che scrive il JS (numeri, nome zona, l'anno del titolo):
+                         applyStaticTranslations lo azzererebbe al cambio lingua - vale solo per i
+                         testi fissi (titoli, CTA). -->
                     <div class="dashboard-grid">
-                        
-                        <!-- Colonna Sinistra -->
+
+                        <!-- Colonna Sinistra: Il tuo cammino -->
                         <div class="dash-col">
-                            <!-- Card Benvenuto -->
-                            <div class="glass-card welcome-card">
-                                <h3 data-i18n-html="dash.benvenuto">Benvenuto su Camoscio, <span class="highlight-text" id="dash-welcome-name">Utente</span>!</h3>
-                                <p class="text-muted" data-i18n="dash.sottotitolo">Il tuo assistente personale per escursioni sicure, organizzazione di carpooling e pianificazione alpina avanzata.</p>
-                                <div class="quick-stats-row">
-                                    <div class="q-stat">
-                                        <span class="q-val" id="stat-completed-hikes">0</span>
-                                        <span class="q-lbl" data-i18n="dash.statCompletate">Escursioni Fatte</span>
+                            <div class="glass-card dash-journey-card" id="dash-journey">
+                                <h4><i data-lucide="mountain"></i> <span data-i18n="dash.camminoTitolo">Il tuo cammino</span></h4>
+
+                                <!-- Stato normale: conteggi + (se c'e' una zona con progresso
+                                     parziale) barra e prossimo traguardo. -->
+                                <div class="dash-journey-main hidden" id="dash-journey-main">
+                                    <!-- "vette conquistate" senza data-i18n: renderDashJourney lo
+                                         scrive con la concordanza singolare/plurale (1 vetta / N
+                                         vette). -->
+                                    <p class="dash-journey-peaks"><strong id="dash-journey-peaks-n">—</strong> <span id="dash-journey-peaks-l">vette conquistate</span></p>
+                                    <p class="small text-muted" id="dash-journey-sub"></p>
+
+                                    <div class="dash-journey-goal hidden" id="dash-journey-goal">
+                                        <!-- FASE 5: nome zona e conteggio "4 / 7" sulla stessa
+                                             riga (prima il conteggio stava sotto la barra). Due
+                                             span separati: renderDashJourney li scrive singolarmente
+                                             (textContent sul <p> cancellerebbe i figli). -->
+                                        <p class="dash-journey-zona" id="dash-journey-zona">
+                                            <span id="dash-journey-zona-name"></span>
+                                            <span class="dash-journey-count" id="dash-journey-count"></span>
+                                        </p>
+                                        <div class="badge-progress-track" role="img" id="dash-journey-track">
+                                            <div class="badge-progress-bar" id="dash-journey-bar" style="width:0%"></div>
+                                        </div>
+                                        <p class="dash-journey-left" id="dash-journey-left"></p>
                                     </div>
-                                    <div class="q-stat">
-                                        <span class="q-val" id="stat-stamps-count">0</span>
-                                        <span class="q-lbl" data-i18n="dash.statTimbri">Timbri Vette</span>
-                                    </div>
-                                    <div class="q-stat">
-                                        <span class="q-val" id="stat-reputation">50%</span>
-                                        <span class="q-lbl" data-i18n="dash.statReputazione">Punteggio Reputazione</span>
-                                    </div>
+
+                                    <!-- Niente data-i18n sullo span: renderDashJourney gli cambia
+                                         il testo fra "Continua il tuo cammino" e "Scopri le
+                                         prossime vette" secondo lo stato, e applyStaticTranslations
+                                         lo riporterebbe sempre al primo. Lo scrive sempre il JS. -->
+                                    <button class="btn btn-sm btn-secondary btn-nav-trigger dash-journey-cta" data-target="progress" id="dash-journey-cta">
+                                        <span>Continua il tuo cammino</span> →
+                                    </button>
+                                </div>
+
+                                <!-- Stato vuoto: nessuna vetta ancora conquistata. -->
+                                <div class="dash-journey-empty hidden" id="dash-journey-empty">
+                                    <p class="dash-empty-title"><span aria-hidden="true">🏔️</span> <span data-i18n="dash.camminoVuotoTitolo">Inizia il tuo cammino</span></p>
+                                    <p class="small text-muted" data-i18n="dash.camminoVuotoTesto">La tua prima vetta è ancora da conquistare. Completa un'escursione per iniziare a costruire il tuo percorso su Camoscio.</p>
+                                    <button class="btn btn-sm btn-primary btn-nav-trigger" data-target="hikes">
+                                        <span data-i18n="dash.camminoVuotoCta">Trova un'escursione</span> →
+                                    </button>
                                 </div>
                             </div>
+                        </div>
 
-                            <!-- Card Passaporto Digitale Vette -->
-                            <div class="glass-card passport-card">
-                                <div class="card-header-row">
-                                    <h4><i data-lucide="award"></i> <span data-i18n="dash.passaportoTitolo">Passaporto delle Vette Digitale</span></h4>
-                                    <span class="badge badge-accent" data-i18n="dash.geofencingAttivo">Geofencing Attivo</span>
+                        <!-- Colonna Destra: Ultimi traguardi -->
+                        <div class="dash-col">
+                            <div class="glass-card dash-achievements-card" id="dash-achievements">
+                                <h4><i data-lucide="award"></i> <span data-i18n="dash.traguardiTitolo">Ultimi traguardi</span></h4>
+
+                                <div class="stamps-grid dash-achievements-grid hidden" id="dash-achievements-grid">
+                                    <!-- .stamp-slot renderizzati da renderDashAchievements (app.js) -->
                                 </div>
-                                <p class="small text-muted" data-i18n="dash.passaportoDesc">Raggiungi le vette e i rifugi per sbloccare i timbri digitali collezionabili. Usa la mappa per simulare la tua posizione GPS!</p>
-                                <div class="stamps-grid" id="stamps-collection">
-                                    <!-- Stamp sbloccati renderizzati da JS -->
-                                </div>
-                                <!-- Punto 18: il "tasto Badge" chiesto dall'utente. Sta qui, sotto i
-                                     timbri, perche' e' guardando questi che viene voglia di vedere
-                                     tutti gli altri; la voce nella barra a sinistra serve a chi
-                                     invece li cerca direttamente. La scheda mostra solo i primi
-                                     quattro, il conteggio dice quanti sono in tutto. -->
-                                <div class="passport-more">
-                                    <span class="small text-muted" id="passport-count">—</span>
-                                    <button class="btn btn-sm btn-secondary btn-nav-trigger" data-target="badges">
+
+                                <div class="dash-achievements-more hidden" id="dash-achievements-more">
+                                    <button class="btn btn-sm btn-secondary btn-nav-trigger" data-target="progress">
                                         <i data-lucide="award"></i> <span data-i18n="dash.vediTuttiBadge">Vedi tutti i badge</span>
                                     </button>
                                 </div>
-                                <!-- Punto 19 di cose_da_fare.txt: qui c'era una sezione "Sfide in
-                                     corso" con la voce "Le Vette del Gran Sasso (0/2)" scritta a mano
-                                     nell'HTML. Compariva IDENTICA per chiunque, anche per un utente
-                                     appena registrato che non aveva creato ne' accettato nessuna sfida,
-                                     e il "(0/2)" restava 0 anche dopo aver preso i timbri. Tolta: le
-                                     sfide dovranno essere create o accettate davvero, e finche' non
-                                     esistono e' meglio non mostrarne nessuna che mostrarne una finta.
-                                     Il conteggio vero dei timbri resta qui sopra e in "Timbri Vette". -->
-                            </div>
-                        </div>
 
-                        <!-- Colonna Destra -->
-                        <div class="dash-col">
-                            <!-- Punto 17 di cose_da_fare.txt: qui c'era il riquadro "Sicurezza
-                                 Rapida" col Dead Man's Switch. Spostato nella sezione Mappa, dove
-                                 serve davvero. Non ne resta una copia qui di proposito: due
-                                 comandi per la stessa cosa vogliono dire due stati da tenere
-                                 allineati a mano, ed e' il genere di disallineamento che si
-                                 scopre nel momento sbagliato. Il conto alla rovescia resta
-                                 comunque visibile OVUNQUE, nella fascia #emergency-banner in cima
-                                 alla pagina, che e' il posto giusto per un avviso che non deve
-                                 dipendere dalla schermata aperta. -->
-
-                            <!-- Punto 16 di cose_da_fare.txt: i totali REALI di quanto si e'
-                                 camminato. I dati esistevano gia' (ogni tracciamento salva distanza
-                                 e dislivello veri dalla Fase F), ma la Dashboard non ne mostrava
-                                 mai la somma. Riempiti da renderTrackingTotals in app.js. -->
-                            <div class="glass-card totals-card">
-                                <h4><i data-lucide="mountain-snow"></i> <span data-i18n="dash.totaliTitolo">Quanto hai camminato</span></h4>
-                                <p class="small text-muted" data-i18n="dash.totaliDesc">Somma di tutte le escursioni che hai registrato con il GPS.</p>
-                                <div class="totals-grid" id="dash-totals">
-                                    <div class="total-box">
-                                        <span class="total-val" id="total-distance">—</span>
-                                        <span class="total-lbl" data-i18n="dash.kmPercorsi">km percorsi</span>
-                                    </div>
-                                    <div class="total-box">
-                                        <span class="total-val" id="total-elevation">—</span>
-                                        <span class="total-lbl" data-i18n="dash.mDislivello">m di dislivello</span>
-                                    </div>
-                                    <div class="total-box">
-                                        <span class="total-val" id="total-speed">—</span>
-                                        <span class="total-lbl" data-i18n="dash.kmhMedia">km/h di media</span>
-                                    </div>
-                                </div>
-                                <p class="small text-muted" id="dash-totals-note"></p>
-                            </div>
-
-                            <!-- Card Statistiche Passo Personalizzato -->
-                            <div class="glass-card pace-card">
-                                <h4><i data-lucide="activity"></i> <span data-i18n="dash.passoTitolo">Calcolatore Passo & Fatica</span></h4>
-                                <p class="small text-muted" data-i18n="dash.passoDesc">L'algoritmo impara dalle tue escursioni tracciate per stimare i tempi effettivi di cammino.</p>
-                                <div class="pace-stats">
-                                    <!-- L'unita' di misura sta in uno span suo, non in un
-                                         testo libero accanto al numero: quando il passo non e'
-                                         mai stato misurato il valore diventa "—" e l'unita' va
-                                         nascosta con lui, altrimenti si leggerebbe "— m/h",
-                                         cioe' una misura mancante travestita da misura. -->
-                                    <div class="pace-row">
-                                        <span data-i18n="dash.velocitaAscesa">Velocità Ascesa:</span>
-                                        <strong><span id="pace-up-val">--</span><span class="pace-unit" id="pace-up-unit"> m/h</span></strong>
-                                    </div>
-                                    <div class="pace-row">
-                                        <span data-i18n="dash.velocitaDiscesa">Velocità Discesa:</span>
-                                        <strong><span id="pace-down-val">--</span><span class="pace-unit" id="pace-down-unit"> m/h</span></strong>
-                                    </div>
-                                    <div class="pace-row">
-                                        <span data-i18n="dash.indiceFatica">Indice Fatica Personalizzato:</span>
-                                        <strong><span id="pace-index-val">--</span><span class="pace-unit" id="pace-index-unit" data-i18n="dash.rispettoCai">x rispetto a CAI</span></strong>
-                                    </div>
-                                </div>
-                                <!-- Riempita da renderDashboard (app.js) solo quando non c'e'
-                                     ancora un passo misurato: stessa idea di #dash-totals-note
-                                     qui sopra, dire cosa manca e come si ottiene invece di
-                                     lasciare tre trattini senza spiegazione. -->
-                                <p class="small text-muted" id="dash-pace-note"></p>
-                                <div class="pace-chart-container">
-                                    <canvas id="paceChart"></canvas>
+                                <!-- Stato vuoto: nessun badge ancora. -->
+                                <div class="dash-achievements-empty hidden" id="dash-achievements-empty">
+                                    <p class="dash-empty-title"><span aria-hidden="true">🏅</span> <span data-i18n="dash.traguardiVuotoTitolo">Il tuo primo badge ti aspetta</span></p>
+                                    <p class="small text-muted" data-i18n="dash.traguardiVuotoTesto">Completa un'escursione e inizia a collezionare i tuoi traguardi.</p>
+                                    <button class="btn btn-sm btn-primary btn-nav-trigger" data-target="hikes">
+                                        <span data-i18n="dash.traguardiVuotoCta">Scopri le escursioni</span> →
+                                    </button>
                                 </div>
                             </div>
                         </div>
+                    </div>
+
+                    <!-- FASE 4: "Passo & Fatica" esce dal grid a due colonne (dove restava
+                         appaiata a "Quanto hai camminato", ora rimossa) e va a piena larghezza.
+                         Contenuto invariato. -->
+                    <div class="glass-card pace-card">
+                        <h4><i data-lucide="activity"></i> <span data-i18n="dash.passoTitolo">Calcolatore Passo & Fatica</span></h4>
+                        <p class="small text-muted" data-i18n="dash.passoDesc">L'algoritmo impara dalle tue escursioni tracciate per stimare i tempi effettivi di cammino.</p>
+                        <div class="pace-stats">
+                            <!-- L'unita' di misura sta in uno span suo, non in un
+                                 testo libero accanto al numero: quando il passo non e'
+                                 mai stato misurato il valore diventa "—" e l'unita' va
+                                 nascosta con lui, altrimenti si leggerebbe "— m/h",
+                                 cioe' una misura mancante travestita da misura. -->
+                            <div class="pace-row">
+                                <span data-i18n="dash.velocitaAscesa">Velocità Ascesa:</span>
+                                <strong><span id="pace-up-val">--</span><span class="pace-unit" id="pace-up-unit"> m/h</span></strong>
+                            </div>
+                            <div class="pace-row">
+                                <span data-i18n="dash.velocitaDiscesa">Velocità Discesa:</span>
+                                <strong><span id="pace-down-val">--</span><span class="pace-unit" id="pace-down-unit"> m/h</span></strong>
+                            </div>
+                            <div class="pace-row">
+                                <span data-i18n="dash.indiceFatica">Indice Fatica Personalizzato:</span>
+                                <strong><span id="pace-index-val">--</span><span class="pace-unit" id="pace-index-unit" data-i18n="dash.rispettoCai">x rispetto a CAI</span></strong>
+                            </div>
+                        </div>
+                        <!-- Riempita da renderDashboard (app.js) solo quando non c'e'
+                             ancora un passo misurato: stessa idea della nota di "Il tuo
+                             <anno>" piu' sotto, dire cosa manca e come si ottiene invece
+                             di lasciare tre trattini senza spiegazione. -->
+                        <p class="small text-muted" id="dash-pace-note"></p>
+                        <div class="pace-chart-container">
+                            <canvas id="paceChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- FASE 4: "Il tuo <anno>" prende il posto di "Quanto hai camminato" come
+                         riepilogo, ma per l'anno in corso invece che di tutta la vita. I tre
+                         numeri da GET /api/tracking/totals?anno=, le vette dell'anno calcolate
+                         lato client (renderDashYearSummary in app.js). Niente link "Vedi
+                         statistiche": la pagina statistiche filtrabile e' una fase a parte.
+                         Titolo senza data-i18n: lo scrive il JS con l'anno vero. -->
+                    <div class="glass-card dash-year-card" id="dash-year-summary">
+                        <h4><i data-lucide="bar-chart-2"></i> <span id="dash-year-title">Il tuo 2026</span></h4>
+                        <div class="dash-year-grid" id="dash-year-grid">
+                            <div class="total-box">
+                                <span class="total-val" id="year-hikes">—</span>
+                                <span class="total-lbl" data-i18n="dash.annoEscursioni">escursioni</span>
+                            </div>
+                            <div class="total-box">
+                                <span class="total-val" id="year-distance">—</span>
+                                <span class="total-lbl" data-i18n="dash.kmPercorsi">km percorsi</span>
+                            </div>
+                            <div class="total-box">
+                                <span class="total-val" id="year-elevation">—</span>
+                                <span class="total-lbl" data-i18n="dash.mDislivello">m di dislivello</span>
+                            </div>
+                            <div class="total-box">
+                                <span class="total-val" id="year-peaks">—</span>
+                                <span class="total-lbl" data-i18n="dash.annoVette">vette</span>
+                            </div>
+                        </div>
+                        <p class="small text-muted" id="dash-year-note"></p>
+                        <!-- V2 UX PASSO 11b: il link "Vedi statistiche" (previsto in Fase 4,
+                             lasciato per quando la pagina filtrabile fosse esistita) porta a
+                             #progress e scorre fino al blocco statistiche. -->
+                        <button type="button" class="btn btn-sm btn-secondary btn-nav-trigger dash-year-stats-link" data-target="progress" data-scroll="progress-stats">
+                            <span data-i18n="dash.vediStatistiche">Vedi statistiche</span> →
+                        </button>
                     </div>
                 </section>
 
@@ -625,7 +811,7 @@
                      GET /api/feed (paginazione a cursore). -->
                 <section id="feed" class="page-section">
                     <div class="glass-card feed-intro">
-                        <h4><i data-lucide="newspaper"></i> <span data-i18n="feed.titolo">Feed</span></h4>
+                        <h4><i data-lucide="sparkles"></i> <span data-i18n="feed.titolo">Ispirazioni</span></h4>
                         <p class="small text-muted" data-i18n="feed.sottotitolo">Le uscite pubblicate dalle persone che segui, più recenti prima. Tocca un'uscita per aprirla.</p>
                     </div>
                     <div id="feed-list"><!-- renderFeed() --></div>
@@ -634,7 +820,7 @@
                 <!-- 2. ESCURSIONI -->
                 <section id="hikes" class="page-section">
                     <div class="hikes-header-row">
-                        <h3 data-i18n="hikes.esplora">Esplora Escursioni di Gruppo</h3>
+                        <h3 data-i18n="hikes.esplora">Escursioni di Gruppo</h3>
                         <button class="btn btn-primary" id="btn-open-create-hike"><i data-lucide="plus"></i> <span data-i18n="hikeModal.creaNuova">Crea Nuova Escursione</span></button>
                     </div>
 
@@ -676,32 +862,18 @@
                         </div>
                     </div>
 
-                    <!-- Punto 69: tre categorie invece di un elenco unico, stesso principio gia'
-                         usato in "Le mie escursioni" qui sotto (stessa classe .my-hikes-group) -
-                         "Completate" mostra solo le escursioni concluse a cui si e' partecipato,
-                         perche' il punto 77 fa gia' sparire le altre a monte (GET /api/hikes). -->
+                    <!-- V2 UX PASSO 9: "Escursioni" (Esplora) resta SOLO scoperta - un
+                         elenco, "A cui puoi partecipare". "A cui partecipi" e "Completate"
+                         vivono ora solo in "Le mie escursioni" (viste-filtro), cosi' le due
+                         pagine non raccontano piu' le stesse escursioni due volte.
+                         renderHikesList (social.js) calcola comunque create/partecipo/fatte:
+                         gli servono per sottrarle da "disponibili". -->
                     <div class="my-hikes-group">
                         <h3 class="my-hikes-group-title">
                             <i data-lucide="compass"></i> <span data-i18n="hikes.disponibiliTitolo">A cui puoi partecipare</span>
                             <span class="badge badge-accent" id="count-hikes-disponibili">0</span>
                         </h3>
                         <div class="hikes-grid" id="hikes-list-disponibili"></div>
-                    </div>
-
-                    <div class="my-hikes-group">
-                        <h3 class="my-hikes-group-title">
-                            <i data-lucide="users"></i> <span data-i18n="hikes.partecipiTitolo">A cui partecipi</span>
-                            <span class="badge badge-green" id="count-hikes-partecipi">0</span>
-                        </h3>
-                        <div class="hikes-grid" id="hikes-list-partecipi"></div>
-                    </div>
-
-                    <div class="my-hikes-group">
-                        <h3 class="my-hikes-group-title">
-                            <i data-lucide="circle-check-big"></i> <span data-i18n="hikes.completateTitolo">Completate</span>
-                            <span class="badge badge-primary" id="count-hikes-completate">0</span>
-                        </h3>
-                        <div class="hikes-grid" id="hikes-list-completate"></div>
                     </div>
                 </section>
 
@@ -710,12 +882,16 @@
                      capire quali erano "le mie" richiedeva di scorrerlo tutto cercando i
                      riquadri colorati dentro le singole schede. Qui le stesse schede sono
                      divise in tre gruppi chiari. -->
-                <section id="my-hikes" class="page-section">
+                <!-- V2 UX PASSO 9: data-view = vista-filtro corrente (tutte | programma |
+                     completate), scelta dalle sotto-voci del menu. La governa
+                     impostaVistaMieEscursioni (social.js) + le regole CSS su
+                     #my-hikes[data-view="..."] [data-mh-group="..."]. -->
+                <section id="my-hikes" class="page-section" data-view="tutte">
                     <div class="my-hikes-summary" id="my-hikes-summary">
                         <!-- contatori generati da JS -->
                     </div>
 
-                    <div class="my-hikes-group">
+                    <div class="my-hikes-group" data-mh-group="organizzate">
                         <h3 class="my-hikes-group-title">
                             <i data-lucide="flag"></i> <span data-i18n="myHikes.organizzateTitolo">Organizzate da me</span>
                             <span class="badge badge-accent" id="count-created">0</span>
@@ -724,7 +900,7 @@
                         <div class="hikes-grid" id="my-hikes-created"></div>
                     </div>
 
-                    <div class="my-hikes-group">
+                    <div class="my-hikes-group" data-mh-group="partecipo">
                         <h3 class="my-hikes-group-title">
                             <i data-lucide="users"></i> <span data-i18n="myHikes.partecipoTitolo">A cui partecipo</span>
                             <span class="badge badge-green" id="count-joined">0</span>
@@ -740,7 +916,7 @@
                          dati, che resta due collezioni separate - vedi renderCompletate in
                          public/js/storico.js), stesso principio gia' provato sul profilo utente
                          (punto 74, renderProfileHikes). -->
-                    <div class="my-hikes-group">
+                    <div class="my-hikes-group" data-mh-group="completate">
                         <h3 class="my-hikes-group-title">
                             <i data-lucide="circle-check-big"></i> <span data-i18n="myHikes.completateTitolo">Escursioni completate</span>
                             <span class="badge badge-primary" id="count-completate">0</span>
@@ -783,7 +959,7 @@
                          progettati si vedevano SOLO dentro la scheda della Mappa, cioe' bisognava
                          sapere dov'erano per trovarli. Un percorso che si e' costruiti si cerca
                          qui, insieme alle proprie escursioni - e' la pagina delle proprie cose. -->
-                    <div class="my-hikes-group">
+                    <div class="my-hikes-group" data-mh-group="progetti">
                         <h3 class="my-hikes-group-title">
                             <i data-lucide="route"></i> <span data-i18n="myHikes.progettiTitolo">I miei progetti</span>
                             <span class="badge badge-accent" id="count-projects">0</span>
@@ -800,7 +976,10 @@
                      Qui sono divisi per genere, con quota e regione, e il conteggio di quelli
                      presi. L'elenco definitivo lo decidera' l'utente: per aggiungerne altri
                      basta una riga in public/js/badges.js. -->
-                <section id="badges" class="page-section">
+                <!-- V2 UX PASSO 11: id "badges" -> "progress" ("Progressi"). Tutti gli id
+                     FIGLI restano invariati (badges-summary, badges-cime, ...) -> renderBadges
+                     non cambia. navigateTo rimappa l'id vecchio "badges" -> "progress". -->
+                <section id="progress" class="page-section">
                     <div class="badges-summary" id="badges-summary">
                         <!-- contatori e barra di avanzamento generati da JS -->
                     </div>
@@ -840,6 +1019,48 @@
                         </h3>
                         <p class="small text-muted" data-i18n="badges.rifugi.sottotitolo">Rifugi e punti di appoggio lungo i percorsi.</p>
                         <div class="badges-grid" id="badges-rifugi"></div>
+                    </div>
+
+                    <!-- V2 UX PASSO 11: dettaglio della progressione per OGNI zona (la Home
+                         ne mostra solo una). Riempito da renderProgressoZoneTutte (badges.js). -->
+                    <div class="badges-group">
+                        <h3 class="badges-group-title">
+                            <i data-lucide="footprints"></i> <span data-i18n="progress.zoneTitolo">Il tuo cammino per zona</span>
+                        </h3>
+                        <p class="small text-muted" data-i18n="progress.zoneDesc">Quante vette hai conquistato in ogni zona, e quante te ne mancano per completarla.</p>
+                        <div id="progress-zones" class="progress-zones"></div>
+                    </div>
+
+                    <!-- V2 UX PASSO 11b: statistiche personali filtrabili per intervallo di
+                         date (il "punto 2" rinviato). escursioni/km/D+ da
+                         GET /api/tracking/totals?from=&to= (estremi vuoti = tutta la vita);
+                         le vette contate lato client dai timbri, come "Il tuo <anno>". -->
+                    <div class="badges-group" id="progress-stats">
+                        <h3 class="badges-group-title">
+                            <i data-lucide="bar-chart-2"></i> <span data-i18n="progress.statsTitolo">Le tue statistiche</span>
+                        </h3>
+                        <div class="progress-stats-controls">
+                            <label class="progress-stats-date">
+                                <span data-i18n="progress.statsDa">Da</span>
+                                <input type="date" id="progress-stats-from">
+                            </label>
+                            <label class="progress-stats-date">
+                                <span data-i18n="progress.statsA">A</span>
+                                <input type="date" id="progress-stats-to">
+                            </label>
+                            <div class="progress-stats-quick">
+                                <button type="button" class="btn btn-sm btn-secondary" data-range="anno" data-i18n="progress.statsQuestoAnno">Quest'anno</button>
+                                <button type="button" class="btn btn-sm btn-secondary" data-range="12mesi" data-i18n="progress.statsUltimi12">Ultimi 12 mesi</button>
+                                <button type="button" class="btn btn-sm btn-secondary" data-range="sempre" data-i18n="progress.statsSempre">Sempre</button>
+                            </div>
+                        </div>
+                        <div class="dash-year-grid" id="progress-stats-grid">
+                            <div class="total-box"><span class="total-val" id="stats-hikes">—</span><span class="total-lbl" data-i18n="dash.annoEscursioni">escursioni</span></div>
+                            <div class="total-box"><span class="total-val" id="stats-distance">—</span><span class="total-lbl" data-i18n="dash.kmPercorsi">km percorsi</span></div>
+                            <div class="total-box"><span class="total-val" id="stats-elevation">—</span><span class="total-lbl" data-i18n="dash.mDislivello">m di dislivello</span></div>
+                            <div class="total-box"><span class="total-val" id="stats-peaks">—</span><span class="total-lbl" data-i18n="dash.annoVette">vette</span></div>
+                        </div>
+                        <p class="small text-muted" id="progress-stats-note"></p>
                     </div>
                 </section>
 
@@ -951,7 +1172,7 @@
                                  l'ultima cosa che si imposta prima di partire, questa la prima che
                                  si fa quando si programma.
                                  Il contenuto lo disegna public/js/routeplanner.js. -->
-                            <div class="glass-card route-planner-card">
+                            <div class="glass-card route-planner-card" id="route-planner-card">
                                 <h4><i data-lucide="route"></i> <span data-i18n="rp.cardTitolo">Progetta un percorso</span></h4>
                                 <div id="route-planner-body"></div>
                             </div>
@@ -965,17 +1186,16 @@
                                  dire tre stati da tenere allineati a mano. -->
                             <div class="glass-card dead-man-card">
                                 <h4><i data-lucide="heart-pulse"></i> <span data-i18n="safety.dms.titolo">Timer di Sicurezza (Dead Man's Switch)</span></h4>
-                                <p class="small text-muted" data-i18n="safety.dms.desc">Imposta l'orario in cui pensi di essere rientrato. Se non fai il check-in entro quell'ora, scatta l'allarme verso il tuo contatto di emergenza.</p>
+                                <p class="small text-muted" data-i18n="safety.dms.desc">Imposta l'orario in cui pensi di essere rientrato. Se non fai il check-in entro quell'ora, scatta l'allarme via email verso tutti i tuoi contatti di emergenza.</p>
 
-                                <!-- Punto 21 di cose_da_fare.txt: qui c'era una casella di testo
-                                     libera, con dentro un numero di esempio scritto a mano, e il
-                                     valore finiva in localStorage - cioe' valeva solo su quel
-                                     browser. I contatti di emergenza sono obbligatori in
-                                     registrazione e stanno gia' sul database (Fase C): si scelgono
-                                     da li'. Riempita da popolaContattiEmergenza() in safety.js. -->
+                                <!-- A-3.2 (revisione sicurezza 21a): niente piu' selettore "chi
+                                     avvisare" - alla scadenza l'allarme va a TUTTI i contatti con
+                                     un'email. Qui la lista dei contatti, ognuno con "Rimuovi"
+                                     (dati di terzi che non hanno acconsentito a nulla). Disegnata
+                                     da renderContattiEmergenza() in safety.js. -->
                                 <div class="form-group">
-                                    <label for="safety-contact" data-i18n="safety.dms.chiAvvisare">Chi avvisare:</label>
-                                    <select id="safety-contact"></select>
+                                    <label data-i18n="safety.dms.contattiTitolo">Contatti di emergenza (avvisati tutti alla scadenza):</label>
+                                    <div id="safety-contacts-list" class="safety-contacts-list"></div>
                                     <p class="small text-muted" id="safety-contact-hint"></p>
                                 </div>
 
@@ -1043,8 +1263,8 @@
                                     <i data-lucide="check-circle"></i>
                                     <span data-i18n="safety.dms.notaOnesta">L'allarme funziona davvero, anche a telefono spento o pagina
                                     chiusa: se il timer scade, entro pochi minuti parte un'email
-                                    vera al contatto scelto. Non è comunque l'unica sicurezza: dì
-                                    sempre a qualcuno dove vai.</span>
+                                    vera a tutti i tuoi contatti di emergenza. Non è comunque
+                                    l'unica sicurezza: dì sempre a qualcuno dove vai.</span>
                                 </p>
                             </div>
 
@@ -1139,278 +1359,6 @@
                     </div>
                 </section>
 
-                <!-- 4. CARPOOLING -->
-                <section id="carpool" class="page-section">
-                    <div class="carpool-layout">
-                        <!-- Colonna di Sinistra: Calcolatore Pedaggi e Spese Generali -->
-                        <div class="carpool-column">
-                            <div class="glass-card carpool-calc-card">
-                                <h4><i data-lucide="calculator"></i> <span data-i18n="carpool.calc.titolo">Split Spese Viaggio</span></h4>
-                                <p class="small text-muted" data-i18n="carpool.calc.desc">Inserisci solo i dati di andata: il ritorno lo calcola da solo, sugli stessi numeri.</p>
-
-                                <form id="carpool-calc-form">
-                                    <div class="form-row">
-                                        <div class="form-group">
-                                            <label for="calc-dist" data-i18n="carpool.calc.distLabel">Distanza Andata (km):</label>
-                                            <input type="number" id="calc-dist" value="60" min="1" required>
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="calc-consumption" data-i18n="carpool.calc.consumoLabel">Consumo (L/100km):</label>
-                                            <input type="number" id="calc-consumption" value="6.5" step="0.1" required>
-                                        </div>
-                                    </div>
-                                    <div class="form-row">
-                                        <div class="form-group">
-                                            <label for="calc-fuel-price" data-i18n="carpool.calc.benzinaLabel">Costo Benzina (€/L):</label>
-                                            <input type="number" id="calc-fuel-price" value="1.82" step="0.01" required>
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="calc-toll" data-i18n="carpool.calc.pedaggioLabel">Pedaggio Andata (€):</label>
-                                            <input type="number" id="calc-toll" value="6.20" step="0.1" required>
-                                        </div>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="calc-extra" data-i18n="carpool.calc.extraLabel">Costi Aggiuntivi (es. parcheggio, rifugio):</label>
-                                        <input type="number" id="calc-extra" value="0" step="1">
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="calc-passengers" data-i18n="carpool.calc.personeLabel">Numero Totale Persone in Auto:</label>
-                                        <input type="number" id="calc-passengers" value="4" min="1" required>
-                                    </div>
-                                    <button type="button" class="btn btn-primary btn-block" id="btn-calculate-expenses" data-i18n="carpool.calc.ricalcolaBtn">Ricalcola Divisione Spese</button>
-                                </form>
-
-                                <div class="calc-results-box" id="calc-results">
-                                    <div class="result-row">
-                                        <span data-i18n="carpool.calc.resFuelLabel">Costo Carburante Totale:</span>
-                                        <strong id="res-fuel-cost">€ 14.19</strong>
-                                    </div>
-                                    <div class="result-row">
-                                        <span data-i18n="carpool.calc.resTotalLabel">Costo Totale Viaggio (andata e ritorno):</span>
-                                        <strong id="res-total-cost">€ 26.59</strong>
-                                    </div>
-                                    <div class="result-row highlight">
-                                        <span data-i18n="carpool.calc.resShareLabel">Quota a Persona:</span>
-                                        <strong id="res-share-cost">€ 6.65</strong>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Punto 46 di cose_da_fare.txt: gli annunci stanno DENTRO l'escursione
-                                 (hike.carpool.drivers), quindi si vedevano solo aprendo quella singola
-                                 escursione - non si ritrovavano piu'. Stesso difetto gia' risolto per
-                                 le escursioni (punto 10) e i progetti: le cose proprie in un posto solo. -->
-                            <div class="glass-card carpool-my-offers-card">
-                                <h4><i data-lucide="car"></i> <span data-i18n="carpool.offers.titolo">I Tuoi Annunci Auto</span></h4>
-                                <div id="my-carpool-offers-list">
-                                    <!-- Renderizzato da JS -->
-                                </div>
-                            </div>
-
-                            <!-- Sezione Offerta Passaggi -->
-                            <div class="glass-card carpool-driver-card">
-                                <h4><i data-lucide="plus-circle"></i> <span data-i18n="carpool.driver.titolo">Offri un Passaggio</span></h4>
-                                <form id="offer-carpool-form">
-                                    <div class="form-group">
-                                        <label for="offer-hike-select" data-i18n="carpool.driver.hikeLabel">Per quale escursione?</label>
-                                        <select id="offer-hike-select" class="form-control" required>
-                                            <!-- Popolato da JS -->
-                                        </select>
-                                    </div>
-                                    <div class="form-row">
-                                        <div class="form-group">
-                                            <label for="offer-city" data-i18n="carpool.driver.cityLabel">Città di Partenza:</label>
-                                            <input type="text" id="offer-city" placeholder="Es. Milano, Bergamo..." data-i18n-placeholder="carpool.driver.cityPlaceholder" required>
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="offer-seats" data-i18n="carpool.driver.seatsLabel">Posti Liberi in Auto:</label>
-                                            <input type="number" id="offer-seats" value="3" min="1" max="8" required>
-                                        </div>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="offer-distance" data-i18n="carpool.driver.distLabel">Distanza A/R stimata (km):</label>
-                                        <input type="number" id="offer-distance" value="120" min="1" required>
-                                    </div>
-                                    <button type="submit" class="btn btn-success btn-block" data-i18n="carpool.driver.pubblicaBtn">Pubblica Auto Disponibile</button>
-                                </form>
-                            </div>
-                        </div>
-
-                        <!-- Colonna di Destra: Matching Intelligente e Privacy Partenza -->
-                        <div class="carpool-column">
-                            <div class="glass-card carpool-match-card">
-                                <h4><i data-lucide="git-merge"></i> <span data-i18n="carpool.match.titolo">Abbinamenti Intelligenti & Privacy Partenze</span></h4>
-                                <p class="small text-muted" data-i18n="carpool.match.desc">Condividi la tua zona di partenza da casa. L'algoritmo mostrerà gli accoppiamenti solo se ci sono 2 o più persone della stessa zona per tutelare la privacy.</p>
-
-                                <div class="address-privacy-box">
-                                    <form id="privacy-address-form">
-                                        <div class="form-group">
-                                            <label for="user-home-city" data-i18n="carpool.match.homeLabel">Il tuo indirizzo / zona di partenza da casa:</label>
-                                            <div class="input-with-btn">
-                                                <input type="text" id="user-home-city" placeholder="Es. Milano Loreto, Bergamo Alta..." data-i18n-placeholder="carpool.match.homePlaceholder" required>
-                                                <button type="submit" class="btn btn-primary" data-i18n="carpool.match.salvaZonaBtn">Salva Zona</button>
-                                            </div>
-                                        </div>
-                                    </form>
-                                    <div class="privacy-status" id="privacy-match-status">
-                                        <!-- Mostrato da JS -->
-                                    </div>
-                                </div>
-
-                                <div class="hike-carpools-section">
-                                    <h5 data-i18n="carpool.match.dispTitolo">Auto e Passaggi disponibili:</h5>
-                                    <div id="hike-carpools-list">
-                                        <!-- Renderizzato da JS -->
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- 5. ZAINO INTELLIGENTE -->
-                <section id="backpack" class="page-section">
-                    <div class="backpack-layout">
-                        <!-- Configurazione Zaino -->
-                        <div class="backpack-config">
-                            <div class="glass-card config-backpack-card">
-                                <h4><i data-lucide="settings"></i> <span data-i18n="backpack.gen.titolo">Generatore Checklist Intelligente</span></h4>
-                                <p class="small text-muted" data-i18n="backpack.gen.desc">Inserisci i dati ambientali dell'escursione per ottenere una checklist consigliata e dividere i pesi con il gruppo.</p>
-
-                                <!-- Punto 23: dire per QUALE escursione e' questa lista. Prima il
-                                     sistema sceglieva da solo, arrivando a prendere l'escursione di
-                                     un altro utente, e dallo schermo non c'era modo di accorgersene.
-                                     Il selettore (aggiunto dopo) lascia scegliere: prima sceglieva
-                                     sempre la prossima in programma, senza alternativa. -->
-                                <div class="form-group">
-                                    <label for="backpack-hike-select" data-i18n="backpack.gen.perQualeLabel">Prepara lo zaino per:</label>
-                                    <select id="backpack-hike-select"></select>
-                                </div>
-                                <div id="backpack-hike-context" class="backpack-context-box"></div>
-
-                                <form id="backpack-generator-form">
-                                    <div class="form-group">
-                                        <label for="backpack-season" data-i18n="backpack.gen.stagioneLabel">Stagione:</label>
-                                        <select id="backpack-season">
-                                            <option value="estate" data-i18n="backpack.gen.stagioneEstate">Estate (Caldo, temporali improvvisi)</option>
-                                            <option value="inverno" data-i18n="backpack.gen.stagioneInverno">Inverno (Freddo intenso, ghiaccio, neve)</option>
-                                            <option value="autunno-primavera" data-i18n="backpack.gen.stagioneMezza">Mezza Stagione (Vento, pioggia, strati termici)</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-row">
-                                        <div class="form-group">
-                                            <label for="backpack-altitude" data-i18n="backpack.gen.quotaLabel">Quota Massima (metri):</label>
-                                            <input type="number" id="backpack-altitude" value="2600" min="0">
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="backpack-duration" data-i18n="backpack.gen.durataLabel">Durata Escursione:</label>
-                                            <select id="backpack-duration">
-                                                <option value="giornata" data-i18n="backpack.gen.durataGiornata">Giornata Singola</option>
-                                                <option value="plurigiorno" data-i18n="backpack.gen.durataPluri">Più Giorni (Rifugio/Tenda)</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="form-group">
-                                        <label><input type="checkbox" id="backpack-rain-expected" checked> <span data-i18n="backpack.gen.pioggiaCheck">Previsione Pioggia / Maltempo</span></label>
-                                    </div>
-                                    <button type="button" class="btn btn-primary btn-block" id="btn-generate-backpack" data-i18n="backpack.gen.generaBtn">Genera Checklist Dinamica</button>
-                                </form>
-                            </div>
-
-                            <!-- Reputazione Pesi Condivisi -->
-                            <div class="glass-card weight-distribution-card">
-                                <h4><i data-lucide="scale"></i> <span data-i18n="backpack.weight.titolo">Ripartizione dei Pesi del Gruppo</span></h4>
-                                <p class="small text-muted" data-i18n="backpack.weight.desc">Solo gli oggetti che si dividono: tenda, fornello, kit di primo soccorso. Le cose personali (giacca, acqua, cibo) le porta ognuno e non compaiono qui.</p>
-                                <div id="backpack-weight-distribution" class="weight-dist-list">
-                                    <!-- Renderizzato da JS -->
-                                </div>
-
-                                <!-- Punto 25 di cose_da_fare.txt: dichiarare un oggetto che
-                                     porti TU per il gruppo, con quante persone copre. Prima del
-                                     blocco 3 nessuna schermata permetteva di aggiungere un
-                                     articolo alla lista dell'escursione - i due template
-                                     esistenti arrivavano dallo script di popolamento - quindi
-                                     "porto io una tenda da 3 posti" non si poteva proprio dire.
-                                     Riempito e mostrato/nascosto da renderWeightDistribution. -->
-                                <div id="backpack-add-shared" class="backpack-add-shared hidden">
-                                    <h5><i data-lucide="plus-circle"></i> <span data-i18n="backpack.shared.titolo">Porto io una cosa per tutti</span></h5>
-                                    <div class="form-group">
-                                        <label for="shared-item-name" data-i18n="backpack.form.cosaLabel">Che cosa:</label>
-                                        <input type="text" id="shared-item-name" maxlength="60" placeholder="Es. Tenda 3 posti" data-i18n-placeholder="backpack.shared.nomePlaceholder">
-                                    </div>
-                                    <div class="form-row">
-                                        <div class="form-group">
-                                            <label for="shared-item-weight" data-i18n="backpack.form.pesoLabel">Peso (grammi):</label>
-                                            <input type="number" id="shared-item-weight" min="1" max="30000" placeholder="Es. 2400" data-i18n-placeholder="backpack.shared.pesoPlaceholder">
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="shared-item-covers" data-i18n="backpack.shared.copreLabel">Per quante persone:</label>
-                                            <input type="number" id="shared-item-covers" min="1" max="20" placeholder="Vuoto = tutti" data-i18n-placeholder="backpack.shared.coprePlaceholder">
-                                        </div>
-                                    </div>
-                                    <p class="small text-muted" data-i18n="backpack.shared.hint">Il numero di persone serve alle cose che bastano per pochi, come la tenda. Un fornello basta al gruppo: lascia vuoto.</p>
-                                    <button type="button" class="btn btn-secondary btn-sm btn-block" id="btn-add-shared-item" data-i18n="backpack.shared.aggiungiBtn">Aggiungi alla lista del gruppo</button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Lista Articoli dello Zaino -->
-                        <div class="backpack-list-area">
-                            <div class="glass-card backpack-list-card">
-                                <div class="card-header-row">
-                                    <h4><i data-lucide="check-square"></i> <span data-i18n="backpack.list.titolo">La tua Checklist</span></h4>
-                                    <span class="badge badge-accent" id="backpack-badge-rules">Altitudine > 2500m</span>
-                                </div>
-                                <div class="backpack-rules-notice warning" id="backpack-rules-alert">
-                                    <i data-lucide="alert-triangle"></i>
-                                    <span>Quota superiore a 2500 metri ed è prevista pioggia: <strong>Guscio Impermeabile</strong> e <strong>Ramponcini</strong> sono stati inseriti come obbligatori!</span>
-                                </div>
-
-                                <!-- Punto 25: avviso quando un oggetto condiviso non basta per
-                                     tutti (la tenda da 3 posti mentre si e' in 4). Riempito da
-                                     mostraAvvisiCopertura in backpack.js. -->
-                                <div class="backpack-rules-notice danger hidden" id="backpack-coverage-alert"></div>
-
-                                <!-- Punto 23: prima la pioggia era data SEMPRE per prevista. Ora la
-                                     previsione e' vera, e quando non si puo' sapere (escursione troppo
-                                     lontana nel tempo) lo si dice invece di inventare. -->
-                                <p class="small text-muted hidden" id="backpack-weather-note"></p>
-                                
-                                <div class="backpack-items-categories" id="backpack-categories-container">
-                                    <!-- Renderizzato da JS in categorie: Abbigliamento, Attrezzatura, Alimentazione, Sicurezza/Emergenza -->
-                                </div>
-
-                                <!-- Punto 47 di cose_da_fare.txt: aggiungere un oggetto PERSONALE a
-                                     mano, non solo condiviso (gia' fatto al punto 25). Piu' semplice
-                                     del modulo condiviso: niente "per quante persone", e' solo tuo. -->
-                                <div class="backpack-add-personal">
-                                    <h5><i data-lucide="plus-circle"></i> <span data-i18n="backpack.personal.titolo">Aggiungi una tua cosa</span></h5>
-                                    <div class="form-row">
-                                        <div class="form-group">
-                                            <label for="personal-item-name" data-i18n="backpack.form.cosaLabel">Che cosa:</label>
-                                            <input type="text" id="personal-item-name" maxlength="60" placeholder="Es. Bastoncini da trekking" data-i18n-placeholder="backpack.personal.nomePlaceholder">
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="personal-item-weight" data-i18n="backpack.form.pesoLabel">Peso (grammi):</label>
-                                            <input type="number" id="personal-item-weight" min="1" max="30000" placeholder="Es. 400" data-i18n-placeholder="backpack.personal.pesoPlaceholder">
-                                        </div>
-                                    </div>
-                                    <button type="button" class="btn btn-secondary btn-sm btn-block" id="btn-add-personal-item" data-i18n="backpack.personal.aggiungiBtn">Aggiungi alla mia lista</button>
-                                </div>
-
-                                <!-- Punto 47: tasto finale. Non e' solo un applauso: controlla che
-                                     tutto cio' che le regole hanno reso OBBLIGATORIO sia gia' spuntato
-                                     prima di dire che lo zaino e' pronto. -->
-                                <div class="backpack-confirmed-banner hidden" id="backpack-confirmed-banner">
-                                    <i data-lucide="check-circle"></i>
-                                    <span data-i18n="backpack.list.confermatoBanner">Zaino confermato: hai tutto l'obbligatorio.</span>
-                                </div>
-                                <button type="button" class="btn btn-success btn-block" id="btn-confirm-backpack" data-i18n="backpack.list.confermaBtn">Conferma zaino</button>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
                 <!-- 6. SICUREZZA & MESH -->
                 <section id="safety" class="page-section">
                     <div class="safety-layout">
@@ -1485,9 +1433,23 @@
                                  (richiesta di Denis). Riempite da renderFollowLists()
                                  (public/js/social.js): "chi seguo" da CamoscioState.following,
                                  "chi mi segue" da GET /api/follow/followers. -->
-                            <div class="glass-card follow-people-card">
+                            <div class="glass-card follow-people-card" id="follow-people-card">
                                 <h4><i data-lucide="users"></i> <span data-i18n="follow.sezioneTitolo">Persone</span></h4>
                                 <p class="small text-muted" data-i18n="follow.sezioneDesc">Chi segui e chi ti segue. Tocca un nome per aprire il profilo.</p>
+
+                                <!-- V2 UX PASSO 10: la ex-pagina "Cerca Persone" (#people-search, rimossa)
+                                     vive qui dentro. Id invariati (#people-search-input /
+                                     #people-search-results) -> peoplesearch.js non cambia. -->
+                                <div class="follow-people-search">
+                                    <p class="small text-muted" data-i18n="peopleSearch.sottotitolo">Scrivi il nome utente di una persona (es. DaniWoll).</p>
+                                    <div class="trailhead-search-row">
+                                        <div class="trailhead-search-field">
+                                            <i data-lucide="search"></i>
+                                            <input type="text" id="people-search-input" autocomplete="off" maxlength="60" placeholder="Es. DaniWoll" data-i18n-placeholder="peopleSearch.placeholder">
+                                        </div>
+                                    </div>
+                                    <div id="people-search-results" class="hike-carpools-list"></div>
+                                </div>
 
                                 <button type="button" class="follow-list-toggle" data-follow-toggle="following" aria-expanded="false">
                                     <span><span data-i18n="follow.seguitiTitolo">Persone che segui</span> <span class="small text-muted" id="following-count"></span></span>
@@ -1620,24 +1582,11 @@
                     </div>
                 </section>
 
-                <!-- Ricerca persone - chiesta da Denis in sessione (01/08/2026), non in
-                     cose_da_fare.txt. Filtro client-side su window.CamoscioState.users (gia'
-                     l'elenco completo, nessuna rotta nuova): vedi public/js/peoplesearch.js.
-                     La ricerca parte al quarto carattere scritto (confermato con Denis,
-                     esempio "Dani" -> "DaniWoll"). -->
-                <section id="people-search" class="page-section">
-                    <div class="glass-card">
-                        <h4><i data-lucide="search"></i> <span data-i18n="peopleSearch.titolo">Cerca Persone</span></h4>
-                        <p class="small text-muted" data-i18n="peopleSearch.sottotitolo">Scrivi il nome utente di una persona (es. DaniWoll).</p>
-                        <div class="trailhead-search-row">
-                            <div class="trailhead-search-field">
-                                <i data-lucide="search"></i>
-                                <input type="text" id="people-search-input" autocomplete="off" maxlength="60" placeholder="Es. DaniWoll" data-i18n-placeholder="peopleSearch.placeholder">
-                            </div>
-                        </div>
-                        <div id="people-search-results" class="hike-carpools-list"></div>
-                    </div>
-                </section>
+                <!-- V2 UX PASSO 10: la sezione #people-search e' stata rimossa. La ricerca
+                     persone (idea di Denis, 01/08/2026 - filtro client-side su
+                     window.CamoscioState.users, vedi public/js/peoplesearch.js, parte al
+                     quarto carattere) vive ora nella card "Persone" di #social qui sopra.
+                     navigateTo('people-search') fa da alias -> #social + scroll alla card. -->
 
                 <!-- Pagina profilo di UN ALTRO utente - non richiesta in cose_da_fare.txt,
                      chiesta da Denis in sessione (01/08/2026). Non ha una voce nella barra
@@ -1714,10 +1663,57 @@
                         <!-- Riempito da JS SOLO se ho un badge personale -->
                     </div>
 
-                    <!-- Card Profilo: foto/bio, esperto locale, cambio password - stesso markup
-                         che prima stava nella Dashboard (punto 40, punto 41: KYC tolta). -->
+                    <!-- V2 UX PASSO 12: #my-profile e' SOLA VISTA - come mi vedono gli altri
+                         (stesso schema di #user-profile). Bio in sola lettura (riempita da
+                         renderMyProfilePage), esperto locale = solo lo stato dichiarato +
+                         le cime col livello (renderProfileIdentity, come su #user-profile).
+                         Foto/bio/esperto/password si modificano in "Impostazioni" (#settings). -->
+                    <div id="my-profile-bio-view" class="profile-bio-view"></div>
+                    <div id="my-profile-local-expert"></div>
+                    <!-- Punto 63b: le cime dove ho raggiunto un livello (5+ salite) -
+                         guadagnate, non dichiarate. Riempito da renderProfileIdentity. -->
+                    <div id="my-profile-expert-peaks"></div>
+
+                    <p class="profile-edit-link-row">
+                        <button type="button" class="btn btn-sm btn-secondary btn-nav-trigger" data-target="settings">
+                            <i data-lucide="settings"></i> <span data-i18n="myProfile.modificaInImpostazioni">Modifica in Impostazioni</span> →
+                        </button>
+                    </p>
+
+                    <!-- Punto 74: stesso elenco di #user-profile-hikes qui sopra, riempito dalla
+                         stessa funzione condivisa renderProfileHikes(). -->
+                    <div class="profile-hikes-group">
+                        <h3 class="badges-group-title">
+                            <i data-lucide="footprints"></i> <span data-i18n="profile.escursioni">Escursioni</span>
+                        </h3>
+                        <div id="my-profile-hikes"></div>
+                    </div>
+
+                    <!-- Punto 80/G: stesso elenco di #user-profile-bookmarks qui sopra,
+                         riempito dalla stessa funzione condivisa renderProfileBookmarks(). -->
+                    <div class="profile-hikes-group">
+                        <h3 class="badges-group-title">
+                            <i data-lucide="bookmark"></i> <span data-i18n="profile.sentieriPreferiti">Sentieri preferiti 🐐</span>
+                        </h3>
+                        <div id="my-profile-bookmarks"></div>
+                    </div>
+
+                    <div class="badges-group">
+                        <h3 class="badges-group-title">
+                            <i data-lucide="award"></i> <span data-i18n="profile.badgeGuadagnati">Badge guadagnati</span>
+                        </h3>
+                        <div class="badges-grid" id="my-profile-badges"></div>
+                    </div>
+                </section>
+
+                <!-- V2 UX PASSO 12: IMPOSTAZIONI (#settings, NUOVA). Configurazione
+                     dell'account. Contiene SOLO cio' che gia' esisteva in #my-profile,
+                     SPOSTATO qui verbatim (ids invariati -> profile.js/renderProfileCard
+                     non cambiano) + lingua + logout + i placeholder. Nessuna feature nuova:
+                     le righe placeholder sono inerti, struttura pronta. -->
+                <section id="settings" class="page-section">
                     <div class="glass-card profile-card">
-                        <h4><i data-lucide="user-check"></i> <span data-i18n="myProfile.cardTitolo">Il Tuo Profilo</span></h4>
+                        <h4><i data-lucide="user-check"></i> <span data-i18n="settings.accountTitolo">Account</span></h4>
 
                         <div class="profile-section photo-bio-section">
                             <div class="photo-upload-row">
@@ -1745,17 +1741,10 @@
                                     <button class="btn btn-sm btn-primary" id="btn-save-local-expert" data-i18n="common.salva">Salva</button>
                                 </div>
                             </div>
-                            <!-- Punto 63b, 17/08/2026: le cime dove ho raggiunto un livello
-                                 (5+ salite) - guadagnate, non c'e' niente da dichiarare qui
-                                 sotto come sopra. Riempito da renderProfileIdentity. -->
-                            <div id="my-profile-expert-peaks"></div>
                         </div>
 
-                        <!-- Punto 7 di cose_da_fare.txt: prima di oggi NON esisteva nessuna
-                             schermata per cambiare la password. Chi voleva solo cambiarla
-                             doveva fingere di averla dimenticata e passare dall'email.
-                             Nascosta per gli account demo (entrano senza password, non ne
-                             hanno una da cambiare): la mostra profile.js. -->
+                        <!-- Punto 7: cambio password. Nascosta per gli account demo (entrano
+                             senza password): la mostra renderProfileCard (app.js). -->
                         <div class="profile-section change-password-section hidden" id="change-password-section">
                             <p class="small text-muted" data-i18n="myProfile.cambioPwdDesc">Cambia la password del tuo account. Serve quella attuale.</p>
                             <div class="form-group">
@@ -1774,29 +1763,58 @@
                         </div>
                     </div>
 
-                    <!-- Punto 74: stesso elenco di #user-profile-hikes qui sopra, riempito dalla
-                         stessa funzione condivisa renderProfileHikes(). -->
-                    <div class="profile-hikes-group">
-                        <h3 class="badges-group-title">
-                            <i data-lucide="footprints"></i> <span data-i18n="profile.escursioni">Escursioni</span>
-                        </h3>
-                        <div id="my-profile-hikes"></div>
+                    <div class="glass-card settings-card">
+                        <h4><i data-lucide="languages"></i> <span data-i18n="settings.linguaTitolo">Lingua</span></h4>
+                        <div class="settings-row">
+                            <span class="small text-muted" data-i18n="settings.linguaDesc">Le stesse due bandiere restano anche nell'intestazione.</span>
+                            <div class="lang-switcher" role="group" aria-label="Lingua / Language">
+                                <button type="button" class="lang-flag-btn" data-lang="it" title="Italiano" aria-label="Italiano" aria-pressed="true">
+                                    <svg viewBox="0 0 3 2" aria-hidden="true"><rect width="1" height="2" fill="#009246"/><rect width="1" height="2" x="1" fill="#fff"/><rect width="1" height="2" x="2" fill="#ce2b37"/></svg>
+                                </button>
+                                <button type="button" class="lang-flag-btn" data-lang="en" title="English" aria-label="English" aria-pressed="false">
+                                    <svg viewBox="0 0 60 30" aria-hidden="true"><rect width="60" height="30" fill="#00247d"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" stroke-width="6"/><path d="M30,0 V30 M0,15 H60" stroke="#fff" stroke-width="10"/><path d="M30,0 V30 M0,15 H60" stroke="#cf142b" stroke-width="6"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#cf142b" stroke-width="2"/></svg>
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
-                    <!-- Punto 80/G: stesso elenco di #user-profile-bookmarks qui sopra,
-                         riempito dalla stessa funzione condivisa renderProfileBookmarks(). -->
-                    <div class="profile-hikes-group">
-                        <h3 class="badges-group-title">
-                            <i data-lucide="bookmark"></i> <span data-i18n="profile.sentieriPreferiti">Sentieri preferiti 🐐</span>
-                        </h3>
-                        <div id="my-profile-bookmarks"></div>
+                    <div class="glass-card settings-card">
+                        <h4><i data-lucide="log-out"></i> <span data-i18n="settings.sessioneTitolo">Sessione</span></h4>
+                        <div class="settings-row">
+                            <span class="small text-muted" data-i18n="settings.logoutDesc">Chiudi la sessione su questo dispositivo.</span>
+                            <button type="button" class="btn btn-sm btn-secondary" id="btn-settings-logout">
+                                <i data-lucide="log-out"></i> <span data-i18n="header.esci">Esci</span>
+                            </button>
+                        </div>
                     </div>
 
-                    <div class="badges-group">
-                        <h3 class="badges-group-title">
-                            <i data-lucide="award"></i> <span data-i18n="profile.badgeGuadagnati">Badge guadagnati</span>
-                        </h3>
-                        <div class="badges-grid" id="my-profile-badges"></div>
+                    <!-- A-3 (revisione sicurezza 21a): privacy e posizione. Revoca del consenso
+                         alla geolocalizzazione (GDPR: il consenso deve essere ritirabile con la
+                         stessa facilita' con cui e' stato dato). -->
+                    <div class="glass-card settings-card">
+                        <h4><i data-lucide="shield"></i> <span data-i18n="settings.privacyTitolo">Privacy e posizione</span></h4>
+                        <div class="settings-row">
+                            <span class="small text-muted" id="settings-geo-consent-state"></span>
+                            <button type="button" class="btn btn-sm btn-secondary hidden" id="btn-revoke-geo-consent" data-i18n="settings.revocaGeo">Revoca il consenso alla posizione</button>
+                        </div>
+                        <p class="small text-muted" data-i18n="settings.geoConsentNota">Revocando, il sito ti richiederà di nuovo il consenso la prossima volta che una funzione usa la posizione. Per impedire del tutto al browser di condividerla, revoca anche il permesso del sito dalle impostazioni del browser. Le tracce GPS già registrate restano: puoi cancellarle una per una da «Le mie escursioni».</p>
+
+                        <div class="settings-row">
+                            <span class="small text-muted" data-i18n="settings.esportaDesc">Scarica in un unico file JSON tutti i dati che il sito conserva sul tuo account.</span>
+                            <button type="button" class="btn btn-sm btn-secondary" id="btn-export-my-data" data-i18n="settings.esportaDati">Scarica i miei dati</button>
+                        </div>
+                    </div>
+
+                    <!-- Struttura pronta, nessuna feature nuova: queste righe sono inerti
+                         finche' non diventano punti a se' ("Elimina account" e' il prossimo). -->
+                    <div class="glass-card settings-card settings-placeholder">
+                        <h4><i data-lucide="sliders-horizontal"></i> <span data-i18n="settings.altreTitolo">Altre impostazioni</span></h4>
+                        <p class="small text-muted" data-i18n="settings.altreDesc">In arrivo. Per ora non sono attive.</p>
+                        <ul class="settings-placeholder-list">
+                            <li data-i18n="settings.phNotifiche">Gestione notifiche</li>
+                            <li data-i18n="settings.phEmail">Cambio email</li>
+                            <li data-i18n="settings.phElimina">Elimina account</li>
+                        </ul>
                     </div>
                 </section>
 
@@ -1828,17 +1846,292 @@
                      sopra: nessuna voce in barra laterale, si apre cliccando "Chat" sulla card
                      di un'escursione (vedi public/js/hikepage.js, window.showHikePage(hikeId)).
                      Niente foto ne' ruoli admin, a differenza della pagina squadra. -->
-                <section id="hike-page" class="page-section">
-                    <div class="glass-card" id="hike-page-header">
-                        <!-- Riempito da JS: titolo dell'escursione -->
+                <section id="hike-page" class="page-section" data-hp-tab="dettagli">
+                    <!-- V2 UX PASSO 14b: hike-page a tab interni. Una sola vista per volta
+                         (attributo data-hp-tab sulla <section>, CSS). "Carpooling" e' il
+                         contenuto della ex .page-section #carpool, ora legato a QUESTA
+                         escursione (niente selettore "per quale escursione"). PASSO 14c
+                         aggiunge il tab "Zaino". -->
+                    <div class="hike-page-tabs" role="tablist">
+                        <button type="button" class="hp-tab" data-hp-tab="dettagli" role="tab">
+                            <i data-lucide="info"></i> <span data-i18n="hikePage.tabDettagli">Dettagli</span>
+                        </button>
+                        <button type="button" class="hp-tab" data-hp-tab="chat" role="tab">
+                            <i data-lucide="message-circle"></i> <span data-i18n="hikePage.tabChat">Chat</span>
+                        </button>
+                        <button type="button" class="hp-tab" data-hp-tab="carpool" role="tab">
+                            <i data-lucide="car"></i> <span data-i18n="hikePage.tabCarpool">Carpooling</span>
+                        </button>
+                        <button type="button" class="hp-tab" data-hp-tab="backpack" role="tab">
+                            <i data-lucide="backpack"></i> <span data-i18n="hikePage.tabZaino">Zaino</span>
+                        </button>
                     </div>
 
-                    <div class="glass-card" id="hike-page-members">
-                        <!-- Riempito da JS: elenco partecipanti -->
+                    <div class="hp-panel" data-hp-panel="dettagli">
+                        <div class="glass-card" id="hike-page-header">
+                            <!-- Riempito da JS: titolo dell'escursione -->
+                        </div>
+                        <div class="glass-card" id="hike-page-members">
+                            <!-- Riempito da JS: elenco partecipanti -->
+                        </div>
                     </div>
 
-                    <div class="glass-card" id="hike-page-chat">
-                        <!-- Riempito da JS: chat riservata ai soli partecipanti dell'escursione -->
+                    <div class="hp-panel" data-hp-panel="chat">
+                        <div class="glass-card" id="hike-page-chat">
+                            <!-- Riempito da JS: chat riservata ai soli partecipanti dell'escursione -->
+                        </div>
+                    </div>
+
+                    <div class="hp-panel" data-hp-panel="carpool">
+                        <div class="carpool-layout">
+                            <div class="carpool-column">
+                                <!-- Il tuo annuncio auto PER QUESTA uscita (era "I Tuoi Annunci
+                                     Auto", su tutte le escursioni - punto 46). 0 o 1 annuncio:
+                                     submitCarpoolOffer sostituisce sempre il precedente. -->
+                                <div class="glass-card carpool-my-offers-card">
+                                    <h4><i data-lucide="car"></i> <span data-i18n="carpool.offers.titoloUscita">Il tuo annuncio auto</span></h4>
+                                    <div id="my-carpool-offers-list">
+                                        <!-- Renderizzato da JS -->
+                                    </div>
+                                </div>
+
+                                <div class="glass-card carpool-driver-card">
+                                    <h4><i data-lucide="plus-circle"></i> <span data-i18n="carpool.driver.titolo">Offri un Passaggio</span></h4>
+                                    <form id="offer-carpool-form">
+                                        <div class="form-row">
+                                            <div class="form-group">
+                                                <label for="offer-city" data-i18n="carpool.driver.cityLabel">Città di Partenza:</label>
+                                                <input type="text" id="offer-city" placeholder="Es. Milano, Bergamo..." data-i18n-placeholder="carpool.driver.cityPlaceholder" required>
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="offer-seats" data-i18n="carpool.driver.seatsLabel">Posti Liberi in Auto:</label>
+                                                <input type="number" id="offer-seats" value="3" min="1" max="8" required>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="offer-distance" data-i18n="carpool.driver.distLabel">Distanza A/R stimata (km):</label>
+                                            <input type="number" id="offer-distance" value="120" min="1" required>
+                                        </div>
+                                        <button type="submit" class="btn btn-success btn-block" data-i18n="carpool.driver.pubblicaBtn">Pubblica Auto Disponibile</button>
+                                    </form>
+                                </div>
+
+                                <div class="glass-card carpool-calc-card">
+                                    <h4><i data-lucide="calculator"></i> <span data-i18n="carpool.calc.titolo">Split Spese Viaggio</span></h4>
+                                    <p class="small text-muted" data-i18n="carpool.calc.desc">Inserisci solo i dati di andata: il ritorno lo calcola da solo, sugli stessi numeri.</p>
+
+                                    <form id="carpool-calc-form">
+                                        <div class="form-row">
+                                            <div class="form-group">
+                                                <label for="calc-dist" data-i18n="carpool.calc.distLabel">Distanza Andata (km):</label>
+                                                <input type="number" id="calc-dist" value="60" min="1" required>
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="calc-consumption" data-i18n="carpool.calc.consumoLabel">Consumo (L/100km):</label>
+                                                <input type="number" id="calc-consumption" value="6.5" step="0.1" required>
+                                            </div>
+                                        </div>
+                                        <div class="form-row">
+                                            <div class="form-group">
+                                                <label for="calc-fuel-price" data-i18n="carpool.calc.benzinaLabel">Costo Benzina (€/L):</label>
+                                                <input type="number" id="calc-fuel-price" value="1.82" step="0.01" required>
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="calc-toll" data-i18n="carpool.calc.pedaggioLabel">Pedaggio Andata (€):</label>
+                                                <input type="number" id="calc-toll" value="6.20" step="0.1" required>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="calc-extra" data-i18n="carpool.calc.extraLabel">Costi Aggiuntivi (es. parcheggio, rifugio):</label>
+                                            <input type="number" id="calc-extra" value="0" step="1">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="calc-passengers" data-i18n="carpool.calc.personeLabel">Numero Totale Persone in Auto:</label>
+                                            <input type="number" id="calc-passengers" value="4" min="1" required>
+                                        </div>
+                                        <button type="button" class="btn btn-primary btn-block" id="btn-calculate-expenses" data-i18n="carpool.calc.ricalcolaBtn">Ricalcola Divisione Spese</button>
+                                    </form>
+
+                                    <div class="calc-results-box" id="calc-results">
+                                        <div class="result-row">
+                                            <span data-i18n="carpool.calc.resFuelLabel">Costo Carburante Totale:</span>
+                                            <strong id="res-fuel-cost">€ 14.19</strong>
+                                        </div>
+                                        <div class="result-row">
+                                            <span data-i18n="carpool.calc.resTotalLabel">Costo Totale Viaggio (andata e ritorno):</span>
+                                            <strong id="res-total-cost">€ 26.59</strong>
+                                        </div>
+                                        <div class="result-row highlight">
+                                            <span data-i18n="carpool.calc.resShareLabel">Quota a Persona:</span>
+                                            <strong id="res-share-cost">€ 6.65</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="carpool-column">
+                                <div class="glass-card carpool-match-card">
+                                    <h4><i data-lucide="git-merge"></i> <span data-i18n="carpool.match.titolo">Abbinamenti Intelligenti & Privacy Partenze</span></h4>
+                                    <p class="small text-muted" data-i18n="carpool.match.desc">Condividi la tua zona di partenza da casa. L'algoritmo mostrerà gli accoppiamenti solo se ci sono 2 o più persone della stessa zona per tutelare la privacy.</p>
+
+                                    <div class="address-privacy-box">
+                                        <form id="privacy-address-form">
+                                            <div class="form-group">
+                                                <label for="user-home-city" data-i18n="carpool.match.homeLabel">Comune / zona di partenza (non l'indirizzo esatto):</label>
+                                                <div class="input-with-btn">
+                                                    <input type="text" id="user-home-city" maxlength="100" placeholder="Es. Roma Nord, L'Aquila, Rieti..." data-i18n-placeholder="carpool.match.homePlaceholder" required>
+                                                    <button type="submit" class="btn btn-primary" data-i18n="carpool.match.salvaZonaBtn">Salva Zona</button>
+                                                </div>
+                                            </div>
+                                        </form>
+                                        <div class="privacy-status" id="privacy-match-status">
+                                            <!-- Mostrato da JS -->
+                                        </div>
+                                    </div>
+
+                                    <div class="hike-carpools-section">
+                                        <h5 data-i18n="carpool.match.dispTitolo">Auto e Passaggi disponibili:</h5>
+                                        <div id="hike-carpools-list">
+                                            <!-- Renderizzato da JS -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="hp-panel" data-hp-panel="backpack">
+                    <div class="backpack-layout">
+                        <!-- Configurazione Zaino -->
+                        <div class="backpack-config">
+                            <div class="glass-card config-backpack-card">
+                                <h4><i data-lucide="settings"></i> <span data-i18n="backpack.gen.titolo">Generatore Checklist Intelligente</span></h4>
+                                <p class="small text-muted" data-i18n="backpack.gen.desc">Inserisci i dati ambientali per ottenere una checklist consigliata. La tua lista è privata: gli altri partecipanti non la vedono.</p>
+
+                                <!-- V2 UX PASSO 14c: niente piu' selettore "prepara lo zaino
+                                     per" - lo Zaino e' un tab della singola escursione, il
+                                     contesto e' sempre QUESTA uscita. -->
+                                <div id="backpack-hike-context" class="backpack-context-box"></div>
+
+                                <form id="backpack-generator-form">
+                                    <div class="form-group">
+                                        <label for="backpack-season" data-i18n="backpack.gen.stagioneLabel">Stagione:</label>
+                                        <select id="backpack-season">
+                                            <option value="estate" data-i18n="backpack.gen.stagioneEstate">Estate (Caldo, temporali improvvisi)</option>
+                                            <option value="inverno" data-i18n="backpack.gen.stagioneInverno">Inverno (Freddo intenso, ghiaccio, neve)</option>
+                                            <option value="autunno-primavera" data-i18n="backpack.gen.stagioneMezza">Mezza Stagione (Vento, pioggia, strati termici)</option>
+                                        </select>
+                                    </div>
+                                    <!-- Blocco zaino/carpooling per-partecipanti: via il <select>
+                                         "durata escursione" - la durata la dice l'escursione
+                                         (hike.multiDay), non l'utente. Il generatore manuale
+                                         resta per stagione / quota / pioggia. -->
+                                    <div class="form-group">
+                                        <label for="backpack-altitude" data-i18n="backpack.gen.quotaLabel">Quota Massima (metri):</label>
+                                        <input type="number" id="backpack-altitude" value="2600" min="0">
+                                    </div>
+                                    <div class="form-group">
+                                        <label><input type="checkbox" id="backpack-rain-expected" checked> <span data-i18n="backpack.gen.pioggiaCheck">Previsione Pioggia / Maltempo</span></label>
+                                    </div>
+                                    <button type="button" class="btn btn-primary btn-block" id="btn-generate-backpack" data-i18n="backpack.gen.generaBtn">Genera Checklist Dinamica</button>
+                                </form>
+                            </div>
+
+                            <!-- "Zaino condivisibile" - blocco zaino/carpooling per-partecipanti:
+                                 tutta questa card compare SOLO per le escursioni di più giorni
+                                 (hike.multiDay). Su una gita in giornata il tab Zaino è solo la
+                                 lista personale privata. Mostrata/nascosta da
+                                 renderWeightDistribution (backpack.js); parte nascosta. -->
+                            <div class="glass-card weight-distribution-card hidden" id="backpack-shared-section">
+                                <h4><i data-lucide="scale"></i> <span data-i18n="backpack.weight.titolo">Ripartizione dei Pesi del Gruppo</span></h4>
+                                <p class="small text-muted" data-i18n="backpack.weight.desc">Solo gli oggetti che si dividono: tenda, fornello, kit di primo soccorso. Le cose personali (giacca, acqua, cibo) le porta ognuno e non compaiono qui.</p>
+                                <div id="backpack-weight-distribution" class="weight-dist-list">
+                                    <!-- Renderizzato da JS -->
+                                </div>
+
+                                <!-- Punto 25 di cose_da_fare.txt: dichiarare un oggetto che
+                                     porti TU per il gruppo, con quante persone copre. Prima del
+                                     blocco 3 nessuna schermata permetteva di aggiungere un
+                                     articolo alla lista dell'escursione - i due template
+                                     esistenti arrivavano dallo script di popolamento - quindi
+                                     "porto io una tenda da 3 posti" non si poteva proprio dire.
+                                     Riempito e mostrato/nascosto da renderWeightDistribution. -->
+                                <div id="backpack-add-shared" class="backpack-add-shared hidden">
+                                    <h5><i data-lucide="plus-circle"></i> <span data-i18n="backpack.shared.titolo">Porto io una cosa per tutti</span></h5>
+                                    <div class="form-group">
+                                        <label for="shared-item-name" data-i18n="backpack.form.cosaLabel">Che cosa:</label>
+                                        <input type="text" id="shared-item-name" maxlength="60" placeholder="Es. Tenda 3 posti" data-i18n-placeholder="backpack.shared.nomePlaceholder">
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="shared-item-weight" data-i18n="backpack.form.pesoLabel">Peso (grammi):</label>
+                                            <input type="number" id="shared-item-weight" min="1" max="30000" placeholder="Es. 2400" data-i18n-placeholder="backpack.shared.pesoPlaceholder">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="shared-item-covers" data-i18n="backpack.shared.copreLabel">Per quante persone:</label>
+                                            <input type="number" id="shared-item-covers" min="1" max="20" placeholder="Vuoto = tutti" data-i18n-placeholder="backpack.shared.coprePlaceholder">
+                                        </div>
+                                    </div>
+                                    <p class="small text-muted" data-i18n="backpack.shared.hint">Il numero di persone serve alle cose che bastano per pochi, come la tenda. Un fornello basta al gruppo: lascia vuoto.</p>
+                                    <button type="button" class="btn btn-secondary btn-sm btn-block" id="btn-add-shared-item" data-i18n="backpack.shared.aggiungiBtn">Aggiungi alla lista del gruppo</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Lista Articoli dello Zaino -->
+                        <div class="backpack-list-area">
+                            <div class="glass-card backpack-list-card">
+                                <div class="card-header-row">
+                                    <h4><i data-lucide="check-square"></i> <span data-i18n="backpack.list.titolo">La tua Checklist</span></h4>
+                                    <span class="badge badge-accent" id="backpack-badge-rules">Altitudine > 2500m</span>
+                                </div>
+                                <div class="backpack-rules-notice warning" id="backpack-rules-alert">
+                                    <i data-lucide="alert-triangle"></i>
+                                    <span>Quota superiore a 2500 metri ed è prevista pioggia: <strong>Guscio Impermeabile</strong> e <strong>Ramponcini</strong> sono stati inseriti come obbligatori!</span>
+                                </div>
+
+                                <!-- Punto 25: avviso quando un oggetto condiviso non basta per
+                                     tutti (la tenda da 3 posti mentre si e' in 4). Riempito da
+                                     mostraAvvisiCopertura in backpack.js. -->
+                                <div class="backpack-rules-notice danger hidden" id="backpack-coverage-alert"></div>
+
+                                <!-- Punto 23: prima la pioggia era data SEMPRE per prevista. Ora la
+                                     previsione e' vera, e quando non si puo' sapere (escursione troppo
+                                     lontana nel tempo) lo si dice invece di inventare. -->
+                                <p class="small text-muted hidden" id="backpack-weather-note"></p>
+                                
+                                <div class="backpack-items-categories" id="backpack-categories-container">
+                                    <!-- Renderizzato da JS in categorie: Abbigliamento, Attrezzatura, Alimentazione, Sicurezza/Emergenza -->
+                                </div>
+
+                                <!-- Punto 47 di cose_da_fare.txt: aggiungere un oggetto PERSONALE a
+                                     mano, non solo condiviso (gia' fatto al punto 25). Piu' semplice
+                                     del modulo condiviso: niente "per quante persone", e' solo tuo. -->
+                                <div class="backpack-add-personal">
+                                    <h5><i data-lucide="plus-circle"></i> <span data-i18n="backpack.personal.titolo">Aggiungi una tua cosa</span></h5>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="personal-item-name" data-i18n="backpack.form.cosaLabel">Che cosa:</label>
+                                            <input type="text" id="personal-item-name" maxlength="60" placeholder="Es. Bastoncini da trekking" data-i18n-placeholder="backpack.personal.nomePlaceholder">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="personal-item-weight" data-i18n="backpack.form.pesoLabel">Peso (grammi):</label>
+                                            <input type="number" id="personal-item-weight" min="1" max="30000" placeholder="Es. 400" data-i18n-placeholder="backpack.personal.pesoPlaceholder">
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn btn-secondary btn-sm btn-block" id="btn-add-personal-item" data-i18n="backpack.personal.aggiungiBtn">Aggiungi alla mia lista</button>
+                                </div>
+
+                                <!-- Punto 47: tasto finale. Non e' solo un applauso: controlla che
+                                     tutto cio' che le regole hanno reso OBBLIGATORIO sia gia' spuntato
+                                     prima di dire che lo zaino e' pronto. -->
+                                <div class="backpack-confirmed-banner hidden" id="backpack-confirmed-banner">
+                                    <i data-lucide="check-circle"></i>
+                                    <span data-i18n="backpack.list.confermatoBanner">Zaino confermato: hai tutto l'obbligatorio.</span>
+                                </div>
+                                <button type="button" class="btn btn-success btn-block" id="btn-confirm-backpack" data-i18n="backpack.list.confermaBtn">Conferma zaino</button>
+                            </div>
+                        </div>
+                    </div>
                     </div>
                 </section>
 
@@ -1938,6 +2231,14 @@
                         <label for="hike-date" data-i18n="hikeModal.dataLabel">Data Uscita:</label>
                         <input type="date" id="hike-date" required>
                     </div>
+                </div>
+                <!-- Blocco zaino/carpooling per-partecipanti: "più giorni" lo decide il
+                     CREATORE. Sblocca lo "zaino condivisibile" (tenda per N persone,
+                     ripartizione dei pesi) nel tab Zaino di hike-page, visibile ai soli
+                     partecipanti. Assente = escursione in giornata. -->
+                <div class="form-group">
+                    <label><input type="checkbox" id="hike-multi-day"> <span data-i18n="hikeModal.multiDayCheck">Escursione di più giorni (rifugio/tenda)</span></label>
+                    <p class="small text-muted" data-i18n="hikeModal.multiDayHint">Attiva lo "zaino condivisibile" per i partecipanti: tenda per più persone, ripartizione dei pesi.</p>
                 </div>
                 <!-- Punto 43: quota/dislivello/distanza restano scrivibili a mano (l'utente
                      l'ha chiesto esplicitamente), ma si puo' anche scegliere un progetto

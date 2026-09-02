@@ -14,6 +14,8 @@ const {
     configurato: mailerConfigurato, inviiFunzionanti
 } = require('../lib/mailer');
 const { requireAuth } = require('../middleware/auth');
+// A-2 (revisione sicurezza 21a): forza bruta su credenziali + bombardamento email.
+const { authLimiter, emailLimiter } = require('../middleware/rateLimit');
 
 const MAX_PHOTO_LENGTH = 2 * 1024 * 1024; // ~1.5MB decodificati: "piccola immagine", non un file pesante
 const MIN_PASSWORD = 8; // stessa regola della registrazione, in un posto solo
@@ -51,7 +53,7 @@ async function consumaScherzoDamianoSeArmato() {
 }
 
 // Registrazione utente reale (Fase C)
-router.post('/register', async (req, res) => {
+router.post('/register', authLimiter, async (req, res) => {
     try {
         const {
             nome, cognome, email, password, birthDate, ageRange, termsAccepted,
@@ -63,6 +65,14 @@ router.post('/register', async (req, res) => {
         // --- 1. Dati base (obbligatori) ---
         if (!nome || !cognome || !email || !password || !username) {
             return res.status(400).json({ error: 'Nome, cognome, email, password e username sono obbligatori' });
+        }
+        // R-2 (ri-review sicurezza, 3° giro): tetto in chiaro qui, oltre al maxlength di schema
+        // (models/User.js). Questi tre campi finiscono nel "Ciao <nome>," delle email.
+        if (String(nome).trim().length > 60 || String(cognome).trim().length > 60) {
+            return res.status(400).json({ error: 'Nome o cognome troppo lungo (massimo 60 caratteri)' });
+        }
+        if (String(username).trim().length > 40) {
+            return res.status(400).json({ error: 'Username troppo lungo (massimo 40 caratteri)' });
         }
         if (!validator.isEmail(String(email))) {
             return res.status(400).json({ error: 'Email non valida' });
@@ -83,6 +93,13 @@ router.post('/register', async (req, res) => {
         // --- 7. Contatti di emergenza (obbligatorio, almeno 1) ---
         if (!Array.isArray(emergencyContacts) || emergencyContacts.length === 0) {
             return res.status(400).json({ error: 'Serve almeno un contatto di emergenza' });
+        }
+        // R-3 (ri-review sicurezza, 3° giro): il tetto (numero + lunghezza campi) valeva solo
+        // per PUT /api/users/:id - un account NUOVO poteva nascere con N contatti e, armando il
+        // Dead Man's Switch, far partire N email verso terzi. Stesso helper del PUT.
+        const erroreContatti = User.validaContattiEmergenza(emergencyContacts);
+        if (erroreContatti) {
+            return res.status(400).json({ error: erroreContatti });
         }
         for (const c of emergencyContacts) {
             // Il telefono non e' piu' fra i campi richiesti (16/08/2026): non viene piu'
@@ -170,7 +187,7 @@ router.post('/register', async (req, res) => {
 });
 
 // Login reale (email + password)
-router.post('/login', async (req, res) => {
+router.post('/login', authLimiter, async (req, res) => {
     try {
         const { email, password } = req.body;
         const normalizedEmail = String(email || '').toLowerCase().trim();
@@ -332,7 +349,7 @@ async function mandaEmailDiVerifica(user) {
 }
 
 // Passo 1: si chiede il link.
-router.post('/forgot-password', async (req, res) => {
+router.post('/forgot-password', emailLimiter, async (req, res) => {
     // RISPOSTA SEMPRE IDENTICA, qualunque cosa succeda dopo. Se dicesse "questa email non
     // risulta registrata", quel modulo diventerebbe uno strumento per scoprire chi e'
     // iscritto al sito provando indirizzi a caso - e nessuno ha scelto di rendere pubblica
@@ -436,7 +453,7 @@ router.get('/reset-password/check', async (req, res) => {
 });
 
 // Passo 3: si sceglie la password nuova.
-router.post('/reset-password', async (req, res) => {
+router.post('/reset-password', authLimiter, async (req, res) => {
     try {
         const { token, password } = req.body || {};
 
@@ -491,7 +508,7 @@ router.post('/reset-password', async (req, res) => {
 // Cambio password per chi e' gia' dentro e quella vecchia se la ricorda.
 // Non esisteva NESSUNA schermata per farlo: senza, l'unico modo di cambiare la password
 // era fingere di averla dimenticata.
-router.post('/change-password', requireAuth, async (req, res) => {
+router.post('/change-password', authLimiter, requireAuth, async (req, res) => {
     try {
         const { currentPassword, newPassword } = req.body || {};
 
@@ -570,7 +587,7 @@ router.get('/verify-email/check', async (req, res) => {
 // E NON FA ENTRARE NEL SITO: dimostrare di avere una casella non e' dimostrare di
 // conoscere la password. Chi clicca il link da un dispositivo altrui non deve trovarsi
 // dentro l'account.
-router.post('/verify-email', async (req, res) => {
+router.post('/verify-email', authLimiter, async (req, res) => {
     try {
         const documento = await trovaTokenVerifica(req.body && req.body.token);
         if (!documento) {
@@ -602,7 +619,7 @@ router.post('/verify-email', async (req, res) => {
 // Qui requireAuth ha senso (a differenza della conferma): chi lo preme e' gia' dentro, e
 // l'indirizzo si prende dalla sessione invece che da quello che manda il client -
 // altrimenti diventerebbe un modo per far arrivare email a chiunque.
-router.post('/resend-verification', requireAuth, async (req, res) => {
+router.post('/resend-verification', emailLimiter, requireAuth, async (req, res) => {
     try {
         const user = await User.findById(req.session.userId);
         if (!user) {

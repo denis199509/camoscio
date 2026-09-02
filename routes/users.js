@@ -3,6 +3,24 @@ const router = express.Router();
 const User = require('../models/User');
 const Squad = require('../models/Squad');
 const { requireAuth } = require('../middleware/auth');
+const { exportLimiter } = require('../middleware/rateLimit');
+// A-3.3 (revisione sicurezza 21a): export dei propri dati - servono tutte le collezioni
+// che portano un riferimento all'utente.
+const ActiveHikeSession = require('../models/ActiveHikeSession');
+const Completion = require('../models/Completion');
+const Hike = require('../models/Hike');
+const Follow = require('../models/Follow');
+const Like = require('../models/Like');
+const Notification = require('../models/Notification');
+const Report = require('../models/Report');
+const Review = require('../models/Review');
+const RouteBookmark = require('../models/RouteBookmark');
+const RouteDraft = require('../models/RouteDraft');
+const SavedRoute = require('../models/SavedRoute');
+const Stamp = require('../models/Stamp');
+const HikeMessage = require('../models/HikeMessage');
+const SquadMessage = require('../models/SquadMessage');
+const TrailCandidate = require('../models/TrailCandidate');
 
 const MAX_PHOTO_LENGTH = 2 * 1024 * 1024;
 
@@ -19,15 +37,20 @@ const MAX_PHOTO_LENGTH = 2 * 1024 * 1024;
 // indicherebbe a un estraneo quali account sono piu' facili da contestare.
 // Punto 37: deadManActive/deadManExpiresAt rivelano quando qualcuno e' atteso di rientro (e se
 // il timer sta correndo adesso) - la stessa categoria di dato sensibile di emergencyContacts,
-// mai da mostrare a chi non e' il proprietario. deadManContactIndex e' solo un indice dentro
-// emergencyContacts, gia' privato per conto suo, ma non ha senso esporlo isolato.
+// mai da mostrare a chi non e' il proprietario. (A-3.2: deadManContactIndex non esiste piu' -
+// l'allarme va a tutti i contatti con email, vedi models/User.js e routes/safety.js.)
 // Punto 45: canModerateReports non e' un dato sensibile come i contatti di emergenza, ma non
 // c'e' motivo che GET /api/users riveli a chiunque chi sono i moderatori delle segnalazioni.
 // Punto 111: stesso ragionamento per receivesReportAlerts (chi riceve gli avvisi).
+// C-1 (revisione sicurezza 21a): homeCity ("comune / zona di partenza da casa" per il
+// carpooling) trapelava a ogni utente loggato via GET /api/users, ignorando privacySetting,
+// mentre l'interfaccia prometteva il contrario. Ora esce solo al proprietario; il match coi
+// co-partecipanti lo calcola il server (GET /api/hikes/:id/home-match), che risponde solo
+// coi nomi di chi combacia, mai con la zona altrui.
 const ALWAYS_PRIVATE_FIELDS = [
     'email', 'emailVerified', 'emergencyContacts', 'birthDate', 'ageRange',
-    'geolocationConsent', 'termsAcceptedAt', 'nome', 'cognome',
-    'deadManActive', 'deadManExpiresAt', 'deadManContactIndex', 'canModerateReports',
+    'geolocationConsent', 'termsAcceptedAt', 'nome', 'cognome', 'homeCity',
+    'deadManActive', 'deadManExpiresAt', 'canModerateReports',
     'receivesReportAlerts'
 ];
 // Campi del "profilo pubblico" (sezione 6/9 della registrazione) governati da privacySetting
@@ -87,6 +110,118 @@ router.get('/users', requireAuth, async (req, res) => {
     res.json(filtered);
 });
 
+// A-3.3 (revisione sicurezza 21a): export dei propri dati (GDPR - diritto di accesso e
+// portabilita'). Un unico JSON scaricabile con tutto quello che il sito conserva collegato
+// all'account. SOLO il proprio (req.session.userId, mai un id dal client). Percorso a 3
+// segmenti apposta: non viene intercettato da /users/:id qui sotto.
+// A-NUOVO-3 (ri-review sicurezza, 2° giro + residuo chiuso al 3°): exportLimiter (3/giorno) +
+// NON si caricano gli array di punti - ne' i punti GPS grezzi delle tracce (.select('-points
+// -offTrailBuffer')), ne' la geometria di percorsi salvati/progetti/tracce candidate
+// (RouteDraft.punti, SavedRoute.punti, TrailCandidate.points, tutti [[Number]]) - + JSON senza
+// indentazione: con `null, 2` ogni numero va su una riga sua, decine di MB in RAM su Render
+// 512 MB. I punti GPS restano scaricabili traccia per traccia da
+// GET /api/tracking/sessions/:id/points; i percorsi si riaprono dai rispettivi pannelli.
+router.get('/users/me/export', requireAuth, exportLimiter, async (req, res) => {
+    try {
+        const uid = req.session.userId;
+        const me = String(uid);
+
+        const [
+            profilo, tracce, completamenti, hikeCreate, hikePartecipate,
+            timbri, followCheFai, followCheRicevi, likeMessi, notifiche,
+            segnalazioni, squadreGrezze, msgEscursioni, msgSquadre,
+            sentieriPreferiti, progetti, percorsiSalvati, recensioniRicevute, tracceCandidate
+        ] = await Promise.all([
+            User.findById(uid).lean(),                  // passwordHash e' select:false: non esce
+            ActiveHikeSession.find({ userId: uid }).select('-points -offTrailBuffer').lean(),
+            Completion.find({ userId: uid }).lean(),
+            Hike.find({ creatorId: uid }).lean(),
+            Hike.find({ participants: uid, creatorId: { $ne: uid } }).lean(),
+            Stamp.find({ userId: uid }).lean(),
+            Follow.find({ followerId: uid }).lean(),
+            Follow.find({ followingId: uid }).lean(),
+            Like.find({ userId: uid }).lean(),
+            Notification.find({ userId: uid }).lean(),
+            Report.find({ reporterId: uid }).lean(),    // photo e' select:false: non esce
+            Squad.find({ $or: [{ creatorId: uid }, { members: uid }] }).lean(),
+            HikeMessage.find({ senderId: uid }).lean(),
+            SquadMessage.find({ senderId: uid }).lean(),
+            RouteBookmark.find({ userId: uid }).lean(),
+            RouteDraft.find({ userId: uid }).select('-punti').lean(),
+            SavedRoute.find({ userId: uid }).select('-punti').lean(),
+            Review.find({ targetUserId: uid }).lean(),  // anonime per design: nessun reviewerId
+            TrailCandidate.find({ userId: uid }).select('-points').lean()
+        ]);
+
+        // Le escursioni a cui SOLO partecipi contengono anche dati di gruppo (carpooling e
+        // zaino condivisibile degli altri): si esporta la parte comune dell'escursione + SOLO
+        // la tua riga carpool e i tuoi oggetti dello zaino, non quelli altrui.
+        const escursioniACuiPartecipi = (hikePartecipate || []).map(h => ({
+            _id: h._id, title: h.title, description: h.description, date: h.date,
+            difficulty: h.difficulty, maxAltitude: h.maxAltitude, distanceKm: h.distanceKm,
+            elevationGain: h.elevationGain, trailhead: h.trailhead, creatorId: h.creatorId,
+            groupCompletedAt: h.groupCompletedAt,
+            mioCarpool: (((h.carpool || {}).drivers) || []).filter(d => String(d.userId) === me),
+            mioZaino: (h.backpackTemplate || []).filter(i => String(i.assignedTo || '') === me)
+        }));
+
+        // Squadre: la lista membri e' gia' visibile a chi ne fa parte, ma pendingRequests
+        // (chi ha chiesto di entrare) la vede solo creatore/admin - si toglie dall'export.
+        const squadre = (squadreGrezze || []).map(s => {
+            const { pendingRequests, ...resto } = s;
+            return resto;
+        });
+
+        // M-3 (ri-review sicurezza, 2° giro): anche sulle PROPRIE escursioni si minimizza -
+        // il file lo scarica l'utente e potrebbe girarlo. Fuori la zona di partenza da casa
+        // degli altri autisti e la lista di chi ha chiesto di partecipare.
+        const escursioniCreateDaTe = (hikeCreate || []).map(h => ({
+            ...h,
+            carpool: h.carpool ? {
+                ...h.carpool,
+                drivers: (h.carpool.drivers || []).map(d => {
+                    const { departureCity, ...restoD } = d || {};
+                    return restoD;
+                })
+            } : h.carpool,
+            pendingApproval: undefined
+        }));
+
+        const bundle = {
+            _nota: "Export dei tuoi dati da Camoscio (app di escursionismo). Formato JSON. Contiene tutto cio' che il sito conserva collegato al tuo account. Gli identificativi lunghi sono i riferimenti interni del database. Non sono inclusi gli elenchi di punti: i punti GPS grezzi di ogni traccia si scaricano traccia per traccia dalla pagina dell'uscita, e la geometria dei percorsi salvati, dei progetti percorso e delle tracce candidate si rivede riaprendoli dai rispettivi pannelli. Qui restano i dati descrittivi (nome, totali, date).",
+            generatoIl: new Date().toISOString(),
+            profilo,
+            tracceGps: tracce,
+            escursioniCompletate: completamenti,
+            escursioniCreateDaTe,
+            escursioniACuiPartecipi,
+            badgeConquistati: timbri,
+            followCheFai,
+            followCheRicevi,
+            likeMessi,
+            notifiche,
+            segnalazioniSentieroTue: segnalazioni,
+            squadre,
+            messaggiChatEscursioni: msgEscursioni,
+            messaggiChatSquadre: msgSquadre,
+            sentieriPreferiti,
+            progettiPercorso: progetti,
+            percorsiSalvati,
+            recensioniRicevute,
+            tracceCandidateSentiero: tracceCandidate
+        };
+
+        const base = String((profilo && profilo.username) || 'utente').replace(/[^\w-]+/g, '_');
+        const nomeFile = `camoscio-dati-${base}-${new Date().toISOString().slice(0, 10)}.json`;
+        res.setHeader('Content-Type', 'application/json; charset=utf-8');
+        res.setHeader('Content-Disposition', `attachment; filename="${nomeFile}"`);
+        res.send(JSON.stringify(bundle)); // niente `null, 2`: il file e' per una macchina, non da leggere a mano
+    } catch (e) {
+        console.error('Errore export dati utente:', e);
+        res.status(500).json({ error: "Impossibile generare l'export dei dati" });
+    }
+});
+
 // Ottieni dettagli utente
 router.get('/users/:id', requireAuth, async (req, res) => {
     try {
@@ -132,6 +267,17 @@ router.put('/users/:id', requireAuth, async (req, res) => {
 
         if (update.profilePhoto && String(update.profilePhoto).length > MAX_PHOTO_LENGTH) {
             return res.status(400).json({ error: 'Foto profilo troppo grande, scegline una più piccola' });
+        }
+
+        // A-NUOVO-1 (ri-review sicurezza, 2° giro): il vero controllo su emergencyContacts va
+        // QUI - Mongoose non valida in modo affidabile i sotto-documenti degli array su
+        // findByIdAndUpdate. Senza, un array gigante o campi enormi passano, e alla scadenza
+        // del Dead Man's Switch il server manda un'email per ogni voce (relay verso terzi).
+        // R-3 (3° giro): le stesse regole servono anche in POST /api/auth/register - helper
+        // condiviso in models/User.js per non tenerne due copie.
+        if (update.emergencyContacts !== undefined) {
+            const errore = User.validaContattiEmergenza(update.emergencyContacts);
+            if (errore) return res.status(400).json({ error: errore });
         }
 
         const user = await User.findByIdAndUpdate(req.params.id, update, { new: true, runValidators: true });

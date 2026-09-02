@@ -13,6 +13,9 @@ const { movimentoSecAttendibile } = require('../lib/gpx');
 // Punto 80/A: calcolaDaPercorso e' stata estratta in lib/percorso.js perche' ora la usa
 // anche routes/completions.js (aggiungere un .gpx retroattivo a un completamento).
 const { calcolaDaPercorso, risolviPercorso } = require('../lib/percorso');
+const { mongoose } = require('../db/mongo');
+// Ri-review sicurezza (2° giro): limiter mirati su una rotta di campionamento e su due scritture.
+const { matchLimiter, scritturaLimiter } = require('../middleware/rateLimit');
 
 // Punto 55: usato da /:id/complete (gia' esistente, riscritto per riusare questa) e dalle
 // nuove rotte di chat. Non ci si fida al 100% che il creatore sia sempre dentro
@@ -107,7 +110,18 @@ function canNonCreatorEditCarpool(hike, userId, newCarpool) {
     }
 
     for (const [uid, newDriver] of newByUser) {
-        if (uid === userIdStr) continue; // la propria offerta: libera
+        if (uid === userIdStr) {
+            // La propria offerta e' libera su prezzo/posti/citta', ma NON sui passeggeri:
+            // ci si sale a bordo da soli con joinCarpoolGroup, che passa dal ramo gia'
+            // validato piu' sotto (uid !== userIdStr, "solo se stesso"). Sulla propria voce
+            // driver i passeggeri possono solo CALARE (l'autista scarica qualcuno), mai
+            // crescere. Il vecchio 'continue' saltava OGNI controllo qui, passengers
+            // compreso: si scrivevano id arbitrari come "a bordo" (security review 21a).
+            const oldMine = oldByUser.get(uid);
+            const pDiff = diffIdLists(oldMine ? oldMine.passengers : [], newDriver.passengers);
+            if (pDiff.added.length) return false;
+            continue;
+        }
 
         const oldDriver = oldByUser.get(uid);
         if (!oldDriver) return false; // creata un'offerta per conto di un altro
@@ -166,6 +180,24 @@ function canNonCreatorEditBackpack(hike, newTemplate, userIdStr) {
 // calcolaDaPercorso (quota massima, dislivello e distanza da un progetto o da un .gpx,
 // punto 43) vive in lib/percorso.js dal punto 80/A - importata sopra.
 
+// C-NUOVO-1 (ri-review sicurezza, 2° giro): carpool (con la citta' di partenza degli autisti,
+// il dato di C-1) e backpackTemplate sono roba di gruppo. TUTTE le uscite di un Hike verso il
+// client devono passare da qui - non solo GET /, ma anche la risposta di PUT /:id, che
+// altrimenti restituiva il documento intero a chiunque facesse una modifica qualsiasi (o
+// nessuna: un update vuoto in Mongoose degrada a una lettura, vedi PUT /:id).
+function hikeVisibileA(hike, userId) {
+    if (isHikeParticipant(hike, userId)) return hike;
+    // toJSON, NON toObject: le opzioni globali (virtuals:true, delete _id) sono su toJSON
+    // (db/mongo.js), da cui tutto il frontend riceve `.id`. Con toObject il documento
+    // strippato usciva con `_id`/`__v` e senza `id` - GET /api/hikes/ restituiva un array
+    // misto (le tue con `id`, le altrui con `_id`) e il client non agganciava piu' schede,
+    // marker e "Partecipa" sulle escursioni altrui. Ri-review sicurezza, 3° giro.
+    const pubblico = hike.toJSON ? hike.toJSON() : { ...hike };
+    delete pubblico.carpool;
+    delete pubblico.backpackTemplate;
+    return pubblico;
+}
+
 // Ottieni escursioni - punto 77: una volta conclusa (hike.groupCompletedAt, stesso
 // segnale gia' usato dal punto 76 per bloccare le modifiche - non un confronto con la
 // data, stessa trappola gia' pagata al punto 58), un'escursione resta visibile SOLO a chi
@@ -178,11 +210,13 @@ router.get('/', requireAuth, async (req, res) => {
     const hikes = await Hike.find();
     const userId = req.session.userId;
     const visibili = hikes.filter(h => !h.groupCompletedAt || isHikeParticipant(h, userId));
-    res.json(visibili);
+    // C-2 / security review: carpooling e "zaino condivisibile" sono roba di gruppo - chi non
+    // e' partecipante li riceve strippati (hikeVisibileA). Le concluse sono gia' solo-partecipanti.
+    res.json(visibili.map(h => hikeVisibileA(h, userId)));
 });
 
 // Crea escursione - il creatore e' SEMPRE chi ha fatto login, mai un valore mandato dal client
-router.post('/', requireAuth, async (req, res) => {
+router.post('/', requireAuth, scritturaLimiter, async (req, res) => {
     try {
         // Vincolo hard di cose_da_fare.txt (solo Marche/Lazio/Abruzzo/Molise): finora
         // controllato SOLO lato client con un rettangolo approssimativo (bypassabile da
@@ -205,8 +239,23 @@ router.post('/', requireAuth, async (req, res) => {
         }
 
         const creatorId = req.session.userId;
+        // Whitelist esplicita invece di `...req.body` (ri-review sicurezza, 2° giro): senza,
+        // il client poteva infilare alla creazione campi come `groupCompletedAt` (un'escursione
+        // che nasce gia' "conclusa"). Stesso principio di SELF_EDITABLE_FIELDS in routes/users.js
+        // e del ciclo whitelist nel PUT qui sotto. multiDay resta creator-set alla creazione.
+        const b = req.body || {};
         const hike = await Hike.create({
-            ...req.body,
+            title: b.title,
+            description: b.description,
+            difficulty: b.difficulty,
+            maxAltitude: b.maxAltitude,
+            distanceKm: b.distanceKm,
+            elevationGain: b.elevationGain,
+            date: b.date,
+            tribeTags: b.tribeTags,
+            manualApproval: b.manualApproval,
+            multiDay: b.multiDay === true ? true : undefined,
+            trailhead: b.trailhead,
             ...datiPercorso,
             creatorId,
             participants: [creatorId],
@@ -261,6 +310,13 @@ router.put('/:id', requireAuth, async (req, res) => {
         const body = req.body;
         const update = {};
 
+        // C-NUOVO-1 / punto 77 (ri-review sicurezza, 2° giro): un'escursione conclusa e' roba
+        // solo dei suoi partecipanti - un non-partecipante non deve poterne leggere i dati
+        // nemmeno passando da una PUT (che sotto risponde col documento).
+        if (hike.groupCompletedAt && !isHikeParticipant(hike, userId)) {
+            return res.status(404).json({ error: 'Escursione non trovata' });
+        }
+
         const CREATOR_ONLY_FIELDS = [
             'title', 'description', 'difficulty', 'maxAltitude', 'distanceKm', 'elevationGain',
             'date', 'tribeTags', 'manualApproval', 'peaks'
@@ -279,7 +335,7 @@ router.put('/:id', requireAuth, async (req, res) => {
         // guarda groupCompletedAt) - una richiesta che poi non si puo' ne' accettare ne'
         // rifiutare, perche' il pannello Veto e' nascosto e participants e' gia' bloccato sopra.
         // Trovato dal test-engineer, non a mano.
-        const EDIT_LOCKED_FIELDS = [...CREATOR_ONLY_FIELDS, 'trailhead', 'routeSource', 'participants', 'pendingApproval'];
+        const EDIT_LOCKED_FIELDS = [...CREATOR_ONLY_FIELDS, 'trailhead', 'routeSource', 'participants', 'pendingApproval', 'multiDay'];
         if (hike.groupCompletedAt && EDIT_LOCKED_FIELDS.some(field => body[field] !== undefined)) {
             return res.status(409).json({ error: 'Un\'escursione già completata non può più essere modificata' });
         }
@@ -333,6 +389,23 @@ router.put('/:id', requireAuth, async (req, res) => {
             update.routeSource = null;
         }
 
+        // Blocco "zaino/carpooling per-partecipanti": "escursione di piu' giorni" la decide
+        // il CREATORE, in creazione o in modifica. multiDay:true sblocca la sezione "Zaino
+        // condivisibile" nel tab Zaino. Si torna "in giornata" con $unset, non scrivendo
+        // false (default: undefined nello schema, vincolo spazio) - stesso principio di
+        // routeSource:null qui sopra. Il client manda true con la spunta attiva, false per
+        // toglierla.
+        if (body.multiDay !== undefined) {
+            if (!isCreator) {
+                return res.status(403).json({ error: "Solo chi ha creato l'escursione può modificare questo campo" });
+            }
+            if (body.multiDay === true) {
+                update.multiDay = true;
+            } else {
+                update.$unset = { ...(update.$unset || {}), multiDay: 1 };
+            }
+        }
+
         // Punto 61: chi chiede di partecipare finisce in pendingApproval, ma finora nessuno
         // avvisava il creatore - doveva andare a controllare da solo. Il diff va calcolato qui
         // (diffIdLists esiste gia' per l'autorizzazione sopra) cosi' la notifica parte per
@@ -351,6 +424,25 @@ router.put('/:id', requireAuth, async (req, res) => {
         }
 
         if (body.carpool !== undefined) {
+            // C-2 (security review 21a): il carpooling di un'escursione e' dei suoi
+            // partecipanti. canNonCreatorEditCarpool valida la FORMA della modifica ma non
+            // ha mai controllato la partecipazione - un estraneo poteva inserirsi come
+            // autista, o leggere/riscrivere le offerte altrui, su un'escursione qualsiasi.
+            if (!isHikeParticipant(hike, userId)) {
+                return res.status(403).json({ error: 'Solo i partecipanti possono usare il carpooling di questa escursione' });
+            }
+            // A-NUOVO-4 (ri-review sicurezza, 2° giro): il maxlength di schema NON e' applicato
+            // ai sotto-documenti degli array su findByIdAndUpdate - il tetto va messo qui, dove
+            // il controllo e' reale (senza, ~9 MB per richiesta su departureCity).
+            const drivers = (body.carpool && Array.isArray(body.carpool.drivers)) ? body.carpool.drivers : [];
+            // 3° giro: e anche il NUMERO di voci - Mongoose non conta gli elementi di un array
+            // di sotto-doc su findByIdAndUpdate, quindi migliaia di driver vuoti passavano.
+            if (drivers.length > 50) {
+                return res.status(400).json({ error: 'Troppi autisti nel carpooling (massimo 50)' });
+            }
+            if (drivers.some(d => d && String(d.departureCity || '').length > 100)) {
+                return res.status(400).json({ error: 'Zona di partenza troppo lunga (massimo 100 caratteri)' });
+            }
             if (!isCreator && !canNonCreatorEditCarpool(hike, userId, body.carpool)) {
                 return res.status(403).json({ error: 'Non puoi modificare così il carpooling' });
             }
@@ -358,10 +450,39 @@ router.put('/:id', requireAuth, async (req, res) => {
         }
 
         if (body.backpackTemplate !== undefined) {
+            // C-2 (security review 21a): lo "zaino condivisibile" e' roba di gruppo, solo i
+            // partecipanti possono toccarlo (canNonCreatorEditBackpack valida la forma della
+            // modifica, non la partecipazione).
+            if (!isHikeParticipant(hike, userId)) {
+                return res.status(403).json({ error: 'Solo i partecipanti possono modificare lo zaino di questa escursione' });
+            }
+            // Blocco zaino/carpooling per-partecipanti: lo "zaino condivisibile" esiste SOLO
+            // per le escursioni di piu' giorni. Su una gita in giornata il tab Zaino e' solo
+            // la lista personale privata di ognuno (localStorage lato client, non passa mai
+            // di qui). Il frontend nasconde la sezione condivisa; questo e' il gate vero.
+            if (!hike.multiDay) {
+                return res.status(403).json({ error: 'Lo zaino condivisibile esiste solo per le escursioni di più giorni' });
+            }
+            // A-NUOVO-4: tetto sul nome/categoria dell'articolo E sul numero di articoli qui,
+            // non nello schema (vedi il gemello nel ramo carpool). 3° giro: aggiunto il tetto
+            // al numero e il controllo su `category`.
+            if (!Array.isArray(body.backpackTemplate) || body.backpackTemplate.length > 100) {
+                return res.status(400).json({ error: 'Lista zaino non valida o troppo lunga (massimo 100 articoli)' });
+            }
+            if (body.backpackTemplate.some(i => i && (String(i.name || '').length > 80 || String(i.category || '').length > 40))) {
+                return res.status(400).json({ error: 'Nome o categoria di un articolo dello zaino troppo lungo' });
+            }
             if (!isCreator && !canNonCreatorEditBackpack(hike, body.backpackTemplate, String(userId))) {
                 return res.status(403).json({ error: 'Non puoi modificare così la lista zaino' });
             }
             update.backpackTemplate = body.backpackTemplate;
+        }
+
+        // C-NUOVO-1 (ri-review sicurezza, 2° giro): un update senza NESSUN campo riconosciuto
+        // non deve diventare una lettura mascherata - findByIdAndUpdate con update vuoto in
+        // Mongoose restituisce il documento intero, scavalcando hikeVisibileA e i gate sopra.
+        if (!Object.keys(update).length) {
+            return res.status(400).json({ error: 'Nessuna modifica valida richiesta' });
         }
 
         const updated = await Hike.findByIdAndUpdate(req.params.id, update, { new: true, runValidators: true });
@@ -391,7 +512,9 @@ router.put('/:id', requireAuth, async (req, res) => {
             console.error('Errore invio notifica richiesta partecipazione:', notifErr);
         }
 
-        res.json(updated);
+        // C-NUOVO-1: mai il documento grezzo - un non-partecipante (es. chi si e' appena
+        // iscritto a un'escursione ad approvazione manuale) non deve ricevere carpool/zaino.
+        res.json(hikeVisibileA(updated, userId));
     } catch (e) {
         console.error('Errore aggiornamento escursione:', e);
         res.status(400).json({ error: "Impossibile aggiornare l'escursione" });
@@ -533,6 +656,57 @@ router.post('/:id/complete-group', requireAuth, async (req, res) => {
     } catch (e) {
         console.error('Errore completamento di gruppo:', e);
         res.status(400).json({ error: 'Impossibile completare la richiesta' });
+    }
+});
+
+// C-1 + A-NUOVO-2 (ri-review sicurezza): il match "parti dalla mia zona?" del carpooling
+// girava tutto lato client su user.homeCity, che GET /api/users spediva a chiunque. Ora
+// homeCity e' ALWAYS_PRIVATE e il confronto lo fa qui il server, che risponde SOLO col
+// CONTEGGIO di chi combacia - MAI i nomi, MAI la zona altrui: coi nomi la rotta diventava un
+// oracolo (cambio la mia homeCity in loop e vedo chi compare -> ricostruisco la zona altrui).
+// matchLimiter tappa comunque il campionamento a raffica. Solo partecipanti.
+function zoneCombaciano(a, b) {
+    const c1 = String(a || '').toLowerCase().trim();
+    const c2 = String(b || '').toLowerCase().trim();
+    if (!c1 || !c2) return false;
+    if (c1 === c2) return true;
+    // Stessa euristica che stava in checkCityMatch (public/js/carpool.js): una parola
+    // "principale" (>3 lettere, non via/piazza/...) contenuta in entrambe le stringhe.
+    const escludi = new Set(['via', 'viale', 'piazza', 'corso', 'alto', 'basso', 'nord', 'sud']);
+    const parole2 = c2.split(/\s+/);
+    return c1.split(/\s+/).some(w1 =>
+        w1.length > 3 && !escludi.has(w1) && parole2.some(w2 => w2.includes(w1) || w1.includes(w2))
+    );
+}
+
+router.get('/:id/home-match', requireAuth, matchLimiter, async (req, res) => {
+    try {
+        if (!mongoose.isValidObjectId(req.params.id)) {
+            return res.status(400).json({ error: 'Id non valido' });
+        }
+        const hike = await Hike.findById(req.params.id);
+        if (!hike) return res.status(404).json({ error: 'Escursione non trovata' });
+
+        const userId = req.session.userId;
+        if (!isHikeParticipant(hike, userId)) {
+            return res.status(403).json({ error: 'Solo i partecipanti possono usare il carpooling di questa escursione' });
+        }
+
+        const io = await User.findById(userId).select('homeCity');
+        const miaZona = io && io.homeCity;
+        if (!miaZona) return res.json({ zonaInserita: false, quanti: 0 });
+
+        const altriIds = [...new Set(
+            [String(hike.creatorId), ...(hike.participants || []).map(String)]
+                .filter(id => id !== String(userId))
+        )];
+        const altri = await User.find({ _id: { $in: altriIds } }).select('homeCity');
+
+        const quanti = altri.filter(u => zoneCombaciano(miaZona, u.homeCity)).length;
+        res.json({ zonaInserita: true, quanti });
+    } catch (e) {
+        console.error('Errore match zona di partenza:', e);
+        res.status(500).json({ error: 'Impossibile calcolare le corrispondenze' });
     }
 });
 

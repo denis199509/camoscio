@@ -136,6 +136,9 @@ window.openEditHikeModal = function(hikeId) {
     document.getElementById('hike-elev').value = hike.elevationGain;
     document.getElementById('hike-dist').value = hike.distanceKm;
     document.getElementById('hike-approval').value = hike.manualApproval ? 'true' : 'false';
+    // Blocco zaino/carpooling per-partecipanti: la spunta "più giorni" e' creator-only e
+    // precompila lo stato attuale dell'escursione.
+    document.getElementById('hike-multi-day').checked = !!hike.multiDay;
 
     document.querySelectorAll("input[name='hike-tags']").forEach(cb => {
         cb.checked = hike.tribeTags.includes(cb.value);
@@ -147,6 +150,31 @@ window.openEditHikeModal = function(hikeId) {
     document.getElementById('hike-trailhead-search').value = hike.trailhead.name || '';
 
     document.getElementById('create-hike-modal').classList.remove('hidden');
+    if (window.lucide) window.lucide.createIcons();
+};
+
+// V2 UX PASSO 7: apertura del modale "nuova escursione" estratta dal listener di
+// #btn-open-create-hike, cosi' anche "＋ Crea" nella barra (app.js, agganciato
+// presto) la riusa senza simulare un click su un bottone che si collega tardi.
+// Stessa forma di window.openEditHikeModal qui sopra (definita a file caricato).
+window.apriModaleNuovaEscursione = function() {
+    const modal = document.getElementById('create-hike-modal');
+    if (!modal) return;
+    // Punto 54: sempre una NUOVA escursione, anche se il modulo era rimasto in
+    // modalita' modifica da un'apertura precedente mai inviata.
+    setHikeModalMode('create');
+    modal.classList.remove('hidden');
+    // Data minima a oggi.
+    document.getElementById('hike-date').min = new Date().toISOString().split('T')[0];
+    // Punto 8: form.reset() non basta a ripulire il punto di ritrovo scelto,
+    // perche' nome/coordinate/avvisi stanno anche fuori dai campi del modulo.
+    if (window.resetTrailheadPicker) window.resetTrailheadPicker();
+    resetHikeRouteSourcePicker();
+    // Blocco zaino/carpooling per-partecipanti: form.reset() gira solo dopo un invio
+    // riuscito, quindi la spunta "più giorni" va azzerata a mano all'apertura (poteva
+    // essere rimasta accesa da una modifica precedente mai inviata).
+    const multiDayCb = document.getElementById('hike-multi-day');
+    if (multiDayCb) multiDayCb.checked = false;
     if (window.lucide) window.lucide.createIcons();
 };
 
@@ -187,18 +215,9 @@ function setupSocialEvents() {
     const modal = document.getElementById("create-hike-modal");
 
     if (btnOpenModal && modal) {
-        btnOpenModal.addEventListener("click", () => {
-            // Punto 54: questo tasto crea sempre una NUOVA escursione, anche se il modulo
-            // era rimasto in modalita' modifica da un'apertura precedente mai inviata.
-            setHikeModalMode('create');
-            modal.classList.remove("hidden");
-            // Imposta la data minima a oggi
-            document.getElementById("hike-date").min = new Date().toISOString().split("T")[0];
-            // Punto 8: form.reset() non basta a ripulire il punto di ritrovo scelto,
-            // perche' nome/coordinate/avvisi stanno anche fuori dai campi del modulo.
-            if (window.resetTrailheadPicker) window.resetTrailheadPicker();
-            resetHikeRouteSourcePicker();
-        });
+        // Corpo estratto in window.apriModaleNuovaEscursione (in cima al file),
+        // condiviso con "＋ Crea" della barra: una sola copia della logica.
+        btnOpenModal.addEventListener("click", () => window.apriModaleNuovaEscursione());
     }
 
     if (btnCloseModal && modal) {
@@ -457,23 +476,19 @@ function renderHikesList() {
 
     // Classificazione calcolata SOLO sulle escursioni gia' filtrate qui sopra (stessa
     // funzione di "Le mie escursioni", punto 59: due pagine non devono poter raccontare
-    // due cose diverse per lo stesso criterio) - "disponibili" e' il complementare delle
-    // altre due, non un quarto confronto scritto a mano.
+    // due cose diverse per lo stesso criterio).
+    // V2 UX PASSO 9: "Escursioni" (Esplora) e' solo scoperta - qui si disegna solo
+    // "A cui puoi partecipare". create/partecipo/fatte servono ancora perche'
+    // "disponibili" e' il loro complementare (non un quarto confronto a mano); i
+    // gruppi "A cui partecipi" e "Completate" vivono ora solo in "Le mie escursioni".
     const { create, partecipo, fatte } = classificaMieEscursioni(filteredHikes);
     const nonDisponibiliIds = new Set([...create, ...partecipo, ...fatte].map(h => h.id));
     const disponibili = filteredHikes.filter(h => !nonDisponibiliIds.has(h.id));
-    const partecipi = [...create, ...partecipo].sort((a, b) => new Date(a.date) - new Date(b.date));
 
     document.getElementById("count-hikes-disponibili").textContent = disponibili.length;
-    document.getElementById("count-hikes-partecipi").textContent = partecipi.length;
-    document.getElementById("count-hikes-completate").textContent = fatte.length;
 
     riempiGruppo("hikes-list-disponibili", disponibili,
         T('hikes.nessunFiltro') || "Nessuna escursione trovata con i filtri inseriti.");
-    riempiGruppo("hikes-list-partecipi", partecipi,
-        T('hikes.nonPartecipiAlcuna') || "Non partecipi a nessuna escursione in programma.");
-    riempiGruppo("hikes-list-completate", fatte,
-        T('hikes.nessunaCompletata') || "Nessuna escursione completata.");
 
     if (window.lucide) window.lucide.createIcons();
 
@@ -572,6 +587,41 @@ function riempiGruppo(idContenitore, escursioni, messaggioVuoto) {
     escursioni.forEach(h => box.appendChild(buildHikeCard(h)));
 }
 
+// --- V2 UX PASSO 9: viste-filtro di "Le mie escursioni" -----------------------
+// Tre viste della STESSA pagina (non tre sezioni): "Tutte" mostra tutti i gruppi,
+// "In programma" solo organizzate + a cui partecipo (= non completate, nessun
+// confronto di date - la trappola del punto 58), "Completate" solo quelle.
+// La scelta sta in localStorage: nessun campo MongoDB (vincolo spazio), e
+// sopravvive a un ridisegno della sezione (renderMyHikes la riapplica in coda).
+// Il filtro vero e' CSS (#my-hikes[data-view="..."] [data-mh-group="..."]); qui si
+// scrive solo l'attributo sulla <section> e la .active sulla sotto-voce di menu.
+const MYHIKES_VISTE = ["tutte", "programma", "completate"];
+const LS_MYHIKES_VISTA = "camoscio.myhikes.view";
+
+function vistaCorrente() {
+    let v = "";
+    try { v = localStorage.getItem(LS_MYHIKES_VISTA) || ""; } catch (e) {}
+    return MYHIKES_VISTE.indexOf(v) === -1 ? "tutte" : v;
+}
+window.vistaCorrente = vistaCorrente;
+
+function impostaVistaMieEscursioni(vista) {
+    if (MYHIKES_VISTE.indexOf(vista) === -1) vista = "tutte";
+    try { localStorage.setItem(LS_MYHIKES_VISTA, vista); } catch (e) {}
+    const sezione = document.getElementById("my-hikes");
+    if (sezione) sezione.setAttribute("data-view", vista);
+    // La .active sulla sotto-voce ha senso solo mentre "Le mie escursioni" e' la
+    // sezione aperta - altrove ci pensa navigateTo a spegnerle tutte (questa funzione
+    // gira anche a cascata da renderHikesList, quando si e' sulla pagina Escursioni).
+    if (sezione && sezione.classList.contains("active")) {
+        document.querySelectorAll('.nav-group[data-group="mie"] .nav-sub[data-view]').forEach(b => {
+            b.classList.toggle("active", b.dataset.view === vista);
+        });
+    }
+}
+window.impostaVistaMieEscursioni = impostaVistaMieEscursioni;
+// ---------------------------------------------------------------------------
+
 function renderMyHikes() {
     const db = window.CamoscioState;
     if (!db || !db.currentUser) return;
@@ -608,6 +658,11 @@ function renderMyHikes() {
                    <div><strong>${fatte.length}</strong><span>${escapeHtml(T('myHikes.completateLabel') || 'completate')}</span></div>
                </div>`;
     }
+
+    // V2 UX PASSO 9: la sezione e' appena stata ridisegnata (da qui, da renderHikesList
+    // o da una delle dodici azioni che aggiornano le escursioni) - riapplica la
+    // vista-filtro corrente. Senza questo, ogni ridisegno riporterebbe a "Tutte".
+    impostaVistaMieEscursioni(vistaCorrente());
 
     if (window.lucide) window.lucide.createIcons();
 }
@@ -1308,6 +1363,7 @@ async function submitCreateHike() {
     const lng = parseFloat(document.getElementById("hike-trailhead-lng").value);
     const name = document.getElementById("hike-trailhead-name").value;
     const manualApproval = document.getElementById("hike-approval").value === "true";
+    const multiDay = document.getElementById("hike-multi-day").checked;
 
     // Punto 8: le coordinate non si scrivono piu' a mano, arrivano dalla ricerca per nome
     // o dalla scelta sulla mappa. Se sono vuote vuol dire che quel passaggio e' stato
@@ -1356,6 +1412,16 @@ async function submitCreateHike() {
     // sessione lato server (hike.creatorId non cambia mai), non un campo del payload.
     if (!editingHikeId) payload.creatorId = db.currentUser.id;
 
+    // Blocco zaino/carpooling per-partecipanti. In creazione si manda multiDay SOLO se
+    // spuntata: mai multiDay:false sul POST, lo schema ha default:undefined (vincolo
+    // spazio MongoDB). In modifica si manda sempre il booleano, cosi' togliere la spunta
+    // fa $unset lato server (routes/hikes.js PUT /:id).
+    if (editingHikeId) {
+        payload.multiDay = multiDay;
+    } else if (multiDay) {
+        payload.multiDay = true;
+    }
+
     const inModifica = !!editingHikeId;
 
     try {
@@ -1383,7 +1449,8 @@ async function submitCreateHike() {
 
             await refreshState();
             renderHikesList(); // ridisegna anche "Le mie escursioni", vedi commento li'
-            if (window.populateHikeSelects) window.populateHikeSelects();
+            // V2 UX PASSO 14b: niente piu' populateHikeSelects (il selettore escursione
+            // del carpooling e' sparito - il tab e' gia' di una singola uscita).
 
             if (avevamoMandatoQuoteManuali && hikeSalvata && hikeSalvata.routeSource && !hikeSalvata.routeSource.dislivelloManuale) {
                 window.showToast(

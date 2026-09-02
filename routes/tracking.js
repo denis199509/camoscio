@@ -8,6 +8,9 @@ const User = require('../models/User'); // punto 42b: recognizedAscents
 const Like = require('../models/Like'); // punto 113: "mi piace" su un'uscita pubblicata
 const Notification = require('../models/Notification'); // punto 113: notifica all'autore per il "mi piace"
 const { requireAuth } = require('../middleware/auth');
+// A-3.1 (ri-review sicurezza, 2° giro): dopo la revoca del consenso GPS il server smette di
+// raccogliere posizioni - applicato a /start, /:id/points, /:id/resume qui sotto.
+const richiedeConsensoGeo = require('../middleware/consensoGeo');
 const { isFiniteNum, haversineKm, simplifyTrack } = require('../lib/geometry');
 const { regionForPoint } = require('../lib/regions');
 const { parseGpx, statisticheTraccia, ErroreGpx, SOGLIA_DISLIVELLO_M, movimentoSecAttendibile } = require('../lib/gpx');
@@ -160,8 +163,37 @@ router.get('/totals', requireAuth, async (req, res) => {
         // Solo le sessioni CONCLUSE: una registrazione ancora aperta e' un'escursione in
         // corso, e farla entrare nei totali li farebbe crescere sotto gli occhi dell'utente
         // mentre cammina, senza che sia ancora "fatta".
+        //
+        // Filtro anno OPZIONALE (?anno=2026, revisione UX v2 - card "Il tuo 2026"): senza il
+        // parametro la risposta resta identica a prima (totale di tutta la vita), cosi' chi
+        // gia' chiama questa rotta non cambia. startedAt e' un vero Date su ogni sessione,
+        // anche quelle importate da file (models/ActiveHikeSession.js).
+        const filtro = { userId: req.session.userId, status: 'ended' };
+        // Intervallo esplicito OPZIONALE (?from=YYYY-MM-DD&to=YYYY-MM-DD, revisione UX v2
+        // PASSO 11b - pagina "Progressi" > statistiche filtrabili). Estremi INCLUSIVI: il
+        // giorno "to" per intero, quindi $lt del giorno dopo. Se arrivano sia from/to sia
+        // anno, vincono from/to. I confini sono in UTC come il filtro ?anno qui sotto -
+        // stessa (im)precisione di fuso, per coerenza fra i due. Forma della risposta invariata.
+        // La regex da sola accetta date sintatticamente valide ma inesistenti
+        // (9999-99-99, 2026-13-45): new Date() le rende Invalid Date -> CastError
+        // Mongoose -> 500 su input utente. Si controlla anche che la data esista.
+        const isData = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s || '') &&
+            !Number.isNaN(new Date(`${s}T00:00:00.000Z`).getTime());
+        if (isData(req.query.from) || isData(req.query.to)) {
+            const range = {};
+            if (isData(req.query.from)) range.$gte = new Date(`${req.query.from}T00:00:00.000Z`);
+            if (isData(req.query.to)) {
+                const giornoDopo = new Date(`${req.query.to}T00:00:00.000Z`);
+                giornoDopo.setUTCDate(giornoDopo.getUTCDate() + 1);
+                range.$lt = giornoDopo;
+            }
+            filtro.startedAt = range;
+        } else if (/^\d{4}$/.test(req.query.anno || '')) {
+            const anno = Number(req.query.anno);
+            filtro.startedAt = { $gte: new Date(`${anno}-01-01`), $lt: new Date(`${anno + 1}-01-01`) };
+        }
         const sessioni = await ActiveHikeSession
-            .find({ userId: req.session.userId, status: 'ended' })
+            .find(filtro)
             .select('-points -offTrailBuffer');
 
         // DUE COPPIE DI SOMME, e la distinzione e' il punto delicato di tutta questa rotta.
@@ -879,7 +911,7 @@ router.post('/import-gpx', requireAuth, async (req, res) => {
     }
 });
 
-router.post('/start', requireAuth, async (req, res) => {
+router.post('/start', requireAuth, richiedeConsensoGeo, async (req, res) => {
     try {
         const existing = await ActiveHikeSession.findOne({ userId: req.session.userId, openSession: true });
         if (existing) {
@@ -909,7 +941,7 @@ router.post('/start', requireAuth, async (req, res) => {
 // Aggiunge un GRUPPO di punti (mai un punto alla volta: troppo dispendioso in montagna
 // con poco campo). L'identita' di chi possiede la sessione e' sempre quella della sessione
 // di login, mai un valore mandato dal client, stesso criterio gia' usato in tutto il resto dell'app.
-router.post('/:id/points', requireAuth, async (req, res) => {
+router.post('/:id/points', requireAuth, richiedeConsensoGeo, async (req, res) => {
     try {
         // Solo i campi che servono davvero: non serve leggere l'intera traccia
         // (potenzialmente lunga ore) solo per aggiungere un piccolo gruppo di punti nuovi.
@@ -1035,7 +1067,7 @@ router.post('/:id/pause', requireAuth, async (req, res) => {
     }
 });
 
-router.post('/:id/resume', requireAuth, async (req, res) => {
+router.post('/:id/resume', requireAuth, richiedeConsensoGeo, async (req, res) => {
     try {
         const session = await ActiveHikeSession.findById(req.params.id);
         if (!session || String(session.userId) !== req.session.userId) {

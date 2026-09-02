@@ -203,6 +203,182 @@ h1, h2, h3, h4, h5, h6 {
     box-shadow: 0 4px 15px var(--accent-orange-glow-soft);
 }
 
+/* --- V2 UX PASSO 7: barra di navigazione a gruppi -----------------------------
+   Intestazioni di blocco non cliccabili, gruppi a fisarmonica (un solo gruppo
+   aperto per volta, gestito da app.js), sottovoci rientrate. Solo il minimo per
+   far funzionare la struttura - colori/animazioni fuori da questa fase. La
+   versione mobile (drawer) e' PASSO 8: nella @media 900 piu' in basso c'e' solo
+   una regola-ponte che riporta tutto al rail a icone di oggi. */
+.nav-block-label {
+    margin: 16px 16px 4px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+}
+.nav-menu > .nav-block-label:first-child {
+    margin-top: 4px;
+}
+
+.nav-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.nav-group-head {
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--color-text-secondary);
+    padding: 12px 16px;
+    border-radius: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    text-align: left;
+    transition: all var(--transition-speed);
+}
+
+.nav-group-head:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--color-text-primary);
+}
+
+.nav-group-head > span {
+    flex: 1;
+}
+
+.nav-group-head > svg:last-child {
+    width: 16px;
+    height: 16px;
+    opacity: 0.55;
+    transition: transform var(--transition-speed);
+}
+
+.nav-group-head[aria-expanded="true"] > svg:last-child {
+    transform: rotate(180deg);
+}
+
+/* Gruppo che contiene la sezione attiva: accento tenue, NON il pieno arancione
+   della foglia .nav-btn.active. */
+.nav-group-head.is-current {
+    color: var(--accent-orange);
+}
+
+.nav-group-body {
+    flex-direction: column;
+    gap: 8px;
+    margin-left: 18px;
+    padding-left: 6px;
+    border-left: 1px solid var(--border-color);
+}
+/* Chiuso di default: l'attributo [hidden] da solo non basta perche' una qualsiasi
+   regola d'autore su .nav-group-body batterebbe il display:none dello UA sheet.
+   Il corpo appare solo quando app.js toglie [hidden] (impostaGruppo). */
+.nav-group-body:not([hidden]) {
+    display: flex;
+}
+
+.nav-btn.nav-sub {
+    padding-left: 12px;
+}
+
+/* + Crea: azione, non navigazione. Accento pieno. */
+.nav-crea {
+    background: var(--accent-orange-glow);
+    border: none;
+    outline: none;
+    color: var(--accent-orange);
+    padding: 12px 16px;
+    border-radius: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-align: left;
+    width: 100%;
+    transition: all var(--transition-speed);
+}
+
+.nav-crea:hover {
+    color: var(--color-text-primary);
+}
+
+/* V2 UX PASSO 13 - popover di "＋ Crea". Ancorato al bottone (wrap position:relative).
+   Niente 'display' sulla regola base: e' un elemento con [hidden] e una regola
+   d'autore che imposta display batterebbe il display:none dello UA sheet (trappola
+   gia' pagata su .nav-group-body). Lo stato "aperto" vive su :not([hidden]). */
+.nav-crea-wrap {
+    position: relative;
+}
+
+.nav-crea-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    z-index: 60;
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 6px;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.5);
+}
+
+.nav-crea-menu:not([hidden]) {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+/* Verso l'alto quando aprirsi in giu' sforerebbe il fondo della .nav-menu (JS). */
+.nav-crea-menu--up {
+    top: auto;
+    bottom: calc(100% + 4px);
+}
+
+.nav-crea-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 12px;
+    background: transparent;
+    border: none;
+    outline: none;
+    border-radius: 8px;
+    color: var(--color-text-secondary);
+    font-size: 0.9rem;
+    text-align: left;
+    cursor: pointer;
+    transition: background var(--transition-speed), color var(--transition-speed);
+}
+
+.nav-crea-menu-item:hover,
+.nav-crea-menu-item:focus-visible {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--color-text-primary);
+}
+
+.nav-crea-menu-item i,
+.nav-crea-menu-item svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+/* PASSO 8: nel drawer mobile .nav-crea e' una voce a piena larghezza come sul
+   desktop, quindi il popover usa la stessa regola base (sotto/sopra il bottone,
+   left:0/right:0). Nessun override mobile. */
+/* -------------------------------------------------------------------------- */
+
 .sidebar-footer {
     padding: 16px 24px;
     border-top: 1px solid var(--border-color);
@@ -238,6 +414,46 @@ h1, h2, h3, h4, h5, h6 {
 .section-title {
     font-size: 1.6rem;
     color: var(--color-text-primary);
+}
+
+/* V2 UX PASSO 8 - drawer mobile. Sul desktop l'hamburger, lo scrim e la copia
+   delle bandiere nel footer della sidebar NON esistono visivamente; compaiono
+   solo nella @media <=900px piu' in basso. */
+.nav-drawer-toggle {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    background: transparent;
+    border: none;
+    outline: none;
+    border-radius: 10px;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+}
+
+.nav-drawer-toggle:hover,
+.nav-drawer-toggle:focus-visible {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--color-text-primary);
+}
+
+/* Scrim: niente 'display' sulla regola base (elemento con [hidden] - vedi la
+   trappola dello UA sheet). Lo stato "visibile" vive su :not([hidden]), e solo
+   dentro la @media: sul desktop non si apre mai. */
+.nav-scrim {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 190;
+}
+
+/* Specificita' (0,2,0) per battere '.lang-switcher { display:flex }' piu' in basso. */
+.sidebar-footer .sidebar-lang-switch {
+    display: none;
+    margin-bottom: 12px;
 }
 
 /* User Widget & Quick Switch */
@@ -997,6 +1213,10 @@ option {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 24px;
+    /* FASE 5: ogni card alta quanto il suo contenuto. Senza, lo stretch di default stira
+       "Ultimi traguardi" (piu' corta) all'altezza di "Il tuo cammino" e lascia il bottone
+       "Vedi tutti i badge" isolato in fondo con dello spazio morto sopra. */
+    align-items: start;
 }
 
 .dash-col {
@@ -1029,31 +1249,124 @@ option {
     margin-bottom: 10px;
 }
 
-/* La scheda di benvenuto e' la "prima" della pagina e lo dice con un filo arancione a
-   sinistra e uno sfondo leggermente piu' chiaro delle altre. Lo sfondo era scritto a mano
-   con due blu (rgba(22,30,49) / rgba(10,14,23)): valori rimasti dalla vecchia palette
-   "neon" e mai aggiornati al tema "rifugio di montagna", per cui l'unica scheda fredda
-   della pagina stava in mezzo a tre schede calde. Ora usa le variabili gia' esistenti. */
-.welcome-card {
-    background: linear-gradient(135deg, var(--bg-card-hover) 0%, var(--bg-card) 100%);
-    border-left: 4px solid var(--accent-orange);
+/* Blocco di apertura della Dashboard (revisione UX v2). A tutta larghezza, sopra
+   .dashboard-grid: e' l'inizio della pagina, non una scheda. Gerarchia dall'alto: saluto ->
+   sottotitolo -> card della prossima avventura (se c'e') -> azione primaria -> secondaria.
+   Qui solo struttura e gerarchia: nessun colore, ombra o animazione nuovi. */
+.dash-hero {
+    margin-bottom: 24px;
 }
 
-/* .glass-card:hover usa la scorciatoia border-color, che vale per TUTTI E QUATTRO i lati:
-   passando il mouse sulla scheda di benvenuto il filo arancione di sinistra diventava
-   grigio e la scheda perdeva il suo unico segno distintivo. */
-.welcome-card:hover {
-    border-left-color: var(--accent-orange);
+.dash-hero-greet {
+    /* clamp al posto di una @media: scende su schermo stretto senza un breakpoint dedicato */
+    font-size: clamp(1.5rem, 3.5vw + 0.8rem, 1.9rem);
+    font-weight: 700;
+    line-height: 1.15;
+    margin: 0;
 }
 
-/* RIQUADRO-DATO: un numero con la sua etichetta. Compare tre volte nella Dashboard
-   (benvenuto, "Quanto hai camminato", "Calcolatore Passo") e prima di questa riga erano
-   tre cose diverse nate in tre momenti diversi: raggio 12px / 10px / 10px, bordo solo su
-   .pace-row, e i tre numeri del benvenuto stipati dentro un unico riquadro flex mentre gli
-   altri sei erano riquadri separati. Ora e' una regola sola: stessa scatola ovunque.
+.dash-hero-sub {
+    font-size: clamp(0.95rem, 1vw + 0.7rem, 1.05rem);
+    color: var(--color-text-secondary);
+    margin: 6px 0 0;
+}
+
+/* Card della prossima avventura (FASE 2). Compare solo se c'e' un'escursione confermata in
+   programma (renderDashHero toglie .hidden). Riusa la scatola introdotta per la riga
+   segnaposto del PASSO 1: sfondo scuro, filo arancione a sinistra, raggio 12px. Solo
+   struttura e gerarchia: nessun colore, ombra o animazione nuovi. */
+.dash-hero-adventure {
+    margin-top: 16px;
+    padding: 14px 16px;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--border-color);
+    border-left: 3px solid var(--accent-orange);
+    border-radius: 12px;
+}
+
+.dash-hero-adv-title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+/* FASE 3: qualifica il titolo, quindi le sta appena sotto e attaccata - non e' un dato
+   dell'escursione come le righe sotto, e' un'etichetta su chi l'ha creata. */
+.dash-hero-adv-org {
+    margin: 2px 0 0;
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
+}
+
+.dash-hero-adv-when {
+    margin: 4px 0 0;
+    color: var(--color-text-primary);
+    font-weight: 600;
+}
+
+.dash-hero-adv-stats,
+.dash-hero-adv-from {
+    margin: 4px 0 0;
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+}
+
+/* Conteggio partecipanti a sinistra, "Apri escursione" a destra; su contenitore stretto
+   vanno a capo (il bottone scende sotto), nessuna @media. */
+.dash-hero-adv-foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.dash-hero-adv-people {
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+}
+
+.dash-hero-adventure .btn i {
+    width: 16px;
+    height: 16px;
+}
+
+/* FASE 3: link "vedi tutte", discreto per davvero - non un .btn come "Vedi tutti i badge" del
+   Passaporto, competerebbe con "Apri escursione" appena sopra. Bottone reso link (nessun bordo/
+   sfondo), allineato a destra sotto il piede. */
+.dash-hero-adv-more {
+    display: block;
+    margin: 8px 0 0 auto;
+    padding: 0;
+    background: none;
+    border: 0;
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+/* Desktop: i due pulsanti affiancati. Su contenitore stretto vanno a capo da soli e
+   diventano a piena larghezza - ci pensa flex-wrap col flex-basis, nessuna @media. */
+.dash-hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 18px;
+}
+
+.dash-hero-cta {
+    flex: 1 1 200px;
+}
+
+/* RIQUADRO-DATO: un numero con la sua etichetta. Compare due volte nella Dashboard
+   ("Quanto hai camminato", "Calcolatore Passo") e prima erano due cose diverse nate in
+   momenti diversi: raggio 10px, bordo solo su .pace-row. Ora e' una regola sola: stessa
+   scatola.
    min-width:0 fuori dalle @media per lo stesso motivo di .dash-col qui sopra (misurato a
    1100px: .pace-stats dava colonne da 86px, 86px e 112px al posto di tre uguali). */
-.q-stat,
 .total-box,
 .pace-row {
     display: flex;
@@ -1067,27 +1380,8 @@ option {
     text-align: center;
 }
 
-/* Tre numeri affiancati, esattamente come .totals-grid e .pace-stats piu' sotto: era
-   l'unica delle tre file a essere un flex con space-between, e a schermo largo si allargava
-   in modo diverso dalle altre due. */
-.quick-stats-row {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-    margin-top: 16px;
-}
-
-.q-val {
-    font-size: 1.8rem;
-    font-weight: 700;
-    font-family: 'Outfit', sans-serif;
-    color: var(--accent-orange);
-    line-height: 1.1;
-}
-
-/* Etichetta sotto il numero: unica misura per tutte e tre le file di riquadri
+/* Etichetta sotto il numero: unica misura per le due file di riquadri
    (era 0.75rem qui, 0.72rem nei totali - una differenza senza motivo). */
-.q-lbl,
 .total-lbl,
 .pace-row span {
     font-size: 0.75rem;
@@ -1189,10 +1483,97 @@ option {
     overflow-wrap: anywhere;
 }
 
-/* Punto 16 - totali reali di cammino in Dashboard. Stessa impostazione di .pace-stats e di
-   .quick-stats-row (tre riquadri affiancati), cosi' le schede si somigliano invece di
-   sembrare disegnate da persone diverse. La scatola dei riquadri e' quella condivisa piu'
-   sopra (.q-stat/.total-box/.pace-row). */
+/* Punto 16 - totali reali di cammino in Dashboard. Stessa impostazione di .pace-stats
+   (tre riquadri affiancati), cosi' le due schede si somigliano invece di sembrare disegnate
+   da persone diverse. La scatola dei riquadri e' quella condivisa piu' sopra
+   (.total-box/.pace-row). */
+/* ===== FASE 4 revisione UX: "Il tuo cammino" / "Ultimi traguardi" / "Il tuo <anno>" =====
+   Solo struttura e gerarchia: nessun colore, ombra o animazione nuovi (regola della fase UX).
+   La barra di progresso riusa .badge-progress-track/.badge-progress-bar della pagina Badge;
+   la griglia dei traguardi riusa .stamps-grid; i box numero riusano .total-box. */
+
+/* "Passo & Fatica" e "Il tuo <anno>" stanno FUORI dal grid a due colonne, a piena larghezza,
+   staccati dal blocco sopra (il grid non ha margine verso il fratello che segue). */
+.dashboard-grid ~ .glass-card {
+    margin-top: 24px;
+}
+
+.dash-journey-peaks {
+    margin: 12px 0 0;
+    font-size: 1rem;
+}
+
+.dash-journey-peaks strong {
+    font-family: 'Outfit', sans-serif;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--accent-orange);
+    margin-right: 6px;
+}
+
+.dash-journey-sub {
+    margin: 4px 0 0;
+}
+
+.dash-journey-goal {
+    margin-top: 16px;
+}
+
+/* FASE 5: nome zona a sinistra, "4 / 7" a destra sulla STESSA riga. Prima il conteggio stava
+   sotto la barra, piccolo e grigio, dove si perdeva - nei mockup di Denis era in evidenza
+   accanto al nome. */
+.dash-journey-zona {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+    margin: 0 0 6px;
+    font-weight: 600;
+}
+
+.dash-journey-count {
+    flex-shrink: 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+}
+
+.dash-journey-left {
+    margin: 6px 0 0;
+    font-weight: 600;
+}
+
+.dash-journey-cta,
+.dash-journey-empty .btn,
+.dash-achievements-empty .btn {
+    margin-top: 16px;
+}
+
+/* Stato vuoto, condiviso da "Il tuo cammino" e "Ultimi traguardi" */
+.dash-empty-title {
+    margin: 12px 0 4px;
+    font-weight: 700;
+}
+
+.dash-achievements-grid {
+    margin-top: 12px;
+}
+
+.dash-achievements-more {
+    margin-top: 12px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+/* Quattro numeri in riga (i box riusano .total-box); su stretto passano a 2x2 nella @media */
+.dash-year-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin: 16px 0 12px;
+}
+/* ===== fine FASE 4 ===== */
+
 .totals-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -1201,7 +1582,7 @@ option {
 }
 
 .total-val {
-    font-family: 'Outfit', sans-serif; /* stesso font dei numeri grandi di .q-val */
+    font-family: 'Outfit', sans-serif; /* stesso font dei numeri grandi delle altre schede */
     font-size: 1.5rem;
     font-weight: 700;
     color: var(--accent-orange);
@@ -1239,8 +1620,8 @@ option {
    verranno costruite, la loro barra andra' scritta su misura del dato reale. */
 
 /* Pace stats - stessa griglia e stessi riquadri dei totali qui sopra (la scatola e' la
-   regola condivisa .q-stat/.total-box/.pace-row). Il margine inferiore era 0 mentre quello
-   dei totali era 12px: stessa fila di riquadri, due distanze diverse dal contenuto sotto. */
+   regola condivisa .total-box/.pace-row). Il margine inferiore era 0 mentre quello dei
+   totali era 12px: stessa fila di riquadri, due distanze diverse dal contenuto sotto. */
 .pace-stats {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -1259,6 +1640,11 @@ option {
 .pace-chart-container {
     height: 160px;
     position: relative;
+    /* FASE 5: da quando "Passo & Fatica" e' a piena larghezza (la card gemella "Quanto hai
+       camminato" e' stata rimossa) il grafico si stirava su ~1150px per quattro barre. In
+       mezza colonna era ~570px. Contenuto qui; i tre box velocita'/indice sopra restano a
+       piena larghezza. */
+    max-width: 640px;
 }
 
 /* Chart.js ridimensiona la tela da solo (responsive:true, vedi renderPaceChart in app.js),
@@ -1285,6 +1671,53 @@ option {
 
 .profile-section .btn {
     margin-top: 4px;
+}
+
+/* V2 UX PASSO 12 - #my-profile sola vista + #settings config */
+.profile-bio-view {
+    margin-bottom: 12px;
+}
+
+.profile-bio-text {
+    white-space: pre-wrap;
+    color: var(--color-text-secondary);
+    line-height: 1.5;
+    margin: 0;
+}
+
+.profile-edit-link-row {
+    margin: 4px 0 24px;
+}
+
+.settings-card {
+    padding: 18px 20px;
+    margin-bottom: 16px;
+}
+
+.settings-card h4 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 12px;
+}
+
+.settings-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.settings-placeholder {
+    opacity: 0.65;
+}
+
+.settings-placeholder-list {
+    margin: 8px 0 0;
+    padding-left: 20px;
+    color: var(--color-text-muted);
+    line-height: 1.7;
 }
 
 /* Timer Dead Man */
@@ -2038,6 +2471,67 @@ option {
 /* ==========================================================================
    4. SECTION: CARPOOLING
    ========================================================================== */
+/* V2 UX PASSO 14b - tab interni di hike-page (Dettagli / Chat / Carpooling; 14c: Zaino).
+   Filtro CSS via l'attributo data-hp-tab sulla <section> - nessun [hidden], quindi
+   nessuna trappola con lo UA sheet. */
+.hike-page-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 18px;
+}
+
+.hp-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+    color: var(--color-text-secondary);
+    font-size: 0.88rem;
+    cursor: pointer;
+    transition: background var(--transition-speed), color var(--transition-speed), border-color var(--transition-speed);
+}
+
+.hp-tab:hover,
+.hp-tab:focus-visible {
+    color: var(--color-text-primary);
+}
+
+.hp-tab.active {
+    background: var(--accent-orange-glow);
+    border-color: var(--accent-orange);
+    color: var(--accent-orange);
+}
+
+.hp-tab i,
+.hp-tab svg {
+    width: 15px;
+    height: 15px;
+}
+
+.hp-panel {
+    display: none;
+}
+
+#hike-page[data-hp-tab="dettagli"] .hp-panel[data-hp-panel="dettagli"],
+#hike-page[data-hp-tab="chat"] .hp-panel[data-hp-panel="chat"],
+#hike-page[data-hp-tab="carpool"] .hp-panel[data-hp-panel="carpool"],
+#hike-page[data-hp-tab="backpack"] .hp-panel[data-hp-panel="backpack"] {
+    display: block;
+}
+
+/* A-1 (security review 21a): a un non-partecipante restano solo i Dettagli. impostaTabHikePage
+   (hikepage.js) forza comunque data-hp-tab="dettagli"; qui si nascondono i bottoni degli
+   altri tab. Il gate vero e' lato server (routes/hikes.js). */
+#hike-page.hp-non-partecipo .hp-tab[data-hp-tab="chat"],
+#hike-page.hp-non-partecipo .hp-tab[data-hp-tab="carpool"],
+#hike-page.hp-non-partecipo .hp-tab[data-hp-tab="backpack"] {
+    display: none;
+}
+
 .carpool-layout {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -3534,6 +4028,22 @@ option {
     margin-bottom: 14px;
 }
 
+/* V2 UX PASSO 9: "Le mie escursioni" ha tre viste-filtro (Tutte / In programma /
+   Completate), scelte dalle sotto-voci del menu. La vista corrente e' in data-view
+   sulla <section id="my-hikes">; qui si nascondono i gruppi che non le appartengono.
+   - "tutte"      -> nessuna regola, si vede tutto.
+   - "programma"  -> solo organizzate + a cui partecipo (= non completate).
+   - "completate" -> solo il gruppo "Escursioni completate".
+   Selettore con #id + attributo = specificita' alta: nessun rischio di conflitto,
+   e .my-hikes-group non ha una regola d'autore su 'display' da dover battere. */
+#my-hikes[data-view="programma"] [data-mh-group="completate"],
+#my-hikes[data-view="programma"] [data-mh-group="progetti"],
+#my-hikes[data-view="completate"] [data-mh-group="organizzate"],
+#my-hikes[data-view="completate"] [data-mh-group="partecipo"],
+#my-hikes[data-view="completate"] [data-mh-group="progetti"] {
+    display: none;
+}
+
 /* ==========================================================================
    STORICO USCITE E CARICAMENTO .GPX — punto 15 di cose_da_fare.txt
 
@@ -3876,6 +4386,79 @@ option {
 
 .badges-group > .small {
     margin-bottom: 14px;
+}
+
+/* V2 UX PASSO 11 - "Il tuo cammino per zona" in fondo a #progress. Una riga per
+   zona: nome + "N / M", barra (riusa .badge-progress-track/.badge-progress-bar
+   della Home e del riepilogo Badge), e la frase "ti mancano N vette". */
+.progress-zones {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.progress-zone-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    margin: 0 0 6px;
+}
+
+.progress-zone-name {
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.progress-zone-count {
+    font-variant-numeric: tabular-nums;
+    color: var(--color-text-secondary);
+    flex-shrink: 0;
+}
+
+.progress-zone-left {
+    margin: 6px 0 0;
+}
+
+.progress-zone-row.is-complete .badge-progress-bar {
+    background: var(--accent-green);
+}
+
+.progress-zone-row.is-complete .progress-zone-left {
+    color: var(--accent-green);
+}
+
+/* V2 UX PASSO 11b - "Le tue statistiche" (#progress-stats): controlli data +
+   intervalli rapidi sopra la stessa griglia .dash-year-grid della card "Il tuo
+   <anno>" (riuso: .total-box / .total-val / .total-lbl). */
+.progress-stats-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 12px 16px;
+    margin: 4px 0 18px;
+}
+
+.progress-stats-date {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.82rem;
+    color: var(--color-text-secondary);
+}
+
+.progress-stats-date input {
+    color-scheme: dark;
+}
+
+.progress-stats-quick {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.dash-year-stats-link {
+    margin-top: 10px;
 }
 
 .badges-grid {
@@ -4664,18 +5247,13 @@ option {
         gap: 16px;
     }
 
-    /* Tre numeri affiancati in 330px diventano illeggibili: le tre file di riquadri della
-       Dashboard passano a due colonne, con l'ultimo che occupa tutta la riga.
-       .quick-stats-row e' entrata in questo elenco quando e' diventata una griglia come le
-       altre due: prima era un flex a cui serviva un flex-wrap tutto suo, e si impilava in
-       modo diverso dalle sue gemelle a parita' di schermo. */
-    .quick-stats-row,
+    /* Tre numeri affiancati in 330px diventano illeggibili: le due file di riquadri della
+       Dashboard passano a due colonne, con l'ultimo che occupa tutta la riga. */
     .totals-grid,
     .pace-stats {
         grid-template-columns: 1fr 1fr;
     }
 
-    .quick-stats-row > :last-child,
     .totals-grid > :last-child,
     .pace-stats > :last-child {
         grid-column: 1 / -1;
@@ -4687,6 +5265,37 @@ option {
     .stamps-grid {
         grid-template-columns: 1fr 1fr;
         gap: 12px;
+    }
+
+    /* FASE 4: "Il tuo <anno>" a 2x2 su stretto; "Ultimi traguardi" mostra 3 badge su
+       mobile invece di 4 (spec di Denis, punto 9) - il quarto si nasconde qui. */
+    .dash-year-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .dash-achievements-grid .stamp-slot:nth-child(4) {
+        display: none;
+    }
+
+    /* FASE 5: i tre badge rimasti in fila (3 colonne), non 2+1 con una cella vuota. */
+    .dash-achievements-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    /* FASE 5: "Vedi tutti i badge" non nell'angolo destro - li' scrollando finisce sotto il
+       pulsante flottante .app-fab (stesso problema del padding-bottom di #my-hikes, punto 15). */
+    .dash-achievements-more {
+        justify-content: center;
+    }
+
+    .dash-achievements-more .btn {
+        width: 100%;
+    }
+
+    /* FASE 5: lo stacco fra il grid e "Passo & Fatica" / "Il tuo <anno>" segue il gap ridotto
+       del mobile (16px), come tutto il resto. */
+    .dashboard-grid ~ .glass-card {
+        margin-top: 16px;
     }
 
     /* Punto 15: lo storico delle uscite e' l'ultima cosa della pagina "Le mie escursioni",
@@ -4726,44 +5335,61 @@ option {
     }
 
     /* "Quota Massima" e "Durata Escursione" affiancate escono dallo schermo (la seconda
-       restava tagliata a meta'). Limitato a #backpack di proposito: .form-row la usano
+       restava tagliata a meta'). Limitato allo Zaino di proposito: .form-row la usano
        anche altri moduli del sito, che non sono stati provati in questa sessione - meglio
-       una correzione che si sa dove arriva che una che tocca schermate mai guardate. */
-    #backpack .form-row {
+       una correzione che si sa dove arriva. V2 UX PASSO 14c: lo Zaino e' un tab di
+       hike-page, il selettore e' .hp-panel[data-hp-panel="backpack"]. */
+    .hp-panel[data-hp-panel="backpack"] .form-row {
         flex-direction: column;
         gap: 0;
     }
 
-    /* --- Barra di navigazione: solo icone --- */
+    /* --- V2 UX PASSO 8: DRAWER a scomparsa (sostituisce il rail a icone + la
+       regola-ponte di PASSO 7). La .sidebar e' off-canvas a sinistra; entra con
+       .is-open (app.js). Dentro, lo STESSO menu annidato del desktop - niente e'
+       nascosto: intestazioni di blocco, teste dei gruppi (fisarmonica), ＋ Crea
+       col testo, footer con le bandiere. Prova vera sul telefono di Denis al deploy. */
+    .nav-drawer-toggle {
+        display: inline-flex;
+    }
+
     .sidebar {
-        width: 62px;
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        width: 280px;
+        max-width: 84vw;
+        transform: translateX(-100%);
+        transition: transform 0.25s ease;
+        z-index: 200;
+        overflow-y: auto;
     }
 
-    .brand {
-        padding: 16px 0;
-        justify-content: center;
+    .sidebar.is-open {
+        transform: translateX(0);
     }
 
-    .logo-text,
-    .nav-btn span,
-    .sidebar-footer {
+    /* Lo scrim compare solo mentre il drawer e' aperto (JS toglie [hidden]). */
+    .nav-scrim:not([hidden]) {
+        display: block;
+    }
+
+    /* Le bandiere lingua: fuori dall'header (troppo stretto), in fondo al drawer. */
+    .user-status-widget > .lang-switcher {
         display: none;
     }
-
-    .nav-menu {
-        padding: 12px 8px;
+    .sidebar-footer .sidebar-lang-switch {
+        display: flex;
     }
 
-    .nav-btn {
-        justify-content: center;
-        padding: 12px 0;
+    /* Niente scroll di sfondo mentre il drawer e' aperto (app.js: body.no-scroll).
+       Il vero contenitore che scorre e' .page-container, non il body. */
+    body.no-scroll {
+        overflow: hidden;
     }
-
-    /* Il bordo sinistro dell'elemento attivo, su una colonnina di sole icone,
-       schiaccerebbe l'icona di lato: si sostituisce con il solo sfondo. */
-    .nav-btn.active {
-        border-left: none;
-        border-radius: 12px;
+    body.no-scroll .page-container {
+        overflow: hidden;
     }
 
     /* --- Intestazione: deve stare su UNA riga sola ---

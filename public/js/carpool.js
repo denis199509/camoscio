@@ -16,9 +16,16 @@ function formattaEuro(n) {
     return lang === 'en' ? testo : testo.replace('.', ',');
 }
 
+// V2 UX PASSO 14b: il carpooling e' un tab di hike-page, legato a UNA escursione.
+// L'id arriva da renderCarpoolModule(hikeId) (chiamata pigra da hikepage.js quando
+// si apre il tab) e resta qui per il submit del form "Offri un Passaggio", che non
+// ha piu' il selettore "per quale escursione".
+var carpoolHikeId = null;
+
 function initCarpoolModule() {
+    // Solo l'aggancio dei listener: il primo render e' pigro, lo fa hikepage.js
+    // all'apertura del tab Carpooling con l'hikeId corrente.
     setupCarpoolEvents();
-    renderCarpoolModule();
 }
 
 function setupCarpoolEvents() {
@@ -50,63 +57,60 @@ function setupCarpoolEvents() {
     }
 }
 
-// Renderizza la UI del modulo carpooling
-async function renderCarpoolModule() {
+// Renderizza la UI del modulo carpooling per UNA escursione (tab di hike-page).
+// hikeId opzionale: se assente si riusa l'ultimo (utile ai ridisegni post-azione).
+async function renderCarpoolModule(hikeId) {
+    if (hikeId) carpoolHikeId = hikeId;
     const db = window.CamoscioState;
-    const currentHike = db.hikes.find(h => h.id === db.activeHikeId) || db.hikes[0]; // Escursione scelta dall'utente, o la prima disponibile
+    if (!db || !db.currentUser) return;
 
-    // Popola select escursioni nel form offerta passaggi
-    populateHikeSelects();
-
-    // Punto 46: i propri annunci, su TUTTE le escursioni - non solo quella attiva.
-    renderMyCarpoolOffers();
-
+    const currentHike = db.hikes.find(h => h.id === carpoolHikeId);
     if (!currentHike) return;
 
-    // Rileva e disegna gli abbinamenti di carpooling e la privacy
-    renderAddressPrivacyMatch(currentHike);
+    // Il tuo annuncio PER QUESTA uscita (0 o 1: submitCarpoolOffer sostituisce sempre
+    // il precedente). Era "I Tuoi Annunci Auto" su tutte le escursioni (punto 46) -
+    // ora che il carpooling e' per-uscita, l'annuncio si ritrova nel tab dell'uscita.
+    renderMyCarpoolOffers(currentHike);
 
-    // Disegna la lista dei conducenti attivi per l'escursione corrente
+    // Abbinamenti/privacy + elenco auto per QUESTA escursione.
+    renderAddressPrivacyMatch(currentHike);
     renderDriversList(currentHike);
 }
 
-// Punto 46 di cose_da_fare.txt: "il mio annuncio non lo trovo piu' e non posso
-// modificarlo". Cerca in TUTTE le escursioni (non solo quella attiva) dove l'utente
-// e' conducente, cosi' i suoi annunci si ritrovano in un posto solo invece che
-// aprendo escursione per escursione a caso.
-function renderMyCarpoolOffers() {
+// V2 UX PASSO 14b: il tuo annuncio auto PER QUESTA uscita (0 o 1). Era "I Tuoi
+// Annunci Auto" su tutte le escursioni (punto 46: "il mio annuncio non lo trovo
+// piu'"); ora che il carpooling e' un tab della singola escursione, l'annuncio si
+// ritrova qui, dentro quella uscita, e resta modificabile/cancellabile come prima.
+function renderMyCarpoolOffers(hike) {
     const box = document.getElementById("my-carpool-offers-list");
     if (!box) return;
 
     const db = window.CamoscioState;
-    const mieOfferte = db.hikes
-        .filter(h => h.carpool && h.carpool.drivers)
-        .map(h => ({ hike: h, driver: h.carpool.drivers.find(d => d.userId === db.currentUser.id) }))
-        .filter(o => o.driver);
+    const driver = (hike.carpool && hike.carpool.drivers)
+        ? hike.carpool.drivers.find(d => d.userId === db.currentUser.id)
+        : null;
 
     box.innerHTML = "";
-    if (mieOfferte.length === 0) {
-        box.innerHTML = `<div class="text-muted small italic text-center py-3">${T('carpool.js.nessunAnnuncio') || "Non hai ancora offerto nessun passaggio. Usa il modulo qui sotto."}</div>`;
+    if (!driver) {
+        box.innerHTML = `<div class="text-muted small italic text-center py-3">${T('carpool.js.nessunAnnuncioUscita') || "Non hai ancora offerto un passaggio per questa uscita. Usa il modulo qui sotto."}</div>`;
         return;
     }
 
-    mieOfferte.forEach(({ hike, driver }) => {
-        const numPasseggeri = (driver.passengers || []).length;
-        const item = document.createElement("div");
-        item.className = "carpool-group-item";
-        item.innerHTML = `
-            <div class="carpool-group-header">
-                <strong>${escapeHtml(hike.title)}</strong>
-                <span>${T('carpool.js.postiOccupati', numPasseggeri, driver.seats) || (numPasseggeri + '/' + driver.seats + ' posti occupati')}</span>
-            </div>
-            <div class="text-muted small">${T('carpool.js.partenzaDaLabel') || 'Partenza da:'} <b>${escapeHtml(driver.departureCity)}</b></div>
-            <div style="display:flex; justify-content: flex-end; gap:8px; margin-top:8px;">
-                <button class="btn btn-sm btn-secondary" onclick="editMyCarpoolOffer('${hike.id}')">${T('common.modifica') || 'Modifica'}</button>
-                <button class="btn btn-sm btn-danger" onclick="deleteMyCarpoolOffer('${hike.id}')">${T('carpool.js.cancellaAnnuncio') || 'Cancella annuncio'}</button>
-            </div>
-        `;
-        box.appendChild(item);
-    });
+    const numPasseggeri = (driver.passengers || []).length;
+    const item = document.createElement("div");
+    item.className = "carpool-group-item";
+    item.innerHTML = `
+        <div class="carpool-group-header">
+            <strong>${escapeHtml(hike.title)}</strong>
+            <span>${T('carpool.js.postiOccupati', numPasseggeri, driver.seats) || (numPasseggeri + '/' + driver.seats + ' posti occupati')}</span>
+        </div>
+        <div class="text-muted small">${T('carpool.js.partenzaDaLabel') || 'Partenza da:'} <b>${escapeHtml(driver.departureCity)}</b></div>
+        <div style="display:flex; justify-content: flex-end; gap:8px; margin-top:8px;">
+            <button class="btn btn-sm btn-secondary" onclick="editMyCarpoolOffer('${hike.id}')">${T('common.modifica') || 'Modifica'}</button>
+            <button class="btn btn-sm btn-danger" onclick="deleteMyCarpoolOffer('${hike.id}')">${T('carpool.js.cancellaAnnuncio') || 'Cancella annuncio'}</button>
+        </div>
+    `;
+    box.appendChild(item);
 }
 
 // Precompila il modulo "Offri un Passaggio" coi dati gia' pubblicati per
@@ -120,7 +124,8 @@ window.editMyCarpoolOffer = function(hikeId) {
     const driver = hike.carpool.drivers.find(d => d.userId === db.currentUser.id);
     if (!driver) return;
 
-    document.getElementById("offer-hike-select").value = hikeId;
+    // V2 UX PASSO 14b: niente piu' selettore escursione (il form e' nel tab di
+    // QUESTA uscita). Si precompilano solo citta'/posti/distanza.
     document.getElementById("offer-city").value = driver.departureCity;
     document.getElementById("offer-seats").value = driver.seats;
     document.getElementById("offer-distance").value = driver.distanceKm || 120;
@@ -162,25 +167,8 @@ window.deleteMyCarpoolOffer = async function(hikeId) {
     }
 };
 
-// Popola la select delle escursioni disponibili per cui offrire/cercare passaggi
-function populateHikeSelects() {
-    const select = document.getElementById("offer-hike-select");
-    if (!select) return;
-
-    const db = window.CamoscioState;
-    select.innerHTML = "";
-
-    // Data solo-cifre: identica in it-IT e en-GB (motivo della bandiera GB), ma il
-    // locale va passato esplicito - toLocaleDateString() senza argomenti segue il
-    // browser, non la lingua del sito.
-    const loc = (window.CamoscioI18n && window.CamoscioI18n.getLang() === 'en') ? 'en-GB' : 'it-IT';
-    db.hikes.forEach(h => {
-        const opt = document.createElement("option");
-        opt.value = h.id;
-        opt.textContent = `${h.title} (${new Date(h.date).toLocaleDateString(loc)})`;
-        select.appendChild(opt);
-    });
-}
+// V2 UX PASSO 14b: populateHikeSelects rimossa - il form "Offri un Passaggio" non
+// ha piu' il selettore "per quale escursione" (il tab e' gia' di UNA uscita).
 
 // Ricalcolo spese viaggio del pannello generico. Punto 98/C: prima si chiedeva la distanza
 // e il pedaggio gia' di andata E ritorno, lasciando all'utente il conto di raddoppiarli a
@@ -216,8 +204,7 @@ async function renderAddressPrivacyMatch(hike) {
     const db = window.CamoscioState;
     const currentUser = db.currentUser;
 
-    // Vediamo se l'utente corrente ha inserito una città/zona di partenza
-    // In questo mock memorizziamo la partenza in un oggetto globale o nel profilo utente nel DB
+    // La PROPRIA zona resta disponibile: currentUser viene da /api/auth/me, non filtrato.
     const myHomeCity = currentUser.homeCity || localStorage.getItem(`home_city_${currentUser.id}`) || "";
     document.getElementById("user-home-city").value = myHomeCity;
 
@@ -231,31 +218,25 @@ async function renderAddressPrivacyMatch(hike) {
         return;
     }
 
-    // Otteniamo gli indirizzi degli altri partecipanti dell'escursione corrente
-    const matches = [];
-    
-    hike.participants.forEach(pId => {
-        if (pId === currentUser.id) return; // Escludo me stesso
-
-        const user = db.users.find(u => u.id === pId);
-        if (!user) return;
-
-        const otherHomeCity = user.homeCity || localStorage.getItem(`home_city_${pId}`) || "";
-        
-        // Verifica se c'è corrispondenza di stringa (es. "Milano Loreto" e "Milano Lambrate" contengono entrambe "Milano")
-        const isMatch = checkCityMatch(myHomeCity, otherHomeCity);
-        if (isMatch && otherHomeCity) {
-            matches.push({ user, city: otherHomeCity });
+    // C-1 + A-NUOVO-2 (ri-review sicurezza): il confronto lo fa il SERVER e risponde SOLO col
+    // CONTEGGIO. Le zone e i nomi degli altri non escono (coi nomi la rotta era un oracolo
+    // sulla zona di casa). Per sapere CHI: la lista partecipanti e "Offri un Passaggio".
+    let quanti = 0;
+    try {
+        const res = await fetch(`/api/hikes/${hike.id}/home-match`);
+        if (res.ok) {
+            const dati = await res.json();
+            quanti = Number(dati.quanti) || 0;
         }
-    });
+    } catch (e) {
+        console.error("Match zona di partenza non riuscito:", e);
+    }
 
-    if (matches.length > 0) {
+    if (quanti > 0) {
         statusBox.className = "privacy-status matching";
-        
-        const matchedNames = matches.map(m => `<b>${escapeHtml(m.user.username.split(" ")[0])}</b> (${escapeHtml(m.city)})`).join(", ");
         statusBox.innerHTML = `
             <i data-lucide="check-circle" style="color:var(--accent-green)"></i>
-            <span>${T('carpool.js.matchTrovato', matchedNames) || `<strong>CORRISPONDENZA PARTENZA TROVATA!</strong> Anche tu e ${matchedNames} partiti dalla stessa zona. Potete viaggiare insieme!`}</span>
+            <span>${T('carpool.js.matchTrovato', quanti) || `<strong>CORRISPONDENZA PARTENZA TROVATA!</strong> ${quanti} ${quanti === 1 ? 'altro partecipante parte' : 'altri partecipanti partono'} dalla tua stessa zona. Guarda la lista partecipanti o usa "Offri un Passaggio" per organizzarvi.`}</span>
         `;
     } else {
         statusBox.className = "privacy-status isolated";
@@ -266,29 +247,6 @@ async function renderAddressPrivacyMatch(hike) {
     }
 
     if (window.lucide) window.lucide.createIcons();
-}
-
-// Funzione helper per verificare se due indirizzi corrispondono (es. stessa città)
-function checkCityMatch(city1, city2) {
-    const clean1 = city1.toLowerCase().trim();
-    const clean2 = city2.toLowerCase().trim();
-    
-    if (clean1 === clean2) return true;
-    
-    // Controlla se una parola principale (es. Milano, Bergamo, Roma) è contenuta in entrambe
-    const words1 = clean1.split(/\s+/);
-    const words2 = clean2.split(/\s+/);
-    
-    // Vediamo se ci sono parole comuni lunghe più di 3 lettere (escludendo via, viale, etc.)
-    const exclude = ["via", "viale", "piazza", "corso", "alto", "basso", "nord", "sud"];
-    for (let w1 of words1) {
-        if (w1.length > 3 && !exclude.includes(w1)) {
-            if (words2.some(w2 => w2.includes(w1) || w1.includes(w2))) {
-                return true;
-            }
-        }
-    }
-    return false;
 }
 
 // Salva la città di partenza dell'utente e sincronizza il server
@@ -317,7 +275,8 @@ async function saveUserHomeCity(city) {
 // Offri un passaggio (aggiungi me come autista)
 async function submitCarpoolOffer() {
     const db = window.CamoscioState;
-    const hikeId = document.getElementById("offer-hike-select").value;
+    // V2 UX PASSO 14b: l'escursione e' quella del tab di hike-page, non piu' da un select.
+    const hikeId = carpoolHikeId;
     const city = document.getElementById("offer-city").value;
     const seats = parseInt(document.getElementById("offer-seats").value);
     const distanceKm = parseFloat(document.getElementById("offer-distance").value) || 120;
@@ -502,17 +461,16 @@ window.leaveCarpoolGroup = async function(hikeId, driverId) {
 };
 
 // Cambio lingua (punto 102, sesto lotto): renderCarpoolModule ricostruisce via
-// innerHTML testo che applyStaticTranslations non raggiunge (annunci, elenco auto,
-// stato privacy). Nessun fetch nel suo percorso sincrono -> ridisegno gratis, come
-// renderHikesList al secondo lotto. Il box "Split Spese" invece lo disegna solo il
-// suo bottone: si richiama calculateGenericExpenses per rimettere i tre importi €
-// nel separatore decimale della lingua nuova (i campi hanno sempre un valore,
-// nessun fetch). Solo se #carpool e' la sezione attiva: navigateTo lo ridisegna
-// comunque all'ingresso (app.js), come renderCompletate.
+// innerHTML testo che applyStaticTranslations non raggiunge (annuncio, elenco auto,
+// stato privacy). Nessun fetch nel percorso sincrono -> ridisegno gratis. Il box
+// "Split Spese" lo disegna solo il suo bottone: si richiama calculateGenericExpenses
+// per rimettere i tre importi € nel separatore decimale della lingua nuova.
+// V2 UX PASSO 14b: il carpooling e' un tab di hike-page - si ridisegna solo se
+// hike-page e' attiva E il tab Carpooling e' quello aperto (data-hp-tab).
 if (window.CamoscioI18n && window.CamoscioI18n.onChange) {
     window.CamoscioI18n.onChange(function () {
-        const sec = document.getElementById("carpool");
-        if (sec && sec.classList.contains("active") &&
+        const hp = document.getElementById("hike-page");
+        if (hp && hp.classList.contains("active") && hp.getAttribute("data-hp-tab") === "carpool" &&
             window.CamoscioState && window.CamoscioState.currentUser) {
             renderCarpoolModule();
             calculateGenericExpenses();
@@ -522,4 +480,3 @@ if (window.CamoscioI18n && window.CamoscioI18n.onChange) {
 
 window.initCarpoolModule = initCarpoolModule;
 window.renderCarpoolModule = renderCarpoolModule;
-window.populateHikeSelects = populateHikeSelects;

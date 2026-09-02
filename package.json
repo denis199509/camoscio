@@ -8,7 +8,6 @@
   },
   "dependencies": {
     "@capacitor/android": "^8.5.0",
-    "@capacitor/cli": "^8.5.0",
     "@capacitor/core": "^8.5.0",
     "@capacitor/local-notifications": "^8.3.0",
     "@capgo/background-geolocation": "^8.4.2",
@@ -16,6 +15,7 @@
     "connect-mongo": "^6.0.0",
     "dotenv": "^17.4.2",
     "express": "^4.19.2",
+    "express-rate-limit": "^8.7.0",
     "express-session": "^1.19.0",
     "fit-file-parser": "^5.0.2",
     "mongoose": "^9.8.0",
@@ -24,6 +24,7 @@
     "ws": "^8.16.0"
   },
   "devDependencies": {
-    "@capacitor/assets": "^3.0.5"
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^8.5.0"
   }
 }

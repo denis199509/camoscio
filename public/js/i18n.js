@@ -61,30 +61,76 @@
             // Titolo di sezione nell'header (#section-title): la mappa completa
             // sectionId -> titolo resta scritta una volta sola in app.js
             // (updateSectionTitle) - qui solo l'inglese per le sezioni tradotte.
-            'sectionTitle.badges': 'Your Badges',
+            // V2 UX PASSO 11: 'sectionTitle.badges' -> 'sectionTitle.progress' (pagina "Progressi").
+            'sectionTitle.progress': 'Progress',
             // Rollout punto 102: manca apposta una voce per squad-page/hike-page (non
             // sono nemmeno in prettyNames, app.js - la loro intestazione e' SEMPRE il
             // nome vero della squadra/escursione, mai un titolo fisso da tradurre qui).
-            'sectionTitle.people-search': 'Search People',
+            // V2 UX PASSO 10: via 'sectionTitle.people-search' (sezione rimossa).
             'sectionTitle.user-profile': 'Profile',
 
             // Etichette della barra laterale (public/index.html, <nav class="nav-menu">) -
             // segnalato da Denis il 22/08/2026: restavano in italiano anche a pagina
-            // tradotta, perche' non erano mai state marcate, nemmeno nella prova originale
-            // sulla sola pagina Badge. Chiavi separate da sectionTitle.*: sono due posti
-            // diversi (voce di menu compatta vs titolo di pagina) che qui capita abbiano
-            // spesso lo stesso testo, ma potrebbero divergere in futuro (es. un'etichetta
-            // di menu piu' corta del titolo della pagina, come gia' succede in italiano per
-            // "Carpooling & Spese Viaggio" -> solo "Carpooling" nel menu).
-            'nav.dashboard': 'Dashboard',
+            // tradotta, perche' non erano mai state marcate. Chiavi separate da
+            // sectionTitle.* perche' sono due punti diversi nel codice (voce di menu vs
+            // #section-title dell'header, che ha un meccanismo suo, updateSectionTitle,
+            // che parte da prettyNames in app.js).
+            // PASSO 6: header = voce di menu. PASSO 7 (01/09/2026): il menu passa a
+            // gruppi. "Home"/"Ispirazioni"/"Community" sono RINOMINE (prima Dashboard/
+            // Feed/Tribu' & Squadre) - i data-target restano dashboard/feed/social.
+            // "Esplora" e' l'intestazione del gruppo, non naviga. nav.ispirazioni sta
+            // piu' in basso, accanto alle altre voci della parte social (punto 113).
+            'nav.blocco.navigazione': 'Navigation',
+            'nav.blocco.azione': 'Action',
+            'nav.blocco.personale': 'Personal area',
+            // V2 UX PASSO 14a: via 'nav.blocco.strumenti' (il blocco "STRUMENTI" non esiste piu').
+            'nav.home': 'Home',
+            'nav.esplora': 'Explore',
             'nav.hikes': 'Hikes',
+            'nav.map': 'Map',
             'nav.myHikes': 'My Hikes',
-            'nav.badges': 'Badges',
-            'nav.map': 'Map & Trails',
-            'nav.backpack': 'Smart Backpack',
-            'nav.safety': 'Safety & Mesh',
-            'nav.social': 'Tribe & Squads',
-            'nav.peopleSearch': 'Search People',
+            // V2 UX PASSO 9: sotto-voci di "Le mie escursioni" (viste-filtro della
+            // stessa pagina, non sezioni). "In programma" = non ancora completate.
+            'nav.mieTutte': 'All',
+            'nav.mieProgramma': 'Upcoming',
+            'nav.mieCompletate': 'Completed',
+            'nav.community': 'Community',
+            // V2 UX PASSO 10: "Community" e' ora un gruppo con la sotto-voce "Amici"
+            // (porta alla card "Persone", che ha assorbito la ricerca per nome utente).
+            // Via 'nav.peopleSearch' - la voce "Cerca Persone" non esiste piu'.
+            'nav.amici': 'Friends',
+            'nav.crea': 'Create',
+            // V2 UX PASSO 13: le 2 voci del popover "＋ Crea".
+            'crea.nuovaEscursione': 'New hike',
+            'crea.nuovoPercorso': 'New route',
+            // V2 UX PASSO 8: aria-label dell'hamburger del drawer mobile.
+            'nav.apriMenu': 'Open menu',
+            // V2 UX PASSO 11: 'nav.badges' -> 'nav.progressi' (la voce "Badge" diventa "Progressi").
+            'nav.progressi': 'Progress',
+            // V2 UX PASSO 12: #my-profile si sdoppia in "Profilo" (vista) + "Impostazioni" (#settings).
+            'nav.profilo': 'Profile',
+            'nav.impostazioni': 'Settings',
+            // V2 UX PASSO 14c: 'nav.backpack' ritirata - lo Zaino e' un tab di hike-page.
+            // V2 UX PASSO 14a: 'nav.safety' -> 'nav.sicurezza', etichetta accorciata.
+            'nav.sicurezza': 'Safety',
+
+            // V2 UX PASSO 11 - blocco "Il tuo cammino per zona" in fondo a #progress
+            // (badges.js -> renderProgressoZoneTutte). "Ti mancano N vette..." riusa
+            // 'dash.camminoMancano' (stessa frase della Home).
+            'progress.zoneTitolo': 'Your path, zone by zone',
+            'progress.zoneDesc': 'How many peaks you have earned in each zone, and how many are left to complete it.',
+            'progress.zoneCompletata': 'Zone completed.',
+            'progress.zoneVuoto': 'No zone has catalogued peaks yet.',
+            // PASSO 11b - blocco "Le tue statistiche" (#progress-stats). I numeri
+            // (escursioni/km/D+/vette) riusano dash.annoEscursioni/.kmPercorsi/.mDislivello/.annoVette.
+            'progress.statsTitolo': 'Your stats',
+            'progress.statsDa': 'From',
+            'progress.statsA': 'To',
+            'progress.statsQuestoAnno': 'This year',
+            'progress.statsUltimi12': 'Last 12 months',
+            'progress.statsSempre': 'All time',
+            'progress.statsVuoto': 'No hikes recorded in this range.',
+            'progress.statsSenzaDurata': function (n) { return n + (n === 1 ? ' outing without' : ' outings without') + ' a recorded duration: distance and elevation still count them.'; },
 
             // Sezione Badge - testo statico nell'HTML (data-i18n / data-i18n-html)
             'badges.howto': 'Badges are earned on location: open the <b>Map</b> with your position active and get within 150 meters of the point. Each badge is earned once and kept forever.',
@@ -205,6 +251,11 @@
             'hikePage.nonTrovata': 'Hike not found.',
             'hikePage.partecipanti': 'Participants',
             'hikePage.chatTitolo': 'Hike Chat',
+            // V2 UX PASSO 14b: tab interni di hike-page (PASSO 14c aggiunge "Zaino").
+            'hikePage.tabDettagli': 'Details',
+            'hikePage.tabChat': 'Chat',
+            'hikePage.tabCarpool': 'Carpooling',
+            'hikePage.tabZaino': 'Backpack',
 
             // ==================================================================
             // Rollout punto 102, secondo lotto (22/08/2026): Escursioni + Le mie
@@ -238,6 +289,7 @@
             'common.e': ' and ',
             'common.elimina': 'Delete',
             'common.cancella': 'Cancel',
+            'common.rimuovi': 'Remove',
             'common.erroreServer': 'Could not reach the server.',
             'common.copia': 'Copy',
 
@@ -262,7 +314,7 @@
             'eligibility.richiestoPassoSuperiore': 'Requires a Higher Pace',
 
             // --- ESCURSIONI (public/index.html #hikes, public/js/social.js) ---
-            'hikes.esplora': 'Explore Group Hikes',
+            'hikes.esplora': 'Group Hikes',
             'hikes.cercaTitoloLabel': 'Search by title:',
             'hikes.cercaTitoloPlaceholder': 'E.g. Alba Corno Grande...',
             'hikes.filtriTitolo': 'Filters and Matching Algorithms',
@@ -270,11 +322,11 @@
             'hikes.tutteDifficolta': 'All difficulties',
             'hikes.tribuLabel': 'Tribe (Lifestyle) — select one or more:',
             'hikes.disponibiliTitolo': 'Open to Join',
-            'hikes.partecipiTitolo': "You're Joining",
-            'hikes.completateTitolo': 'Completed',
+            // V2 UX PASSO 9: "Escursioni" (Esplora) e' solo scoperta - via le chiavi
+            // hikes.partecipiTitolo / hikes.completateTitolo / hikes.nonPartecipiAlcuna /
+            // hikes.nessunaCompletata (i gruppi "A cui partecipi" e "Completate" vivono
+            // ora solo in "Le mie escursioni").
             'hikes.nessunFiltro': 'No hikes found with the selected filters.',
-            'hikes.nonPartecipiAlcuna': "You're not joining any upcoming hike.",
-            'hikes.nessunaCompletata': 'No completed hikes.',
 
             // --- LE MIE ESCURSIONI (public/index.html #my-hikes, social.js +
             // storico.js) ---
@@ -309,6 +361,8 @@
             'hikeModal.diffIntermedio': 'Intermediate (Up to 1000m gain, steep sections)',
             'hikeModal.diffEsperto': 'Expert (Over 1000m gain, technical/exposed terrain)',
             'hikeModal.dataLabel': 'Hike Date:',
+            'hikeModal.multiDayCheck': 'Multi-day hike (hut/tent)',
+            'hikeModal.multiDayHint': 'Enables the "shareable backpack" for participants: tent for several people, weight split.',
             'hikeModal.routeSourceLabel': 'Max altitude, elevation gain and distance:',
             'hikeModal.routeManuale': "I'll enter them myself",
             'hikeModal.routeDraft': 'Calculate from an existing project',
@@ -475,28 +529,51 @@
             // 3) La Dashboard invece SI ridisegna al cambio lingua
             //    (CamoscioI18n.onChange in fondo ad app.js): quasi tutti i suoi
             //    dati sono gia' in CamoscioState, il re-render sincrono e'
-            //    gratis. L'unico fetch (renderTrackingTotals, 3 numeri) non
+            //    gratis. L'unico fetch (renderDashYearSummary, pochi numeri) non
             //    svuota la card mentre carica, quindi non da' il flicker che ha
             //    sconsigliato l'onChange completo su userprofile.js.
-            // 4) I totali in Dashboard (km/dislivello/media) passano da
-            //    toLocaleString: separatore migliaia italiano vs inglese, va
+            // 4) I numeri della Dashboard (km/dislivello/vette dell'anno) passano
+            //    da toLocaleString: separatore migliaia italiano vs inglese, va
             //    scelto il locale come per le date col nome del mese (en-GB).
 
             // --- DASHBOARD: testo statico nell'HTML (#dashboard) ---
-            'dash.benvenuto': 'Welcome to Camoscio, <span class="highlight-text" id="dash-welcome-name">User</span>!',
-            'dash.sottotitolo': 'Your personal assistant for safe hikes, carpooling and advanced alpine planning.',
-            'dash.statCompletate': 'Hikes Done',
-            'dash.statTimbri': 'Peak Stamps',
-            'dash.statReputazione': 'Reputation Score',
-            'dash.passaportoTitolo': 'Digital Peak Passport',
-            'dash.geofencingAttivo': 'Geofencing Active',
-            'dash.passaportoDesc': 'Reach the peaks and huts to unlock collectible digital stamps. Use the map to simulate your GPS position!',
+            // Blocco di apertura (revisione UX): saluto, sottotitolo e card della prossima
+            // avventura li scrive renderDashHero (app.js) via le voci qui sotto - gli elementi
+            // NON hanno data-i18n apposta (vedi commento in index.html). Fa eccezione il bottone
+            // "Apri escursione", testo fisso, che sta come data-i18n.
+            'dash.ciaoNome': function (nome) { return 'Hi ' + nome + ' 👋'; },
+            'dash.heroSubDefault': 'Ready for your next adventure?',
+            'dash.heroSubProssima': 'Your next adventure is almost ready.',
+            'dash.ctaTrova': 'Find a hike',
+            'dash.ctaEsplora': 'Explore',
+            'dash.avventuraApri': 'Open hike',
+            'dash.avventuraOggi': 'today',
+            'dash.avventuraDomani': 'tomorrow',
+            'dash.avventuraFraGiorni': function (n) { return 'in ' + n + ' days'; },
+            'dash.avventuraDa': function (nome) { return 'from ' + nome; },
+            'dash.avventuraPartecipanti': function (n) { return n + (n === 1 ? ' participant' : ' participants'); },
+            // FASE 3
+            'dash.avventuraOrganizzata': 'Organised by you',
+            'dash.avventuraVediTutte': 'See all my hikes',
             'dash.vediTuttiBadge': 'See all badges',
-            'dash.totaliTitolo': "How far you've walked",
-            'dash.totaliDesc': 'Total of all the hikes you recorded with GPS.',
             'dash.kmPercorsi': 'km covered',
             'dash.mDislivello': 'm of elevation gain',
-            'dash.kmhMedia': 'km/h average',
+            // FASE 4 - "Il tuo cammino" / "Ultimi traguardi" / "Il tuo <anno>" (testo fisso)
+            'dash.camminoTitolo': 'Your journey',
+            'dash.camminoVette': function (n) { return n === 1 ? 'peak conquered' : 'peaks conquered'; },
+            'dash.camminoCta': 'Continue your journey',
+            'dash.camminoCtaScopri': 'Discover the next peaks',
+            'dash.camminoVuotoTitolo': 'Start your journey',
+            'dash.camminoVuotoTesto': 'Your first peak is still waiting. Complete a hike to start building your path on Camoscio.',
+            'dash.camminoVuotoCta': 'Find a hike',
+            'dash.traguardiTitolo': 'Latest achievements',
+            'dash.traguardiVuotoTitolo': 'Your first badge awaits',
+            'dash.traguardiVuotoTesto': 'Complete a hike and start collecting your achievements.',
+            'dash.traguardiVuotoCta': 'Discover hikes',
+            'dash.annoEscursioni': 'hikes',
+            'dash.annoVette': 'peaks',
+            // PASSO 11b: link dalla card "Il tuo <anno>" alla pagina statistiche filtrabile.
+            'dash.vediStatistiche': 'See stats',
             'dash.passoTitolo': 'Pace & Effort Calculator',
             'dash.passoDesc': 'The algorithm learns from your tracked hikes to estimate real walking times.',
             'dash.velocitaAscesa': 'Ascent Speed:',
@@ -506,20 +583,51 @@
 
             // --- DASHBOARD: testo generato da JS (app.js) ---
             'dash.passoNotaVuoto': "Your pace hasn't been measured yet: complete a hike entering the time it took (or attaching the .gpx track) and these numbers will show up.",
-            'dash.totaliNotaVuoto': "You haven't recorded any hikes yet: start GPS tracking from the map and these numbers will start going up.",
-            'dash.totaliNota': function (n, tempo) { return n + (n === 1 ? ' hike recorded' : ' hikes recorded') + ', ' + tempo + ' of walking in total.'; },
-            'dash.totaliSenzaOrari': function (n) { return n === 1 ? " One imported hike has no timestamps: its kilometers are counted, the time and average speed are not." : ' ' + n + ' imported hikes have no timestamps: their kilometers are counted, the time and average speed are not.'; },
             'dash.totaliErrore': 'Could not load the totals. Try again later.',
-            'dash.timbroBloccato': 'Locked',
-            'dash.badgeSuTotale': function (presi, tot) { return presi + ' of ' + tot + ' badges'; },
+            // FASE 4 - testo generato da JS
+            'dash.camminoSub': function (r, b) { return r + (r === 1 ? ' hut visited' : ' huts visited') + ' · ' + b + (b === 1 ? ' badge unlocked' : ' badges unlocked'); },
+            'dash.camminoMancano': function (n, zona) { return (n === 1 ? 'You are 1 peak away' : 'You are ' + n + ' peaks away') + ' from completing ' + zona + '.'; },
+            'dash.camminoBarraAria': function (presi, tot, zona) { return presi + ' of ' + tot + ' peaks in ' + zona; },
+            'dash.annoTitolo': function (a) { return 'Your ' + a; },
+            'dash.annoNotaVuoto': function (a) { return 'No hikes recorded in ' + a + ' yet: these numbers update on their own as you walk.'; },
             'dash.chartTuoPasso': 'Your Measured Pace',
             'dash.chartCaiStandard': 'Alpine CAI Standard',
             'dash.chartAscesa': 'Ascent (m/hour)',
             'dash.chartDiscesa': 'Descent (m/hour)',
 
-            // --- PROFILO PROPRIO (#my-profile): testo statico nell'HTML ---
-            'sectionTitle.my-profile': 'Your Profile',
+            // --- PROFILO PROPRIO (#my-profile) + IMPOSTAZIONI (#settings): testo statico ---
+            // V2 UX PASSO 12: header = menu -> "Profile". #settings e' la pagina di config.
+            'sectionTitle.my-profile': 'Profile',
+            'sectionTitle.settings': 'Settings',
             'myProfile.cardTitolo': 'Your Profile',
+            'myProfile.modificaInImpostazioni': 'Edit in Settings',
+            'settings.accountTitolo': 'Account',
+            'settings.linguaTitolo': 'Language',
+            'settings.linguaDesc': 'The same two flags stay in the header too.',
+            'settings.sessioneTitolo': 'Session',
+            'settings.logoutDesc': 'End the session on this device.',
+            'settings.altreTitolo': 'Other settings',
+            'settings.altreDesc': 'Coming soon. Not active yet.',
+            'settings.phNotifiche': 'Notification settings',
+            'settings.phEmail': 'Change email',
+            'settings.phElimina': 'Delete account',
+            // A-3.1: revoca del consenso alla geolocalizzazione (#settings, "Privacy e posizione")
+            'settings.privacyTitolo': 'Privacy & location',
+            'settings.revocaGeo': 'Withdraw location consent',
+            'settings.geoConsentNota': "If you withdraw it, the site will ask for your consent again next time a feature uses your location. To stop the browser from sharing it at all, also revoke the site's permission in your browser settings. GPS tracks already recorded are kept: you can delete them one by one from «My hikes».",
+            'settings.geoConsentDemo': "Location consent doesn't apply to demo accounts.",
+            'settings.geoConsentDato': "You've consented to the use of your location.",
+            'settings.geoConsentNon': "You haven't given (or you've withdrawn) consent to use your location: you'll be asked when it's needed.",
+            'settings.geoRevocaTracciamento': 'A GPS recording is in progress: stop it before withdrawing consent.',
+            'settings.geoRevocaConferma': 'Withdraw consent to use your location? Features that need it (route recording, «where am I», nearby hikes) will ask again.',
+            'settings.geoRevocaFatto': "Consent withdrawn. Remember to also remove the site's permission from your browser settings if you want to block it entirely.",
+            'settings.geoRevocaErrore': "I couldn't withdraw consent. Try again.",
+            // A-3.3: export dei propri dati
+            'settings.esportaDati': 'Download my data',
+            'settings.esportaDesc': 'Download a single JSON file with all the data the site keeps about your account.',
+            'settings.esportaInCorso': 'Preparing the file…',
+            'settings.esportaFatto': 'Export downloaded.',
+            'settings.esportaErrore': "I couldn't prepare the export. Try again.",
             'myProfile.rimuoviFoto': 'Remove photo',
             'myProfile.bioLabel': 'Bio (max 250 characters):',
             'myProfile.bioPlaceholder': 'Tell us something about yourself...',
@@ -597,7 +705,7 @@
             //    fatta per notifyParticipantDecision (secondo lotto).
             // 4) Orario nel registro avvisi (toLocaleTimeString): locale
             //    'en-GB'/'it-IT' come per le date col nome del mese.
-            'sectionTitle.safety': 'Safety & Mesh Simulator',
+            'sectionTitle.safety': 'Safety',
 
             // --- Fascia rossa #emergency-banner (globale). data-i18n-html: dentro
             //     c'e' <span id="emergency-banner-timer"> che safety.js aggiorna
@@ -626,6 +734,7 @@
             'safety.mesh.inputPlaceholder': 'Write a message or SOS...',
             'safety.mesh.invia': 'Send',
             'safety.mesh.sosText': 'SOS! IMMEDIATE ASSISTANCE NEEDED / ACCIDENT ON THE TRAIL!',
+            'safety.mesh.posNonDisp': 'position not available',
 
             // --- Tasto SOS 112 (barra laterale Mappa, safety.js -> chiamaSos) ---
             'safety.sos.btnTitle': 'Call the 112 emergency number',
@@ -645,8 +754,8 @@
 
             // --- Form Dead Man's Switch (barra laterale Mappa): testo statico HTML ---
             'safety.dms.titolo': 'Safety Timer (Dead Man\'s Switch)',
-            'safety.dms.desc': 'Set the time you expect to be back. If you don\'t check in by then, an alert goes out to your emergency contact.',
-            'safety.dms.chiAvvisare': 'Who to alert:',
+            'safety.dms.desc': "Set the time you expect to be back. If you don't check in by then, an email alert goes out to all your emergency contacts.",
+            'safety.dms.contattiTitolo': 'Emergency contacts (all alerted at expiry):',
             'safety.dms.nome': 'Name',
             'safety.dms.nomePlaceholder': 'E.g. Anna',
             'safety.dms.chiE': 'Relationship',
@@ -660,15 +769,19 @@
             'safety.dms.oppureCheOra': 'Or at what time:',
             'safety.dms.attiva': 'Start the timer',
             'safety.dms.disattiva': 'I\'m safe (turn off)',
-            'safety.dms.notaOnesta': 'The alert really works, even with the phone off or the page closed: if the timer runs out, within a few minutes a real email goes to the chosen contact. It\'s still not your only safety net: always tell someone where you\'re going.',
+            'safety.dms.notaOnesta': "The alert really works, even with the phone off or the page closed: if the timer runs out, within a few minutes a real email goes to all your emergency contacts. It's still not your only safety net: always tell someone where you're going.",
 
             // --- Form Dead Man's Switch: testo generato da JS (safety.js) ---
-            'safety.dms.hintContatto': function (nome, email) { return 'When the timer runs out, the alert would go to ' + nome + '’s email (' + email + ').'; },
-            'safety.dms.nessunContattoSalvato': 'No saved contact',
-            'safety.dms.nessunContattoEmail': 'No contact with an email',
+            // A-3.2: niente piu' "contatto scelto" - l'allarme va a tutti quelli con un'email.
+            'safety.dms.senzaEmail': 'no email',
+            'safety.dms.avvisaTuttiPrefix': 'At expiry the alert goes by email to all your contacts:',
+            'safety.dms.confermaRimuovi': function (nome) { return 'Remove ' + nome + ' from your emergency contacts?'; },
+            'safety.dms.contattoRimosso': 'Contact removed.',
+            'safety.dms.rimossoUltimoConEmail': 'You removed the last contact with an email while the timer is active: no alert will go out at expiry.',
+            'safety.dms.erroreRimozione': "I couldn't remove the contact. Try again.",
             'safety.dms.avvisoNessunContatto': 'You have no emergency contact: without one, the timer would have nobody to alert. Add one below.',
-            'safety.dms.avvisoNessunaEmail': 'Your saved contacts have no email, which is needed to send the real alert: add a new one below.',
-            'safety.dms.scegliContatto': 'Choose who to alert before starting the timer.',
+            'safety.dms.avvisoNessunaEmail': 'None of your contacts has an email, which is needed to send the alert: add one below.',
+            'safety.dms.serveContattoEmail': 'Add an emergency contact with an email before starting the timer.',
             'safety.dms.campiObbligatori': 'All three fields are needed: name, relationship and email.',
             'safety.dms.emailNonValida': 'That email doesn\'t look valid.',
             'safety.dms.contattoSalvato': 'Emergency contact saved.',
@@ -719,15 +832,16 @@
             //    e i messaggi nuovi escono gia' nella lingua attiva.
             // 3) Data col nome del mese in rigaInvitoSquadra (riquadro "Invita a
             //    Gita"): locale 'en-GB'/'it-IT' come per le altre date estese.
-            // 4) sectionTitle.social ("Tribe, Reviews & Squads") diverso da
-            //    nav.social ("Tribe & Squads", piu' corto): il caso previsto dal
-            //    commento di nav.* - etichetta di menu piu' corta del titolo pagina.
+            // 4) sectionTitle.social e la voce di menu portano lo stesso testo.
+            //    PASSO 6 lo accorcio' da "Tribe, Reviews & Squads"; PASSO 7 (01/09)
+            //    rinomina la sezione "Community" (data-target resta 'social') - vedi
+            //    nav.community nel commento di nav.* piu' sopra.
             // 5) Un residuo del secondo lotto corretto qui perche' trovato
             //    lavorando nel file: il tooltip "Esperto locale: <zona>" sugli
             //    avatar dei partecipanti in buildHikeCard, ora dietro T()
             //    (riusa profile.espertoLocale del primo lotto). Il badge "Admin"
             //    su squadpage.js resta invariato: e' gia' inglese, come "Carpooling".
-            'sectionTitle.social': 'Tribe, Reviews & Squads',
+            'sectionTitle.social': 'Community',
 
             // --- #social: card "Le tue Squadre Ricorrenti" (HTML statico) ---
             'social.squadsTitle': 'Your Recurring Squads',
@@ -832,13 +946,14 @@
             // modale dedicato a queste due sezioni.
             //
             // Scelte non ovvie:
-            // 1) sectionTitle.carpool aggiunto anche se la voce di menu
-            //    "Carpooling" NON e' tradotta (e' gia' inglese): sono i due
-            //    posti diversi (voce di menu vs titolo di pagina) descritti dal
-            //    commento di nav.* piu' sopra - qui il titolo di pagina in
-            //    italiano e' piu' lungo ("Carpooling & Spese Viaggio"), quindi
-            //    la sua traduzione serve. nav.backpack esisteva gia' dal primo
-            //    lotto ("Smart Backpack"); qui si aggiunge solo sectionTitle.*.
+            // 1) sectionTitle.carpool esiste anche se la voce di menu "Carpooling"
+            //    NON e' tradotta (e' gia' inglese): serve comunque perche' l'header
+            //    ha un meccanismo suo (updateSectionTitle) che parte da prettyNames
+            //    in italiano. Dalla revisione UX v2 (PASSO 6) header e menu portano
+            //    lo stesso testo, "Carpooling" (prima l'header diceva "Carpooling &
+            //    Spese Viaggio" / "...& Travel Costs", accorciato perche' si troncava
+            //    su telefono). Idem sectionTitle.backpack -> "Smart Backpack", uguale
+            //    a nav.backpack (che esisteva gia' dal primo lotto).
             // 2) I nomi degli oggetti della checklist generati dalle REGOLE di
             //    backpack.js (Scarponi da trekking, Mantella impermeabile...),
             //    le categorie (Abbigliamento, Attrezzatura...) e i "generi"
@@ -871,8 +986,9 @@
             //    T('common.cancella') + danger:true. Le altre showConfirmModal
             //    del sito (Mappa, tracciamento, moderazione) restano in
             //    italiano: sono lotti futuri.
-            'sectionTitle.carpool': 'Carpooling & Travel Costs',
-            'sectionTitle.backpack': 'Smart Backpack Checklist',
+            // V2 UX PASSO 14b: 'sectionTitle.carpool' ritirata - #carpool e' un tab di
+            // hike-page, il cui header e' sempre il nome dell'escursione.
+            // V2 UX PASSO 14c: 'sectionTitle.backpack' ritirata - lo Zaino e' un tab di hike-page.
 
             // Etichette generiche riusabili (come common.elimina/cancella dei
             // lotti precedenti) - stanno qui per i lotti futuri.
@@ -894,10 +1010,11 @@
             'carpool.calc.resTotalLabel': 'Total Trip Cost (round trip):',
             'carpool.calc.resShareLabel': 'Share per Person:',
 
-            // --- I tuoi annunci auto / Offri un passaggio (HTML statico) ---
-            'carpool.offers.titolo': 'Your Car Listings',
+            // --- Il tuo annuncio auto / Offri un passaggio (HTML statico) ---
+            // V2 UX PASSO 14b: annuncio per-uscita (era "Your Car Listings", tutte le
+            // escursioni); via 'carpool.driver.hikeLabel' (il selettore escursione e' sparito).
+            'carpool.offers.titoloUscita': 'Your ride offer',
             'carpool.driver.titolo': 'Offer a Ride',
-            'carpool.driver.hikeLabel': 'For which hike?',
             'carpool.driver.cityLabel': 'Departure City:',
             'carpool.driver.cityPlaceholder': 'E.g. Milan, Bergamo...',
             'carpool.driver.seatsLabel': 'Free Seats in the Car:',
@@ -907,13 +1024,14 @@
             // --- Abbinamenti & privacy partenze (HTML statico) ---
             'carpool.match.titolo': 'Smart Matching & Departure Privacy',
             'carpool.match.desc': 'Share your home departure area. The algorithm shows matches only if 2 or more people are from the same area, to protect privacy.',
-            'carpool.match.homeLabel': 'Your home address / departure area:',
-            'carpool.match.homePlaceholder': 'E.g. Milan Loreto, Bergamo Alta...',
+            'carpool.match.homeLabel': "Town / departure area (not your exact address):",
+            'carpool.match.homePlaceholder': "E.g. Roma Nord, L'Aquila, Rieti...",
             'carpool.match.salvaZonaBtn': 'Save Area',
             'carpool.match.dispTitolo': 'Available cars and rides:',
 
             // --- carpool.js: testo generato da JS ---
-            'carpool.js.nessunAnnuncio': "You haven't offered any ride yet. Use the form below.",
+            // V2 UX PASSO 14b: messaggio per-uscita (era 'carpool.js.nessunAnnuncio', su tutte).
+            'carpool.js.nessunAnnuncioUscita': "You haven't offered a ride for this outing yet. Use the form below.",
             'carpool.js.postiOccupati': function (n, tot) { return n + '/' + tot + ' seats taken'; },
             'carpool.js.partenzaDaLabel': 'Departure from:',
             'carpool.js.cancellaAnnuncio': 'Delete listing',
@@ -921,7 +1039,7 @@
             'carpool.js.confermaCancella': 'Delete this listing?',
             'carpool.js.annuncioCancellato': 'Listing deleted.',
             'carpool.js.nessunaZona': 'No departure area entered. Enter your area to find nearby companions.',
-            'carpool.js.matchTrovato': function (nomi) { return '<strong>DEPARTURE MATCH FOUND!</strong> You and ' + nomi + ' are also leaving from the same area. You can travel together!'; },
+            'carpool.js.matchTrovato': function (quanti) { return '<strong>DEPARTURE MATCH FOUND!</strong> ' + quanti + (quanti === 1 ? ' other participant leaves' : ' other participants leave') + ' from your same area. Check the participant list or use "Offer a Ride" to sort it out.'; },
             'carpool.js.posizioneProtetta': function (citta) { return '<strong>Position protected:</strong> You\'re leaving from <i>"' + citta + '"</i>. Right now no other participant leaves from your area. Your departure will stay hidden for privacy.'; },
             'carpool.js.nessunaAuto': 'No car registered for this hike yet. Be the first to offer a ride!',
             'carpool.js.passeggeroFallback': 'Passenger',
@@ -938,20 +1056,18 @@
             // ================== ZAINO INTELLIGENTE (#backpack) =================
             // --- Generatore checklist (HTML statico) ---
             'backpack.gen.titolo': 'Smart Checklist Generator',
-            'backpack.gen.desc': "Enter the hike's environmental data to get a recommended checklist and split the weight with the group.",
-            'backpack.gen.perQualeLabel': 'Pack for:',
-            'backpack.gen.perAuto': 'Automatic (the next scheduled one)',
-            'backpack.gen.grpOrganizzate': 'Organized by me',
-            'backpack.gen.grpPartecipo': "I'm joining",
-            'backpack.gen.perPersonale': 'Personal backpack (no hike)',
+            'backpack.gen.desc': "Enter the environmental data to get a recommended checklist. Your list is private: other participants don't see it.",
+            // V2 UX PASSO 14c: ritirate backpack.gen.perQualeLabel / perAuto / grpOrganizzate /
+            // grpPartecipo / perPersonale - non c'e' piu' il selettore "prepara lo zaino per"
+            // ne' lo "zaino personale" (Q6): il tab e' gia' di una singola escursione.
             'backpack.gen.stagioneLabel': 'Season:',
             'backpack.gen.stagioneEstate': 'Summer (Heat, sudden storms)',
             'backpack.gen.stagioneInverno': 'Winter (Deep cold, ice, snow)',
             'backpack.gen.stagioneMezza': 'Shoulder Season (Wind, rain, layering)',
             'backpack.gen.quotaLabel': 'Max Altitude (meters):',
-            'backpack.gen.durataLabel': 'Hike Duration:',
-            'backpack.gen.durataGiornata': 'Single Day',
-            'backpack.gen.durataPluri': 'Multi-Day (Hut/Tent)',
+            // Blocco zaino/carpooling per-partecipanti: ritirate backpack.gen.durataLabel /
+            // durataGiornata / durataPluri - non c'e' piu' il <select> "durata escursione",
+            // la durata la dice l'escursione del tab (hike.multiDay).
             'backpack.gen.pioggiaCheck': 'Rain / Bad Weather Forecast',
             'backpack.gen.generaBtn': 'Generate Dynamic Checklist',
 
@@ -1041,14 +1157,15 @@
             'backpack.js.posti': function (n) { return n + (n === 1 ? ' spot' : ' spots'); },
 
             // --- backpack.js: riquadro escursione di riferimento (mostraEscursioneDiRiferimento) ---
-            'backpack.js.zainoPersonaleTitolo': 'Personal backpack',
-            'backpack.js.zainoPersonaleDesc': 'You have no upcoming hikes: this is the list of your own things. Join a hike to also see the items to share with the group.',
-            'backpack.js.zainoPersonaleScelto': "You chose not to link it to a hike: it's the list of your own things, with no items to share with the group.",
+            // V2 UX PASSO 14c: ritirate backpack.js.zainoPersonaleTitolo/Desc/Scelto (Q6:
+            // niente piu' "zaino personale" - il tab e' sempre di un'escursione vera).
             'backpack.js.zainoPerLabel': 'Backpack for:',
             'backpack.js.dataNonIndicata': 'date not set',
             'backpack.js.quotaMassimaLabel': 'max altitude',
             'backpack.js.organizzataDaTe': 'organized by you',
             'backpack.js.aCuiPartecipi': "you're joining",
+            'backpack.js.piuGiorni': 'multi-day',
+            'backpack.js.listaPrivata': "Your list is private: other participants don't see what you carry.",
 
             // --- backpack.js: nota previsione pioggia (mostraNotaPioggia) ---
             'backpack.js.meteoTroppoLontano': "Forecast not available yet: it's more than two weeks away. Check the backpack again in the days before you leave.",
@@ -1196,7 +1313,7 @@
             // 5) Conferma "risolvi segnalazione" allineata agli altri "cancella
             //    per sempre" (cancelLabel common.cancella + danger:true), come
             //    la gemella rejectPendingReport del settimo lotto.
-            'sectionTitle.map-section': 'Map & Trails',
+            'sectionTitle.map-section': 'Map',
 
             // --- .map-overlay-instructions + tasto "Dove sono" (#btn-use-real-gps) ---
             'map.overlay.istruzioni': 'Click the map to report hazards or simulate your GPS position to stamp the peak.',
@@ -2008,16 +2125,20 @@
             // proprio), e il testo delle notifiche (lo genera il server, come tutte le altre).
             // ============================================================
 
-            // Voce di barra + titolo di sezione
-            'nav.feed': 'Feed',
-            'sectionTitle.feed': 'Feed',
+            // Voce di barra + titolo di sezione. PASSO 7 (01/09/2026): "Feed" ->
+            // "Ispirazioni" (rinomina; data-target e id di sezione restano 'feed').
+            // La voce ora vive dentro il gruppo "Esplora" della sidebar.
+            'nav.ispirazioni': 'Inspiration',
+            'sectionTitle.feed': 'Inspiration',
             // #section-title dell'uscita: disegnaTestata (outingpage.js) ci scrive poi il nome
             // dell'autore (come #user-profile con lo username) - questa e' la parola di
             // ripiego per l'istante prima, e per il picker della barra dove la sezione non ha voce.
             'sectionTitle.outing-page': 'Outing',
 
-            // Pagina Feed (feed.js + intro statica in index.html)
-            'feed.titolo': 'Feed',
+            // Pagina Feed (feed.js + intro statica in index.html). PASSO 7: il titolo
+            // interno segue la rinomina "Feed" -> "Ispirazioni" (id sezione resta 'feed';
+            // "il feed" come nome comune del flusso resta nei testi di publish.*).
+            'feed.titolo': 'Inspiration',
             'feed.sottotitolo': 'Outings published by the people you follow, most recent first. Tap an outing to open it.',
             'feed.caricamento': 'Loading...',
             'feed.caricaAltre': 'Load more',
@@ -2165,6 +2286,16 @@
             }
             const tradotto = t(el.getAttribute('data-i18n-title'));
             el.title = tradotto !== null ? tradotto : el.dataset.i18nTitleFallback;
+        });
+
+        // data-i18n-label: stesso principio per aria-label (V2 UX PASSO 8, hamburger del
+        // drawer - primo controllo con un aria-label da tradurre).
+        document.querySelectorAll('[data-i18n-label]').forEach(function (el) {
+            if (el.dataset.i18nLabelFallback === undefined) {
+                el.dataset.i18nLabelFallback = el.getAttribute('aria-label') || '';
+            }
+            const tradotto = t(el.getAttribute('data-i18n-label'));
+            el.setAttribute('aria-label', tradotto !== null ? tradotto : el.dataset.i18nLabelFallback);
         });
     }
 
