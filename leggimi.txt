@@ -26,7 +26,7 @@ la linea compare re-importando. Dettaglio: vault 03 ("Traccia importata
     prima di ogni push. Fatto cosi' per il lavoro di oggi.
 
     STATO A META' 27a SESSIONE (dopo il punto 116, prima dell'invito squadra):
-      - camoscio       origin/master = `NOTE-27A` (codice a `89d2e0b`,
+      - camoscio       origin/master = `d0f1a06` (codice a `89d2e0b`,
                        sopra solo il commit di note). Working tree PULITO.
       - camoscio memoria (vault) origin/master = `240ce36`. Working tree PULITO.
       - Tutto pushato in entrambi i repo, niente in coda.
