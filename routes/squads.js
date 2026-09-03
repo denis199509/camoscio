@@ -5,7 +5,7 @@ const SquadMessage = require('../models/SquadMessage');
 const User = require('../models/User');
 const Notification = require('../models/Notification');
 const { requireAuth } = require('../middleware/auth');
-const { invitoLimiter } = require('../middleware/rateLimit'); // M-5, revisione sicurezza 27ª: il ciclo invita/annulla non e' coperto da tetto+idempotenza
+const { invitoLimiter, fotoLimiter } = require('../middleware/rateLimit'); // M-5 (27ª): ciclo invita/annulla non coperto da tetto+idempotenza. fotoLimiter: MEDIO-3 (28ª), foto squadra fino a 2 MB
 const { nomeVisibile } = require('../lib/accountDeletion'); // A-3.4: nome pseudonimizzato per gli account eliminati
 // Punto 48: il creatore e' admin/membro per calcolo (creatorId), mai duplicato dentro
 // admins[]/members[]. Estratti in lib/squad.js perche' ora li usa anche routes/hikes.js
@@ -120,11 +120,31 @@ function squadVisibileA(squad, userId) {
 // (nessun handler unhandledRejection in server.js), ed e' la rotta chiamata a ogni refreshState.
 router.get('/', requireAuth, async (req, res) => {
     try {
+        // photo (MEDIO-3, 28ª) NON entra qui: e' select:false a schema, la pagina della
+        // singola squadra la prende da GET /:id/photo. Caricarla per ogni squadra a ogni
+        // refreshState di ogni utente era il vero muro (RAM su Render), prima ancora dello
+        // spazio Atlas.
         const squads = await Squad.find();
         res.json(squads.map(s => squadVisibileA(s, req.session.userId)));
     } catch (e) {
         console.error('Errore lettura squadre:', e);
         res.status(500).json({ error: 'Impossibile leggere le squadre' });
+    }
+});
+
+// La foto di UNA squadra. Rotta a sé perche' GET /api/squads non la porta piu' (MEDIO-3, 28ª:
+// 2 MB x squadra x refreshState = RAM finita su Render). Solo requireAuth, come prima era per
+// tutti dentro GET /api/squads: la foto non e' un dato sensibile come il carpool o la chat, e
+// il vettore DoS (lista che le carica tutte + scritture illimitate) e' chiuso da select:false
+// e fotoLimiter, non da un gate di appartenenza su una singola lettura.
+router.get('/:id/photo', requireAuth, async (req, res) => {
+    try {
+        const squad = await Squad.findById(req.params.id).select('+photo');
+        if (!squad) return res.status(404).json({ error: 'Squadra non trovata' });
+        res.json({ photo: squad.photo || null });
+    } catch (e) {
+        console.error('Errore lettura foto squadra:', e);
+        res.status(400).json({ error: 'Impossibile leggere la foto della squadra' });
     }
 });
 
@@ -348,6 +368,15 @@ router.delete('/:id/members/:userId', requireAuth, async (req, res) => {
                     if (!squad.admins.some(a => String(a) === nuovo)) squad.admins.push(nuovo);
                     await squad.save();
                     successoreInstallato = true;
+                    // B-4 (revisione sicurezza 28ª): chi eredita la conduzione della squadra
+                    // deve saperlo. Best-effort, come tutte le notifiche del modulo.
+                    try {
+                        await Notification.create({
+                            userId: nuovo,
+                            text: `Sei ora il referente della squadra "${squad.name}": chi l'aveva creata è uscito.`,
+                            read: false
+                        });
+                    } catch (e) { console.error('Notifica nuovo referente squadra non inviata:', e); }
                 }
             }
             // restanti === 0: la squadra si scioglie dopo il $pull qui sotto.
@@ -359,6 +388,20 @@ router.delete('/:id/members/:userId', requireAuth, async (req, res) => {
             !(squad.members || []).some(m => String(m) === String(targetId)) &&
             String(squad.creatorId) !== String(targetId)) {
             return res.status(404).json({ error: 'Questa persona non è un membro della squadra' });
+        }
+
+        // B-4 (revisione sicurezza 28ª): un admin che espelle un membro lo faceva in silenzio.
+        // Solo per una rimozione altrui: chi esce da solo non ha bisogno di essere avvisato.
+        // PRIMA del $pull: se la rimozione scioglie la squadra (ramo qui sotto), il rimosso
+        // e' proprio chi ha piu' bisogno di saperlo. squad.name e' gia' in memoria.
+        if (!seStesso) {
+            try {
+                await Notification.create({
+                    userId: targetId,
+                    text: `Sei stato rimosso dalla squadra "${squad.name}".`,
+                    read: false
+                });
+            } catch (e) { console.error('Notifica rimozione da squadra non inviata:', e); }
         }
 
         const dopo = await Squad.findByIdAndUpdate(
@@ -394,9 +437,11 @@ router.delete('/:id/members/:userId', requireAuth, async (req, res) => {
     }
 });
 
-// Cambia la foto della squadra - solo amministratori (punto 48)
-router.put('/:id/photo', requireAuth, async (req, res) => {
+// Cambia la foto della squadra - solo amministratori (punto 48).
+// fotoLimiter (MEDIO-3, 28ª): un data URL da 2 MB scritto a raffica riempie Atlas.
+router.put('/:id/photo', requireAuth, fotoLimiter, async (req, res) => {
     try {
+        // select('+photo') non serve: si SCRIVE la foto nuova, non si legge la vecchia.
         const squad = await Squad.findById(req.params.id);
         if (!squad) {
             return res.status(404).json({ error: 'Squadra non trovata' });
@@ -410,6 +455,9 @@ router.put('/:id/photo', requireAuth, async (req, res) => {
         }
         squad.photo = photo || null;
         await squad.save();
+        // La foto appena assegnata resta nell'oggetto in memoria (select:false vale sulle
+        // query, non sulla serializzazione): la risposta la contiene, e il client la usa per
+        // ridisegnare l'anteprima senza un GET in piu'.
         res.json(squad);
     } catch (e) {
         console.error('Errore cambio foto squadra:', e);

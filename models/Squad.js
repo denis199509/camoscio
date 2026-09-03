@@ -11,7 +11,13 @@ const squadSchema = new mongoose.Schema({
     members: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     // Il creatore NON e' duplicato qui dentro: e' admin per calcolo (creatorId), non per dato salvato.
     admins: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-    photo: { type: String, default: null }, // data URL base64, stesso formato di User.profilePhoto
+    // data URL base64 (fino a 2 MB), stesso formato di User.profilePhoto.
+    // select: false (MEDIO-3, revisione sicurezza 28ª): la foto NON esce da Squad.find() -
+    // GET /api/squads la caricava per OGNI squadra a ogni refreshState di ogni utente (a ~250
+    // squadre da 2 MB il processo Render da 512 MB e' morto). La pagina della singola squadra
+    // la legge da GET /api/squads/:id/photo, che fa .select('+photo'). Stesso schema di
+    // Report.photo (routes/reports.js).
+    photo: { type: String, default: null, select: false },
     // Punto 75: richieste di entrare in una squadra gia' esistente, in attesa che un
     // amministratore (uno qualunque) confermi o rifiuti - stesso principio di
     // Hike.pendingApproval, spostato su Squad/admins invece che su Hike/creatore.

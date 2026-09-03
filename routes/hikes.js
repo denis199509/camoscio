@@ -191,7 +191,26 @@ function canNonCreatorEditBackpack(hike, newTemplate, userIdStr) {
 // altrimenti restituiva il documento intero a chiunque facesse una modifica qualsiasi (o
 // nessuna: un update vuoto in Mongoose degrada a una lettura, vedi PUT /:id).
 function hikeVisibileA(hike, userId) {
-    if (isHikeParticipant(hike, userId)) return hike;
+    if (isHikeParticipant(hike, userId)) {
+        // B-6 (revisione sicurezza 28ª): SOLO il creatore vede la lista intera degli invitati
+        // in attesa (i loro id). Un partecipante qualunque che chiama GET /api/hikes/ non deve
+        // leggere CHI altro e' stato invitato e non ha ancora risposto: e' lo stesso grafo
+        // sociale su una relazione non accettata che il ramo non-partecipante qui sotto gia'
+        // protegge. Il CONTEGGIO invece serve a due punti del client (public/js/social.js: la
+        // nota "N invitati non hanno risposto" al creatore, e rigaInvitoSquadra che calcola
+        // quanti membri di una squadra restano da invitare a una gita a cui si partecipa) -
+        // quindi si tiene, non nominativo, in pendingInvitesCount. carpool/backpackTemplate
+        // restano (e' comunque un partecipante).
+        if (hike.creatorId.equals(userId) || !Array.isArray(hike.pendingInvites) || !hike.pendingInvites.length) {
+            return hike;
+        }
+        const perPartecipante = hike.toJSON ? hike.toJSON() : { ...hike };
+        perPartecipante.pendingInvitesCount = perPartecipante.pendingInvites.length;
+        const soloMio = perPartecipante.pendingInvites.filter(id => String(id) === String(userId));
+        if (soloMio.length) perPartecipante.pendingInvites = soloMio;
+        else delete perPartecipante.pendingInvites;
+        return perPartecipante;
+    }
     // toJSON, NON toObject: le opzioni globali (virtuals:true, delete _id) sono su toJSON
     // (db/mongo.js), da cui tutto il frontend riceve `.id`. Con toObject il documento
     // strippato usciva con `_id`/`__v` e senza `id` - GET /api/hikes/ restituiva un array
@@ -1016,7 +1035,8 @@ router.post('/:id/complete-group', requireAuth, scritturaLimiter, async (req, re
 // significa sempre "l'organizzatore e' d'accordo", senza bisogno di un campo invitedBy
 // (decisione della 27ª sessione).
 // invitoLimiter (M-5, revisione sicurezza 27ª): ogni chiamata genera fino a un lotto di
-// notifiche (un membro di squadra a testa). Secchio separato da scritturaLimiter (Dead Man's Switch).
+// notifiche (un membro di squadra a testa). Secchio separato dagli altri limiter di
+// scrittura, e in particolare da sicurezzaLimiter (il secchio del Dead Man's Switch, 28ª).
 router.post('/:id/invite-squad', requireAuth, invitoLimiter, async (req, res) => {
     try {
         if (!mongoose.Types.ObjectId.isValid(req.params.id)) {

@@ -156,7 +156,8 @@ router.get('/users/me/export', requireAuth, exportLimiter, async (req, res) => {
             profilo, tracce, completamenti, hikeCreate, hikePartecipate,
             timbri, followCheFai, followCheRicevi, likeMessi, notifiche,
             segnalazioni, squadreGrezze, msgEscursioni, msgSquadre,
-            sentieriPreferiti, progetti, percorsiSalvati, recensioniRicevute, tracceCandidate
+            sentieriPreferiti, progetti, percorsiSalvati, recensioniRicevute, tracceCandidate,
+            invitiSquadraRicevuti, invitiEscursioneRicevuti
         ] = await Promise.all([
             User.findById(uid).lean(),                  // passwordHash e' select:false: non esce
             ActiveHikeSession.find({ userId: uid }).select('-points -offTrailBuffer').lean(),
@@ -176,7 +177,12 @@ router.get('/users/me/export', requireAuth, exportLimiter, async (req, res) => {
             RouteDraft.find({ userId: uid }).select('-punti').lean(),
             SavedRoute.find({ userId: uid }).select('-punti').lean(),
             Review.find({ targetUserId: uid }).lean(),  // anonime per design: nessun reviewerId
-            TrailCandidate.find({ userId: uid }).select('-points').lean()
+            TrailCandidate.find({ userId: uid }).select('-points').lean(),
+            // B-5 (revisione sicurezza 28ª): un invito RICEVUTO e non ancora accettato e' un
+            // dato personale che il titolare detiene sull'interessato - va nell'export come le
+            // squadre/escursioni di cui si fa parte. Solo i campi che identificano l'invito.
+            Squad.find({ pendingInvites: uid }).select('_id name').lean(),
+            Hike.find({ pendingInvites: uid }).select('_id title date').lean()
         ]);
 
         // Le escursioni a cui SOLO partecipi contengono anche dati di gruppo (carpooling e
@@ -234,7 +240,9 @@ router.get('/users/me/export', requireAuth, exportLimiter, async (req, res) => {
             progettiPercorso: progetti,
             percorsiSalvati,
             recensioniRicevute,
-            tracceCandidateSentiero: tracceCandidate
+            tracceCandidateSentiero: tracceCandidate,
+            invitiSquadraRicevuti,
+            invitiEscursioneRicevuti
         };
 
         const base = String((profilo && profilo.username) || 'utente').replace(/[^\w-]+/g, '_');
@@ -328,8 +336,9 @@ async function scrubEliminatiHandler(req, res) {
         res.status(500).json({ error: 'Errore nello scrub degli account eliminati' });
     }
 }
-// scritturaLimiter come su /api/safety/activate: la rotta e' senza sessione e ogni colpo
-// fa una scansione su deletionScrubAt. Gated su NODE_ENV=production (skip in dev/test).
+// scritturaLimiter: la rotta e' senza sessione e ogni colpo fa una scansione su
+// deletionScrubAt. Gated su NODE_ENV=production (skip in dev/test). NB: dalla 28ª
+// (MEDIO-1) POST /api/safety/activate ha un secchio suo (sicurezzaLimiter), non piu' questo.
 router.get('/users/scrub-eliminati', scritturaLimiter, scrubEliminatiHandler);
 router.post('/users/scrub-eliminati', scritturaLimiter, scrubEliminatiHandler);
 

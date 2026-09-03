@@ -188,6 +188,8 @@ const S = a => (a || []).map(String);
         ok('un admin non puo\' rimuovere il creatore -> 400', r.status === 400, JSON.stringify(r.corpo));
         r = await chiama('DELETE', `/api/squads/${S1}/members/${L}`, undefined, ckG); // G (admin) rimuove L (membro)
         ok('un admin rimuove un altro membro -> 200', r.status === 200, JSON.stringify(r.corpo));
+        ok('B-4: L (rimosso da un admin) ha ricevuto una notifica',
+            await notifCol.countDocuments({ userId: oid(L), text: new RegExp('rimosso dalla squadra "' + MARCA + '-S1') }) === 1);
 
         // creatore che esce -> passa la proprieta'
         const { id: S4 } = await creaSquad('-S4', { inviteUserIds: [G, L] });
@@ -198,6 +200,8 @@ const S = a => (a || []).map(String);
         const s4db = await squadsCol.findOne({ _id: oid(S4) });
         ok('creatorId e\' passato al membro piu\' anziano (G)', String(s4db.creatorId) === String(G), String(s4db.creatorId));
         ok('...che e\' anche in admins, e A e\' fuori da members', S(s4db.admins).includes(String(G)) && !S(s4db.members).includes(String(A)));
+        ok('B-4: G (nuovo referente di S4) ha ricevuto una notifica',
+            await notifCol.countDocuments({ userId: oid(G), text: new RegExp('referente della squadra "' + MARCA + '-S4') }) === 1);
 
         // un admin non creatore che esce, col creatore ancora presente -> nessuna promozione forzata
         const { id: S4b } = await creaSquad('-S4b', { inviteUserIds: [G] });
@@ -274,6 +278,38 @@ const S = a => (a || []).map(String);
         const hdb = await hikesCol.findOne({ _id: oid(H) });
         ok('G e\' ancora in Hike.pendingInvites: l\'invito vive sull\'escursione, non sulla squadra',
             S(hdb.pendingInvites).includes(String(G)), JSON.stringify(hdb.pendingInvites));
+
+        // === 8b. B-5 (revisione sicurezza 28ª): l'export dati contiene gli inviti RICEVUTI ===
+        // G qui ha DUE inviti in sospeso: alla gita H (sez. 8, sopravvissuto all'uscita da S6)
+        // e a S6b (creata ora, mai accettata).
+        console.log('\n8b. B-5: /api/users/me/export include gli inviti ricevuti e non accettati');
+        const { id: S6b } = await creaSquad('-S6b', { inviteUserIds: [G] }); // G invitato, NON accetta
+        const exp = await chiama('GET', '/api/users/me/export', undefined, ckG);
+        ok('export -> 200', exp.status === 200, `status ${exp.status}`);
+        const invS = (exp.corpo && exp.corpo.invitiSquadraRicevuti) || [];
+        ok('B-5: invitiSquadraRicevuti contiene S6b (solo nome + id, non il documento intero)',
+            invS.some(s => String(s._id) === String(S6b) && s.name === MARCA + '-S6b') && !invS.some(s => 'members' in s), JSON.stringify(invS));
+        const invH = (exp.corpo && exp.corpo.invitiEscursioneRicevuti) || [];
+        ok('B-5: invitiEscursioneRicevuti contiene la gita H (l\'invito sopravvissuto all\'uscita da S6)',
+            invH.some(h => String(h._id) === String(H)), JSON.stringify(invH));
+
+        // === 8c. MEDIO-3 (revisione sicurezza 28ª): Squad.photo fuori da GET /api/squads ===
+        console.log('\n8c. MEDIO-3: la foto squadra ha una rotta dedicata, non esce dalla lista');
+        const { id: Sfoto } = await creaSquad('-Sfoto', {});
+        const fintoDataUrl = 'data:image/png;base64,' + 'A'.repeat(240);
+        let rf = await chiama('PUT', `/api/squads/${Sfoto}/photo`, { photo: fintoDataUrl }, ckA);
+        ok('PUT /:id/photo da admin -> 200', rf.status === 200, JSON.stringify(rf.corpo && rf.corpo.error));
+        ok('...la risposta contiene ancora la foto (serve al client per l\'anteprima)', rf.corpo && rf.corpo.photo === fintoDataUrl);
+        const listaConFoto = (await chiama('GET', '/api/squads', undefined, ckA)).corpo || [];
+        const sfotoInLista = listaConFoto.find(s => (s.id || s._id) === Sfoto);
+        ok('MEDIO-3: GET /api/squads NON porta il campo photo', sfotoInLista && !('photo' in sfotoInLista),
+            JSON.stringify(sfotoInLista && Object.keys(sfotoInLista)));
+        rf = await chiama('GET', `/api/squads/${Sfoto}/photo`, undefined, ckA);
+        ok('MEDIO-3: GET /api/squads/:id/photo restituisce la foto', rf.status === 200 && rf.corpo && rf.corpo.photo === fintoDataUrl, JSON.stringify(rf.corpo && Object.keys(rf.corpo)));
+        rf = await chiama('GET', `/api/squads/${Sfoto}/photo`, undefined, null);
+        ok('MEDIO-3: la rotta foto richiede login -> 401', rf.status === 401, `status ${rf.status}`);
+        rf = await chiama('PUT', `/api/squads/${Sfoto}/photo`, { photo: fintoDataUrl }, ckL); // L non e' admin di Sfoto
+        ok('MEDIO-3: PUT /:id/photo da un non-admin -> 403', rf.status === 403, `status ${rf.status}`);
 
         // === 9. non regressione: request-join + approve ===
         console.log('\n9. request-join + approve (punto 75) invariati');

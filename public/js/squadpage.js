@@ -1,8 +1,9 @@
 // Pagina di UNA squadra (punto 48) - si apre cliccando una squadra in Tribu' & Squadre
 // (vedi public/js/social.js, renderSquadsList). Stesso principio di userprofile.js:
 // nessuna voce in barra laterale, la squadra si legge da window.CamoscioState.squads
-// (gia' caricata da refreshState - GET /api/squads porta gia' photo/admins) invece di
-// fare una fetch in piu' solo per aprire la pagina.
+// (gia' caricata da refreshState - GET /api/squads porta gia' admins/membri) invece di
+// fare una fetch in piu' solo per aprire la pagina. Unica eccezione dalla 28ª: la FOTO,
+// che GET /api/squads non porta piu' (MEDIO-3) - la carica caricaFotoSquadra qui sotto.
 //
 // La chat (punto 48, poi condivisa col punto 55) vive in public/js/chatpanel.js.
 
@@ -17,6 +18,26 @@ var T = (window.CamoscioI18n && window.CamoscioI18n.t) || function () { return n
 // posizione di scroll se richiamato di nuovo (stessa lezione gia' scritta per
 // refreshSquadHeaderAndMembers, qui applicata anche al cambio lingua).
 var squadIdAperta = null;
+
+// MEDIO-3 (revisione sicurezza 28ª): GET /api/squads non porta piu' la foto (era un data URL
+// fino a 2 MB caricato per OGNI squadra a OGNI refreshState di OGNI utente - RAM finita su
+// Render). La pagina della singola squadra la chiede a parte (GET /api/squads/:id/photo) e la
+// tiene qui, per squadId: cosi' sopravvive ai refreshState che rimpiazzano l'oggetto dentro
+// CamoscioState.squads.
+var fotoSquadraPerId = {};
+
+async function caricaFotoSquadra(squadId) {
+    try {
+        const r = await fetch(`/api/squads/${squadId}/photo`);
+        if (!r.ok) return; // 404 se la squadra e' sparita (la rotta e' solo requireAuth): resta il segnaposto
+        const { photo } = await r.json();
+        fotoSquadraPerId[squadId] = photo || null;
+        if (squadIdAperta === squadId) refreshSquadHeaderAndMembers(squadId);
+    } catch (e) {
+        // La foto non e' essenziale: senza, l'intestazione mostra il segnaposto 👥.
+        console.error("Foto squadra non caricata:", e);
+    }
+}
 
 function isSquadAdminClient(squad, userId) {
     return squad.creatorId === userId || (squad.admins || []).includes(userId);
@@ -58,6 +79,9 @@ async function renderSquadPage(squadId) {
     renderSquadHeader(squad, canManage, headerBox);
     if (joinBox) renderSquadJoinBox(squad, isMember, canManage, joinBox);
     renderSquadMembers(squad, canManage, membersBox);
+    // MEDIO-3: la foto arriva da una rotta a sé. Fire-and-forget: quando risponde,
+    // caricaFotoSquadra ridisegna l'intestazione da solo (solo se è ancora questa la aperta).
+    caricaFotoSquadra(squadId);
 
     // Punto 75: la chat resta riservata ai membri (stesso principio gia' seguito per il
     // tasto Chat di un'escursione, punto 55: visibile/raggiungibile solo a chi partecipa).
@@ -218,8 +242,12 @@ async function declineSquadRequest(squadId, userId) {
 
 function renderSquadHeader(squad, canManage, box) {
     const esc = window.escapeHtml;
-    const photoHtml = squad.photo
-        ? `<img src="${esc(squad.photo)}" alt="${esc(T('squadPage.fotoAlt') || 'Foto squadra')}">`
+    // MEDIO-3: la foto non arriva piu' dentro l'oggetto squad (GET /api/squads). Ripiego su
+    // quella caricata a parte da caricaFotoSquadra; squad.photo resta come primo posto per il
+    // caso "appena cambiata" (la risposta di PUT /:id/photo la contiene ancora).
+    const foto = squad.photo || fotoSquadraPerId[squad.id];
+    const photoHtml = foto
+        ? `<img src="${esc(foto)}" alt="${esc(T('squadPage.fotoAlt') || 'Foto squadra')}">`
         : "👥";
 
     box.innerHTML = `
@@ -244,7 +272,7 @@ function handleSquadPhotoChange(e, squadId) {
     const file = e.target.files[0];
     if (!file) return;
     // Stesso tetto lato client della foto profilo utente (public/js/profile.js):
-    // il server valida i byte decodificati (MAX_PHOTO_LENGTH in routes/squads.js).
+    // il server ricontrolla la lunghezza del data URL (MAX_PHOTO_LENGTH in routes/squads.js).
     if (file.size > 1.5 * 1024 * 1024) {
         window.showToast(T('squadPage.fotoTroppoGrande') || "Foto troppo grande, scegline una più piccola (max ~1.5MB).", "error");
         e.target.value = "";
@@ -263,7 +291,11 @@ async function saveSquadPhoto(squadId, dataUrl) {
             body: JSON.stringify({ photo: dataUrl })
         });
         if (response.ok) {
-            updateLocalSquad(await response.json());
+            const aggiornata = await response.json();
+            updateLocalSquad(aggiornata);
+            // Tieni allineata anche la cache per-id (MEDIO-3): un refreshState successivo
+            // rimpiazza l'oggetto squad SENZA foto, e senza questo l'anteprima tornerebbe a 👥.
+            fotoSquadraPerId[squadId] = aggiornata.photo || null;
             refreshSquadHeaderAndMembers(squadId);
             window.showToast(T('squadPage.fotoAggiornata') || "Foto della squadra aggiornata.", "success");
         } else {

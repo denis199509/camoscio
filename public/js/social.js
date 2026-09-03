@@ -2294,8 +2294,15 @@ function rigaInvitoSquadra(hike, squad, me) {
     const soloCreatorePuoInvitare = !isCreatorMe && !!hike.manualApproval;
 
     // pendingInvites incluso: un membro gia' invitato non e' "da invitare" di nuovo.
+    // B-6 (revisione sicurezza 28ª): su una gita a cui partecipo ma non ho creato,
+    // hike.pendingInvites arriva troncato al mio id - il numero pieno e' in
+    // pendingInvitesCount. Gli invitati non visibili (differenza fra i due) potrebbero essere
+    // membri di questa squadra: li sottraggo, cosi' il conteggio non li ripropone come "da
+    // invitare". Nel caso peggiore mostra "gia' tutti invitati" con un invitato non-di-squadra
+    // ancora pendente - innocuo, il server (applicaInviti) invita comunque solo chi manca.
     const giaDentro = new Set([...(hike.participants || []), ...(hike.pendingApproval || []), ...(hike.pendingInvites || [])]);
-    const daAggiungere = squad.members.filter(id => !giaDentro.has(id));
+    const invitiNascosti = Math.max(0, (hike.pendingInvitesCount || 0) - (hike.pendingInvites || []).length);
+    const nDaAggiungere = Math.max(0, squad.members.filter(id => !giaDentro.has(id)).length - invitiNascosti);
 
     const organizzatore = isCreatorMe ? (T('social.you') || 'te') : (() => {
         const u = db.users.find(u => u.id === hike.creatorId);
@@ -2309,12 +2316,12 @@ function rigaInvitoSquadra(hike, squad, me) {
         ? new Date(hike.date + 'T12:00:00').toLocaleDateString(dateLocale, { day: 'numeric', month: 'long', year: 'numeric' })
         : (T('social.noDate') || 'data non indicata');
 
-    const disabilitata = soloCreatorePuoInvitare || daAggiungere.length === 0;
+    const disabilitata = soloCreatorePuoInvitare || nDaAggiungere === 0;
     const contatore = soloCreatorePuoInvitare
         ? (T('social.inviteOnlyOrganizer') || "Solo l'organizzatore può invitare una squadra")
-        : (daAggiungere.length === 0
+        : (nDaAggiungere === 0
             ? (T('social.allMembersInvited') || "Tutti i membri sono già iscritti, in attesa o invitati")
-            : (T('social.toInvite', daAggiungere.length) || `${daAggiungere.length} da invitare`));
+            : (T('social.toInvite', nDaAggiungere) || `${nDaAggiungere} da invitare`));
 
     return `
         <div class="carpool-group-item" style="display:flex; justify-content:space-between; align-items:center; gap:12px; ${disabilitata ? 'opacity:0.6;' : 'cursor:pointer;'}" ${disabilitata ? '' : `onclick="confermaInvitoSquadra('${hike.id}')"`}>

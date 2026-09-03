@@ -6,7 +6,10 @@ const Notification = require('../models/Notification');
 const { requireAuth } = require('../middleware/auth');
 const { inviaEmail, emailAllarmeDeadMan } = require('../lib/mailer');
 // A-NUOVO-1 (ri-review sicurezza, 2° giro): tetto agli armamenti del timer per IP.
-const { scritturaLimiter } = require('../middleware/rateLimit');
+// MEDIO-1 (revisione sicurezza 28ª): secchio DEDICATO (sicurezzaLimiter), non piu' condiviso
+// con le altre scritture - il soccorso non deve poter finire la quota per colpa di chi crea
+// escursioni o cancella un account dallo stesso IP/NAT.
+const { sicurezzaLimiter } = require('../middleware/rateLimit');
 // Segreto condiviso per il trigger esterno (nessuno scheduler nel progetto). Estratto in
 // lib/cronSecret.js perche' serve la stessa logica anche allo scrub degli account
 // eliminati (routes/users.js), con una variabile d'ambiente sua.
@@ -25,7 +28,7 @@ const { segretoCronValido } = require('../lib/cronSecret');
 // non a uno scelto - quindi qui basta che ce ne sia almeno uno raggiungibile. Il client
 // disabilita gia' il tasto quando non ce n'e' nessuno (renderContattiEmergenza in
 // safety.js), questo e' il controllo vero - il client si puo' sempre aggirare.
-router.post('/activate', requireAuth, scritturaLimiter, async (req, res) => {
+router.post('/activate', requireAuth, sicurezzaLimiter, async (req, res) => {
     try {
         const scadenza = new Date(req.body.expiresAt);
         if (!req.body.expiresAt || isNaN(scadenza.getTime()) || scadenza.getTime() <= Date.now()) {

@@ -87,12 +87,31 @@ const exportLimiter = rateLimit({
     message: messaggioTroppiTentativi
 });
 
-// POST /api/hikes (crea escursione) e POST /api/safety/activate (arma il Dead Man's Switch):
-// scritture che nessun umano ripete decine di volte all'ora. Tappo al riempimento DB e
-// all'uso del DMS come relay email.
+// POST /api/hikes (crea escursione), complete-group, DELETE /api/users/me, GET|POST
+// /api/users/scrub-eliminati: scritture (o scansioni) che nessun umano ripete decine di volte
+// all'ora. Tappo al riempimento DB.
+// NB (MEDIO-1, revisione sicurezza 28ª): POST /api/safety/activate NON e' piu' qui - armare
+// il Dead Man's Switch ha il suo sicurezzaLimiter dedicato, cosi' la rotta del soccorso non
+// puo' finire la quota per colpa di traffico che soccorso non e' (stesso motivo di
+// cancellazioneLimiter e invitoLimiter).
 const scritturaLimiter = rateLimit({
     windowMs: 60 * 60 * 1000,
     limit: 30,
+    skip: soloInProduzione,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: messaggioTroppiTentativi
+});
+
+// POST /api/safety/activate (armare il Dead Man's Switch): secchio DEDICATO. Terzo caso della
+// stessa regola di cancellazioneLimiter e invitoLimiter, e il piu' importante: la rotta del
+// soccorso non deve poter rispondere 429 per colpa di traffico che soccorso non e' - creare
+// escursioni, chiuderle in gruppo, cancellare l'account, tutte su scritturaLimiter, e dietro
+// un NAT (wifi di un rifugio) la quota e' condivisa fra persone diverse. 60/ora: riarmare il
+// timer piu' volte durante un'uscita e' un uso normale. MEDIO-1, revisione sicurezza 28ª.
+const sicurezzaLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    limit: 60,
     skip: soloInProduzione,
     standardHeaders: true,
     legacyHeaders: false,
@@ -104,10 +123,11 @@ const scritturaLimiter = rateLimit({
 // si difende con tetto + idempotenza invece che con un limiter, e su una singola
 // squadra/escursione regge; NON regge sul ciclo invita -> DELETE /:id/invites -> invita, che
 // rimette i destinatari fra gli invitabili (100 notifiche ogni 52 richieste, ripetibile fino
-// al tetto di apiLimiter). Secchio SEPARATO da scritturaLimiter, che e' condiviso con
-// POST /api/safety/activate (armare il Dead Man's Switch): esaurirlo con gli inviti farebbe
-// rispondere 429 al timer di sicurezza - lo stesso motivo per cui cancellazioneLimiter e'
-// separato. 40/ora e' molto oltre qualunque uso in buona fede. M-5, revisione sicurezza 27ª.
+// al tetto di apiLimiter). Secchio SEPARATO dagli altri limiter di scrittura: un ciclo di
+// inviti non deve intaccare la quota di chi crea escursioni (scritturaLimiter) ne', a maggior
+// ragione, quella di chi arma il timer di sicurezza (sicurezzaLimiter) - lo stesso motivo per
+// cui cancellazioneLimiter e' separato. 40/ora e' molto oltre qualunque uso in buona fede.
+// M-5, revisione sicurezza 27ª.
 const invitoLimiter = rateLimit({
     windowMs: 60 * 60 * 1000,
     limit: 40,
@@ -117,11 +137,12 @@ const invitoLimiter = rateLimit({
     message: messaggioTroppiTentativi
 });
 
-// DELETE /api/hikes/:id: secchio SEPARATO da scritturaLimiter di proposito. Quella rotta la
-// condivide con POST /api/safety/activate (armare il Dead Man's Switch): se la cancellazione
-// - il cui caso d'uso dichiarato e' ripulire piu' escursioni di prova di fila - esaurisse
-// quel secchio, armare il timer di sicurezza risponderebbe 429. Qui 20/ora, per IP: molto
-// oltre qualunque pulizia in buona fede, e non intacca il secchio del soccorso.
+// DELETE /api/hikes/:id: secchio SEPARATO da scritturaLimiter di proposito. Il caso d'uso
+// dichiarato e' ripulire piu' escursioni di prova di fila: se consumasse la quota di
+// scritturaLimiter, creare una nuova escursione o cancellare il proprio account
+// risponderebbe 429 nel mezzo della pulizia. Resta separato anche da sicurezzaLimiter (il
+// secchio del Dead Man's Switch, MEDIO-1 della 28ª): una pulizia non deve poter toccare la
+// quota del soccorso. Qui 20/ora, per IP: molto oltre qualunque pulizia in buona fede.
 const cancellazioneLimiter = rateLimit({
     windowMs: 60 * 60 * 1000,
     limit: 20,
@@ -131,4 +152,19 @@ const cancellazioneLimiter = rateLimit({
     message: messaggioTroppiTentativi
 });
 
-module.exports = { authLimiter, emailLimiter, apiLimiter, matchLimiter, exportLimiter, scritturaLimiter, cancellazioneLimiter, invitoLimiter };
+// PUT /api/squads/:id/photo: la foto e' un data URL fino a 2 MB (MAX_PHOTO_LENGTH in
+// routes/squads.js). Senza un tetto suo, un solo IP puo' riscrivere la foto di una squadra a
+// raffica e riempire i 512 MB di Atlas (vincolo hard) in poche ore. Cambiare la foto di una
+// squadra e' un gesto raro: 20/ora e' larghissimo per un umano e taglia il ritmo di
+// riempimento di un ordine di grandezza. MEDIO-3, revisione sicurezza 28ª. (User.profilePhoto
+// ha lo stesso problema su un'altra rotta: da guardare a parte.)
+const fotoLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    limit: 20,
+    skip: soloInProduzione,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: messaggioTroppiTentativi
+});
+
+module.exports = { authLimiter, emailLimiter, apiLimiter, matchLimiter, exportLimiter, scritturaLimiter, sicurezzaLimiter, cancellazioneLimiter, invitoLimiter, fotoLimiter };

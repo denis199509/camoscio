@@ -206,6 +206,26 @@ function fraGiorni(n) {
         const vA = await vistoDa(ckA); // A: creatore/partecipante
         ok('A (creatore) vede la lista intera [B, C]', vA && (vA.pendingInvites || []).map(String).sort().join() === [B, C].sort().join(), JSON.stringify(vA && vA.pendingInvites));
 
+        // B-6 (revisione sicurezza 28ª): un partecipante NON creatore non vede la lista intera
+        // degli invitati in attesa - solo il creatore, a cui serve per il conteggio.
+        await chiama('POST', `/api/hikes/${H6}/invite-response`, { accept: true }, ckC); // C accetta -> partecipante non creatore
+        const vCpart = await vistoDa(ckC);
+        ok('B-6: C (ora partecipante, non creatore) NON vede pendingInvites',
+            vCpart && (vCpart.pendingInvites === undefined || vCpart.pendingInvites.length === 0), JSON.stringify(vCpart && vCpart.pendingInvites));
+        // R-1, trappola gia' pagata due volte in questo file: se hikeVisibileA regredisse a
+        // toObject() la copia uscirebbe con _id/__v e senza id, e il client non aggancerebbe piu'.
+        ok('B-6: la copia per il partecipante esce con .id e senza ._id/__v (no toObject)',
+            vCpart && typeof vCpart.id === 'string' && vCpart._id === undefined && vCpart.__v === undefined,
+            JSON.stringify(Object.keys(vCpart || {})));
+        ok('B-6: il partecipante non creatore vede ancora carpool/backpackTemplate (l\'estraneo D no)',
+            vCpart && ('carpool' in vCpart) && ('backpackTemplate' in vCpart) && !('carpool' in vD),
+            JSON.stringify({ cpart: 'carpool' in (vCpart || {}), d: 'carpool' in (vD || {}) }));
+        ok('B-6: pendingInvitesCount (conteggio non nominativo) = 1 per il partecipante',
+            vCpart && vCpart.pendingInvitesCount === 1, JSON.stringify(vCpart && vCpart.pendingInvitesCount));
+        const vAdopo = await vistoDa(ckA);
+        ok('B-6: A (creatore) continua a vedere l\'invito restante [B]',
+            vAdopo && (vAdopo.pendingInvites || []).map(String).join() === B, JSON.stringify(vAdopo && vAdopo.pendingInvites));
+
         // === 7. manualApproval: invita solo il creatore ===
         console.log('\n7. escursione ad approvazione manuale: invita solo il creatore');
         const H7 = await creaHike(ckA, 'H7', { manualApproval: true });
