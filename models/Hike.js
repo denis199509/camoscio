@@ -85,6 +85,15 @@ const hikeSchema = new mongoose.Schema({
     multiDay: { type: Boolean, default: undefined },
     participants: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     pendingApproval: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    // Invito squadra DIREZIONALE ("decide l'invitato", rimandato dalla 26ª sessione).
+    // Semantica OPPOSTA a pendingApproval: pendingApproval = "questa persona ha chiesto,
+    // decide il creatore"; pendingInvites = "un membro della squadra ha invitato, decide LA
+    // PERSONA". Nessuno entra in `participants` (= gruppo mesh/SOS, server.js) senza il
+    // proprio sì (POST /api/hikes/:id/invite-response {accept:true}).
+    // default: undefined e NON [] (vincolo hard spazio, 02-Vincoli-Hard): la maggior parte
+    // delle escursioni non ne ha una, e quando l'ultimo invitato risponde il campo si
+    // $unset. Ogni lettura deve essere `(hike.pendingInvites || [])`.
+    pendingInvites: { type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], default: undefined },
     trailhead: {
         lat: Number,
         lng: Number,

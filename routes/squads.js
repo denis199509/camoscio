@@ -6,18 +6,13 @@ const User = require('../models/User');
 const Notification = require('../models/Notification');
 const { requireAuth } = require('../middleware/auth');
 const { nomeVisibile } = require('../lib/accountDeletion'); // A-3.4: nome pseudonimizzato per gli account eliminati
+// Punto 48: il creatore e' admin/membro per calcolo (creatorId), mai duplicato dentro
+// admins[]/members[]. Estratti in lib/squad.js perche' ora li usa anche routes/hikes.js
+// (invito squadra direzionale) - una definizione sola.
+const { isSquadMember, isSquadAdmin } = require('../lib/squad');
 
 const MAX_PHOTO_LENGTH = 2 * 1024 * 1024;
 const MAX_MESSAGES = 50;
-
-// Punto 48: il creatore e' admin per calcolo (creatorId), mai duplicato dentro admins[].
-function isSquadAdmin(squad, userId) {
-    return squad.creatorId.equals(userId) || squad.admins.some(a => a.equals(userId));
-}
-
-function isSquadMember(squad, userId) {
-    return squad.creatorId.equals(userId) || squad.members.some(m => m.equals(userId));
-}
 
 // Ottieni squadre ricorrenti
 router.get('/', requireAuth, async (req, res) => {

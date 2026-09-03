@@ -22,6 +22,7 @@ const { mongoose } = require('../db/mongo');
 // Ri-review sicurezza (2° giro): limiter mirati su una rotta di campionamento e su due scritture.
 const { matchLimiter, scritturaLimiter, cancellazioneLimiter } = require('../middleware/rateLimit');
 const { nomeVisibile, oggiRomaISO } = require('../lib/accountDeletion'); // A-3.4: nome pseudonimizzato; oggiRomaISO: blocco iscrizioni oltre il giorno previsto
+const { isSquadMember } = require('../lib/squad'); // invito squadra direzionale: chi invita deve far parte della squadra
 
 // Punto 55: usato da /:id/complete (gia' esistente, riscritto per riusare questa) e dalle
 // nuove rotte di chat. Non ci si fida al 100% che il creatore sia sempre dentro
@@ -201,6 +202,15 @@ function hikeVisibileA(hike, userId) {
     const pubblico = hike.toJSON ? hike.toJSON() : { ...hike };
     delete pubblico.carpool;
     delete pubblico.backpackTemplate;
+    // Invito squadra direzionale: un non-partecipante vede SOLO il proprio invito, mai la
+    // lista intera (che direbbe a chiunque "Tizio e' invitato alla gita di Caio e non ha
+    // ancora risposto"). I partecipanti veri ricevono `hike` intero col return anticipato
+    // qui sopra, quindi l'invitante puo' contare quanti membri restano da invitare.
+    if (Array.isArray(pubblico.pendingInvites)) {
+        const soloMio = pubblico.pendingInvites.filter(id => String(id) === String(userId));
+        if (soloMio.length) pubblico.pendingInvites = soloMio;
+        else delete pubblico.pendingInvites;
+    }
     return pubblico;
 }
 
@@ -918,6 +928,15 @@ router.post('/:id/complete-group', requireAuth, scritturaLimiter, async (req, re
         hike.groupCompletedAt = new Date();
         await hike.save();
 
+        // Invito squadra direzionale: un invito che nessuno puo' piu' accettare (l'escursione
+        // e' ora chiusa) resterebbe una card morta nella pagina dell'invitato. Si toglie con
+        // $unset ESPLICITO - non `[]`: pendingInvites ha default undefined nello schema
+        // (vincolo spazio), a differenza di pendingApproval qui sopra.
+        if ((hike.pendingInvites || []).length) {
+            await Hike.updateOne({ _id: hike._id }, { $unset: { pendingInvites: '' } });
+            hike.pendingInvites = undefined;
+        }
+
         // Avvisa chi viene segnato presente pur non essendo fra gli iscritti: la ricerca
         // "aggiungi chi non era in lista" e' una funzione voluta, ma un Completion creato per
         // qualcuno che non ne sa niente non deve restare silenzioso (finisce nel suo "Escursioni
@@ -942,6 +961,229 @@ router.post('/:id/complete-group', requireAuth, scritturaLimiter, async (req, re
     } catch (e) {
         console.error('Errore completamento di gruppo:', e);
         res.status(400).json({ error: 'Impossibile completare la richiesta' });
+    }
+});
+
+// ===================================================================================
+// INVITO SQUADRA DIREZIONALE ("decide l'invitato", rimandato dalla 26ª sessione)
+//
+// Prima: un compagno di squadra si aggiungeva a `participants` con un PUT del creatore
+// (corsia HIKE_AGGIUNTA_NON_CONSENTITA) - cioe' finiva nel gruppo mesh/SOS (server.js) senza
+// aver mai detto si'. Ora `invite-squad` mette i membri della squadra in `pendingInvites`, e
+// SOLO `invite-response {accept:true}` dell'interessato lo sposta in `participants`. Nessuno
+// entra nel gruppo di sicurezza senza un'azione esplicita sua.
+// (Tappa 1 di 3: le rotte esistono, il client e la chiusura della vecchia corsia in PUT /:id
+// arrivano con le tappe 2 e 3. Vedi C:\Users\lenovo\.claude\plans\camoscio-invito-squadra-direzionale.md)
+// ===================================================================================
+
+// POST /api/hikes/:id/invite-squad { squadId }
+// Chi puo': un partecipante dell'escursione che e' anche membro della squadra. Su
+// un'escursione ad approvazione manuale SOLO il creatore - cosi' "sei in pendingInvites"
+// significa sempre "l'organizzatore e' d'accordo", senza bisogno di un campo invitedBy
+// (decisione della 27ª sessione).
+router.post('/:id/invite-squad', requireAuth, async (req, res) => {
+    try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(400).json({ error: 'Identificativo non valido.' });
+        }
+        const squadId = req.body && req.body.squadId;
+        if (typeof squadId !== 'string' || !mongoose.Types.ObjectId.isValid(squadId)) {
+            return res.status(400).json({ error: 'Squadra non valida.' });
+        }
+        const hike = await Hike.findById(req.params.id);
+        if (!hike) return res.status(404).json({ error: 'Escursione non trovata' });
+
+        const userId = req.session.userId;
+        if (hike.groupCompletedAt) {
+            return res.status(409).json({ error: 'Questa escursione è già stata completata.', code: 'HIKE_COMPLETATA' });
+        }
+        if (!isHikeParticipant(hike, userId)) {
+            return res.status(403).json({ error: 'Solo un partecipante può invitare una squadra a questa escursione.' });
+        }
+        if (hike.manualApproval && !hike.creatorId.equals(userId)) {
+            return res.status(403).json({
+                error: "Questa escursione richiede l'approvazione dell'organizzatore: solo chi l'ha creata può invitare una squadra.",
+                code: 'HIKE_INVITO_SOLO_CREATORE'
+            });
+        }
+        // Stessa regola di HIKE_DATE_PASSED (25ª): passato il giorno previsto, niente
+        // aggiunte. Confronto fra stringhe "YYYY-MM-DD" nel fuso Europe/Rome, mai new Date().
+        if (hike.date && hike.date < oggiRomaISO()) {
+            return res.status(409).json({
+                error: `Questa escursione era prevista per il ${hike.date}: da quel giorno in poi non accetta più iscrizioni.`,
+                code: 'HIKE_DATE_PASSED',
+                hikeDate: hike.date
+            });
+        }
+
+        const squad = await Squad.findById(squadId);
+        if (!squad) return res.status(404).json({ error: 'Squadra non trovata.' });
+        if (!isSquadMember(squad, userId)) {
+            return res.status(403).json({ error: 'Puoi invitare solo una squadra di cui fai parte.' });
+        }
+
+        // Chi si esclude: il creatore; chi e' gia' partecipante o gia' in pendingApproval (la
+        // sua pratica e' in mano al creatore - niente due stati contemporanei); chi e' gia'
+        // invitato (idempotenza); gli account eliminati (non potrebbero accettare).
+        const membriSquadra = [...new Set((squad.members || []).map(String))];
+        const giaDentroSet = new Set([
+            String(hike.creatorId),
+            ...(hike.participants || []).map(String),
+            ...(hike.pendingApproval || []).map(String)
+        ]);
+        const giaInvitatiSet = new Set((hike.pendingInvites || []).map(String));
+        const nGiaDentro = membriSquadra.filter(id => giaDentroSet.has(id)).length;
+        const nGiaInvitati = membriSquadra.filter(id => giaInvitatiSet.has(id)).length;
+        const candidati = membriSquadra.filter(id => !giaDentroSet.has(id) && !giaInvitatiSet.has(id));
+
+        let daInvitare = [];
+        if (candidati.length) {
+            const vivi = await User.find({ _id: { $in: candidati }, deletedAt: { $exists: false } })
+                .select('_id').lean();
+            daInvitare = vivi.map(u => String(u._id));
+        }
+
+        // Tetto: pendingInvites nasce dai membri di una squadra, e POST /api/squads non ha
+        // ancora un tetto sui membri (arriva con la tappa 4 - "consenso squadra"). 200 come
+        // complete-group, con lo stesso ragionamento: una squadra vera sta molto sotto.
+        if ((hike.pendingInvites || []).length + daInvitare.length > 200) {
+            return res.status(400).json({ error: 'Troppi inviti in una volta.' });
+        }
+
+        if (daInvitare.length) {
+            await Hike.updateOne(
+                { _id: hike._id },
+                { $addToSet: { pendingInvites: { $each: daInvitare } } }
+            );
+            // Best-effort (try separato): un invito che esiste sul documento non deve fallire
+            // perche' una notifica non parte.
+            try {
+                await Notification.insertMany(daInvitare.map(uid => ({
+                    userId: uid,
+                    text: `Sei stato invitato all'escursione "${hike.title}".`,
+                    relatedHikeId: hike._id
+                })));
+            } catch (e) {
+                console.error('Notifiche invito squadra non inviate:', e);
+            }
+        }
+
+        const aggiornata = await Hike.findById(hike._id);
+        res.json({
+            invitati: daInvitare.length,
+            giaDentro: nGiaDentro,
+            giaInvitati: nGiaInvitati,
+            hike: hikeVisibileA(aggiornata, userId)
+        });
+    } catch (e) {
+        console.error('Errore invito squadra:', e);
+        res.status(400).json({ error: 'Impossibile invitare la squadra.' });
+    }
+});
+
+// POST /api/hikes/:id/invite-response { accept: true | false }
+// L'attore e' SEMPRE req.session.userId (mai un id dal client). accept:true sposta
+// l'invitato in `participants` (= nel gruppo mesh/SOS), accept:false toglie solo l'invito.
+// Il RIFIUTO non e' mai bloccato - nemmeno su un'escursione conclusa o scaduta: un invito
+// morto deve poter sparire dalla pagina dell'invitato.
+router.post('/:id/invite-response', requireAuth, async (req, res) => {
+    try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(400).json({ error: 'Identificativo non valido.' });
+        }
+        // Mai coercizione: la stringa "false" e' truthy e trasformerebbe un rifiuto in
+        // un'adesione al gruppo di sicurezza.
+        if (typeof req.body.accept !== 'boolean') {
+            return res.status(400).json({ error: 'Risposta non valida.' });
+        }
+        const accept = req.body.accept;
+        const userId = req.session.userId;
+
+        const hike = await Hike.findById(req.params.id);
+        if (!hike) return res.status(404).json({ error: 'Escursione non trovata' });
+
+        const inInvito = (hike.pendingInvites || []).some(id => id.equals(userId));
+        if (!inInvito) {
+            // Non e' (piu') invitato. Se e' gia' dentro ed e' un accept, e' il doppio clic /
+            // la seconda scheda -> 200 idempotente, nessuna seconda notifica.
+            if (accept && isHikeParticipant(hike, userId)) {
+                return res.json(hikeVisibileA(hike, userId));
+            }
+            return res.status(403).json({
+                error: 'Non hai un invito in attesa per questa escursione.',
+                code: 'HIKE_INVITO_ASSENTE'
+            });
+        }
+
+        if (accept) {
+            if (hike.groupCompletedAt) {
+                return res.status(409).json({ error: 'Questa escursione è già stata completata.', code: 'HIKE_COMPLETATA' });
+            }
+            if (hike.date && hike.date < oggiRomaISO()) {
+                return res.status(409).json({
+                    error: `Questa escursione era prevista per il ${hike.date}: da quel giorno in poi non accetta più iscrizioni.`,
+                    code: 'HIKE_DATE_PASSED',
+                    hikeDate: hike.date
+                });
+            }
+        }
+
+        // Compare-and-swap: `pendingInvites: userId` nel filtro fa vincere un solo accept fra
+        // due concorrenti; `groupCompletedAt: null` (che in Mongo combacia anche col campo
+        // assente) fa perdere gracefully un accept che si incrocia con complete-group. Il
+        // rifiuto non ha il filtro sulla chiusura: e' sempre permesso.
+        const filtro = accept
+            ? { _id: hike._id, pendingInvites: userId, groupCompletedAt: null }
+            : { _id: hike._id, pendingInvites: userId };
+        const mod = accept
+            ? { $addToSet: { participants: userId }, $pull: { pendingInvites: userId, pendingApproval: userId } }
+            : { $pull: { pendingInvites: userId } };
+        const aggiornata = await Hike.findOneAndUpdate(filtro, mod, { new: true });
+
+        if (!aggiornata) {
+            // Fra la lettura e qui qualcuno ha tolto l'invito, o l'escursione si e' chiusa.
+            const ri = await Hike.findById(hike._id);
+            if (accept && ri && isHikeParticipant(ri, userId)) {
+                return res.json(hikeVisibileA(ri, userId));
+            }
+            if (accept && ri && ri.groupCompletedAt) {
+                return res.status(409).json({ error: 'Questa escursione è già stata completata.', code: 'HIKE_COMPLETATA' });
+            }
+            return res.status(403).json({ error: 'Questo invito non è più valido.', code: 'HIKE_INVITO_ASSENTE' });
+        }
+
+        // pendingInvites vuoto -> $unset (non lasciare `[]`, vincolo spazio). Best-effort:
+        // un `[]` sopravvissuto e' innocuo.
+        if ((aggiornata.pendingInvites || []).length === 0) {
+            try {
+                await Hike.updateOne({ _id: aggiornata._id }, { $unset: { pendingInvites: '' } });
+                aggiornata.pendingInvites = undefined;
+            } catch (e) { /* innocuo */ }
+        }
+
+        // Notifica al creatore, in un try SEPARATO (una notifica non deve poter mentire
+        // sull'esito - regola gia' in PUT /:id). nomeVisibile: mai lo username vero di un
+        // account eliminato. relatedHikeId: la cascata di DELETE /api/hikes/:id.
+        try {
+            if (!hike.creatorId.equals(userId)) {
+                const invitato = await User.findById(userId).select('username pendingDeletionAt deletedAt');
+                const nome = nomeVisibile(invitato) || 'Qualcuno';
+                await Notification.create({
+                    userId: hike.creatorId,
+                    text: accept
+                        ? `${nome} ha accettato il tuo invito a "${hike.title}".`
+                        : `${nome} non parteciperà a "${hike.title}".`,
+                    relatedHikeId: hike._id
+                });
+            }
+        } catch (e) {
+            console.error('Notifica risposta invito non inviata:', e);
+        }
+
+        res.json(hikeVisibileA(aggiornata, userId));
+    } catch (e) {
+        console.error('Errore risposta a invito:', e);
+        res.status(400).json({ error: 'Impossibile registrare la risposta.' });
     }
 });
 

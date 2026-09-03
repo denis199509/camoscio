@@ -128,6 +128,33 @@ dell'APPROVAZIONE MANUALE che si poteva scavalcare:
     quel giorno stesso. I tre controlli B11 lo presidiano, e pretendono 409 e non un 403
     qualunque: deve fermarsi perche' l'escursione e' CHIUSA, non per un caso dei permessi.
 
+La prova dell'INVITO SQUADRA DIREZIONALE ("decide l'invitato", rimandato dalla 26a sessione),
+TAPPA 1 di 3 (solo server: le rotte nuove esistono, la corsia vecchia in PUT /:id e il
+client arrivano con le tappe 2-3):
+
+    node prove/prova-invito-direzionale.js          41 controlli  (ne avvia uno suo, sulla 3117)
+
+    NOVE SEZIONI, quattro account demo (A crea, B=Giulia e' l'invitato, C=Luca, D=Sofia).
+    Copre POST /api/hikes/:id/invite-squad {squadId} e POST /:id/invite-response {accept}:
+    1) guardie dell'invito (non partecipante -> 403; squadra di cui non fai parte -> 403;
+    squadId inesistente -> 404 / non valido -> 400). 2) invito legittimo -> i membri vanno
+    in pendingInvites, NESSUNO in participants, una notifica d'invito a testa con
+    relatedHikeId (contata SOLO sul testo "invitato all'escursione": l'auto-annuncio di
+    POST /api/hikes alle squadre del creatore genera altre notifiche con lo stesso
+    relatedHikeId - trappola da ricordare). 3) reinvito idempotente. 4) B accetta -> entra
+    in participants + notifica al creatore; C rifiuta -> non entra; pendingInvites vuoto ->
+    $unset, non []. 5) errori di invite-response (non invitato -> 403 HIKE_INVITO_ASSENTE;
+    accept stringa "false" -> 400; accept mancante -> 400; accept ripetuto da chi e' gia'
+    dentro -> 200 idempotente, un solo id, NESSUNA seconda notifica). 6) hikeVisibileA
+    ridotto: un estraneo non vede pendingInvites, un invitato vede solo il proprio id, un
+    partecipante vede la lista intera. 7) su manualApproval invita solo il creatore
+    (partecipante non creatore -> 403 HIKE_INVITO_SOLO_CREATORE). 8) complete-group azzera
+    pendingInvites con $unset; invito su conclusa -> 409 HIKE_COMPLETATA. 9) stato forzato
+    sul DB (conclusa / data passata con un invitato dentro): accept -> 409, reject -> 200
+    (il rifiuto non e' MAI bloccato). Squadra di prova via l'helper creaSquadraDiProva (unico
+    punto che la tappa 4 cambiera'), cancellata nel finally coi suoi documenti. CONTROPROVA:
+    sul commit precedente le due rotte danno 404 e le sezioni 2-9 cadono.
+
 La prova della CANCELLAZIONE DI UN'ESCURSIONE (DELETE /api/hikes/:id, nata il 02/09/2026:
 prima una hike creata era per sempre, e dopo la chiusura di gruppo spariva anche "Modifica"):
 
