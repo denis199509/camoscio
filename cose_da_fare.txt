@@ -9979,3 +9979,76 @@ toccato (congelato).
      che dichiara la condivisione della posizione + uscita come
      revoca del consenso.
    - Verifica dal vivo di Denis su tutto l'invito squadra.
+
+  --- CHIUSO nella 29a sessione (03/09/2026) ---
+  Denis: "proviamo a chiudere le ultime cose aperte dall'ultima
+  sessione" -> ambito: SOLO i follow-up di sicurezza (MEDIO-1,
+  MEDIO-3, B-4, B-5, B-6; B-3 documentato). "Giro agente
+  security-privacy, poi commit" -> "Lascia cosi', per oggi abbiamo
+  finito. Vai con commit e push e chiusura sessione in sicurezza".
+  Decisione di prodotto: la foto squadra resta visibile a chiunque
+  loggato (GET /api/squads/:id/photo solo requireAuth, non gated
+  sui membri).
+
+  FATTI, commit 99c5ddd, push su master:
+   - MEDIO-1: nuovo sicurezzaLimiter (60/ora, middleware/rateLimit.js);
+     POST /api/safety/activate ci passa sopra, via da scritturaLimiter.
+   - MEDIO-3: Squad.photo -> select:false (fuori da GET /api/squads,
+     era il muro RAM su Render). Nuova GET /api/squads/:id/photo
+     (requireAuth). fotoLimiter (20/ora) su PUT /:id/photo. Frontend
+     (squadpage.js) carica la foto a parte, cache fotoSquadraPerId.
+   - B-4: DELETE /:id/members/:userId notifica chi e' espulso (prima
+     dello scioglimento) e chi eredita la conduzione.
+   - B-5: GET /users/me/export + invitiSquadraRicevuti /
+     invitiEscursioneRicevuti (solo id + nome/titolo).
+   - B-6: hikeVisibileA -> solo il creatore vede gli id di
+     pendingInvites; un partecipante il solo numero
+     (pendingInvitesCount). social.js rigaInvitoSquadra usa il
+     conteggio (niente regressione UI).
+   - B-3: NON corretto di proposito (cap 50 per chiamata, correzione
+     pulita = $expr/$size, non vale il costo). L'agente concorda.
+
+  GIRO security-privacy SUL DIFF: verdetto GO. 0 CRITICO, 0 ALTO dal
+  diff. Rilievi minori sistemati NELLO STESSO commit: commenti dei
+  limiter allineati (cancellazioneLimiter / users.js / hikes.js
+  dicevano ancora "condivide con /api/safety/activate"); notifica B-4
+  spostata prima dello scioglimento; regressione UI da B-6 chiusa con
+  pendingInvitesCount; 3 commenti del client corretti; test B-6
+  rinforzato (contro un ritorno a toObject + carpool/backpackTemplate
+  tenuti).
+
+  Prove: prova-squadre-consenso 64/64 (+11: sez. 8b/8c), prova-invito-
+  direzionale 46/46 (+5: B-6), prova-punto37 28/28, prova-invito-
+  squadra 54/54, prova-partecipanti-forzati 35/35, prova-eliminazione-
+  account 57/57, prova-elimina-escursione 53/53, prova-punto116 42/42,
+  prova-punto113 103/103. npm audit --omit=dev = 0.
+
+  RESTANO APERTI dopo la 29a (in coda, non bloccano), ordine agente:
+   - ALTO-1 (PREESISTENTE, non trovato nei due giri della 28a):
+     POST /api/notifications e' requireAuth e basta -> qualunque
+     utente loggato forgia una notifica per QUALUNQUE userId, con
+     qualunque testo (ora capato a 600). Es.: un falso esito del
+     Dead Man's Switch. E' il PROSSIMO punto. Fix: whitelist campi +
+     valida userId + (meglio) verifica che chiamante e destinatario
+     condividano una squadra/escursione, e riserva al server i testi
+     di sicurezza. (GET /api/notifications/:userId e' gia' gated bene.)
+   - MEDIO-1b/1c: GET /api/squads/:id/photo (2 MB/richiesta) senza
+     limiter di lettura e senza Cache-Control (reports.js:128 mette
+     private,max-age=86400).
+   - MEDIO-2: PUT /:id/photo non valida i byte della foto (magic-byte
+     / dimensione decodificata). Precedente VERO: User.profilePhoto
+     (anche lui non valida), NON Report.photo. Il commento di
+     models/Squad.js e' stato corretto in questa sessione.
+   - MEDIO-3 residuo: fotoLimiter 20/ora x 2 MB = un IP riempie Atlas
+     in ~8 h. Rimedio: compressione foto lato client (imagecompress.js
+     come i report) + MAX_PHOTO_LENGTH piu' basso.
+   - MEDIO-4: l'export GDPR ha gli inviti RICEVUTI (B-5) ma non le
+     richieste INVIATE (Squad.pendingRequests / Hike.pendingApproval
+     dove sono io il richiedente). Due righe nello stesso Promise.all.
+   - CONFORMITA' GDPR (professionista) + verifica dal vivo di Denis
+     su tutto l'invito squadra: invariati.
+
+  Rapporto del giro agente: la sua consegna e' nel task del
+  security-privacy (29a sessione). Dettaglio decisioni in
+  ../camoscio memoria/03-Decisioni-Architetturali.md "Follow-up
+  revisione sicurezza (29a)".

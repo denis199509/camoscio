@@ -1,98 +1,97 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-09-03 (VENTOTTESIMA sessione — HOTFIX REVISIONE
-SICUREZZA "Invito squadra direzionale". Chiuso il triage che era
-rimasto aperto a fine 27a. Verdetto del 2o giro dell'agente:
-GO al push. Push `1bb0df5..1f98413` su `master`, Render redeploy
-automatico.
+Aggiornato: 2026-09-03 (VENTINOVESIMA sessione — I 5 FOLLOW-UP
+DELLA REVISIONE SICUREZZA, chiusi e in produzione. Push `99c5ddd`
+su `master`, Render redeploy automatico. Giro `security-privacy`
+sul diff: GO.
 
 --- COSA E' STATO CHIUSO ---
-12 voci del rapporto (commit `b6e0edd`), + 2 rilievi del 2o giro
-dell'agente (commit `1f98413`):
+Denis: "proviamo a chiudere le ultime cose aperte dall'ultima
+sessione" -> ambito scelto: SOLO i follow-up di sicurezza rimasti
+aperti dalla 28a. Un giro unico di hotfix, un commit (`99c5ddd`).
 
- C-1  (CRITICO)  la corsia "un partecipante propone un terzo in
-      pendingApproval" e' CHIUSA. `canNonCreatorEditParticipation`
-      (routes/hikes.js) -> `return false` dopo il ramo
-      touchesOnlySelf. Client social.js: una sola strada (invito
-      direzionale), riga disabilitata su escursione altrui ad
-      approvazione manuale. DECISIONE DI DENIS (opzione A): rovescia
-      la sua scelta #2 della 27a "la proposta resta".
- A-1  Squad.name maxlength:80 a schema + trim().slice(0,80) in
-      POST /api/squads + maxlength HTML.
- A-2  DELETE /api/squads/:id/members/:userId: isSquadMember
-      sull'attore PRIMA dei rami (i due controlli erano entrambi
-      condizionati a !seStesso -> un estraneo faceva partire lo
-      scioglimento di una squadra con members vuoto).
- A-3  overrides: { "qs": "6.16.0" } in package.json. `npm audit fix`
-      da solo NON chiudeva l'advisory (express@4.22.2 fissa
-      qs:~6.15.1, nessuna express 4.x sopra), `--force` -> express 5.
-      `npm audit --omit=dev` = 0.
- M-1  successore del creatore uscente = primo membro VIVO (filtro di
-      lib/squadAdmin.js); se nessun vivo -> la squadra si scioglie
-      invece di restare col creatorId fantasma.
- M-2  PUT /api/hikes/:id: tetto 200 + dedup (new Set) su participants
-      / pendingApproval, prima di ogni guardia.
- M-3  squadVisibileA (specchio di hikeVisibileA, toJSON) su GET /,
-      invite-response, request-join, DELETE members: un non-membro
-      vede la squadra ma solo il PROPRIO invito/richiesta.
- M-4  scrubAccount fa $pull da Squad/Hike .pendingInvites e
-      Hike.pendingApproval + nuova DELETE /api/hikes/:id/invites/
-      :userId (solo creatore).
- M-5  invitoLimiter nuovo (40/ora, SEPARATO da scritturaLimiter =
-      Dead Man's Switch) su invite-squad, POST /squads,
-      POST /squads/:id/invite, entrambe le DELETE .../invites.
- M-6  complete-group verifica la partecipazione: confirmedUserIds
-      solo fra participants + pendingApproval (+ creatore).
-      DECISIONE DI DENIS: revoca la "conferma di un walk-up mai
-      iscritto" del punto 64. L'avviso "segnato come presente"
-      resta per chi era in pendingApproval.
- B-1  $unset di pendingInvites condizionato a { $size: 0 } (3 punti).
- B-2  invite-squad filtra anche pendingDeletionAt.
+ MEDIO-1  sicurezzaLimiter dedicato (60/ora) per
+          POST /api/safety/activate. Prima condivideva
+          scritturaLimiter con creare escursioni / complete-group /
+          DELETE /api/users/me / scrub-eliminati: dietro un NAT
+          (wifi di un rifugio) uno consuma la quota e un altro non
+          arma il Dead Man's Switch. Terzo caso della stessa regola
+          di cancellazioneLimiter e invitoLimiter.
+ MEDIO-3  Squad.photo -> `select: false` (models/Squad.js): fuori
+          da GET /api/squads. Il muro vero non era Atlas ma la RAM
+          su Render (2 MB x squadra x refreshState x utente). Nuova
+          GET /api/squads/:id/photo -> SOLO requireAuth (scelta di
+          Denis: la foto resta visibile a chiunque loggato, non
+          gated sui membri). fotoLimiter (20/ora) su
+          PUT /:id/photo. public/js/squadpage.js carica la foto a
+          parte e la tiene in fotoSquadraPerId.
+          >>> Residuo NON chiuso: 20/ora x 2 MB = un IP riempie
+              Atlas in ~8 h. Rimedio vero: comprimere lato client
+              (come i report) + cap piu' basso. In coda (MEDIO-3
+              residuo).
+ B-4      routes/squads.js DELETE /:id/members/:userId: notifica
+          chi viene ESPULSO da un admin (prima dello scioglimento)
+          e chi EREDITA la conduzione della squadra.
+ B-5      routes/users.js GET /users/me/export: + invitiSquadra
+          Ricevuti / invitiEscursioneRicevuti (solo id + nome).
+ B-6      routes/hikes.js hikeVisibileA: SOLO il creatore vede gli
+          id in pendingInvites; un partecipante qualunque riceve
+          solo il numero (pendingInvitesCount). social.js
+          rigaInvitoSquadra usa il conteggio -> niente regressione
+          UI.
+ B-3      NON corretto, di proposito: ogni chiamata resta cappata
+          a 50, una correzione atomica richiederebbe $expr/$size,
+          non vale il costo. L'agente concorda.
 
- 2o GIRO DELL'AGENTE (plans/...-giro2.md): GO, 0 CRITICO, 1 ALTO,
- 3 MEDIO, 5 BASSO, nessuna regressione bloccante. Chiusi:
- ALTO-1  (residuo M-6) complete-group accettava anche chi era solo
-         in pendingInvites (invitato che NON ha accettato) ->
-         finalizzarlo era C-1 con un nome nuovo. Tolto dall'insieme.
- MEDIO-2 (regressione da M-3) GET /api/squads senza try/catch +
-         squadVisibileA che tocca creatorId nullo -> crash del
-         processo. Aggiunto try/catch + guardie in lib/squad.js.
- Notification.text maxlength:600 (300 taglierebbe l'esito del Dead
-         Man's Switch, ~540 caratteri con 5 contatti).
+ GIRO `security-privacy` SUL DIFF: verdetto GO. Rilievi minori
+ sistemati NELLO STESSO commit: commenti dei limiter allineati
+ (cancellazioneLimiter / users.js / hikes.js dicevano ancora
+ "condivide con /api/safety/activate"); notifica B-4 spostata
+ prima dello scioglimento; regressione UI da B-6 chiusa con
+ pendingInvitesCount; 3 commenti del client corretti; test B-6
+ rinforzato (asserzioni contro un ritorno a toObject, e che il
+ partecipante non-creatore veda ancora carpool/backpackTemplate).
 
->>> STATO A FINE 28a SESSIONE:
-      - camoscio       origin/master = `1f98413` (codice hotfix;
-                       sopra solo il commit di note). Working tree PULITO.
+>>> STATO A FINE 29a SESSIONE:
+      - camoscio       origin/master = `99c5ddd`. Working tree PULITO.
+                       (sopra `99c5ddd` solo il commit di note.)
       - camoscio memoria (vault) origin/master aggiornato (04/06/03/07).
       - Tutto pushato in entrambi i repo.
-      - Prove verdi: prova-invito-squadra 54/54, prova-partecipanti-
-        forzati 35/35, prova-invito-direzionale 41/41,
-        prova-squadre-consenso 53/53 (sez. 7b nuova: A-2/M-1/M-3),
-        prova-eliminazione-account 57/57, prova-elimina-escursione
-        53/53, prova-punto116 42/42, prova-punto77 17/17,
-        prova-punto93 28/28, prova-punto113 103/103.
+      - Prove verdi: prova-squadre-consenso 64/64, prova-invito-
+        direzionale 46/46, prova-punto37 28/28, prova-invito-squadra
+        54/54, prova-partecipanti-forzati 35/35, prova-eliminazione-
+        account 57/57, prova-elimina-escursione 53/53, prova-punto116
+        42/42, prova-punto113 103/103.
       - npm audit --omit=dev = 0.
 
->>> APERTI DELLA REVISIONE SICUREZZA (follow-up, NON bloccano):
-  - MEDIO-1: POST /api/safety/activate condivide ancora
-    scritturaLimiter con POST /api/hikes / complete-group /
-    DELETE /api/users/me. Dietro NAT uno esaurisce la quota e un
-    altro non arma il timer di sicurezza. Serve un sicurezzaLimiter
-    dedicato (tocca routes/safety.js + prova-punto37).
-  - MEDIO-3: Squad.photo (data URL 2 MB) senza limiter su
-    PUT /:id/photo e senza select('-photo') in GET /. Fix pulito =
-    nuova GET /api/squads/:id (la pagina squadra oggi legge la foto
-    da CamoscioState.squads).
-  - B-3 (tetti non atomici), B-4 (nessuna notifica a chi e' rimosso
-    da una squadra / a chi ne eredita la proprieta'), B-5 (export
-    GDPR senza gli inviti ricevuti), B-6 (tutti i partecipanti, non
-    solo il creatore, vedono pendingInvites per intero).
-  - CONFORMITA' GDPR (serve un professionista, NON e' consulenza
-    dell'agente): il testo dell'invito dovrebbe dire, PRIMA
-    dell'accettazione, che accettare = la propria posizione potra'
-    essere condivisa coi partecipanti in caso di mesh/SOS; e
-    l'uscita da participants andrebbe presentata come revoca del
-    consenso, con la stessa evidenza.
+>>> APERTI DELLA REVISIONE SICUREZZA (follow-up, NON bloccano),
+    in ordine di priorita' dell'agente:
+  - ALTO-1 (PREESISTENTE, non trovato nei due giri della 28a):
+    POST /api/notifications e' requireAuth e basta -> qualunque
+    utente loggato forgia una notifica per QUALUNQUE userId, con
+    qualunque testo (ora capato a 600). Si puo' fabbricare un falso
+    esito del Dead Man's Switch ("e' partito un avviso ai tuoi
+    contatti"). E' il PROSSIMO punto da aprire. Fix: whitelist dei
+    campi + validare userId + (meglio) verificare che chiamante e
+    destinatario condividano una squadra/escursione, e riservare al
+    server i testi che parlano di sicurezza.
+  - MEDIO-1b/1c: GET /api/squads/:id/photo (2 MB/richiesta) senza
+    un limiter di lettura e senza Cache-Control (reports.js:128
+    mette `private, max-age=86400`).
+  - MEDIO-2: PUT /api/squads/:id/photo non valida i byte della
+    foto (magic-byte / dimensione decodificata). Il precedente
+    VERO e' User.profilePhoto (anche lui non valida), NON
+    Report.photo (che invece controlla). Il commento di
+    models/Squad.js e' stato corretto.
+  - MEDIO-3 residuo: vedi sopra (compressione foto + cap).
+  - MEDIO-4: l'export GDPR ha gli inviti RICEVUTI (B-5) ma non le
+    richieste INVIATE (Squad.pendingRequests / Hike.pendingApproval
+    dove sono io il richiedente). Due righe nello stesso Promise.all.
+  - CONFORMITA' GDPR (serve un professionista): il testo dell'invito
+    dovrebbe dire, PRIMA dell'accettazione, che accettare = la
+    propria posizione potra' essere condivisa coi partecipanti in
+    caso di mesh/SOS; e l'uscita da participants come revoca del
+    consenso.
   - VERIFICA DAL VIVO di Denis su tutto l'invito squadra (card
     Accetta/Rifiuta, gruppo "Inviti", creazione squadra -> inviti,
     "Lascia la squadra") - MAI provato su un telefono vero. E il
@@ -100,7 +99,8 @@ dell'agente (commit `1f98413`):
 
 >>> SI LAVORA SU `master`, hotfix normali (commit vero + push -> Render
     ridistribuisce). L'hook di auto-save committa in locale (mai push):
-    va rifuso in UN commit vero prima di ogni push.
+    va rifuso in UN commit vero prima di ogni push
+    (`git reset --soft origin/master`).
 
 >>> AZIONI MANUALI DI DENIS, aperte:
   1. ACCOUNT_SCRUB_SECRET su Render (stringa a scelta, DIVERSA da
@@ -132,11 +132,14 @@ dell'agente (commit `1f98413`):
     app-wide + migrazione -> a se'.
   - nascondere il cestino sulle card "completate in gruppo".
 
->>> GIA' IN PRODUZIONE prima di oggi (origin/master era `1bb0df5`
-    prima della 28a, `1f98413` dopo):
-    27a sessione — punto 116 (traccia importata -> linea sulla
-    mappa, Hike.routePath) + INVITO SQUADRA DIREZIONALE chiuso per
-    intero (4 tappe + consenso squadra, 0fce557->adf9ff2).
+>>> GIA' IN PRODUZIONE prima di oggi (origin/master era `3c3aa29`
+    prima della 29a, `99c5ddd` dopo):
+    28a sessione — HOTFIX revisione sicurezza "Invito squadra
+    direzionale": C-1 (chiusa la corsia "proposta", rovescia la
+    scelta della 27a) + 11 voci + 2 rilievi del 2o giro agente.
+    27a — punto 116 (traccia importata -> linea sulla mappa,
+    Hike.routePath) + INVITO SQUADRA DIREZIONALE chiuso per intero
+    (4 tappe + consenso squadra).
     26a — DELETE /api/hikes/:id + due vulnerabilita' preesistenti
     (creatore aggiungeva chiunque; complete-group senza tetto).
     25a — tre rifiniture v2. 24a — menu "Squadre"; eliminazione
@@ -198,7 +201,8 @@ MAI piu' (congelato); cose_da_fare.txt quando un punto si chiude o ne arriva uno
     componenti condivisi fra piu' pagine, .toObject vs .toJSON, $unset di campi
     required, select('username') che scavalca la pseudonimizzazione, recupero
     password vs grazia dell'eliminazione, npm audit fix vs overrides, serializzatore
-    aggiunto a una rotta senza try/catch, test verde su una premessa falsa): tutte in
+    aggiunto a una rotta senza try/catch, test verde su una premessa falsa,
+    select:false non vale su un campo assegnato in memoria): tutte in
     ../camoscio memoria/07-Trappole-Tecniche.md — quella e' la sede dove si guarda
     prima di toccare codice a rischio.
 ===================================================================
