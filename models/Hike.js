@@ -111,7 +111,9 @@ const hikeSchema = new mongoose.Schema({
             // (models/SavedRoute.js). Come 'draft'/'gpx' e' solo un'etichetta presa una
             // volta - i tre numeri qui sopra restano validi anche se poi il SavedRoute
             // viene cancellato.
-            kind: { type: String, enum: ['draft', 'gpx', 'saved'], required: true },
+            // 'fit' (punto 116): traccia importata nel formato nativo Garmin - stessa
+            // idraulica di 'gpx' in lib/percorso.js/calcolaDaPercorso, mancava solo qui.
+            kind: { type: String, enum: ['draft', 'gpx', 'fit', 'saved'], required: true },
             nome: { type: String, required: true },
             // Il progetto c'e' e il tracciato/la distanza vengono da lui, ma quota massima e
             // dislivello li ha scritti il creatore perche' la fonte delle quote non
@@ -122,6 +124,15 @@ const hikeSchema = new mongoose.Schema({
         }, { _id: false }),
         default: undefined
     },
+    // --- Punto 116: la geometria della traccia importata, per disegnarla come linea sulla
+    // mappa (Esplora + mini-mappa nel tab Dettagli di hike-page) ---
+    // [[lng, lat], ...], gia' semplificata (~18 m) e ridotta a due numeri per punto - stessa
+    // disciplina di models/SavedRoute.js, l'unico altro punto in cui il progetto persiste
+    // una polyline vera. Valorizzato quando routeSource.kind e' 'gpx', 'fit' o 'saved';
+    // per 'draft' resta undefined (il percorso progettato si ricalcola all'occorrenza).
+    // default: undefined e non []: la maggior parte delle escursioni non ne ha una, e c'e'
+    // il vincolo hard sullo spazio MongoDB (vedi 02-Vincoli-Hard del vault).
+    routePath: { type: [[Number]], default: undefined },
     carpool: {
         fuelPrice: Number,
         fuelConsumption: Number,

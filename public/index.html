@@ -1899,6 +1899,13 @@
                         <div class="glass-card" id="hike-page-header">
                             <!-- Riempito da JS: titolo dell'escursione -->
                         </div>
+                        <!-- Punto 116: mini-mappa col percorso della traccia importata (.gpx/.fit),
+                             stesso schema della pagina uscita (#outing-page-map). hikepage.js
+                             nasconde questa card quando l'escursione non ha routePath. -->
+                        <div class="glass-card hidden" id="hike-page-map-card">
+                            <h4><i data-lucide="route"></i> <span data-i18n="hikePage.percorsoPrevisto">Percorso previsto</span></h4>
+                            <div id="hike-page-map" class="outing-page-map"><!-- mini-mappa Leaflet --></div>
+                        </div>
                         <div class="glass-card" id="hike-page-members">
                             <!-- Riempito da JS: elenco partecipanti -->
                         </div>
@@ -2278,7 +2285,7 @@
                         <option value="manuale" data-i18n="hikeModal.routeManuale">Li scrivo io</option>
                         <option value="draft" data-i18n="hikeModal.routeDraft">Li calcolo da un progetto già fatto</option>
                         <option value="saved" data-i18n="hikeModal.routeSaved">Li calcolo da un percorso salvato da una traccia</option>
-                        <option value="gpx" data-i18n="hikeModal.routeGpx">Li calcolo importando una traccia (.gpx)</option>
+                        <option value="gpx" data-i18n="hikeModal.routeGpx">Li calcolo importando una traccia (.gpx o .fit)</option>
                     </select>
                 </div>
                 <div class="form-group hidden" id="hike-route-draft-picker">
@@ -2293,8 +2300,8 @@
                     <select id="hike-route-saved-select"></select>
                 </div>
                 <div class="form-group hidden" id="hike-route-gpx-picker">
-                    <label for="hike-route-gpx-file" data-i18n="hikeModal.fileGpxLabel">File .gpx:</label>
-                    <input type="file" id="hike-route-gpx-file" accept=".gpx">
+                    <label for="hike-route-gpx-file" data-i18n="hikeModal.fileGpxLabel">File .gpx o .fit:</label>
+                    <input type="file" id="hike-route-gpx-file" accept=".gpx,.fit">
                 </div>
                 <p class="small text-muted hidden" id="hike-route-calcolato-nota"></p>
                 <!-- Punto 93: ripiego quando il calcolo automatico fallisce (fonte delle

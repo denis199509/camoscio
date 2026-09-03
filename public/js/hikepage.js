@@ -21,6 +21,11 @@ var hikeIdAperta = null;
 // rifanno solo alla prima apertura del tab o se cambia l'escursione).
 var carpoolResoPerHikeId = null;
 var backpackResoPerHikeId = null;
+// Punto 116: la mini-mappa del tab Dettagli col percorso della traccia importata (.gpx/.fit).
+// UNA sola istanza Leaflet, riusata (come il miniMap di outingpage.js); NON su window (la'
+// vive window.mapInstance).
+var hpMiniMap = null;
+var hpMiniLayer = null;
 
 async function showHikePage(hikeId) {
     if (!hikeId) return;
@@ -64,6 +69,7 @@ async function renderHikePage(hikeId) {
     window.CamoscioChatPanel.render({ box: chatBox, apiBase: `/api/hikes/${hike.id}`, title: T('hikePage.chatTitolo') || 'Chat Escursione' });
 
     impostaTabHikePage("dettagli"); // si riparte sempre dal primo tab
+    disegnaTracciaHikePage(hike);   // dopo impostaTabHikePage: il pannello Dettagli e' visibile
 
     if (window.lucide) window.lucide.createIcons();
 }
@@ -142,6 +148,45 @@ function renderHikePageParticipants(hike, box) {
         <h4><i data-lucide="users"></i> ${esc(T('hikePage.partecipanti') || 'Partecipanti')}</h4>
         <div class="squads-list">${rows}</div>
     `;
+}
+
+// Punto 116: disegna (o nasconde) la mini-mappa col percorso della traccia importata.
+// hike.routePath ([[lng,lat],...]) e' gia' in CamoscioState - nessun fetch, nessuna corsa.
+// Stesso schema di disegnaTraccia in outingpage.js: istanza Leaflet riusata, layer
+// ridisegnabile, invalidateSize dopo che il pannello e' diventato visibile.
+function disegnaTracciaHikePage(hike) {
+    const card = document.getElementById('hike-page-map-card');
+    const box = document.getElementById('hike-page-map');
+    if (!card || !box) return;
+
+    const rp = hike && Array.isArray(hike.routePath) ? hike.routePath : null;
+    const haPercorso = rp && rp.length >= 2 &&
+        rp.every(p => Array.isArray(p) && Number.isFinite(p[0]) && Number.isFinite(p[1]));
+
+    if (!haPercorso || typeof L === 'undefined') {
+        card.classList.add('hidden');
+        if (hpMiniMap && hpMiniLayer) { hpMiniMap.removeLayer(hpMiniLayer); hpMiniLayer = null; }
+        return;
+    }
+
+    card.classList.remove('hidden');
+    const latlng = rp.map(p => [p[1], p[0]]); // [lng,lat] -> [lat,lng] per Leaflet
+
+    if (!hpMiniMap) {
+        hpMiniMap = L.map('hike-page-map', { minZoom: 6 });
+        L.tileLayer(window.CAMOSCIO_TILE_URL, window.CAMOSCIO_TILE_OPTIONS).addTo(hpMiniMap);
+    }
+    if (hpMiniLayer) { hpMiniMap.removeLayer(hpMiniLayer); hpMiniLayer = null; }
+
+    // #4C7E90: lo stesso blu "percorso da seguire" della mappa grande (map.js
+    // loadActiveHikeOnMap) e di disegnaPercorsoSalvato - un percorso PREVISTO, non una
+    // traccia registrata dal vivo.
+    hpMiniLayer = L.polyline(latlng, { color: '#4C7E90', weight: 4, opacity: 0.9 }).addTo(hpMiniMap);
+    hpMiniMap.fitBounds(hpMiniLayer.getBounds(), { padding: [24, 24] });
+
+    // Il pannello Dettagli e' appena diventato visibile: Leaflet deve rimisurare il
+    // contenitore (stesso motivo del setTimeout in outingpage.js).
+    setTimeout(() => { if (hpMiniMap && hikeIdAperta === hike.id) hpMiniMap.invalidateSize(); }, 60);
 }
 
 window.showHikePage = showHikePage;

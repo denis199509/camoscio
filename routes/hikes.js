@@ -383,12 +383,21 @@ router.put('/:id', requireAuth, async (req, res) => {
             }
             if (body.routeSource === null) {
                 update.routeSource = null;
+                // Punto 116: si torna manuale -> via anche la linea della vecchia traccia importata.
+                update.$unset = { ...(update.$unset || {}), routePath: 1 };
             } else {
                 // Punto 93: risolviPercorso puo' rispondere 422 se la fonte delle quote non
                 // risponde - vedi lib/percorso.js e il gemello in POST / qui sopra.
                 const r = await risolviPercorso(body.routeSource, userId);
                 if (!r.ok) return res.status(r.status).json(r.corpo);
                 Object.assign(update, r.dati);
+                // Punto 116: se il percorso nuovo non porta una linea ('draft', o un
+                // 'saved'/'gpx'/'fit' degenere sotto i 2 punti), quella vecchia va tolta -
+                // lasciarla contraddirebbe il percorso appena collegato. r.dati.routePath e
+                // questo $unset restano mutuamente esclusivi (mai lo stesso campo in $set e $unset).
+                if (!r.dati.routePath) {
+                    update.$unset = { ...(update.$unset || {}), routePath: 1 };
+                }
             }
         } else if (isCreator && hike.routeSource &&
             (body.maxAltitude !== undefined || body.elevationGain !== undefined || body.distanceKm !== undefined)) {
@@ -396,6 +405,7 @@ router.put('/:id', requireAuth, async (req, res) => {
             // "percorso collegato" non varrebbe piu' niente se questi numeri divergono da
             // quelli del percorso originale, quindi si toglie invece di lasciarla a mentire.
             update.routeSource = null;
+            update.$unset = { ...(update.$unset || {}), routePath: 1 }; // punto 116: e con lei la linea
         }
 
         // Blocco "zaino/carpooling per-partecipanti": "escursione di piu' giorni" la decide

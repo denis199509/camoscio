@@ -1434,28 +1434,43 @@ function loadActiveHikeOnMap(hikeId) {
             .openPopup();
     }
 
-    // Genera un percorso fittizio ma sensato attorno al trailhead
-    // Per far vedere l'algoritmo di esposizione solare, creiamo segmenti Nord e Sud
-    const centerLat = hike.trailhead.lat;
-    const centerLng = hike.trailhead.lng;
+    // Punto 116: se l'escursione ha una traccia importata (.gpx/.fit), si disegna QUELLA -
+    // hike.routePath e' [[lng,lat],...], gia' semplificata dal server. Colore blu "percorso
+    // da seguire" (#4C7E90, lo stesso di disegnaPercorsoSalvato): e' un percorso PREVISTO,
+    // non la traccia registrata dal vivo (#7FB5C7) ne' il verde della demo qui sotto.
+    // Senza routePath resta il percorso fittizio attorno al trailhead, che serve solo a far
+    // vedere l'algoritmo di esposizione solare (segmenti Nord e Sud).
+    const rp = Array.isArray(hike.routePath) ? hike.routePath : null;
+    const haPercorsoVero = rp && rp.length >= 2 &&
+        rp.every(p => Array.isArray(p) && Number.isFinite(p[0]) && Number.isFinite(p[1]));
 
-    activeHikePath = [
-        [centerLat - 0.02, centerLng - 0.02], // Base
-        [centerLat - 0.01, centerLng - 0.015], // Salita versante Nord (Ombreggiato)
-        [centerLat, centerLng], // Rifugio / Punto intermedio
-        [centerLat + 0.01, centerLng + 0.01], // Cresta soleggiata
-        [centerLat + 0.02, centerLng + 0.015] // Cima (Versante Sud)
-    ];
+    if (haPercorsoVero) {
+        activeHikePath = rp.map(p => [p[1], p[0]]); // [lng,lat] -> [lat,lng] per Leaflet
+        hikePolyline = L.polyline(activeHikePath, {
+            color: '#4C7E90',
+            weight: 5,
+            opacity: 0.9
+        }).addTo(window.mapInstance);
+        window.mapInstance.fitBounds(hikePolyline.getBounds(), { padding: [40, 40] });
+    } else {
+        const centerLat = hike.trailhead.lat;
+        const centerLng = hike.trailhead.lng;
+        activeHikePath = [
+            [centerLat - 0.02, centerLng - 0.02], // Base
+            [centerLat - 0.01, centerLng - 0.015], // Salita versante Nord (Ombreggiato)
+            [centerLat, centerLng], // Rifugio / Punto intermedio
+            [centerLat + 0.01, centerLng + 0.01], // Cresta soleggiata
+            [centerLat + 0.02, centerLng + 0.015] // Cima (Versante Sud)
+        ];
+        hikePolyline = L.polyline(activeHikePath, {
+            color: '#4C7A44',
+            weight: 6,
+            opacity: 0.8
+        }).addTo(window.mapInstance);
+    }
 
-    // Se l'utente vuole l'esposizione solare, coloriamo il sentiero in modo speciale
-    // Altrimenti lo coloriamo di verde foresta standard
-    hikePolyline = L.polyline(activeHikePath, {
-        color: '#4C7A44',
-        weight: 6,
-        opacity: 0.8
-    }).addTo(window.mapInstance);
-
-    // Sposta il marker GPS dell'utente alla partenza
+    // Sposta il marker GPS dell'utente alla partenza (primo punto del percorso vero, o
+    // della base del percorso fittizio)
     teleportUserGps(activeHikePath[0][0], activeHikePath[0][1]);
 
     // Rigenera i marker dei punti timbrabili (era la seconda copia dello stesso blocco,

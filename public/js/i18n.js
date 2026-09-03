@@ -261,6 +261,8 @@
             'hikePage.tabChat': 'Chat',
             'hikePage.tabCarpool': 'Carpooling',
             'hikePage.tabZaino': 'Backpack',
+            // Punto 116: card mini-mappa nel tab Dettagli, col percorso della traccia importata.
+            'hikePage.percorsoPrevisto': 'Planned route',
 
             // ==================================================================
             // Rollout punto 102, secondo lotto (22/08/2026): Escursioni + Le mie
@@ -374,9 +376,9 @@
             'hikeModal.routeSourceLabel': 'Max altitude, elevation gain and distance:',
             'hikeModal.routeManuale': "I'll enter them myself",
             'hikeModal.routeDraft': 'Calculate from an existing project',
-            'hikeModal.routeGpx': 'Calculate by importing a track (.gpx)',
+            'hikeModal.routeGpx': 'Calculate by importing a track (.gpx or .fit)',
             'hikeModal.qualeProgetto': 'Which project:',
-            'hikeModal.fileGpxLabel': '.gpx File:',
+            'hikeModal.fileGpxLabel': '.gpx or .fit file:',
             'hikeModal.quotaMassima': 'Max altitude (meters):',
             'hikeModal.dislivelloPositivo': 'Elevation gain (D+ meters):',
             'hikeModal.distanzaTotale': 'Total Distance (km):',
@@ -455,7 +457,7 @@
 
             // --- Messaggi/conferme azioni escursione (social.js) ---
             'hikeToast.scegliProgetto': 'Choose a project from the list.',
-            'hikeToast.scegliGpx': 'Choose a .gpx file to import.',
+            'hikeToast.scegliGpx': 'Choose a .gpx or .fit file to import.',
             'hikeToast.fileNonLetto': 'Could not read the file.',
             'hikeToast.scegliRitrovo': 'Choose the meeting point first: search by name or pick it on the map.',
             'hikeToast.fuoriRegione': 'The meeting point you entered is outside the current geographic scope of the demo (Lazio, Molise, Abruzzo, Marche). Enter coordinates within these regions.',

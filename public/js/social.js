@@ -1479,13 +1479,18 @@ async function submitCreateHike() {
             };
         }
     } else if (fonte === 'gpx') {
+        // Punto 116: un solo selettore per entrambi i formati - il ramo si sceglie
+        // dall'estensione del file, come fa gia' il ⬆ dello storico (storico.js) e
+        // complete-group. Il .fit va in base64 (binario), il .gpx come testo.
         const file = document.getElementById("hike-route-gpx-file").files[0];
         if (!file) {
-            window.showToast(T('hikeToast.scegliGpx') || "Scegli un file .gpx da importare.", "error");
+            window.showToast(T('hikeToast.scegliGpx') || "Scegli un file .gpx o .fit da importare.", "error");
             return;
         }
         try {
-            routeSource = { kind: 'gpx', gpxText: await file.text() };
+            routeSource = /\.fit$/i.test(file.name)
+                ? { kind: 'fit', fitBase64: await window.fileToBase64(file) }
+                : { kind: 'gpx', gpxText: await file.text() };
         } catch (e) {
             window.showToast(T('hikeToast.fileNonLetto') || "Non è stato possibile leggere il file.", "error");
             return;

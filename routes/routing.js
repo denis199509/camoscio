@@ -20,6 +20,9 @@ const User = require('../models/User');
 const { guardiaUscitaVisibile } = require('../lib/uscitaVisibile'); // punto 113: guardia autore-o-follower
 const { nomeVisibile } = require('../lib/accountDeletion'); // A-3.4: nome pseudonimizzato per gli account eliminati
 const { mongoose } = require('../db/mongo');
+// Punto 116: SEMPLIFICA_PERCORSO_M / MAX_PUNTI_PERCORSO vivono in lib/percorso.js (le usa
+// anche il ramo .gpx/.fit della creazione escursione) - una definizione sola, importata qui.
+const { SEMPLIFICA_PERCORSO_M, MAX_PUNTI_PERCORSO } = require('../lib/percorso');
 
 // Campione per il controllo delle quattro regioni su una traccia: mirror di CAMPIONE_REGIONE
 // in routes/tracking.js (una traccia di crinale entra ed esce dai confini, si guarda la
@@ -174,8 +177,8 @@ router.delete('/drafts/:id', requireAuth, async (req, res) => {
 // e per la disciplina di spazio.
 
 const MAX_PERCORSI_SALVATI = 50;    // specchio di MAX_BOZZE
-const MAX_PUNTI_PERCORSO = 400;     // una linea DA SEGUIRE, non un dato topografico
-const SEMPLIFICA_PERCORSO_M = 18;   // piu' grezzo degli ~8 m d'archivio
+// MAX_PUNTI_PERCORSO / SEMPLIFICA_PERCORSO_M: importati da lib/percorso.js (vedi in cima) -
+// li usa anche la creazione escursione col ramo .gpx/.fit (punto 116).
 
 router.get('/saved-routes', requireAuth, async (req, res) => {
     try {

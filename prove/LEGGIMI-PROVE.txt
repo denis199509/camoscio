@@ -346,6 +346,28 @@ La prova del PUNTO 115 (rinominare un'uscita) avvia un server suo sulla 3115:
     dalla prova - il feed dell'account demo ora contiene anche l'uscita .fit vera pubblicata
     da Denis, con un "mi piace" reale di Marco Alpinista. 103/103 invariato.
 
+La prova del PUNTO 116 (traccia importata in creazione escursione -> linea sulla mappa)
+avvia un server suo sulla 3116:
+
+    node prove/prova-punto116.js                   42 controlli  (ne avvia uno suo, sulla 3116)
+
+    SETTE SEZIONI, un account demo. 1) POST /api/hikes con routeSource kind:'gpx' -> 200 e
+    l'escursione ha routePath ([[lng,lat]], 2..400 punti), molto piu' corto dei <trkpt> di
+    partenza (Douglas-Peucker), + i tre numeri; persistito sul DB. 2) lo stesso con
+    kind:'fit' -> 200 (REGRESSIONE: prima l'enum routeSource.kind non aveva 'fit' e questo
+    dava 400); una retta -> routePath minimo. 3) traccia fuori dalle 4 regioni -> 400,
+    nessuna escursione creata. 4) PUT routeSource:null -> routePath $unset. 5) PUT numeri a
+    mano dal creatore -> routeSource E routePath tolti insieme. 6) kind:'saved' (percorso
+    copiato da una traccia): routePath copiato pari pari dal SavedRoute (gia' semplificato e
+    capato alla sua creazione), i tre numeri dal SavedRoute. 7) calcolaDaPercorso /
+    risolviPercorso diretti: routePath c'e' per gpx/fit, e' capato a MAX_PUNTI_PERCORSO su
+    una traccia da 3000 punti (campionamento a passo fisso, non il DP), e risolviPercorso
+    NON fa colare gpxLetto verso Hike.create/update (esattamente 5 chiavi in dati).
+    CONTROPROVA: col codice prima del punto 116 la sez. 2 va in 400 e le sez. 1/2/6/7 non
+    trovano routePath. Costo spazio misurato (scratchpad, tracce .gpx realistiche): ~1,5-2
+    KB per un'escursione media, ~5 KB nel caso peggiore realistico, tetto ~12,7 KB (cap
+    400 punti) - trascurabile contro i 321 MB liberi (vincolo hard).
+
 La prova del PUNTO 45 (moderazione segnalazioni + foto) e' stata aggiornata per il 111:
 GET /pending -> GET /moderation (oggetto con tre liste + totale), DELETE /:id/resolve
 gated moderatore, TTL createdAt -> expiresAt. 46 controlli, invariati nel numero.
