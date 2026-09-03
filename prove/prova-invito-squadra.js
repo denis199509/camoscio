@@ -195,30 +195,34 @@ async function sezioneA() {
             msg.includes('solo se') && !msg.includes('aggiunta a'), msg);
     }
 
-    // --- A4. sulla MIA escursione, anche con approvazione manuale, aggiungo direttamente ---
+    // --- A4. sulla MIA escursione: invito DIREZIONALE (27ª) - POST /:id/invite-squad {squadId},
+    //     mai un elenco di id dal client. Prima (fino alla 26ª) scriveva participants con un PUT. ---
     {
         const hike = escursioneFinta('h', { creatorId: 'io', participants: ['io'], manualApproval: true });
         const { contesto, chiamateFetch } = caricaSocial({ stato: statoBase({ hikes: [hike] }) });
         contesto.inviteSquadToHike('sq');
         await contesto.confermaInvitoSquadra('h');
-        const corpo = chiamateFetch[0] ? chiamateFetch[0].corpo : {};
-        ok('sulla propria escursione l\'organizzatore aggiunge direttamente ai partecipanti',
-            Object.keys(corpo).length === 1 && Array.isArray(corpo.participants) &&
-            corpo.participants.includes('amico1') && corpo.participants.includes('io'), JSON.stringify(corpo));
+        const c0 = chiamateFetch[0] || {};
+        ok('sulla propria escursione l\'organizzatore invita la squadra via POST /:id/invite-squad',
+            /\/api\/hikes\/h\/invite-squad$/.test(c0.url || '') && (c0.opzioni || {}).method === 'POST',
+            `${c0.url} ${(c0.opzioni || {}).method}`);
+        ok('...mandando SOLO lo squadId, nessun elenco di partecipanti',
+            c0.corpo && Object.keys(c0.corpo).length === 1 && c0.corpo.squadId === 'sq', JSON.stringify(c0.corpo));
     }
 
-    // --- A5. escursione altrui SENZA approvazione manuale: comportamento di sempre ---
+    // --- A5. escursione altrui SENZA approvazione manuale: stessa strada direzionale ---
     {
         const hike = escursioneFinta('h', { participants: ['altro', 'io'] });
         const { contesto, chiamateFetch } = caricaSocial({ stato: statoBase({ hikes: [hike] }) });
         contesto.inviteSquadToHike('sq');
         await contesto.confermaInvitoSquadra('h');
-        const corpo = chiamateFetch[0] ? chiamateFetch[0].corpo : {};
-        ok('senza approvazione manuale l\'invito aggiunge direttamente ai partecipanti (comportamento di sempre)',
-            Object.keys(corpo).length === 1 && Array.isArray(corpo.participants) &&
-            corpo.participants.includes('amico1') && corpo.participants.includes('amico2'), JSON.stringify(corpo));
-        ok('...senza perdere per strada chi partecipava gia\'',
-            (corpo.participants || []).includes('altro') && (corpo.participants || []).includes('io'), JSON.stringify(corpo));
+        const c0 = chiamateFetch[0] || {};
+        ok('senza approvazione manuale l\'invito passa comunque da POST /:id/invite-squad {squadId}',
+            /\/api\/hikes\/h\/invite-squad$/.test(c0.url || '') && (c0.opzioni || {}).method === 'POST' &&
+            c0.corpo && Object.keys(c0.corpo).length === 1 && c0.corpo.squadId === 'sq',
+            `${c0.url} ${JSON.stringify(c0.corpo)}`);
+        ok('...una sola richiesta al server (il delta lo calcola lui, il client non manda liste)',
+            chiamateFetch.length === 1, `richieste: ${chiamateFetch.length}`);
     }
 
     // --- A6. l'escursione si chiude MENTRE il riquadro e' aperto: niente richiesta ---

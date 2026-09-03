@@ -4123,9 +4123,13 @@ option {
 #my-hikes[data-view="programma"] [data-mh-group="progetti"],
 #my-hikes[data-view="completate"] [data-mh-group="organizzate"],
 #my-hikes[data-view="completate"] [data-mh-group="partecipo"],
+#my-hikes[data-view="completate"] [data-mh-group="inviti"],
 #my-hikes[data-view="completate"] [data-mh-group="progetti"] {
     display: none;
 }
+/* Gruppo "Inviti" (invito squadra direzionale, 27a): visibile in "tutte" e "programma"
+   (un invito e' una cosa in programma), nascosto in "completate" - riga qui sopra.
+   Quando non ci sono inviti lo nasconde renderMyHikes con [hidden] (UA sheet). */
 
 /* ==========================================================================
    STORICO USCITE E CARICAMENTO .GPX — punto 15 di cose_da_fare.txt

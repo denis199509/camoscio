@@ -344,6 +344,9 @@
             'myHikes.organizzateDesc': 'Hikes you created. Here you approve or decline join requests.',
             'myHikes.partecipoTitolo': 'Joining',
             'myHikes.partecipoDesc': "Upcoming hikes you've joined, plus those awaiting approval.",
+            // Invito squadra direzionale (27ª): gruppo nuovo in "Le mie escursioni".
+            'myHikes.invitiTitolo': 'Invitations',
+            'myHikes.invitiDesc': 'Hikes a squad invited you to. You decide whether to join.',
             'myHikes.completateTitolo': 'Completed Hikes',
             'myHikes.completateDesc': 'Hikes you completed on the site, and routes you recorded via GPS or uploaded from a file.',
             'myHikes.gpxUploadTitolo': 'Upload a track (.gpx or .fit)',
@@ -444,6 +447,10 @@
             'hikeCard.richiestePendenti': 'Pending Requests (Veto):',
             'hikeCard.accettaBtn': 'Accept',
             'hikeCard.rifiutaBtn': 'Decline',
+            // Invito squadra direzionale (27ª): l'invitato accetta o rifiuta dalla card.
+            'hikeCard.accettaInvitoBtn': 'Accept',
+            'hikeCard.rifiutaInvitoBtn': 'Decline',
+            'hikeCard.invitiInAttesa': function (n) { return n + (n === 1 ? ' invited person has' : ' invited people have') + ' not answered yet'; },
             'hikeCard.completataGruppo': 'Completed as a group ✓',
             'hikeCard.completaBtn': 'Complete hike',
             'hikeCard.opzioniTitle': 'Hike options',
@@ -483,6 +490,10 @@
             'hikeConfirm.eliminaHikeIrreversibile': 'This cannot be undone.',
             'hikeToast.hikeEliminata': 'Hike deleted.',
             'hikeToast.erroreEliminaHike': 'Could not delete this hike.',
+            // Invito squadra direzionale (27ª): esito della risposta all'invito.
+            'hikeToast.invitoAccettato': 'You are now taking part in this hike.',
+            'hikeToast.invitoRifiutato': 'Invitation declined.',
+            'hikeToast.invitoNonPiuValido': 'This invitation is no longer valid.',
             'hikeToast.escursioneNonPiuEsiste': 'This hike no longer exists.',
             'hikeToast.filePesa': function (mb, limite) { return 'The file is ' + mb + ' MB, over the ' + (limite || 10) + ' MB limit.'; },
             'hikeToast.erroreAggiuntaFile': 'Could not add the file.',
@@ -944,6 +955,10 @@
             'social.allMembersIn': 'All members are already joined',
             'social.toPropose': function (n) { return n + ' to propose'; },
             'social.toAdd': function (n) { return n + (n === 1 ? ' member to add' : ' members to add'); },
+            // Invito squadra direzionale (27ª): l'invito NON aggiunge, propone alla persona.
+            'social.toInvite': function (n) { return n + ' to invite'; },
+            'social.allMembersInvited': 'All members are already joined, pending or invited',
+            'social.squadInvited': function (squad, hike, n) { return 'Invitation sent to ' + n + (n === 1 ? ' member' : ' members') + ' of "' + squad + '": they will join "' + hike + '" only if they accept.'; },
             'social.organizedBy': function (chi) { return 'Organized by ' + chi; },
             'social.organizedByYou': 'Organized by you',
             'social.youreJoining': "You're joining",

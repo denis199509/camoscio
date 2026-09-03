@@ -925,6 +925,18 @@
                         <div class="hikes-grid" id="my-hikes-joined"></div>
                     </div>
 
+                    <!-- Invito squadra direzionale (27a sessione): escursioni a cui una
+                         squadra ti ha invitato. Nascosto quando non ci sono inviti - lo
+                         mostra/nasconde renderMyHikes (social.js). -->
+                    <div class="my-hikes-group" data-mh-group="inviti" hidden>
+                        <h3 class="my-hikes-group-title">
+                            <i data-lucide="mail"></i> <span data-i18n="myHikes.invitiTitolo">Inviti</span>
+                            <span class="badge badge-primary" id="count-invited">0</span>
+                        </h3>
+                        <p class="small text-muted" data-i18n="myHikes.invitiDesc">Escursioni a cui una squadra ti ha invitato. Decidi tu se partecipare.</p>
+                        <div class="hikes-grid" id="my-hikes-invited"></div>
+                    </div>
+
                     <!-- Punto 80/B: "Gia' fatte" (Completion, escursioni sociali) e "Uscite
                          registrate" (ActiveHikeSession, punto 15 - gpx importati o tracciamento
                          libero) erano due sezioni separate che raccontavano la stessa cosa:

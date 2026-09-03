@@ -515,7 +515,7 @@ function renderHikesList() {
 function classificaMieEscursioni(lista) {
     const db = window.CamoscioState;
     const utente = db.currentUser;
-    if (!utente) return { create: [], partecipo: [], fatte: [] };
+    if (!utente) return { create: [], partecipo: [], fatte: [], invitato: [] };
 
     const idFatte = new Set(
         (db.completions || []).filter(c => c.userId === utente.id).map(c => c.hikeId)
@@ -524,10 +524,14 @@ function classificaMieEscursioni(lista) {
     const create = [];
     const partecipo = [];
     const fatte = [];
+    // Invito squadra direzionale: escursioni a cui sono stato invitato e a cui non ho ancora
+    // risposto. NON e' partecipazione - non entro nel gruppo mesh/SOS finche' non accetto.
+    const invitato = [];
 
     (lista || db.hikes || []).forEach(h => {
         const sonoIscritto = (h.participants || []).includes(utente.id);
         const inAttesa = (h.pendingApproval || []).includes(utente.id);
+        const sonoInvitato = (h.pendingInvites || []).includes(utente.id);
         const laHoCreata = h.creatorId === utente.id;
 
         // "Completata" per QUESTO utente: ha un suo Completion, OPPURE il creatore ha
@@ -552,16 +556,20 @@ function classificaMieEscursioni(lista) {
         // Chi ha creato l'escursione ne fa anche parte: senza questo controllo
         // comparirebbe due volte, in "organizzate da me" e in "a cui partecipo".
         else if (sonoIscritto || inAttesa) partecipo.push(h);
+        // "invitato" per ULTIMO: chi e' gia' partecipante e per una corsa risulta anche
+        // invitato va mostrato come partecipante, non come invitato.
+        else if (sonoInvitato) invitato.push(h);
     });
 
     // La piu' vicina nel tempo per prima: e' quella di cui importa davvero.
     const perData = (a, b) => new Date(a.date) - new Date(b.date);
     create.sort(perData);
     partecipo.sort(perData);
+    invitato.sort(perData);
     // Le gia' fatte al contrario: l'ultima cosa fatta e' la prima da rivedere.
     fatte.sort((a, b) => new Date(b.date) - new Date(a.date));
 
-    return { create, partecipo, fatte };
+    return { create, partecipo, fatte, invitato };
 }
 
 // "YYYY-MM-DD" di oggi in ora locale (il browser sta in Italia). Componenti locali, MAI
@@ -662,15 +670,26 @@ function renderMyHikes() {
     if (!db || !db.currentUser) return;
     if (!document.getElementById("my-hikes-created")) return;
 
-    const { create, partecipo, fatte } = classificaMieEscursioni();
+    const { create, partecipo, fatte, invitato } = classificaMieEscursioni();
 
     document.getElementById("count-created").textContent = create.length;
     document.getElementById("count-joined").textContent = partecipo.length;
+    const elInvited = document.getElementById("count-invited");
+    if (elInvited) elInvited.textContent = invitato.length;
 
     riempiGruppo("my-hikes-created", create,
         T('myHikes.nessunaOrganizzata') || "Non hai ancora organizzato nessuna escursione. Puoi crearne una dalla sezione Escursioni.");
     riempiGruppo("my-hikes-joined", partecipo,
         T('myHikes.nonIscrittoAlcuna') || "Non sei iscritto a nessuna escursione in programma. Guarda quelle degli altri nella sezione Escursioni.");
+    // Invito squadra direzionale: escursioni a cui sono stato invitato e a cui non ho ancora
+    // risposto. A differenza degli altri gruppi (che mostrano un messaggio "vuoto"), questo
+    // si nasconde del tutto quando non ci sono inviti: essere invitati e' raro, un gruppo
+    // sempre presente sarebbe solo rumore.
+    const gruppoInviti = document.querySelector('#my-hikes [data-mh-group="inviti"]');
+    if (gruppoInviti) gruppoInviti.hidden = invitato.length === 0;
+    if (invitato.length) {
+        riempiGruppo("my-hikes-invited", invitato, "");
+    }
 
     // Punto 80/B: "Gia' fatte" e "Uscite registrate" sono ora un'unica lista visiva
     // (public/js/storico.js, renderCompletate) - vive li' perche' e' l'unico file che ha
@@ -684,7 +703,7 @@ function renderMyHikes() {
 
     const riepilogo = document.getElementById("my-hikes-summary");
     if (riepilogo) {
-        const totale = create.length + partecipo.length + fatte.length;
+        const totale = create.length + partecipo.length + fatte.length + invitato.length;
         riepilogo.innerHTML = totale === 0
             ? `<div class="glass-card text-center py-4 text-muted">${escapeHtml(T('myHikes.riepilogoVuoto') || 'Qui compariranno le tue escursioni: quelle che organizzi, quelle a cui ti iscrivi e quelle che hai già fatto.')}</div>`
             : `<div class="glass-card my-hikes-counters">
@@ -869,6 +888,7 @@ function buildHikeCard(hike) {
     let actionBtnHtml = "";
     const isParticipant = hike.participants.includes(currentUser.id);
     const isPending = hike.pendingApproval.includes(currentUser.id);
+    const isInvited = (hike.pendingInvites || []).includes(currentUser.id);
 
     if (isCreatorMe) {
         actionBtnHtml = `<span class="badge badge-accent">${escapeHtml(T('hikeCard.organizzatore') || 'Organizzatore')}</span>`;
@@ -876,10 +896,21 @@ function buildHikeCard(hike) {
         actionBtnHtml = `<span class="badge badge-green">${escapeHtml(T('hikeCard.partecipiCheck') || 'Partecipi ✓')}</span>`;
     } else if (isPending) {
         actionBtnHtml = `<span class="badge badge-primary">${escapeHtml(T('hikeCard.inAttesaApprovazione') || 'In attesa approvazione...')}</span>`;
+    } else if (isInvited && !escursioneNonPiuAperta(hike)) {
+        // Invito squadra direzionale: decide l'invitato. NESSUNA adesione ottimistica (vedi
+        // rispondiInvito): "partecipi" e' vero solo dopo la risposta del server, perche' qui
+        // significa "sei nel gruppo mesh/SOS".
+        actionBtnHtml =
+            `<button class="btn btn-sm btn-success" style="padding:2px 8px;" onclick="rispondiInvito('${hike.id}', true)">${escapeHtml(T('hikeCard.accettaInvitoBtn') || 'Accetta')}</button>` +
+            `<button class="btn btn-sm btn-danger" style="padding:2px 8px; margin-left:4px;" onclick="rispondiInvito('${hike.id}', false)">${escapeHtml(T('hikeCard.rifiutaInvitoBtn') || 'Rifiuta')}</button>`;
     } else if (escursioneNonPiuAperta(hike)) {
         // Passato il giorno previsto niente piu' "Iscriviti" (decisione di Denis). Dopo
-        // isParticipant/isPending: chi era gia' dentro continua a vedere il suo stato.
-        actionBtnHtml = `<span class="badge" title="${escapeHtml(T('hikeCard.iscrizioniChiuseTitle') || 'Il giorno previsto è passato: non si accettano più iscrizioni')}">${escapeHtml(T('hikeCard.iscrizioniChiuse') || 'Iscrizioni chiuse')}</span>`;
+        // isParticipant/isPending: chi era gia' dentro continua a vedere il suo stato. Un
+        // invitato puo' ancora RIFIUTARE (per togliersi la card di dosso), non accettare.
+        const chiuse = `<span class="badge" title="${escapeHtml(T('hikeCard.iscrizioniChiuseTitle') || 'Il giorno previsto è passato: non si accettano più iscrizioni')}">${escapeHtml(T('hikeCard.iscrizioniChiuse') || 'Iscrizioni chiuse')}</span>`;
+        actionBtnHtml = isInvited
+            ? `<button class="btn btn-sm btn-danger" style="padding:2px 8px;" onclick="rispondiInvito('${hike.id}', false)">${escapeHtml(T('hikeCard.rifiutaInvitoBtn') || 'Rifiuta')}</button> ${chiuse}`
+            : chiuse;
     } else {
         actionBtnHtml = `<button class="btn btn-sm btn-primary" onclick="joinHikeRequest('${hike.id}', ${eligibility.eligible})">${escapeHtml(T('hikeCard.iscrivitiBtn') || 'Iscriviti')}</button>`;
     }
@@ -911,6 +942,15 @@ function buildHikeCard(hike) {
                 ${pendingItemsHtml}
             </div>
         `;
+    }
+
+    // Invito squadra direzionale: quanti invitati non hanno ancora risposto. SOLA LETTURA,
+    // nessun bottone - la decisione e' loro (decisione della 27ª). Serve all'organizzatore
+    // per contare i posti in macchina. Si aggiunge a vetoSectionHtml anche quando non ci sono
+    // richieste pendenti (quel blocco sopra resterebbe vuoto).
+    if (isCreatorMe && !hike.groupCompletedAt && (hike.pendingInvites || []).length > 0) {
+        const n = hike.pendingInvites.length;
+        vetoSectionHtml += `<p class="small text-muted veto-inviti-nota"><i data-lucide="mail"></i> ${escapeHtml(T('hikeCard.invitiInAttesa', n) || `${n} ${n === 1 ? 'invitato non ha' : 'invitati non hanno'} ancora risposto`)}</p>`;
     }
 
     // Punto 64: il creatore conferma IN BLOCCO chi ha partecipato, invece di aspettare che
@@ -1041,9 +1081,11 @@ window.toggleHikeCard = function(headerEl) {
 // SOLO al creatore (ensureCompletionReminders, lib/hikeStats.js), quindi la scheda giusta
 // esiste sempre li'. renderMyHikes() legge gia' window.CamoscioState (nessun fetch), la
 // scheda e' gia' nel DOM appena si naviga: nessuna attesa a tempo fisso.
-// Scoped a #my-hikes-created, non a document: la stessa escursione puo' comparire anche in
+// Scoped a #my-hikes (non a document): la stessa escursione puo' comparire anche in
 // "Escursioni" (buildHikeCard costruisce piu' copie identiche su piu' pagine/gruppi) - senza
-// questo scope si rischierebbe di espandere/scrollare la copia sbagliata.
+// questo scope si rischierebbe di espandere/scrollare la copia sbagliata. NON piu' scoped al
+// solo gruppo "Organizzate da me": una notifica d'invito (invito squadra direzionale) porta
+// a un'escursione che per l'invitato sta nel gruppo "Inviti", non fra le sue organizzate.
 window.goToHikeToComplete = function(hikeId) {
     // Il pannello notifiche resta aperto altrimenti: e' dentro di lui che si e' cliccato,
     // quindi il chiudi-al-click-fuori di setupNotificationBell (app.js) non scatta da solo.
@@ -1052,7 +1094,7 @@ window.goToHikeToComplete = function(hikeId) {
 
     if (window.navigateTo) window.navigateTo('my-hikes');
 
-    const card = document.querySelector(`#my-hikes-created .hike-card[data-hike-id="${hikeId}"]`);
+    const card = document.querySelector(`#my-hikes .hike-card[data-hike-id="${hikeId}"]`);
     if (!card) return;
 
     const header = card.querySelector('.hike-card-header');
@@ -1117,6 +1159,40 @@ window.joinHikeRequest = async function(hikeId, isEligible) {
         renderHikesList();
     } catch(e) {
         console.error("Errore nell'iscrizione:", e);
+    }
+};
+
+// Invito squadra direzionale: l'invitato accetta (entra in participants = nel gruppo
+// mesh/SOS) o rifiuta (l'invito sparisce). Attore = la sessione, lato server.
+// NIENTE adesione ottimistica (a differenza di joinHikeRequest): "sono nel gruppo" qui
+// vuol dire "gli altri riceveranno il mio GPS e io il loro" - una card che lo dichiara
+// prima che sia vero e' una promessa che il sito non puo' mantenere (vincolo hard 7).
+window.rispondiInvito = async function(hikeId, accept) {
+    try {
+        const res = await fetch(`/api/hikes/${encodeURIComponent(hikeId)}/invite-response`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ accept: !!accept })
+        });
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            if (window.showToast) window.showToast(
+                body.error || T('hikeToast.invitoNonPiuValido') || 'Questo invito non è più valido.',
+                'error'
+            );
+        } else if (window.showToast) {
+            window.showToast(
+                accept
+                    ? (T('hikeToast.invitoAccettato') || 'Ora partecipi a questa escursione.')
+                    : (T('hikeToast.invitoRifiutato') || 'Invito rifiutato.'),
+                'success'
+            );
+        }
+        await refreshState();
+        renderHikesList();
+    } catch (e) {
+        console.error('Errore risposta a invito:', e);
+        if (window.showToast) window.showToast(T('common.erroreServer') || 'Non è stato possibile contattare il server.', 'error');
     }
 };
 
@@ -2144,9 +2220,9 @@ function rigaInvitoSquadra(hike, squad, me) {
     const isCreatorMe = hike.creatorId === me;
     const richiedeApprovazione = !isCreatorMe && !!hike.manualApproval;
 
-    const giaDentro = new Set([...(hike.participants || []), ...(hike.pendingApproval || [])]);
+    // pendingInvites incluso: un membro gia' invitato non e' "da invitare" di nuovo.
+    const giaDentro = new Set([...(hike.participants || []), ...(hike.pendingApproval || []), ...(hike.pendingInvites || [])]);
     const daAggiungere = squad.members.filter(id => !giaDentro.has(id));
-    const inAttesa = squad.members.some(id => (hike.pendingApproval || []).includes(id));
 
     const organizzatore = isCreatorMe ? (T('social.you') || 'te') : (() => {
         const u = db.users.find(u => u.id === hike.creatorId);
@@ -2163,12 +2239,10 @@ function rigaInvitoSquadra(hike, squad, me) {
 
     const disabilitata = daAggiungere.length === 0;
     const contatore = disabilitata
-        ? (inAttesa
-            ? (T('social.allMembersInOrPending') || "Tutti i membri sono già iscritti o in attesa")
-            : (T('social.allMembersIn') || "Tutti i membri sono già iscritti"))
+        ? (T('social.allMembersInvited') || "Tutti i membri sono già iscritti, in attesa o invitati")
         : (richiedeApprovazione
             ? (T('social.toPropose', daAggiungere.length) || `${daAggiungere.length} da proporre`)
-            : (T('social.toAdd', daAggiungere.length) || `${daAggiungere.length} ${daAggiungere.length === 1 ? 'membro da aggiungere' : 'membri da aggiungere'}`));
+            : (T('social.toInvite', daAggiungere.length) || `${daAggiungere.length} da invitare`));
 
     return `
         <div class="carpool-group-item" style="display:flex; justify-content:space-between; align-items:center; gap:12px; ${disabilitata ? 'opacity:0.6;' : 'cursor:pointer;'}" ${disabilitata ? '' : `onclick="confermaInvitoSquadra('${hike.id}')"`}>
@@ -2255,53 +2329,79 @@ window.confermaInvitoSquadra = async function(hikeId) {
     }
 
     const isCreatorMe = hike.creatorId === me;
-    // Con l'approvazione manuale attiva, chi non e' il creatore puo' solo PROPORRE nomi
-    // (pendingApproval), mai iscriverli direttamente - il server rifiuta comunque il campo
-    // sbagliato (canNonCreatorEditParticipation), questo sceglie subito quello giusto.
-    const campo = (!isCreatorMe && hike.manualApproval) ? 'pendingApproval' : 'participants';
+    // DUE STRADE (decisione della 27ª sessione):
+    //  - se NON sono il creatore e l'escursione ha `manualApproval`, resta la vecchia
+    //    "proposta": i nomi vanno in `pendingApproval` e li finalizza l'organizzatore (PUT).
+    //  - in tutti gli altri casi: invito DIREZIONALE — `POST /:id/invite-squad` mette i
+    //    membri in `pendingInvites`, e ognuno decide da sé (`invite-response`). Nessuno
+    //    finisce in `participants` (= nel gruppo mesh/SOS) senza aver detto sì.
+    const soloProposta = !isCreatorMe && !!hike.manualApproval;
 
-    const giaDentro = new Set([...(hike.participants || []), ...(hike.pendingApproval || [])]);
-    const daAggiungere = squad.members.filter(id => !giaDentro.has(id));
+    if (soloProposta) {
+        const giaDentro = new Set([...(hike.participants || []), ...(hike.pendingApproval || []), ...(hike.pendingInvites || [])]);
+        const daProporre = squad.members.filter(id => !giaDentro.has(id));
+        if (daProporre.length === 0) {
+            window.showToast(T('social.allMembersInvited') || 'Tutti i membri sono già iscritti, in attesa o invitati.', "info");
+            closeInviteSquadModal();
+            return;
+        }
+        try {
+            // UN SOLO campo nel body: il server calcola il diff contro il proprio stato.
+            const response = await fetch(`/api/hikes/${hikeId}`, {
+                method: 'PUT', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pendingApproval: (hike.pendingApproval || []).concat(daProporre) })
+            });
+            if (!response.ok) {
+                const body = await response.json().catch(() => ({}));
+                window.showToast(body.error || T('social.errInviteSend') || "Non è stato possibile inviare l'invito.", "error");
+                await refreshState(); renderInviteSquadHikeList();
+                return;
+            }
+            await refreshState();
+            const n = daProporre.length;
+            window.showToast(T('social.squadProposed', squad.name, hike.title, n) || `Richiesta inviata per ${n} ${n === 1 ? 'membro' : 'membri'} di "${squad.name}": ${n === 1 ? 'entrerà' : 'entreranno'} in "${hike.title}" solo se l'organizzatore la approva.`, "success");
+            closeInviteSquadModal(); renderSquadsList(); renderHikesList();
+        } catch (e) {
+            console.error("Errore proposta squadra:", e);
+            window.showToast(T('social.errInviteSend') || "Non è stato possibile inviare l'invito.", "error");
+        }
+        return;
+    }
 
-    if (daAggiungere.length === 0) {
-        window.showToast(T('social.allAlreadyIn', squad.name, hike.title) || `Tutti i membri di "${squad.name}" sono già iscritti (o in attesa) su "${hike.title}".`, "info");
+    // Pre-check client: se tutti i membri sono già dentro (participants / pendingApproval /
+    // pendingInvites) non si chiama il server. Il calcolo VERO lo fa comunque lui — questo
+    // evita solo un round-trip inutile su una riga cliccata quando non c'è niente da fare.
+    const giaDentroInv = new Set([...(hike.participants || []), ...(hike.pendingApproval || []), ...(hike.pendingInvites || [])]);
+    if (squad.members.every(id => giaDentroInv.has(id))) {
+        window.showToast(T('social.allMembersInvited') || 'Tutti i membri sono già iscritti, in attesa o invitati.', "info");
         closeInviteSquadModal();
         return;
     }
 
-    // UN SOLO campo nel body, mai anche l'altro invariato: il server calcola il diff contro
-    // il proprio stato attuale, e mandare anche il campo che non cambia e' puro rischio se
-    // quello in pagina fosse di qualche minuto vecchio.
-    const nuovoElenco = (hike[campo] || []).concat(daAggiungere);
-
+    // Invito direzionale: il server legge i membri dal documento Squad (nessun elenco di id
+    // dal client), calcola il delta e mette in pendingInvites chi non è già dentro.
     try {
-        const response = await fetch(`/api/hikes/${hikeId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ [campo]: nuovoElenco })
+        const response = await fetch(`/api/hikes/${hikeId}/invite-squad`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ squadId: squadIdAlMomento })
         });
-
+        const body = await response.json().catch(() => ({}));
         if (!response.ok) {
-            const body = await response.json().catch(() => ({}));
             window.showToast(body.error || T('social.errInviteSend') || "Non è stato possibile inviare l'invito.", "error");
-            await refreshState();
-            renderInviteSquadHikeList();
+            await refreshState(); renderInviteSquadHikeList();
             return;
         }
-
         await refreshState();
-
-        const n = daAggiungere.length;
-        // Mai la parola "invitata" nel caso proposta, e "solo se" non "solo quando": "quando"
-        // darebbe per scontata un'approvazione che potrebbe non arrivare.
-        const messaggio = campo === 'participants'
-            ? (T('social.squadAdded', squad.name, hike.title, n) || `"${squad.name}" aggiunta a "${hike.title}": ${n} ${n === 1 ? 'nuovo partecipante' : 'nuovi partecipanti'}.`)
-            : (T('social.squadProposed', squad.name, hike.title, n) || `Richiesta inviata per ${n} ${n === 1 ? 'membro' : 'membri'} di "${squad.name}": ${n === 1 ? 'entrerà' : 'entreranno'} in "${hike.title}" solo se l'organizzatore la approva.`);
-        window.showToast(messaggio, "success");
-
-        closeInviteSquadModal();
-        renderSquadsList();
-        renderHikesList();
+        const n = body.invitati || 0;
+        // Vincolo hard 7: "solo se accettano", non "aggiunta a" — la promessa dipende da una
+        // persona, non dal sito.
+        window.showToast(
+            n === 0
+                ? (T('social.allMembersInvited') || 'Tutti i membri sono già iscritti, in attesa o invitati.')
+                : (T('social.squadInvited', squad.name, hike.title, n) || `Invito inviato a ${n} ${n === 1 ? 'membro' : 'membri'} di "${squad.name}": ${n === 1 ? 'entrerà' : 'entreranno'} in "${hike.title}" solo se ${n === 1 ? 'accetta' : 'accettano'}.`),
+            n === 0 ? "info" : "success"
+        );
+        closeInviteSquadModal(); renderSquadsList(); renderHikesList();
     } catch (e) {
         console.error("Errore invito squadra:", e);
         window.showToast(T('social.errInviteSend') || "Non è stato possibile inviare l'invito.", "error");
