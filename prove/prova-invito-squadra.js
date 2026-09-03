@@ -172,27 +172,29 @@ async function sezioneA() {
             chiamateFetch.length === 0, `richieste: ${chiamateFetch.length}`);
     }
 
-    // --- A3. escursione altrui con approvazione manuale: si PROPONE, non si iscrive ---
+    // --- A3. escursione altrui ad approvazione manuale: la corsia "proposta" NON esiste piu'
+    //     (C-1, revisione sicurezza 27ª). La riga si mostra DISABILITATA (solo l'organizzatore
+    //     puo' invitare una squadra a un'escursione altrui ad approvazione manuale), e anche
+    //     se forzata confermaInvitoSquadra non scrive MAI piu' su pendingApproval per conto
+    //     di terzi - va a invite-squad, che poi il server rifiuta con 403. ---
     {
         const hike = escursioneFinta('h', { participants: ['altro', 'io'], manualApproval: true, pendingApproval: ['gia-in-attesa'] });
-        const { contesto, chiamateFetch, toast } = caricaSocial({ stato: statoBase({ hikes: [hike] }) });
+        const { contesto, chiamateFetch } = caricaSocial({ stato: statoBase({ hikes: [hike] }) });
+        const squad = contesto.window.CamoscioState.squads[0];
+
+        const html = contesto.rigaInvitoSquadra(hike, squad, 'io');
+        ok('la riga di un\'escursione altrui ad approvazione manuale NON e\' cliccabile (niente onclick)',
+            !/confermaInvitoSquadra/.test(html), html);
+        ok('...e lo spiega: "solo l\'organizzatore"', /organizzatore/i.test(html), html);
+
         contesto.inviteSquadToHike('sq');
         await contesto.confermaInvitoSquadra('h');
-
-        ok('invito su escursione altrui ad approvazione manuale: una sola richiesta al server', chiamateFetch.length === 1,
-            `richieste: ${chiamateFetch.length}`);
         const corpo = chiamateFetch[0] ? chiamateFetch[0].corpo : {};
-        ok('...e scrive su pendingApproval, mai su participants',
-            Object.keys(corpo).length === 1 && Object.keys(corpo)[0] === 'pendingApproval', JSON.stringify(corpo));
-        ok('...portandosi dietro chi era gia\' in attesa, senza cancellarlo',
-            (corpo.pendingApproval || []).includes('gia-in-attesa'), JSON.stringify(corpo));
-        ok('...e aggiungendo i membri della squadra non ancora coinvolti',
-            (corpo.pendingApproval || []).includes('amico1') && (corpo.pendingApproval || []).includes('amico2'), JSON.stringify(corpo));
-        ok('...senza reinserire chi e\' gia\' partecipante',
-            (corpo.pendingApproval || []).filter(id => id === 'io').length === 0, JSON.stringify(corpo));
-        const msg = (toast.find(t => t.tipo === 'success') || {}).testo || '';
-        ok('il messaggio finale non promette l\'iscrizione che dipende dall\'organizzatore',
-            msg.includes('solo se') && !msg.includes('aggiunta a'), msg);
+        ok('se forzata, confermaInvitoSquadra passa da POST /:id/invite-squad {squadId}, MAI da un PUT {pendingApproval}',
+            chiamateFetch.length === 1 && /\/api\/hikes\/h\/invite-squad$/.test(chiamateFetch[0].url || '') &&
+            (chiamateFetch[0].opzioni || {}).method === 'POST' &&
+            Object.keys(corpo).length === 1 && corpo.squadId === 'sq' && !('pendingApproval' in corpo),
+            `${chiamateFetch.length} richieste: ${JSON.stringify(chiamateFetch.map(c => ({ u: c.url, b: c.corpo })))}`);
     }
 
     // --- A4. sulla MIA escursione: invito DIREZIONALE (27ª) - POST /:id/invite-squad {squadId},
@@ -424,22 +426,20 @@ const ids = lista => (lista || []).map(String);
         ok('...e resta in attesa dov\'era', stato && ids(stato.pendingApproval).includes(String(C)) &&
             !ids(stato.participants).includes(String(C)), JSON.stringify(stato && { p: stato.participants, a: stato.pendingApproval }));
 
-        // --- B6. un partecipante PROPONE un altro (l'invito squadra vero e proprio) ---
+        // --- B6. C-1 (revisione sicurezza 27ª): la corsia "proposta" e' CHIUSA. Un
+        //     partecipante non-creatore non scrive piu' in pendingApproval per conto di terzi
+        //     - nemmeno su un'escursione ad approvazione manuale. Era lo stesso difetto della
+        //     26ª sopravvissuto sotto l'altro campo: B propone V, A approva, V nel gruppo
+        //     mesh/SOS senza aver detto si'. Per coinvolgere un terzo: invite-squad, o
+        //     "Richiesta Partecipazione". ---
+        const primaDiB6 = ids((await leggiHike(cookieA, h1)).pendingApproval);
         const proposta = await chiama('PUT', `/api/hikes/${h1}`, { pendingApproval: [C, D] }, cookieB);
-        ok('un partecipante puo\' PROPORRE un altro all\'organizzatore (200)', proposta.status === 200,
+        ok('un partecipante NON puo\' piu\' proporre un terzo (403, C-1)', proposta.status === 403,
             `status ${proposta.status}: ${proposta.testo}`);
-        ok('...e il proposto finisce in attesa, mai direttamente fra i partecipanti',
-            ids(proposta.corpo.pendingApproval).includes(String(D)) && !ids(proposta.corpo.participants).includes(String(D)),
-            JSON.stringify(proposta.corpo && { p: proposta.corpo.participants, a: proposta.corpo.pendingApproval }));
-
-        const notifiche = await notificheDi(cookieA);
-        const suD = notifiche.filter(n => n.text.includes(String(MARCA)) && n.text.includes(nomeDi(D)));
-        ok('l\'organizzatore riceve una notifica per la persona proposta', suD.length === 1,
-            `${suD.length}: ${JSON.stringify(suD.map(n => n.text))}`);
-        ok('...che NON dice "ha chiesto di partecipare" di chi non ha chiesto niente',
-            suD.length === 1 && !suD[0].text.includes('ha chiesto di partecipare'), JSON.stringify(suD.map(n => n.text)));
-        ok('...e dice invece chi lo ha proposto', suD.length === 1 && suD[0].text.includes(nomeDi(B)) &&
-            suD[0].text.includes('propone'), JSON.stringify(suD.map(n => n.text)));
+        const dopoB6 = ids((await leggiHike(cookieA, h1)).pendingApproval);
+        ok('...e D NON e\' finito da nessuna parte', !dopoB6.includes(String(D)) &&
+            dopoB6.sort().join() === primaDiB6.sort().join(),
+            `prima ${JSON.stringify(primaDiB6)} dopo ${JSON.stringify(dopoB6)}`);
 
         // --- B7. invitare non vuol dire decidere: nessuna rimozione da parte di un non creatore ---
         const rifiutoAltrui = await chiama('PUT', `/api/hikes/${h1}`, { pendingApproval: [] }, cookieB);

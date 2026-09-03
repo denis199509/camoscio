@@ -959,11 +959,12 @@
             // --- #social: modale "Invita a Gita" (#invite-squad-modal + social.js) ---
             'social.inviteModalPre': 'Invite',
             'social.inviteModalPost': 'to a hike',
-            'social.inviteModalDesc': 'Choose the hike: members will be added as participants, or proposed to the organizer if the hike requires approval.',
+            'social.inviteModalDesc': "Choose the hike: squad members get an invitation and join only if they accept. On someone else's hike that requires approval, only the organizer can invite.",
             'social.you': 'you',
             'social.anotherUser': 'another user',
             'social.noDate': 'date not set',
             'social.needsApproval': 'Needs approval',
+            'social.inviteOnlyOrganizer': 'Only the organizer can invite a squad',
             'social.allMembersInOrPending': 'All members are already joined or pending',
             'social.allMembersIn': 'All members are already joined',
             'social.toPropose': function (n) { return n + ' to propose'; },

@@ -1507,7 +1507,7 @@
                                     <form id="create-squad-form">
                                         <div class="form-group">
                                             <label for="squad-name" data-i18n="social.squadNameLabel">Nome Squadra:</label>
-                                            <input type="text" id="squad-name" placeholder="Es. I Camosci del Gran Sasso" data-i18n-placeholder="social.squadNamePlaceholder" required>
+                                            <input type="text" id="squad-name" placeholder="Es. I Camosci del Gran Sasso" data-i18n-placeholder="social.squadNamePlaceholder" maxlength="80" required>
                                         </div>
                                         <!-- Punto 75: ricerca invece di spuntare tutti gli iscritti al
                                              sito (problema di scala) - stesso schema gia' in uso per
@@ -2469,7 +2469,7 @@
                 <h4><span data-i18n="social.inviteModalPre">Invita</span> <span id="invite-squad-name"></span> <span data-i18n="social.inviteModalPost">a un'escursione</span></h4>
                 <button class="close-modal-btn" id="btn-close-invite-squad-modal">&times;</button>
             </div>
-            <p class="small text-muted" data-i18n="social.inviteModalDesc">Scegli l'escursione: i membri verranno aggiunti tra i partecipanti, o proposti all'organizzatore se l'escursione richiede approvazione.</p>
+            <p class="small text-muted" data-i18n="social.inviteModalDesc">Scegli l'escursione: i membri della squadra riceveranno un invito ed entreranno solo se accettano. Su un'escursione altrui che richiede approvazione può invitare solo l'organizzatore.</p>
             <div id="invite-squad-hike-list" class="hike-carpools-list"></div>
         </div>
     </div>

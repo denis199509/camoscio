@@ -100,14 +100,16 @@ La prova dell'INVITO A UNA SQUADRA (il bug segnalato da Denis: "Invita a Gita" s
 l'escursione da sola e ha invitato una squadra a un'escursione GIA' COMPLETATA) e
 dell'APPROVAZIONE MANUALE che si poteva scavalcare:
 
-    node prove/prova-invito-squadra.js              60 controlli  (ne avvia uno suo, sulla 3109)
+    node prove/prova-invito-squadra.js              54 controlli  (ne avvia uno suo, sulla 3109)
 
-    Aggiornata con l'invito squadra DIREZIONALE (27a sessione, tappe 2-3): la sezione A ora
-    verifica che confermaInvitoSquadra chiami POST /:id/invite-squad {squadId} (mai un
-    elenco di id) tranne il ramo "proposta" (non-creatore + manualApproval), che resta la
-    vecchia PUT {pendingApproval}. La sezione B: il creatore NON puo' piu' aggiungere a mano
-    un compagno di squadra (B entra chiedendo + accettando), e NEMMENO un partecipante puo'
-    aggiungere altri direttamente ai partecipanti - si invitano (403). Proporre resta.
+    Aggiornata con l'invito squadra DIREZIONALE (27a sessione, tappe 2-3) e con C-1 della
+    REVISIONE SICUREZZA (27a, fine sessione): la corsia "proposta" NON esiste piu'.
+    Sezione A: confermaInvitoSquadra chiama SEMPRE POST /:id/invite-squad {squadId} (mai un
+    elenco di id, mai piu' un PUT {pendingApproval}); su un'escursione altrui ad approvazione
+    manuale rigaInvitoSquadra rende la riga DISABILITATA ("solo l'organizzatore"). Sezione B:
+    il creatore NON puo' aggiungere a mano un compagno di squadra, e un partecipante non
+    creatore non puo' ne' iscrivere ne' PROPORRE un terzo - 403 in ogni caso (B6 invertita
+    dal 200 di prima).
 
     DUE SEZIONI, perche' i due difetti vivono in due punti diversi.
     La sezione A non vuole ne' server ne' database: carica public/js/social.js dentro un
@@ -121,10 +123,10 @@ dell'APPROVAZIONE MANUALE che si poteva scavalcare:
     La sezione B parla col server vero, con quattro account demo e cookie veri: chi puo'
     toccare la lista partecipanti e quando. Sorveglia che un non creatore non possa piu'
     iscrivere altri (ne' se stesso, ne' approvarsi da solo) su un'escursione ad approvazione
-    manuale (403), che possa invece PROPORLI (200, in pendingApproval), che senza
-    approvazione manuale l'invito diretto continui a funzionare come sempre, che la chiusura
-    di gruppo azzeri le richieste in sospeso, e che su un'escursione conclusa la lista
-    partecipanti non si tocchi piu' (409, nemmeno dal creatore).
+    manuale (403), che NON possa nemmeno proporli (403, C-1 - prima era 200 in
+    pendingApproval), che senza approvazione manuale l'invito diretto continui a funzionare
+    come sempre, che la chiusura di gruppo azzeri le richieste in sospeso, e che su
+    un'escursione conclusa la lista partecipanti non si tocchi piu' (409, nemmeno dal creatore).
     CONTROPROVA fatta il 18/08/2026 (git worktree su HEAD + NODE_PATH sui node_modules del
     progetto): col codice di prima cadono 18 controlli della sezione B e la sezione A non
     parte nemmeno (le due funzioni non esistevano). La prova guarda davvero quello che dice.
@@ -189,7 +191,10 @@ ha la sua prova a parte (prova-squadre-consenso.js, qui sopra):
 La prova della CANCELLAZIONE DI UN'ESCURSIONE (DELETE /api/hikes/:id, nata il 02/09/2026:
 prima una hike creata era per sempre, e dopo la chiusura di gruppo spariva anche "Modifica"):
 
-    node prove/prova-elimina-escursione.js          52 controlli  (ne avvia uno suo, sulla 3126)
+    node prove/prova-elimina-escursione.js          53 controlli  (ne avvia uno suo, sulla 3126)
+    (sez. 3: B ora si iscrive DA SOLO prima del completamento - prima la PUT era fatta come
+    creatore e falliva in silenzio 403; a mascherarlo era la mancanza di controllo di
+    partecipazione in complete-group, chiusa da M-6 della revisione sicurezza 27ª.)
 
     Tre account demo: A crea e cancella, B partecipa+completa+ha una traccia, C ha SOLO una
     traccia (nessun Completion). Quattro sezioni: (1) guardie - id non valido 400, inesistente

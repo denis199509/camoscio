@@ -99,6 +99,24 @@ const scritturaLimiter = rateLimit({
     message: messaggioTroppiTentativi
 });
 
+// POST /api/hikes/:id/invite-squad, POST /api/squads e POST /api/squads/:id/invite (+ il suo
+// annullamento): ogni chiamata puo' generare un LOTTO di notifiche (fino a 50). Il progetto
+// si difende con tetto + idempotenza invece che con un limiter, e su una singola
+// squadra/escursione regge; NON regge sul ciclo invita -> DELETE /:id/invites -> invita, che
+// rimette i destinatari fra gli invitabili (100 notifiche ogni 52 richieste, ripetibile fino
+// al tetto di apiLimiter). Secchio SEPARATO da scritturaLimiter, che e' condiviso con
+// POST /api/safety/activate (armare il Dead Man's Switch): esaurirlo con gli inviti farebbe
+// rispondere 429 al timer di sicurezza - lo stesso motivo per cui cancellazioneLimiter e'
+// separato. 40/ora e' molto oltre qualunque uso in buona fede. M-5, revisione sicurezza 27ª.
+const invitoLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    limit: 40,
+    skip: soloInProduzione,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: messaggioTroppiTentativi
+});
+
 // DELETE /api/hikes/:id: secchio SEPARATO da scritturaLimiter di proposito. Quella rotta la
 // condivide con POST /api/safety/activate (armare il Dead Man's Switch): se la cancellazione
 // - il cui caso d'uso dichiarato e' ripulire piu' escursioni di prova di fila - esaurisse
@@ -113,4 +131,4 @@ const cancellazioneLimiter = rateLimit({
     message: messaggioTroppiTentativi
 });
 
-module.exports = { authLimiter, emailLimiter, apiLimiter, matchLimiter, exportLimiter, scritturaLimiter, cancellazioneLimiter };
+module.exports = { authLimiter, emailLimiter, apiLimiter, matchLimiter, exportLimiter, scritturaLimiter, cancellazioneLimiter, invitoLimiter };

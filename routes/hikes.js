@@ -20,7 +20,8 @@ const { movimentoSecAttendibile } = require('../lib/gpx');
 const { calcolaDaPercorso, risolviPercorso } = require('../lib/percorso');
 const { mongoose } = require('../db/mongo');
 // Ri-review sicurezza (2° giro): limiter mirati su una rotta di campionamento e su due scritture.
-const { matchLimiter, scritturaLimiter, cancellazioneLimiter } = require('../middleware/rateLimit');
+// invitoLimiter (M-5, revisione 27ª): il ciclo invita/annulla non e' coperto da tetto+idempotenza.
+const { matchLimiter, scritturaLimiter, cancellazioneLimiter, invitoLimiter } = require('../middleware/rateLimit');
 const { nomeVisibile, oggiRomaISO } = require('../lib/accountDeletion'); // A-3.4: nome pseudonimizzato; oggiRomaISO: blocco iscrizioni oltre il giorno previsto
 const { isSquadMember } = require('../lib/squad'); // invito squadra direzionale: chi invita deve far parte della squadra
 
@@ -64,7 +65,6 @@ function canNonCreatorEditParticipation(hike, userId, body) {
     const userIdStr = String(userId);
     const pDiff = diffIdLists(hike.participants, body.participants !== undefined ? body.participants : hike.participants);
     const pendDiff = diffIdLists(hike.pendingApproval, body.pendingApproval !== undefined ? body.pendingApproval : hike.pendingApproval);
-    const wasParticipant = (hike.participants || []).some(id => String(id) === userIdStr);
 
     const onlySelfOrEmpty = ids => ids.length === 0 || (ids.length === 1 && ids[0] === userIdStr);
 
@@ -81,21 +81,18 @@ function canNonCreatorEditParticipation(hike, userId, body) {
         return true;
     }
 
-    // --- Coinvolgere altri: SOLO come proposta, MAI direttamente in participants ---
-    // Da parte di chi e' gia' un partecipante, e mai rimozioni: togliere l'id di un altro
-    // significherebbe cacciarlo o rifiutarne la richiesta al posto dell'organizzatore.
-    if (!wasParticipant) return false;
-    if (pDiff.removed.length !== 0 || pendDiff.removed.length !== 0) return false;
-
-    // MAI aggiungere altri direttamente a participants (= al gruppo mesh/SOS): dalla 27ª i
-    // compagni di squadra si INVITANO (POST /api/hikes/:id/invite-squad -> pendingInvites),
-    // ed entrano solo se accettano. La vecchia corsia "iscrizione libera -> aggiungo io il
-    // compagno" e' chiusa.
-    if (pDiff.added.length !== 0) return false;
-
-    // Proporre nomi (pendingApproval) resta INVARIATO: solo su un'escursione ad approvazione
-    // manuale, dove l'organizzatore ha il pannello Veto per decidere (opzione B della 27ª).
-    return hike.manualApproval || pendDiff.added.length === 0;
+    // --- Coinvolgere altri: MAI, in nessun campo (C-1, revisione sicurezza 27ª) ---
+    // Un partecipante non-creatore non iscrive e non "propone" nessuno per conto di altri.
+    // La vecchia corsia "proposta" scriveva in pendingApproval e la finalizzava il creatore:
+    // ma quella decisione del creatore non e' MAI stata il consenso della persona proposta -
+    // e' lo stesso difetto della 26ª sopravvissuto sotto l'altro campo (bastano due account:
+    // B propone V su una hike ad approvazione manuale, A la approva, V finisce nel gruppo
+    // mesh/SOS senza aver detto si'). Per coinvolgere un terzo esiste invite-squad
+    // (POST /api/hikes/:id/invite-squad -> pendingInvites), che richiede il si' dell'invitato;
+    // chi non e' in una squadra usa "Richiesta Partecipazione". Restano liberi (ramo
+    // touchesOnlySelf qui sopra): iscriversi/ritirarsi da soli, chiedere e ritirare la
+    // propria richiesta.
+    return false;
 }
 
 // Un utente normale puo' creare/modificare/rimuovere SOLO la propria offerta come autista, e
@@ -442,6 +439,21 @@ router.put('/:id', requireAuth, async (req, res) => {
         // qualunque richiesta nuova, non solo dal tasto di oggi (joinHikeRequest in social.js).
         let newPendingRequesterIds = [];
         if (body.participants !== undefined || body.pendingApproval !== undefined) {
+            // M-2 (revisione sicurezza 27ª): PRIMA di ogni altra cosa - i due array si scrivono
+            // verbatim (piu' sotto), ma ogni guardia a monte ragiona su INSIEMI (diffIdLists):
+            // un array di 300.000 ripetizioni degli id gia' presenti ha diff nullo, supera
+            // "touchesOnlySelf" e viene salvato cosi'. Il tetto sul NUMERO va qui: lo schema
+            // non lo applica sui findByIdAndUpdate. 200 come complete-group e pendingInvites.
+            // La dedup rende innocuo anche un array di soli doppioni sotto quota. Gli altri
+            // array della rotta (drivers > 50, backpackTemplate > 100) hanno gia' il loro tetto.
+            for (const campo of ['participants', 'pendingApproval']) {
+                if (body[campo] === undefined) continue;
+                if (!Array.isArray(body[campo]) || body[campo].length > 200) {
+                    return res.status(400).json({ error: 'Lista partecipanti non valida o troppo lunga (massimo 200).' });
+                }
+                body[campo] = [...new Set(body[campo].map(String))];
+            }
+
             if (!isCreator && !canNonCreatorEditParticipation(hike, userId, body)) {
                 return res.status(403).json({ error: 'Non puoi modificare così la lista partecipanti' });
             }
@@ -862,6 +874,26 @@ router.post('/:id/complete-group', requireAuth, scritturaLimiter, async (req, re
         if (utentiConfermati.length !== confirmedUserIds.length) {
             return res.status(400).json({ error: 'Uno degli utenti confermati non esiste.' });
         }
+        // M-6 (revisione sicurezza 27ª, decisione di Denis 03/09/2026: chiudere - "togli la
+        // funzione"). Oltre a esistere, ogni id confermato dev'essere in RELAZIONE con
+        // l'escursione: chi era gia' partecipante, chi aveva chiesto (pendingApproval) o era
+        // stato invitato (pendingInvites). Prima il creatore poteva passare id ARBITRARI e
+        // per ognuno applyHikeCompletionStats creava un Completion, incrementava completedHikes
+        // e ricalcolava experienceLevel/passo (lib/hikeStats.js), e poco sotto li scriveva in
+        // participants: si modificava il profilo di un utente qualsiasi senza il suo consenso.
+        // Revoca la facolta' "segna presente chi non si era MAI iscritto" (punto 64 / 26ª):
+        // per un walk-up vero l'organizzatore lo aggiunge prima come partecipante, o quello
+        // chiede di partecipare. L'insieme e' lo stesso `giaInRelazione` di PUT /:id.
+        const inRelazione = new Set([
+            ...(hike.participants || []).map(String),
+            ...(hike.pendingApproval || []).map(String),
+            ...(hike.pendingInvites || []).map(String),
+            String(hike.creatorId)
+        ]);
+        const estranei = [...new Set(confirmedUserIds.map(String))].filter(id => !inRelazione.has(id));
+        if (estranei.length) {
+            return res.status(400).json({ error: "Puoi confermare solo chi era iscritto o invitato all'escursione." });
+        }
 
         // Chi era gia' iscritto PRIMA di questa chiamata: serve sotto per avvisare solo chi
         // viene aggiunto ex novo (la ricerca "aggiungi chi non era in lista" e' una funzione
@@ -981,7 +1013,9 @@ router.post('/:id/complete-group', requireAuth, scritturaLimiter, async (req, re
 // un'escursione ad approvazione manuale SOLO il creatore - cosi' "sei in pendingInvites"
 // significa sempre "l'organizzatore e' d'accordo", senza bisogno di un campo invitedBy
 // (decisione della 27ª sessione).
-router.post('/:id/invite-squad', requireAuth, async (req, res) => {
+// invitoLimiter (M-5, revisione sicurezza 27ª): ogni chiamata genera fino a un lotto di
+// notifiche (un membro di squadra a testa). Secchio separato da scritturaLimiter (Dead Man's Switch).
+router.post('/:id/invite-squad', requireAuth, invitoLimiter, async (req, res) => {
     try {
         if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
             return res.status(400).json({ error: 'Identificativo non valido.' });
@@ -1024,7 +1058,9 @@ router.post('/:id/invite-squad', requireAuth, async (req, res) => {
 
         // Chi si esclude: il creatore; chi e' gia' partecipante o gia' in pendingApproval (la
         // sua pratica e' in mano al creatore - niente due stati contemporanei); chi e' gia'
-        // invitato (idempotenza); gli account eliminati (non potrebbero accettare).
+        // invitato (idempotenza); gli account eliminati O in grazia (non potrebbero accettare,
+        // e la notifica verrebbe poi cancellata dallo scrub - B-2, revisione sicurezza 27ª:
+        // applicaInviti in routes/squads.js filtra gia' entrambi, qui filtrava solo deletedAt).
         const membriSquadra = [...new Set((squad.members || []).map(String))];
         const giaDentroSet = new Set([
             String(hike.creatorId),
@@ -1038,8 +1074,11 @@ router.post('/:id/invite-squad', requireAuth, async (req, res) => {
 
         let daInvitare = [];
         if (candidati.length) {
-            const vivi = await User.find({ _id: { $in: candidati }, deletedAt: { $exists: false } })
-                .select('_id').lean();
+            const vivi = await User.find({
+                _id: { $in: candidati },
+                deletedAt: { $exists: false },
+                pendingDeletionAt: { $exists: false }
+            }).select('_id').lean();
             daInvitare = vivi.map(u => String(u._id));
         }
 
@@ -1154,10 +1193,14 @@ router.post('/:id/invite-response', requireAuth, async (req, res) => {
 
         // pendingInvites vuoto -> $unset (non lasciare `[]`, vincolo spazio). Best-effort:
         // un `[]` sopravvissuto e' innocuo.
+        // B-1 (revisione sicurezza 27ª): il $unset e' condizionato a { $size: 0 } - fra il
+        // findOneAndUpdate qui sopra e questo un invite-squad concorrente puo' aver fatto
+        // $addToSet di un nuovo invitato: senza il filtro lo cancelleremmo, e quello cliccando
+        // "Accetta" prenderebbe 403 HIKE_INVITO_ASSENTE.
         if ((aggiornata.pendingInvites || []).length === 0) {
             try {
-                await Hike.updateOne({ _id: aggiornata._id }, { $unset: { pendingInvites: '' } });
-                aggiornata.pendingInvites = undefined;
+                const u = await Hike.updateOne({ _id: aggiornata._id, pendingInvites: { $size: 0 } }, { $unset: { pendingInvites: '' } });
+                if (u.modifiedCount) aggiornata.pendingInvites = undefined;
             } catch (e) { /* innocuo */ }
         }
 
@@ -1184,6 +1227,36 @@ router.post('/:id/invite-response', requireAuth, async (req, res) => {
     } catch (e) {
         console.error('Errore risposta a invito:', e);
         res.status(400).json({ error: 'Impossibile registrare la risposta.' });
+    }
+});
+
+// DELETE /api/hikes/:id/invites/:userId - annulla un invito a un'escursione ancora aperta,
+// solo il creatore. M-4 (revisione sicurezza 27ª): gemella di DELETE /api/squads/:id/invites/
+// :userId (che esisteva gia'). Prima, per le escursioni, un invito si toglieva SOLO con la
+// risposta dell'interessato (e un account eliminato non risponde mai) o con complete-group:
+// un invito mandato per errore, o a un account poi eliminato, non si poteva ritirare, e il
+// creatore continuava a leggere "N invitati non hanno ancora risposto" su un numero fermo.
+// invitoLimiter: e' l'altra meta' del ciclo invita/annulla.
+router.delete('/:id/invites/:userId', requireAuth, invitoLimiter, async (req, res) => {
+    try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(400).json({ error: 'Identificativo non valido.' });
+        }
+        const hike = await Hike.findById(req.params.id);
+        if (!hike) return res.status(404).json({ error: 'Escursione non trovata' });
+        if (!hike.creatorId.equals(req.session.userId)) {
+            return res.status(403).json({ error: "Solo chi ha creato l'escursione può annullare un invito" });
+        }
+        await Hike.updateOne({ _id: hike._id }, { $pull: { pendingInvites: req.params.userId } });
+        const dopo = await Hike.findById(hike._id);
+        if ((dopo.pendingInvites || []).length === 0) {
+            // B-1: $unset condizionato allo stato attuale (un $addToSet concorrente non deve sparire).
+            await Hike.updateOne({ _id: hike._id, pendingInvites: { $size: 0 } }, { $unset: { pendingInvites: '' } }).catch(() => {});
+        }
+        res.json(hikeVisibileA(await Hike.findById(hike._id), req.session.userId));
+    } catch (e) {
+        console.error('Errore annullamento invito escursione:', e);
+        res.status(400).json({ error: "Impossibile annullare l'invito" });
     }
 });
 

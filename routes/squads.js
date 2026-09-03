@@ -5,6 +5,7 @@ const SquadMessage = require('../models/SquadMessage');
 const User = require('../models/User');
 const Notification = require('../models/Notification');
 const { requireAuth } = require('../middleware/auth');
+const { invitoLimiter } = require('../middleware/rateLimit'); // M-5, revisione sicurezza 27ª: il ciclo invita/annulla non e' coperto da tetto+idempotenza
 const { nomeVisibile } = require('../lib/accountDeletion'); // A-3.4: nome pseudonimizzato per gli account eliminati
 // Punto 48: il creatore e' admin/membro per calcolo (creatorId), mai duplicato dentro
 // admins[]/members[]. Estratti in lib/squad.js perche' ora li usa anche routes/hikes.js
@@ -90,15 +91,38 @@ async function applicaInviti(squad, userIds, chiInvita) {
     };
 }
 
+// M-3 (revisione sicurezza 27ª): specchio di hikeVisibileA (routes/hikes.js). Chi NON e'
+// membro vede la squadra, ma non lo stato delle pratiche altrui: solo il PROPRIO invito /
+// la PROPRIA richiesta, che gli servono per rispondere. Senza questo, GET /api/squads
+// diceva a ogni utente loggato "X e' invitato nella squadra Y e non ha ancora risposto" -
+// un pezzo di grafo sociale su una relazione non ancora accettata, esattamente cio' che il
+// ramo escursioni protegge. (members/admins/pendingRequests escono gia' cosi' da prima di
+// questo lavoro: problema preesistente e piu' ampio, non affrontato qui.)
+// toJSON, NON toObject: le opzioni globali (virtuals:true / delete _id, db/mongo.js) sono
+// solo su toJSON - con toObject il ramo strippato uscirebbe con _id e senza id, e il client
+// non aggancerebbe piu' le schede (stessa trappola gia' pagata su hikeVisibileA).
+function squadVisibileA(squad, userId) {
+    if (isSquadMember(squad, userId)) return squad;
+    const pubblico = squad.toJSON ? squad.toJSON() : { ...squad };
+    for (const campo of ['pendingInvites', 'pendingRequests']) {
+        if (!Array.isArray(pubblico[campo])) continue;
+        const soloMio = pubblico[campo].filter(id => String(id) === String(userId));
+        if (soloMio.length) pubblico[campo] = soloMio;
+        else delete pubblico[campo];
+    }
+    return pubblico;
+}
+
 // Ottieni squadre ricorrenti
 router.get('/', requireAuth, async (req, res) => {
     const squads = await Squad.find();
-    res.json(squads);
+    res.json(squads.map(s => squadVisibileA(s, req.session.userId)));
 });
 
 // Crea squadra - il creatore e' sempre chi ha fatto login, ed e' l'UNICO membro alla
 // nascita: gli altri si INVITANO (27ª), ed entrano solo se accettano.
-router.post('/', requireAuth, async (req, res) => {
+// invitoLimiter (M-5): passa da applicaInviti, che manda un lotto di notifiche.
+router.post('/', requireAuth, invitoLimiter, async (req, res) => {
     try {
         const creatorId = req.session.userId;
         // Body onesto: { name, inviteUserIds: [...] } - quelli NON diventano membri, ricevono
@@ -111,12 +135,20 @@ router.post('/', requireAuth, async (req, res) => {
             return res.status(400).json({ error: `Troppi inviti in una volta (massimo ${MAX_INVITI_PER_CHIAMATA}).` });
         }
 
+        // A-1 (revisione sicurezza 27ª): il nome va sanificato QUI, non solo a schema - il
+        // maxlength di Mongoose non vale sui findByIdAndUpdate e comunque un 400 pulito e'
+        // meglio di un ValidationError generico. Stesso idioma di routes/tracking.js:402.
+        const name = String(req.body.name || '').trim().slice(0, 80);
+        if (!name) {
+            return res.status(400).json({ error: 'Il nome della squadra non può essere vuoto' });
+        }
+
         // Whitelist esplicita (punto 48): niente admins/photo dal client alla creazione.
         // Il creatore resta dentro `members` anche se isSquadMember lo calcolerebbe da
         // creatorId: cosi' la forma del documento e' identica a quella dei documenti
         // esistenti, e renderSquadsList/renderNavSquadre (che iterano members) non cambiano.
         const squad = await Squad.create({
-            name: req.body.name,
+            name,
             members: [creatorId],
             creatorId
         });
@@ -136,7 +168,8 @@ router.post('/', requireAuth, async (req, res) => {
 // Invita altri utenti in una squadra esistente - solo un amministratore (specchio di
 // /:id/approve, visto dall'altro lato). Il server legge i membri da nessuna parte: sono i
 // singoli userId scelti a mano nel pannello squadra.
-router.post('/:id/invite', requireAuth, async (req, res) => {
+// invitoLimiter (M-5): lotto di notifiche via applicaInviti.
+router.post('/:id/invite', requireAuth, invitoLimiter, async (req, res) => {
     try {
         const squad = await Squad.findById(req.params.id);
         if (!squad) return res.status(404).json({ error: 'Squadra non trovata' });
@@ -173,7 +206,7 @@ router.post('/:id/invite-response', requireAuth, async (req, res) => {
 
         const inInvito = (squad.pendingInvites || []).some(id => id.equals(userId));
         if (!inInvito) {
-            if (accept && isSquadMember(squad, userId)) return res.json(squad); // doppio clic
+            if (accept && isSquadMember(squad, userId)) return res.json(squadVisibileA(squad, userId)); // doppio clic
             return res.status(403).json({ error: 'Non hai un invito in attesa per questa squadra.', code: 'SQUAD_INVITO_ASSENTE' });
         }
         // Il tetto si ricontrolla all'accept: fra invito e risposta la squadra puo' essersi
@@ -188,11 +221,18 @@ router.post('/:id/invite-response', requireAuth, async (req, res) => {
         const aggiornata = await Squad.findOneAndUpdate({ _id: squad._id, pendingInvites: userId }, mod, { new: true });
         if (!aggiornata) {
             const ri = await Squad.findById(squad._id);
-            if (accept && ri && isSquadMember(ri, userId)) return res.json(ri);
+            if (accept && ri && isSquadMember(ri, userId)) return res.json(squadVisibileA(ri, userId));
             return res.status(403).json({ error: 'Questo invito non è più valido.', code: 'SQUAD_INVITO_ASSENTE' });
         }
         if ((aggiornata.pendingInvites || []).length === 0) {
-            try { await Squad.updateOne({ _id: aggiornata._id }, { $unset: { pendingInvites: '' } }); aggiornata.pendingInvites = undefined; } catch (e) { /* [] innocuo */ }
+            // B-1 (revisione sicurezza 27ª): il $unset va condizionato allo stato ATTUALE
+            // dell'array. Fra il findOneAndUpdate qui sopra e questo updateOne un applicaInviti
+            // concorrente puo' aver fatto $addToSet di un nuovo invitato: senza il filtro
+            // { $size: 0 } lo cancelleremmo, e quello cliccando "Accetta" prenderebbe 403.
+            try {
+                const u = await Squad.updateOne({ _id: aggiornata._id, pendingInvites: { $size: 0 } }, { $unset: { pendingInvites: '' } });
+                if (u.modifiedCount) aggiornata.pendingInvites = undefined;
+            } catch (e) { /* [] innocuo */ }
         }
 
         // Notifica agli admin, come request-join (non sappiamo chi ha invitato: niente invitedBy).
@@ -207,7 +247,10 @@ router.post('/:id/invite-response', requireAuth, async (req, res) => {
         } catch (e) {
             console.error('Notifica risposta invito squadra non inviata:', e);
         }
-        res.json(aggiornata);
+        // M-3: nel ramo accept:false chi risponde NON e' membro - non deve ricevere la lista
+        // pendingInvites/pendingRequests intera. squadVisibileA e' un no-op sull'accept (a
+        // quel punto e' membro).
+        res.json(squadVisibileA(aggiornata, userId));
     } catch (e) {
         console.error('Errore risposta a invito squadra:', e);
         res.status(400).json({ error: 'Impossibile registrare la risposta' });
@@ -216,7 +259,9 @@ router.post('/:id/invite-response', requireAuth, async (req, res) => {
 
 // Annulla un invito in attesa - solo un amministratore (lo stesso motivo per cui il punto
 // 75 ha aggiunto DELETE /:id/pending/:userId: senza, un invito sbagliato resta per sempre).
-router.delete('/:id/invites/:userId', requireAuth, async (req, res) => {
+// invitoLimiter (M-5): e' l'altra meta' del ciclo invita/annulla che riapre la produzione
+// di notifiche.
+router.delete('/:id/invites/:userId', requireAuth, invitoLimiter, async (req, res) => {
     try {
         const squad = await Squad.findById(req.params.id);
         if (!squad) return res.status(404).json({ error: 'Squadra non trovata' });
@@ -226,7 +271,8 @@ router.delete('/:id/invites/:userId', requireAuth, async (req, res) => {
         await Squad.updateOne({ _id: squad._id }, { $pull: { pendingInvites: req.params.userId } });
         const dopo = await Squad.findById(squad._id);
         if ((dopo.pendingInvites || []).length === 0) {
-            await Squad.updateOne({ _id: squad._id }, { $unset: { pendingInvites: '' } }).catch(() => {});
+            // B-1: $unset condizionato allo stato attuale (un $addToSet concorrente non deve sparire).
+            await Squad.updateOne({ _id: squad._id, pendingInvites: { $size: 0 } }, { $unset: { pendingInvites: '' } }).catch(() => {});
         }
         res.json(await Squad.findById(squad._id));
     } catch (e) {
@@ -247,6 +293,22 @@ router.delete('/:id/members/:userId', requireAuth, async (req, res) => {
 
         const targetId = req.params.userId;
         const seStesso = String(targetId) === String(req.session.userId);
+        // Catturato PRIMA della riassegnazione qui sotto (che muta squad.creatorId): serve
+        // dopo il $pull per decidere se il creatore uscente conta ancora come admin vivo.
+        const creatoreEsce = seStesso && String(squad.creatorId) === String(targetId);
+        let successoreInstallato = false;
+
+        // A-2 (revisione sicurezza 27ª): chi chiama deve comunque far parte della squadra,
+        // ANCHE quando esce da solo. Prima il controllo sull'admin E quello sull'appartenenza
+        // erano ENTRAMBI condizionati a !seStesso: un utente qualunque poteva quindi invocare
+        // il flusso d'uscita su una squadra di cui non aveva mai fatto parte, e - se quella
+        // squadra aveva `members` vuoto (documenti nati dalla vecchia POST /api/squads, che
+        // scriveva `members: req.body.members`) - farne partire lo scioglimento con
+        // SquadMessage.deleteMany sulla chat. isSquadMember calcola il creatore da creatorId,
+        // quindi un creatore fuori da `members` continua a poter uscire.
+        if (!isSquadMember(squad, req.session.userId)) {
+            return res.status(403).json({ error: 'Non fai parte di questa squadra' });
+        }
         if (!seStesso && !isSquadAdmin(squad, req.session.userId)) {
             return res.status(403).json({ error: 'Puoi rimuovere solo te stesso, o un altro membro se sei amministratore' });
         }
@@ -255,16 +317,38 @@ router.delete('/:id/members/:userId', requireAuth, async (req, res) => {
             if (!seStesso) {
                 return res.status(400).json({ error: 'Chi ha creato la squadra non può essere rimosso' });
             }
+            // M-1 (revisione sicurezza 27ª): il successore va scelto fra i membri VIVI, con
+            // lo stesso filtro di lib/squadAdmin.js. restanti[0] poteva essere un account
+            // eliminato (in grazia o gia' scrubato): la squadra restava con creatorId =
+            // tombstone e admins = [tombstone], e promuoviSeSenzaAdmin (riga sotto) non
+            // riparava - guarda admins.length, non la vitalita' -> nessun amministratore vivo,
+            // nessuno che possa piu' invitare/approvare/rimuovere. Se non c'e' NESSUN
+            // successore vivo si lascia fare a promuoviSeSenzaAdmin, che scioglie la squadra
+            // dopo il $pull (creatoreVivo resterebbe false).
             const restanti = (squad.members || []).map(String).filter(id => id !== String(targetId));
             if (restanti.length > 0) {
-                const nuovo = restanti[0]; // ordine d'iscrizione
-                squad.creatorId = nuovo;
-                if (!squad.admins.some(a => String(a) === nuovo)) squad.admins.push(nuovo);
-                await squad.save();
+                const vivi = await User.find({
+                    _id: { $in: restanti },
+                    pendingDeletionAt: { $exists: false },
+                    deletedAt: { $exists: false }
+                }).select('_id');
+                const viviSet = new Set(vivi.map(u => String(u._id)));
+                const nuovo = restanti.find(id => viviSet.has(id)) || null;
+                if (nuovo) {
+                    squad.creatorId = nuovo;
+                    if (!squad.admins.some(a => String(a) === nuovo)) squad.admins.push(nuovo);
+                    await squad.save();
+                    successoreInstallato = true;
+                }
             }
             // restanti === 0: la squadra si scioglie dopo il $pull qui sotto.
         }
-        if (!seStesso && !(squad.members || []).some(m => String(m) === String(targetId))) {
+        // Il !seStesso resta: un self-caller ha gia' dimostrato l'appartenenza col gate in
+        // cima, e il creatore che esce e' gia' passato di sopra. Questo intercetta solo "un
+        // admin rimuove un id che non e' nella squadra".
+        if (!seStesso &&
+            !(squad.members || []).some(m => String(m) === String(targetId)) &&
+            String(squad.creatorId) !== String(targetId)) {
             return res.status(404).json({ error: 'Questa persona non è un membro della squadra' });
         }
 
@@ -280,14 +364,21 @@ router.delete('/:id/members/:userId', requireAuth, async (req, res) => {
         }
 
         // Nessun admin vivo -> promuovi il piu' anziano (o sciogli, se sono tutti tombstone).
+        // M-1: se e' il CREATORE a uscire e non e' stato installato nessun successore vivo
+        // (restanti tutti tombstone), il creatore uscente NON conta piu' come admin vivo -
+        // altrimenti promuoviSeSenzaAdmin uscirebbe subito 'ok' e la squadra resterebbe con
+        // un creatorId fantasma e zero amministratori. Stessa scelta di riassegnaAdminSquadre
+        // (creatoreContaComeAdmin=false quando e' il creatore stesso ad andarsene).
         let creatoreVivo = false;
-        if (dopo.creatorId) {
+        if (dopo.creatorId && !(creatoreEsce && !successoreInstallato)) {
             const c = await User.findById(dopo.creatorId).select('pendingDeletionAt deletedAt');
             creatoreVivo = !!c && !c.pendingDeletionAt && !c.deletedAt;
         }
         const esito = await promuoviSeSenzaAdmin(dopo, creatoreVivo);
         if (esito === 'sciolta') return res.json({ sciolta: true });
-        res.json(dopo);
+        // M-3: chi ha appena lasciato la squadra non e' piu' membro -> non deve ricevere la
+        // lista pendingInvites/pendingRequests intera.
+        res.json(squadVisibileA(dopo, req.session.userId));
     } catch (e) {
         console.error('Errore uscita/rimozione dalla squadra:', e);
         res.status(400).json({ error: 'Impossibile completare l\'operazione' });
@@ -398,7 +489,9 @@ router.post('/:id/request-join', requireAuth, async (req, res) => {
             });
         }
 
-        res.json(squad);
+        // M-3: chi chiede di entrare non e' membro -> vede solo la propria richiesta appena
+        // aggiunta, non gli inviti/le richieste altrui.
+        res.json(squadVisibileA(squad, userId));
     } catch (e) {
         console.error('Errore richiesta di partecipazione squadra:', e);
         res.status(400).json({ error: 'Impossibile inviare la richiesta' });

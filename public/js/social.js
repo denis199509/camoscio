@@ -2282,14 +2282,16 @@ function closeInviteSquadModal() {
 }
 
 // Una riga per escursione candidata: titolo/data/organizzatore, e quanti membri della squadra
-// verrebbero davvero toccati (esclusi quelli gia' dentro, in participants O in pendingApproval).
-// "Richiede approvazione" quando non sono io il creatore e l'escursione ha manualApproval: in
-// quel caso l'invito propone, non iscrive (vedi confermaInvitoSquadra) - va detto PRIMA del
-// click, non solo nel messaggio finale.
+// verrebbero davvero toccati (esclusi quelli gia' dentro, in participants/pendingApproval/
+// pendingInvites). Dalla revisione sicurezza 27ª (C-1) la corsia "proposta" non esiste piu':
+// su un'escursione altrui ad approvazione manuale SOLO l'organizzatore puo' invitare una
+// squadra (invite-squad -> 403 HIKE_INVITO_SOLO_CREATORE per gli altri), quindi la riga si
+// mostra disabilitata e lo dice PRIMA del click. Un compagno che vuole portare qualcuno su
+// un'escursione altrui ad approvazione manuale usa "Richiesta Partecipazione".
 function rigaInvitoSquadra(hike, squad, me) {
     const db = window.CamoscioState;
     const isCreatorMe = hike.creatorId === me;
-    const richiedeApprovazione = !isCreatorMe && !!hike.manualApproval;
+    const soloCreatorePuoInvitare = !isCreatorMe && !!hike.manualApproval;
 
     // pendingInvites incluso: un membro gia' invitato non e' "da invitare" di nuovo.
     const giaDentro = new Set([...(hike.participants || []), ...(hike.pendingApproval || []), ...(hike.pendingInvites || [])]);
@@ -2306,22 +2308,21 @@ function rigaInvitoSquadra(hike, squad, me) {
     const dataFmt = hike.date
         ? new Date(hike.date + 'T12:00:00').toLocaleDateString(dateLocale, { day: 'numeric', month: 'long', year: 'numeric' })
         : (T('social.noDate') || 'data non indicata');
-    const badge = richiedeApprovazione ? ` <span class="badge badge-primary">${escapeHtml(T('social.needsApproval') || 'Richiede approvazione')}</span>` : "";
 
-    const disabilitata = daAggiungere.length === 0;
-    const contatore = disabilitata
-        ? (T('social.allMembersInvited') || "Tutti i membri sono già iscritti, in attesa o invitati")
-        : (richiedeApprovazione
-            ? (T('social.toPropose', daAggiungere.length) || `${daAggiungere.length} da proporre`)
+    const disabilitata = soloCreatorePuoInvitare || daAggiungere.length === 0;
+    const contatore = soloCreatorePuoInvitare
+        ? (T('social.inviteOnlyOrganizer') || "Solo l'organizzatore può invitare una squadra")
+        : (daAggiungere.length === 0
+            ? (T('social.allMembersInvited') || "Tutti i membri sono già iscritti, in attesa o invitati")
             : (T('social.toInvite', daAggiungere.length) || `${daAggiungere.length} da invitare`));
 
     return `
         <div class="carpool-group-item" style="display:flex; justify-content:space-between; align-items:center; gap:12px; ${disabilitata ? 'opacity:0.6;' : 'cursor:pointer;'}" ${disabilitata ? '' : `onclick="confermaInvitoSquadra('${hike.id}')"`}>
             <div>
                 <b>${escapeHtml(hike.title)}</b> · ${dataFmt}<br>
-                <span class="small text-muted">${T('social.organizedBy', organizzatore) || `Organizzata da ${organizzatore}`}${badge}</span>
+                <span class="small text-muted">${T('social.organizedBy', organizzatore) || `Organizzata da ${organizzatore}`}</span>
             </div>
-            <span class="small ${richiedeApprovazione && !disabilitata ? 'text-warning' : 'text-muted'}">${contatore}</span>
+            <span class="small text-muted">${contatore}</span>
         </div>
     `;
 }
@@ -2391,7 +2392,6 @@ window.confermaInvitoSquadra = async function(hikeId) {
     // Stessa condizione che decide cosa mostrare nel riquadro (mieEscursioniAperte): se nel
     // frattempo l'escursione si e' chiusa, o non ne faccio piu' parte, non e' piu' un bersaglio
     // valido - non si scopre solo dal 403 del server, si ridisegna la lista con lo stato vero.
-    const me = db.currentUser.id;
     const ancoraValida = mieEscursioniAperte().some(h => h.id === hikeId);
     if (!ancoraValida) {
         window.showToast(T('social.hikeNotAvailableInvite', hike.title) || `"${hike.title}" non è più disponibile per un invito.`, "error");
@@ -2399,45 +2399,13 @@ window.confermaInvitoSquadra = async function(hikeId) {
         return;
     }
 
-    const isCreatorMe = hike.creatorId === me;
-    // DUE STRADE (decisione della 27ª sessione):
-    //  - se NON sono il creatore e l'escursione ha `manualApproval`, resta la vecchia
-    //    "proposta": i nomi vanno in `pendingApproval` e li finalizza l'organizzatore (PUT).
-    //  - in tutti gli altri casi: invito DIREZIONALE — `POST /:id/invite-squad` mette i
-    //    membri in `pendingInvites`, e ognuno decide da sé (`invite-response`). Nessuno
-    //    finisce in `participants` (= nel gruppo mesh/SOS) senza aver detto sì.
-    const soloProposta = !isCreatorMe && !!hike.manualApproval;
-
-    if (soloProposta) {
-        const giaDentro = new Set([...(hike.participants || []), ...(hike.pendingApproval || []), ...(hike.pendingInvites || [])]);
-        const daProporre = squad.members.filter(id => !giaDentro.has(id));
-        if (daProporre.length === 0) {
-            window.showToast(T('social.allMembersInvited') || 'Tutti i membri sono già iscritti, in attesa o invitati.', "info");
-            closeInviteSquadModal();
-            return;
-        }
-        try {
-            // UN SOLO campo nel body: il server calcola il diff contro il proprio stato.
-            const response = await fetch(`/api/hikes/${hikeId}`, {
-                method: 'PUT', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ pendingApproval: (hike.pendingApproval || []).concat(daProporre) })
-            });
-            if (!response.ok) {
-                const body = await response.json().catch(() => ({}));
-                window.showToast(body.error || T('social.errInviteSend') || "Non è stato possibile inviare l'invito.", "error");
-                await refreshState(); renderInviteSquadHikeList();
-                return;
-            }
-            await refreshState();
-            const n = daProporre.length;
-            window.showToast(T('social.squadProposed', squad.name, hike.title, n) || `Richiesta inviata per ${n} ${n === 1 ? 'membro' : 'membri'} di "${squad.name}": ${n === 1 ? 'entrerà' : 'entreranno'} in "${hike.title}" solo se l'organizzatore la approva.`, "success");
-            closeInviteSquadModal(); renderSquadsList(); renderHikesList();
-        } catch (e) {
-            console.error("Errore proposta squadra:", e);
-            window.showToast(T('social.errInviteSend') || "Non è stato possibile inviare l'invito.", "error");
-        }
-        return;
-    }
+    // C-1 (revisione sicurezza 27ª): UNA SOLA strada, l'invito DIREZIONALE. `POST /:id/invite-squad`
+    // mette i membri in `pendingInvites` e ognuno decide da sé (`invite-response`) - nessuno
+    // finisce in `participants` (= nel gruppo mesh/SOS) senza aver detto sì. La vecchia
+    // "proposta" (PUT {pendingApproval}) non c'è più: la finalizzava l'organizzatore, e quella
+    // non era mai il consenso della persona proposta. Su un'escursione altrui ad approvazione
+    // manuale invite-squad è riservato al creatore (403 HIKE_INVITO_SOLO_CREATORE) e la riga
+    // del riquadro è già disabilitata (rigaInvitoSquadra).
 
     // Pre-check client: se tutti i membri sono già dentro (participants / pendingApproval /
     // pendingInvites) non si chiama il server. Il calcolo VERO lo fa comunque lui — questo

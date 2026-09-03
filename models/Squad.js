@@ -1,7 +1,12 @@
 const { mongoose } = require('../db/mongo');
 
 const squadSchema = new mongoose.Schema({
-    name: { type: String, required: true },
+    // maxlength (A-1, revisione sicurezza 27ª): senza tetto il nome finisce dentro una
+    // notifica PER OGNI invitato (routes/squads.js, applicaInviti -> Notification.insertMany,
+    // fino a 50 per chiamata) e una sola POST /api/squads con un `name` da 9,9 MB riempirebbe
+    // i 512 MB di Atlas (vincolo hard). 80 e' larghissimo per un nome squadra. Il tetto vero
+    // e' comunque nella rotta (trim + slice): lo schema non lo applica sui findByIdAndUpdate.
+    name: { type: String, required: true, maxlength: 80 },
     creatorId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     members: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     // Il creatore NON e' duplicato qui dentro: e' admin per calcolo (creatorId), non per dato salvato.

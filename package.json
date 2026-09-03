@@ -26,5 +26,9 @@
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^8.5.0"
+  },
+  "//overrides": "A-3 (revisione sicurezza 27ª): GHSA-x5fp-wj9c-mxmx (bypass del limite di elementi degli array, a MONTE di ogni tetto sugli array di questo progetto) + GHSA-4mjr-xmp4-gh2g (DoS via isBuffer) su qs. La patch e' qs@6.16.0, ma express@4.22.2 e body-parser@1.20.6 fissano entrambi qs:~6.15.1 (<6.16.0) e non esiste una express 4.x sopra la 4.22.2 - `npm audit fix` non basta, servirebbe --force (-> express 5, breaking). L'override forza la sola transitiva, express resta 4.x. Da togliere quando express 4.x allarga il range o si passa a express 5.",
+  "overrides": {
+    "qs": "6.16.0"
   }
 }

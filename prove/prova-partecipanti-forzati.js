@@ -154,6 +154,27 @@ async function ripristinaPace(id, s) {
         const h2fine = await Hike.findById(h2).lean();
         ok('ora C e\' partecipante, e fuori da pendingInvites', (h2fine.participants || []).map(String).includes(String(idC)) && !(h2fine.pendingInvites || []).map(String).includes(String(idC)));
 
+        // === 1c. C-1 (revisione sicurezza 27ª): la corsia "proposta" e' chiusa ===
+        // Un partecipante non-creatore non scrive piu' in pendingApproval per conto di terzi,
+        // nemmeno su un'escursione ad approvazione manuale. Era il difetto della 26ª
+        // sopravvissuto sotto l'altro campo: B propone V, A approva, V nel gruppo mesh/SOS
+        // senza aver detto si'.
+        console.log('\n--- 1c. C-1: un partecipante non puo\' piu\' "proporre" un terzo ---');
+        const rMa = await chiama('POST', '/api/hikes', {
+            title: `PROVA-VULN-${MARCA}-ma`, difficulty: 'Principiante', date: dataFutura,
+            manualApproval: true, tribeTags: [], trailhead: { lat: 42.4, lng: 13.5, name: `vma${MARCA}` }
+        }, ckA);
+        const hMa = rMa.corpo && (rMa.corpo.id || rMa.corpo._id);
+        if (hMa) hikeIds.push(hMa);
+        ok('escursione ad approvazione manuale creata', !!hMa && rMa.corpo.manualApproval === true, JSON.stringify(rMa.corpo));
+        await chiama('PUT', `/api/hikes/${hMa}`, { pendingApproval: [idB] }, ckB);       // B chiede
+        await chiama('PUT', `/api/hikes/${hMa}`, { participants: [idA, idB], pendingApproval: [] }, ckA); // A approva
+        const proponi = await chiama('PUT', `/api/hikes/${hMa}`, { pendingApproval: [idC] }, ckB);
+        ok('B (partecipante) prova a proporre C -> 403', proponi.status === 403, `status ${proponi.status} ${JSON.stringify(proponi.corpo)}`);
+        const hMaDopo = await Hike.findById(hMa).lean();
+        ok('C non e\' in pendingApproval', !(hMaDopo.pendingApproval || []).map(String).includes(String(idC)), JSON.stringify(hMaDopo.pendingApproval));
+        ok('C non e\' fra i partecipanti', !(hMaDopo.participants || []).map(String).includes(String(idC)), JSON.stringify(hMaDopo.participants));
+
         // === 2. complete-group: tetto alla lista ===
         console.log('\n--- 2. complete-group, tetto alla lista ---');
         const h3 = await creaHike('cap');
@@ -163,17 +184,34 @@ async function ripristinaPace(id, s) {
         ok('messaggio "troppe persone"', troppi.corpo && /[Tt]roppe persone/.test(troppi.corpo.error || ''), JSON.stringify(troppi.corpo));
         ok('la hike NON e\' stata chiusa', !(await Hike.findById(h3).lean()).groupCompletedAt);
 
-        // === 3. complete-group: avviso a chi e' segnato presente senza essere iscritto ===
-        console.log('\n--- 3. complete-group, avviso a chi non era iscritto ---');
+        // === 3. M-6 (revisione sicurezza 27ª, chiuso su decisione di Denis): complete-group
+        //     conferma SOLO chi era in relazione con l'escursione (partecipante, pendingApproval
+        //     o pendingInvites). Revoca la facolta' "segna presente un walk-up mai iscritto"
+        //     (punto 64): per un estraneo -> 400, il profilo non si tocca. ===
+        console.log('\n--- 3. M-6: complete-group rifiuta un estraneo, conferma chi aveva chiesto ---');
+        const idE = demo[2].id; // Sofia: nessuna relazione con h4 (M-6 guarda l'escursione, non le squadre)
+        const paceE = await istantaneaPace(idE);
         const h4 = await creaHike('avviso');
-        await chiama('PUT', `/api/hikes/${h4}`, { participants: [idA, idB] }, ckB); // B si iscrive da solo (h4 senza approvazione manuale); C no
+        await chiama('PUT', `/api/hikes/${h4}`, { participants: [idA, idB] }, ckB); // B si iscrive da solo (h4 senza approvazione manuale)
+        await chiama('PUT', `/api/hikes/${h4}`, { pendingApproval: [idC] }, ckC);   // C CHIEDE (non e' ancora partecipante)
+
+        const conEstraneo = await chiama('POST', `/api/hikes/${h4}/complete-group`, { confirmedUserIds: [idA, idB, idE] }, ckA);
+        ok('confermare un estraneo (mai iscritto ne\' invitato) -> 400 (M-6)', conEstraneo.status === 400,
+            `status ${conEstraneo.status} ${JSON.stringify(conEstraneo.corpo)}`);
+        ok('...con il messaggio "solo chi era iscritto o invitato"',
+            conEstraneo.corpo && /iscritto o invitato/.test(conEstraneo.corpo.error || ''), JSON.stringify(conEstraneo.corpo));
+        ok('...e la hike NON e\' stata chiusa', !(await Hike.findById(h4).lean()).groupCompletedAt);
+        ok('...e il profilo dell\'estraneo non e\' stato toccato',
+            JSON.stringify(await istantaneaPace(idE)) === JSON.stringify(paceE), JSON.stringify(paceE));
+
+        // chi aveva CHIESTO (C, in pendingApproval) invece SI puo' confermare, e riceve l'avviso
         const nCprima = await Notification.countDocuments({ userId: oid(idC), text: /segnato come presente/ });
         const nBprima = await Notification.countDocuments({ userId: oid(idB), text: /segnato come presente/ });
         const chiudi = await chiama('POST', `/api/hikes/${h4}/complete-group`, { confirmedUserIds: [idA, idB, idC] }, ckA);
-        ok('completamento di gruppo con C aggiunto ex novo -> 200', chiudi.status === 200, JSON.stringify(chiudi.corpo));
-        ok('C (non era iscritto) riceve l\'avviso "segnato presente"',
+        ok('confermare chi aveva CHIESTO (pendingApproval) -> 200', chiudi.status === 200, JSON.stringify(chiudi.corpo));
+        ok('C (era in pendingApproval) riceve l\'avviso "segnato presente"',
             await Notification.countDocuments({ userId: oid(idC), text: /segnato come presente/ }) === nCprima + 1);
-        ok('B (era gia\' iscritto) NON riceve l\'avviso',
+        ok('B (era gia\' partecipante) NON riceve l\'avviso',
             await Notification.countDocuments({ userId: oid(idB), text: /segnato come presente/ }) === nBprima);
         ok('A (creatore) NON riceve l\'avviso',
             await Notification.countDocuments({ userId: oid(idA), text: /segnato come presente/ }) === 0);

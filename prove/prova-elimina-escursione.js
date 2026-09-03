@@ -191,7 +191,13 @@ async function ripristinaPace(id, snap) {
 
         // === 3. CASCATA ===
         console.log('\n--- 3. Cascata ---');
-        await chiama('PUT', `/api/hikes/${hikeId}`, { participants: [idA, idB] }, cookieA);
+        // B si iscrive DA SOLO (hikeId non ha approvazione manuale): dalla 26ª il creatore non
+        // puo' piu' aggiungere a mano chi non e' gia' in relazione con l'escursione, e dalla
+        // revisione sicurezza 27ª (M-6) complete-group rifiuta i confirmedUserIds estranei -
+        // prima questa PUT (fatta come cookieA) falliva in silenzio con 403 e a salvare la
+        // situazione era proprio la mancanza di controllo in complete-group.
+        const iscrizioneB = await chiama('PUT', `/api/hikes/${hikeId}`, { participants: [idA, idB] }, cookieB);
+        ok('B si iscrive da solo -> 200', iscrizioneB.status === 200, `status ${iscrizioneB.status}: ${JSON.stringify(iscrizioneB.corpo)}`);
         const completa = await chiama('POST', `/api/hikes/${hikeId}/complete-group`, { confirmedUserIds: [idA, idB] }, cookieA);
         ok('chiusura di gruppo accettata (A + B)', completa.status === 200, JSON.stringify(completa.corpo));
         ok('due Completion creati dalla chiusura di gruppo', await Completion.countDocuments({ hikeId: oid(hikeId) }) === 2);
