@@ -9676,3 +9676,81 @@ partecipanti dal creatore + tetto a complete-group"), 07 ("I 4 account
 demo non sono estranei fra loro"), 04 (frontmatter + punto rimandato).
 leggimi.txt aggiornato. Vault committato e pushato. cronologia.txt NON
 toccato (congelato).
+
+
+===================================================================
+PUNTO 116 - LA TRACCIA IMPORTATA (.GPX/.FIT) SI DISEGNA SULLA MAPPA
+27a sessione (03/09/2026) - ARRIVATO E CHIUSO. Commit 89d2e0b, push
+a090723..89d2e0b su master. Render redeploy automatico.
+===================================================================
+
+Parole di Denis (a inizio 27a sessione, prima dell'invito squadra):
+
+"durante la creazione dell escursione vorrei un tasto per importare un
+file gpx o fit per creare il progetto. se qualcuno mi passa il file gpx
+fuori da camoscio, vorrei la possibilita' di importarlo durante la
+creazione del escursione. cosi' creo l'escursione, importo il file gpx
+della traccia, inserisco tutti i dati e preparo il progetto
+dell'escursione."
+
+Dopo la diagnosi ("l'import .gpx in creazione esiste gia', sepolto nella
+tendina 'Quota, dislivello e distanza'"):
+
+"hai ragione errore mio. allora solo il punto 2 la traccia importata
+deve comparire come linea sulla mappa."
+  1 (dove) -> b: mappa Esplora + mini-mappa nel tab Dettagli
+  2 (anche .fit) -> si
+  poi, a lavoro fatto: "saved (percorso copiato da una traccia) ...
+  voglio pure questo"
+
+COSA C'ERA GIA': l'import .gpx in creazione escursione esisteva
+(routeSource kind:'gpx'), ma (a) calcolava solo i 3 numeri + l'etichetta
+e BUTTAVA la geometria (risolviPercorso), quindi nessuna linea da
+nessuna parte; (b) niente .fit, e l'enum routeSource.kind non aveva
+'fit' (bug latente dal 114, mai emerso perche' completions.js non scrive
+hike.routeSource); (c) la mappa Esplora disegnava un percorso FINTO di 5
+punti attorno al ritrovo (serviva solo alla demo esposizione solare).
+
+COSA E' STATO FATTO:
+- models/Hike.js: enum routeSource.kind + 'fit'; campo nuovo routePath
+  ([[lng,lat]], default undefined, disciplina di SavedRoute: Douglas-
+  Peucker 18 m, solo lng/lat, tetto 400 punti).
+- lib/percorso.js: calcolaDaPercorso per gpx/fit produce routePath; il
+  ramo 'saved' lo copia dal SavedRoute (gia' pronto). risolviPercorso lo
+  aggiunge alla whitelist di ritorno (senza, spariva con gpxLetto). Le
+  costanti SEMPLIFICA_PERCORSO_M / MAX_PUNTI_PERCORSO spostate qui da
+  routes/routing.js (una definizione sola).
+- routes/hikes.js: PUT fa $unset di routePath quando si torna manuale, si
+  passa a un draft, o il creatore riscrive i numeri a mano.
+- social.js / index.html / i18n.js: un solo tasto "importa traccia" per
+  entrambi i formati, il ramo si sceglie dall'estensione (.fit in
+  base64, come il tasto su dello storico). accept=".gpx,.fit".
+- map.js loadActiveHikeOnMap: disegna la linea vera (blu #4C7E90,
+  fitBounds) quando c'e' routePath; il percorso finto resta come
+  fallback per chi non ha una traccia.
+- hikepage.js / index.html: card "Percorso previsto" con mini-mappa
+  Leaflet nel tab Dettagli, nascosta se non c'e' traccia.
+- prove/prova-punto116.js NUOVA, 42 controlli (7 sezioni), + voce in
+  LEGGIMI-PROVE.txt. Regressioni verdi: 93 28/28, 113 103/103, 113-gpx
+  43/43, 77 17/17, elimina-escursione 52/52, invito-squadra 59/59,
+  partecipanti-forzati 21/21.
+
+gpx/fit/saved valorizzano routePath; draft NO (si ricalcola, decisione
+del vault sui progetti).
+
+COSTO SPAZIO (misurato, non stimato - script nello scratchpad, tracce
+.gpx realistiche nella pipeline vera): ~1,5-2 KB per un'escursione media
+(49-63 punti dopo Douglas-Peucker), ~5 KB nel caso peggiore realistico
+(22 km, 1 Hz), tetto ~12,7 KB (cap 400 punti). Contro i 321 MB liberi:
+trascurabile (1000 escursioni con traccia nel caso peggiore ~4,7 MB).
+
+SOLO IN AVANTI: le escursioni gia' create con un .gpx non hanno il file
+salvato -> la linea compare re-importando la traccia.
+
+APERTO: verifica dal vivo di Denis (linea sulla mappa Esplora + card
+"Percorso previsto" nel tab Dettagli).
+
+Dettaglio: vault 03 ("Traccia importata -> linea sulla mappa"), 06
+("Ventisettesima sessione"), 07 ("risolviPercorso ha una whitelist di
+ritorno"). leggimi.txt aggiornato. Vault committato e pushato.
+cronologia.txt NON toccato (congelato).

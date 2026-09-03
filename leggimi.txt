@@ -1,34 +1,45 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-09-02 (VENTISEIESIMA sessione — cancellazione escursione
-+ due vulnerabilita' preesistenti chiuse. Sessione INTERROTTA da uno
-spegnimento del PC; niente perso (auto-save `14f7596` col codice giusto,
-rifuso in `85d537b`). Push `655af09..85d537b` su `master`. (1) DELETE
-/api/hikes/:id: il creatore cancella una sua escursione, anche dopo la
-chiusura di gruppo, con cascata completa (`7d2de46`, era gia' committato
-prima del crash). (2) Due falle trovate dall'agente security-privacy su
-`7d2de46`: PUT /api/hikes/:id lasciava il creatore aggiungere UNO
-SCONOSCIUTO a participants -> gruppo mesh/SOS -> GPS reale; ora solo
-richiedenti / gia'-dentro / compagni di una sua squadra. E complete-group
-senza limiter/tetto: aggiunti scritturaLimiter + tetto 200 + avviso a chi
-e' segnato presente senza essere iscritto (`85d537b`). Dettaglio: vault
-04-Da-Fare (frontmatter) + 06 ("Ventiseiesima sessione") + 03 + 07.)
+Aggiornato: 2026-09-03 (VENTISETTESIMA sessione — PUNTO 116: la traccia
+importata (.gpx/.fit) in creazione escursione si disegna come LINEA
+sulla mappa. Push `a090723..89d2e0b` su `master`, Render redeploy
+automatico. L'import .gpx in creazione ESISTEVA GIA' (tendina "Quota,
+dislivello e distanza", routeSource kind:'gpx') ma calcolava solo i 3
+numeri e BUTTAVA la geometria; ora si salva Hike.routePath ([[lng,lat]],
+Douglas-Peucker 18 m, tetto 400 punti, disciplina di SavedRoute) e si
+disegna su Esplora (loadActiveHikeOnMap, prima disegnava un percorso
+FINTO di 5 punti) + mini-mappa nel tab Dettagli di hike-page. Aggiunto
+anche il .fit: l'enum routeSource.kind non aveva 'fit' (bug latente dal
+114). gpx/fit/saved valorizzano routePath, draft NO (si ricalcola). Un
+solo tasto per i due formati, ramo dall'estensione. Costanti
+SEMPLIFICA_PERCORSO_M / MAX_PUNTI_PERCORSO spostate in lib/percorso.js.
+Prova prova-punto116 42/42 (7 sez.) + 7 regressioni verdi. Costo spazio
+MISURATO: ~1,5-2 KB/escursione media, tetto ~12,7 KB — trascurabile.
+SOLO IN AVANTI: le escursioni gia' create con un .gpx non hanno il file,
+la linea compare re-importando. Dettaglio: vault 03 ("Traccia importata
+-> linea sulla mappa") + 06 ("Ventisettesima sessione") + 07
+("risolviPercorso whitelist di ritorno"), cose_da_fare.txt "PUNTO 116".)
 
 >>> SI LAVORA SU `master`, hotfix normali (commit vero + push -> Render
     ridistribuisce). L'hook di auto-save committa in locale (mai push):
     va rifuso in UN commit vero (`git reset <base>` + commit per pezzo)
     prima di ogni push. Fatto cosi' per il lavoro di oggi.
 
-    STATO A FINE 26a SESSIONE (chiusura in sicurezza):
-      - camoscio       origin/master = `7c25ec2` (codice a `85d537b`,
+    STATO A META' 27a SESSIONE (dopo il punto 116, prima dell'invito squadra):
+      - camoscio       origin/master = `NOTE-27A` (codice a `89d2e0b`,
                        sopra solo il commit di note). Working tree PULITO.
-      - camoscio memoria (vault) origin/master = `a34e844`. Working tree PULITO.
+      - camoscio memoria (vault) origin/master = `240ce36`. Working tree PULITO.
       - Tutto pushato in entrambi i repo, niente in coda.
-      - Prove verdi: prova-partecipanti-forzati 21/21, prova-invito-squadra
-        59/59, prova-elimina-escursione 52/52, prova-punto77 17/17.
-      - PROSSIMA SESSIONE: candidati -> "invito squadra direzionale"
-        (grosso, vedi sotto in APERTO) oppure M-5 (piccolo). Nessun
-        lavoro a meta': si riparte da zero sul punto scelto.
+      - Prove verdi: prova-punto116 42/42, prova-punto93 28/28,
+        prova-punto113 103/103, prova-punto113-gpx 43/43, prova-punto77
+        17/17, prova-elimina-escursione 52/52, prova-invito-squadra 59/59,
+        prova-partecipanti-forzati 21/21.
+      - APERTO SUBITO: verifica dal vivo di Denis del punto 116 (linea su
+        Esplora col tasto "Mappa" di una card con traccia importata +
+        card "Percorso previsto" nel tab Dettagli).
+      - IN CORSO DA ORA: "invito squadra direzionale" (vedi sotto in
+        APERTO) — il lavoro grosso rimandato dalla 26a. Si riparte da
+        zero sul punto.
 
 >>> AZIONI MANUALI DI DENIS, aperte:
   1. NUOVA — ACCOUNT_SCRUB_SECRET su Render (stringa a scelta, DIVERSA da
