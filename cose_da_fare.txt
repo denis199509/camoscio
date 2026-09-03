@@ -10089,3 +10089,43 @@ AUDIT VISIVO DEL SITO (29a sessione, 03/09/2026)
    2. Bianco su arancione = 4,03:1 (appena sotto la soglia di
       leggibilita' AA) sul CTA principale. Scurire l'arancione del
       ~6% lo sistema, ma e' il colore del marchio.
+
+===============================================================
+TASTO INDIETRO / HISTORY API (29a sessione, 03/09/2026) - DA FARE
+===============================================================
+
+  Denis: "il tasto indietro sia del telefono che pc buttano fuori
+  dal sito. non ha il classico utilizzo 'torna alla pagina
+  precedente'. spesso capita di usare il tasto indietro. mi butta
+  fuori dal sito, e' molto fastidioso cosi'".
+
+  Causa: Camoscio e' una SPA, la navigazione fra sezioni e' solo
+  JS (classe .active sui <section>), la cronologia del browser non
+  viene mai toccata -> Indietro esce dal sito.
+
+  DECISIONI PRESE (AskUserQuestion):
+   - Ambito PIENO: sezioni + pagine con id (squadra/escursione/
+     profilo altrui/uscita) + MODALI (Indietro con un modale
+     aperto lo chiude invece di navigare).
+   - Indietro sulla home ESCE dal sito (nessun trap, come Gmail/
+     Instagram).
+
+  ESITO SESSIONE: Denis -> "niente codice per adesso" -> "tutto da
+  segnare per il lavoro futuro". NIENTE IMPLEMENTATO.
+
+  PROGETTO COMPLETO agli atti (analisi navigazione + censimento
+  degli 8 modali + modello di stato history + 4 sotto-decisioni
+  ancora da chiudere: tracking-panel nella cronologia si/no, viste-
+  filtro "Le mie escursioni", deep-link #sezione, scroll
+  restoration):
+    C:\Users\lenovo\.claude\plans\camoscio-tasto-indietro-history-api.md
+  Puntatore nel vault: ../camoscio memoria/04-Da-Fare.md.
+
+  In breve: agganciare l'imbuto unico navigateTo() (app.js) alla
+  History API - pushState a ogni navigazione + #sezione nell'URL,
+  handler popstate che ripristina senza ripushare, id nello stato
+  per le pagine parametriche, i modali che pushano all'apertura e
+  si chiudono su Indietro. ~130-180 righe, quasi tutte in app.js.
+  Convive col pushState che auth.js gia' usa per il wizard di
+  registrazione (chiavi di stato distinte). Nessuna prova
+  automatica -> verifica dal vivo nel browser.
