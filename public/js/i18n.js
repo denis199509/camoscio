@@ -250,6 +250,19 @@
             'squadPage.erroreFoto': "Could not change the squad's photo.",
             'squadPage.errorePromozione': 'Could not promote the member.',
             'squadPage.erroreRimozioneAdmin': 'Could not remove the admin.',
+            // Consenso squadra (27ª): inviti, uscita, rimozione.
+            'squadPage.invitatoInAttesa': 'invited, pending',
+            'squadPage.invitiInAttesa': 'Pending invitations:',
+            'squadPage.annullaInvito': 'Cancel',
+            'squadPage.seiInvitato': 'You have been invited to this squad.',
+            'squadPage.rimuoviMembro': 'Remove from squad',
+            'squadPage.lasciaSquadra': 'Leave squad',
+            'squadPage.confermaRimuoviMembro': 'Remove this person from the squad?',
+            'squadPage.lasciaConfermaBase': 'Leave this squad?',
+            'squadPage.lasciaUltimoMembro': "You're the last member: the squad and its chat will be deleted.",
+            'squadPage.lasciaCreatore': 'You created this squad: it will pass to the longest-standing member.',
+            'squadPage.uscito': 'You left the squad.',
+            'squadPage.erroreAnnullaInvito': 'Could not cancel the invitation.',
             'squadPage.chatTitolo': 'Squad Chat',
 
             // Pagina escursione (public/js/hikepage.js)
@@ -969,6 +982,16 @@
             'social.errInviteSend': 'Could not send the invite.',
             'social.squadAdded': function (squad, hike, n) { return '"' + squad + '" added to "' + hike + '": ' + n + (n === 1 ? ' new participant.' : ' new participants.'); },
             'social.squadProposed': function (squad, hike, n) { return 'Request sent for ' + n + (n === 1 ? ' member' : ' members') + ' of "' + squad + '": they will join "' + hike + '" only if the organizer approves it.'; },
+            // Consenso squadra (27ª): creazione, card "Inviti alle squadre", risposta.
+            'social.squadCreated': 'Squad created.',
+            'social.squadCreatedInvited': function (n) { return 'Squad created. Invitation sent to ' + n + (n === 1 ? ' person: they will' : ' people: they will') + ' join only if they accept.'; },
+            'social.squadInvitesTitle': 'Squad invitations',
+            'social.squadInvitesDesc': 'Squads that invited you. You decide whether to join.',
+            'social.acceptSquadInvite': 'Accept',
+            'social.declineSquadInvite': 'Decline',
+            'social.squadInviteAccepted': 'You have joined the squad.',
+            'social.squadInviteDeclined': 'Invitation declined.',
+            'social.squadInviteNoLongerValid': 'This invitation is no longer valid.',
 
             // --- #social: recensioni anonime (social.js) ---
             'social.noPastSharedHikes': 'No past shared hikes to review',

@@ -51,10 +51,17 @@ async function loginDemo(userId) {
 
 // Helper UNICO per costruire una squadra di prova - alla tappa 4 ("consenso squadra")
 // questa funzione diventa creazione + accept degli invitati, e cambia SOLO qui.
-async function creaSquadraDiProva(cookieCreatore, nome, membriIds) {
-    const r = await chiama('POST', '/api/squads', { name: nome, members: membriIds }, cookieCreatore);
+// Dalla tappa 4 ("consenso squadra") POST /api/squads crea la squadra col SOLO creatore e
+// invita gli altri: qui li si fa accettare, cosi' a valle la squadra ha membri veri.
+// invitati: [{ id, cookie }] - il creatore e' gia' membro, non va passato.
+async function creaSquadraDiProva(cookieCreatore, nome, invitati) {
+    const r = await chiama('POST', '/api/squads', { name: nome, inviteUserIds: invitati.map(x => x.id) }, cookieCreatore);
     const id = r.corpo && (r.corpo.id || r.corpo._id);
     if (r.status !== 200 || !id) throw new Error('creaSquadraDiProva fallita: ' + JSON.stringify(r));
+    for (const inv of invitati) {
+        const acc = await chiama('POST', `/api/squads/${id}/invite-response`, { accept: true }, inv.cookie);
+        if (acc.status !== 200) throw new Error(`accept invito squadra fallito per ${inv.id}: ` + JSON.stringify(acc));
+    }
     return id;
 }
 
@@ -100,11 +107,11 @@ function fraGiorni(n) {
         const ckA = await loginDemo(A), ckB = await loginDemo(B), ckC = await loginDemo(C), ckD = await loginDemo(D);
         console.log(`     A=${elenco[0].username} (crea)  B=${elenco[3].username} (invitato)  C=${elenco[1].username}  D=${elenco[2].username}\n`);
 
-        // Squadra di prova con A + B + C. B (Giulia) e' l'unico demo libero, C (Luca) sta
-        // gia' in "Val Brembana" ma qui e' in una squadra NUOVA a parte.
-        const S = await creaSquadraDiProva(ckA, MARCA + '-S', [A, B, C]);
+        // Squadra di prova: A (creatore) + B + C, che accettano l'invito. B (Giulia) e' l'unico
+        // demo libero, C (Luca) sta gia' in "Val Brembana" ma qui e' in una squadra NUOVA.
+        const S = await creaSquadraDiProva(ckA, MARCA + '-S', [{ id: B, cookie: ckB }, { id: C, cookie: ckC }]);
         squadIds.push(oid(S));
-        const S_altrui = await creaSquadraDiProva(ckB, MARCA + '-S2', [B, D]); // squadra di B, senza A
+        const S_altrui = await creaSquadraDiProva(ckB, MARCA + '-S2', [{ id: D, cookie: ckD }]); // squadra di B, senza A
         squadIds.push(oid(S_altrui));
 
         async function creaHike(cookie, suff, extra = {}) {
@@ -260,6 +267,9 @@ function fraGiorni(n) {
         await hikesCol.deleteMany({ title: { $regex: '^' + MARCA } });
         if (squadIds.length) await squadsCol.deleteMany({ _id: { $in: squadIds } });
         await squadsCol.deleteMany({ name: { $regex: '^' + MARCA } });
+        // Notifiche degli inviti squadra (non hanno relatedHikeId): il testo cita il nome
+        // della squadra di prova, che contiene MARCA.
+        await notifCol.deleteMany({ text: { $regex: 'squadra "' + MARCA } });
         const fine = {
             hikes: await hikesCol.countDocuments(),
             squads: await squadsCol.countDocuments(),

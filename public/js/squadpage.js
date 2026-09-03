@@ -106,7 +106,8 @@ function renderSquadJoinBox(squad, isMember, canManage, box) {
 
     if (canManage) {
         const pending = squad.pendingRequests || [];
-        if (pending.length === 0) {
+        const inviti = squad.pendingInvites || [];
+        if (pending.length === 0 && inviti.length === 0) {
             box.classList.add("hidden");
             box.innerHTML = "";
             return;
@@ -114,7 +115,7 @@ function renderSquadJoinBox(squad, isMember, canManage, box) {
         box.classList.remove("hidden");
         // Stesso stile del "Pannello Veto del Capogruppo" gia' usato per le richieste di
         // partecipazione a un'escursione (social.js) - stesse classi, stesso principio.
-        const righe = pending.map(id => {
+        const righeRichieste = pending.map(id => {
             const u = db.users.find(u => u.id === id);
             const nome = u ? esc(u.username) : esc(T('common.utente') || 'Utente');
             const avatar = u ? esc(u.avatar) : "👤";
@@ -128,12 +129,40 @@ function renderSquadJoinBox(squad, isMember, canManage, box) {
                 </div>
             `;
         }).join("");
+        // 27ª: inviti in attesa - SOLA LETTURA (decide l'invitato) + "annulla" per l'admin.
+        const righeInviti = inviti.map(id => {
+            const u = db.users.find(u => u.id === id);
+            const nome = u ? esc(u.username) : esc(T('common.utente') || 'Utente');
+            const avatar = u ? esc(u.avatar) : "👤";
+            return `
+                <div class="veto-request-item">
+                    <span>${avatar} <b>${nome}</b> <span class="small text-muted">${esc(T('squadPage.invitatoInAttesa') || 'invitato, in attesa')}</span></span>
+                    <div class="veto-actions">
+                        <button class="btn btn-sm btn-secondary" style="padding:2px 6px;" onclick="annullaInvitoSquadra('${squad.id}','${id}')">${esc(T('squadPage.annullaInvito') || 'Annulla')}</button>
+                    </div>
+                </div>
+            `;
+        }).join("");
         box.innerHTML = `
             <div class="veto-management-box">
-                <span class="small font-bold text-warning" style="display:block; margin-bottom:6px;"><i data-lucide="shield-alert"></i> ${esc(T('squadPage.richiestePartecipazione') || 'Richieste di partecipazione:')}</span>
-                ${righe}
+                ${pending.length ? `<span class="small font-bold text-warning" style="display:block; margin-bottom:6px;"><i data-lucide="shield-alert"></i> ${esc(T('squadPage.richiestePartecipazione') || 'Richieste di partecipazione:')}</span>${righeRichieste}` : ''}
+                ${inviti.length ? `<span class="small font-bold text-muted" style="display:block; margin:${pending.length ? '10px' : '0'} 0 6px;"><i data-lucide="mail"></i> ${esc(T('squadPage.invitiInAttesa') || 'Inviti in attesa:')}</span>${righeInviti}` : ''}
             </div>
         `;
+        return;
+    }
+
+    // 27ª: sei stato INVITATO a questa squadra -> Accetta / Rifiuta.
+    if (!isMember && (squad.pendingInvites || []).includes(db.currentUser.id)) {
+        box.classList.remove("hidden");
+        box.innerHTML = `
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+                <p class="small text-muted" style="margin:0;">${esc(T('squadPage.seiInvitato') || 'Sei stato invitato in questa squadra.')}</p>
+                <div style="display:flex; gap:6px;">
+                    <button class="btn btn-sm btn-success" onclick="rispondiInvitoSquadra('${squad.id}', true)">${esc(T('social.acceptSquadInvite') || 'Accetta')}</button>
+                    <button class="btn btn-sm btn-danger" onclick="rispondiInvitoSquadra('${squad.id}', false)">${esc(T('social.declineSquadInvite') || 'Rifiuta')}</button>
+                </div>
+            </div>`;
         return;
     }
 
@@ -263,6 +292,7 @@ function renderSquadMembers(squad, canManage, box) {
             actionHtml += isAdmin
                 ? ` <button class="btn btn-sm btn-secondary" onclick="demoteSquadMember('${squad.id}','${memberId}')">${esc(T('squadPage.rimuoviAdmin') || 'Rimuovi admin')}</button>`
                 : ` <button class="btn btn-sm btn-secondary" onclick="promoteSquadMember('${squad.id}','${memberId}')">${esc(T('squadPage.rendiAdmin') || 'Rendi admin')}</button>`;
+            actionHtml += ` <button class="btn btn-sm btn-danger" style="padding:2px 8px;" title="${esc(T('squadPage.rimuoviMembro') || 'Rimuovi dalla squadra')}" onclick="rimuoviMembroSquadra('${squad.id}','${memberId}')">✕</button>`;
         }
 
         return `
@@ -273,9 +303,14 @@ function renderSquadMembers(squad, canManage, box) {
         `;
     }).join("");
 
+    // 27ª: la porta d'uscita. Vale per QUALUNQUE membro, creatore compreso (in quel caso la
+    // conferma avvisa che la squadra passa a un altro).
+    const sonoMembro = isSquadMemberClient(squad, db.currentUser.id);
+
     box.innerHTML = `
         <h4><i data-lucide="users"></i> ${esc(T('squadPage.membri') || 'Membri')}</h4>
         <div class="squads-list">${rows}</div>
+        ${sonoMembro ? `<div style="margin-top:10px;"><button class="btn btn-sm btn-secondary" onclick="lasciaSquadra('${squad.id}')"><i data-lucide="log-out"></i> ${esc(T('squadPage.lasciaSquadra') || 'Lascia la squadra')}</button></div>` : ''}
     `;
 }
 
@@ -318,11 +353,79 @@ function updateLocalSquad(updatedSquad) {
     else db.squads.push(updatedSquad);
 }
 
+// --- 27ª: consenso squadra ------------------------------------------------------
+
+async function annullaInvitoSquadra(squadId, userId) {
+    try {
+        const r = await fetch(`/api/squads/${squadId}/invites/${userId}`, { method: 'DELETE' });
+        if (r.ok) { updateLocalSquad(await r.json()); refreshSquadHeaderAndMembers(squadId); }
+        else {
+            const e = await r.json().catch(() => ({}));
+            window.showToast(e.error || T('squadPage.erroreAnnullaInvito') || "Impossibile annullare l'invito.", "error");
+        }
+    } catch (e) {
+        console.error("Errore annullamento invito squadra:", e);
+        window.showToast(T('squadPage.erroreAnnullaInvito') || "Impossibile annullare l'invito.", "error");
+    }
+}
+
+async function rimuoviMembroSquadra(squadId, userId) {
+    const msg = T('squadPage.confermaRimuoviMembro') || 'Rimuovere questa persona dalla squadra?';
+    const proc = window.showConfirmModal ? await window.showConfirmModal(msg) : window.confirm(msg);
+    if (!proc) return;
+    await eseguiUscitaSquadra(squadId, userId, false);
+}
+
+async function lasciaSquadra(squadId) {
+    const db = window.CamoscioState;
+    const squad = db.squads.find(s => s.id === squadId);
+    if (!squad) return;
+    const io = db.currentUser.id;
+    const altri = (squad.members || []).filter(m => m !== io);
+    const righe = [T('squadPage.lasciaConfermaBase') || 'Vuoi lasciare questa squadra?'];
+    if (altri.length === 0) righe.push(T('squadPage.lasciaUltimoMembro') || 'Sei l\'ultimo membro: la squadra e la sua chat spariranno.');
+    else if (squad.creatorId === io) righe.push(T('squadPage.lasciaCreatore') || 'Hai creato tu la squadra: passerà al membro più anziano.');
+    const proc = window.showConfirmModal
+        ? await window.showConfirmModal(righe.join('\n\n'), T('squadPage.lasciaSquadra') || 'Lascia la squadra')
+        : window.confirm(righe.join('\n'));
+    if (!proc) return;
+    await eseguiUscitaSquadra(squadId, io, true);
+}
+
+async function eseguiUscitaSquadra(squadId, userId, sonoIo) {
+    try {
+        const r = await fetch(`/api/squads/${squadId}/members/${userId}`, { method: 'DELETE' });
+        const body = await r.json().catch(() => ({}));
+        if (!r.ok) {
+            window.showToast(body.error || T('common.erroreServer') || 'Non è stato possibile completare l\'operazione.', "error");
+            return;
+        }
+        await (window.refreshState ? window.refreshState() : Promise.resolve());
+        if (window.renderSquadsList) window.renderSquadsList();
+        if (window.renderOtherSquadsList) window.renderOtherSquadsList();
+        if (window.renderNavSquadre) window.renderNavSquadre();
+        const spariita = body.sciolta || !(window.CamoscioState.squads || []).some(s => s.id === squadId);
+        if (sonoIo && spariita) {
+            if (window.navigateTo) window.navigateTo('social');
+            window.showToast(T('squadPage.uscito') || 'Hai lasciato la squadra.', "success");
+        } else {
+            refreshSquadHeaderAndMembers(squadId);
+            if (sonoIo) window.showToast(T('squadPage.uscito') || 'Hai lasciato la squadra.', "success");
+        }
+    } catch (e) {
+        console.error("Errore uscita/rimozione dalla squadra:", e);
+        window.showToast(T('common.erroreServer') || 'Non è stato possibile completare l\'operazione.', "error");
+    }
+}
+
 window.showSquadPage = showSquadPage;
 window.promoteSquadMember = promoteSquadMember;
 window.demoteSquadMember = demoteSquadMember;
 window.approveSquadRequest = approveSquadRequest;
 window.declineSquadRequest = declineSquadRequest;
+window.annullaInvitoSquadra = annullaInvitoSquadra;
+window.rimuoviMembroSquadra = rimuoviMembroSquadra;
+window.lasciaSquadra = lasciaSquadra;
 window.updateLocalSquad = updateLocalSquad;
 window.refreshSquadHeaderAndMembers = refreshSquadHeaderAndMembers;
 

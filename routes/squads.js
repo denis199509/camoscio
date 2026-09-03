@@ -10,9 +10,85 @@ const { nomeVisibile } = require('../lib/accountDeletion'); // A-3.4: nome pseud
 // admins[]/members[]. Estratti in lib/squad.js perche' ora li usa anche routes/hikes.js
 // (invito squadra direzionale) - una definizione sola.
 const { isSquadMember, isSquadAdmin } = require('../lib/squad');
+const { promuoviSeSenzaAdmin } = require('../lib/squadAdmin'); // "squadra senza admin", condivisa con l'eliminazione account
+const { mongoose } = require('../db/mongo');
 
 const MAX_PHOTO_LENGTH = 2 * 1024 * 1024;
 const MAX_MESSAGES = 50;
+
+// Consenso squadra (27ª). Una squadra e' un gruppo di amici: 100 e' gia' assurdo in buona
+// fede - non serve il 200 usato per complete-group, che li' protegge un ciclo costoso per
+// utente. Qui protegge una lista e un lotto di notifiche. I tetti valgono SOLO sulle
+// aggiunte, mai retroattivamente (stessa disciplina di HIKE_DATE_PASSED).
+const MAX_MEMBRI_SQUADRA = 100;   // members + pendingInvites
+const MAX_INVITI_PER_CHIAMATA = 50;
+
+// Costruisce e applica un lotto di inviti a una squadra, dalla lista di userId scelta a mano
+// (creazione) o dal pannello squadra. Una definizione sola per POST / e POST /:id/invite -
+// il client non manda mai un elenco di `members`, solo chi INVITARE, e il resto lo decide qui.
+// Chi si salta: gia' membro/creatore, gia' invitato, account eliminato. Chi e' in
+// `pendingRequests` NON si salta: si APPROVA (ha gia' acconsentito chiedendo, e un admin
+// sta dicendo si') - $pull da pendingRequests, dentro a members subito.
+// Ritorna { invitati, giaDentro, approvatiDaRichiesta, squad } oppure { errore: {status, body} }.
+async function applicaInviti(squad, userIds, chiInvita) {
+    const idsPuliti = [...new Set((userIds || [])
+        .map(String)
+        .filter(id => mongoose.Types.ObjectId.isValid(id)))];
+
+    const giaDentro = new Set([...(squad.members || []).map(String), String(squad.creatorId)]);
+    const giaInvitati = new Set((squad.pendingInvites || []).map(String));
+    const inRichiesta = new Set((squad.pendingRequests || []).map(String));
+
+    const nGiaDentro = idsPuliti.filter(id => giaDentro.has(id) || giaInvitati.has(id)).length;
+    const candidati = idsPuliti.filter(id => !giaDentro.has(id) && !giaInvitati.has(id));
+
+    let vivi = [];
+    if (candidati.length) {
+        const u = await User.find({
+            _id: { $in: candidati },
+            deletedAt: { $exists: false },
+            pendingDeletionAt: { $exists: false }
+        }).select('_id').lean();
+        vivi = u.map(x => String(x._id));
+    }
+    const daApprovare = vivi.filter(id => inRichiesta.has(id)); // avevano chiesto -> entrano subito
+    const daInvitare = vivi.filter(id => !inRichiesta.has(id));
+
+    const totaleFinale = (squad.members || []).length + (squad.pendingInvites || []).length +
+        daApprovare.length + daInvitare.length;
+    if (totaleFinale > MAX_MEMBRI_SQUADRA) {
+        return { errore: { status: 400, body: { error: `Una squadra non può superare i ${MAX_MEMBRI_SQUADRA} membri.`, code: 'SQUAD_PIENA' } } };
+    }
+
+    const setOps = {};
+    if (daInvitare.length) setOps.pendingInvites = { $each: daInvitare };
+    if (daApprovare.length) setOps.members = { $each: daApprovare };
+    const upd = {};
+    if (Object.keys(setOps).length) upd.$addToSet = setOps;
+    if (daApprovare.length) upd.$pull = { pendingRequests: { $in: daApprovare } };
+    if (Object.keys(upd).length) await Squad.updateOne({ _id: squad._id }, upd);
+
+    // Notifiche best-effort (try separato: un invito che esiste non deve fallire perche' una
+    // notifica non parte). nomeVisibile: mai lo username vero di un account eliminato.
+    try {
+        const chi = await User.findById(chiInvita).select('username pendingDeletionAt deletedAt');
+        const nome = nomeVisibile(chi) || 'Qualcuno';
+        const notifiche = [
+            ...daInvitare.map(userId => ({ userId, text: `${nome} ti ha invitato nella squadra "${squad.name}"`, read: false })),
+            ...daApprovare.map(userId => ({ userId, text: `Sei stato aggiunto alla squadra "${squad.name}"`, read: false }))
+        ];
+        if (notifiche.length) await Notification.insertMany(notifiche);
+    } catch (e) {
+        console.error('Notifiche invito squadra non inviate:', e);
+    }
+
+    return {
+        invitati: daInvitare.length,
+        giaDentro: nGiaDentro,
+        approvatiDaRichiesta: daApprovare.length,
+        squad: await Squad.findById(squad._id)
+    };
+}
 
 // Ottieni squadre ricorrenti
 router.get('/', requireAuth, async (req, res) => {
@@ -20,21 +96,201 @@ router.get('/', requireAuth, async (req, res) => {
     res.json(squads);
 });
 
-// Crea squadra - il creatore e' sempre chi ha fatto login
+// Crea squadra - il creatore e' sempre chi ha fatto login, ed e' l'UNICO membro alla
+// nascita: gli altri si INVITANO (27ª), ed entrano solo se accettano.
 router.post('/', requireAuth, async (req, res) => {
     try {
-        // Whitelist esplicita invece di spargere req.body per intero: da quando esistono
-        // admins/photo (punto 48), spargerlo avrebbe permesso di auto-assegnarsi admin o
-        // di piazzare una foto fuori dal tetto MAX_PHOTO_LENGTH gia' in fase di creazione.
+        const creatorId = req.session.userId;
+        // Body onesto: { name, inviteUserIds: [...] } - quelli NON diventano membri, ricevono
+        // un invito. `members` resta accettato come sinonimo di inviteUserIds SOLO come
+        // ripiego per una scheda vecchia aperta durante il deploy (altrimenti otterrebbe una
+        // squadra vuota in silenzio); da togliere piu' avanti.
+        const daInvitare = Array.isArray(req.body.inviteUserIds) ? req.body.inviteUserIds
+            : (Array.isArray(req.body.members) ? req.body.members : []);
+        if (daInvitare.length > MAX_INVITI_PER_CHIAMATA) {
+            return res.status(400).json({ error: `Troppi inviti in una volta (massimo ${MAX_INVITI_PER_CHIAMATA}).` });
+        }
+
+        // Whitelist esplicita (punto 48): niente admins/photo dal client alla creazione.
+        // Il creatore resta dentro `members` anche se isSquadMember lo calcolerebbe da
+        // creatorId: cosi' la forma del documento e' identica a quella dei documenti
+        // esistenti, e renderSquadsList/renderNavSquadre (che iterano members) non cambiano.
         const squad = await Squad.create({
             name: req.body.name,
-            members: req.body.members,
-            creatorId: req.session.userId
+            members: [creatorId],
+            creatorId
         });
-        res.json(squad);
+        const esito = await applicaInviti(squad, daInvitare, creatorId);
+        if (esito.errore) {
+            // La squadra e' gia' creata (col solo creatore): l'invito che sfora il tetto non
+            // e' un motivo per non avere la squadra. Si risponde comunque 200 col documento.
+            return res.json(squad);
+        }
+        res.json(esito.squad || squad);
     } catch (e) {
         console.error('Errore creazione squadra:', e);
         res.status(400).json({ error: 'Impossibile creare la squadra' });
+    }
+});
+
+// Invita altri utenti in una squadra esistente - solo un amministratore (specchio di
+// /:id/approve, visto dall'altro lato). Il server legge i membri da nessuna parte: sono i
+// singoli userId scelti a mano nel pannello squadra.
+router.post('/:id/invite', requireAuth, async (req, res) => {
+    try {
+        const squad = await Squad.findById(req.params.id);
+        if (!squad) return res.status(404).json({ error: 'Squadra non trovata' });
+        if (!isSquadAdmin(squad, req.session.userId)) {
+            return res.status(403).json({ error: 'Solo un amministratore della squadra può invitare nuovi membri' });
+        }
+        const userIds = Array.isArray(req.body.userIds) ? req.body.userIds : [];
+        if (userIds.length > MAX_INVITI_PER_CHIAMATA) {
+            return res.status(400).json({ error: `Troppi inviti in una volta (massimo ${MAX_INVITI_PER_CHIAMATA}).` });
+        }
+        const esito = await applicaInviti(squad, userIds, req.session.userId);
+        if (esito.errore) return res.status(esito.errore.status).json(esito.errore.body);
+        res.json(esito);
+    } catch (e) {
+        console.error('Errore invito in squadra:', e);
+        res.status(400).json({ error: 'Impossibile inviare gli inviti' });
+    }
+});
+
+// Rispondi a un invito di squadra - l'attore e' SEMPRE req.session.userId. accept:true
+// entra fra i membri, accept:false toglie solo l'invito. Idempotente.
+router.post('/:id/invite-response', requireAuth, async (req, res) => {
+    try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(400).json({ error: 'Identificativo non valido.' });
+        }
+        if (typeof req.body.accept !== 'boolean') {
+            return res.status(400).json({ error: 'Risposta non valida.' }); // mai coercizione: "false" e' truthy
+        }
+        const accept = req.body.accept;
+        const userId = req.session.userId;
+        const squad = await Squad.findById(req.params.id);
+        if (!squad) return res.status(404).json({ error: 'Squadra non trovata' });
+
+        const inInvito = (squad.pendingInvites || []).some(id => id.equals(userId));
+        if (!inInvito) {
+            if (accept && isSquadMember(squad, userId)) return res.json(squad); // doppio clic
+            return res.status(403).json({ error: 'Non hai un invito in attesa per questa squadra.', code: 'SQUAD_INVITO_ASSENTE' });
+        }
+        // Il tetto si ricontrolla all'accept: fra invito e risposta la squadra puo' essersi
+        // riempita.
+        if (accept && (squad.members || []).length >= MAX_MEMBRI_SQUADRA) {
+            return res.status(409).json({ error: `Questa squadra ha raggiunto i ${MAX_MEMBRI_SQUADRA} membri.`, code: 'SQUAD_PIENA' });
+        }
+
+        const mod = accept
+            ? { $addToSet: { members: userId }, $pull: { pendingInvites: userId, pendingRequests: userId } }
+            : { $pull: { pendingInvites: userId } };
+        const aggiornata = await Squad.findOneAndUpdate({ _id: squad._id, pendingInvites: userId }, mod, { new: true });
+        if (!aggiornata) {
+            const ri = await Squad.findById(squad._id);
+            if (accept && ri && isSquadMember(ri, userId)) return res.json(ri);
+            return res.status(403).json({ error: 'Questo invito non è più valido.', code: 'SQUAD_INVITO_ASSENTE' });
+        }
+        if ((aggiornata.pendingInvites || []).length === 0) {
+            try { await Squad.updateOne({ _id: aggiornata._id }, { $unset: { pendingInvites: '' } }); aggiornata.pendingInvites = undefined; } catch (e) { /* [] innocuo */ }
+        }
+
+        // Notifica agli admin, come request-join (non sappiamo chi ha invitato: niente invitedBy).
+        try {
+            const chi = await User.findById(userId).select('username pendingDeletionAt deletedAt');
+            const nome = nomeVisibile(chi) || 'Qualcuno';
+            const testo = accept
+                ? `${nome} è entrato nella squadra "${squad.name}"`
+                : `${nome} ha rifiutato l'invito alla squadra "${squad.name}"`;
+            const dest = [squad.creatorId, ...(squad.admins || [])].filter(a => !a.equals(userId));
+            if (dest.length) await Notification.insertMany(dest.map(a => ({ userId: a, text: testo, read: false })));
+        } catch (e) {
+            console.error('Notifica risposta invito squadra non inviata:', e);
+        }
+        res.json(aggiornata);
+    } catch (e) {
+        console.error('Errore risposta a invito squadra:', e);
+        res.status(400).json({ error: 'Impossibile registrare la risposta' });
+    }
+});
+
+// Annulla un invito in attesa - solo un amministratore (lo stesso motivo per cui il punto
+// 75 ha aggiunto DELETE /:id/pending/:userId: senza, un invito sbagliato resta per sempre).
+router.delete('/:id/invites/:userId', requireAuth, async (req, res) => {
+    try {
+        const squad = await Squad.findById(req.params.id);
+        if (!squad) return res.status(404).json({ error: 'Squadra non trovata' });
+        if (!isSquadAdmin(squad, req.session.userId)) {
+            return res.status(403).json({ error: 'Solo un amministratore può annullare un invito' });
+        }
+        await Squad.updateOne({ _id: squad._id }, { $pull: { pendingInvites: req.params.userId } });
+        const dopo = await Squad.findById(squad._id);
+        if ((dopo.pendingInvites || []).length === 0) {
+            await Squad.updateOne({ _id: squad._id }, { $unset: { pendingInvites: '' } }).catch(() => {});
+        }
+        res.json(await Squad.findById(squad._id));
+    } catch (e) {
+        console.error('Errore annullamento invito squadra:', e);
+        res.status(400).json({ error: 'Impossibile annullare l\'invito' });
+    }
+});
+
+// Lascia la squadra / rimuovi un membro - la porta d'uscita che finora non c'era.
+// Corsie: chiunque su SE STESSO (esce); un admin su un altro membro (lo rimuove); mai sul
+// creatore. Ordine di esecuzione IMPORTANTE: prima la promozione/il passaggio di
+// proprieta', POI il $pull - al contrario un fallimento a meta' lascerebbe una squadra
+// piena senza amministratori, stato irrecuperabile senza script.
+router.delete('/:id/members/:userId', requireAuth, async (req, res) => {
+    try {
+        const squad = await Squad.findById(req.params.id);
+        if (!squad) return res.status(404).json({ error: 'Squadra non trovata' });
+
+        const targetId = req.params.userId;
+        const seStesso = String(targetId) === String(req.session.userId);
+        if (!seStesso && !isSquadAdmin(squad, req.session.userId)) {
+            return res.status(403).json({ error: 'Puoi rimuovere solo te stesso, o un altro membro se sei amministratore' });
+        }
+        if (String(squad.creatorId) === String(targetId)) {
+            // ...a meno che sia il creatore stesso a uscire: allora si passa la proprieta'.
+            if (!seStesso) {
+                return res.status(400).json({ error: 'Chi ha creato la squadra non può essere rimosso' });
+            }
+            const restanti = (squad.members || []).map(String).filter(id => id !== String(targetId));
+            if (restanti.length > 0) {
+                const nuovo = restanti[0]; // ordine d'iscrizione
+                squad.creatorId = nuovo;
+                if (!squad.admins.some(a => String(a) === nuovo)) squad.admins.push(nuovo);
+                await squad.save();
+            }
+            // restanti === 0: la squadra si scioglie dopo il $pull qui sotto.
+        }
+        if (!seStesso && !(squad.members || []).some(m => String(m) === String(targetId))) {
+            return res.status(404).json({ error: 'Questa persona non è un membro della squadra' });
+        }
+
+        const dopo = await Squad.findByIdAndUpdate(
+            squad._id,
+            { $pull: { members: targetId, admins: targetId } },
+            { new: true }
+        );
+        if (!dopo || (dopo.members || []).length === 0) {
+            await Squad.deleteOne({ _id: squad._id });
+            await SquadMessage.deleteMany({ squadId: squad._id });
+            return res.json({ sciolta: true });
+        }
+
+        // Nessun admin vivo -> promuovi il piu' anziano (o sciogli, se sono tutti tombstone).
+        let creatoreVivo = false;
+        if (dopo.creatorId) {
+            const c = await User.findById(dopo.creatorId).select('pendingDeletionAt deletedAt');
+            creatoreVivo = !!c && !c.pendingDeletionAt && !c.deletedAt;
+        }
+        const esito = await promuoviSeSenzaAdmin(dopo, creatoreVivo);
+        if (esito === 'sciolta') return res.json({ sciolta: true });
+        res.json(dopo);
+    } catch (e) {
+        console.error('Errore uscita/rimozione dalla squadra:', e);
+        res.status(400).json({ error: 'Impossibile completare l\'operazione' });
     }
 });
 

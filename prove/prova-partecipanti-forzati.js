@@ -131,9 +131,13 @@ async function ripristinaPace(id, s) {
 
         // ...e NEMMENO ora che A e C condividono una squadra: dalla 27ª ("decide l'invitato")
         // un compagno di squadra si INVITA, non si aggiunge a mano. Stessa aggiunta, stesso 403.
-        const sq = await chiama('POST', '/api/squads', { name: `PROVA-VULN-${MARCA}`, members: [idA, idC] }, ckA);
+        // Dalla 27ª POST /api/squads crea la squadra col solo creatore e invita gli altri:
+        // C accetta, cosi' e' un membro vero e invite-squad (hike) lo trova.
+        const sq = await chiama('POST', '/api/squads', { name: `PROVA-VULN-${MARCA}`, inviteUserIds: [idC] }, ckA);
         squadId = sq.corpo && (sq.corpo.id || sq.corpo._id);
-        ok('squadra di prova creata (A + C)', !!squadId, JSON.stringify(sq.corpo));
+        ok('squadra di prova creata', !!squadId, JSON.stringify(sq.corpo));
+        const accC = await chiama('POST', `/api/squads/${squadId}/invite-response`, { accept: true }, ckC);
+        ok('C accetta l\'invito alla squadra -> 200 ed e\' membro', accC.status === 200 && (accC.corpo.members || []).map(String).includes(String(idC)), JSON.stringify(accC.corpo));
         const h2 = await creaHike('squad');
         const invita = await chiama('PUT', `/api/hikes/${h2}`, { participants: [idA, idC] }, ckA);
         ok('il creatore NON puo\' aggiungere a mano un compagno di squadra -> 403', invita.status === 403, `status ${invita.status} ${JSON.stringify(invita.corpo)}`);
@@ -188,6 +192,7 @@ async function ripristinaPace(id, s) {
         if (squadId) await Squad.deleteOne({ _id: oid(squadId) }).catch(() => {});
         const idsProva = [idA, idB, idC].filter(Boolean).map(oid);
         await Notification.deleteMany({ userId: { $in: idsProva }, text: /segnato come presente all'escursione "PROVA-VULN-/ }).catch(() => {});
+        await Notification.deleteMany({ userId: { $in: idsProva }, text: new RegExp('squadra "PROVA-VULN-' + MARCA) }).catch(() => {});
         await ripristinaPace(idA, paceA); await ripristinaPace(idB, paceB); await ripristinaPace(idC, paceC);
 
         const fine = { hikes: await conta('hikes'), squads: await conta('squads'), completions: await conta('completions'), notifications: await conta('notifications') };

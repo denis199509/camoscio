@@ -135,10 +135,33 @@ dell'APPROVAZIONE MANUALE che si poteva scavalcare:
     quel giorno stesso. I tre controlli B11 lo presidiano, e pretendono 409 e non un 403
     qualunque: deve fermarsi perche' l'escursione e' CHIUSA, non per un caso dei permessi.
 
+La prova del CONSENSO SQUADRA (27a sessione, tappa 4 dell'invito direzionale: chiude la
+falla "chiunque puo' mettere chiunque nella propria squadra, e quello non puo' uscirne"):
+
+    node prove/prova-squadre-consenso.js            44 controlli  (ne avvia uno suo, sulla 3128)
+
+    NOVE SEZIONI, quattro account demo (A crea, G=Giulia l'unica libera, L=Luca, So=Sofia).
+    Copre POST /api/squads (crea col solo creatore, `inviteUserIds`, `members` accettato come
+    ripiego per una scheda vecchia), POST /:id/invite (solo admin; gia' membro saltato;
+    reinvito idempotente; chi e' in pendingRequests entra SUBITO; tetto 50/chiamata e 100
+    totali -> SQUAD_PIENA), POST /:id/invite-response (accetta/rifiuta; $unset di
+    pendingInvites; idempotenza + una sola notifica; non invitato -> 403 SQUAD_INVITO_ASSENTE;
+    accept non booleano -> 400), DELETE /:id/invites/:userId (solo admin), DELETE
+    /:id/members/:userId (esce da solo; un admin rimuove un altro; MAI il creatore da un
+    altro; il creatore che esce -> creatorId passa al membro piu' anziano che entra in
+    admins; ultimo membro -> { sciolta:true } e la squadra + i SquadMessage spariscono).
+    Sez. 8: un Hike.pendingInvites gia' generato SOPRAVVIVE all'uscita dalla squadra
+    (coerenza col gemello: il consenso e' della persona, non del gruppo). Sez. 9:
+    request-join + approve (punto 75) invariati. CONTROPROVA: sul commit precedente POST
+    /api/squads mette i `members` dritti dentro, DELETE /:id/members non esiste, sez. 1/3/4
+    cadono. La regola "squadra senza admin -> promuovi il piu' anziano o sciogli" vive in
+    lib/squadAdmin.js, condivisa con l'eliminazione account (prova-eliminazione-account
+    57/57 la sorveglia: e' la regressione piu' probabile della tappa 4).
+
 La prova dell'INVITO SQUADRA DIREZIONALE ("decide l'invitato", rimandato dalla 26a sessione),
 lato ESCURSIONE - tappe 1-3 (schema Hike.pendingInvites, rotte invite-squad / invite-response,
-chiusura della corsia squadra in PUT /:id). La tappa 4 - il consenso per entrare in una
-SQUADRA - avra' la sua prova a parte (prova-squadre-consenso.js):
+chiusura della corsia squadra in PUT /:id). Il consenso per entrare in una SQUADRA (tappa 4)
+ha la sua prova a parte (prova-squadre-consenso.js, qui sopra):
 
     node prove/prova-invito-direzionale.js          41 controlli  (ne avvia uno suo, sulla 3117)
 

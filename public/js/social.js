@@ -2014,12 +2014,45 @@ function renderOtherSquadsList() {
     const db = window.CamoscioState;
     const currentUser = db.currentUser;
 
+    // 27ª: squadre a cui SEI STATO INVITATO - decidi tu. A parte, con Accetta/Rifiuta, ed
+    // ESCLUSE da "Altre squadre" (dove il tasto sarebbe "Richiesta Partecipazione", sbagliato).
+    const invitato = db.squads.filter(s => (s.pendingInvites || []).includes(currentUser.id));
     const altreSquadre = db.squads.filter(s =>
-        s.creatorId !== currentUser.id && !s.members.includes(currentUser.id)
+        s.creatorId !== currentUser.id &&
+        !s.members.includes(currentUser.id) &&
+        !(s.pendingInvites || []).includes(currentUser.id)
     );
 
+    if (invitato.length) {
+        const box = document.createElement("div");
+        box.className = "glass-card";
+        box.style.marginBottom = "10px";
+        box.innerHTML =
+            `<h5 class="font-bold" style="margin:0 0 4px;">${escapeHtml(T('social.squadInvitesTitle') || 'Inviti alle squadre')}</h5>`
+            + `<p class="small text-muted" style="margin:0 0 8px;">${escapeHtml(T('social.squadInvitesDesc') || 'Squadre che ti hanno invitato. Decidi tu se entrare.')}</p>`
+            + invitato.map(squad => {
+                const avatars = (squad.members || []).map(mId => {
+                    const mem = db.users.find(u => u.id === mId);
+                    return mem ? mem.avatar : "👤";
+                }).join(" ");
+                return `<div class="squad-item">
+                    <div class="squad-item-open" onclick="showSquadPage('${squad.id}')">
+                        <h5>👥 ${escapeHtml(squad.name)}</h5>
+                        <div class="squad-members-row">${avatars}</div>
+                    </div>
+                    <div style="display:flex; gap:4px;">
+                        <button class="btn btn-sm btn-success" style="padding:2px 8px;" onclick="rispondiInvitoSquadra('${squad.id}', true)">${escapeHtml(T('social.acceptSquadInvite') || 'Accetta')}</button>
+                        <button class="btn btn-sm btn-danger" style="padding:2px 8px;" onclick="rispondiInvitoSquadra('${squad.id}', false)">${escapeHtml(T('social.declineSquadInvite') || 'Rifiuta')}</button>
+                    </div>
+                </div>`;
+            }).join("");
+        container.appendChild(box);
+    }
+
     if (altreSquadre.length === 0) {
-        container.innerHTML = `<div class="text-muted small italic text-center py-2">${escapeHtml(T('social.noOtherSquads') || "Nessun'altra squadra per ora.")}</div>`;
+        if (!invitato.length) {
+            container.innerHTML = `<div class="text-muted small italic text-center py-2">${escapeHtml(T('social.noOtherSquads') || "Nessun'altra squadra per ora.")}</div>`;
+        }
         return;
     }
 
@@ -2049,6 +2082,33 @@ function renderOtherSquadsList() {
         container.appendChild(item);
     });
 }
+
+// 27ª: risposta a un invito di squadra (dalla card "Inviti alle squadre" o dalla pagina
+// squadra). Nessuna adesione ottimistica: si aspetta il server, si ridisegna.
+window.rispondiInvitoSquadra = async function(squadId, accept) {
+    try {
+        const res = await fetch(`/api/squads/${encodeURIComponent(squadId)}/invite-response`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ accept: !!accept })
+        });
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            if (window.showToast) window.showToast(body.error || T('social.squadInviteNoLongerValid') || 'Questo invito non è più valido.', 'error');
+        } else if (window.showToast) {
+            window.showToast(accept
+                ? (T('social.squadInviteAccepted') || 'Sei entrato nella squadra.')
+                : (T('social.squadInviteDeclined') || 'Invito rifiutato.'), 'success');
+        }
+        await refreshState();
+        renderSquadsList();
+        renderOtherSquadsList();
+        if (window.renderNavSquadre) window.renderNavSquadre();
+        if (window.refreshSquadHeaderAndMembers) window.refreshSquadHeaderAndMembers(squadId);
+    } catch (e) {
+        console.error('Errore risposta a invito squadra:', e);
+        if (window.showToast) window.showToast(T('common.erroreServer') || 'Non è stato possibile contattare il server.', 'error');
+    }
+};
 
 // Punto 75: usata sia dalla lista "Altre Squadre" sia dal tasto sulla pagina della singola
 // squadra (squadpage.js) - stessa richiesta, due punti di partenza diversi.
@@ -2151,18 +2211,19 @@ function renderSquadCreateSearch() {
 
 // Crea la squadra sul server
 async function submitCreateSquad() {
-    const db = window.CamoscioState;
     const name = document.getElementById("squad-name").value;
-    const memberIds = [db.currentUser.id, ...squadCreateMemberIds];
 
     try {
+        // 27ª: la squadra nasce col solo creatore; gli altri ricevono un INVITO ed entrano
+        // solo se accettano. `inviteUserIds`, non `members`.
         const response = await fetch('/api/squads', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, creatorId: db.currentUser.id, members: memberIds })
+            body: JSON.stringify({ name, inviteUserIds: squadCreateMemberIds })
         });
 
         if (response.ok) {
+            const n = squadCreateMemberIds.length;
             document.getElementById("create-squad-form-box").classList.add("hidden");
             document.getElementById("create-squad-form").reset();
             resetSquadCreateForm();
@@ -2170,6 +2231,16 @@ async function submitCreateSquad() {
             await refreshState();
             renderSquadsList();
             renderOtherSquadsList();
+            // Vincolo hard 7: "invito mandato", non "squadra creata con N membri" (che
+            // sarebbe falso finche' nessuno accetta).
+            if (window.showToast) {
+                window.showToast(
+                    n === 0
+                        ? (T('social.squadCreated') || 'Squadra creata.')
+                        : (T('social.squadCreatedInvited', n) || `Squadra creata. Invito mandato a ${n} ${n === 1 ? 'persona' : 'persone'}: ${n === 1 ? 'entrerà' : 'entreranno'} solo se ${n === 1 ? 'accetta' : 'accettano'}.`),
+                    'success'
+                );
+            }
         }
     } catch(e) {
         console.error("Errore creazione squadra:", e);
