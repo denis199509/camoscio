@@ -9929,3 +9929,53 @@ toccato (congelato).
   PROSSIMA SESSIONE: partire da qui. Decidere C-1, poi un unico giro di
   hotfix (i "fixare comunque" + quello che Denis approva dei "da
   decidere"), prove, commit+push, secondo giro dell'agente sui fix.
+
+  --- CHIUSO nella 28a sessione (03/09/2026) ---
+  Denis: "possiamo risolvere le vulnerabilita'" -> "vai con Commit e
+  push e chiusura sessioni".
+
+  TRE DECISIONI DI DENIS (via AskUserQuestion):
+   - C-1: OPZIONE A - togliere la corsia "proposta" (rovescia la sua
+     risposta #2 della 27a "la proposta resta"). Un partecipante che
+     vuole coinvolgere un terzo su un'escursione altrui ad approvazione
+     manuale gli dice di usare "Richiesta Partecipazione".
+   - Ambito: TUTTE E 5 le "da decidere" (A-3, M-2, M-4, M-5, M-6).
+   - M-6: CHIUDERE togliendo la funzione "segna presente un walk-up mai
+     iscritto" (punto 64). complete-group conferma solo chi era
+     participante o aveva CHIESTO (pendingApproval).
+
+  FATTE, 12 voci, commit b6e0edd: C-1, A-1, A-2, A-3 (overrides qs
+  6.16.0 - npm audit fix non bastava, express 4.22.2 fissa qs:~6.15.1),
+  M-1, M-2, M-3, M-4, M-5, M-6, B-1, B-2. npm audit --omit=dev = 0.
+
+  2o GIRO DELL'AGENTE (plans/camoscio-review-sicurezza-invito-squadra-
+  giro2.md): VERDETTO GO. 0 CRITICO, 1 ALTO, 3 MEDIO, 5 BASSO, nessuna
+  regressione bloccante. C-1 verificato chiuso per enumerazione.
+  Chiusi in commit 1f98413:
+   - ALTO-1 (residuo M-6): complete-group accettava anche chi era solo
+     in pendingInvites -> tolto (giaInRelazione non lo include).
+   - MEDIO-2 (regressione MIA da M-3): GET /api/squads senza try/catch
+     + squadVisibileA che tocca creatorId nullo -> crash del processo.
+     try/catch + guardie in lib/squad.js.
+   - Notification.text maxlength:600 (non 300: l'esito del Dead Man's
+     Switch arriva a ~540).
+   - Sez. 7b in prova-squadre-consenso: asserzioni per A-2/M-1/M-3.
+
+  Push 1bb0df5..1f98413 su master, Render redeploy automatico.
+
+  RESTANO APERTI (follow-up, non bloccano):
+   - MEDIO-1: sicurezzaLimiter dedicato per POST /api/safety/activate
+     (oggi condivide scritturaLimiter con POST /api/hikes /
+     complete-group / DELETE /api/users/me). Tocca routes/safety.js +
+     prova-punto37.
+   - MEDIO-3: Squad.photo 2 MB senza limiter su PUT /:id/photo e senza
+     select('-photo') in GET /. Serve una GET /api/squads/:id dedicata
+     (la pagina squadra legge la foto da CamoscioState.squads).
+   - B-3 (tetti non atomici), B-4 (nessuna notifica a chi e' rimosso
+     da una squadra / a chi ne eredita la proprieta'), B-5 (export
+     GDPR senza gli inviti ricevuti), B-6 (tutti i partecipanti
+     vedono pendingInvites per intero).
+   - CONFORMITA' GDPR (serve un professionista): testo dell'invito
+     che dichiara la condivisione della posizione + uscita come
+     revoca del consenso.
+   - Verifica dal vivo di Denis su tutto l'invito squadra.

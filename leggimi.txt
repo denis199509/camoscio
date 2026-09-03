@@ -1,208 +1,175 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-09-03 (VENTISETTESIMA sessione — DUE lavori grossi.
-(a) PUNTO 116: la traccia importata (.gpx/.fit) si disegna come LINEA
-sulla mappa. (b) INVITO SQUADRA DIREZIONALE, chiuso per intero in 4
-tappe + consenso squadra (rimandato dalla 26a). Push
-`a090723..adf9ff2` su `master`, Render redeploy automatico.
---- (a) PUNTO 116 --- L'import .gpx in creazione ESISTEVA GIA' (tendina "Quota,
-dislivello e distanza", routeSource kind:'gpx') ma calcolava solo i 3
-numeri e BUTTAVA la geometria; ora si salva Hike.routePath ([[lng,lat]],
-Douglas-Peucker 18 m, tetto 400 punti, disciplina di SavedRoute) e si
-disegna su Esplora (loadActiveHikeOnMap, prima disegnava un percorso
-FINTO di 5 punti) + mini-mappa nel tab Dettagli di hike-page. Aggiunto
-anche il .fit: l'enum routeSource.kind non aveva 'fit' (bug latente dal
-114). gpx/fit/saved valorizzano routePath, draft NO (si ricalcola). Un
-solo tasto per i due formati, ramo dall'estensione. Costanti
-SEMPLIFICA_PERCORSO_M / MAX_PUNTI_PERCORSO spostate in lib/percorso.js.
-Prova prova-punto116 42/42 (7 sez.) + 7 regressioni verdi. Costo spazio
-MISURATO: ~1,5-2 KB/escursione media, tetto ~12,7 KB — trascurabile.
-SOLO IN AVANTI: le escursioni gia' create con un .gpx non hanno il file,
-la linea compare re-importando. Dettaglio: vault 03 ("Traccia importata
--> linea sulla mappa") + 06 + 07, cose_da_fare.txt "PUNTO 116".
---- (b) INVITO SQUADRA DIREZIONALE --- 4 tappe, 0fce557->adf9ff2,
-progetto dell'agente architect. Il gruppo mesh/SOS di un'escursione E'
-`hike.participants`, e la corsia "compagno di squadra" della 26a NON era
-un vero controllo di relazione: POST /api/squads scriveva `members` dal
-client senza consenso ne' tetto, e non c'era rotta per uscire da una
-squadra. Ora: Hike.pendingInvites + Squad.pendingInvites (default
-undefined), semantica OPPOSTA a pendingApproval/pendingRequests (decide
-LA PERSONA). Rotte: invite-squad / invite (il server legge i membri dal
-doc Squad, mai id dal client), invite-response {accept} (CAS, rifiuto
-mai bloccato, mai scritturaLimiter), DELETE /api/squads/:id/members/
-:userId (LA PORTA D'USCITA che non esisteva - creatore che esce ->
-creatorId al piu' anziano; ultimo membro -> squadra + chat sciolte).
-lib/squad.js + lib/squadAdmin.js (promuoviSeSenzaAdmin estratta da
-riassegnaAdminSquadre). Tappa 3 CHIUDE la corsia PUT: aggiungere un
-compagno a mano e' IMPOSSIBILE (rischio deploy: scheda vecchia -> 403).
-Tappa 4 (consenso squadra): migrazione NESSUNA. Prove nuove:
-prova-invito-direzionale 41/41, prova-squadre-consenso 44/44; inversioni
-verdi in prova-invito-squadra 60/60 e prova-partecipanti-forzati 27/27.
-Dettaglio: vault 03 ("Invito squadra direzionale") + 06 + 07 ("il
-creatore di una squadra e' membro per calcolo"), cose_da_fare.txt
-"INVITO SQUADRA DIREZIONALE - CHIUSO PER INTERO".)
+Aggiornato: 2026-09-03 (VENTOTTESIMA sessione — HOTFIX REVISIONE
+SICUREZZA "Invito squadra direzionale". Chiuso il triage che era
+rimasto aperto a fine 27a. Verdetto del 2o giro dell'agente:
+GO al push. Push `1bb0df5..1f98413` su `master`, Render redeploy
+automatico.
+
+--- COSA E' STATO CHIUSO ---
+12 voci del rapporto (commit `b6e0edd`), + 2 rilievi del 2o giro
+dell'agente (commit `1f98413`):
+
+ C-1  (CRITICO)  la corsia "un partecipante propone un terzo in
+      pendingApproval" e' CHIUSA. `canNonCreatorEditParticipation`
+      (routes/hikes.js) -> `return false` dopo il ramo
+      touchesOnlySelf. Client social.js: una sola strada (invito
+      direzionale), riga disabilitata su escursione altrui ad
+      approvazione manuale. DECISIONE DI DENIS (opzione A): rovescia
+      la sua scelta #2 della 27a "la proposta resta".
+ A-1  Squad.name maxlength:80 a schema + trim().slice(0,80) in
+      POST /api/squads + maxlength HTML.
+ A-2  DELETE /api/squads/:id/members/:userId: isSquadMember
+      sull'attore PRIMA dei rami (i due controlli erano entrambi
+      condizionati a !seStesso -> un estraneo faceva partire lo
+      scioglimento di una squadra con members vuoto).
+ A-3  overrides: { "qs": "6.16.0" } in package.json. `npm audit fix`
+      da solo NON chiudeva l'advisory (express@4.22.2 fissa
+      qs:~6.15.1, nessuna express 4.x sopra), `--force` -> express 5.
+      `npm audit --omit=dev` = 0.
+ M-1  successore del creatore uscente = primo membro VIVO (filtro di
+      lib/squadAdmin.js); se nessun vivo -> la squadra si scioglie
+      invece di restare col creatorId fantasma.
+ M-2  PUT /api/hikes/:id: tetto 200 + dedup (new Set) su participants
+      / pendingApproval, prima di ogni guardia.
+ M-3  squadVisibileA (specchio di hikeVisibileA, toJSON) su GET /,
+      invite-response, request-join, DELETE members: un non-membro
+      vede la squadra ma solo il PROPRIO invito/richiesta.
+ M-4  scrubAccount fa $pull da Squad/Hike .pendingInvites e
+      Hike.pendingApproval + nuova DELETE /api/hikes/:id/invites/
+      :userId (solo creatore).
+ M-5  invitoLimiter nuovo (40/ora, SEPARATO da scritturaLimiter =
+      Dead Man's Switch) su invite-squad, POST /squads,
+      POST /squads/:id/invite, entrambe le DELETE .../invites.
+ M-6  complete-group verifica la partecipazione: confirmedUserIds
+      solo fra participants + pendingApproval (+ creatore).
+      DECISIONE DI DENIS: revoca la "conferma di un walk-up mai
+      iscritto" del punto 64. L'avviso "segnato come presente"
+      resta per chi era in pendingApproval.
+ B-1  $unset di pendingInvites condizionato a { $size: 0 } (3 punti).
+ B-2  invite-squad filtra anche pendingDeletionAt.
+
+ 2o GIRO DELL'AGENTE (plans/...-giro2.md): GO, 0 CRITICO, 1 ALTO,
+ 3 MEDIO, 5 BASSO, nessuna regressione bloccante. Chiusi:
+ ALTO-1  (residuo M-6) complete-group accettava anche chi era solo
+         in pendingInvites (invitato che NON ha accettato) ->
+         finalizzarlo era C-1 con un nome nuovo. Tolto dall'insieme.
+ MEDIO-2 (regressione da M-3) GET /api/squads senza try/catch +
+         squadVisibileA che tocca creatorId nullo -> crash del
+         processo. Aggiunto try/catch + guardie in lib/squad.js.
+ Notification.text maxlength:600 (300 taglierebbe l'esito del Dead
+         Man's Switch, ~540 caratteri con 5 contatti).
+
+>>> STATO A FINE 28a SESSIONE:
+      - camoscio       origin/master = `1f98413` (codice hotfix;
+                       sopra solo il commit di note). Working tree PULITO.
+      - camoscio memoria (vault) origin/master aggiornato (04/06/03/07).
+      - Tutto pushato in entrambi i repo.
+      - Prove verdi: prova-invito-squadra 54/54, prova-partecipanti-
+        forzati 35/35, prova-invito-direzionale 41/41,
+        prova-squadre-consenso 53/53 (sez. 7b nuova: A-2/M-1/M-3),
+        prova-eliminazione-account 57/57, prova-elimina-escursione
+        53/53, prova-punto116 42/42, prova-punto77 17/17,
+        prova-punto93 28/28, prova-punto113 103/103.
+      - npm audit --omit=dev = 0.
+
+>>> APERTI DELLA REVISIONE SICUREZZA (follow-up, NON bloccano):
+  - MEDIO-1: POST /api/safety/activate condivide ancora
+    scritturaLimiter con POST /api/hikes / complete-group /
+    DELETE /api/users/me. Dietro NAT uno esaurisce la quota e un
+    altro non arma il timer di sicurezza. Serve un sicurezzaLimiter
+    dedicato (tocca routes/safety.js + prova-punto37).
+  - MEDIO-3: Squad.photo (data URL 2 MB) senza limiter su
+    PUT /:id/photo e senza select('-photo') in GET /. Fix pulito =
+    nuova GET /api/squads/:id (la pagina squadra oggi legge la foto
+    da CamoscioState.squads).
+  - B-3 (tetti non atomici), B-4 (nessuna notifica a chi e' rimosso
+    da una squadra / a chi ne eredita la proprieta'), B-5 (export
+    GDPR senza gli inviti ricevuti), B-6 (tutti i partecipanti, non
+    solo il creatore, vedono pendingInvites per intero).
+  - CONFORMITA' GDPR (serve un professionista, NON e' consulenza
+    dell'agente): il testo dell'invito dovrebbe dire, PRIMA
+    dell'accettazione, che accettare = la propria posizione potra'
+    essere condivisa coi partecipanti in caso di mesh/SOS; e
+    l'uscita da participants andrebbe presentata come revoca del
+    consenso, con la stessa evidenza.
+  - VERIFICA DAL VIVO di Denis su tutto l'invito squadra (card
+    Accetta/Rifiuta, gruppo "Inviti", creazione squadra -> inviti,
+    "Lascia la squadra") - MAI provato su un telefono vero. E il
+    punto 116 (linea su Esplora + card "Percorso previsto").
 
 >>> SI LAVORA SU `master`, hotfix normali (commit vero + push -> Render
     ridistribuisce). L'hook di auto-save committa in locale (mai push):
-    va rifuso in UN commit vero (`git reset <base>` + commit per pezzo)
-    prima di ogni push. Fatto cosi' per il lavoro di oggi.
-
-    STATO A FINE 27a SESSIONE:
-      - camoscio       origin/master = `89f50ef` (codice a `adf9ff2`,
-                       sopra solo il commit di note). Working tree PULITO.
-      - camoscio memoria (vault) origin/master = `3d5cf5d`. Working tree PULITO.
-      - Tutto pushato in entrambi i repo, niente in coda.
-      - Prove verdi: prova-punto116 42/42, prova-invito-direzionale
-        41/41, prova-squadre-consenso 44/44, prova-invito-squadra 60/60,
-        prova-partecipanti-forzati 27/27, prova-eliminazione-account
-        57/57, prova-elimina-escursione 52/52, prova-punto77 17/17,
-        prova-punto93 28/28.
-
-      >>> LA PROSSIMA SESSIONE PARTE DA QUI: HOTFIX SICUREZZA <<<
-      L'agente security-privacy ha rivisto l'invito squadra (gia' in
-      produzione): 1 CRITICO, 3 ALTO, 6 MEDIO, 6 BASSO. Rapporto:
-        C:\Users\lenovo\.claude\plans\camoscio-review-sicurezza-invito-squadra.md
-      Il TRIAGE completo (con le parole di Denis "salva tutto quanto
-      riprendiamo nella prossima sessione") sta in cose_da_fare.txt,
-      blocco "REVISIONE SICUREZZA".
-      In breve:
-       - C-1 (CRITICO): la corsia pendingApproval e' sopravvissuta - un
-         partecipante non creatore propone V su una hike ad approvazione
-         manuale, il creatore la approva, V finisce nel gruppo mesh/SOS
-         senza dire si'. SERVE LA DECISIONE DI DENIS (chiudere = rovescia
-         la sua risposta #2 "la proposta resta"). Consiglio: chiudere.
-       - Fixare comunque (bug introdotti da questo lavoro): A-2 (DELETE
-         members senza check appartenenza sulla corsia "se stesso"), M-1
-         (nuovo proprietario squadra senza filtro vitalita'), A-1
-         (Squad.name senza tetto x50 notifiche), M-3 (Squad.pendingInvites
-         esce a tutti), B-1 (race sul $unset), B-2 (filtro
-         pendingDeletionAt).
-       - Da decidere con Denis: A-3 (npm audit fix), M-2 (tetto
-         participants/pendingApproval in PUT), M-4 (scrub non fa $pull
-         dagli inviti), M-5 (invitoLimiter), M-6 (complete-group non
-         verifica la partecipazione - PREESISTENTE, la memoria diceva il
-         contrario).
-      Piano: decidere C-1, un unico giro di hotfix, prove, commit+push,
-      secondo giro dell'agente.
-
-      - APERTO ANCHE (non blocca l'hotfix): verifica dal vivo di Denis -
-        (1) punto 116: linea su Esplora + card "Percorso previsto" nel tab
-        Dettagli. (2) invito squadra: card Accetta/Rifiuta, gruppo
-        "Inviti", creare una squadra -> inviti (non membri diretti),
-        "Lascia la squadra", squadra rimasta vuota -> sparisce.
-      - RISCHIO DEPLOY (accettato, gia' pushato): una scheda aperta col
-        codice pre-tappa-2 che fa PUT {participants:[compagno]} prende
-        un 403 col messaggio che lo spiega.
+    va rifuso in UN commit vero prima di ogni push.
 
 >>> AZIONI MANUALI DI DENIS, aperte:
-  1. NUOVA — ACCOUNT_SCRUB_SECRET su Render (stringa a scelta, DIVERSA da
-     SAFETY_CRON_SECRET) + un job giornaliero su cron-job.org (stesso
-     account del ping DMS) verso:
+  1. ACCOUNT_SCRUB_SECRET su Render (stringa a scelta, DIVERSA da
+     SAFETY_CRON_SECRET) + un job giornaliero su cron-job.org verso:
        https://camoscio.onrender.com/api/users/scrub-eliminati?chiave=<segreto>
-     Senza, gli account eliminati restano "Account eliminato" PER SEMPRE
-     (nessuno scrub dei dati personali al giorno 30). Il server lo urla
-     nei log all'avvio in produzione. Fail-safe, ma da fare.
+     Senza, gli account eliminati restano "Account eliminato" PER
+     SEMPRE (nessuno scrub al giorno 30). Il server lo urla nei log
+     all'avvio in produzione. Fail-safe, ma da fare.
   2. Ricaricare il .gpx/.fit col ⬆ per le vecchie escursioni da
-     pubblicare nel feed (l'originale non era stato conservato).
+     pubblicare nel feed (l'originale non era stato conservato). E
+     per farci comparire la LINEA sulla mappa (punto 116, 27a).
   3. Camilla: `camilla2026` e' TEMPORANEA. Deve cambiarla da
      Impostazioni > Cambia password. Accede con EMAIL
-     camilla.orsini@gmail.com (il login e' per email, non per username).
+     camilla.orsini@gmail.com (il login e' per email, non username).
 
->>> APERTO, non bloccante:
-  - PROVA MOBILE v2 sul telefono, SUL SITO LIVE: drawer/hamburger, i 4
-    tab di hike-page (Dettagli/Chat/Carpooling/Zaino), la nuova
-    #settings, il layout stretto. Il drawer non e' MAI stato provato su
-    un telefono vero. Ritocchi = hotfix su `master`.
-  - RESPONSIVE Dashboard <900px (regole @media di Fasi 4-5 viste solo in
-    simulazione): 3 badge in fila, "Il tuo <anno>" a 2x2, "Vedi tutti i
-    badge" a piena larghezza fuori dall'angolo del FAB.
-  - NOTA LEGALE: index.html fa accettare "Termini + Informativa privacy"
-    senza documento dietro. Serve un professionista. Gia' cosi' da prima,
-    non e' una regressione — ma da non dimenticare prima di un uso
-    pubblico vero.
-  - M-5: race del cancella-contatto emergenza con 2 schede aperte (serve
-    una DELETE per contenuto/id, non per indice posizionale). E' il piu'
-    piccolo punto aperto — buon candidato per la prossima sessione.
-  - TTL sulle Notification che nominano un utente (dall'agente): un
-    "Mario Rossi ha chiesto di..." resta per sempre nelle notifiche
-    altrui, col nome vero anche dopo l'eliminazione di Mario. Il fix
-    (nomeVisibile, 24a sessione) copre solo le notifiche NUOVE. Cambio
-    schema app-wide + migrazione -> a se'.
-  - INVITO SQUADRA DIREZIONALE "decide l'invitato": FATTO nella 27a
-    sessione (4 tappe + consenso squadra, 0fce557->adf9ff2). Vedi il
-    blocco (b) del frontmatter qui sopra e cose_da_fare.txt.
+>>> APERTO, non bloccante (da prima della 28a):
+  - PROVA MOBILE v2 sul telefono, SUL SITO LIVE: drawer/hamburger, i
+    4 tab di hike-page, la nuova #settings, il layout stretto.
+  - RESPONSIVE Dashboard <900px (regole @media viste solo in
+    simulazione).
+  - NOTA LEGALE: index.html fa accettare "Termini + Informativa
+    privacy" senza documento dietro. Serve un professionista.
+  - M-5 (il vecchio, diverso da M-5 della revisione): race del
+    cancella-contatto emergenza con 2 schede aperte (serve una
+    DELETE per contenuto/id, non per indice posizionale).
+  - TTL sulle Notification che nominano un utente: un "Mario Rossi
+    ha chiesto di..." resta per sempre nelle notifiche altrui col
+    nome vero anche dopo l'eliminazione di Mario. Cambio schema
+    app-wide + migrazione -> a se'.
+  - nascondere il cestino sulle card "completate in gruppo".
 
->>> COSA E' STATO FATTO OGGI (dettaglio per esteso: vault 03/06/07 e
-    cose_da_fare.txt "PUNTO 116" + "INVITO SQUADRA DIREZIONALE"):
-
-  (a) PUNTO 116 — la traccia importata (.gpx/.fit) in creazione
-  escursione si salva come polyline (Hike.routePath) e si disegna come
-  linea su Esplora + mini-mappa nel tab Dettagli. Enum routeSource.kind
-  + 'fit'. Commit 89d2e0b. Prova prova-punto116 42/42.
-
-  (b) INVITO SQUADRA DIREZIONALE — rimandato dalla 26a, chiuso per
-  intero in 4 tappe (0fce557->adf9ff2), progetto dell'agente architect
-  (due giri: lato escursione, poi consenso squadra). Hike.pendingInvites
-  + Squad.pendingInvites; rotte invite-squad/invite + invite-response;
-  DELETE /api/squads/:id/members/:userId (la porta d'uscita che non
-  c'era). Tappa 3 chiude la corsia PUT (aggiungere un compagno a mano e'
-  impossibile) e con essa il buco §0. Tappa 4 (consenso squadra):
-  migrazione nessuna. lib/squad.js + lib/squadAdmin.js nuovi
-  (promuoviSeSenzaAdmin estratta da riassegnaAdminSquadre).
-  Prove: prova-invito-direzionale 41/41, prova-squadre-consenso 44/44,
-  + inversioni verdi (prova-invito-squadra 60/60, prova-partecipanti-
-  forzati 27/27). Il dettaglio delle 6 decisioni di Denis e' in
-  cose_da_fare.txt e vault 03.
-
->>> GIA' IN PRODUZIONE prima di oggi (origin/master era `d363eea` prima
-    della 27a, `adf9ff2` dopo):
-    26a sessione — DELETE /api/hikes/:id (il creatore cancella una sua
-    escursione) + due vulnerabilita' preesistenti (creatore aggiungeva
-    chiunque; complete-group senza tetto), 7d2de46+85d537b.
-    25a sessione — tre rifiniture v2 (menu "Le mie escursioni"/"Community"
-    aprono solo la tendina c0de245; Terminillo chiusa in gruppo non resta
-    "In programma" c278e25; niente iscrizioni oltre il giorno previsto,
-    409 HIKE_DATE_PASSED d363eea). 24a sessione — menu "Squadre" nella
-    sidebar (122cb15); punto A-3.4
-    eliminazione account, soft-delete in due tempi + giro agente
-    security-privacy 1 critico + 5 alti chiusi (543cc4c); password
-    temporanea per Camilla (camilla2026, DA CAMBIARE). Prima ancora:
-    TUTTA LA REVISIONE UX "Camoscio v2" (merge del 02/09) — Dashboard
-    rifatta, riordino menu a gruppi + drawer mobile, Blocco 0
-    zaino/carpooling per-partecipanti, lotto sicurezza. Dettaglio:
-    vault 04-Da-Fare ("[ARCHIVIO] revisione UX del sito") + 06
-    ("Sedicesima"..."Ventitreesima sessione"). Prima ancora: traduzione
-    IT/EN (102), timbri con traccia reale (108), moderazione
-    segnalazioni (111), parte social — Segui/Feed/"mi piace"/"crea
-    percorso" (113), import .fit (114), nome uscita editabile (115),
-    hotfix Ju Busciu sogliaM (efd1290).
-    >>> LIMITE .fit/.gpx, e' il FILE non il codice: un file "smart" (o da
-        Garmin Connect) ha buchi -> niente split cammino/pause. Serve 1 Hz.
+>>> GIA' IN PRODUZIONE prima di oggi (origin/master era `1bb0df5`
+    prima della 28a, `1f98413` dopo):
+    27a sessione — punto 116 (traccia importata -> linea sulla
+    mappa, Hike.routePath) + INVITO SQUADRA DIREZIONALE chiuso per
+    intero (4 tappe + consenso squadra, 0fce557->adf9ff2).
+    26a — DELETE /api/hikes/:id + due vulnerabilita' preesistenti
+    (creatore aggiungeva chiunque; complete-group senza tetto).
+    25a — tre rifiniture v2. 24a — menu "Squadre"; eliminazione
+    account (A-3.4); password temporanea Camilla. Prima: TUTTA la
+    revisione UX "Camoscio v2" (merge 02/09); traduzione IT/EN
+    (102); timbri con traccia reale (108); moderazione segnalazioni
+    (111); parte social (113); import .fit (114); nome uscita
+    editabile (115).
+    >>> LIMITE .fit/.gpx, e' il FILE non il codice: un file "smart"
+        (o da Garmin Connect) ha buchi -> niente split cammino/pause.
     >>> Smartwatch (Garmin/Suunto/Amazfit): valutato e SCARTATO.
 
 >>> ALTRE APERTE, non urgenti (dettaglio in vault 04-Da-Fare.md):
-    livelli ORIGINALI del punto 63b (gradini per la ZONA dichiarata a
-    mano, DIVERSI dai livelli gia' fatti del punto 86) + calcolo
-    automatico del raggio (punto 42a) — Denis deve ancora pensarci, non
-    richiederlo; dominio email proprio (rimandato da lui, "non ora") —
-    e' anche la causa vera delle email che non arrivano (spam).
-    FILONE B: collezione "I 2000 dell'Appennino" dentro la pagina
-    Progressi — bloccato, LA LISTA UFFICIALE DELLE VETTE LA FORNISCE
-    DENIS. Piano: C:\Users\lenovo\.claude\plans\camoscio-2000-appennino-collezione.md
+    livelli ORIGINALI del punto 63b + calcolo automatico del raggio
+    (punto 42a) — Denis deve ancora pensarci, non richiederlo;
+    dominio email proprio (rimandato da lui) — e' anche la causa
+    vera delle email che non arrivano (spam).
+    FILONE B: collezione "I 2000 dell'Appennino" — bloccato, LA
+    LISTA UFFICIALE DELLE VETTE LA FORNISCE DENIS.
+    Piano: C:\Users\lenovo\.claude\plans\camoscio-2000-appennino-collezione.md
 
 >>> RESTA VALIDO:
-  - Hook "Stop" di auto-save: commit locale (MAI push) a fine di ogni
-    risposta se ci sono modifiche non salvate. Va rifuso in un commit
-    vero prima di ogni push/tappa.
-  - Traduzione IT/EN (punto 102, CHIUSO): resta ITALIANO di proposito
-    tutto il testo scritto dagli utenti (didascalie del feed comprese),
-    i nomi propri di luogo, i nomi dei percorsi salvati e l'etichetta
-    "da <autore>", titolo/descrizione dei badge personali, le schede "i"
-    dei badge (punto 112), il testo delle notifiche (lo genera il
-    server), il segnaposto nativo di <input type=date>/<input type=file>,
-    e componiRapporto() dentro diagnostica-gps.html. Le chiavi EN dei
-    blocchi nuovi si aggiungono mano a mano (scelta di Denis).
-  - "Account eliminato" (punto A-3.4) SI traduce (e' interfaccia):
+  - Hook "Stop" di auto-save: commit locale (MAI push) a fine di
+    ogni risposta se ci sono modifiche non salvate. Va rifuso in un
+    commit vero prima di ogni push.
+  - Traduzione IT/EN (punto 102, CHIUSO): resta ITALIANO di
+    proposito tutto il testo scritto dagli utenti, i nomi propri di
+    luogo, i nomi dei percorsi salvati, titolo/descrizione dei badge
+    personali, le schede "i" dei badge, il testo delle notifiche (lo
+    genera il server), il segnaposto nativo di <input type=date>/
+    <input type=file>, e componiRapporto() dentro diagnostica-gps.
+    Le chiavi EN dei blocchi nuovi si aggiungono mano a mano.
+  - "Account eliminato" (punto A-3.4) SI traduce:
     common.accountEliminato -> "Deleted account".
 
 ===================================================================
@@ -230,7 +197,8 @@ MAI piu' (congelato); cose_da_fare.txt quando un punto si chiude o ne arriva uno
 >>> LEZIONI OPERATIVE (git dopo un'interruzione, moduli che si collegano tardi,
     componenti condivisi fra piu' pagine, .toObject vs .toJSON, $unset di campi
     required, select('username') che scavalca la pseudonimizzazione, recupero
-    password vs grazia dell'eliminazione): tutte in
+    password vs grazia dell'eliminazione, npm audit fix vs overrides, serializzatore
+    aggiunto a una rotta senza try/catch, test verde su una premessa falsa): tutte in
     ../camoscio memoria/07-Trappole-Tecniche.md — quella e' la sede dove si guarda
     prima di toccare codice a rischio.
 ===================================================================
