@@ -53,13 +53,15 @@ aperti dalla 28a. Un giro unico di hotfix, un commit (`99c5ddd`).
  partecipante non-creatore veda ancora carpool/backpackTemplate).
 
 >>> STATO A FINE 29a SESSIONE:
-      - camoscio       origin/master = `53e279a`. Working tree PULITO.
-                       (`99c5ddd` = codice hotfix; `952855d`/`2299fdb`/
-                       `53e279a` = solo note e progetti agli atti.)
-      - camoscio memoria (vault) origin/master = `feb1c9e`, aggiornato
-                       (03/04/06/07).
-      - Tutto pushato in entrambi i repo. Working tree pulito in
-        entrambi, niente auto-save in sospeso.
+      - camoscio: ultimo COMMIT DI CODICE = `99c5ddd` (l'hotfix).
+                  Sopra ci sono SOLO commit di note/progetti
+                  ("Note 29a...", "Audit visivo...", "Tasto
+                  Indietro...", "leggimi: fine 29a..."): non
+                  toccano il sito. origin/master = l'ultimo di
+                  questi. Working tree PULITO.
+      - camoscio memoria (vault): ultimo commit "29a: tasto
+                  Indietro / History API agli atti". Working tree PULITO.
+      - Tutto pushato in entrambi i repo. Niente auto-save in sospeso.
       - Prove verdi: prova-squadre-consenso 64/64, prova-invito-
         direzionale 46/46, prova-punto37 28/28, prova-invito-squadra
         54/54, prova-partecipanti-forzati 35/35, prova-eliminazione-
