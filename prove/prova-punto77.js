@@ -115,8 +115,9 @@ function vedeEscursione(risposta, hikeId) {
         hikeId = creazione.corpo && (creazione.corpo.id || creazione.corpo._id);
         ok('escursione creata con un id', !!hikeId);
 
-        // --- 3. B si iscrive (A, creatore, la aggiunge direttamente ai partecipanti) ---
-        const iscrizione = await chiama('PUT', `/api/hikes/${hikeId}`, { participants: [idA, idB] }, cookieA);
+        // --- 3. B si iscrive da solo (l'escursione non ha approvazione manuale; dalla 27ª il
+        //        creatore non aggiunge piu' altri "a mano" - i compagni di squadra si invitano) ---
+        const iscrizione = await chiama('PUT', `/api/hikes/${hikeId}`, { participants: [idA, idB] }, cookieB);
         ok('B iscritto come partecipante', iscrizione.status === 200 &&
             (iscrizione.corpo.participants || []).map(String).includes(String(idB)), JSON.stringify(iscrizione.corpo));
 

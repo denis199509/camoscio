@@ -100,7 +100,14 @@ La prova dell'INVITO A UNA SQUADRA (il bug segnalato da Denis: "Invita a Gita" s
 l'escursione da sola e ha invitato una squadra a un'escursione GIA' COMPLETATA) e
 dell'APPROVAZIONE MANUALE che si poteva scavalcare:
 
-    node prove/prova-invito-squadra.js              59 controlli  (ne avvia uno suo, sulla 3109)
+    node prove/prova-invito-squadra.js              60 controlli  (ne avvia uno suo, sulla 3109)
+
+    Aggiornata con l'invito squadra DIREZIONALE (27a sessione, tappe 2-3): la sezione A ora
+    verifica che confermaInvitoSquadra chiami POST /:id/invite-squad {squadId} (mai un
+    elenco di id) tranne il ramo "proposta" (non-creatore + manualApproval), che resta la
+    vecchia PUT {pendingApproval}. La sezione B: il creatore NON puo' piu' aggiungere a mano
+    un compagno di squadra (B entra chiedendo + accettando), e NEMMENO un partecipante puo'
+    aggiungere altri direttamente ai partecipanti - si invitano (403). Proporre resta.
 
     DUE SEZIONI, perche' i due difetti vivono in due punti diversi.
     La sezione A non vuole ne' server ne' database: carica public/js/social.js dentro un
@@ -129,8 +136,9 @@ dell'APPROVAZIONE MANUALE che si poteva scavalcare:
     qualunque: deve fermarsi perche' l'escursione e' CHIUSA, non per un caso dei permessi.
 
 La prova dell'INVITO SQUADRA DIREZIONALE ("decide l'invitato", rimandato dalla 26a sessione),
-TAPPA 1 di 3 (solo server: le rotte nuove esistono, la corsia vecchia in PUT /:id e il
-client arrivano con le tappe 2-3):
+lato ESCURSIONE - tappe 1-3 (schema Hike.pendingInvites, rotte invite-squad / invite-response,
+chiusura della corsia squadra in PUT /:id). La tappa 4 - il consenso per entrare in una
+SQUADRA - avra' la sua prova a parte (prova-squadre-consenso.js):
 
     node prove/prova-invito-direzionale.js          41 controlli  (ne avvia uno suo, sulla 3117)
 

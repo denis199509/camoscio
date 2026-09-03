@@ -1,4 +1,4 @@
-// PROVA — INVITO SQUADRA DIREZIONALE, tappa 1 (server).
+// PROVA — INVITO SQUADRA DIREZIONALE, lato escursione (tappe 1-3).
 // Rimandato dalla 26ª sessione: "solo chi accetta diventa partecipante, chi rifiuta no.
 // decide l'invitato, non il creatore della squadra" (parole di Denis).
 //
@@ -6,12 +6,9 @@
 //   POST /api/hikes/:id/invite-squad   { squadId }
 //   POST /api/hikes/:id/invite-response { accept }
 // più il $unset di pendingInvites in complete-group e la serializzazione ridotta in
-// hikeVisibileA.
-//
-// PRIMA di questa tappa il compagno di squadra si aggiungeva a `participants` con un PUT
-// del creatore (corsia HIKE_AGGIUNTA_NON_CONSENTITA) → finiva nel gruppo mesh/SOS senza
-// aver detto sì. Quella corsia in PUT /:id NON è toccata da questa tappa (arriva con la
-// tappa 3): qui si verifica solo che la strada NUOVA funzioni.
+// hikeVisibileA. La CHIUSURA della vecchia corsia (il creatore/un partecipante non puo'
+// piu' aggiungere altri a `participants` con un PUT) e' provata da prova-invito-squadra.js
+// (sezione B) e prova-partecipanti-forzati.js.
 //
 // CONTROPROVA: sul commit precedente le due rotte rispondono 404 e le sezioni 2-8 cadono.
 //
@@ -205,9 +202,10 @@ function fraGiorni(n) {
         // === 7. manualApproval: invita solo il creatore ===
         console.log('\n7. escursione ad approvazione manuale: invita solo il creatore');
         const H7 = await creaHike(ckA, 'H7', { manualApproval: true });
-        // metto C fra i partecipanti di H7 con il vecchio PUT (in tappa 1 la corsia squadra
-        // e' ancora aperta: C e' in S con A) - così C è un partecipante NON creatore.
-        await chiama('PUT', `/api/hikes/${H7}`, { participants: [A, C] }, ckA);
+        // C entra come partecipante NON creatore: chiede (H7 e' ad approvazione manuale) e A
+        // accetta. Dalla tappa 3 il creatore non puo' piu' aggiungere C "a mano".
+        await chiama('PUT', `/api/hikes/${H7}`, { pendingApproval: [C] }, ckC);
+        await chiama('PUT', `/api/hikes/${H7}`, { participants: [A, C], pendingApproval: [] }, ckA);
         r = await chiama('POST', `/api/hikes/${H7}/invite-squad`, { squadId: S }, ckC);
         ok('C (partecipante non creatore) invita → 403 HIKE_INVITO_SOLO_CREATORE', r.status === 403 && r.corpo.code === 'HIKE_INVITO_SOLO_CREATORE', JSON.stringify(r.corpo));
         r = await chiama('POST', `/api/hikes/${H7}/invite-squad`, { squadId: S }, ckA);

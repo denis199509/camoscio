@@ -5,7 +5,9 @@
 //      participants/pendingApproval. Un PUT {participants:[<id sconosciuto>]} bastava per
 //      infilare quella persona nel gruppo mesh/SOS di un'escursione non conclusa e riceverne
 //      le coordinate GPS reali (server.js). Ora il creatore puo' aggiungere SOLO chi ha
-//      chiesto (pendingApproval), chi e' gia' dentro, o un membro di una sua squadra.
+//      chiesto (pendingApproval) o chi e' gia' dentro. Dalla 27a sessione ("invito squadra
+//      direzionale") nemmeno un compagno di squadra si aggiunge a mano: si INVITA, ed entra
+//      solo se accetta (POST /:id/invite-squad -> pendingInvites -> invite-response).
 //
 //  (2) POST /api/hikes/:id/complete-group - nessun rate limiter, nessun tetto alla lista, e
 //      chi viene "segnato presente" senza essere iscritto non lo sapeva. Ora: scritturaLimiter,
@@ -127,15 +129,26 @@ async function ripristinaPace(id, s) {
         ok('il creatore accetta chi ha chiesto -> 200', accetta.status === 200, JSON.stringify(accetta.corpo));
         ok('ora C e\' partecipante', (accetta.corpo.participants || []).map(String).includes(String(idC)));
 
-        // ...e appena A e C condividono una squadra, la STESSA aggiunta che sopra dava 403
-        // passa: e' la prova che a decidere e' il legame di squadra, non un caso fortuito.
+        // ...e NEMMENO ora che A e C condividono una squadra: dalla 27ª ("decide l'invitato")
+        // un compagno di squadra si INVITA, non si aggiunge a mano. Stessa aggiunta, stesso 403.
         const sq = await chiama('POST', '/api/squads', { name: `PROVA-VULN-${MARCA}`, members: [idA, idC] }, ckA);
         squadId = sq.corpo && (sq.corpo.id || sq.corpo._id);
         ok('squadra di prova creata (A + C)', !!squadId, JSON.stringify(sq.corpo));
         const h2 = await creaHike('squad');
         const invita = await chiama('PUT', `/api/hikes/${h2}`, { participants: [idA, idC] }, ckA);
-        ok('ora che C e\' in una squadra di A, il creatore lo aggiunge -> 200', invita.status === 200, JSON.stringify(invita.corpo));
-        ok('C (compagno di squadra) e\' partecipante', (invita.corpo.participants || []).map(String).includes(String(idC)));
+        ok('il creatore NON puo\' aggiungere a mano un compagno di squadra -> 403', invita.status === 403, `status ${invita.status} ${JSON.stringify(invita.corpo)}`);
+        ok('codice HIKE_AGGIUNTA_NON_CONSENTITA anche per il compagno di squadra', invita.corpo && invita.corpo.code === 'HIKE_AGGIUNTA_NON_CONSENTITA', JSON.stringify(invita.corpo));
+        ok('C NON e\' fra i partecipanti', !((await Hike.findById(h2).lean()).participants || []).map(String).includes(String(idC)));
+        // ...ma via l'INVITO direzionale C entra - SE accetta. Stessa aggiunta impossibile a
+        // mano, strada nuova possibile: e' la prova che a decidere ora e' l'invitato.
+        const inv = await chiama('POST', `/api/hikes/${h2}/invite-squad`, { squadId }, ckA);
+        ok('A invita la squadra -> 200', inv.status === 200, JSON.stringify(inv.corpo));
+        const h2conInvito = await Hike.findById(h2).lean();
+        ok('C e\' in pendingInvites, non fra i partecipanti', (h2conInvito.pendingInvites || []).map(String).includes(String(idC)) && !(h2conInvito.participants || []).map(String).includes(String(idC)));
+        const rispC = await chiama('POST', `/api/hikes/${h2}/invite-response`, { accept: true }, ckC);
+        ok('C accetta l\'invito -> 200', rispC.status === 200, JSON.stringify(rispC.corpo));
+        const h2fine = await Hike.findById(h2).lean();
+        ok('ora C e\' partecipante, e fuori da pendingInvites', (h2fine.participants || []).map(String).includes(String(idC)) && !(h2fine.pendingInvites || []).map(String).includes(String(idC)));
 
         // === 2. complete-group: tetto alla lista ===
         console.log('\n--- 2. complete-group, tetto alla lista ---');
@@ -149,7 +162,7 @@ async function ripristinaPace(id, s) {
         // === 3. complete-group: avviso a chi e' segnato presente senza essere iscritto ===
         console.log('\n--- 3. complete-group, avviso a chi non era iscritto ---');
         const h4 = await creaHike('avviso');
-        await chiama('PUT', `/api/hikes/${h4}`, { participants: [idA, idB] }, ckA); // B iscritto, C no
+        await chiama('PUT', `/api/hikes/${h4}`, { participants: [idA, idB] }, ckB); // B si iscrive da solo (h4 senza approvazione manuale); C no
         const nCprima = await Notification.countDocuments({ userId: oid(idC), text: /segnato come presente/ });
         const nBprima = await Notification.countDocuments({ userId: oid(idB), text: /segnato come presente/ });
         const chiudi = await chiama('POST', `/api/hikes/${h4}/complete-group`, { confirmedUserIds: [idA, idB, idC] }, ckA);

@@ -81,20 +81,21 @@ function canNonCreatorEditParticipation(hike, userId, body) {
         return true;
     }
 
-    // --- Invito di altri (es. "invita la mia squadra") ---
-    // Solo da parte di chi e' gia' un partecipante, e mai rimozioni: togliere l'id di un
-    // altro da participants o da pendingApproval significherebbe cacciare qualcuno o
-    // rifiutarne la richiesta al posto dell'organizzatore. Vale in ENTRAMBI i rami sotto.
+    // --- Coinvolgere altri: SOLO come proposta, MAI direttamente in participants ---
+    // Da parte di chi e' gia' un partecipante, e mai rimozioni: togliere l'id di un altro
+    // significherebbe cacciarlo o rifiutarne la richiesta al posto dell'organizzatore.
     if (!wasParticipant) return false;
     if (pDiff.removed.length !== 0 || pendDiff.removed.length !== 0) return false;
 
-    return hike.manualApproval
-        // Approvazione manuale: si possono solo PROPORRE nomi, mai iscriverli - il server
-        // non si fida che il client scelga il campo giusto.
-        ? pDiff.added.length === 0
-        // Iscrizione libera: si aggiunge direttamente ai partecipanti (comportamento di
-        // sempre), e non si tocca la lista delle richieste in sospeso.
-        : pendDiff.added.length === 0;
+    // MAI aggiungere altri direttamente a participants (= al gruppo mesh/SOS): dalla 27ª i
+    // compagni di squadra si INVITANO (POST /api/hikes/:id/invite-squad -> pendingInvites),
+    // ed entrano solo se accettano. La vecchia corsia "iscrizione libera -> aggiungo io il
+    // compagno" e' chiusa.
+    if (pDiff.added.length !== 0) return false;
+
+    // Proporre nomi (pendingApproval) resta INVARIATO: solo su un'escursione ad approvazione
+    // manuale, dove l'organizzatore ha il pannello Veto per decidere (opzione B della 27ª).
+    return hike.manualApproval || pendDiff.added.length === 0;
 }
 
 // Un utente normale puo' creare/modificare/rimuovere SOLO la propria offerta come autista, e
@@ -446,13 +447,20 @@ router.put('/:id', requireAuth, async (req, res) => {
             }
 
             // Il CREATORE non aveva nessun filtro qui: un semplice PUT {participants:[<id>]}
-            // bastava per infilare un id qualsiasi (uno sconosciuto, uno preso da GET /api/users)
-            // nel gruppo mesh/SOS di un'escursione non ancora conclusa, e da lì ricevere le
-            // coordinate GPS reali di quella persona quando manda un pacchetto mesh (server.js).
-            // Ora un'aggiunta del creatore a participants/pendingApproval deve avere senso: chi
-            // ha già chiesto di partecipare, chi è già dentro, o un membro di una sua squadra
-            // (l'unico modo legittimo di aggiungere qualcuno "a mano" - l'invito squadra).
-            // Le RIMOZIONI restano libere (il creatore gestisce la sua escursione).
+            // bastava per infilare un id qualsiasi nel gruppo mesh/SOS di un'escursione non
+            // ancora conclusa, e da lì ricevere le coordinate GPS reali di quella persona
+            // quando manda un pacchetto mesh (server.js).
+            // Ora il creatore puo' aggiungere a participants/pendingApproval SOLO chi e' gia'
+            // in relazione con l'escursione: chi ha gia' chiesto (in pendingApproval -> lo
+            // sposta in participants = "accetta la richiesta") o chi e' gia' dentro. NON puo'
+            // piu' aggiungere un compagno di squadra "a mano": i compagni di squadra si
+            // INVITANO (POST /:id/invite-squad -> pendingInvites) ed entrano solo se accettano
+            // (decisione della 27ª - "decide l'invitato"). Le RIMOZIONI restano libere.
+            //
+            // pendingInvites NON entra in `giaInRelazione`, ed e' deliberato: se il creatore
+            // potesse "finalizzare" un invitato spostandolo lui in participants avremmo
+            // riscritto lo stesso difetto con un nome nuovo. Un invitato entra SOLO da
+            // POST /:id/invite-response.
             if (isCreator) {
                 const aggiuntiDalCreatore = [...new Set([
                     ...(body.participants !== undefined ? diffIdLists(hike.participants, body.participants).added : []),
@@ -463,19 +471,11 @@ router.put('/:id', requireAuth, async (req, res) => {
                     ...(hike.pendingApproval || []).map(String),
                     String(hike.creatorId)
                 ]);
-                const daVerificare = aggiuntiDalCreatore.filter(id => !giaInRelazione.has(id));
-                if (daVerificare.length) {
-                    const squadreDelCreatore = await Squad.find({ members: userId }).select('members').lean();
-                    const compagniDiSquadra = new Set();
-                    for (const s of squadreDelCreatore) {
-                        for (const m of (s.members || [])) compagniDiSquadra.add(String(m));
-                    }
-                    if (daVerificare.some(id => !compagniDiSquadra.has(id))) {
-                        return res.status(403).json({
-                            error: 'Puoi aggiungere solo chi ha chiesto di partecipare o un membro di una tua squadra.',
-                            code: 'HIKE_AGGIUNTA_NON_CONSENTITA'
-                        });
-                    }
+                if (aggiuntiDalCreatore.some(id => !giaInRelazione.has(id))) {
+                    return res.status(403).json({
+                        error: 'I compagni di squadra si invitano: entrano solo se accettano. Puoi aggiungere solo chi ha già chiesto di partecipare.',
+                        code: 'HIKE_AGGIUNTA_NON_CONSENTITA'
+                    });
                 }
             }
 

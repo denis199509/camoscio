@@ -383,8 +383,12 @@ const ids = lista => (lista || []).map(String);
         ok('l\'escursione ha davvero manualApproval attivo', !!(creazione.corpo && creazione.corpo.manualApproval),
             JSON.stringify(creazione.corpo && creazione.corpo.manualApproval));
 
-        const conB = await chiama('PUT', `/api/hikes/${h1}`, { participants: [A, B] }, cookieA);
-        ok('l\'organizzatore puo\' aggiungere B fra i partecipanti', conB.status === 200 && ids(conB.corpo.participants).includes(String(B)),
+        // B entra chiedendo di partecipare e l'organizzatore che accetta la richiesta: dalla
+        // 27ª il creatore non puo' piu' aggiungere B "a mano" se B non ha chiesto o accettato
+        // un invito (i compagni di squadra si invitano - vedi prova-invito-direzionale).
+        await chiama('PUT', `/api/hikes/${h1}`, { pendingApproval: [B] }, cookieB);
+        const conB = await chiama('PUT', `/api/hikes/${h1}`, { participants: [A, B], pendingApproval: [] }, cookieA);
+        ok('l\'organizzatore accetta la richiesta di B -> B fra i partecipanti', conB.status === 200 && ids(conB.corpo.participants).includes(String(B)),
             JSON.stringify(conB.corpo && conB.corpo.participants));
 
         // --- B2. un partecipante NON creatore prova a ISCRIVERE un altro direttamente ---
@@ -456,14 +460,18 @@ const ids = lista => (lista || []).map(String);
         }, cookieA);
         h2 = creazione2.corpo && (creazione2.corpo._id || creazione2.corpo.id);
         ok('seconda escursione (iscrizione libera) creata', creazione2.status === 200 && !!h2, JSON.stringify(creazione2.corpo));
-        await chiama('PUT', `/api/hikes/${h2}`, { participants: [A, B] }, cookieA);
+        // B si iscrive da solo (h2 non ha approvazione manuale): e' consenso suo.
+        await chiama('PUT', `/api/hikes/${h2}`, { participants: [A, B] }, cookieB);
 
+        // Dalla 27ª: nemmeno senza approvazione manuale un partecipante puo' aggiungere un
+        // ALTRO direttamente ai partecipanti. I compagni di squadra si invitano (invito
+        // direzionale, POST /:id/invite-squad), ed entrano solo se accettano.
         const invitoLibero = await chiama('PUT', `/api/hikes/${h2}`, { participants: [A, B, C] }, cookieB);
-        ok('senza approvazione manuale un partecipante puo\' ancora invitare direttamente (200, comportamento di sempre)',
-            invitoLibero.status === 200, `status ${invitoLibero.status}: ${invitoLibero.testo}`);
-        ok('...e l\'invitato entra davvero fra i partecipanti',
-            invitoLibero.status === 200 && ids(invitoLibero.corpo.participants).includes(String(C)),
-            JSON.stringify(invitoLibero.corpo && invitoLibero.corpo.participants));
+        ok('un partecipante NON puo\' aggiungere un altro direttamente ai partecipanti (403), nemmeno senza approvazione manuale',
+            invitoLibero.status === 403, `status ${invitoLibero.status}: ${invitoLibero.testo}`);
+        const statoH2 = await leggiHike(cookieA, h2);
+        ok('...e l\'invitato NON e\' finito fra i partecipanti',
+            statoH2 && !ids(statoH2.participants).includes(String(C)), JSON.stringify(statoH2 && statoH2.participants));
 
         const attesaSenzaApprovazione = await chiama('PUT', `/api/hikes/${h2}`, { pendingApproval: [D] }, cookieB);
         ok('senza approvazione manuale un partecipante non mette nessuno in attesa (403)',
