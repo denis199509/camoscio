@@ -53,16 +53,21 @@ aperti dalla 28a. Un giro unico di hotfix, un commit (`99c5ddd`).
  partecipante non-creatore veda ancora carpool/backpackTemplate).
 
 >>> STATO A FINE 29a SESSIONE:
-      - camoscio       origin/master = `99c5ddd`. Working tree PULITO.
-                       (sopra `99c5ddd` solo il commit di note.)
-      - camoscio memoria (vault) origin/master aggiornato (04/06/03/07).
-      - Tutto pushato in entrambi i repo.
+      - camoscio       origin/master = `53e279a`. Working tree PULITO.
+                       (`99c5ddd` = codice hotfix; `952855d`/`2299fdb`/
+                       `53e279a` = solo note e progetti agli atti.)
+      - camoscio memoria (vault) origin/master = `feb1c9e`, aggiornato
+                       (03/04/06/07).
+      - Tutto pushato in entrambi i repo. Working tree pulito in
+        entrambi, niente auto-save in sospeso.
       - Prove verdi: prova-squadre-consenso 64/64, prova-invito-
         direzionale 46/46, prova-punto37 28/28, prova-invito-squadra
         54/54, prova-partecipanti-forzati 35/35, prova-eliminazione-
         account 57/57, prova-elimina-escursione 53/53, prova-punto116
         42/42, prova-punto113 103/103.
       - npm audit --omit=dev = 0.
+      - NIENTE codice scritto dopo l'hotfix: audit visivo e tasto
+        Indietro sono solo PROGETTI agli atti (vedi sotto).
 
 >>> APERTI DELLA REVISIONE SICUREZZA (follow-up, NON bloccano),
     in ordine di priorita' dell'agente:
@@ -96,6 +101,46 @@ aperti dalla 28a. Un giro unico di hotfix, un commit (`99c5ddd`).
     Accetta/Rifiuta, gruppo "Inviti", creazione squadra -> inviti,
     "Lascia la squadra") - MAI provato su un telefono vero. E il
     punto 116 (linea su Esplora + card "Percorso previsto").
+
+>>> LAVORO FUTURO PREPARATO IN QUESTA SESSIONE (progetti agli atti,
+    NIENTE codice scritto - si riparte da questi):
+
+  A) TASTO INDIETRO / HISTORY API. Denis: "il tasto indietro sia
+     del telefono che pc buttano fuori dal sito... e' molto
+     fastidioso". Camoscio e' una SPA senza integrazione con la
+     cronologia del browser -> Indietro esce dal sito.
+     DECISIONI PRESE: ambito PIENO (sezioni + pagine con id +
+     MODALI, Indietro con un modale aperto lo chiude); Indietro
+     sulla home ESCE (come Gmail/Instagram).
+     Progetto completo (analisi navigateTo + censimento 8 modali +
+     modello di stato + 4 sotto-decisioni da chiudere):
+       C:\Users\lenovo\.claude\plans\camoscio-tasto-indietro-history-api.md
+     ~130-180 righe, quasi tutte in public/js/app.js. Verifica
+     solo dal vivo nel browser. Si puo' fare inline (no architect).
+
+  B) RITOCCHI VISIVI (audit dell'agente designer, 29a). Il sito
+     non e' amatoriale; il difetto e' che le regole imparate non
+     sono mai state propagate. La piu' grossa: 19 regole CSS
+     stilano <i> senza la gemella su svg -> morte dopo Lucide ->
+     icone a 24px colore testo.
+     Pronta una "Fascia A" di ~11 interventi CSS a costo quasi
+     zero (< 80 righe, un solo file) che sistema le icone di tutto
+     il sito, tutti gli stati vuoti (oggi storti: usano classi
+     utility inesistenti), 2 overflow su telefono, la lista
+     contatti del Dead Man's Switch (unico componente non stilato),
+     la gerarchia dei titoli di scheda. NON applicata.
+     Rapporto completo (Fascia A/B/C + le 2 domande sotto):
+       C:\Users\lenovo\.claude\plans\camoscio-audit-visivo-29a.md
+     Se si riprende: il lavoro va all'agente `designer`.
+     DUE DECISIONI CHE ASPETTANO DENIS:
+      1. "Passo & Fatica" (aperta dal 10/08): i numeri del passo
+         sono blu, gli altri numeri della Dashboard arancioni, e
+         nel grafico sotto il passo utente e' arancione. -> (a)
+         tutti arancioni, (b) grafico ribaltato (passo utente blu
+         ovunque), (c) lasciare + legenda "blu = stimato".
+      2. Bianco su arancione = 4,03:1 (appena sotto la soglia AA)
+         sul CTA principale. Scurire l'arancione del ~6% lo
+         sistema, ma e' il colore del marchio.
 
 >>> SI LAVORA SU `master`, hotfix normali (commit vero + push -> Render
     ridistribuisce). L'hook di auto-save committa in locale (mai push):
