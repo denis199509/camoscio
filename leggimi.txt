@@ -1,9 +1,11 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-09-03 (VENTISETTESIMA sessione — PUNTO 116: la traccia
-importata (.gpx/.fit) in creazione escursione si disegna come LINEA
-sulla mappa. Push `a090723..89d2e0b` su `master`, Render redeploy
-automatico. L'import .gpx in creazione ESISTEVA GIA' (tendina "Quota,
+Aggiornato: 2026-09-03 (VENTISETTESIMA sessione — DUE lavori grossi.
+(a) PUNTO 116: la traccia importata (.gpx/.fit) si disegna come LINEA
+sulla mappa. (b) INVITO SQUADRA DIREZIONALE, chiuso per intero in 4
+tappe + consenso squadra (rimandato dalla 26a). Push
+`a090723..adf9ff2` su `master`, Render redeploy automatico.
+--- (a) PUNTO 116 --- L'import .gpx in creazione ESISTEVA GIA' (tendina "Quota,
 dislivello e distanza", routeSource kind:'gpx') ma calcolava solo i 3
 numeri e BUTTAVA la geometria; ora si salva Hike.routePath ([[lng,lat]],
 Douglas-Peucker 18 m, tetto 400 punti, disciplina di SavedRoute) e si
@@ -17,29 +19,56 @@ Prova prova-punto116 42/42 (7 sez.) + 7 regressioni verdi. Costo spazio
 MISURATO: ~1,5-2 KB/escursione media, tetto ~12,7 KB — trascurabile.
 SOLO IN AVANTI: le escursioni gia' create con un .gpx non hanno il file,
 la linea compare re-importando. Dettaglio: vault 03 ("Traccia importata
--> linea sulla mappa") + 06 ("Ventisettesima sessione") + 07
-("risolviPercorso whitelist di ritorno"), cose_da_fare.txt "PUNTO 116".)
+-> linea sulla mappa") + 06 + 07, cose_da_fare.txt "PUNTO 116".
+--- (b) INVITO SQUADRA DIREZIONALE --- 4 tappe, 0fce557->adf9ff2,
+progetto dell'agente architect. Il gruppo mesh/SOS di un'escursione E'
+`hike.participants`, e la corsia "compagno di squadra" della 26a NON era
+un vero controllo di relazione: POST /api/squads scriveva `members` dal
+client senza consenso ne' tetto, e non c'era rotta per uscire da una
+squadra. Ora: Hike.pendingInvites + Squad.pendingInvites (default
+undefined), semantica OPPOSTA a pendingApproval/pendingRequests (decide
+LA PERSONA). Rotte: invite-squad / invite (il server legge i membri dal
+doc Squad, mai id dal client), invite-response {accept} (CAS, rifiuto
+mai bloccato, mai scritturaLimiter), DELETE /api/squads/:id/members/
+:userId (LA PORTA D'USCITA che non esisteva - creatore che esce ->
+creatorId al piu' anziano; ultimo membro -> squadra + chat sciolte).
+lib/squad.js + lib/squadAdmin.js (promuoviSeSenzaAdmin estratta da
+riassegnaAdminSquadre). Tappa 3 CHIUDE la corsia PUT: aggiungere un
+compagno a mano e' IMPOSSIBILE (rischio deploy: scheda vecchia -> 403).
+Tappa 4 (consenso squadra): migrazione NESSUNA. Prove nuove:
+prova-invito-direzionale 41/41, prova-squadre-consenso 44/44; inversioni
+verdi in prova-invito-squadra 60/60 e prova-partecipanti-forzati 27/27.
+Dettaglio: vault 03 ("Invito squadra direzionale") + 06 + 07 ("il
+creatore di una squadra e' membro per calcolo"), cose_da_fare.txt
+"INVITO SQUADRA DIREZIONALE - CHIUSO PER INTERO".)
 
 >>> SI LAVORA SU `master`, hotfix normali (commit vero + push -> Render
     ridistribuisce). L'hook di auto-save committa in locale (mai push):
     va rifuso in UN commit vero (`git reset <base>` + commit per pezzo)
     prima di ogni push. Fatto cosi' per il lavoro di oggi.
 
-    STATO A META' 27a SESSIONE (dopo il punto 116, prima dell'invito squadra):
-      - camoscio       origin/master = `d0f1a06` (codice a `89d2e0b`,
+    STATO A FINE 27a SESSIONE:
+      - camoscio       origin/master = `NOTE-27B` (codice a `adf9ff2`,
                        sopra solo il commit di note). Working tree PULITO.
-      - camoscio memoria (vault) origin/master = `240ce36`. Working tree PULITO.
+      - camoscio memoria (vault) origin/master = `fc28507`. Working tree PULITO.
       - Tutto pushato in entrambi i repo, niente in coda.
-      - Prove verdi: prova-punto116 42/42, prova-punto93 28/28,
-        prova-punto113 103/103, prova-punto113-gpx 43/43, prova-punto77
-        17/17, prova-elimina-escursione 52/52, prova-invito-squadra 59/59,
-        prova-partecipanti-forzati 21/21.
-      - APERTO SUBITO: verifica dal vivo di Denis del punto 116 (linea su
-        Esplora col tasto "Mappa" di una card con traccia importata +
-        card "Percorso previsto" nel tab Dettagli).
-      - IN CORSO DA ORA: "invito squadra direzionale" (vedi sotto in
-        APERTO) — il lavoro grosso rimandato dalla 26a. Si riparte da
-        zero sul punto.
+      - Prove verdi: prova-punto116 42/42, prova-invito-direzionale
+        41/41, prova-squadre-consenso 44/44, prova-invito-squadra 60/60,
+        prova-partecipanti-forzati 27/27, prova-eliminazione-account
+        57/57, prova-elimina-escursione 52/52, prova-punto77 17/17,
+        prova-punto93 28/28.
+      - APERTO SUBITO: verifica dal vivo di Denis - (1) punto 116: linea
+        su Esplora (tasto "Mappa" di una card con traccia importata) +
+        card "Percorso previsto" nel tab Dettagli. (2) invito squadra:
+        card Accetta/Rifiuta su un'escursione, gruppo "Inviti" in "Le mie
+        escursioni", creare una squadra -> inviti (non membri diretti),
+        "Lascia la squadra", squadra rimasta vuota -> sparisce.
+      - RISCHIO DEPLOY (accettato, gia' pushato): una scheda aperta col
+        codice pre-tappa-2 che fa PUT {participants:[compagno]} prende
+        un 403 col messaggio che lo spiega.
+      - PROSSIMA SESSIONE: candidati -> M-5 (race cancella-contatto, il
+        piu' piccolo aperto), TTL sulle Notification, cestino sulle card
+        "completate in gruppo", oppure una nuova richiesta di Denis.
 
 >>> AZIONI MANUALI DI DENIS, aperte:
   1. NUOVA — ACCOUNT_SCRUB_SECRET su Render (stringa a scelta, DIVERSA da
@@ -75,60 +104,37 @@ la linea compare re-importando. Dettaglio: vault 03 ("Traccia importata
     altrui, col nome vero anche dopo l'eliminazione di Mario. Il fix
     (nomeVisibile, 24a sessione) copre solo le notifiche NUOVE. Cambio
     schema app-wide + migrazione -> a se'.
-  - INVITO SQUADRA DIREZIONALE "decide l'invitato" (dalla 26a, parole di
-    Denis): creatore invita la squadra -> notifica a TUTTI i membri ->
-    solo chi accetta diventa partecipante, chi rifiuta no. Oggi il
-    creatore puo' ancora aggiungere lui un compagno di squadra: la falla
-    e' chiusa (niente estranei) ma manca il passo "accetta". Serve campo
-    Hike.pendingInvites, rotta invite-response, UI Accetta/Rifiuta,
-    riscrittura di prova-invito-squadra (59 asserzioni). Sessione intera,
-    valutare l'agente architect. Piano: vault 04 + 03 + 06.
+  - INVITO SQUADRA DIREZIONALE "decide l'invitato": FATTO nella 27a
+    sessione (4 tappe + consenso squadra, 0fce557->adf9ff2). Vedi il
+    blocco (b) del frontmatter qui sopra e cose_da_fare.txt.
 
->>> COSA E' STATO FATTO OGGI (dettaglio: vault 03/06/07):
+>>> COSA E' STATO FATTO OGGI (dettaglio per esteso: vault 03/06/07 e
+    cose_da_fare.txt "PUNTO 116" + "INVITO SQUADRA DIREZIONALE"):
 
-  Sessione INTERROTTA a meta' da uno spegnimento del PC (il terzo). Alla
-  ripresa: procedura da vault 07 ("dopo un'interruzione, git prima delle
-  note"). Niente perso — l'hook Stop aveva committato un auto-save
-  (14f7596) col codice giusto, rifuso poi in un commit vero.
+  (a) PUNTO 116 — la traccia importata (.gpx/.fit) in creazione
+  escursione si salva come polyline (Hike.routePath) e si disegna come
+  linea su Esplora + mini-mappa nel tab Dettagli. Enum routeSource.kind
+  + 'fit'. Commit 89d2e0b. Prova prova-punto116 42/42.
 
-  (1) DELETE /api/hikes/:id — il creatore cancella una sua escursione,
-  anche dopo la chiusura di gruppo. Richiesta di Denis ("poter togliere
-  le escursioni di prova"), nata dalla 25a (il cestino sulle card
-  "completate in gruppo" toglieva il Completion ma la card restava).
-  cancellazioneLimiter a se' (NON scritturaLimiter, che arma il DMS);
-  409 se c'e' una ActiveHikeSession viva; cascata su tracce concluse +
-  Like/Notification/TrailCandidate loro, Completion di tutti, chat,
-  Notification(relatedHikeId), RouteBookmark; completedHikes-1 in bulk;
-  passo ricalcolato; avviso ai partecipanti; seconda passata dopo
-  Hike.deleteOne (TOCTOU). Client: conferma rossa col conteggio iscritti.
-  Prova prova-elimina-escursione 52/52. (7d2de46 — era gia' committato
-  prima del crash, pushato ora)
+  (b) INVITO SQUADRA DIREZIONALE — rimandato dalla 26a, chiuso per
+  intero in 4 tappe (0fce557->adf9ff2), progetto dell'agente architect
+  (due giri: lato escursione, poi consenso squadra). Hike.pendingInvites
+  + Squad.pendingInvites; rotte invite-squad/invite + invite-response;
+  DELETE /api/squads/:id/members/:userId (la porta d'uscita che non
+  c'era). Tappa 3 chiude la corsia PUT (aggiungere un compagno a mano e'
+  impossibile) e con essa il buco §0. Tappa 4 (consenso squadra):
+  migrazione nessuna. lib/squad.js + lib/squadAdmin.js nuovi
+  (promuoviSeSenzaAdmin estratta da riassegnaAdminSquadre).
+  Prove: prova-invito-direzionale 41/41, prova-squadre-consenso 44/44,
+  + inversioni verdi (prova-invito-squadra 60/60, prova-partecipanti-
+  forzati 27/27). Il dettaglio delle 6 decisioni di Denis e' in
+  cose_da_fare.txt e vault 03.
 
-  (2) DUE VULNERABILITA' PREESISTENTI (agente security-privacy su
-  7d2de46, NON regressioni):
-   (a) PUT /api/hikes/:id — il creatore NON aveva nessun filtro su chi
-   aggiungere a participants/pendingApproval: un PUT {participants:[<id>]}
-   con un id preso da GET /api/users bastava per infilare uno sconosciuto
-   nel gruppo mesh/SOS di un'escursione non conclusa e riceverne il GPS
-   reale (server.js). Ora il creatore puo' aggiungere solo: chi ha gia'
-   chiesto, chi e' gia' dentro, o un membro di una squadra di cui LUI fa
-   parte (Squad.find({members}), di proposito piu' largo del creatorId
-   dell'invito-squadra di POST /). 403 HIKE_AGGIUNTA_NON_CONSENTITA.
-   Rimozioni sempre libere.
-   (b) POST /:id/complete-group — nessun rate limiter, nessun tetto alla
-   lista, nessun avviso a chi era "segnato presente" senza essere
-   iscritto. Aggiunti scritturaLimiter, tetto 200, Notification a chi e'
-   confermato ex novo.
-   (85d537b)
-
-  Prova nuova prove/prova-partecipanti-forzati.js (21/21). Era rossa NON
-  per il codice: usava Sofia (demo[2]) come estraneo, ma i 4 demo non
-  sono scollegati — Marco/Luca/Sofia stanno tutti in "I Camosci della
-  Val Brembana". Giulia (demo[3]) e' l'unica libera. Trappola in vault 07.
-  Regressioni verdi: prova-invito-squadra 59/59, prova-elimina-escursione
-  52/52, prova-punto77 17/17. node --check OK.
-
->>> GIA' IN PRODUZIONE prima di oggi (origin/master era `d363eea`):
+>>> GIA' IN PRODUZIONE prima di oggi (origin/master era `d363eea` prima
+    della 27a, `adf9ff2` dopo):
+    26a sessione — DELETE /api/hikes/:id (il creatore cancella una sua
+    escursione) + due vulnerabilita' preesistenti (creatore aggiungeva
+    chiunque; complete-group senza tetto), 7d2de46+85d537b.
     25a sessione — tre rifiniture v2 (menu "Le mie escursioni"/"Community"
     aprono solo la tendina c0de245; Terminillo chiusa in gruppo non resta
     "In programma" c278e25; niente iscrizioni oltre il giorno previsto,

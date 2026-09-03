@@ -9754,3 +9754,79 @@ Dettaglio: vault 03 ("Traccia importata -> linea sulla mappa"), 06
 ("Ventisettesima sessione"), 07 ("risolviPercorso ha una whitelist di
 ritorno"). leggimi.txt aggiornato. Vault committato e pushato.
 cronologia.txt NON toccato (congelato).
+
+
+===================================================================
+INVITO SQUADRA DIREZIONALE ("decide l'invitato") - CHIUSO PER INTERO
+27a sessione (03/09/2026), stessa sessione del punto 116. 4 tappe,
+commit 0fce557 -> adf9ff2. Progetto dell'agente architect.
+Le parole di Denis stanno piu' su, nel blocco "RIMANDATO: INVITO
+SQUADRA DIREZIONALE" della 26a sessione.
+===================================================================
+
+Denis ha chiesto l'agente architect ("vai con l'agente"). L'agente ha
+prodotto due piani (in C:\Users\lenovo\.claude\plans\) e ha trovato,
+NON nel briefing, che la falla che il vault dava per chiusa alla 26a
+e' ancora aperta:
+
+  la "corsia compagno di squadra" non e' un vero controllo di
+  relazione. POST /api/squads scrive `members` preso dal client, senza
+  consenso e senza tetto, e NON esiste nessuna rotta per lasciare una
+  squadra. Quindi: creo una squadra {members:[io, sconosciuto]}, poi
+  PUT /api/hikes/:id {participants:[io, sconosciuto]} -> 200, e quello
+  e' nel gruppo mesh/SOS.
+
+Denis: "confermo tutti i punti con le proposte del agente. risolviamo
+pure la falla."
+
+LE 6 DECISIONI (tutte = proposta dell'agente):
+ 1. manualApproval + invito -> chi accetta ENTRA SUBITO; su quelle
+    escursioni invita SOLO il creatore. Niente campo invitedBy.
+ 2. la "proposta" di un terzo (pendingApproval) resta com'e' (opzione B).
+    confermaInvitoSquadra a due strade.
+ 3. la creazione escursione resta un annuncio (POST /api/hikes non
+    toccato).
+ 4. il rifiuto notifica l'organizzatore (testo neutro); conteggio in
+    sola lettura degli inviti senza risposta, nessun bottone.
+ 5. pendingInvites serializzato ridotto (partecipanti vedono tutti,
+    estraneo vede solo il proprio).
+ 6. la falla si chiude (tappa 4).
++ tappa 4: (a) la squadra rimasta senza membri si cancella con la chat;
+  (b) il creatore che esce passa la proprieta' al membro piu' anziano.
+
+COSA E' STATO FATTO - 4 tappe, ognuna verde e deployabile da sola:
+ tappa 1 (0fce557, server): Hike.pendingInvites; POST /:id/invite-squad
+   + /:id/invite-response; hikeVisibileA ridotto; complete-group $unset.
+   lib/squad.js nuovo. PUT intatto. prova-invito-direzionale 41/41.
+ tappa 2 (f5445ab, client): UI Accetta/Rifiuta sulla card, gruppo
+   "Inviti" in "Le mie escursioni", confermaInvitoSquadra a due strade,
+   rispondiInvito, bucket invitato, fix goToHikeToComplete.
+ tappa 3 (3c9bd46, chiusura): via la corsia HIKE_AGGIUNTA_NON_CONSENTITA
+   dal PUT - aggiungere un compagno a mano e' IMPOSSIBILE, non solo non
+   offerto. Chiude il buco §0 lato escursione. prova-invito-squadra
+   sez. B 60/60, prova-partecipanti-forzati 27/27.
+ tappa 4 (adf9ff2, consenso squadra): Squad.pendingInvites; POST
+   /api/squads crea col solo creatore + invita; POST /:id/invite,
+   /:id/invite-response, DELETE /:id/invites/:userId, DELETE
+   /:id/members/:userId (LA PORTA D'USCITA che non esisteva).
+   lib/squadAdmin.js nuovo (promuoviSeSenzaAdmin estratta da
+   riassegnaAdminSquadre). Client: submitCreateSquad, card "Inviti alle
+   squadre", squadpage.js (inviti in attesa, "x" sui membri, "Lascia la
+   squadra" con conferma a 3 varianti). Migrazione: NESSUNA.
+   prova-squadre-consenso 44/44.
+
+RISCHIO DEPLOY (accettato): una scheda aperta col codice pre-tappa-2
+che fa PUT {participants:[compagno]} prende un 403 col messaggio che
+lo spiega.
+
+APERTO: verifica dal vivo di Denis (card Accetta/Rifiuta su una card
+escursione, gruppo "Inviti", creazione squadra -> inviti, "Lascia la
+squadra", squadra rimasta vuota -> sparisce).
+
+npm audit --omit=dev: 3 vulnerabilita' MODERATE transitive, NON
+introdotte in questa sessione (nessuna dipendenza nuova aggiunta).
+
+Dettaglio: vault 03 ("Invito squadra direzionale"), 06 ("Ventisettesima
+sessione"), 07 ("il creatore di una squadra e' membro per calcolo").
+leggimi.txt aggiornato. Vault committato e pushato. cronologia.txt NON
+toccato (congelato).
