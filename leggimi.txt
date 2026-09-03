@@ -48,27 +48,51 @@ creatore di una squadra e' membro per calcolo"), cose_da_fare.txt
     prima di ogni push. Fatto cosi' per il lavoro di oggi.
 
     STATO A FINE 27a SESSIONE:
-      - camoscio       origin/master = `28001ea` (codice a `adf9ff2`,
+      - camoscio       origin/master = `NOTE-27C` (codice a `adf9ff2`,
                        sopra solo il commit di note). Working tree PULITO.
-      - camoscio memoria (vault) origin/master = `fc28507`. Working tree PULITO.
+      - camoscio memoria (vault) origin/master = `3d5cf5d`. Working tree PULITO.
       - Tutto pushato in entrambi i repo, niente in coda.
       - Prove verdi: prova-punto116 42/42, prova-invito-direzionale
         41/41, prova-squadre-consenso 44/44, prova-invito-squadra 60/60,
         prova-partecipanti-forzati 27/27, prova-eliminazione-account
         57/57, prova-elimina-escursione 52/52, prova-punto77 17/17,
         prova-punto93 28/28.
-      - APERTO SUBITO: verifica dal vivo di Denis - (1) punto 116: linea
-        su Esplora (tasto "Mappa" di una card con traccia importata) +
-        card "Percorso previsto" nel tab Dettagli. (2) invito squadra:
-        card Accetta/Rifiuta su un'escursione, gruppo "Inviti" in "Le mie
-        escursioni", creare una squadra -> inviti (non membri diretti),
+
+      >>> LA PROSSIMA SESSIONE PARTE DA QUI: HOTFIX SICUREZZA <<<
+      L'agente security-privacy ha rivisto l'invito squadra (gia' in
+      produzione): 1 CRITICO, 3 ALTO, 6 MEDIO, 6 BASSO. Rapporto:
+        C:\Users\lenovo\.claude\plans\camoscio-review-sicurezza-invito-squadra.md
+      Il TRIAGE completo (con le parole di Denis "salva tutto quanto
+      riprendiamo nella prossima sessione") sta in cose_da_fare.txt,
+      blocco "REVISIONE SICUREZZA".
+      In breve:
+       - C-1 (CRITICO): la corsia pendingApproval e' sopravvissuta - un
+         partecipante non creatore propone V su una hike ad approvazione
+         manuale, il creatore la approva, V finisce nel gruppo mesh/SOS
+         senza dire si'. SERVE LA DECISIONE DI DENIS (chiudere = rovescia
+         la sua risposta #2 "la proposta resta"). Consiglio: chiudere.
+       - Fixare comunque (bug introdotti da questo lavoro): A-2 (DELETE
+         members senza check appartenenza sulla corsia "se stesso"), M-1
+         (nuovo proprietario squadra senza filtro vitalita'), A-1
+         (Squad.name senza tetto x50 notifiche), M-3 (Squad.pendingInvites
+         esce a tutti), B-1 (race sul $unset), B-2 (filtro
+         pendingDeletionAt).
+       - Da decidere con Denis: A-3 (npm audit fix), M-2 (tetto
+         participants/pendingApproval in PUT), M-4 (scrub non fa $pull
+         dagli inviti), M-5 (invitoLimiter), M-6 (complete-group non
+         verifica la partecipazione - PREESISTENTE, la memoria diceva il
+         contrario).
+      Piano: decidere C-1, un unico giro di hotfix, prove, commit+push,
+      secondo giro dell'agente.
+
+      - APERTO ANCHE (non blocca l'hotfix): verifica dal vivo di Denis -
+        (1) punto 116: linea su Esplora + card "Percorso previsto" nel tab
+        Dettagli. (2) invito squadra: card Accetta/Rifiuta, gruppo
+        "Inviti", creare una squadra -> inviti (non membri diretti),
         "Lascia la squadra", squadra rimasta vuota -> sparisce.
       - RISCHIO DEPLOY (accettato, gia' pushato): una scheda aperta col
         codice pre-tappa-2 che fa PUT {participants:[compagno]} prende
         un 403 col messaggio che lo spiega.
-      - PROSSIMA SESSIONE: candidati -> M-5 (race cancella-contatto, il
-        piu' piccolo aperto), TTL sulle Notification, cestino sulle card
-        "completate in gruppo", oppure una nuova richiesta di Denis.
 
 >>> AZIONI MANUALI DI DENIS, aperte:
   1. NUOVA — ACCOUNT_SCRUB_SECRET su Render (stringa a scelta, DIVERSA da

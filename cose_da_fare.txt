@@ -9830,3 +9830,102 @@ Dettaglio: vault 03 ("Invito squadra direzionale"), 06 ("Ventisettesima
 sessione"), 07 ("il creatore di una squadra e' membro per calcolo").
 leggimi.txt aggiornato. Vault committato e pushato. cronologia.txt NON
 toccato (congelato).
+
+--- REVISIONE SICUREZZA (agente security-privacy, fine 27a sessione) ---
+    Rapporto completo: C:\Users\lenovo\.claude\plans\
+                       camoscio-review-sicurezza-invito-squadra.md
+    Denis: "salva tutto quanto riprendiamo nella prossima sessione."
+    Il codice E' GIA' IN PRODUZIONE (push 8e8718f). Ogni voce = hotfix.
+
+    Conta: 1 CRITICO, 3 ALTO, 6 MEDIO, 6 BASSO.
+    16 voci "Verificato pulito" (attore mai dal client su tutte le rotte
+    nuove, CAS di invite-response corretto, nomeVisibile ovunque, niente
+    XSS, squadAdmin estratto senza regressioni). Il lavoro ha anche
+    chiuso un bypass di privacy non previsto (areSquadmates: chiunque si
+    creava una squadra con dentro la vittima -> "compagno di squadra" ->
+    bio/foto/interessi sbloccati).
+
+  DECISIONE APERTA - C-1 (CRITICO), serve Denis:
+    routes/hikes.js:98 + il blocco isCreator di PUT /:id. La corsia
+    pendingInvites e' chiusa, ma quella pendingApproval e' sopravvissuta.
+    2 account: B (partecipante non creatore) propone V in pendingApproval
+    su una hike ad approvazione manuale (riga 98 lo consente) -> A
+    (creatore) sposta V in participants (V e' ormai in giaInRelazione) ->
+    V nel gruppo mesh/SOS, NESSUNA notifica. E' il difetto della 26a
+    sopravvissuto sotto l'altro campo.
+    Denis aveva scelto l'opzione B ("la proposta resta") sapendo del
+    rischio; l'agente mostra che e' silenzioso + banale + e' il gruppo di
+    SICUREZZA. Consiglio dell'assistente: CHIUDERLO -> riga 98
+    `return pendDiff.added.length === 0;` + togliere il ramo "proposta"
+    (soloProposta) dal client (confermaInvitoSquadra) + prova nuova. Un
+    partecipante non creatore che vuole portare la sua squadra su una
+    hike ad approvazione manuale non creata da lui: dice all'amico di
+    usare "Richiesta Partecipazione". DA DECIDERE con Denis.
+
+  DA FIXARE COMUNQUE (bug introdotti da questo lavoro, basso rischio):
+   A-2 (ALTO) DELETE /api/squads/:id/members/:userId - la corsia "su me
+       stesso" NON verifica l'appartenenza -> un estraneo fa sciogliere
+       una squadra altrui (con la chat). Aggiungere isSquadMember
+       sull'attore PRIMA dei rami (routes/squads.js:249-269).
+   M-1 (MEDIO) il nuovo proprietario di una squadra (creatore che esce)
+       e' scelto senza filtro di vitalita' -> si resta con creatorId =
+       account eliminato e nessun admin (promuoviSeSenzaAdmin poi esce
+       'ok' perche' guarda admins.length, non la vitalita'). Riusare il
+       filtro di lib/squadAdmin.js (routes/squads.js:258-263).
+   A-1 (ALTO) Squad.name senza maxlength, x50 nelle notifiche d'invito ->
+       una POST /api/squads con name da 9,9 MB + 50 id = ~495 MB di
+       stringhe su Render 512 MB. maxlength:80 a schema + trim().slice
+       (0,80) in rotta (idioma in routes/tracking.js:402). + maxlength
+       "80" nell'HTML (cosmetico). Valutare anche maxlength:300 su
+       Notification.text (ultimo campo testo libero senza tetto).
+   M-3 (MEDIO) Squad.pendingInvites (e pendingRequests) escono a TUTTI da
+       GET /api/squads, al contrario di Hike.pendingInvites. squadVisibileA
+       speculare a hikeVisibileA (toJSON, non toObject) su GET /,
+       invite-response, request-join, DELETE /:id/members.
+   B-1 (BASSO) race sul $unset di pendingInvites (3 punti: squads.js
+       ~194 e ~228, hikes.js ~1157): un $addToSet concorrente viene
+       cancellato. Filtro { pendingInvites: { $size: 0 } } nel $unset.
+   B-2 (BASSO) invite-squad (hike) filtra solo deletedAt, non
+       pendingDeletionAt; applicaInviti li filtra entrambi. Allineare
+       (routes/hikes.js:1041).
+
+  DA DECIDERE con Denis (preesistenti o di confine):
+   A-3 (ALTO) npm audit fix - 3 moderate su qs via express (transitiva).
+       Tocca package-lock.json. Il primo advisory e' il bypass del limite
+       di elementi degli array: sta a MONTE di tutti i tetti sugli array.
+   M-2 (MEDIO) PUT /api/hikes/:id: nessun tetto su participants/
+       pendingApproval (diffIdLists ragiona su INSIEMI -> 300k doppioni
+       passano). Preesistente: gli altri array della rotta hanno il tetto.
+       Cap 200 + dedup con new Set.
+   M-4 (MEDIO) l'eliminazione account non fa $pull da Hike/Squad
+       .pendingInvites ne' da Hike.pendingApproval (residuo GDPR +
+       "N invitati non hanno risposto" non torna mai a 0). + non esiste
+       DELETE /api/hikes/:id/invites/:userId (per le squadre si').
+   M-5 (MEDIO) niente limiter dedicato su invite-squad / squads/:id/invite;
+       il ciclo invita -> DELETE /:id/invites -> invita riapre la
+       produzione di notifiche (100 ogni 52 richieste). invitoLimiter
+       nuovo, 40/ora, MAI scritturaLimiter (secchio del Dead Man's
+       Switch). Da mettere anche su POST /api/squads e DELETE /:id/invites.
+   M-6 (MEDIO) complete-group NON verifica la partecipazione dei
+       confirmedUserIds (preesistente: 85d537b ha aggiunto tetto +
+       esistenza, non partecipazione). Il creatore crea Completion,
+       incrementa completedHikes/experienceLevel/passo di un utente
+       QUALSIASI. groupCompletedAt nello stesso save() chiude il mesh, ma
+       resta l'integrita' dei dati altrui. Fix di 1 riga (nonPartecipanti).
+       NB: la memoria "falle-preesistenti-hikes" diceva che complete-group
+       era sistemato - NON lo e'.
+
+  RIMANDATI (micro): B-4 notifica a chi e' rimosso da una squadra / a chi
+   ne eredita la proprieta'; B-5 export GDPR senza gli inviti ricevuti;
+   B-6 tutti i partecipanti (non solo il creatore) vedono l'elenco pieno
+   di pendingInvites.
+
+  CONFORMITA' (serve un professionista, NON e' consulenza legale
+   dell'agente): (1) il testo dell'invito dovrebbe dire, PRIMA
+   dell'accettazione, che accettare = la propria posizione potra' essere
+   condivisa coi partecipanti in caso di mesh/SOS; (2) l'uscita da
+   participants come revoca del consenso, con la stessa evidenza.
+
+  PROSSIMA SESSIONE: partire da qui. Decidere C-1, poi un unico giro di
+  hotfix (i "fixare comunque" + quello che Denis approva dei "da
+  decidere"), prove, commit+push, secondo giro dell'agente sui fix.
