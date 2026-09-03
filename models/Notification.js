@@ -2,7 +2,13 @@ const { mongoose } = require('../db/mongo');
 
 const notificationSchema = new mongoose.Schema({
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    text: { type: String, required: true },
+    // maxlength (A-1 / 2° giro dell'agente): cintura indipendente da ogni chiamante futuro
+    // sull'ultimo campo di testo che il client puo' riempire per interposta persona. 600 e'
+    // ben oltre il piu' lungo testo legittimo: l'esito del Dead Man's Switch con 5 contatti da
+    // 80 caratteri arriva a ~540 (routes/safety.js), tutti gli altri sono template con
+    // interpolazioni gia' capate (squad.name 80, hike.title 120, username 40). Un 300 - la
+    // proposta iniziale - taglierebbe l'avviso del soccorso, per questo era stato lasciato fuori.
+    text: { type: String, required: true, maxlength: 600 },
     read: { type: Boolean, default: false },
     // Punto 64: collega una notifica alla sua escursione, SOLO dove serve (il promemoria di
     // completamento di gruppo). Prima nessuna notifica aveva un modo di collegarsi a

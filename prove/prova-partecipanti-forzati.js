@@ -198,8 +198,8 @@ async function ripristinaPace(id, s) {
         const conEstraneo = await chiama('POST', `/api/hikes/${h4}/complete-group`, { confirmedUserIds: [idA, idB, idE] }, ckA);
         ok('confermare un estraneo (mai iscritto ne\' invitato) -> 400 (M-6)', conEstraneo.status === 400,
             `status ${conEstraneo.status} ${JSON.stringify(conEstraneo.corpo)}`);
-        ok('...con il messaggio "solo chi era iscritto o invitato"',
-            conEstraneo.corpo && /iscritto o invitato/.test(conEstraneo.corpo.error || ''), JSON.stringify(conEstraneo.corpo));
+        ok('...con il messaggio "solo chi era iscritto"',
+            conEstraneo.corpo && /solo chi era iscritto/.test(conEstraneo.corpo.error || ''), JSON.stringify(conEstraneo.corpo));
         ok('...e la hike NON e\' stata chiusa', !(await Hike.findById(h4).lean()).groupCompletedAt);
         ok('...e il profilo dell\'estraneo non e\' stato toccato',
             JSON.stringify(await istantaneaPace(idE)) === JSON.stringify(paceE), JSON.stringify(paceE));

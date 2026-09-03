@@ -114,9 +114,18 @@ function squadVisibileA(squad, userId) {
 }
 
 // Ottieni squadre ricorrenti
+// try/catch (MEDIO-2 del 2° giro dell'agente): era l'unica rotta del modulo senza, e ora il
+// corpo non e' piu' un semplice res.json(squads) - squadVisibileA -> isSquadMember tocca
+// squad.creatorId. Una promessa rifiutata qui, non catturata, terminerebbe il processo
+// (nessun handler unhandledRejection in server.js), ed e' la rotta chiamata a ogni refreshState.
 router.get('/', requireAuth, async (req, res) => {
-    const squads = await Squad.find();
-    res.json(squads.map(s => squadVisibileA(s, req.session.userId)));
+    try {
+        const squads = await Squad.find();
+        res.json(squads.map(s => squadVisibileA(s, req.session.userId)));
+    } catch (e) {
+        console.error('Errore lettura squadre:', e);
+        res.status(500).json({ error: 'Impossibile leggere le squadre' });
+    }
 });
 
 // Crea squadra - il creatore e' sempre chi ha fatto login, ed e' l'UNICO membro alla

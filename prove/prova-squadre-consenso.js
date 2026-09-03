@@ -213,6 +213,52 @@ const S = a => (a || []).map(String);
         ok('l\'ultimo membro esce -> { sciolta: true }', r.status === 200 && r.corpo && r.corpo.sciolta === true, JSON.stringify(r.corpo));
         ok('...e la squadra non esiste piu\' sul DB', await squadsCol.findOne({ _id: oid(S5) }) === null);
 
+        // === 7b. rilievi della REVISIONE SICUREZZA 27ª: A-2, M-1, M-3 ===
+        console.log('\n7b. A-2 (appartenenza dell\'attore), M-1 (successore vivo), M-3 (squadVisibileA)');
+
+        // A-2: un NON MEMBRO non puo' invocare il flusso d'uscita "su se stesso" su una
+        // squadra di cui non fa parte (prima il gate era condizionato a !seStesso -> un
+        // estraneo faceva partire lo scioglimento di una squadra con members vuoto).
+        const { id: S7b } = await creaSquad('-S7b', { inviteUserIds: [G] });
+        await chiama('POST', `/api/squads/${S7b}/invite-response`, { accept: true }, ckG);
+        r = await chiama('DELETE', `/api/squads/${S7b}/members/${So}`, undefined, ckSo); // So non e' in S7b
+        ok('A-2: un non-membro che "esce" da una squadra estranea -> 403', r.status === 403, `status ${r.status}: ${JSON.stringify(r.corpo)}`);
+        ok('A-2: ...e la squadra estranea esiste ancora (niente scioglimento)', await squadsCol.findOne({ _id: oid(S7b) }) !== null);
+
+        // M-1: il successore del creatore uscente si sceglie fra i membri VIVI. Un id che non
+        // risolve a nessun utente (o un tombstone) va saltato - prima si prendeva restanti[0]
+        // e la squadra restava con creatorId fantasma + zero admin.
+        const idFantasma = String(new mongoose.Types.ObjectId()); // non corrisponde a nessun User
+        const { id: S8 } = await creaSquad('-S8', { inviteUserIds: [G] });
+        await chiama('POST', `/api/squads/${S8}/invite-response`, { accept: true }, ckG); // members: [A, G]
+        await squadsCol.updateOne({ _id: oid(S8) }, { $push: { members: oid(idFantasma) } }); // members: [A, G, fantasma]
+        r = await chiama('DELETE', `/api/squads/${S8}/members/${A}`, undefined, ckA); // A (creatore) esce
+        ok('M-1: A esce -> 200', r.status === 200, JSON.stringify(r.corpo));
+        const s8db = await squadsCol.findOne({ _id: oid(S8) });
+        ok('M-1: il nuovo creatorId e\' G (vivo), NON l\'id fantasma', s8db && String(s8db.creatorId) === String(G), s8db && String(s8db.creatorId));
+
+        // M-1: se NON c'e' nessun successore vivo, la squadra si scioglie invece di restare
+        // con un creatorId fantasma.
+        const { id: S9 } = await creaSquad('-S9', {});
+        await squadsCol.updateOne({ _id: oid(S9) }, { $push: { members: oid(idFantasma) } }); // members: [A, fantasma]
+        r = await chiama('DELETE', `/api/squads/${S9}/members/${A}`, undefined, ckA);
+        ok('M-1: creatore esce, unico "membro" restante e\' un fantasma -> { sciolta: true }',
+            r.status === 200 && r.corpo && r.corpo.sciolta === true, JSON.stringify(r.corpo));
+        ok('M-1: ...e la squadra non esiste piu\' sul DB', await squadsCol.findOne({ _id: oid(S9) }) === null);
+
+        // M-3: GET /api/squads da un NON MEMBRO non espone gli inviti/le richieste altrui.
+        const { id: S10 } = await creaSquad('-S10', { inviteUserIds: [L] }); // L invitato, non ancora dentro
+        const listaSo = (await chiama('GET', '/api/squads', undefined, ckSo)).corpo || [];
+        const s10visto = listaSo.find(s => (s.id || s._id) === S10);
+        ok('M-3: So (non membro) vede comunque la squadra S10', !!s10visto, JSON.stringify(listaSo.map(s => s.id || s._id)));
+        ok('M-3: ...ma NON vede pendingInvites (l\'invito di L a una squadra di cui non fa parte)',
+            s10visto && (s10visto.pendingInvites === undefined || s10visto.pendingInvites.length === 0),
+            JSON.stringify(s10visto && s10visto.pendingInvites));
+        const listaG = (await chiama('GET', '/api/squads', undefined, ckA)).corpo || []; // A e' il creatore di S10
+        const s10vistoDaA = listaG.find(s => (s.id || s._id) === S10);
+        ok('M-3: il creatore (membro) vede pendingInvites per intero', s10vistoDaA && S(s10vistoDaA.pendingInvites).includes(String(L)),
+            JSON.stringify(s10vistoDaA && s10vistoDaA.pendingInvites));
+
         // === 8. coerenza col gemello (Hike.pendingInvites sopravvive all'uscita) ===
         console.log('\n8. l\'invito a un\'escursione sopravvive all\'uscita dalla squadra');
         const { id: S6 } = await creaSquad('-S6', { inviteUserIds: [G] });

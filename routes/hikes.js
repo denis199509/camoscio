@@ -876,23 +876,25 @@ router.post('/:id/complete-group', requireAuth, scritturaLimiter, async (req, re
         }
         // M-6 (revisione sicurezza 27ª, decisione di Denis 03/09/2026: chiudere - "togli la
         // funzione"). Oltre a esistere, ogni id confermato dev'essere in RELAZIONE con
-        // l'escursione: chi era gia' partecipante, chi aveva chiesto (pendingApproval) o era
-        // stato invitato (pendingInvites). Prima il creatore poteva passare id ARBITRARI e
-        // per ognuno applyHikeCompletionStats creava un Completion, incrementava completedHikes
-        // e ricalcolava experienceLevel/passo (lib/hikeStats.js), e poco sotto li scriveva in
-        // participants: si modificava il profilo di un utente qualsiasi senza il suo consenso.
+        // l'escursione: chi era gia' partecipante o chi aveva CHIESTO (pendingApproval). Prima
+        // il creatore poteva passare id ARBITRARI e per ognuno applyHikeCompletionStats creava
+        // un Completion, incrementava completedHikes e ricalcolava experienceLevel/passo
+        // (lib/hikeStats.js), e poco sotto li scriveva in participants: si modificava il
+        // profilo di un utente qualsiasi senza il suo consenso.
         // Revoca la facolta' "segna presente chi non si era MAI iscritto" (punto 64 / 26ª):
         // per un walk-up vero l'organizzatore lo aggiunge prima come partecipante, o quello
-        // chiede di partecipare. L'insieme e' lo stesso `giaInRelazione` di PUT /:id.
+        // chiede di partecipare. `pendingInvites` NON e' incluso, esattamente come in
+        // `giaInRelazione` di PUT /:id (righe ~482-486): un invitato che non ha ancora
+        // accettato non ha acconsentito a stare nell'escursione - finalizzarlo qui sarebbe lo
+        // stesso difetto di C-1 con un nome nuovo (rilievo ALTO-1 del 2° giro dell'agente).
         const inRelazione = new Set([
             ...(hike.participants || []).map(String),
             ...(hike.pendingApproval || []).map(String),
-            ...(hike.pendingInvites || []).map(String),
             String(hike.creatorId)
         ]);
         const estranei = [...new Set(confirmedUserIds.map(String))].filter(id => !inRelazione.has(id));
         if (estranei.length) {
-            return res.status(400).json({ error: "Puoi confermare solo chi era iscritto o invitato all'escursione." });
+            return res.status(400).json({ error: "Puoi confermare solo chi era iscritto all'escursione." });
         }
 
         // Chi era gia' iscritto PRIMA di questa chiamata: serve sotto per avvisare solo chi
