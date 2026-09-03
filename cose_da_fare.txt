@@ -10052,3 +10052,40 @@ toccato (congelato).
   security-privacy (29a sessione). Dettaglio decisioni in
   ../camoscio memoria/03-Decisioni-Architetturali.md "Follow-up
   revisione sicurezza (29a)".
+
+===============================================================
+AUDIT VISIVO DEL SITO (29a sessione, 03/09/2026)
+===============================================================
+
+  Denis: "abbiamo l'agente designer? facciamoli fare un giro per
+  vedere il sito. come e visivamente il sito. cosa si puo'
+  modificare per renderlo piu' piacevole al occhio".
+
+  Giro dell'agente `designer`, SOLO dal codice (niente toccato).
+  Il primo lancio e' fallito (limite di sessione), il secondo ha
+  consegnato.
+
+  ESITO: Denis -> "Per ora basta l'audit" (decide con calma).
+  NESSUN INTERVENTO APPLICATO.
+
+  Rapporto completo agli atti:
+    C:\Users\lenovo\.claude\plans\camoscio-audit-visivo-29a.md
+  Puntatore nel vault: ../camoscio memoria/04-Da-Fare.md
+    ("Audit visivo del sito (29a sessione)").
+
+  In due righe: il sito NON e' amatoriale (palette centralizzata,
+  componenti unificati). Difetto di fondo: il sistema non e' mai
+  stato applicato all'indietro. Il piu' diffuso: 19 regole CSS
+  stilano <i> senza la gemella su svg -> morte dopo Lucide ->
+  icone a 24px colore testo. Pronta una "Fascia A" di ~11
+  interventi CSS a costo quasi zero, non applicata.
+
+  DUE DECISIONI CHE ASPETTANO DENIS (dettaglio nel rapporto, sez. 9):
+   1. "Passo & Fatica" (aperta dal 10/08): i numeri del passo sono
+      blu, gli altri numeri della Dashboard arancioni, e nel
+      grafico sotto il passo dell'utente e' arancione. -> (a) tutti
+      arancioni, (b) grafico ribaltato (passo utente blu ovunque),
+      (c) lasciare + legenda "blu = stimato".
+   2. Bianco su arancione = 4,03:1 (appena sotto la soglia di
+      leggibilita' AA) sul CTA principale. Scurire l'arancione del
+      ~6% lo sistema, ma e' il colore del marchio.
