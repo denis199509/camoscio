@@ -48,7 +48,7 @@ creatore di una squadra e' membro per calcolo"), cose_da_fare.txt
     prima di ogni push. Fatto cosi' per il lavoro di oggi.
 
     STATO A FINE 27a SESSIONE:
-      - camoscio       origin/master = `NOTE-27B` (codice a `adf9ff2`,
+      - camoscio       origin/master = `28001ea` (codice a `adf9ff2`,
                        sopra solo il commit di note). Working tree PULITO.
       - camoscio memoria (vault) origin/master = `fc28507`. Working tree PULITO.
       - Tutto pushato in entrambi i repo, niente in coda.
