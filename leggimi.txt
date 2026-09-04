@@ -2,10 +2,12 @@
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
 Aggiornato: 2026-09-04 (TRENTESIMA sessione — CHIUSO PER INTERO il
 blocco dei follow-up rimasti aperti dalla revisione sicurezza (29a):
-ALTO-1, MEDIO-1b/1c, MEDIO-2, MEDIO-3 residuo, MEDIO-4. Push
-`884ea32` su `master`, Render redeploy automatico. Due giri
-`security-privacy` (uno su ALTO-1 da solo, uno sul cumulativo dei
-5 commit): GO.
+ALTO-1, MEDIO-1b/1c, MEDIO-2, MEDIO-3 residuo, MEDIO-4, poi anche
+il nuovo ALTO trovato in coda (User.profilePhoto, stesso buco
+gemello di Squad.photo). Push `571136d` su `master`, Render
+redeploy automatico. Tre giri `security-privacy` (ALTO-1 da solo,
+il cumulativo dei 5 commit, poi il fix su User.profilePhoto): GO
+tutti e tre.
 
 --- COSA E' STATO CHIUSO ---
 Denis: "procedi" -> l'elenco di sicurezza lavorato in ordine, un
@@ -53,32 +55,47 @@ punto alla volta, ognuno col suo commit (6 in tutto, tutti pushati).
         contenuto invariato).
 
 >>> STATO A FINE 30a SESSIONE:
-      - camoscio: ultimo commit = `884ea32`, PUSHATO. Working tree
+      - camoscio: ultimo commit = `571136d`, PUSHATO. Working tree
         pulito, niente auto-save in sospeso.
       - Prove verdi (rilanciate una alla volta - le suite condividono
         il DB demo, si "pestano i piedi" in parallelo):
-        prova-partecipanti-forzati 43/43, prova-squadre-consenso
-        71/71, prova-invito-squadra 54/54, prova-eliminazione-account
-        57/57.
+        prova-foto-profilo 14/14, prova-registrazione-senza-email
+        7/7, prova-eliminazione-account 57/57, prova-configurazione
+        9/9, prova-squadre-consenso 71/71, prova-invito-squadra 54/54,
+        prova-partecipanti-forzati 43/43.
       - npm audit --omit=dev = 0.
 
->>> APERTI (follow-up sicurezza, NON bloccano):
-  - ALTO NUOVO (trovato dal 2° giro agente, PREESISTENTE, FUORI
-    SCOPE del blocco appena chiuso - quello copriva solo la foto
-    squadra): User.profilePhoto (routes/users.js + routes/auth.js)
-    ha lo STESSO pattern non validato/non compresso appena chiuso su
-    Squad.photo, ma su una superficie piu' esposta: PUT
-    /api/users/:id senza limiter dedicato, e POST /api/auth/register
-    dove authLimiter ha skipSuccessfulRequests:true -> una
-    REGISTRAZIONE RIUSCITA non consuma quota, il tetto vero e' il
-    solo apiLimiter (3000/5min). Caso peggiore: 3000 account nuovi x
-    foto fino a ~1,5 MB decodificati riempirebbero i 512 MB di Atlas
-    in meno di un minuto. Fix proposto dall'agente: stesso blocco di
-    validazione byte gia' scritto in routes/squads.js + far
-    comprimere public/js/profile.js con lo stesso
-    window.CamoscioImageCompress + un limiter NUOVO dedicato sulla
-    registrazione (mai riusare authLimiter, condiviso col login).
-    E' il prossimo punto, se si continua sul filone sicurezza.
+>>> CHIUSO IN CODA ALLA 30a: User.profilePhoto (ALTO, trovato dal 2°
+    giro agente sul blocco Squad.photo). Stesso pattern: validazione
+    byte veri JPEG + compressione lato client (profile.js, auth.js) +
+    due limiter nuovi (fotoProfiloLimiter su PUT /users/:id, SOLO
+    quando tocca la foto; registrazioneLimiter su POST /auth/register,
+    conta OGNI tentativo - authLimiter da solo non bastava, salta le
+    richieste riuscite). Giro security-privacy: GO, con un bug vero
+    trovato e chiuso nello stesso commit - registrazioneLimiter era
+    montato DOPO authLimiter, cosi' i suoi 429 finivano ANCHE nel
+    secchio di authLimiter (condiviso con login/reset password):
+    misurato, 35 registrazioni bastavano a bloccare il login dello
+    stesso IP per 15 minuti (dietro un NAT, es. wifi di un rifugio, di
+    chiunque). Ordine invertito. Denis ha scelto di fermarsi qui
+    (non proseguire subito sui due punti nuovi trovati dal giro).
+
+>>> APERTI (follow-up sicurezza, NON bloccano, NUOVI da questo giro):
+  - MEDIO, non urgente con la base utenti attuale: GET /api/users
+    carica la foto intera di OGNI utente senza select/limite -
+    stessa asimmetria che aveva Squad.photo prima di select:false +
+    rotta dedicata + fotoLetturaLimiter. A 600 utenti con foto e' un
+    rischio OOM su Render 512 MB. Fix proposto: profilePhoto
+    select:false su User (models/User.js) + nuova GET
+    /api/users/:id/photo dietro un limiter di lettura dedicato +
+    aggiornare i punti client che oggi leggono usr.profilePhoto dalla
+    lista (ricerca persone, liste membri squadra...).
+  - BASSO: i messaggi di ValidationError di mongoose (routes/auth.js,
+    catch della registrazione) possono rispecchiare dati di terzi
+    (es. l'email di un contatto di emergenza, se il maxlength scatta
+    su quel campo) nel log del server e nella risposta al client.
+    Fix: messaggio generico al client, log solo di e.name +
+    Object.keys(e.errors).
   - CONFORMITA' GDPR (serve un professionista): il testo dell'invito
     dovrebbe dire, PRIMA dell'accettazione, che accettare = la
     propria posizione potra' essere condivisa coi partecipanti in

@@ -10115,6 +10115,56 @@ toccato (congelato).
   Dettaglio decisioni in ../camoscio memoria/03-Decisioni-
   Architetturali.md "Chiusura follow-up revisione sicurezza (30a)".
 
+  --- CHIUSO in coda alla 30a sessione (04/09/2026) ---
+  Denis: "si voglio chiudere i punti sulla sicurezza" -> chiuso anche
+  User.profilePhoto (era il prossimo punto sopra).
+
+  FATTI, commit 571136d, push su master:
+   - lib/profilePhoto.js (nuovo): validaFotoProfiloJpeg, condivisa fra
+     routes/users.js (PUT /:id) e routes/auth.js (POST /register) -
+     stesso principio di User.validaContattiEmergenza. Valida byte
+     JPEG veri + dimensione decodificata (600KB, come Squad.photo).
+   - fotoProfiloLimiter (20/ora su PUT /:id, ma SOLO quando il body
+     tocca profilePhoto - la rotta serve ogni altro campo del
+     profilo) + registrazioneLimiter (10/ora, conta OGNI tentativo,
+     affiancato ad authLimiter non al suo posto).
+   - profile.js + auth.js: il client comprime sempre la foto in JPEG
+     (window.CamoscioImageCompress, come le foto squadra), invece di
+     leggere il file scelto cosi' com'e'.
+
+  GIRO security-privacy: GO, con un bug VERO trovato e chiuso nello
+  stesso commit - registrazioneLimiter era montato DOPO authLimiter
+  (authLimiter ha skipSuccessfulRequests:true, conta solo le risposte
+  NON riuscite - e un 429 di registrazioneLimiter e' una di quelle).
+  Misurato dall'agente eseguendo i limiter veri: 35 registrazioni
+  bastavano a bloccare il LOGIN dello stesso IP per 15 minuti (dietro
+  un NAT, es. wifi di un rifugio, di chiunque). Ordine invertito
+  (registrazioneLimiter, authLimiter - il piu' stretto per primo).
+  Chiusi anche 2 rilievi BASSO: commento di server.js sul limite
+  express.json corretto (serve all'import .gpx/.fit, non piu' alle
+  foto), truthy-check -> !== undefined/null sulla validazione.
+
+  Prove: prova-foto-profilo.js (nuovo) 14/14, prova-registrazione-
+  senza-email 7/7, prova-eliminazione-account 57/57, prova-
+  configurazione 9/9. npm audit --omit=dev = 0.
+
+  RESTA APERTO dopo la 30a (Denis ha scelto di fermarsi qui, non
+  proseguire subito su questi due, trovati dal giro agente):
+   - MEDIO, non urgente con gli utenti attuali: GET /api/users carica
+     la foto intera di OGNI utente senza select/limite - stessa
+     asimmetria che aveva Squad.photo prima del suo fix. A qualche
+     centinaio di utenti con foto e' un rischio OOM su Render 512 MB.
+   - BASSO: i messaggi di ValidationError di mongoose (routes/auth.js,
+     registrazione) possono rispecchiare dati di terzi (es. l'email
+     di un contatto di emergenza) nel log del server e nella risposta.
+   - CONFORMITA' GDPR (professionista) + verifica dal vivo di Denis:
+     invariati.
+
+  Dettaglio decisioni in ../camoscio memoria/03-Decisioni-
+  Architetturali.md "Chiusura follow-up revisione sicurezza (30a)".
+  Lezione sull'ordine dei rate-limiter in ../camoscio memoria/
+  07-Trappole-Tecniche.md.
+
 ===============================================================
 AUDIT VISIVO DEL SITO (29a sessione, 03/09/2026)
 ===============================================================
