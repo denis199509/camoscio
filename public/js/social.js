@@ -1196,19 +1196,6 @@ window.rispondiInvito = async function(hikeId, accept) {
     }
 };
 
-// Notifica l'esito (accettato/rifiutato) di una richiesta di iscrizione
-async function notifyParticipantDecision(userId, text) {
-    try {
-        await fetch('/api/notifications', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId, text })
-        });
-    } catch (e) {
-        console.error("Errore nell'invio della notifica:", e);
-    }
-}
-
 // Accetta partecipante (Veto Capogruppo)
 window.approveParticipant = async function(hikeId, userId) {
     // Stato riletto PRIMA di calcolare qualunque cosa, stessa regola di confermaInvitoSquadra:
@@ -1243,11 +1230,8 @@ window.approveParticipant = async function(hikeId, userId) {
             return;
         }
 
-        // Testo neutro apposta: da quando l'aggiunta a pendingApproval puo' arrivare anche da un
-        // invito squadra (non solo da una richiesta propria), "la tua richiesta" sarebbe falso
-        // per chi non ha mai chiesto niente.
-        await notifyParticipantDecision(userId, `Sei tra i partecipanti di "${hike.title}".`);
-
+        // ALTO-1: la notifica di esito la genera il server dentro la PUT stessa (testo mai
+        // dal client) - non serve piu' una chiamata separata qui.
         await refreshState();
         renderHikesList();
     } catch(e) {
@@ -1272,9 +1256,7 @@ window.declineParticipant = async function(hikeId, userId) {
             body: JSON.stringify({ pendingApproval })
         });
 
-        // Stesso motivo del testo neutro in approveParticipant qui sopra.
-        await notifyParticipantDecision(userId, `Non sei stato inserito tra i partecipanti di "${hike.title}".`);
-
+        // ALTO-1: come in approveParticipant, la notifica la genera il server dentro la PUT.
         await refreshState();
         renderHikesList();
     } catch(e) {

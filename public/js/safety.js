@@ -694,7 +694,8 @@ function sendMeshChatMessage(isSos) {
     const input = document.getElementById("mesh-input-msg");
     // Testo auto SOS: trasmesso via WebSocket agli altri client e mostrato come
     // arriva - chi lo manda lo vede nella propria lingua, chi lo riceve nella
-    // lingua di chi l'ha inviato (stessa scelta di notifyParticipantDecision).
+    // lingua di chi l'ha inviato (stesso principio delle notifiche scritte una
+    // volta sola dal server, es. l'esito di una richiesta di partecipazione).
     let text = isSos ? (T('safety.mesh.sosText') || "SOS! RICHIESTA ASSISTENZA IMMEDIATA / INCIDENTE SUL SENTIERO!") : input.value;
     
     if (!text && !isSos) return;

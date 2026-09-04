@@ -457,6 +457,7 @@ router.put('/:id', requireAuth, async (req, res) => {
         // (diffIdLists esiste gia' per l'autorizzazione sopra) cosi' la notifica parte per
         // qualunque richiesta nuova, non solo dal tasto di oggi (joinHikeRequest in social.js).
         let newPendingRequesterIds = [];
+        let esitiPartecipazione = []; // ALTO-1: {userId, approvato} decisi dal creatore, testo mai dal client
         if (body.participants !== undefined || body.pendingApproval !== undefined) {
             // M-2 (revisione sicurezza 27ª): PRIMA di ogni altra cosa - i due array si scrivono
             // verbatim (piu' sotto), ma ogni guardia a monte ragiona su INSIEMI (diffIdLists):
@@ -537,6 +538,36 @@ router.put('/:id', requireAuth, async (req, res) => {
                 update.pendingApproval = body.pendingApproval;
                 newPendingRequesterIds = diffIdLists(hike.pendingApproval, body.pendingApproval).added
                     .filter(id => id !== String(hike.creatorId));
+
+                // ALTO-1 (revisione sicurezza, 29ª/30ª): l'esito "sei/non sei tra i
+                // partecipanti" veniva prima notificato da una POST /api/notifications
+                // separata, col testo E il destinatario scelti dal CLIENT - chiunque loggato
+                // poteva forgiare quella rotta per QUALUNQUE userId e QUALUNQUE testo (anche
+                // un falso esito del Dead Man's Switch). L'unico uso legittimo era proprio
+                // questo "Veto Capogruppo" (social.js approveParticipant/declineParticipant),
+                // quindi la notifica si genera qui - stesso giro gia' fatto, stesso hike.title
+                // gia' in mano, MAI un testo che arriva dal client. Solo il creatore decide
+                // (isCreator sopra), quindi un rifiuto/approvazione di un TERZO che ha solo
+                // proposto (canNonCreatorEditParticipation) non genera questo avviso.
+                //
+                // giaPartecipante (giro agente sul fix ALTO-1, MEDIO-A): giaInRelazione qui
+                // sopra considera "in relazione" anche chi e' GIA' in participants, quindi il
+                // creatore poteva rimettere un partecipante vero dentro pendingApproval e
+                // ritoglierlo subito - ogni giro genera una notifica verso un TERZO (non piu'
+                // verso se stesso come newPendingRequesterIds), fino a 200 a chiamata: molestia
+                // + riempimento reale di Atlas. Notificare SOLO chi era davvero in attesa (non
+                // gia' partecipante PRIMA di questa PUT) chiude il riciclo: chi viene rifiutato
+                // esce da giaInRelazione e non puo' rientrare in pendingApproval (403 sopra).
+                if (isCreator) {
+                    const giaPartecipante = new Set((hike.participants || []).map(String));
+                    const nuoviParticipantsSet = new Set(
+                        (body.participants !== undefined ? body.participants : hike.participants).map(String)
+                    );
+                    esitiPartecipazione = diffIdLists(hike.pendingApproval, body.pendingApproval).removed
+                        .filter(id => id !== String(hike.creatorId))
+                        .filter(id => !giaPartecipante.has(id))
+                        .map(id => ({ userId: id, approvato: nuoviParticipantsSet.has(id) }));
+                }
             }
         }
 
@@ -628,6 +659,15 @@ router.put('/:id', requireAuth, async (req, res) => {
                     : `${nomeChiPropone} propone ${nome} per la tua escursione "${hike.title}"`;
                 // relatedHikeId: la porta via DELETE /api/hikes/:id con l'escursione.
                 await Notification.create({ userId: hike.creatorId, text, read: false, relatedHikeId: hike._id });
+            }
+
+            // ALTO-1: esito della decisione del creatore, testo fisso generato qui (vedi il
+            // commento sopra, dove esitiPartecipazione viene calcolato).
+            for (const { userId: targetId, approvato } of esitiPartecipazione) {
+                const text = approvato
+                    ? `Sei tra i partecipanti di "${hike.title}".`
+                    : `Non sei stato inserito tra i partecipanti di "${hike.title}".`;
+                await Notification.create({ userId: targetId, text, read: false, relatedHikeId: hike._id });
             }
         } catch (notifErr) {
             console.error('Errore invio notifica richiesta partecipazione:', notifErr);

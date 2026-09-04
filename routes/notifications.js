@@ -45,18 +45,16 @@ router.get('/:userId', requireAuth, async (req, res) => {
     }
 });
 
-// Crea una notifica (usato lato client per gli esiti di approvazione/rifiuto iscrizione).
-// Il destinatario (userId) puo' essere un altro utente: e' cosi' per design (es. il
-// capogruppo notifica chi ha accettato/rifiutato), va bene finche' chi chiama e' loggato.
-router.post('/', requireAuth, async (req, res) => {
-    try {
-        const notification = await Notification.create({ read: false, ...req.body });
-        res.json(notification);
-    } catch (e) {
-        console.error('Errore creazione notifica:', e);
-        res.status(400).json({ error: 'Impossibile creare la notifica' });
-    }
-});
+// ALTO-1 (revisione sicurezza, 29ª/30ª sessione): qui viveva una POST '/' aperta a
+// requireAuth e basta - destinatario (userId) E testo arrivavano interi dal client, quindi
+// chiunque loggato poteva forgiare una notifica per QUALUNQUE utente con QUALUNQUE testo
+// (fino a 600 caratteri, il tetto dello schema - abbastanza per un falso esito del Dead
+// Man's Switch). L'unico uso legittimo era l'esito di approvazione/rifiuto di una richiesta
+// di iscrizione (Veto Capogruppo): quella notifica ora la genera routes/hikes.js dentro la
+// stessa PUT /api/hikes/:id che applica la decisione, con un testo fisso e mai il testo del
+// client. Nessun'altra rotta creava notifiche per conto di un utente da questo file - grep
+// su tutto il repo prima di toglierla. Se in futuro serve un'altra notifica "per conto di
+// un altro utente", va scritta come rotta dedicata col testo deciso dal server, MAI qui.
 
 // Punto 81: segna TUTTE le proprie notifiche come lette in un colpo solo - aprire il
 // pannello del campanello basta a considerarle lette, senza cliccarle una per una. Sempre

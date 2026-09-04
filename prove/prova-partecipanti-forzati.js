@@ -129,6 +129,33 @@ async function ripristinaPace(id, s) {
         ok('il creatore accetta chi ha chiesto -> 200', accetta.status === 200, JSON.stringify(accetta.corpo));
         ok('ora C e\' partecipante', (accetta.corpo.participants || []).map(String).includes(String(idC)));
 
+        // === 1b. ALTO-1 (revisione sicurezza, follow-up): l'esito lo scrive il server ===
+        // Prima, il client faceva una POST /api/notifications separata con testo E
+        // destinatario a scelta propria - chiunque loggato poteva forgiare quella rotta per
+        // QUALUNQUE utente/testo (anche un falso esito del Dead Man's Switch). Ora la
+        // notifica nasce dentro la PUT stessa, testo fisso deciso dal server.
+        const notifCDopoAccetta = await chiama('GET', `/api/notifications/${idC}`, null, ckC);
+        ok('C riceve l\'esito "sei tra i partecipanti", scritto dal server (ALTO-1)',
+            Array.isArray(notifCDopoAccetta.corpo) &&
+            notifCDopoAccetta.corpo.some(n => n.text === `Sei tra i partecipanti di "PROVA-VULN-${MARCA}-put".`),
+            JSON.stringify(notifCDopoAccetta.corpo && notifCDopoAccetta.corpo.slice(0, 3)));
+
+        const forgia = await chiama('POST', '/api/notifications',
+            { userId: idC, text: 'Il timer di sicurezza è scaduto: avvisati i tuoi contatti.' }, ckA);
+        ok('POST /api/notifications non esiste piu\' (ALTO-1)', forgia.status === 404, `status ${forgia.status}`);
+
+        // === 1c. MEDIO-A (giro agente sul fix ALTO-1): niente spam da un riciclo pendingApproval ===
+        // giaInRelazione considera "in relazione" anche chi e' GIA' partecipante: senza il
+        // filtro giaPartecipante, il creatore poteva rimettere C in pendingApproval e
+        // ritoglierlo subito, generando una notifica ad ogni giro (fino a 200 a chiamata).
+        const noteAmPrima = (await chiama('GET', `/api/notifications/${idC}`, null, ckC)).corpo.length;
+        const rimetti = await chiama('PUT', `/api/hikes/${h1}`, { pendingApproval: [idC] }, ckA);
+        ok('il creatore puo\' rimettere un partecipante in pendingApproval (giaInRelazione)', rimetti.status === 200, JSON.stringify(rimetti.corpo));
+        const ritogli = await chiama('PUT', `/api/hikes/${h1}`, { participants: [idA, idC], pendingApproval: [] }, ckA);
+        ok('...e ritoglierlo subito', ritogli.status === 200, JSON.stringify(ritogli.corpo));
+        const noteAmDopo = (await chiama('GET', `/api/notifications/${idC}`, null, ckC)).corpo.length;
+        ok('nessuna notifica nuova per C dal riciclo pendingApproval (MEDIO-A)', noteAmDopo === noteAmPrima, `${noteAmPrima} -> ${noteAmDopo}`);
+
         // ...e NEMMENO ora che A e C condividono una squadra: dalla 27ª ("decide l'invitato")
         // un compagno di squadra si INVITA, non si aggiunge a mano. Stessa aggiunta, stesso 403.
         // Dalla 27ª POST /api/squads crea la squadra col solo creatore e invita gli altri:

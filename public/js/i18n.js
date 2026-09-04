@@ -291,12 +291,11 @@
             //    tribeTag.* sotto, usati come T('...'+valore) con l'italiano
             //    invariato come ripiego, mai per filtrare o salvare).
             // 2) I due messaggi di notifica mandati all'ALTRO utente quando lo si
-            //    accetta/rifiuta (notifyParticipantDecision, social.js) NON sono
-            //    stati tradotti apposta: il testo viene scritto una volta sola sul
-            //    server nella lingua di CHI approva, non di chi lo legge dopo -
-            //    tradurlo avrebbe fatto vedere l'inglese a un utente che preferisce
-            //    l'italiano (o viceversa) a seconda della lingua di chi ha
-            //    approvato, invece di seguire sempre la lingua di chi guarda.
+            //    accetta/rifiuta (routes/hikes.js, PUT /:id, ALTO-1) NON sono
+            //    stati tradotti apposta: il testo lo scrive il server una volta
+            //    sola, sempre in italiano fisso, non nella lingua di chi lo legge -
+            //    stessa scelta di ogni altro testo che il server genera per una
+            //    notifica (richiesta di partecipazione, invito squadra...).
             //    Restano in italiano fisso, come prima di questo lotto.
             // 3) I messaggi d'errore che arrivano dal SERVER (dati.error/body.error
             //    nelle risposte delle rotte) restano sempre in italiano: il
@@ -759,8 +758,9 @@
             // 3) Il testo auto del tasto SOS mesh (safety.mesh.sosText) viene
             //    trasmesso via WebSocket agli altri client e mostrato come
             //    arriva: chi lo manda lo vede nella propria lingua, chi lo
-            //    riceve nella lingua di chi l'ha mandato - stessa scelta gia'
-            //    fatta per notifyParticipantDecision (secondo lotto).
+            //    riceve nella lingua di chi l'ha mandato - il punto 1 sopra e'
+            //    lo stesso principio: testo scritto una volta sola, non riletto
+            //    nella lingua di chi guarda dopo.
             // 4) Orario nel registro avvisi (toLocaleTimeString): locale
             //    'en-GB'/'it-IT' come per le date col nome del mese.
             'sectionTitle.safety': 'Safety',
