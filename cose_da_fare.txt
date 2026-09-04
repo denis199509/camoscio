@@ -10053,6 +10053,68 @@ toccato (congelato).
   ../camoscio memoria/03-Decisioni-Architetturali.md "Follow-up
   revisione sicurezza (29a)".
 
+  --- CHIUSO nella 30a sessione (04/09/2026) ---
+  Denis: "partiamo dalla sicurezza in ordine elencato", poi "procedi"
+  a ogni punto successivo -> lavorato un punto alla volta, un commit
+  per punto, prove rilanciate prima di passare al successivo.
+
+  FATTI, 6 commit (29069e6..884ea32), push su master:
+   - ALTO-1: POST /api/notifications RIMOSSA DEL TUTTO (non una
+     whitelist di campi). L'unico uso legittimo (esito Veto
+     Capogruppo) ora lo scrive il server dentro PUT /api/hikes/:id
+     stessa, testo fisso mai dal client.
+   - MEDIO-1b/1c: nuovo fotoLetturaLimiter (100/ora) su
+     GET /api/squads/:id/photo + Cache-Control.
+   - MEDIO-2: PUT /:id/photo valida ora i byte VERI decodificati
+     (magic byte) + la dimensione decodificata, non solo la stringa.
+   - MEDIO-3 residuo: squadpage.js comprime SEMPRE lato client
+     (imagecompress.js, come i report) -> sempre JPEG. Server:
+     MAX_PHOTO_BYTES 1.5MB -> 600KB, validazione ristretta al solo
+     JPEG.
+   - MEDIO-4: GET /users/me/export + richiesteSquadraInviate /
+     richiesteEscursioneInviate (pendingRequests/pendingApproval dove
+     sono io il richiedente), stessa minimizzazione di B-5.
+
+  2 GIRI security-privacy: uno su ALTO-1 da solo (GO, chiuso un
+  rilievo MEDIO nello stesso commit: giaPartecipante, niente
+  notifiche di riciclo verso un partecipante gia' dentro), uno sul
+  cumulativo dei 5 commit (GO per il push). Rilievi del 2o giro
+  chiusi in un commit apposito (884ea32):
+   - M-1: il filtro giaPartecipante chiudeva il riciclo SENZA
+     rimozione, non quello CON rimozione -> idempotenza
+     (Notification.exists sullo stesso testo/destinatario/escursione)
+     invece di un secondo secchio di rate-limit.
+   - M-2: Cache-Control era private,max-age=86400 su una risorsa
+     MUTABILE (Squad.photo cambia a ogni PUT) -> corretto a
+     private,no-cache (sempre rivalidata via ETag, stesso risparmio
+     di banda sul contenuto invariato).
+   - B-1/B-3: correzioni di commento (un commento di prova, un
+     commento del campo export).
+
+  Prove: prova-partecipanti-forzati 43/43 (+8), prova-squadre-
+  consenso 71/71 (+7), prova-invito-squadra 54/54, prova-
+  eliminazione-account 57/57, prova-elimina-escursione 53/53.
+  npm audit --omit=dev = 0.
+
+  RESTA APERTO dopo la 30a (ALTO NUOVO, PREESISTENTE, fuori scope -
+  il blocco copriva solo la foto squadra):
+   - User.profilePhoto (routes/users.js + routes/auth.js) ha lo
+     STESSO pattern non validato/non compresso appena chiuso su
+     Squad.photo, ma piu' esposto: PUT /api/users/:id senza limiter
+     dedicato, POST /api/auth/register dove authLimiter ha
+     skipSuccessfulRequests:true (una registrazione riuscita non
+     consuma quota, tetto vero = solo apiLimiter 3000/5min). Caso
+     peggiore: 3000 account nuovi x foto ~1.5MB riempirebbero Atlas
+     in meno di un minuto. Fix proposto dall'agente: stesso blocco
+     di validazione di routes/squads.js + far comprimere profile.js
+     + un limiter NUOVO sulla registrazione (mai riusare authLimiter,
+     condiviso col login). Prossimo punto, se si continua sul filone.
+   - CONFORMITA' GDPR (professionista) + verifica dal vivo di Denis
+     su tutto l'invito squadra: invariati.
+
+  Dettaglio decisioni in ../camoscio memoria/03-Decisioni-
+  Architetturali.md "Chiusura follow-up revisione sicurezza (30a)".
+
 ===============================================================
 AUDIT VISIVO DEL SITO (29a sessione, 03/09/2026)
 ===============================================================
