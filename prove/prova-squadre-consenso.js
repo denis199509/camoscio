@@ -293,6 +293,29 @@ const S = a => (a || []).map(String);
         ok('B-5: invitiEscursioneRicevuti contiene la gita H (l\'invito sopravvissuto all\'uscita da S6)',
             invH.some(h => String(h._id) === String(H)), JSON.stringify(invH));
 
+        // === 8c bis. MEDIO-4 (follow-up revisione sicurezza): il gemello di B-5, richieste INVIATE ===
+        // G qui manda due richieste in sospeso: entra in una squadra nuova (request-join, mai
+        // approvata) e chiede di partecipare a un'escursione ad approvazione manuale (mai
+        // accettata) - prima l'export non le portava, solo gli inviti RICEVUTI (B-5).
+        console.log('\n8c bis. MEDIO-4: /api/users/me/export include anche le richieste inviate e non ancora decise');
+        const { id: S6c } = await creaSquad('-S6c', {}); // creata da A, G non ne fa parte
+        await chiama('POST', `/api/squads/${S6c}/request-join`, {}, ckG); // G chiede, nessuno approva
+        const hkMa = await chiama('POST', '/api/hikes', {
+            title: MARCA + '-Hma', difficulty: 'Esperto', manualApproval: true,
+            date: new Date(Date.now() + 20 * 86400000).toISOString().slice(0, 10),
+            trailhead: { lat: 42.4686, lng: 13.5644, name: MARCA + 'ma' }
+        }, ckA);
+        const Hma = hkMa.corpo && hkMa.corpo.id;
+        if (Hma) hikeIds.push(oid(Hma));
+        await chiama('PUT', `/api/hikes/${Hma}`, { pendingApproval: [G] }, ckG); // G chiede, nessuno approva
+        const exp2 = await chiama('GET', '/api/users/me/export', undefined, ckG);
+        const reqS = (exp2.corpo && exp2.corpo.richiesteSquadraInviate) || [];
+        ok('MEDIO-4: richiesteSquadraInviate contiene S6c (solo nome + id, non il documento intero)',
+            reqS.some(s => String(s._id) === String(S6c) && s.name === MARCA + '-S6c') && !reqS.some(s => 'members' in s), JSON.stringify(reqS));
+        const reqH = (exp2.corpo && exp2.corpo.richiesteEscursioneInviate) || [];
+        ok('MEDIO-4: richiesteEscursioneInviate contiene Hma (solo campi minimi, non il documento intero)',
+            reqH.some(h => String(h._id) === String(Hma) && h.title === MARCA + '-Hma') && !reqH.some(h => 'participants' in h), JSON.stringify(reqH));
+
         // === 8c. MEDIO-3 (revisione sicurezza 28ª): Squad.photo fuori da GET /api/squads ===
         console.log('\n8c. MEDIO-3: la foto squadra ha una rotta dedicata, non esce dalla lista');
         const { id: Sfoto } = await creaSquad('-Sfoto', {});

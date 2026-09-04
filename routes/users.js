@@ -157,7 +157,8 @@ router.get('/users/me/export', requireAuth, exportLimiter, async (req, res) => {
             timbri, followCheFai, followCheRicevi, likeMessi, notifiche,
             segnalazioni, squadreGrezze, msgEscursioni, msgSquadre,
             sentieriPreferiti, progetti, percorsiSalvati, recensioniRicevute, tracceCandidate,
-            invitiSquadraRicevuti, invitiEscursioneRicevuti
+            invitiSquadraRicevuti, invitiEscursioneRicevuti,
+            richiesteSquadraInviate, richiesteEscursioneInviate
         ] = await Promise.all([
             User.findById(uid).lean(),                  // passwordHash e' select:false: non esce
             ActiveHikeSession.find({ userId: uid }).select('-points -offTrailBuffer').lean(),
@@ -182,7 +183,14 @@ router.get('/users/me/export', requireAuth, exportLimiter, async (req, res) => {
             // dato personale che il titolare detiene sull'interessato - va nell'export come le
             // squadre/escursioni di cui si fa parte. Solo i campi che identificano l'invito.
             Squad.find({ pendingInvites: uid }).select('_id name').lean(),
-            Hike.find({ pendingInvites: uid }).select('_id title date').lean()
+            Hike.find({ pendingInvites: uid }).select('_id title date').lean(),
+            // MEDIO-4 (follow-up revisione sicurezza): il gemello di B-5 mancava - una
+            // richiesta INVIATA da te e ancora in sospeso (pendingRequests di una squadra,
+            // pendingApproval di un'escursione) e' comunque un dato personale che il sito
+            // conserva su di te, anche se qui il "titolare" e' l'escursione/squadra altrui e
+            // non tu. Stessa minimizzazione di B-5: solo i campi che identificano la richiesta.
+            Squad.find({ pendingRequests: uid }).select('_id name').lean(),
+            Hike.find({ pendingApproval: uid }).select('_id title date').lean()
         ]);
 
         // Le escursioni a cui SOLO partecipi contengono anche dati di gruppo (carpooling e
@@ -242,7 +250,9 @@ router.get('/users/me/export', requireAuth, exportLimiter, async (req, res) => {
             recensioniRicevute,
             tracceCandidateSentiero: tracceCandidate,
             invitiSquadraRicevuti,
-            invitiEscursioneRicevuti
+            invitiEscursioneRicevuti,
+            richiesteSquadraInviate,
+            richiesteEscursioneInviate
         };
 
         const base = String((profilo && profilo.username) || 'utente').replace(/[^\w-]+/g, '_');
