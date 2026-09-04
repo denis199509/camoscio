@@ -41,7 +41,11 @@ const port = process.env.PORT || 3000;
 // impedendo qualunque login di funzionare una volta online.
 app.set('trust proxy', 1);
 
-app.use(express.json({ limit: '10mb' })); // limite alzato per le foto profilo (base64)
+// Limite alzato per l'import .gpx/.fit in base64 (MAX_BYTE_GPX in routes/tracking.js e
+// lib/percorso.js sono gia' a 10mb) - NON per le foto profilo/squadra, che dal follow-up
+// sicurezza (30ª) sono compresse e capate molto piu' in basso (~800 KB). Non abbassare
+// questo limite pensando "tanto le foto sono piccole": romperebbe l'import di tracce.
+app.use(express.json({ limit: '10mb' }));
 
 // Tenuta come variabile a parte (non solo dentro app.use) perche' la riusa anche il WebSocket
 // del mesh networking piu' sotto, per riconoscere chi si connette senza duplicare la logica di

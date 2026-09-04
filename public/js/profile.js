@@ -331,26 +331,26 @@ function setupProfileCardEvents() {
         });
     }
 
-    // Stesso limite e stesso formato (data URL) della foto in registrazione: nessun
-    // campo nuovo sul modello, la validazione lato server (MAX_PHOTO_LENGTH) e' gia'
-    // pronta da quando "profilePhoto" e' entrato in SELF_EDITABLE_FIELDS.
+    // ALTO, follow-up revisione sicurezza (30ª): prima si leggeva il file scelto cosi'
+    // com'e' (fino a 1.5 MB), stesso identico buco gia' chiuso su Squad.photo. Ora si
+    // comprime sempre lato client (imagecompress.js, come le foto squadra/segnalazioni),
+    // sempre JPEG - il server (lib/profilePhoto.js) accetta solo quel formato.
     const photoInput = document.getElementById("profile-photo-input");
     if (photoInput) {
-        photoInput.addEventListener("change", (e) => {
+        photoInput.addEventListener("change", async (e) => {
             const file = e.target.files[0];
             if (!file) return;
-            if (file.size > 1.5 * 1024 * 1024) {
-                window.showToast(T('myProfile.fotoTroppoGrande') || "Foto troppo grande, scegline una più piccola (max ~1.5MB).", "error");
-                e.target.value = "";
+            const dataUrl = window.CamoscioImageCompress
+                ? await window.CamoscioImageCompress.comprimi(file)
+                : null;
+            e.target.value = "";
+            if (!dataUrl) {
+                window.showToast(T('myProfile.fotoNonElaborata') || "Non è stato possibile elaborare la foto scelta.", "error");
                 return;
             }
-            const reader = new FileReader();
-            reader.onload = () => {
-                newProfilePhotoDataUrl = reader.result;
-                removePhotoRequested = false; // scegliere un file nuovo annulla una rimozione appena chiesta
-                document.getElementById("profile-photo-preview").innerHTML = `<img src="${reader.result}" alt="Anteprima">`;
-            };
-            reader.readAsDataURL(file);
+            newProfilePhotoDataUrl = dataUrl;
+            removePhotoRequested = false; // scegliere un file nuovo annulla una rimozione appena chiesta
+            document.getElementById("profile-photo-preview").innerHTML = `<img src="${dataUrl}" alt="Anteprima">`;
         });
     }
 

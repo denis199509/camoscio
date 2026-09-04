@@ -158,7 +158,8 @@ const cancellazioneLimiter = rateLimit({
 // squadra a raffica e riempire i 512 MB di Atlas (vincolo hard) in poche ore. Cambiare la
 // foto di una squadra e' un gesto raro: 20/ora e' larghissimo per un umano e taglia il ritmo
 // di riempimento di un ordine di grandezza. MEDIO-3, revisione sicurezza 28ª. (User.profilePhoto
-// ha lo stesso problema su un'altra rotta: da guardare a parte.)
+// aveva lo stesso problema su altre due rotte: vedi fotoProfiloLimiter/registrazioneLimiter
+// piu' sotto, chiusi nello stesso follow-up, 30ª sessione.)
 const fotoLimiter = rateLimit({
     windowMs: 60 * 60 * 1000,
     limit: 20,
@@ -186,4 +187,43 @@ const fotoLetturaLimiter = rateLimit({
     message: messaggioTroppiTentativi
 });
 
-module.exports = { authLimiter, emailLimiter, apiLimiter, matchLimiter, exportLimiter, scritturaLimiter, sicurezzaLimiter, cancellazioneLimiter, invitoLimiter, fotoLimiter, fotoLetturaLimiter };
+// PUT /api/users/:id, SOLO quando tocca profilePhoto (ALTO, follow-up revisione sicurezza,
+// 30ª): stesso identico problema di fotoLimiter (foto fino a ~800 KB dopo la compressione
+// obbligatoria, vedi lib/profilePhoto.js), ma la rotta e' condivisa con OGNI altro campo
+// modificabile del profilo (bio, contatti di emergenza, preferenze...) - un limiter secco
+// sull'intera rotta avrebbe rallentato anche chi non tocca mai la foto. `skip` combina il
+// criterio normale (solo in produzione) con "il body non tocca profilePhoto": la scrittura
+// vera resta protetta, il resto del profilo no. 20/ora, stesso numero di fotoLimiter (cambiare
+// la propria foto profilo e' un gesto raro quanto cambiare quella di una squadra).
+const fotoProfiloLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    limit: 20,
+    skip: (req) => soloInProduzione() || req.body.profilePhoto === undefined,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: messaggioTroppiTentativi
+});
+
+// POST /api/auth/register (ALTO, follow-up revisione sicurezza, 30ª): affiancato ad
+// authLimiter, MAI al suo posto - authLimiter ha `skipSuccessfulRequests: true` (protegge
+// dalla forza bruta su credenziali, conta solo i FALLIMENTI), quindi una raffica di
+// registrazioni RIUSCITE non consumava nessuna quota. Prima di questo secchio il tetto vero
+// era il solo apiLimiter (3000/5min): 3000 account nuovi, ciascuno con una foto profilo fino
+// a ~1,5 MB decodificati (il vecchio MAX_PHOTO_LENGTH), riempivano i 512 MB di Atlas in meno
+// di un minuto. 10/ora per IP conta OGNI tentativo (`skipSuccessfulRequests` assente di
+// proposito): largo per una famiglia dietro lo stesso NAT che si registra in un pomeriggio,
+// stretto per uno script.
+const registrazioneLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    limit: 10,
+    skip: soloInProduzione,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: messaggioTroppiTentativi
+});
+
+module.exports = {
+    authLimiter, emailLimiter, apiLimiter, matchLimiter, exportLimiter, scritturaLimiter,
+    sicurezzaLimiter, cancellazioneLimiter, invitoLimiter, fotoLimiter, fotoLetturaLimiter,
+    fotoProfiloLimiter, registrazioneLimiter
+};

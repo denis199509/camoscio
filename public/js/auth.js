@@ -402,20 +402,23 @@ function setupAuthGate() {
         document.getElementById('reg-bio-counter').textContent = e.target.value.length;
     });
 
-    document.getElementById('reg-photo-input').addEventListener('change', (e) => {
+    // ALTO, follow-up revisione sicurezza (30ª): prima si leggeva il file scelto cosi'
+    // com'e' (fino a 1.5 MB), stesso identico buco gia' chiuso su Squad.photo. Ora si
+    // comprime sempre lato client (imagecompress.js, come le foto squadra/segnalazioni),
+    // sempre JPEG - il server (lib/profilePhoto.js) accetta solo quel formato.
+    document.getElementById('reg-photo-input').addEventListener('change', async (e) => {
         const file = e.target.files[0];
         if (!file) return;
-        if (file.size > 1.5 * 1024 * 1024) {
-            window.showToast(T('auth.err.photoTooBig') || 'Foto troppo grande, scegline una più piccola (max ~1.5MB).', 'error');
-            e.target.value = '';
+        const dataUrl = window.CamoscioImageCompress
+            ? await window.CamoscioImageCompress.comprimi(file)
+            : null;
+        e.target.value = '';
+        if (!dataUrl) {
+            window.showToast(T('auth.err.photoNotProcessed') || 'Non è stato possibile elaborare la foto scelta.', 'error');
             return;
         }
-        const reader = new FileReader();
-        reader.onload = () => {
-            registerPhotoDataUrl = reader.result;
-            document.getElementById('reg-photo-preview').innerHTML = `<img src="${reader.result}" alt="${T('auth.photoPreviewAlt') || 'Anteprima'}">`;
-        };
-        reader.readAsDataURL(file);
+        registerPhotoDataUrl = dataUrl;
+        document.getElementById('reg-photo-preview').innerHTML = `<img src="${dataUrl}" alt="${T('auth.photoPreviewAlt') || 'Anteprima'}">`;
     });
 
     // Passo 5: almeno un contatto di emergenza gia' presente all'apertura

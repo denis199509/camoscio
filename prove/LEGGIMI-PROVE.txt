@@ -28,6 +28,13 @@ poi, in un'altra finestra:
     node prove/prova-guasto-invio.js                 6 controlli
     node prove/prova-configurazione.js               9 controlli  (non serve il server)
     node prove/prova-registrazione-senza-email.js    7 controlli  (ne avvia uno suo sulla 3100)
+    node prove/prova-foto-profilo.js                14 controlli  (ne avvia uno suo sulla 3130)
+
+    La prova FOTO PROFILO (30a sessione, follow-up sicurezza ALTO su User.profilePhoto):
+    verifica che POST /api/auth/register e PUT /api/users/:id rifiutino byte senza una
+    vera firma JPEG (anche con l'etichetta giusta), un formato diverso da JPEG (es. un PNG
+    vero), e byte decodificati oltre il tetto (600 KB) - stesso controllo gia' verificato
+    su Squad.photo in prova-squadre-consenso.js.
 
 La prova del PASSO NON MISURATO (16/08/2026) non vuole il server acceso, ma legge il
 database (in SOLA lettura: l'unica interrogazione vera e' su un id inesistente, quindi non

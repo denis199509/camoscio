@@ -4,7 +4,8 @@ const router = express.Router();
 const User = require('../models/User');
 const Squad = require('../models/Squad');
 const { requireAuth } = require('../middleware/auth');
-const { exportLimiter, scritturaLimiter } = require('../middleware/rateLimit');
+const { exportLimiter, scritturaLimiter, fotoProfiloLimiter } = require('../middleware/rateLimit');
+const { validaFotoProfiloJpeg } = require('../lib/profilePhoto'); // ALTO, follow-up revisione sicurezza (30ª): stesso buco di MEDIO-2/3 su Squad.photo
 const { chiudiTutteLeSessioni } = require('../db/sessionStore');
 // Punto A-3.4: eliminazione account. La logica sta in lib/accountDeletion.js (serve
 // anche al trigger esterno dello scrub, e non va duplicata).
@@ -30,8 +31,6 @@ const Stamp = require('../models/Stamp');
 const HikeMessage = require('../models/HikeMessage');
 const SquadMessage = require('../models/SquadMessage');
 const TrailCandidate = require('../models/TrailCandidate');
-
-const MAX_PHOTO_LENGTH = 2 * 1024 * 1024;
 
 // Router montato direttamente su /api (non /api/users): storicamente /api/login
 // era un percorso "fratello", non annidato sotto /users (login vero e proprio e'
@@ -334,9 +333,10 @@ async function scrubEliminatiHandler(req, res) {
     }
     try {
         // .select minimale (scrubAccount usa solo _id e deletedAt) + tetto: senza,
-        // User.find carica i documenti interi, profilePhoto base64 compreso (fino a 2 MB
-        // l'uno) su un'istanza Render da 512 MB. Un arretrato oltre 200 lo smaltisce il
-        // ping successivo.
+        // User.find carica i documenti interi, profilePhoto base64 compreso (fino a ~800 KB
+        // l'uno dopo il tetto abbassato nel follow-up sicurezza, 30ª; foto piu' vecchie
+        // possono ancora pesare fino ai 2 MB di prima) su un'istanza Render da 512 MB. Un
+        // arretrato oltre 200 lo smaltisce il ping successivo.
         const daScrubare = await User.find({
             deletionScrubAt: { $lte: new Date() },
             deletedAt: { $exists: false }
@@ -371,7 +371,9 @@ router.get('/users/:id', requireAuth, async (req, res) => {
 });
 
 // Aggiorna profilo utente (es. goal, localExpert, bio, interessi...) - SOLO il proprio profilo
-router.put('/users/:id', requireAuth, async (req, res) => {
+// fotoProfiloLimiter: scatta SOLO quando il body tocca profilePhoto (vedi il commento sul
+// limiter) - la rotta serve OGNI campo del profilo, non solo la foto.
+router.put('/users/:id', requireAuth, fotoProfiloLimiter, async (req, res) => {
     if (req.params.id !== req.session.userId) {
         return res.status(403).json({ error: 'Puoi modificare solo il tuo profilo' });
     }
@@ -400,8 +402,17 @@ router.put('/users/:id', requireAuth, async (req, res) => {
             delete update.username;
         }
 
-        if (update.profilePhoto && String(update.profilePhoto).length > MAX_PHOTO_LENGTH) {
-            return res.status(400).json({ error: 'Foto profilo troppo grande, scegline una più piccola' });
+        // ALTO, follow-up revisione sicurezza (30ª): prima si controllava solo la LUNGHEZZA
+        // della stringa, mai i byte veri - stesso buco gia' chiuso su Squad.photo
+        // (MEDIO-2/MEDIO-3 residuo). Il client ora comprime sempre in JPEG (profile.js), quindi
+        // qui si valida solo quel formato - lib/profilePhoto.js, condivisa con la registrazione.
+        // !== undefined/null, non un truthy check (giro agente, BASSO): null resta la
+        // richiesta esplicita di RIMOZIONE (btnRemovePhoto in profile.js) e deve continuare a
+        // passare senza validazione; una stringa vuota invece andrebbe rifiutata, non scivolare
+        // silenziosamente nel documento.
+        if (update.profilePhoto !== undefined && update.profilePhoto !== null) {
+            const v = validaFotoProfiloJpeg(update.profilePhoto);
+            if (!v.ok) return res.status(400).json({ error: v.errore });
         }
 
         // A-NUOVO-1 (ri-review sicurezza, 2° giro): il vero controllo su emergencyContacts va

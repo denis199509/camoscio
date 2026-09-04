@@ -700,7 +700,7 @@
             'myProfile.cambiaPwdBtn': 'Change password',
 
             // --- PROFILO PROPRIO: testo generato da JS (profile.js) ---
-            'myProfile.fotoTroppoGrande': 'Photo too big, pick a smaller one (max ~1.5MB).',
+            'myProfile.fotoNonElaborata': 'The chosen photo could not be processed.',
             'myProfile.profiloAggiornato': 'Profile updated.',
             'myProfile.erroreSalva': 'Could not save the changes.',
             'myProfile.scriviPwdAttuale': 'Enter your current password.',
@@ -2028,7 +2028,7 @@
             'auth.err.registerFailed': 'Registration failed.',
             'auth.err.registerRetry': 'Could not complete registration. Try again.',
             'auth.err.loginFailed': 'Login failed.',
-            'auth.err.photoTooBig': 'Photo too big, pick a smaller one (max ~1.5MB).',
+            'auth.err.photoNotProcessed': 'The chosen photo could not be processed.',
             'common.hoCapito': 'Got it',
 
             // --- demo.html ---

@@ -15,11 +15,14 @@ const {
 } = require('../lib/mailer');
 const { requireAuth } = require('../middleware/auth');
 // A-2 (revisione sicurezza 21a): forza bruta su credenziali + bombardamento email.
-const { authLimiter, emailLimiter } = require('../middleware/rateLimit');
+// registrazioneLimiter (ALTO, follow-up revisione sicurezza 30ª): authLimiter da solo non
+// basta qui, vedi il commento sul limiter.
+const { authLimiter, emailLimiter, registrazioneLimiter } = require('../middleware/rateLimit');
 // Punto A-3.4: rientrare col login entro i 30 giorni annulla l'eliminazione dell'account.
 const { ripristinaAccount } = require('../lib/accountDeletion');
+// ALTO, follow-up revisione sicurezza (30ª): stesso buco di MEDIO-2/3 su Squad.photo.
+const { validaFotoProfiloJpeg } = require('../lib/profilePhoto');
 
-const MAX_PHOTO_LENGTH = 2 * 1024 * 1024; // ~1.5MB decodificati: "piccola immagine", non un file pesante
 const MIN_PASSWORD = 8; // stessa regola della registrazione, in un posto solo
 
 function calculateAge(birthDate) {
@@ -55,7 +58,14 @@ async function consumaScherzoDamianoSeArmato() {
 }
 
 // Registrazione utente reale (Fase C)
-router.post('/register', authLimiter, async (req, res) => {
+// registrazioneLimiter PRIMA di authLimiter, non dopo (giro agente sul fix ALTO
+// User.profilePhoto): authLimiter ha skipSuccessfulRequests:true, quindi conta solo le
+// risposte NON riuscite - un 429 di registrazioneLimiter e' una di quelle. Con l'ordine
+// invertito (registrazioneLimiter dopo) ogni 429 di troppe registrazioni si sommava anche
+// al secchio di authLimiter, condiviso con login/reset password/verifica email: misurato,
+// bastavano 35 registrazioni per bloccare il LOGIN dello stesso IP per 15 minuti (dietro un
+// NAT, es. wifi di un rifugio, di chiunque). Il piu' stretto va per primo nella catena.
+router.post('/register', registrazioneLimiter, authLimiter, async (req, res) => {
     try {
         const {
             nome, cognome, email, password, birthDate, ageRange, termsAccepted,
@@ -116,8 +126,13 @@ router.post('/register', authLimiter, async (req, res) => {
             }
         }
 
-        if (profilePhoto && String(profilePhoto).length > MAX_PHOTO_LENGTH) {
-            return res.status(400).json({ error: 'Foto profilo troppo grande, scegline una più piccola' });
+        // ALTO, follow-up revisione sicurezza (30ª): il client ora comprime sempre in JPEG
+        // (auth.js), quindi qui si valida il formato + i byte veri, non solo la lunghezza.
+        // !== undefined/null, non un truthy check (giro agente, BASSO): una stringa vuota
+        // andrebbe comunque rifiutata invece di scivolare silenziosamente a null sotto.
+        if (profilePhoto !== undefined && profilePhoto !== null) {
+            const v = validaFotoProfiloJpeg(profilePhoto);
+            if (!v.ok) return res.status(400).json({ error: v.errore });
         }
 
         const normalizedEmail = String(email).toLowerCase().trim();
