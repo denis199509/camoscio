@@ -184,11 +184,16 @@ router.get('/users/me/export', requireAuth, exportLimiter, async (req, res) => {
             // squadre/escursioni di cui si fa parte. Solo i campi che identificano l'invito.
             Squad.find({ pendingInvites: uid }).select('_id name').lean(),
             Hike.find({ pendingInvites: uid }).select('_id title date').lean(),
-            // MEDIO-4 (follow-up revisione sicurezza): il gemello di B-5 mancava - una
-            // richiesta INVIATA da te e ancora in sospeso (pendingRequests di una squadra,
-            // pendingApproval di un'escursione) e' comunque un dato personale che il sito
-            // conserva su di te, anche se qui il "titolare" e' l'escursione/squadra altrui e
-            // non tu. Stessa minimizzazione di B-5: solo i campi che identificano la richiesta.
+            // MEDIO-4 (follow-up revisione sicurezza): il gemello di B-5 mancava - trovarsi
+            // ancora in sospeso (pendingRequests di una squadra, pendingApproval di
+            // un'escursione) e' comunque un dato personale che il sito conserva su di te,
+            // anche se qui il "titolare" e' l'escursione/squadra altrui e non tu. Per le
+            // squadre e' sempre una richiesta TUA (pendingRequests si scrive solo da
+            // POST /:id/request-join, sul proprio id); per le escursioni pendingApproval e'
+            // quasi sempre una tua richiesta ma puo' anche essere il creatore che ti sposta
+            // li' da participants (B-3, giro agente) - resta comunque giusto esportarlo, e'
+            // vero in entrambi i casi che sei "in attesa" su quell'escursione. Stessa
+            // minimizzazione di B-5: solo i campi che identificano la richiesta.
             Squad.find({ pendingRequests: uid }).select('_id name').lean(),
             Hike.find({ pendingApproval: uid }).select('_id title date').lean()
         ]);

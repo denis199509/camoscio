@@ -353,19 +353,26 @@ const S = a => (a || []).map(String);
         rf = await chiama('PUT', `/api/squads/${Sfoto}/photo`, { photo: pngVero }, ckA);
         ok('MEDIO-3 residuo: un PNG vero non basta piu\', solo JPEG -> 400', rf.status === 400, JSON.stringify(rf.corpo));
 
-        // MEDIO-2/MEDIO-3: dimensione VERA (byte decodificati) oltre il tetto -> rifiutata.
+        // MEDIO-2/MEDIO-3: una foto troppo grande viene rifiutata. Con questi numeri (700 KB
+        // decodificati) scatta di fatto il pre-controllo sulla LUNGHEZZA della stringa
+        // (MAX_PHOTO_LENGTH, piu' economico: non serve decodificare per rifiutarla) - il
+        // controllo sui byte decodificati (MAX_PHOTO_BYTES) resta una seconda difesa, la sua
+        // finestra propria e' di ~57 byte sopra MAX_PHOTO_LENGTH (base64 arrotonda a gruppi di
+        // 4 caratteri), troppo stretta per un fixture di prova leggibile. B-1, giro agente.
         const troppoGrande = 'data:image/jpeg;base64,' + Buffer.concat([jpegMagic, Buffer.alloc(700 * 1024)]).toString('base64');
         rf = await chiama('PUT', `/api/squads/${Sfoto}/photo`, { photo: troppoGrande }, ckA);
-        ok('MEDIO-2: byte decodificati oltre il tetto -> 400', rf.status === 400, `status ${rf.status}`);
+        ok('MEDIO-2/3: foto troppo grande -> 400', rf.status === 400, `status ${rf.status}`);
 
-        // MEDIO-1c (follow-up revisione sicurezza): Cache-Control privato sulla lettura, evita
-        // di riscaricare gli stessi ~2 MB ad ogni apertura della pagina squadra. MEDIO-1b
-        // (fotoLetturaLimiter) non e' testabile qui: come ogni altro limiter dedicato del
-        // progetto (fotoLimiter, invitoLimiter...), salta in locale (skip: soloInProduzione) e
-        // non gira mai in produzione dentro questa suite.
+        // MEDIO-1c (follow-up revisione sicurezza): Cache-Control privato sulla lettura.
+        // `no-cache`, non un `max-age` (corretto nel 2° giro agente, M-2): Squad.photo e'
+        // mutabile - un admin puo' sostituirla o toglierla in ogni momento - quindi la
+        // risposta va sempre rivalidata, mai servita "alla cieca" per un giorno intero.
+        // MEDIO-1b (fotoLetturaLimiter) non e' testabile qui: come ogni altro limiter dedicato
+        // del progetto (fotoLimiter, invitoLimiter...), salta in locale (skip:
+        // soloInProduzione) e non gira mai in produzione dentro questa suite.
         const rfGrezza = await fetch(`${BASE}/api/squads/${Sfoto}/photo`, { headers: { Cookie: ckA } });
-        ok('MEDIO-1c: Cache-Control privato sulla foto squadra',
-            rfGrezza.headers.get('cache-control') === 'private, max-age=86400', rfGrezza.headers.get('cache-control'));
+        ok('MEDIO-1c/M-2: Cache-Control privato e sempre rivalidato sulla foto squadra',
+            rfGrezza.headers.get('cache-control') === 'private, no-cache', rfGrezza.headers.get('cache-control'));
 
         rf = await chiama('GET', `/api/squads/${Sfoto}/photo`, undefined, null);
         ok('MEDIO-3: la rotta foto richiede login -> 401', rf.status === 401, `status ${rf.status}`);

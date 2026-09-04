@@ -663,11 +663,24 @@ router.put('/:id', requireAuth, async (req, res) => {
 
             // ALTO-1: esito della decisione del creatore, testo fisso generato qui (vedi il
             // commento sopra, dove esitiPartecipazione viene calcolato).
+            // Idempotenza (2° giro agente sul fix ALTO-1): giaPartecipante qui sopra
+            // chiude il riciclo SENZA rimozione (rimettere dentro chi era gia' partecipante),
+            // non quello CON rimozione - un creatore puo' ancora togliere e rimettere lo
+            // stesso id in due PUT separate (prima {participants:[creatore], pendingApproval:
+            // [X]} senza toccare participants -> nessuna rimozione, poi {participants:
+            // [creatore,X], pendingApproval:[]} -> ora X non e' piu' "gia' partecipante" alla
+            // PUT precedente). Stesso esito ripetuto = stesso testo: non riscriverlo se esiste
+            // gia' per questa persona su questa escursione, invece di inventare un secchio
+            // dedicato solo per un caso limite che il creatore puo' produrre solo su una
+            // propria escursione (mai su bersagli arbitrari).
             for (const { userId: targetId, approvato } of esitiPartecipazione) {
                 const text = approvato
                     ? `Sei tra i partecipanti di "${hike.title}".`
                     : `Non sei stato inserito tra i partecipanti di "${hike.title}".`;
-                await Notification.create({ userId: targetId, text, read: false, relatedHikeId: hike._id });
+                const giaNotificato = await Notification.exists({ userId: targetId, relatedHikeId: hike._id, text });
+                if (!giaNotificato) {
+                    await Notification.create({ userId: targetId, text, read: false, relatedHikeId: hike._id });
+                }
             }
         } catch (notifErr) {
             console.error('Errore invio notifica richiesta partecipazione:', notifErr);

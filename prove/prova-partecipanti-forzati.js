@@ -156,6 +156,20 @@ async function ripristinaPace(id, s) {
         const noteAmDopo = (await chiama('GET', `/api/notifications/${idC}`, null, ckC)).corpo.length;
         ok('nessuna notifica nuova per C dal riciclo pendingApproval (MEDIO-A)', noteAmDopo === noteAmPrima, `${noteAmPrima} -> ${noteAmDopo}`);
 
+        // === 1c bis. M-1 (2° giro agente sul fix ALTO-1): il riciclo CON rimozione ===
+        // giaPartecipante (MEDIO-A) chiude il giro SENZA una rimozione vera di C da
+        // participants (sez. 1c sopra): qui invece C esce DAVVERO da participants prima di
+        // rientrarci, quindi "gia' partecipante PRIMA di questa PUT" e' falso alla 2a PUT e
+        // il filtro non basta piu' - senza l'idempotenza sul testo (routes/hikes.js) sarebbe
+        // uscita una seconda notifica identica "Sei tra i partecipanti...".
+        const noteM1Prima = (await chiama('GET', `/api/notifications/${idC}`, null, ckC)).corpo.length;
+        const spostaFuori = await chiama('PUT', `/api/hikes/${h1}`, { participants: [idA], pendingApproval: [idC] }, ckA);
+        ok('M-1: il creatore sposta C da participants a pendingApproval (giaInRelazione)', spostaFuori.status === 200, JSON.stringify(spostaFuori.corpo));
+        const rimettiDentro = await chiama('PUT', `/api/hikes/${h1}`, { participants: [idA, idC], pendingApproval: [] }, ckA);
+        ok('...e lo rimette dentro subito dopo', rimettiDentro.status === 200, JSON.stringify(rimettiDentro.corpo));
+        const noteM1Dopo = (await chiama('GET', `/api/notifications/${idC}`, null, ckC)).corpo.length;
+        ok('M-1: nessuna notifica duplicata per C dal riciclo CON rimozione', noteM1Dopo === noteM1Prima, `${noteM1Prima} -> ${noteM1Dopo}`);
+
         // ...e NEMMENO ora che A e C condividono una squadra: dalla 27ª ("decide l'invitato")
         // un compagno di squadra si INVITA, non si aggiunge a mano. Stessa aggiunta, stesso 403.
         // Dalla 27ª POST /api/squads crea la squadra col solo creatore e invita gli altri:

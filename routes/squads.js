@@ -149,17 +149,21 @@ router.get('/', requireAuth, async (req, res) => {
 // e fotoLimiter, non da un gate di appartenenza su una singola lettura.
 // MEDIO-1b/1c (follow-up revisione sicurezza): questa singola lettura non aveva ne' un
 // tetto dedicato (1b) ne' un Cache-Control (1c) - fotoLetturaLimiter chiude il primo (vedi
-// il commento sul limiter), l'header il secondo: la foto cambia raramente (solo PUT
-// /:id/photo la tocca), un giorno di cache privata evita di riscaricare la stessa foto ad
-// ogni apertura della pagina squadra dallo stesso browser. Stesso Cache-Control gia' usato
-// da reports.js GET /:id/photo, che pero' invia bytes grezzi (Report.photo e' un Buffer);
-// qui la foto resta un data URL dentro il JSON (Squad.photo e' String) - il client
-// (squadpage.js) la usa gia' cosi', nessun cambio di formato.
+// il commento sul limiter), l'header il secondo. `no-cache` e non un `max-age`: a
+// differenza di Report.photo (immutabile una volta creata), Squad.photo cambia - un admin
+// puo' sostituirla o toglierla in qualunque momento (PUT /:id/photo) - quindi un giorno di
+// cache "cieca" avrebbe fatto vedere agli ALTRI membri una foto vecchia (anche gia' rimossa)
+// fino a 24 ore, senza modo di saperlo (2° giro agente sul fix ALTO-1/MEDIO). `no-cache` non
+// e' "niente cache": impone solo la rivalidazione ad ogni richiesta, e Express genera da
+// solo un ETag debole su res.json - senza cambiamenti risponde 304 senza corpo, stesso
+// risparmio di banda di un max-age, ma sempre corretto. La foto resta un data URL dentro il
+// JSON (Squad.photo e' String, non un Buffer come Report.photo) - il client (squadpage.js)
+// la usa gia' cosi', nessun cambio di formato.
 router.get('/:id/photo', requireAuth, fotoLetturaLimiter, async (req, res) => {
     try {
         const squad = await Squad.findById(req.params.id).select('+photo');
         if (!squad) return res.status(404).json({ error: 'Squadra non trovata' });
-        res.set('Cache-Control', 'private, max-age=86400');
+        res.set('Cache-Control', 'private, no-cache');
         res.json({ photo: squad.photo || null });
     } catch (e) {
         console.error('Errore lettura foto squadra:', e);
