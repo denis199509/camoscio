@@ -296,7 +296,12 @@ const S = a => (a || []).map(String);
         // === 8c. MEDIO-3 (revisione sicurezza 28ª): Squad.photo fuori da GET /api/squads ===
         console.log('\n8c. MEDIO-3: la foto squadra ha una rotta dedicata, non esce dalla lista');
         const { id: Sfoto } = await creaSquad('-Sfoto', {});
-        const fintoDataUrl = 'data:image/png;base64,' + 'A'.repeat(240);
+        // MEDIO-2 (follow-up revisione sicurezza): la validazione ora legge i BYTE veri, non
+        // piu' solo la lunghezza della stringa - il fixture deve avere una firma PNG vera
+        // (8 byte) seguita da riempimento qualunque (il server non decodifica l'immagine per
+        // intero, solo la firma + la dimensione, stesso spirito di Report.photo).
+        const pngMagic = Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);
+        const fintoDataUrl = 'data:image/png;base64,' + Buffer.concat([pngMagic, Buffer.from('A'.repeat(200))]).toString('base64');
         let rf = await chiama('PUT', `/api/squads/${Sfoto}/photo`, { photo: fintoDataUrl }, ckA);
         ok('PUT /:id/photo da admin -> 200', rf.status === 200, JSON.stringify(rf.corpo && rf.corpo.error));
         ok('...la risposta contiene ancora la foto (serve al client per l\'anteprima)', rf.corpo && rf.corpo.photo === fintoDataUrl);
@@ -306,6 +311,21 @@ const S = a => (a || []).map(String);
             JSON.stringify(sfotoInLista && Object.keys(sfotoInLista)));
         rf = await chiama('GET', `/api/squads/${Sfoto}/photo`, undefined, ckA);
         ok('MEDIO-3: GET /api/squads/:id/photo restituisce la foto', rf.status === 200 && rf.corpo && rf.corpo.photo === fintoDataUrl, JSON.stringify(rf.corpo && Object.keys(rf.corpo)));
+
+        // MEDIO-2: byte senza una firma immagine vera -> rifiutata, anche con l'etichetta
+        // "data:image/png" e sotto il tetto di lunghezza (prima passava lo stesso: si
+        // controllava solo String(photo).length).
+        const nonImmagine = 'data:image/png;base64,' + Buffer.from('non e\' un\'immagine, solo testo').toString('base64');
+        rf = await chiama('PUT', `/api/squads/${Sfoto}/photo`, { photo: nonImmagine }, ckA);
+        ok('MEDIO-2: byte senza firma immagine vera -> 400', rf.status === 400, JSON.stringify(rf.corpo));
+        const dopoRifiuto = await squadsCol.findOne({ _id: oid(Sfoto) }, { projection: { photo: 1 } });
+        ok('...e la foto precedente (valida) resta quella di prima', dopoRifiuto.photo === fintoDataUrl);
+
+        // MEDIO-2: dimensione VERA (byte decodificati) oltre il tetto -> rifiutata, anche se
+        // la stringa base64 resta sotto MAX_PHOTO_LENGTH.
+        const troppoGrande = 'data:image/png;base64,' + Buffer.concat([pngMagic, Buffer.alloc(1.6 * 1024 * 1024)]).toString('base64');
+        rf = await chiama('PUT', `/api/squads/${Sfoto}/photo`, { photo: troppoGrande }, ckA);
+        ok('MEDIO-2: byte decodificati oltre il tetto -> 400', rf.status === 400, `status ${rf.status}`);
 
         // MEDIO-1c (follow-up revisione sicurezza): Cache-Control privato sulla lettura, evita
         // di riscaricare gli stessi ~2 MB ad ogni apertura della pagina squadra. MEDIO-1b

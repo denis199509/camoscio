@@ -15,6 +15,9 @@ const { promuoviSeSenzaAdmin } = require('../lib/squadAdmin'); // "squadra senza
 const { mongoose } = require('../db/mongo');
 
 const MAX_PHOTO_LENGTH = 2 * 1024 * 1024;
+// MEDIO-2: tetto sui byte VERI decodificati (non sulla stringa base64) - stesso limite gia'
+// imposto lato client su file.size (public/js/squadpage.js), qui ricontrollato sul server.
+const MAX_PHOTO_BYTES = 1.5 * 1024 * 1024;
 const MAX_MESSAGES = 50;
 
 // Consenso squadra (27ª). Una squadra e' un gruppo di amici: 100 e' gia' assurdo in buona
@@ -461,6 +464,36 @@ router.put('/:id/photo', requireAuth, fotoLimiter, async (req, res) => {
         const { photo } = req.body;
         if (photo && String(photo).length > MAX_PHOTO_LENGTH) {
             return res.status(400).json({ error: 'Foto troppo grande, scegline una più piccola' });
+        }
+        // MEDIO-2 (follow-up revisione sicurezza): fin qui si controllava solo la LUNGHEZZA
+        // della stringa (il data URL, prefisso compreso), mai i byte veri - lo stesso buco che
+        // Report.photo (routes/reports.js) gia' chiude per le segnalazioni. Qui pero' non c'e'
+        // un compressore lato client che normalizza tutto a JPEG (squadpage.js legge il file
+        // scelto cosi' com'e', stesso schema di User.profilePhoto): si accettano i quattro
+        // formati raster comuni di una foto (JPEG/PNG/GIF/WebP), riconosciuti dai BYTE veri
+        // decodificati, mai dall'etichetta "data:image/xxx" che il client potrebbe non
+        // rispettare (vincolo hard 7, non fidarsi di un'etichetta).
+        if (photo) {
+            const m = String(photo).match(/^data:image\/[\w.+-]+;base64,([A-Za-z0-9+/=\s]+)$/);
+            if (!m) {
+                return res.status(400).json({ error: 'Formato foto non valido' });
+            }
+            const buffer = Buffer.from(m[1], 'base64');
+            // Dimensione VERA (byte decodificati): il tetto sopra e' sulla stringa e puo'
+            // mentire (spazi/padding estranei nel base64 non contano ai fini dei byte reali).
+            if (buffer.length === 0 || buffer.length > MAX_PHOTO_BYTES) {
+                return res.status(400).json({ error: 'Foto troppo grande, scegline una più piccola' });
+            }
+            const jpeg = buffer.length >= 3 && buffer[0] === 0xFF && buffer[1] === 0xD8 && buffer[2] === 0xFF;
+            const png = buffer.length >= 8 && buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E && buffer[3] === 0x47
+                && buffer[4] === 0x0D && buffer[5] === 0x0A && buffer[6] === 0x1A && buffer[7] === 0x0A;
+            const gif = buffer.length >= 6 && buffer[0] === 0x47 && buffer[1] === 0x49 && buffer[2] === 0x46
+                && buffer[3] === 0x38 && (buffer[4] === 0x37 || buffer[4] === 0x39) && buffer[5] === 0x61;
+            const webp = buffer.length >= 12 && buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46
+                && buffer[8] === 0x57 && buffer[9] === 0x45 && buffer[10] === 0x42 && buffer[11] === 0x50;
+            if (!jpeg && !png && !gif && !webp) {
+                return res.status(400).json({ error: 'Formato foto non valido' });
+            }
         }
         squad.photo = photo || null;
         await squad.save();
