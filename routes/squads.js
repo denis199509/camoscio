@@ -5,7 +5,7 @@ const SquadMessage = require('../models/SquadMessage');
 const User = require('../models/User');
 const Notification = require('../models/Notification');
 const { requireAuth } = require('../middleware/auth');
-const { invitoLimiter, fotoLimiter } = require('../middleware/rateLimit'); // M-5 (27ª): ciclo invita/annulla non coperto da tetto+idempotenza. fotoLimiter: MEDIO-3 (28ª), foto squadra fino a 2 MB
+const { invitoLimiter, fotoLimiter, fotoLetturaLimiter } = require('../middleware/rateLimit'); // M-5 (27ª): ciclo invita/annulla non coperto da tetto+idempotenza. fotoLimiter: MEDIO-3 (28ª), foto squadra fino a 2 MB. fotoLetturaLimiter: MEDIO-1b, la stessa lettura senza tetto
 const { nomeVisibile } = require('../lib/accountDeletion'); // A-3.4: nome pseudonimizzato per gli account eliminati
 // Punto 48: il creatore e' admin/membro per calcolo (creatorId), mai duplicato dentro
 // admins[]/members[]. Estratti in lib/squad.js perche' ora li usa anche routes/hikes.js
@@ -137,10 +137,19 @@ router.get('/', requireAuth, async (req, res) => {
 // tutti dentro GET /api/squads: la foto non e' un dato sensibile come il carpool o la chat, e
 // il vettore DoS (lista che le carica tutte + scritture illimitate) e' chiuso da select:false
 // e fotoLimiter, non da un gate di appartenenza su una singola lettura.
-router.get('/:id/photo', requireAuth, async (req, res) => {
+// MEDIO-1b/1c (follow-up revisione sicurezza): questa singola lettura non aveva ne' un
+// tetto dedicato (1b) ne' un Cache-Control (1c) - fotoLetturaLimiter chiude il primo (vedi
+// il commento sul limiter), l'header il secondo: la foto cambia raramente (solo PUT
+// /:id/photo la tocca), un giorno di cache privata evita di riscaricare gli stessi ~2 MB ad
+// ogni apertura della pagina squadra dallo stesso browser. Stesso Cache-Control gia' usato
+// da reports.js GET /:id/photo, che pero' invia bytes grezzi (Report.photo e' un Buffer);
+// qui la foto resta un data URL dentro il JSON (Squad.photo e' String) - il client
+// (squadpage.js) la usa gia' cosi', nessun cambio di formato.
+router.get('/:id/photo', requireAuth, fotoLetturaLimiter, async (req, res) => {
     try {
         const squad = await Squad.findById(req.params.id).select('+photo');
         if (!squad) return res.status(404).json({ error: 'Squadra non trovata' });
+        res.set('Cache-Control', 'private, max-age=86400');
         res.json({ photo: squad.photo || null });
     } catch (e) {
         console.error('Errore lettura foto squadra:', e);

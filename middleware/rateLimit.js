@@ -167,4 +167,21 @@ const fotoLimiter = rateLimit({
     message: messaggioTroppiTentativi
 });
 
-module.exports = { authLimiter, emailLimiter, apiLimiter, matchLimiter, exportLimiter, scritturaLimiter, sicurezzaLimiter, cancellazioneLimiter, invitoLimiter, fotoLimiter };
+// GET /api/squads/:id/photo (MEDIO-1b, follow-up revisione sicurezza): la risposta arriva
+// fino a ~2,7 MB (data URL base64 del tetto MAX_PHOTO_LENGTH di routes/squads.js), e prima
+// non aveva NESSUN tappo oltre l'apiLimiter generale - 3000 richieste/5min vorrebbe dire
+// fino a ~97 GB/ora da un solo IP, ben oltre quanto regge la banda di Render gratuito.
+// Secchio dedicato e SEPARATO da fotoLimiter (che copre la scrittura, PUT /:id/photo): una
+// lettura a raffica non deve poter consumare la quota di chi cambia davvero la foto della
+// propria squadra, ne' viceversa. 100/ora e' largo per chi sfoglia a mano le pagine delle
+// proprie squadre.
+const fotoLetturaLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    limit: 100,
+    skip: soloInProduzione,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: messaggioTroppiTentativi
+});
+
+module.exports = { authLimiter, emailLimiter, apiLimiter, matchLimiter, exportLimiter, scritturaLimiter, sicurezzaLimiter, cancellazioneLimiter, invitoLimiter, fotoLimiter, fotoLetturaLimiter };

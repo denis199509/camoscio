@@ -306,6 +306,16 @@ const S = a => (a || []).map(String);
             JSON.stringify(sfotoInLista && Object.keys(sfotoInLista)));
         rf = await chiama('GET', `/api/squads/${Sfoto}/photo`, undefined, ckA);
         ok('MEDIO-3: GET /api/squads/:id/photo restituisce la foto', rf.status === 200 && rf.corpo && rf.corpo.photo === fintoDataUrl, JSON.stringify(rf.corpo && Object.keys(rf.corpo)));
+
+        // MEDIO-1c (follow-up revisione sicurezza): Cache-Control privato sulla lettura, evita
+        // di riscaricare gli stessi ~2 MB ad ogni apertura della pagina squadra. MEDIO-1b
+        // (fotoLetturaLimiter) non e' testabile qui: come ogni altro limiter dedicato del
+        // progetto (fotoLimiter, invitoLimiter...), salta in locale (skip: soloInProduzione) e
+        // non gira mai in produzione dentro questa suite.
+        const rfGrezza = await fetch(`${BASE}/api/squads/${Sfoto}/photo`, { headers: { Cookie: ckA } });
+        ok('MEDIO-1c: Cache-Control privato sulla foto squadra',
+            rfGrezza.headers.get('cache-control') === 'private, max-age=86400', rfGrezza.headers.get('cache-control'));
+
         rf = await chiama('GET', `/api/squads/${Sfoto}/photo`, undefined, null);
         ok('MEDIO-3: la rotta foto richiede login -> 401', rf.status === 401, `status ${rf.status}`);
         rf = await chiama('PUT', `/api/squads/${Sfoto}/photo`, { photo: fintoDataUrl }, ckL); // L non e' admin di Sfoto
