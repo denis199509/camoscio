@@ -268,19 +268,25 @@ function renderSquadHeader(squad, canManage, box) {
     }
 }
 
-function handleSquadPhotoChange(e, squadId) {
+// MEDIO-3 residuo (follow-up revisione sicurezza): prima si mandava il file scelto cosi'
+// com'e' (fino a 1.5 MB), qui si comprime lato client come gia' fa il FAB foto di una
+// segnalazione (map.js) - stesso modulo, stesso schema: comprimi() ridimensiona e ricodifica
+// SEMPRE in JPEG (public/js/imagecompress.js), quindi il server ora accetta solo JPEG
+// (routes/squads.js). 20 scritture/ora x un payload molto piu' piccolo di prima abbassa di
+// molto il tetto di riempimento Atlas nel caso peggiore (un admin che manda la foto piu'
+// grande possibile ad ogni chiamata), senza cambiare il limiter stesso.
+async function handleSquadPhotoChange(e, squadId) {
     const file = e.target.files[0];
     if (!file) return;
-    // Stesso tetto lato client della foto profilo utente (public/js/profile.js):
-    // il server ricontrolla la lunghezza del data URL (MAX_PHOTO_LENGTH in routes/squads.js).
-    if (file.size > 1.5 * 1024 * 1024) {
-        window.showToast(T('squadPage.fotoTroppoGrande') || "Foto troppo grande, scegline una più piccola (max ~1.5MB).", "error");
-        e.target.value = "";
+    const dataUrl = window.CamoscioImageCompress
+        ? await window.CamoscioImageCompress.comprimi(file)
+        : null;
+    e.target.value = "";
+    if (!dataUrl) {
+        window.showToast(T('squadPage.fotoNonElaborata') || "Non è stato possibile elaborare la foto scelta.", "error");
         return;
     }
-    const reader = new FileReader();
-    reader.onload = () => saveSquadPhoto(squadId, reader.result);
-    reader.readAsDataURL(file);
+    await saveSquadPhoto(squadId, dataUrl);
 }
 
 async function saveSquadPhoto(squadId, dataUrl) {

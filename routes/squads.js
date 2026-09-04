@@ -5,7 +5,7 @@ const SquadMessage = require('../models/SquadMessage');
 const User = require('../models/User');
 const Notification = require('../models/Notification');
 const { requireAuth } = require('../middleware/auth');
-const { invitoLimiter, fotoLimiter, fotoLetturaLimiter } = require('../middleware/rateLimit'); // M-5 (27ª): ciclo invita/annulla non coperto da tetto+idempotenza. fotoLimiter: MEDIO-3 (28ª), foto squadra fino a 2 MB. fotoLetturaLimiter: MEDIO-1b, la stessa lettura senza tetto
+const { invitoLimiter, fotoLimiter, fotoLetturaLimiter } = require('../middleware/rateLimit'); // M-5 (27ª): ciclo invita/annulla non coperto da tetto+idempotenza. fotoLimiter: MEDIO-3 (28ª), foto squadra (~800 KB dopo MEDIO-3 residuo). fotoLetturaLimiter: MEDIO-1b, la stessa lettura senza tetto
 const { nomeVisibile } = require('../lib/accountDeletion'); // A-3.4: nome pseudonimizzato per gli account eliminati
 // Punto 48: il creatore e' admin/membro per calcolo (creatorId), mai duplicato dentro
 // admins[]/members[]. Estratti in lib/squad.js perche' ora li usa anche routes/hikes.js
@@ -14,10 +14,17 @@ const { isSquadMember, isSquadAdmin } = require('../lib/squad');
 const { promuoviSeSenzaAdmin } = require('../lib/squadAdmin'); // "squadra senza admin", condivisa con l'eliminazione account
 const { mongoose } = require('../db/mongo');
 
-const MAX_PHOTO_LENGTH = 2 * 1024 * 1024;
-// MEDIO-2: tetto sui byte VERI decodificati (non sulla stringa base64) - stesso limite gia'
-// imposto lato client su file.size (public/js/squadpage.js), qui ricontrollato sul server.
-const MAX_PHOTO_BYTES = 1.5 * 1024 * 1024;
+// MEDIO-3 residuo (follow-up revisione sicurezza): il client comprime sempre la foto prima
+// di mandarla (public/js/squadpage.js, come il FAB foto di una segnalazione in map.js) - i
+// due tetti scendono da 2 MB/1,5 MB a un peso vicino a quello di un JPEG compresso. 600 KB e'
+// lo stesso MAX_PHOTO_BYTES gia' usato da Report.photo (routes/reports.js): il compressore
+// mira a ~380 KB ma puo' restare sopra su un'immagine che non comprime bene, e questo resta
+// un tetto duro, non l'obiettivo. abbassare il tetto abbassa anche il caso peggiore di
+// riempimento Atlas (20 scritture/ora di fotoLimiter x il payload massimo possibile).
+const MAX_PHOTO_BYTES = 600 * 1024;
+// Margine sulla stringa base64 (~4/3 dei byte, + il prefisso "data:image/jpeg;base64,"):
+// un pre-controllo economico prima di decodificare, MAI il tetto vero (quello e' sui byte).
+const MAX_PHOTO_LENGTH = Math.ceil(MAX_PHOTO_BYTES * 4 / 3) + 100;
 const MAX_MESSAGES = 50;
 
 // Consenso squadra (27ª). Una squadra e' un gruppo di amici: 100 e' gia' assurdo in buona
@@ -143,7 +150,7 @@ router.get('/', requireAuth, async (req, res) => {
 // MEDIO-1b/1c (follow-up revisione sicurezza): questa singola lettura non aveva ne' un
 // tetto dedicato (1b) ne' un Cache-Control (1c) - fotoLetturaLimiter chiude il primo (vedi
 // il commento sul limiter), l'header il secondo: la foto cambia raramente (solo PUT
-// /:id/photo la tocca), un giorno di cache privata evita di riscaricare gli stessi ~2 MB ad
+// /:id/photo la tocca), un giorno di cache privata evita di riscaricare la stessa foto ad
 // ogni apertura della pagina squadra dallo stesso browser. Stesso Cache-Control gia' usato
 // da reports.js GET /:id/photo, che pero' invia bytes grezzi (Report.photo e' un Buffer);
 // qui la foto resta un data URL dentro il JSON (Squad.photo e' String) - il client
@@ -450,7 +457,8 @@ router.delete('/:id/members/:userId', requireAuth, async (req, res) => {
 });
 
 // Cambia la foto della squadra - solo amministratori (punto 48).
-// fotoLimiter (MEDIO-3, 28ª): un data URL da 2 MB scritto a raffica riempie Atlas.
+// fotoLimiter (MEDIO-3, 28ª): un data URL scritto a raffica riempie Atlas anche col tetto
+// piu' basso di MEDIO-3 residuo (MAX_PHOTO_BYTES qui sopra).
 router.put('/:id/photo', requireAuth, fotoLimiter, async (req, res) => {
     try {
         // select('+photo') non serve: si SCRIVE la foto nuova, non si legge la vecchia.
@@ -467,31 +475,24 @@ router.put('/:id/photo', requireAuth, fotoLimiter, async (req, res) => {
         }
         // MEDIO-2 (follow-up revisione sicurezza): fin qui si controllava solo la LUNGHEZZA
         // della stringa (il data URL, prefisso compreso), mai i byte veri - lo stesso buco che
-        // Report.photo (routes/reports.js) gia' chiude per le segnalazioni. Qui pero' non c'e'
-        // un compressore lato client che normalizza tutto a JPEG (squadpage.js legge il file
-        // scelto cosi' com'e', stesso schema di User.profilePhoto): si accettano i quattro
-        // formati raster comuni di una foto (JPEG/PNG/GIF/WebP), riconosciuti dai BYTE veri
-        // decodificati, mai dall'etichetta "data:image/xxx" che il client potrebbe non
-        // rispettare (vincolo hard 7, non fidarsi di un'etichetta).
+        // Report.photo (routes/reports.js) gia' chiude per le segnalazioni. MEDIO-3 residuo ha
+        // poi aggiunto un compressore lato client (squadpage.js, come il FAB foto di una
+        // segnalazione) che normalizza SEMPRE in JPEG: qui si controlla solo quel formato,
+        // riconosciuto dai BYTE veri decodificati (i magic byte FF D8 FF), mai dall'etichetta
+        // "data:image/xxx" che il client potrebbe non rispettare (vincolo hard 7, non fidarsi
+        // di un'etichetta). Stesso identico controllo di reports.js, stesso motivo.
         if (photo) {
-            const m = String(photo).match(/^data:image\/[\w.+-]+;base64,([A-Za-z0-9+/=\s]+)$/);
+            const m = String(photo).match(/^data:image\/jpeg;base64,([A-Za-z0-9+/=\s]+)$/);
             if (!m) {
                 return res.status(400).json({ error: 'Formato foto non valido' });
             }
             const buffer = Buffer.from(m[1], 'base64');
             // Dimensione VERA (byte decodificati): il tetto sopra e' sulla stringa e puo'
             // mentire (spazi/padding estranei nel base64 non contano ai fini dei byte reali).
-            if (buffer.length === 0 || buffer.length > MAX_PHOTO_BYTES) {
+            if (buffer.length > MAX_PHOTO_BYTES) {
                 return res.status(400).json({ error: 'Foto troppo grande, scegline una più piccola' });
             }
-            const jpeg = buffer.length >= 3 && buffer[0] === 0xFF && buffer[1] === 0xD8 && buffer[2] === 0xFF;
-            const png = buffer.length >= 8 && buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E && buffer[3] === 0x47
-                && buffer[4] === 0x0D && buffer[5] === 0x0A && buffer[6] === 0x1A && buffer[7] === 0x0A;
-            const gif = buffer.length >= 6 && buffer[0] === 0x47 && buffer[1] === 0x49 && buffer[2] === 0x46
-                && buffer[3] === 0x38 && (buffer[4] === 0x37 || buffer[4] === 0x39) && buffer[5] === 0x61;
-            const webp = buffer.length >= 12 && buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46
-                && buffer[8] === 0x57 && buffer[9] === 0x45 && buffer[10] === 0x42 && buffer[11] === 0x50;
-            if (!jpeg && !png && !gif && !webp) {
+            if (buffer.length < 3 || buffer[0] !== 0xFF || buffer[1] !== 0xD8 || buffer[2] !== 0xFF) {
                 return res.status(400).json({ error: 'Formato foto non valido' });
             }
         }

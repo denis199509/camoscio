@@ -243,7 +243,7 @@
             'squadPage.fotoAlt': 'Squad photo',
             'squadPage.rimuoviAdmin': 'Remove admin',
             'squadPage.rendiAdmin': 'Make admin',
-            'squadPage.fotoTroppoGrande': 'Photo too big, pick a smaller one (max ~1.5MB).',
+            'squadPage.fotoNonElaborata': 'The chosen photo could not be processed.',
             'squadPage.erroreApprovazione': 'Could not approve the request.',
             'squadPage.erroreRifiuto': 'Could not decline the request.',
             'squadPage.fotoAggiornata': 'Squad photo updated.',

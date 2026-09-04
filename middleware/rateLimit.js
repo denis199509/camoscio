@@ -152,11 +152,12 @@ const cancellazioneLimiter = rateLimit({
     message: messaggioTroppiTentativi
 });
 
-// PUT /api/squads/:id/photo: la foto e' un data URL fino a 2 MB (MAX_PHOTO_LENGTH in
-// routes/squads.js). Senza un tetto suo, un solo IP puo' riscrivere la foto di una squadra a
-// raffica e riempire i 512 MB di Atlas (vincolo hard) in poche ore. Cambiare la foto di una
-// squadra e' un gesto raro: 20/ora e' larghissimo per un umano e taglia il ritmo di
-// riempimento di un ordine di grandezza. MEDIO-3, revisione sicurezza 28ª. (User.profilePhoto
+// PUT /api/squads/:id/photo: la foto e' un data URL fino a ~800 KB (MAX_PHOTO_LENGTH in
+// routes/squads.js, abbassato da 2 MB con MEDIO-3 residuo quando il client ha iniziato a
+// comprimere sempre in JPEG). Senza un tetto suo, un solo IP puo' riscrivere la foto di una
+// squadra a raffica e riempire i 512 MB di Atlas (vincolo hard) in poche ore. Cambiare la
+// foto di una squadra e' un gesto raro: 20/ora e' larghissimo per un umano e taglia il ritmo
+// di riempimento di un ordine di grandezza. MEDIO-3, revisione sicurezza 28ª. (User.profilePhoto
 // ha lo stesso problema su un'altra rotta: da guardare a parte.)
 const fotoLimiter = rateLimit({
     windowMs: 60 * 60 * 1000,
@@ -168,9 +169,10 @@ const fotoLimiter = rateLimit({
 });
 
 // GET /api/squads/:id/photo (MEDIO-1b, follow-up revisione sicurezza): la risposta arriva
-// fino a ~2,7 MB (data URL base64 del tetto MAX_PHOTO_LENGTH di routes/squads.js), e prima
-// non aveva NESSUN tappo oltre l'apiLimiter generale - 3000 richieste/5min vorrebbe dire
-// fino a ~97 GB/ora da un solo IP, ben oltre quanto regge la banda di Render gratuito.
+// fino a ~800 KB (data URL base64 del tetto MAX_PHOTO_LENGTH di routes/squads.js - foto piu'
+// vecchie di MEDIO-3 residuo possono ancora pesare fino ai 2 MB di prima), e prima non aveva
+// NESSUN tappo oltre l'apiLimiter generale - 3000 richieste/5min vorrebbe dire fino a diversi
+// GB/ora da un solo IP, ben oltre quanto regge la banda di Render gratuito.
 // Secchio dedicato e SEPARATO da fotoLimiter (che copre la scrittura, PUT /:id/photo): una
 // lettura a raffica non deve poter consumare la quota di chi cambia davvero la foto della
 // propria squadra, ne' viceversa. 100/ora e' largo per chi sfoglia a mano le pagine delle
