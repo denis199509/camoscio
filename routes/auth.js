@@ -192,13 +192,22 @@ router.post('/register', registrazioneLimiter, authLimiter, async (req, res) => 
         }
         res.json(risposta);
     } catch (e) {
-        console.error('Errore registrazione:', e);
         if (e.code === 11000) {
+            console.error('Errore registrazione:', e);
             return res.status(409).json({ error: 'Email o username già in uso' });
         }
         if (e.name === 'ValidationError') {
-            return res.status(400).json({ error: e.message });
+            // BASSO, follow-up revisione sicurezza: e.message di Mongoose incorpora il VALORE
+            // che ha fallito la validazione (es. "Cast to date failed for value ..."), non
+            // solo il nome del campo. I campi piu' esposti (emergencyContacts compreso) sono
+            // gia' controllati a mano sopra con messaggi sicuri; questo resta l'ultima rete,
+            // per un campo che in futuro nascesse senza lo stesso controllo manuale (qui lo
+            // dimostra gia' oggi un birthDate non valido). Messaggio generico al client, log
+            // solo dei NOMI dei campi (mai il valore).
+            console.error('Errore registrazione (validazione):', Object.keys(e.errors || {}));
+            return res.status(400).json({ error: 'Dati non validi. Controlla i campi inseriti.' });
         }
+        console.error('Errore registrazione:', e);
         res.status(500).json({ error: 'Errore interno durante la registrazione' });
     }
 });
