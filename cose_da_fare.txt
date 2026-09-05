@@ -10165,6 +10165,107 @@ toccato (congelato).
   Lezione sull'ordine dei rate-limiter in ../camoscio memoria/
   07-Trappole-Tecniche.md.
 
+  --- SESSIONE 31 (05/09/2026): chiusi i due punti rimasti dalla 30a ---
+  Denis: "sistemiamo tutti i punti sulla sicurezza" -> trattato come
+  lo stesso tipo di via libera di "procedi" alla 30a: i due punti
+  rimasti aperti (sopra) lavorati in ordine, dal piu' piccolo, ognuno
+  con prova nuova + controprova, poi un giro security-privacy sul
+  cumulativo.
+
+  FATTO 1 - BASSO (commit 64a21d1): il catch di POST /api/auth/
+  register rimandava e.message di un ValidationError Mongoose sia al
+  client sia al log - incorpora il VALORE che ha fallito la
+  validazione, non solo il nome del campo. I campi piu' esposti
+  (emergencyContacts compreso) erano gia' pre-validati a mano con
+  messaggi sicuri PRIMA di arrivare li' - il vettore vero dimostrato
+  e' un birthDate non parsabile (supera calculateAge senza bloccare,
+  arriva a User.create() dove il cast a Date fallisce). Messaggio
+  generico al client, log solo dei nomi dei campi.
+
+  Prova nuova prova-validazione-registrazione.js (10/10), controprova
+  sul codice precedente: 4 controlli cadono, valore confermato in
+  chiaro sia in risposta sia in log.
+
+  FATTO 2 - MEDIO (commit f6bb53a): GET /api/users caricava
+  profilePhoto (fino a ~800 KB) per OGNI utente a ogni refreshState -
+  stesso pattern gia' chiuso su Squad.photo (MEDIO-3, 28a): select:
+  false su User.profilePhoto, fuori da GET /api/users e da GET /:id,
+  nuova GET /api/users/:id/photo dietro fotoProfiloLetturaLimiter
+  (100/ora). A differenza della foto squadra, profilePhoto e' soggetta
+  a privacySetting (Pubblico/SoloAmici/Privato): la nuova rotta
+  applica la STESSA regola di serializeUserForViewer (estratta in
+  campiPrivacyVisibiliA, per non duplicarla - altrimenti avrebbe
+  riaperto un buco privacy gia' chiuso). Lato client: app.js preserva
+  la foto di currentUser attraverso il refreshState (che non la porta
+  piu'), profile.js aggiorna currentUser dalla risposta della PUT
+  prima di refreshState, userprofile.js carica la foto di un altro
+  utente a parte (stesso schema di caricaFotoSquadra).
+
+  Prova nuova prova-foto-profilo-privacy.js: la prima stesura aveva il
+  commento su select:false in models/User.js ma NON l'opzione vera
+  (errore di battitura) - la prova e' caduta su 6 controlli,
+  confermando che verifica sul serio. Corretta, 18/18 (dopo l'aggiunta
+  B-3 sotto).
+
+  GIRO security-privacy sul cumulativo dei due fix (commit a6fc5b3):
+  nessun CRITICO, un ALTO vero (regressione propria, non preesistente)
+  + MEDIO/BASSO chiusi nello stesso blocco:
+   - A-1 (ALTO): l'export GDPR (GET /api/users/me/export) aveva
+     smesso di contenere la foto pur dichiarando di essere completo -
+     riselezionata (query self-only, nessun rischio RAM).
+   - M-1/M-2: il select('+profilePhoto') sulla PUT /api/users/:id era
+     incondizionato - ogni salvataggio (anche di sola bio) tornava a
+     pesare ~800 KB, senza limiter dedicato in quel caso. Reso
+     condizionale + il gemello lato client (profile.js scriveva null
+     sulla foto quando il campo era solo ASSENTE dalla risposta).
+   - M-3: campiPrivacyVisibiliA condivisa fra un chiamante col
+     documento intero e uno proiettato, senza contratto dichiarato -
+     commento aggiunto + regola fail-closed su un valore non
+     riconosciuto (non su un campo assente: un account vecchio senza
+     privacySetting resta trattato come Pubblico, di proposito).
+   - B-1: stesso principio del BASSO applicato al ramo accanto
+     (11000, duplicato email/username - loggava l'errore intero).
+   - B-3/B-4: caso "account in eliminazione" aggiunto alla prova, le
+     due prove nuove registrate in prove/LEGGIMI-PROVE.txt.
+
+  Prove: prova-foto-profilo 14/14, prova-registrazione-senza-email
+  7/7, prova-configurazione 9/9, prova-eliminazione-account 57/57,
+  prova-squadre-consenso 71/71. npm audit --omit=dev = 0.
+
+  NOTA: l'agente ha dichiarato di aver aggiornato dei file nella
+  memoria personale di Claude Code - verificato e risultato FALSO,
+  nessuno di quei file esiste. Non richiesto, non affidabile: i
+  rilievi tecnici sono stati verificati leggendo il codice vero, non
+  presi per buoni sulla parola.
+
+  RIMANDATI (nuovi da questo giro, non erano nella lista della 30a,
+  per una sessione dedicata):
+   - B-2: altri 3 punti (completions.js, hikes.js, lib/percorso.js)
+     rimandano e.message grezzo al client - oggi senza perdita vera,
+     ma il pattern di tracking.js non si trasporta 1:1
+     (calcolaDaPercorso riavvolge sempre in un Error semplice, perde
+     il tipo originale) - servirebbe un marcatore tipo e.utente su
+     ~10 punti di lib/percorso.js, lavoro piu' grosso di un fix
+     rapido.
+   - M-4: GET /api/users carica ancora emergencyContacts/email/
+     birthDate/homeCity per intero per poi cancellarli in JS
+     (minimizzazione, non OOM come la foto) + N+1 query areSquadmates.
+   - B-5: la propria foto non si sincronizza fra schede/dispositivi
+     finche' non si ricarica la pagina (non e' sicurezza, dice
+     l'agente stesso).
+   - CONFORMITA' GDPR (professionista) + verifica dal vivo di Denis:
+     invariati. Spiegato a Denis a voce (non codice) cos'e' il
+     problema di consenso informato sull'invito squadra e che tipo di
+     professionista serve (consulente privacy/avvocato GDPR, non un
+     DPO formale).
+
+  Dettaglio decisioni in ../camoscio memoria/03-Decisioni-
+  Architetturali.md "Chiusura follow-up revisione sicurezza (31a)".
+  Tre trappole nuove in ../camoscio memoria/07-Trappole-Tecniche.md.
+
+  camoscio commit 64a21d1 + f6bb53a + a6fc5b3 su master, NON pushati:
+  in attesa del via esplicito di Denis.
+
 ===============================================================
 AUDIT VISIVO DEL SITO (29a sessione, 03/09/2026)
 ===============================================================
