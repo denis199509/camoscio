@@ -21,6 +21,16 @@ function setHikeModalMode(mode, hike) {
     }
 }
 
+// Chiusura vera di create-hike-modal (nascondere + uscire da modalita' modifica): e' la
+// stessa sia annullando col tasto X sia dopo un salvataggio riuscito (che poi aggiunge il
+// SUO reset di form/trailhead/fonte percorso - vedi submitCreateHike). Registrata come
+// "chiudi" del modale (window.apriModaleStorico/chiudiModaleStorico, app.js) cosi' un
+// Indietro fisico e una chiusura a mano consumano la STESSA entry di cronologia.
+function chiudiCreateHikeModal() {
+    document.getElementById('create-hike-modal').classList.add('hidden');
+    editingHikeId = null;
+}
+
 // Punto 43: riporta il selettore "quota/dislivello/distanza" a "Li scrivo io", che e' anche
 // lo stato con cui si apre SEMPRE il modulo di modifica (punto 54) - anche su un'escursione
 // che ha gia' un percorso collegato. Riproporre un progetto o una traccia ogni volta che si
@@ -150,6 +160,7 @@ window.openEditHikeModal = function(hikeId) {
     document.getElementById('hike-trailhead-search').value = hike.trailhead.name || '';
 
     document.getElementById('create-hike-modal').classList.remove('hidden');
+    window.apriModaleStorico('create-hike-modal', chiudiCreateHikeModal);
     if (window.lucide) window.lucide.createIcons();
 };
 
@@ -164,6 +175,7 @@ window.apriModaleNuovaEscursione = function() {
     // modalita' modifica da un'apertura precedente mai inviata.
     setHikeModalMode('create');
     modal.classList.remove('hidden');
+    window.apriModaleStorico('create-hike-modal', chiudiCreateHikeModal);
     // Data minima a oggi.
     document.getElementById('hike-date').min = new Date().toISOString().split('T')[0];
     // Punto 8: form.reset() non basta a ripulire il punto di ritrovo scelto,
@@ -222,8 +234,7 @@ function setupSocialEvents() {
 
     if (btnCloseModal && modal) {
         btnCloseModal.addEventListener("click", () => {
-            modal.classList.add("hidden");
-            editingHikeId = null;
+            window.chiudiModaleStorico('create-hike-modal', chiudiCreateHikeModal);
         });
     }
 
@@ -286,7 +297,7 @@ function setupSocialEvents() {
     // Punto 64: modale di completamento di gruppo
     const btnCloseCompleteGroup = document.getElementById("btn-close-complete-group-modal");
     if (btnCloseCompleteGroup) {
-        btnCloseCompleteGroup.addEventListener("click", closeCompleteGroupModal);
+        btnCloseCompleteGroup.addEventListener("click", () => window.chiudiModaleStorico('complete-group-modal', closeCompleteGroupModal));
     }
     const btnConfirmCompleteGroup = document.getElementById("btn-confirm-complete-group");
     if (btnConfirmCompleteGroup) {
@@ -300,7 +311,7 @@ function setupSocialEvents() {
     // "Invita a Gita" da una squadra ricorrente
     const btnCloseInviteSquad = document.getElementById("btn-close-invite-squad-modal");
     if (btnCloseInviteSquad) {
-        btnCloseInviteSquad.addEventListener("click", closeInviteSquadModal);
+        btnCloseInviteSquad.addEventListener("click", () => window.chiudiModaleStorico('invite-squad-modal', closeInviteSquadModal));
     }
 
     // Form creazione squadra ricorrente
@@ -1642,7 +1653,7 @@ async function submitCreateHike() {
             const avevamoMandatoQuoteManuali = !!(routeSource && routeSource.quoteManuali);
             const hikeSalvata = await response.json().catch(() => null);
 
-            document.getElementById("create-hike-modal").classList.add("hidden");
+            window.chiudiModaleStorico('create-hike-modal', chiudiCreateHikeModal);
             document.getElementById("create-hike-form").reset();
             if (window.resetTrailheadPicker) window.resetTrailheadPicker();
             resetHikeRouteSourcePicker();
@@ -1807,6 +1818,7 @@ window.openCompleteGroupModal = function(hikeId) {
     renderCompleteGroupChecklist();
 
     document.getElementById("complete-group-modal").classList.remove("hidden");
+    window.apriModaleStorico('complete-group-modal', closeCompleteGroupModal);
     if (window.lucide) window.lucide.createIcons();
 };
 
@@ -1850,7 +1862,7 @@ async function submitCompleteGroup() {
         });
 
         if (response.ok) {
-            closeCompleteGroupModal();
+            window.chiudiModaleStorico('complete-group-modal', closeCompleteGroupModal);
             await refreshState();
             renderHikesList(); // ridisegna anche "Le mie escursioni", vedi commento su renderHikesList
             window.showToast(T('completeGroupModal.completataSuccesso') || "Escursione completata per il gruppo!", "success");
@@ -2255,6 +2267,7 @@ window.inviteSquadToHike = function(squadId) {
     // escursione aperta (es. appena creata).
     if (!renderInviteSquadHikeList()) return;
     document.getElementById("invite-squad-modal").classList.remove("hidden");
+    window.apriModaleStorico('invite-squad-modal', closeInviteSquadModal);
     if (window.lucide) window.lucide.createIcons();
 };
 
@@ -2330,6 +2343,10 @@ function renderInviteSquadHikeList() {
     const candidate = mieEscursioniAperte();
     if (candidate.length === 0) {
         const nomeSquadra = squad.name;
+        // Chiusura "grezza" (non chiudiModaleStorico): subito dopo si apre generic-modal,
+        // che pusha la SUA entry - back() e' asincrono, un push immediato dopo correrebbe
+        // contro quella traversata (vedi il commento su scollegaModaleStorico, app.js).
+        window.scollegaModaleStorico('invite-squad-modal');
         closeInviteSquadModal();
         window.showAlertModal(T('social.noOpenHikeForInvite', nomeSquadra) || `Non hai nessuna escursione aperta a cui invitare "${nomeSquadra}": le escursioni già completate non si possono più modificare. Creane una nuova dalla sezione Escursioni.`);
         return false;
@@ -2374,7 +2391,7 @@ window.confermaInvitoSquadra = async function(hikeId) {
     const hike = db.hikes.find(h => h.id === hikeId);
     if (!squad || !hike) {
         window.showToast(T('social.squadOrHikeGone') || "Squadra o escursione non più disponibile.", "error");
-        closeInviteSquadModal();
+        window.chiudiModaleStorico('invite-squad-modal', closeInviteSquadModal);
         return;
     }
 
@@ -2402,7 +2419,7 @@ window.confermaInvitoSquadra = async function(hikeId) {
     const giaDentroInv = new Set([...(hike.participants || []), ...(hike.pendingApproval || []), ...(hike.pendingInvites || [])]);
     if (squad.members.every(id => giaDentroInv.has(id))) {
         window.showToast(T('social.allMembersInvited') || 'Tutti i membri sono già iscritti, in attesa o invitati.', "info");
-        closeInviteSquadModal();
+        window.chiudiModaleStorico('invite-squad-modal', closeInviteSquadModal);
         return;
     }
 
@@ -2429,7 +2446,7 @@ window.confermaInvitoSquadra = async function(hikeId) {
                 : (T('social.squadInvited', squad.name, hike.title, n) || `Invito inviato a ${n} ${n === 1 ? 'membro' : 'membri'} di "${squad.name}": ${n === 1 ? 'entrerà' : 'entreranno'} in "${hike.title}" solo se ${n === 1 ? 'accetta' : 'accettano'}.`),
             n === 0 ? "info" : "success"
         );
-        closeInviteSquadModal(); renderSquadsList(); renderHikesList();
+        window.chiudiModaleStorico('invite-squad-modal', closeInviteSquadModal); renderSquadsList(); renderHikesList();
     } catch (e) {
         console.error("Errore invito squadra:", e);
         window.showToast(T('social.errInviteSend') || "Non è stato possibile inviare l'invito.", "error");

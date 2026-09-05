@@ -1021,13 +1021,19 @@ function openReportFabPanel() {
     mostraSceltaPosizioneReport();
 
     panel.classList.remove('hidden');
+    window.apriModaleStorico('report-panel', chiudiReportFabPanelSubito);
     if (window.lucide) window.lucide.createIcons();
 }
 
-// Chiude il pannello SENZA svuotarlo (non lo tocca) - serve anche a avviaScegliPuntoSullaMappa
-// piu' sopra, che deve poter nascondere il pannello mantenendo tipo/descrizione/foto gia'
-// scritti. Il reset vero avviene solo in apertura (openReportFabPanel), mai in chiusura.
-function closeReportFabPanel() {
+// Chiusura vera (nascondere SENZA svuotare - il reset vero avviene solo in apertura,
+// vedi openReportFabPanel): registrata come "chiudi" del pannello (apriModaleStorico
+// sopra) e usata come riserva da chiudiModaleStorico. closeReportFabPanel resta il nome
+// pubblico chiamato da tasto X/Annulla/invio riuscito, ma passa sempre da li' cosi' un
+// Indietro fisico e una chiusura a mano consumano la STESSA entry di cronologia. NON
+// tocca la modalita' "scegli sulla mappa" (avviaScegliPuntoSullaMappa/
+// confermaPuntoReportScelto/annullaScegliPuntoSullaMappa nascondono/mostrano il pannello
+// per conto loro, di proposito fuori da questa cronologia - vedi la nota li' sopra).
+function chiudiReportFabPanelSubito() {
     const panel = document.getElementById('report-panel');
     if (panel) panel.classList.add('hidden');
     reportFabPosizione = null;
@@ -1035,6 +1041,9 @@ function closeReportFabPanel() {
         modalitaScegliPuntoReport = false;
         impostaAvvisoMappaScegliPunto(false);
     }
+}
+function closeReportFabPanel() {
+    window.chiudiModaleStorico('report-panel', chiudiReportFabPanelSubito);
 }
 
 // Punto 26 - il tasto in alto a destra e' quello che l'utente preme aspettandosi di vedere

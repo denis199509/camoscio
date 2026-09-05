@@ -32,7 +32,7 @@ async function showUserProfile(userId) {
     const db = window.CamoscioState;
     const bersaglio = db && db.users && db.users.find(u => String(u.id) === String(userId));
     if (bersaglio && bersaglio.deleted) return;
-    if (window.navigateTo) window.navigateTo("user-profile");
+    if (window.navigateTo) window.navigateTo("user-profile", null, { entita: userId });
     await renderUserProfile(userId);
 }
 
@@ -572,6 +572,7 @@ window.showFollowList = async function (userId, tipo) {
     }
     bodyEl.innerHTML = `<p class="small text-muted">${window.escapeHtml(T('profile.caricamento') || 'Caricamento...')}</p>`;
     modal.classList.remove('hidden');
+    window.apriModaleStorico('follow-list-modal', window.closeFollowListModal);
 
     let lista = [];
     try {
@@ -587,7 +588,7 @@ window.showFollowList = async function (userId, tipo) {
 
     bodyEl.innerHTML = persone.length
         ? persone.map(u => `
-            <div class="squad-item" style="cursor:pointer;" onclick="closeFollowListModal(); showUserProfile('${esc(u.id)}')">
+            <div class="squad-item" style="cursor:pointer;" onclick="scollegaModaleStorico('follow-list-modal'); closeFollowListModal(); showUserProfile('${esc(u.id)}')">
                 <div><h5>${esc(u.avatar)} ${esc(u.username)}</h5></div>
             </div>`).join('')
         : `<div class="text-muted small italic text-center py-2">${esc(tipo === 'followers'
@@ -597,9 +598,21 @@ window.showFollowList = async function (userId, tipo) {
     if (window.lucide) window.lucide.createIcons();
 };
 
+// Chiusura "grezza" (nascondere e basta): e' il "chiudi" registrato all'apertura
+// (apriModaleStorico, sopra) e viene chiamata anche direttamente dalla riga della lista
+// che naviga altrove (onclick sopra) - li' NON si passa da chiudiModaleStorico apposta
+// (vedi commento su scollegaModaleStorico, app.js). Il backdrop e il tasto X invece
+// passano da chiudiModaleStoricoUtente qui sotto, per consumare la entry di cronologia.
 window.closeFollowListModal = function () {
     const modal = document.getElementById('follow-list-modal');
     if (modal) modal.classList.add('hidden');
+};
+
+// Chiusura esplicita da parte dell'utente (backdrop, tasto X): a differenza del click su
+// una riga (che naviga subito altrove), qui non segue nient'altro - si puo' consumare la
+// entry di cronologia con chiudiModaleStorico invece di lasciarla li' morta.
+window.chiudiModaleStoricoFollowList = function () {
+    window.chiudiModaleStorico('follow-list-modal', window.closeFollowListModal);
 };
 
 window.showUserProfile = showUserProfile;

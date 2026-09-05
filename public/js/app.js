@@ -56,6 +56,65 @@ window.showToast = function(message, type = "info") {
     }, 9000);
 };
 
+// --- Cronologia dei modali (Tasto Indietro / History API, 29a sessione) -----------
+// Aprire un modale pianta una entry in cronologia; un Indietro fisico la consuma e
+// chiude SOLO il modale (mai anche una navigazione - vedi il gestore popstate in
+// setupNavigation). Chiudere da codice (X, Annulla, invio riuscito) passa da
+// chiudiModaleStorico(), che quando puo' consuma la STESSA entry con un
+// history.back() invece di nascondere e basta: senza, la entry morta costerebbe
+// all'utente un secondo Indietro per uscire davvero dalla sezione sotto. Il "chiudi"
+// vero (nascondere + azzerare stato) parte SEMPRE da li' o dal gestore popstate,
+// mai in modo sincrono da chi chiama chiudiModaleStorico: back() e' asincrono apposta.
+let modaleCorrente = null; // { id, chiudi() } - il modale con una entry aperta ORA
+
+function apriModaleStorico(id, chiudi) {
+    const sezioneAttiva = document.querySelector(".page-section.active");
+    // Porta avanti l'entita'/scrollToId della entry su cui si apre (es. l'id utente di una
+    // pagina profilo): serve SOLO per il caso raro in cui questa entry, orfana, venga
+    // attraversata da un Indietro NORMALE dopo che il modale e' gia' stato chiuso da un'altra
+    // via (scollegaModaleStorico + chiusura diretta + navigazione, es. click su una riga della
+    // lista follower che apre un altro profilo - vedi userprofile.js). Senza, il gestore
+    // popstate vedrebbe camoscioNav:"user-profile" senza sapere DI CHI, e lascerebbe a schermo
+    // il profilo sbagliato (quello aperto per ultimo) invece di ripristinare quello giusto.
+    const precedente = history.state;
+    modaleCorrente = { id, chiudi };
+    history.pushState({
+        camoscioModal: id,
+        camoscioNav: sezioneAttiva ? sezioneAttiva.id : null,
+        entita: (precedente && precedente.entita) || null,
+        scrollToId: (precedente && precedente.scrollToId) || null
+    }, "");
+}
+
+function chiudiModaleStorico(id, chiudi) {
+    if (modaleCorrente && modaleCorrente.id === id) {
+        if (history.state && history.state.camoscioModal === id) {
+            // Il popstate esegue modaleCorrente.chiudi, non l'argomento "chiudi" qui sopra:
+            // va aggiornato PRIMA di back(), altrimenti chi chiude con un risultato preciso
+            // (es. Conferma vs Annulla di generic-modal) si ritroverebbe sempre eseguita la
+            // chiusura piantata all'apertura (pensata per l'Indietro fisico, es. "Annulla").
+            modaleCorrente.chiudi = chiudi;
+            history.back();
+            return;
+        }
+        modaleCorrente = null;
+    }
+    // Registro incoerente (mai passato da apriModaleStorico, o gia' chiuso): chiude
+    // comunque subito, un modale non si lascia mai a schermo per questo.
+    if (chiudi) chiudi();
+}
+
+// Toglie di mezzo il registro senza toccare la cronologia. Serve nei pochi punti dove
+// la chiusura e' seguita SUBITO da un'altra pushState (apertura di un altro modale, o
+// una navigazione vera, es. click su una riga della lista follower che apre un
+// profilo): back() e' asincrono, un push immediatamente dopo correrebbe contro la
+// traversata ancora in corso. Li' si chiude a mano (funzione "grezza") invece di
+// passare da chiudiModaleStorico, e si chiama prima questa per non lasciare il
+// registro a puntare a un modale ormai chiuso.
+function scollegaModaleStorico(id) {
+    if (modaleCorrente && modaleCorrente.id === id) modaleCorrente = null;
+}
+
 function showGenericModal(message, { showInput = false, defaultValue = "", showCancel = true, confirmLabel = "OK", cancelLabel = "Annulla", danger = false, inputType = "text", inputMax = null } = {}) {
     return new Promise((resolve) => {
         const modal = document.getElementById("generic-modal");
@@ -91,9 +150,6 @@ function showGenericModal(message, { showInput = false, defaultValue = "", showC
             inputWrapper.classList.add("hidden");
         }
 
-        modal.classList.remove("hidden");
-        if (showInput) input.focus();
-
         const cleanup = (result) => {
             modal.classList.add("hidden");
             btnConfirm.removeEventListener("click", onConfirm);
@@ -104,11 +160,29 @@ function showGenericModal(message, { showInput = false, defaultValue = "", showC
             resolve(result);
         };
 
-        const onConfirm = () => cleanup(showInput ? input.value : true);
-        const onCancel = () => cleanup(showInput ? null : false);
+        // Tasto Indietro: passa SEMPRE da chiudiModaleStorico, mai da cleanup() diretto -
+        // altrimenti la entry piantata sotto (registraStorico, in fondo) resterebbe li'
+        // morta e il prossimo Indietro dell'utente la troverebbe invece di tornare
+        // davvero alla sezione precedente.
+        const onConfirm = () => chiudiModaleStorico("generic-modal", () => cleanup(showInput ? input.value : true));
+        const onCancel = () => chiudiModaleStorico("generic-modal", () => cleanup(showInput ? null : false));
 
         btnConfirm.addEventListener("click", onConfirm);
         btnCancel.addEventListener("click", onCancel);
+
+        modal.classList.remove("hidden");
+        if (showInput) input.focus();
+
+        // Un Indietro fisico equivale al tasto Annulla - stessa cleanup(). Una notifica
+        // SENZA Annulla (showAlertModal, es. l'allarme del Dead Man's Switch, punto 37) non
+        // va persa per un Indietro premuto per sbaglio: non la chiude, si ripianta la
+        // stessa entry (stesso schema della sentinella del wizard in auth.js) - va
+        // riconosciuta col suo bottone, non scavalcata.
+        const registraStorico = () => apriModaleStorico("generic-modal", () => {
+            if (showCancel) cleanup(showInput ? null : false);
+            else registraStorico();
+        });
+        registraStorico();
     });
 }
 
@@ -205,6 +279,7 @@ window.openImageLightbox = function(src, alt, grayscale, stampId) {
     }
 
     modal.classList.remove("hidden");
+    apriModaleStorico("image-lightbox", chiudiImageLightboxSubito);
 };
 
 // Apre/chiude il pannello informativo dentro il modale immagine (bottone "i").
@@ -217,7 +292,12 @@ window.toggleImageLightboxInfo = function() {
     btnInfo.setAttribute("aria-expanded", daMostrare ? "true" : "false");
 };
 
-window.closeImageLightbox = function() {
+// Chiusura vera (nascondere + azzerare): registrata come "chiudi" del modale (vedi
+// apriModaleStorico sopra) e usata come riserva da chiudiModaleStorico.
+// window.closeImageLightbox resta il nome pubblico chiamato da backdrop/tasto X/Esc,
+// ma passa sempre da chiudiModaleStorico cosi' un Indietro fisico e una chiusura a
+// mano consumano la STESSA entry di cronologia invece di lasciarne una morta.
+function chiudiImageLightboxSubito() {
     const modal = document.getElementById("image-lightbox");
     if (!modal) return;
     modal.classList.add("hidden");
@@ -229,6 +309,9 @@ window.closeImageLightbox = function() {
     if (boxInfo) boxInfo.classList.add("hidden");
     const btnInfo = document.getElementById("image-lightbox-info-btn");
     if (btnInfo) btnInfo.setAttribute("aria-expanded", "false");
+}
+window.closeImageLightbox = function() {
+    chiudiModaleStorico("image-lightbox", chiudiImageLightboxSubito);
 };
 
 document.addEventListener("click", (e) => {
@@ -591,6 +674,13 @@ function setupNavigation() {
     const sections = document.querySelectorAll(".page-section");
     const sectionTitle = document.getElementById("section-title");
 
+    // Tasto Indietro / History API (progetto in ../camoscio memoria, 29a sessione): true
+    // SOLO mentre navigateTo() sta rispondendo a un popstate gia' avvenuto (vedi il
+    // gestore in fondo a questa funzione) - senza, ogni Indietro pusherebbe una entry
+    // Avanti identica, un loop. Vive qui (non a livello di file) perche' la legge sia
+    // navigateTo sia quel gestore, entrambi annidati in setupNavigation.
+    let sopprimiPush = false;
+
     // Mappa sectionId -> titolo italiano, scritta un'unica volta: la usano sia
     // la navigazione (sotto) sia il cambio lingua (i18n.js, per rimettere a
     // posto il titolo quando si cambia lingua senza navigare altrove).
@@ -809,7 +899,7 @@ function setupNavigation() {
     });
     // --------------------------------------------------------------------------
 
-    function navigateTo(targetId, scrollToId) {
+    function navigateTo(targetId, scrollToId, stato) {
         // V2 UX PASSO 10: alias di navigazione. Alcune sezioni sono state assorbite
         // in un'altra pagina; l'id vecchio resta valido (deep-link, chiamate da altri
         // file) e viene rimappato qui, in cima all'imbuto unico.
@@ -919,6 +1009,17 @@ function setupNavigation() {
                 scrollaDopoLayout();
             }
         }
+
+        // Tasto Indietro / History API: navigateTo e' l'unico punto che pusha (ci passano
+        // sia i pulsanti sia gli show*Page con un id in "stato.entita"). Mai quando la
+        // chiamata arriva gia' da un popstate (sopprimiPush) - vedi il commento sopra.
+        if (!sopprimiPush) {
+            history.pushState(
+                { camoscioNav: targetId, entita: (stato && stato.entita) || null, scrollToId: scrollToId || null },
+                "",
+                "#" + targetId
+            );
+        }
     }
 
     // V2 UX PASSO 9: un elemento di navigazione puo' portare un data-view (le viste
@@ -1024,6 +1125,65 @@ function setupNavigation() {
     // a CHI si e' cliccato), ma deve comunque passare da qui per nascondere le altre
     // sezioni, spegnere il GPS se si stava guardando la Mappa, ecc.
     window.navigateTo = navigateTo;
+
+    // --- Tasto Indietro / History API (progetto in ../camoscio memoria, 29a sessione) ---
+    // Punto 52 (telefono, gia' risolto per il wizard di registrazione in auth.js) era
+    // diventato strutturale una volta loggati: la SPA non toccava mai history, quindi
+    // l'unica entry era quella d'ingresso e Indietro usciva sempre dal sito. Le pagine
+    // con parametro (id nello stato) non sono deep-linkabili da un hash semplice: le
+    // gestisce lo show*Page giusto, richiamato con l'id salvato in st.entita.
+    const IDS_PARAMETRICI = new Set(["squad-page", "hike-page", "user-profile", "outing-page"]);
+    const sezioniNote = new Set(Array.from(sections).map(s => s.id).filter(id => !IDS_PARAMETRICI.has(id)));
+
+    window.addEventListener("popstate", (e) => {
+        const st = e.state;
+        // auth.js pianta le sue entry SOLO per il wizard di registrazione (pre-login,
+        // camoscioRegWizard) e le legge SOLO lui: i due percorsi restano indipendenti,
+        // ognuno ignora lo stato dell'altro.
+        if (st && st.camoscioRegWizard) return;
+        if (!(window.CamoscioState && window.CamoscioState.currentUser)) return;
+
+        // Un modale con una entry propria (apriModaleStorico) intercetta l'Indietro PRIMA
+        // di guardare la navigazione: lo chiude e basta, non naviga mai nello stesso colpo
+        // - si resta sulla sezione sotto, comportamento voluto (vedi il piano).
+        if (modaleCorrente) {
+            const m = modaleCorrente;
+            modaleCorrente = null;
+            m.chiudi();
+            return;
+        }
+
+        if (st && st.camoscioNav) {
+            sopprimiPush = true;
+            if (st.entita && st.camoscioNav === "squad-page" && window.showSquadPage) window.showSquadPage(st.entita);
+            else if (st.entita && st.camoscioNav === "hike-page" && window.showHikePage) window.showHikePage(st.entita);
+            else if (st.entita && st.camoscioNav === "user-profile" && window.showUserProfile) window.showUserProfile(st.entita);
+            else if (st.entita && st.camoscioNav === "outing-page" && window.showOutingPage) window.showOutingPage(st.entita);
+            else navigateTo(st.camoscioNav, st.scrollToId || undefined);
+            sopprimiPush = false;
+        }
+    });
+
+    // Stato iniziale della cronologia. Un deep-link (#mappa, da un link condiviso o dai
+    // preferiti) apre subito quella sezione SENZA pusharla di nuovo (sopprimiPush) - la
+    // entry d'ingresso resta quella, cosi' un Indietro da li' esce dal sito, com'e' giusto
+    // che sia. Le pagine con parametro non sono deep-linkabili (manca l'id in un hash
+    // semplice): un loro hash ripiega sulla Dashboard, come se il link non ci fosse.
+    const hashIniziale = (location.hash || "").replace(/^#/, "");
+    if (hashIniziale && sezioniNote.has(hashIniziale)) {
+        // Etichetta SUBITO la entry d'ingresso (replaceState, non tocca lo stack) - senza,
+        // resterebbe con state:null e un Indietro che vi ritorna dopo aver navigato altrove
+        // non risincronizzerebbe la sezione visibile (il gestore popstate ignora uno stato
+        // senza camoscioNav). sopprimiPush evita comunque una SECONDA entry identica: qui
+        // basta correggere quella che il browser ha gia' creato da solo.
+        history.replaceState({ camoscioNav: hashIniziale, entita: null, scrollToId: null }, "", "#" + hashIniziale);
+        sopprimiPush = true;
+        navigateTo(hashIniziale);
+        sopprimiPush = false;
+    } else {
+        history.replaceState({ camoscioNav: "dashboard" }, "", "#dashboard");
+    }
+    // --------------------------------------------------------------------------
 }
 
 // Innesca il render corretto della sezione aperta. Ritorna la promise del ciclo

@@ -41,7 +41,7 @@
 
     async function showOutingPage(sessionId) {
         if (!sessionId) return;
-        if (window.navigateTo) window.navigateTo('outing-page');
+        if (window.navigateTo) window.navigateTo('outing-page', null, { entita: sessionId });
         await renderOutingPage(sessionId);
     }
 

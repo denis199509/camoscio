@@ -29,7 +29,7 @@ var hpMiniLayer = null;
 
 async function showHikePage(hikeId) {
     if (!hikeId) return;
-    if (window.navigateTo) window.navigateTo("hike-page");
+    if (window.navigateTo) window.navigateTo("hike-page", null, { entita: hikeId });
     await renderHikePage(hikeId);
 }
 

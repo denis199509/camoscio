@@ -49,7 +49,7 @@ function isSquadMemberClient(squad, userId) {
 
 async function showSquadPage(squadId) {
     if (!squadId) return;
-    if (window.navigateTo) window.navigateTo("squad-page");
+    if (window.navigateTo) window.navigateTo("squad-page", null, { entita: squadId });
     await renderSquadPage(squadId);
 }
 

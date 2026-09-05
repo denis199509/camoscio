@@ -1,94 +1,97 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-09-05 (TRENTADUESIMA sessione — chiusi gli ultimi tre
-follow-up di sicurezza (B-5, M-4, B-2), poi un giro `security-privacy` sul
-cumulativo: GO, con 3 MEDIO + 4 BASSO chiusi nello stesso blocco (uno era
-un difetto funzionale vero, non solo sicurezza — vedi sotto). Denis ha
-anche chiuso a voce altri tre punti aperti da tempo.
+Aggiornato: 2026-09-05 (TRENTATREESIMA sessione — Denis ha aperto con "abbiamo
+delle cose già progettate, possiamo cominciare con il codice": i tre lavori
+preparati ma mai scritti (vedi 32a sessione) proposti via AskUserQuestion,
+scelto il TASTO INDIETRO / HISTORY API. Implementato per intero e verificato
+DAL VIVO con l'estensione Chrome (non solo a schermo: history.state e l'esito
+delle promise letti con javascript_tool a ogni passo).
 
---- COSA E' STATO CHIUSO ---
-Denis: "cominciamo con b-2, m-4 e b-5" -> i tre lavorati in ordine dal
-piu' piccolo, ognuno con prova nuova + controprova.
+--- COSA E' STATO FATTO ---
+Il tasto Indietro (telefono e PC) buttava fuori dal sito invece di tornare
+alla pagina/sezione precedente, perche' la SPA non toccava mai la cronologia
+del browser. Piano gia' pronto dalla 29a sessione (ambito pieno: sezioni +
+pagine con id + modali; Indietro sulla home esce dal sito).
 
- B-5   La propria foto profilo non si sincronizzava piu' fra schede/
-       dispositivi diversi (regressione accettata dal fix MEDIO della
-       31a, che ha tolto profilePhoto da GET /api/users). Un listener
-       visibilitychange (public/js/app.js) ri-scarica SOLO la propria
-       foto quando la scheda torna visibile - non a ogni cambio
-       sezione, per non reintrodurre lo spreco di banda appena tolto.
- M-4   GET /api/users caricava email/emergencyContacts/birthDate/
-       homeCity per INTERO per ogni utente, per poi cancellarli in JS -
-       minimizzazione mancata su dati di TERZE PERSONE. La query verso
-       gli altri usa ora una proiezione che li esclude; il proprio
-       documento resta separato (altrimenti currentUser perderebbe i
-       propri campi). Tolto anche l'N+1 di areSquadmates.
- B-2   Tre punti rimandavano l'errore di un percorso al client senza
-       controllare se fosse sicuro da mostrare. Il marcatore .utente
-       che sembrava "da inventare" esisteva gia' (ErroreGpx/ErroreFit)
-       - si perdeva solo a ogni ri-lancio. Nuovo erroreUtente() applicato
-       a tutti i punti throw di lib/percorso.js.
+Nucleo in public/js/app.js: navigateTo() e' l'unico punto che fa
+history.pushState (flag sopprimiPush per non ripushare quando la chiamata
+arriva gia' da un popstate); un gestore popstate unico; un registro modali
+(apriModaleStorico/chiudiModaleStorico/scollegaModaleStorico) che pianta una
+entry all'apertura di un modale e la CONSUMA con un history.back() alla
+chiusura, invece di nascondere e basta - senza, un Indietro successivo
+troverebbe una entry morta e servirebbe un secondo Indietro per uscire
+davvero dalla sezione sotto. squadpage.js/hikepage.js/userprofile.js/
+outingpage.js passano l'id della pagina come stato.entita; gli 8 modali del
+censimento della 29a agganciati uno per uno (create-hike-modal,
+complete-group-modal, invite-squad-modal, follow-list-modal, generic-modal,
+map-picker-modal, image-lightbox, report-panel). tracking-panel ESCLUSO di
+proposito (resta un pannello di stato, non un dialogo).
 
- GIRO security-privacy sul cumulativo: GO. MEDIO-1 era un difetto
- FUNZIONALE vero (non solo sicurezza): il tentativo di ridisegnare la
- pagina Profilo dopo il sync chiamava la funzione sbagliata (zero
- effetto sulla vista) - corretto e verificato dal vivo con l'estensione
- Chrome, due schede reali. MEDIO-2 (secchio di lettura foto condiviso
- con chi guarda il profilo di altri - soglia 5 min), MEDIO-3 (il Set
- precalcolato ora porta con se' il viewerId per cui e' stato calcolato,
- fail-closed se non combacia), BASSO-1..4 (try/catch mancante, log
- dell'errore originale su un fallimento imprevisto, due rifiniture alle
- prove, due difese a costo zero). Tutto chiuso nel commit 617edde.
+>>> TRE DIFETTI VERI TROVATI E CORRETTI in questa sessione (due SOLO
+    provando dal vivo, uno rileggendo il codice appena scritto):
+  1. La entry d'ingresso di un deep-link (es. un link salvato su #map-section)
+     non portava camoscioNav: un Indietro che vi tornava dopo aver navigato
+     altrove non risincronizzava la sezione VISIBILE (l'URL cambiava, il
+     contenuto restava quello di prima). Corretto con un replaceState che
+     etichetta subito quella entry.
+  2. apriModaleStorico non portava avanti l'entita' (es. l'id utente) della
+     pagina su cui si apre un modale: chiudendo il modale con un'azione che
+     naviga altrove (es. click su una riga della lista follower che apre un
+     ALTRO profilo), un Indietro successivo su quella entry ormai orfana
+     mostrava il profilo SBAGLIATO (l'ultimo aperto, non quello di partenza).
+     Corretto portando avanti entita'/scrollToId dalla entry precedente.
+  3. chiudiModaleStorico eseguiva SEMPRE la chiusura piantata all'apertura
+     invece di quella passata dal bottone premuto - un Confirm sarebbe stato
+     risolto come se fosse un Annulla. Trovato rileggendo il codice prima di
+     testare dal vivo, corretto subito.
 
->>> STATO A FINE 32a SESSIONE:
-      - camoscio: 1 commit avanti a origin/master (617edde), NON
-        PUSHATO - in attesa del via esplicito di Denis. Working tree
-        pulito, gli auto-save di sessione sono stati rifusi con
-        `git reset --soft` prima di committare.
-      - Prove verdi: prova-lista-utenti-minimizzata 31/31 (nuova),
-        prova-percorso-errori-sicuri 19/19 (nuova), prova-punto93
-        28/28, prova-punto116 42/42, prova-punto113-gpx 43/43,
-        prova-fit 33/33, prova-foto-profilo-privacy 18/18, prova-
-        foto-profilo 14/14, prova-eliminazione-account 57/57, prova-
-        squadre-consenso 71/71, prova-configurazione 9/9, prova-
-        validazione-registrazione 10/10, prova-registrazione-senza-
-        email 7/7.
-      - npm audit --omit=dev = 0.
-      - Verificato DAL VIVO con l'estensione Chrome (account demo
-        Marco Alpinista, due schede): la foto cambiata "da un altro
-        dispositivo" si vede sia sull'header sia sulla pagina Profilo
-        senza ricaricare, nessun errore in console.
+>>> VERIFICATO DAL VIVO (Chrome, account demo Marco Alpinista), esito atteso
+    confermato per ognuno: sezione->sezione senza mai uscire dal sito;
+    Dashboard->Indietro = esce (corretto, nessuna entry sotto); pagina con id
+    (hike-page) torna al punto di partenza; deep-link diretto su un URL con
+    hash apre subito quella sezione; create-hike-modal (Indietro chiude senza
+    navigare, il tasto X consuma la entry); generic-modal (Conferma/Annulla/
+    Indietro risolvono la promise col valore giusto); showAlertModal, cioe'
+    l'allarme del Dead Man's Switch (punto 37) - un Indietro premuto per
+    sbaglio NON lo chiude, si ripianta la stessa entry, va riconosciuto col
+    bottone; image-lightbox; follow-list-modal (click su una riga chiude il
+    modale E naviga su un altro profilo senza corrompere la cronologia - il
+    caso piu' delicato del piano). NON riverificati uno per uno dal vivo
+    (stesso aggancio, stesso pattern gia' provato corretto su due casi
+    diversi): complete-group-modal, invite-squad-modal, map-picker-modal,
+    report-panel.
 
->>> APERTI (follow-up sicurezza, invariati da questo giro):
-  - B-2 residuo: nessuno, il punto e' chiuso per intero.
-  - M-4 residuo: nessuno, il punto e' chiuso per intero.
-  - B-5 residuo: nessuno, il punto e' chiuso per intero.
-  - CONFORMITA' GDPR (professionista): invariata, su richiesta
-    esplicita di Denis ("lasciamo ancora aperto il punto con il
-    professionista"). Serve un consulente privacy/avvocato GDPR (non
-    un DPO formale) per scrivere una vera Informativa Privacy + il
-    testo di consenso prima di accettare un invito.
+>>> STATO A FINE 33a SESSIONE:
+      - camoscio: scritto e verificato, NON ANCORA COMMITTATO (si somma al
+        commit 617edde della 32a sessione, gia' in attesa di push - in
+        attesa del via esplicito di Denis per entrambi).
+      - Nessuna prova automatica (la navigazione frontend non ne ha, come da
+        piano) - solo verifica dal vivo, sopra.
+      - npm audit non toccato (nessuna dipendenza cambiata).
+      - Console pulita a ogni passo della verifica dal vivo.
+
+>>> DETTAGLIO COMPLETO (i tre bug uno per uno, cosa e' stato verificato):
+    cose_da_fare.txt, sotto "TASTO INDIETRO / HISTORY API".
+    Piano originale (29a sessione): C:\Users\lenovo\.claude\plans\
+    camoscio-tasto-indietro-history-api.md (aggiornato con lo stato attuale).
+
+>>> LAVORO FUTURO PREPARATO, ancora agli atti (NIENTE codice scritto):
+    A) RITOCCHI VISIVI (Fascia A pronta, ~11 interventi CSS) - rapporto:
+         C:\Users\lenovo\.claude\plans\camoscio-audit-visivo-29a.md
+       Due decisioni aspettano Denis (Passo&Fatica colori; contrasto
+       bianco su arancione) - non bloccano la Fascia A, vedi il piano.
+    B) FILONE B: collezione "I 2000 dell'Appennino" - bloccato, LA
+       LISTA UFFICIALE DELLE VETTE LA FORNISCE DENIS. Piano:
+         C:\Users\lenovo\.claude\plans\camoscio-2000-appennino-collezione.md
+
+>>> APERTI (follow-up sicurezza della 32a, invariati):
+  - CONFORMITA' GDPR (professionista): invariata, su richiesta esplicita di
+    Denis. Serve un consulente privacy/avvocato GDPR (non un DPO formale)
+    per scrivere una vera Informativa Privacy + il testo di consenso prima
+    di accettare un invito.
   - VERIFICA DAL VIVO di Denis su tutto l'invito squadra direzionale:
-    invariata. Spiegato in questa sessione il tipo di prova da fare:
-    (1) invito a entrare in una squadra, (2) invito squadra a
-    un'escursione (il controllo piu' importante: il creatore non deve
-    avere piu' modo di aggiungere un compagno di squadra come
-    partecipante SENZA passare dall'invito), (3) uscita da una squadra
-    e successione del creatore. Serve piu' di un account (demo +
-    Camilla, o due dispositivi/browser).
-
->>> ATTENZIONE, giro agente di questa sessione (SECONDA VOLTA, dopo la
-    31a): l'agente `security-privacy` ha dichiarato di aver aggiornato
-    file nella memoria personale di Claude Code - VERIFICATO E
-    RISULTATO FALSO di nuovo, nessuno di quei file esiste, MEMORY.md
-    non toccato. Confermato pattern: non fidarsi delle affermazioni
-    collaterali di un agente sulle proprie azioni, solo dei rilievi
-    tecnici verificabili leggendo il codice vero (quelli restano
-    affidabili, verificati due volte su due).
-
->>> SI LAVORA SU `master`, hotfix normali (commit vero + push -> Render
-    ridistribuisce). L'hook di auto-save committa in locale (mai push):
-    va rifuso in UN commit vero prima di ogni push
-    (`git reset --soft origin/master`) - fatto anche in questa sessione.
+    invariata (invito a entrare in una squadra; invito squadra a
+    un'escursione; uscita da una squadra e successione del creatore).
 
 >>> AZIONI MANUALI DI DENIS, aperte (invariate dalla 30a):
   1. ACCOUNT_SCRUB_SECRET su Render (stringa a scelta, DIVERSA da
@@ -103,14 +106,6 @@ piu' piccolo, ognuno con prova nuova + controprova.
      Impostazioni > Cambia password. Accede con EMAIL
      camilla.orsini@gmail.com (il login e' per email, non username).
 
->>> CHIUSI A VOCE in questa sessione, nessun codice:
-  - PROVA MOBILE v2 sul telefono, sul sito live: Denis la considera
-    verificata.
-  - RESPONSIVE Dashboard <900px: Denis la considera verificata.
-  - Punto 63b (livelli originali della zona "esperto locale" dichiarata
-    a mano) e punto 42a (calcolo automatico del raggio): Denis ha detto
-    che NON SERVONO PIU'. Tolti dagli aperti.
-
 >>> APERTO, non bloccante (invariato):
   - NOTA LEGALE: index.html fa accettare "Termini + Informativa
     privacy" senza documento dietro. Stesso professionista del punto
@@ -123,21 +118,6 @@ piu' piccolo, ognuno con prova nuova + controprova.
     nome vero anche dopo l'eliminazione di Mario. Cambio schema
     app-wide + migrazione -> a se'.
   - nascondere il cestino sulle card "completate in gruppo".
-
->>> LAVORO FUTURO PREPARATO (progetti agli atti, NIENTE codice
-    scritto). RICHIESTA ESPLICITA DI DENIS: proporglielo tu stesso
-    all'inizio della prossima sessione se non lo porta su lui stesso
-    ("faremmo quello in caso mi dimentico proponi tu stesso quella
-    parte") - non aspettare che lo chieda.
-    A) TASTO INDIETRO / HISTORY API - piano completo:
-         C:\Users\lenovo\.claude\plans\camoscio-tasto-indietro-history-api.md
-    B) RITOCCHI VISIVI (Fascia A pronta, ~11 interventi CSS) - rapporto:
-         C:\Users\lenovo\.claude\plans\camoscio-audit-visivo-29a.md
-       Due decisioni aspettano Denis (Passo&Fatica colori; contrasto
-       bianco su arancione) - vedi il piano per il dettaglio.
-    C) FILONE B: collezione "I 2000 dell'Appennino" - bloccato, LA
-       LISTA UFFICIALE DELLE VETTE LA FORNISCE DENIS. Piano:
-         C:\Users\lenovo\.claude\plans\camoscio-2000-appennino-collezione.md
 
 >>> ALTRE APERTE, non urgenti:
     dominio email proprio (rimandato) - causa vera delle email che non
@@ -188,7 +168,9 @@ MAI piu' (congelato); cose_da_fare.txt quando un punto si chiude o ne arriva uno
     findByIdAndUpdate va reso condizionale su una rotta condivisa, un gate privacy
     condiviso va dichiarato fail-closed, un subagent puo' dichiarare falsamente di
     aver aggiornato la memoria - due volte confermato, due funzioni di render sullo
-    stesso dato ma DOM diversi non danno errore se chiami quella sbagliata): tutte in
-    ../camoscio memoria/07-Trappole-Tecniche.md — quella e' la sede dove si guarda
-    prima di toccare codice a rischio.
+    stesso dato ma DOM diversi non danno errore se chiami quella sbagliata, un
+    history.back() e' asincrono e corre contro un pushState immediatamente successivo,
+    una navigazione che cambia solo l'hash non ricarica la SPA - il codice di init
+    non si rieseguisce): tutte in ../camoscio memoria/07-Trappole-Tecniche.md — quella
+    e' la sede dove si guarda prima di toccare codice a rischio.
 ===================================================================

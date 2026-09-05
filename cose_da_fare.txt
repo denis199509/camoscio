@@ -10402,7 +10402,8 @@ AUDIT VISIVO DEL SITO (29a sessione, 03/09/2026)
       ~6% lo sistema, ma e' il colore del marchio.
 
 ===============================================================
-TASTO INDIETRO / HISTORY API (29a sessione, 03/09/2026) - DA FARE
+TASTO INDIETRO / HISTORY API (29a sessione 03/09/2026 progettato,
+33a sessione 05/09/2026 IMPLEMENTATO E VERIFICATO)
 ===============================================================
 
   Denis: "il tasto indietro sia del telefono che pc buttano fuori
@@ -10414,23 +10415,96 @@ TASTO INDIETRO / HISTORY API (29a sessione, 03/09/2026) - DA FARE
   JS (classe .active sui <section>), la cronologia del browser non
   viene mai toccata -> Indietro esce dal sito.
 
-  DECISIONI PRESE (AskUserQuestion):
+  DECISIONI PRESE il 03/09 (AskUserQuestion):
    - Ambito PIENO: sezioni + pagine con id (squadra/escursione/
      profilo altrui/uscita) + MODALI (Indietro con un modale
      aperto lo chiude invece di navigare).
    - Indietro sulla home ESCE dal sito (nessun trap, come Gmail/
      Instagram).
 
-  ESITO SESSIONE: Denis -> "niente codice per adesso" -> "tutto da
-  segnare per il lavoro futuro". NIENTE IMPLEMENTATO.
+  33a SESSIONE (05/09/2026): Denis ha chiesto di cominciare dai tre
+  lavori preparati e non scritti, scegliendo questo per primo (via
+  AskUserQuestion). Implementato per intero + verificato dal vivo
+  con l'estensione Chrome (account demo Marco Alpinista), NON solo
+  a occhio: history.state e risultato delle promise letti da
+  javascript_tool a ogni passo, non solo schermate.
 
-  PROGETTO COMPLETO agli atti (analisi navigazione + censimento
-  degli 8 modali + modello di stato history + 4 sotto-decisioni
-  ancora da chiudere: tracking-panel nella cronologia si/no, viste-
-  filtro "Le mie escursioni", deep-link #sezione, scroll
-  restoration):
+  Progetto in public/js/app.js (nucleo: navigateTo pusha in fondo,
+  flag sopprimiPush, gestore popstate unico, registro modali
+  apriModaleStorico/chiudiModaleStorico/scollegaModaleStorico) +
+  ritocchi a squadpage.js/hikepage.js/userprofile.js/outingpage.js
+  (passano l'id come stato.entita) + agli 8 punti di apertura/
+  chiusura dei modali sparsi in social.js, userprofile.js,
+  trailhead-picker.js, map.js, index.html.
+
+  Le 4 sotto-decisioni della 29a, chiuse senza richiedere altro a
+  Denis (proposte del piano, nessuna toccava una decisione del
+  vault): tracking-panel FUORI dalla cronologia (resta un pannello
+  di stato, non un dialogo - Indietro mentre si traccia naviga
+  normalmente); report-panel invece SI' (form transitorio); deep-
+  link #sezione SI' per le sezioni semplici, le pagine con id
+  ripiegano su Dashboard; scroll restoration lasciata al default
+  del browser (nessun codice in piu').
+
+  DUE DIFETTI VERI trovati SOLO provando dal vivo (non dalla
+  lettura del codice), corretti nella stessa sessione:
+   1. La entry d'ingresso di un deep-link (es. #map-section aperto
+      da un link) non portava camoscioNav: un Indietro che vi
+      tornava dopo aver navigato altrove non risincronizzava la
+      sezione visibile (l'URL cambiava, il contenuto restava
+      quello di prima). Corretto con un replaceState che etichetta
+      subito quella entry.
+   2. apriModaleStorico non portava avanti l'entita' (es. l'id
+      utente) della pagina su cui si apre un modale: chiudendo il
+      modale con un'azione che naviga altrove (es. click su una
+      riga della lista follower che apre un ALTRO profilo), un
+      Indietro successivo che riattraversava quella entry ormai
+      orfana mostrava il profilo sbagliato (l'ultimo aperto, non
+      quello da cui si era partiti). Corretto portando avanti
+      entita'/scrollToId dalla entry precedente.
+  Un terzo bug (non di history ma trovato per lo stesso motivo,
+  nello scrivere il codice): chiudiModaleStorico eseguiva SEMPRE la
+  chiusura piantata all'apertura invece di quella passata dal
+  bottone premuto - un Confirm sarebbe stato risolto come se fosse
+  un Annulla. Corretto prima di testare dal vivo (letto rileggendo
+  il codice appena scritto).
+
+  Verificato dal vivo, con esito atteso confermato per ognuno:
+  sezione->sezione (Mappa->Escursioni->Dashboard, mai fuori dal
+  sito); Dashboard->Indietro = esce (nessuna entry sotto, corretto);
+  pagina con id (hike-page) apre/torna al punto di partenza;
+  create-hike-modal: Indietro chiude il modale SENZA navigare,
+  richiudere col tasto X consuma la entry (un Indietro dopo non
+  resta "vuoto"); generic-modal: Conferma/Annulla/Indietro fisico
+  risolvono la promise coi valori giusti; showAlertModal (allarme
+  DMS, punto 37) NON si chiude con un Indietro premuto per sbaglio
+  - si ripianta la stessa entry, va riconosciuto col bottone;
+  image-lightbox: Indietro chiude; deep-link diretto a un URL con
+  #map-section apre subito quella sezione; follow-list-modal: click
+  su una riga chiude il modale E naviga su un altro profilo senza
+  corrompere la cronologia (il caso piu' delicato del piano).
+
+  NON toccato di proposito: complete-group-modal, invite-squad-
+  modal, map-picker-modal, report-panel hanno lo stesso identico
+  aggancio (apriModaleStorico/chiudiModaleStorico) gia' verificato
+  su due casi diversi (modale semplice e generic-modal con esiti
+  diversi) - non riverificati uno per uno dal vivo per il tempo
+  che avrebbe richiesto, stesso pattern quindi stessa confidenza.
+
+  Nessuna prova automatica (la navigazione frontend non ne ha,
+  come da piano) - solo verifica dal vivo. npm audit non toccato
+  (nessuna dipendenza cambiata). Console pulita in ogni passo.
+
+  STATO: codice scritto e verificato, NON ANCORA COMMITTATO (in
+  attesa che Denis lo dica - vedi anche il commit 617edde della 32a
+  sessione, gia' in attesa di push).
+
+  Piano originale (29a sessione) agli atti, con l'analisi di
+  navigazione completa e il censimento degli 8 modali:
     C:\Users\lenovo\.claude\plans\camoscio-tasto-indietro-history-api.md
-  Puntatore nel vault: ../camoscio memoria/04-Da-Fare.md.
+  Restano agli atti, non ancora affrontati: RITOCCHI VISIVI Fascia A
+  (11 correzioni CSS) e la collezione "I 2000 dell'Appennino"
+  (bloccata sulla lista ufficiale delle vette).
 
   In breve: agganciare l'imbuto unico navigateTo() (app.js) alla
   History API - pushState a ogni navigazione + #sezione nell'URL,

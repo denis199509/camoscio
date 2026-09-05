@@ -2477,11 +2477,11 @@
     <!-- Punto 113: elenco "seguaci"/"seguiti" di un utente, aperto dai due contatori sul
          suo profilo (window.showFollowList in userprofile.js). Sola navigazione: ogni riga
          porta al profilo di quella persona. Fuori da .page-container come gli altri modali. -->
-    <div id="follow-list-modal" class="modal hidden" onclick="if (event.target === this) closeFollowListModal()">
+    <div id="follow-list-modal" class="modal hidden" onclick="if (event.target === this) chiudiModaleStoricoFollowList()">
         <div class="modal-content glass-card">
             <div class="modal-header">
                 <h4 id="follow-list-modal-title"></h4>
-                <button class="close-modal-btn" onclick="closeFollowListModal()">&times;</button>
+                <button class="close-modal-btn" onclick="chiudiModaleStoricoFollowList()">&times;</button>
             </div>
             <div id="follow-list-modal-body" class="squads-list"></div>
         </div>

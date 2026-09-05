@@ -134,6 +134,7 @@ function apriMappaScelta({ titolo, suggerimento, punto, onConfirm } = {}) {
     if (elHint && suggerimento) elHint.textContent = suggerimento;
 
     modal.classList.remove('hidden');
+    window.apriModaleStorico('map-picker-modal', chiudiMappaScelta);
 
     // La mappa si crea la prima volta che serve, non al caricamento della pagina:
     // e' dentro una finestra nascosta, e Leaflet creato in un contenitore invisibile
@@ -220,10 +221,18 @@ async function scegliPuntoSullaMappa(lat, lng) {
     mostraInfoScelta(dati.nome, lat, lng, dati.distanzaM);
 }
 
+// Chiusura vera (nascondere e basta): registrata come "chiudi" del modale
+// (apriModaleStorico sopra) e usata da entrambi i punti di chiusura (conferma, tasto X)
+// tramite chiudiModaleStorico, cosi' un Indietro fisico e una chiusura a mano consumano
+// la STESSA entry di cronologia.
+function chiudiMappaScelta() {
+    document.getElementById('map-picker-modal').classList.add('hidden');
+}
+
 function confermaPuntoMappa() {
     if (!puntoModale) return;
     const scelto = puntoModale;
-    document.getElementById('map-picker-modal').classList.add('hidden');
+    window.chiudiModaleStorico('map-picker-modal', chiudiMappaScelta);
     if (onConfirmModale) onConfirmModale(scelto);
 }
 
@@ -339,7 +348,7 @@ function initTrailheadPicker() {
 
     const btnChiudi = document.getElementById('map-picker-close');
     if (btnChiudi) btnChiudi.addEventListener('click', () => {
-        document.getElementById('map-picker-modal').classList.add('hidden');
+        window.chiudiModaleStorico('map-picker-modal', chiudiMappaScelta);
     });
 
     const btnConferma = document.getElementById('btn-confirm-map-point');
