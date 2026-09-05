@@ -55,7 +55,11 @@ router.post('/:id/gpx', requireAuth, async (req, res) => {
         try {
             datiReali = await calcolaDaPercorso(routeSource, req.session.userId);
         } catch (e) {
-            return res.status(400).json({ error: e.message });
+            // B-2 (follow-up revisione sicurezza, 31a): solo un errore marcato .utente
+            // (erroreUtente, lib/percorso.js) e' sicuro da mostrare cosi' com'e' -
+            // fail-closed su qualunque altra eccezione, stesso principio di M-3.
+            if (!(e && e.utente)) console.error('Errore gpx in completions:', e);
+            return res.status(400).json({ error: (e && e.utente) ? e.message : 'Non è stato possibile leggere questo file.' });
         }
 
         const letto = datiReali.gpxLetto;

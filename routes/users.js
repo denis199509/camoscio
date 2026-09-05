@@ -61,6 +61,15 @@ const ALWAYS_PRIVATE_FIELDS = [
     'deadManActive', 'deadManExpiresAt', 'canModerateReports',
     'receivesReportAlerts'
 ];
+// M-4 (follow-up revisione sicurezza, 31a): proiezione Mongo derivata dallo stesso elenco,
+// cosi' i due non possono divergere in silenzio (lezione gia' pagata altrove nel progetto).
+// Usata SOLO dalla lista (GET /users, sotto) per non caricare in RAM del server dati di
+// TERZE PERSONE (i contatti di emergenza altrui) che tanto serializeUserForViewer avrebbe
+// cancellato subito dopo - non e' un rischio OOM come lo era la foto (sono stringhe corte),
+// ma minimizzazione: non tirare dentro dati che non serviranno. NON va applicata al proprio
+// documento (vedi sotto): cancellerebbe anche i TUOI campi dalla lista, e currentUser
+// (app.js) li legge proprio da qui.
+const PROIEZIONE_LISTA_ESCLUDE_PRIVATI = Object.fromEntries(ALWAYS_PRIVATE_FIELDS.map(f => [f, 0]));
 // Campi del "profilo pubblico" (sezione 6/9 della registrazione) governati da privacySetting
 const PRIVACY_GATED_FIELDS = ['bio', 'profilePhoto', 'interests', 'hikingLevel', 'preferredDifficulty', 'geoPreferences'];
 
@@ -90,6 +99,30 @@ async function areSquadmates(userIdA, userIdB) {
     return !!shared;
 }
 
+// M-4 (follow-up revisione sicurezza, 31a): usata SOLO da GET /users (lista, sotto) per
+// calcolare una volta sola l'insieme dei compagni di squadra di viewerId, invece che con
+// una query areSquadmates() per OGNI utente "SoloAmici" incontrato scorrendo la lista (N+1
+// - a 50 utenti "SoloAmici" erano 50 query Squad identiche nella parte che conta, ripetute
+// ad ogni refreshState). areSquadmates() resta per i chiamanti a bersaglio singolo (GET
+// /:id, GET /:id/photo), dove una query sola e' gia' il minimo possibile.
+// Il viewerId per cui e' stato calcolato viaggia CON l'insieme (rilievo MEDIO del giro
+// agente): senza, un domani un chiamante potesse passare un Set calcolato per un ALTRO
+// utente e campiPrivacyVisibiliA lo crederebbe sulla parola - un Set sbagliato non esplode
+// come un tipo sbagliato, decide silenziosamente male su un campo di privacy.
+async function squadmateSetFor(viewerId) {
+    if (!viewerId) return { viewerId: null, ids: new Set() };
+    const squadre = await Squad.find({
+        $or: [{ creatorId: viewerId }, { members: viewerId }]
+    }).select('creatorId members');
+    const ids = new Set();
+    for (const s of squadre) {
+        ids.add(String(s.creatorId));
+        for (const m of s.members || []) ids.add(String(m));
+    }
+    ids.delete(String(viewerId));
+    return { viewerId: String(viewerId), ids };
+}
+
 // Decide se PRIVACY_GATED_FIELDS (bio/profilePhoto/interessi/livello/...) sono visibili a
 // viewerId. Estratta da serializeUserForViewer (MEDIO, follow-up revisione sicurezza) per non
 // riscrivere la stessa regola nella nuova GET /:id/photo qui sotto - due copie
@@ -106,16 +139,27 @@ async function areSquadmates(userIdA, userIdB) {
 // di concedere per esclusione, un valore CORROTTO o scritto con un typo (es. "privato"
 // minuscolo), che col vecchio confronto a catena sarebbe scivolato nel ramo "tutto il resto
 // e' pubblico".
-async function campiPrivacyVisibiliA(targetUser, viewerId) {
+// squadmateInfo (M-4, opzionale): l'oggetto {viewerId, ids} di squadmateSetFor(), per chi
+// scorre una lista intera e vuole evitare una query areSquadmates() per ogni utente
+// SoloAmici. Omesso (chiamata a bersaglio singolo, GET /:id e /:id/photo), si ripiega sulla
+// query. Se viewerId non combacia con quello per cui l'insieme e' stato calcolato, si
+// ignora l'insieme e si ripiega comunque sulla query - fail-closed, mai concedere per un
+// insieme che potrebbe appartenere a qualcun altro (vedi il commento su squadmateSetFor).
+async function campiPrivacyVisibiliA(targetUser, viewerId, squadmateInfo) {
     const isSelf = viewerId && String(viewerId) === String(targetUser._id);
     if (isSelf) return true;
-    if (targetUser.privacySetting === 'SoloAmici') return areSquadmates(viewerId, targetUser._id);
+    if (targetUser.privacySetting === 'SoloAmici') {
+        if (squadmateInfo && squadmateInfo.viewerId === String(viewerId)) {
+            return squadmateInfo.ids.has(String(targetUser._id));
+        }
+        return areSquadmates(viewerId, targetUser._id);
+    }
     return targetUser.privacySetting === 'Pubblico' || targetUser.privacySetting === undefined;
 }
 
 // Prepara il profilo di targetUser per gli occhi di viewerId, nascondendo i campi
 // sensibili quando chi guarda non e' il proprietario del profilo.
-async function serializeUserForViewer(targetUser, viewerId) {
+async function serializeUserForViewer(targetUser, viewerId, squadmateInfo) {
     // Punto A-3.4: account eliminato (in grazia o gia' scrubato) -> nessun dato personale
     // a nessuno, nome fisso "Account eliminato". Vale anche per il "se stesso" nominale:
     // durante la grazia non esistono sessioni attive di quell'utente (chiuse alla
@@ -130,7 +174,7 @@ async function serializeUserForViewer(targetUser, viewerId) {
 
     for (const field of ALWAYS_PRIVATE_FIELDS) delete json[field];
 
-    if (!(await campiPrivacyVisibiliA(targetUser, viewerId))) {
+    if (!(await campiPrivacyVisibiliA(targetUser, viewerId, squadmateInfo))) {
         for (const field of PRIVACY_GATED_FIELDS) delete json[field];
     }
 
@@ -138,10 +182,32 @@ async function serializeUserForViewer(targetUser, viewerId) {
 }
 
 // Ottieni tutti gli utenti
+// M-4 (follow-up revisione sicurezza, 31a): il proprio documento va preso SENZA la
+// proiezione (query separata) - serializeUserForViewer gli lascia tutti i campi (isSelf),
+// e currentUser (app.js) prende proprio da questa lista i propri emergencyContacts/
+// birthDate/homeCity per popolare le schermate di modifica. Applicare la proiezione anche
+// a se stessi li svuoterebbe ad ogni refreshState, stesso difetto gia' visto e risolto sulla
+// foto (M-1/M-2 dello stesso giro).
+// BASSO (giro agente sul fix M-4): questa rotta era l'unica della zona senza try/catch - le
+// vicine (GET /:id, GET /:id/photo, qui sotto) ce l'hanno tutte. Express non cattura da solo
+// il rifiuto di un handler async: senza rete, un errore qui lascerebbe la richiesta appesa
+// (o, da Node 15 in poi, potrebbe abbattere il processo) - non un dettaglio su un'app che
+// ospita anche il Dead Man's Switch.
 router.get('/users', requireAuth, async (req, res) => {
-    const users = await User.find();
-    const filtered = await Promise.all(users.map(u => serializeUserForViewer(u, req.session.userId)));
-    res.json(filtered);
+    try {
+        const viewerId = req.session.userId;
+        const [altri, self, squadmateInfo] = await Promise.all([
+            User.find({ _id: { $ne: viewerId } }).select(PROIEZIONE_LISTA_ESCLUDE_PRIVATI),
+            User.findById(viewerId),
+            squadmateSetFor(viewerId)
+        ]);
+        const users = self ? [self, ...altri] : altri;
+        const filtered = await Promise.all(users.map(u => serializeUserForViewer(u, viewerId, squadmateInfo)));
+        res.json(filtered);
+    } catch (e) {
+        console.error('Errore caricamento lista utenti:', e);
+        res.status(500).json({ error: 'Errore nel caricamento degli utenti' });
+    }
 });
 
 // A-3.3 (revisione sicurezza 21a): export dei propri dati (GDPR - diritto di accesso e

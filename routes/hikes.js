@@ -985,7 +985,11 @@ router.post('/:id/complete-group', requireAuth, scritturaLimiter, async (req, re
             try {
                 datiReali = await calcolaDaPercorso({ kind: 'gpx', gpxText: req.body.gpxText }, req.session.userId);
             } catch (e) {
-                return res.status(400).json({ error: e.message });
+                // B-2 (follow-up revisione sicurezza, 31a): solo un errore marcato .utente
+                // (erroreUtente, lib/percorso.js) e' sicuro da mostrare cosi' com'e' -
+                // fail-closed su qualunque altra eccezione, stesso principio di M-3.
+                if (!(e && e.utente)) console.error('Errore gpx in complete-group:', e);
+                return res.status(400).json({ error: (e && e.utente) ? e.message : 'Non è stato possibile leggere questo file.' });
             }
             hike.maxAltitude = datiReali.maxAltitude;
             hike.elevationGain = datiReali.elevationGain;

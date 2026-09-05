@@ -416,6 +416,53 @@ if (window.CamoscioI18n) {
     window.CamoscioI18n.onChange(() => applicaNomeEliminati(window.CamoscioState.users));
 }
 
+// B-5 (follow-up sicurezza, 31a): da quando GET /api/users non porta piu' la foto di
+// nessuno (select:false, chiuso nella stessa sessione), refreshState() qui sotto preserva
+// la foto gia' nota invece di aggiornarla - necessario per non perderla ad ogni cambio
+// sezione, ma per conseguenza la propria foto cambiata da un'altra scheda/dispositivo non
+// si vedeva piu' senza ricaricare la pagina. Ri-scaricarla ad OGNI refreshState
+// risolverebbe il sintomo reintroducendo lo stesso spreco appena tolto (fino a 800 KB per
+// cambio sezione, che capita in continuazione) - qui invece ci si riallinea SOLO quando la
+// scheda torna visibile dopo essere stata in background: e' il momento realistico in cui
+// puo' essere cambiata altrove, molto piu' raro di un cambio sezione. GET /:id/photo e'
+// una singola foto dietro fotoProfiloLetturaLimiter - condiviso pero' con chi apre il
+// profilo di ALTRI utenti (userprofile.js): senza una soglia di tempo, alternare schede di
+// continuo (es. durante un'escursione, sul telefono) potrebbe esaurire lo stesso secchio e
+// far sparire per un'ora le foto altrui (rilievo del giro agente sul fix). 5 minuti bastano
+// per l'uso reale (cambiare scheda per vedere la foto aggiornata NON e' un'azione urgente).
+let ultimaVerificaFotoPropria = 0;
+const INTERVALLO_VERIFICA_FOTO_PROPRIA_MS = 5 * 60 * 1000;
+document.addEventListener('visibilitychange', async () => {
+    if (document.visibilityState !== 'visible') return;
+    if (Date.now() - ultimaVerificaFotoPropria < INTERVALLO_VERIFICA_FOTO_PROPRIA_MS) return;
+    ultimaVerificaFotoPropria = Date.now();
+    const usr = window.CamoscioState.currentUser;
+    if (!usr) return;
+    try {
+        const res = await fetch(`/api/users/${usr.id}/photo`);
+        // Fra l'inizio della fetch e qui puo' essere cambiato l'account (logout/login):
+        // login e logout ricaricano comunque la pagina (auth.js), quindi non raggiungibile
+        // oggi, ma il controllo costa poco ed evita di scrivere la foto di A su B se un
+        // giorno quel ricaricamento sparisse.
+        if (!window.CamoscioState.currentUser || window.CamoscioState.currentUser.id !== usr.id) return;
+        if (!res.ok) return; // silenzioso: non e' critico, si riallinea al prossimo giro utile
+        const dati = await res.json();
+        const nuova = dati.photo || null;
+        if (nuova === window.CamoscioState.currentUser.profilePhoto) return; // niente da ridisegnare
+        window.CamoscioState.currentUser.profilePhoto = nuova;
+        updateHeaderUserWidget();
+        // #my-profile e' sola vista (renderMyProfilePage, profile.js) - #settings invece ha
+        // i CONTROLLI di modifica (bio in scrittura, l'anteprima di una foto scelta e non
+        // ancora salvata): ridisegnarlo da qui cancellerebbe un edit in corso, quindi si
+        // aggiorna solo se e' aperta la vista, mai il pannello di modifica (stesso confine
+        // gia' tracciato da saveProfilePhotoAndBio, profile.js, che infatti le tratta separate).
+        const miaProfilo = document.getElementById("my-profile");
+        if (miaProfilo && miaProfilo.classList.contains("active") && typeof window.renderMyProfilePage === 'function') {
+            window.renderMyProfilePage();
+        }
+    } catch (e) { /* rete assente o sessione scaduta: refreshState la gestira' al prossimo giro */ }
+});
+
 async function refreshState() {
     // Ogni risposta va controllata PRIMA di usarla (punto 35). Con la sessione scaduta il
     // server risponde 401 con {error:...} al posto dell'elenco atteso: senza questo controllo
