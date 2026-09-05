@@ -465,9 +465,19 @@ async function refreshState() {
         // tempo (vedi il commento in backpack.js/escursioneDiRiferimento).
 
         if (window.CamoscioState.currentUser) {
+            // MEDIO, follow-up sicurezza: GET /api/users non porta piu' profilePhoto
+            // (select:false a schema, stesso motivo di Squad.photo/MEDIO-3 - RAM su Render).
+            // Il rimpiazzo sotto perderebbe la foto ad ogni refreshState (richiamato a ogni
+            // cambio sezione) se non la si preserva: si tiene da parte il valore gia' noto
+            // (caricato da GET /api/auth/me all'avvio, o appena aggiornato dal salvataggio in
+            // profile.js) e lo si riattacca dopo.
+            const fotoAttuale = window.CamoscioState.currentUser.profilePhoto;
             // Aggiorna l'utente corrente con i dati freschi dal server
             window.CamoscioState.currentUser = users.find(u => u.id === window.CamoscioState.currentUser.id) || window.CamoscioState.currentUser;
-            
+            if (window.CamoscioState.currentUser) {
+                window.CamoscioState.currentUser.profilePhoto = fotoAttuale;
+            }
+
             // Carica i timbri dell'utente corrente
             const stamps = await fetchApi(`/api/stamps/${window.CamoscioState.currentUser.id}`);
             window.CamoscioState.stamps = stamps;

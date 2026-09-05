@@ -222,8 +222,23 @@ const registrazioneLimiter = rateLimit({
     message: messaggioTroppiTentativi
 });
 
+// GET /api/users/:id/photo (MEDIO, follow-up revisione sicurezza): stesso ragionamento di
+// fotoLetturaLimiter (la foto squadra), ma secchio SEPARATO - un utente che apre molti
+// profili non deve poter esaurire la quota di chi guarda le foto delle proprie squadre, ne'
+// viceversa (lo stesso motivo per cui fotoLimiter/fotoProfiloLimiter sono separati in
+// scrittura). 100/ora, stesso numero: aprire il profilo di un altro utente e' un gesto raro
+// quanto aprire la pagina di una squadra.
+const fotoProfiloLetturaLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    limit: 100,
+    skip: soloInProduzione,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: messaggioTroppiTentativi
+});
+
 module.exports = {
     authLimiter, emailLimiter, apiLimiter, matchLimiter, exportLimiter, scritturaLimiter,
     sicurezzaLimiter, cancellazioneLimiter, invitoLimiter, fotoLimiter, fotoLetturaLimiter,
-    fotoProfiloLimiter, registrazioneLimiter
+    fotoProfiloLimiter, registrazioneLimiter, fotoProfiloLetturaLimiter
 };

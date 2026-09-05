@@ -434,8 +434,8 @@ async function renderUserProfile(userId) {
     let timbri = [];
     let ascese = {};
     try {
-        let asceseArray, seguiti;
-        [utente, timbri, asceseArray, seguiti] = await Promise.all([
+        let asceseArray, seguiti, fotoWrap;
+        [utente, timbri, asceseArray, seguiti, fotoWrap] = await Promise.all([
             fetch(`/api/users/${userId}`).then(r => r.ok ? r.json() : null),
             fetch(`/api/stamps/${userId}`).then(r => r.ok ? r.json() : []),
             // Punto 42b: quante volte, non solo "se" - stessa rotta usata per il proprio
@@ -443,10 +443,16 @@ async function renderUserProfile(userId) {
             fetch(`/api/tracking/peak-ascents/${userId}`).then(r => r.ok ? r.json() : []),
             // Punto 113: chi seguo io - fresco ad ogni apertura, per il tasto "Segui".
             // Ripiego [] se la rotta non c'e' ancora: il profilo si disegna lo stesso.
-            fetch('/api/follow/following').then(r => r.ok ? r.json() : [])
+            fetch('/api/follow/following').then(r => r.ok ? r.json() : []),
+            // MEDIO, follow-up sicurezza: profilePhoto non arriva piu' dentro GET /api/users/:id
+            // (select:false a schema) - rotta a se', stesso schema di caricaFotoSquadra
+            // (squadpage.js). 403 (privacy dell'altro) o 404 -> nessuna foto: si torna
+            // all'emoji, esattamente il comportamento gia' descritto in cima a questo file.
+            fetch(`/api/users/${userId}/photo`).then(r => r.ok ? r.json() : { photo: null })
         ]);
         asceseArray.forEach(a => { ascese[a.stampId] = a; });
         seguitiDiMe = Array.isArray(seguiti) ? seguiti : [];
+        if (utente) utente.profilePhoto = (fotoWrap && fotoWrap.photo) || null;
     } catch (e) {
         console.error("Errore nel caricamento del profilo:", e);
         header.innerHTML = `<p class="text-muted">${window.escapeHtml(T('profile.erroreCaricamento') || 'Non è stato possibile caricare questo profilo. Riprova più tardi.')}</p>`;

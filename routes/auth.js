@@ -300,7 +300,11 @@ router.get('/me', async (req, res) => {
     if (!req.session || !req.session.userId) {
         return res.status(401).json({ error: 'Non autenticato' });
     }
-    const user = await User.findById(req.session.userId);
+    // .select('+profilePhoto') (MEDIO, follow-up revisione sicurezza): il campo e' select:false
+    // a schema per tenerlo fuori da GET /api/users (lista), ma questa rotta restituisce SOLO
+    // il proprio documento - nessun rischio RAM/privacy a riportarlo qui, ed e' il punto dove
+    // il client popola currentUser all'avvio (app.js, checkAuthAndShowGate).
+    const user = await User.findById(req.session.userId).select('+profilePhoto');
     if (!user) {
         return req.session.destroy(() => res.status(401).json({ error: 'Non autenticato' }));
     }

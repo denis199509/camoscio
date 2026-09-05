@@ -164,7 +164,15 @@ const userSchema = new mongoose.Schema({
     },
 
     // --- 6. Profilo pubblico (username: vedi campo "username" sopra, gia' esistente) ---
-    profilePhoto: { type: String, default: null }, // data URL base64, piccola: niente file su disco (Render li perde ad ogni riavvio)
+    // select: false (MEDIO, follow-up revisione sicurezza): GET /api/users la caricava per
+    // OGNI utente a ogni refreshState di ogni sessione - stessa identica asimmetria RAM gia'
+    // chiusa su Squad.photo (MEDIO-3, 28ª): a 600 utenti con foto (fino a ~800 KB l'una dopo
+    // la compressione obbligatoria) e' un rischio OOM su Render 512 MB. La pagina del singolo
+    // profilo la legge da GET /api/users/:id/photo (routes/users.js), che fa
+    // .select('+profilePhoto') e applica lo stesso filtro privacySetting di
+    // serializeUserForViewer - a differenza di Squad.photo, questo campo e' in
+    // PRIVACY_GATED_FIELDS e non puo' diventare un semplice requireAuth.
+    profilePhoto: { type: String, default: null, select: false }, // data URL base64, piccola: niente file su disco (Render li perde ad ogni riavvio)
     bio: { type: String, maxlength: 250, default: '' },
 
     // --- 7. Contatti di emergenza (obbligatorio, anche piu' di uno) ---

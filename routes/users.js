@@ -4,7 +4,7 @@ const router = express.Router();
 const User = require('../models/User');
 const Squad = require('../models/Squad');
 const { requireAuth } = require('../middleware/auth');
-const { exportLimiter, scritturaLimiter, fotoProfiloLimiter } = require('../middleware/rateLimit');
+const { exportLimiter, scritturaLimiter, fotoProfiloLimiter, fotoProfiloLetturaLimiter } = require('../middleware/rateLimit');
 const { validaFotoProfiloJpeg } = require('../lib/profilePhoto'); // ALTO, follow-up revisione sicurezza (30ª): stesso buco di MEDIO-2/3 su Squad.photo
 const { chiudiTutteLeSessioni } = require('../db/sessionStore');
 // Punto A-3.4: eliminazione account. La logica sta in lib/accountDeletion.js (serve
@@ -90,6 +90,18 @@ async function areSquadmates(userIdA, userIdB) {
     return !!shared;
 }
 
+// Decide se PRIVACY_GATED_FIELDS (bio/profilePhoto/interessi/livello/...) sono visibili a
+// viewerId. Estratta da serializeUserForViewer (MEDIO, follow-up revisione sicurezza) per non
+// riscrivere la stessa regola nella nuova GET /:id/photo qui sotto - due copie
+// divergerebbero in silenzio, stessa lezione di usciteVisibili/uscitaVisibile.
+async function campiPrivacyVisibiliA(targetUser, viewerId) {
+    const isSelf = viewerId && String(viewerId) === String(targetUser._id);
+    if (isSelf) return true;
+    if (targetUser.privacySetting === 'Privato') return false;
+    if (targetUser.privacySetting === 'SoloAmici') return areSquadmates(viewerId, targetUser._id);
+    return true; // 'Pubblico' (default)
+}
+
 // Prepara il profilo di targetUser per gli occhi di viewerId, nascondendo i campi
 // sensibili quando chi guarda non e' il proprietario del profilo.
 async function serializeUserForViewer(targetUser, viewerId) {
@@ -107,13 +119,8 @@ async function serializeUserForViewer(targetUser, viewerId) {
 
     for (const field of ALWAYS_PRIVATE_FIELDS) delete json[field];
 
-    if (targetUser.privacySetting === 'Privato') {
+    if (!(await campiPrivacyVisibiliA(targetUser, viewerId))) {
         for (const field of PRIVACY_GATED_FIELDS) delete json[field];
-    } else if (targetUser.privacySetting === 'SoloAmici') {
-        const friends = await areSquadmates(viewerId, targetUser._id);
-        if (!friends) {
-            for (const field of PRIVACY_GATED_FIELDS) delete json[field];
-        }
     }
 
     return json;
@@ -370,6 +377,28 @@ router.get('/users/:id', requireAuth, async (req, res) => {
     }
 });
 
+// La foto profilo di UN utente. Rotta a se' (MEDIO, follow-up revisione sicurezza): ne'
+// GET /api/users ne' GET /:id qui sopra la portano piu' (select:false a schema) - stessa
+// asimmetria RAM gia' chiusa su Squad.photo (MEDIO-3, 28ª), ma a differenza della foto
+// squadra profilePhoto e' un PRIVACY_GATED_FIELDS: si applica la STESSA regola di
+// serializeUserForViewer (campiPrivacyVisibiliA), altrimenti questa rotta riaprirebbe di
+// nascosto un buco privacy gia' chiuso li' (Privato/SoloAmici scavalcati da chiunque loggato).
+// Cache-Control no-cache (non max-age): il proprietario puo' cambiare o togliere la foto in
+// qualunque momento (PUT /:id), stesso motivo gia' documentato su GET /squads/:id/photo.
+router.get('/users/:id/photo', requireAuth, fotoProfiloLetturaLimiter, async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id).select('+profilePhoto privacySetting pendingDeletionAt deletedAt');
+        if (!user || eliminato(user)) return res.status(404).json({ error: 'Utente non trovato' });
+        const visibile = await campiPrivacyVisibiliA(user, req.session.userId);
+        if (!visibile) return res.status(403).json({ error: 'Non autorizzato' });
+        res.set('Cache-Control', 'private, no-cache');
+        res.json({ photo: user.profilePhoto || null });
+    } catch (e) {
+        console.error('Errore lettura foto profilo:', e);
+        res.status(404).json({ error: 'Utente non trovato' });
+    }
+});
+
 // Aggiorna profilo utente (es. goal, localExpert, bio, interessi...) - SOLO il proprio profilo
 // fotoProfiloLimiter: scatta SOLO quando il body tocca profilePhoto (vedi il commento sul
 // limiter) - la rotta serve OGNI campo del profilo, non solo la foto.
@@ -426,7 +455,13 @@ router.put('/users/:id', requireAuth, fotoProfiloLimiter, async (req, res) => {
             if (errore) return res.status(400).json({ error: errore });
         }
 
-        const user = await User.findByIdAndUpdate(req.params.id, update, { new: true, runValidators: true });
+        // .select('+profilePhoto') (MEDIO, follow-up revisione sicurezza): il campo e'
+        // select:false a schema - findByIdAndUpdate rispetta la proiezione anche sul
+        // documento "new" restituito (a differenza di doc.save(), dove un valore assegnato a
+        // mano sopravvive comunque - vedi la trappola gia' pagata su Squad.photo). Qui e' il
+        // proprietario che rilegge il proprio profilo appena salvato: nessun rischio RAM/
+        // privacy, e profile.js usa gia' questa risposta per aggiornare l'anteprima.
+        const user = await User.findByIdAndUpdate(req.params.id, update, { new: true, runValidators: true }).select('+profilePhoto');
         if (user) {
             res.json(user);
         } else {

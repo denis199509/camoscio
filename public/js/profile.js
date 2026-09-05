@@ -399,6 +399,16 @@ async function saveProfilePhotoAndBio() {
         });
 
         if (response.ok) {
+            // MEDIO, follow-up sicurezza: GET /api/users non porta piu' profilePhoto
+            // (select:false a schema) - refreshState() da solo non aggiornerebbe piu' la
+            // foto appena salvata. La risposta di QUESTA put la contiene ancora (rotta
+            // dedicata al proprio profilo, .select('+profilePhoto') in routes/users.js): si
+            // scrive su currentUser PRIMA di refreshState, che la preserva (vedi il commento
+            // li' sopra).
+            const dati = await response.json().catch(() => null);
+            if (dati && window.CamoscioState.currentUser) {
+                window.CamoscioState.currentUser.profilePhoto = dati.profilePhoto ?? null;
+            }
             newProfilePhotoDataUrl = null;
             removePhotoRequested = false;
             window.showToast(T('myProfile.profiloAggiornato') || "Profilo aggiornato.", "success");
