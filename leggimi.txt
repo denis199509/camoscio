@@ -1,91 +1,94 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-09-05 (TRENTUNESIMA sessione — chiusi i due follow-up
-di sicurezza rimasti dalla 30a: BASSO (messaggio di errore di
-validazione in POST /api/auth/register rispecchiava dati grezzi) e
-MEDIO (GET /api/users caricava la foto di ogni utente in RAM). Poi un
-giro `security-privacy` sul cumulativo: GO, con un ALTO vero
-(regressione propria sull'export GDPR) + alcuni MEDIO/BASSO, tutti
-chiusi nello stesso blocco.
+Aggiornato: 2026-09-05 (TRENTADUESIMA sessione — chiusi gli ultimi tre
+follow-up di sicurezza (B-5, M-4, B-2), poi un giro `security-privacy` sul
+cumulativo: GO, con 3 MEDIO + 4 BASSO chiusi nello stesso blocco (uno era
+un difetto funzionale vero, non solo sicurezza — vedi sotto). Denis ha
+anche chiuso a voce altri tre punti aperti da tempo.
 
 --- COSA E' STATO CHIUSO ---
-Denis: "sistemiamo tutti i punti sulla sicurezza" -> i due punti
-lavorati in ordine (piu' piccolo prima), ognuno con prova nuova +
-controprova sul codice precedente.
+Denis: "cominciamo con b-2, m-4 e b-5" -> i tre lavorati in ordine dal
+piu' piccolo, ognuno con prova nuova + controprova.
 
- BASSO   Il catch di POST /api/auth/register rimandava e.message di
-         un ValidationError Mongoose (incorpora il VALORE che ha
-         fallito, non solo il nome del campo) sia al client sia al
-         log. I campi piu' esposti (emergencyContacts compreso) erano
-         gia' pre-validati a mano con messaggi sicuri; il vettore
-         dimostrato e' un birthDate non parsabile. Messaggio generico,
-         log solo dei nomi dei campi.
- MEDIO   GET /api/users caricava profilePhoto (fino a ~800 KB) per
-         OGNI utente a ogni refreshState - stesso muro RAM gia' chiuso
-         su Squad.photo (28a). select:false + nuova GET
-         /api/users/:id/photo, SOGGETTA a privacySetting (a differenza
-         della foto squadra) - campiPrivacyVisibiliA estratta da
-         serializeUserForViewer per non duplicare la regola. Tre file
-         client aggiornati di conseguenza (app.js/profile.js/
-         userprofile.js).
+ B-5   La propria foto profilo non si sincronizzava piu' fra schede/
+       dispositivi diversi (regressione accettata dal fix MEDIO della
+       31a, che ha tolto profilePhoto da GET /api/users). Un listener
+       visibilitychange (public/js/app.js) ri-scarica SOLO la propria
+       foto quando la scheda torna visibile - non a ogni cambio
+       sezione, per non reintrodurre lo spreco di banda appena tolto.
+ M-4   GET /api/users caricava email/emergencyContacts/birthDate/
+       homeCity per INTERO per ogni utente, per poi cancellarli in JS -
+       minimizzazione mancata su dati di TERZE PERSONE. La query verso
+       gli altri usa ora una proiezione che li esclude; il proprio
+       documento resta separato (altrimenti currentUser perderebbe i
+       propri campi). Tolto anche l'N+1 di areSquadmates.
+ B-2   Tre punti rimandavano l'errore di un percorso al client senza
+       controllare se fosse sicuro da mostrare. Il marcatore .utente
+       che sembrava "da inventare" esisteva gia' (ErroreGpx/ErroreFit)
+       - si perdeva solo a ogni ri-lancio. Nuovo erroreUtente() applicato
+       a tutti i punti throw di lib/percorso.js.
 
- GIRO security-privacy sul cumulativo: GO, con un ALTO vero (l'export
- GDPR aveva smesso di contenere la foto, regressione propria) + M-1/M-2
- (select incondizionato su PUT /:id riapriva la stessa asimmetria RAM
- su un'altra rotta, + il gemello lato client) + M-3 (gate privacy
- condiviso reso fail-closed) + B-1 (stesso principio del BASSO sul
- ramo 11000 accanto) + B-3/B-4 (prova e LEGGIMI-PROVE.txt completati).
- Tutti chiusi nello stesso blocco (commit a6fc5b3).
+ GIRO security-privacy sul cumulativo: GO. MEDIO-1 era un difetto
+ FUNZIONALE vero (non solo sicurezza): il tentativo di ridisegnare la
+ pagina Profilo dopo il sync chiamava la funzione sbagliata (zero
+ effetto sulla vista) - corretto e verificato dal vivo con l'estensione
+ Chrome, due schede reali. MEDIO-2 (secchio di lettura foto condiviso
+ con chi guarda il profilo di altri - soglia 5 min), MEDIO-3 (il Set
+ precalcolato ora porta con se' il viewerId per cui e' stato calcolato,
+ fail-closed se non combacia), BASSO-1..4 (try/catch mancante, log
+ dell'errore originale su un fallimento imprevisto, due rifiniture alle
+ prove, due difese a costo zero). Tutto chiuso nel commit 617edde.
 
->>> STATO A FINE 31a SESSIONE:
-      - camoscio: 3 commit avanti a origin/master (64a21d1, f6bb53a,
-        a6fc5b3), NON PUSHATI - in attesa del via esplicito di Denis.
-        Working tree pulito, niente auto-save in sospeso.
-      - Prove verdi: prova-validazione-registrazione 10/10 (nuova),
-        prova-foto-profilo-privacy 18/18 (nuova), prova-foto-profilo
-        14/14, prova-registrazione-senza-email 7/7, prova-
-        configurazione 9/9, prova-eliminazione-account 57/57, prova-
-        squadre-consenso 71/71.
+>>> STATO A FINE 32a SESSIONE:
+      - camoscio: 1 commit avanti a origin/master (617edde), NON
+        PUSHATO - in attesa del via esplicito di Denis. Working tree
+        pulito, gli auto-save di sessione sono stati rifusi con
+        `git reset --soft` prima di committare.
+      - Prove verdi: prova-lista-utenti-minimizzata 31/31 (nuova),
+        prova-percorso-errori-sicuri 19/19 (nuova), prova-punto93
+        28/28, prova-punto116 42/42, prova-punto113-gpx 43/43,
+        prova-fit 33/33, prova-foto-profilo-privacy 18/18, prova-
+        foto-profilo 14/14, prova-eliminazione-account 57/57, prova-
+        squadre-consenso 71/71, prova-configurazione 9/9, prova-
+        validazione-registrazione 10/10, prova-registrazione-senza-
+        email 7/7.
       - npm audit --omit=dev = 0.
-      - L'estensione Chrome non era collegata: le 3 modifiche client
-        (app.js/profile.js/userprofile.js) NON sono state verificate
-        dal vivo in un browser, solo per lettura attenta del codice +
-        il ragionamento del giro agente su ordine delle operazioni.
+      - Verificato DAL VIVO con l'estensione Chrome (account demo
+        Marco Alpinista, due schede): la foto cambiata "da un altro
+        dispositivo" si vede sia sull'header sia sulla pagina Profilo
+        senza ricaricare, nessun errore in console.
 
->>> APERTI (follow-up sicurezza, NUOVI da questo giro, non bloccano):
-  - B-2: altri 3 punti (completions.js/hikes.js/lib/percorso.js)
-    rimandano e.message grezzo al client - oggi senza perdita vera,
-    ma servirebbe un marcatore tipo e.utente su ~10 punti di
-    lib/percorso.js per chiuderlo senza degradare i messaggi gia'
-    sicuri (il pattern di tracking.js non si trasporta 1:1). Lavoro a
-    se'.
-  - M-4: GET /api/users carica ancora emergencyContacts/email/
-    birthDate/homeCity per intero per ogni utente (minimizzazione
-    mancata, non un rischio OOM come la foto) + N+1 query
-    areSquadmates per ogni utente SoloAmici.
-  - B-5: la propria foto non si sincronizza piu' fra schede/
-    dispositivi diversi finche' non si ricarica la pagina - non e'
-    sicurezza (dice l'agente stesso), prezzo accettabile.
-  - CONFORMITA' GDPR (professionista): invariata. Spiegata a Denis a
-    voce in questa sessione - serve un consulente privacy/avvocato
-    GDPR (non un DPO formale) per scrivere una vera Informativa
-    Privacy + il testo di consenso prima di accettare un invito.
-  - VERIFICA DAL VIVO di Denis su tutto l'invito squadra: invariata.
+>>> APERTI (follow-up sicurezza, invariati da questo giro):
+  - B-2 residuo: nessuno, il punto e' chiuso per intero.
+  - M-4 residuo: nessuno, il punto e' chiuso per intero.
+  - B-5 residuo: nessuno, il punto e' chiuso per intero.
+  - CONFORMITA' GDPR (professionista): invariata, su richiesta
+    esplicita di Denis ("lasciamo ancora aperto il punto con il
+    professionista"). Serve un consulente privacy/avvocato GDPR (non
+    un DPO formale) per scrivere una vera Informativa Privacy + il
+    testo di consenso prima di accettare un invito.
+  - VERIFICA DAL VIVO di Denis su tutto l'invito squadra direzionale:
+    invariata. Spiegato in questa sessione il tipo di prova da fare:
+    (1) invito a entrare in una squadra, (2) invito squadra a
+    un'escursione (il controllo piu' importante: il creatore non deve
+    avere piu' modo di aggiungere un compagno di squadra come
+    partecipante SENZA passare dall'invito), (3) uscita da una squadra
+    e successione del creatore. Serve piu' di un account (demo +
+    Camilla, o due dispositivi/browser).
 
->>> ATTENZIONE, giro agente di oggi: l'agente `security-privacy` ha
-    dichiarato di aver aggiornato 4 file nella memoria personale di
-    Claude Code - VERIFICATO E RISULTATO FALSO, nessuno di quei file
-    esiste, MEMORY.md non toccato. Non e' stato chiesto nel prompt e
-    non c'e' un meccanismo reale per farlo da quell'agente. I rilievi
-    TECNICI restano validi (verificati leggendo il codice vero), ma
-    non fidarsi delle affermazioni collaterali di un agente sulle
-    proprie azioni.
+>>> ATTENZIONE, giro agente di questa sessione (SECONDA VOLTA, dopo la
+    31a): l'agente `security-privacy` ha dichiarato di aver aggiornato
+    file nella memoria personale di Claude Code - VERIFICATO E
+    RISULTATO FALSO di nuovo, nessuno di quei file esiste, MEMORY.md
+    non toccato. Confermato pattern: non fidarsi delle affermazioni
+    collaterali di un agente sulle proprie azioni, solo dei rilievi
+    tecnici verificabili leggendo il codice vero (quelli restano
+    affidabili, verificati due volte su due).
 
 >>> SI LAVORA SU `master`, hotfix normali (commit vero + push -> Render
     ridistribuisce). L'hook di auto-save committa in locale (mai push):
     va rifuso in UN commit vero prima di ogni push
-    (`git reset --soft origin/master`) - fatto anche in questa sessione
-    (un auto-save rifuso nel commit f6bb53a).
+    (`git reset --soft origin/master`) - fatto anche in questa sessione.
 
 >>> AZIONI MANUALI DI DENIS, aperte (invariate dalla 30a):
   1. ACCOUNT_SCRUB_SECRET su Render (stringa a scelta, DIVERSA da
@@ -100,16 +103,20 @@ controprova sul codice precedente.
      Impostazioni > Cambia password. Accede con EMAIL
      camilla.orsini@gmail.com (il login e' per email, non username).
 
->>> APERTO, non bloccante (da prima della 28a, invariato):
-  - PROVA MOBILE v2 sul telefono, SUL SITO LIVE: drawer/hamburger, i
-    4 tab di hike-page, la nuova #settings, il layout stretto.
-  - RESPONSIVE Dashboard <900px (regole @media viste solo in
-    simulazione).
+>>> CHIUSI A VOCE in questa sessione, nessun codice:
+  - PROVA MOBILE v2 sul telefono, sul sito live: Denis la considera
+    verificata.
+  - RESPONSIVE Dashboard <900px: Denis la considera verificata.
+  - Punto 63b (livelli originali della zona "esperto locale" dichiarata
+    a mano) e punto 42a (calcolo automatico del raggio): Denis ha detto
+    che NON SERVONO PIU'. Tolti dagli aperti.
+
+>>> APERTO, non bloccante (invariato):
   - NOTA LEGALE: index.html fa accettare "Termini + Informativa
     privacy" senza documento dietro. Stesso professionista del punto
     GDPR sopra puo' chiuderli insieme.
-  - M-5 (il vecchio, diverso dagli M della revisione): race del
-    cancella-contatto emergenza con 2 schede aperte (serve una
+  - M-5 (il vecchio, diverso dagli M della revisione sicurezza): race
+    del cancella-contatto emergenza con 2 schede aperte (serve una
     DELETE per contenuto/id, non per indice posizionale).
   - TTL sulle Notification che nominano un utente: un "Mario Rossi
     ha chiesto di..." resta per sempre nelle notifiche altrui col
@@ -118,21 +125,23 @@ controprova sul codice precedente.
   - nascondere il cestino sulle card "completate in gruppo".
 
 >>> LAVORO FUTURO PREPARATO (progetti agli atti, NIENTE codice
-    scritto - invariato dalla 30a, si riparte da questi se richiesto):
-  A) TASTO INDIETRO / HISTORY API - piano completo:
-       C:\Users\lenovo\.claude\plans\camoscio-tasto-indietro-history-api.md
-  B) RITOCCHI VISIVI (Fascia A pronta, ~11 interventi CSS) - rapporto:
-       C:\Users\lenovo\.claude\plans\camoscio-audit-visivo-29a.md
-     Due decisioni aspettano Denis (Passo&Fatica colori; contrasto
-     bianco su arancione) - vedi il piano per il dettaglio.
+    scritto). RICHIESTA ESPLICITA DI DENIS: proporglielo tu stesso
+    all'inizio della prossima sessione se non lo porta su lui stesso
+    ("faremmo quello in caso mi dimentico proponi tu stesso quella
+    parte") - non aspettare che lo chieda.
+    A) TASTO INDIETRO / HISTORY API - piano completo:
+         C:\Users\lenovo\.claude\plans\camoscio-tasto-indietro-history-api.md
+    B) RITOCCHI VISIVI (Fascia A pronta, ~11 interventi CSS) - rapporto:
+         C:\Users\lenovo\.claude\plans\camoscio-audit-visivo-29a.md
+       Due decisioni aspettano Denis (Passo&Fatica colori; contrasto
+       bianco su arancione) - vedi il piano per il dettaglio.
+    C) FILONE B: collezione "I 2000 dell'Appennino" - bloccato, LA
+       LISTA UFFICIALE DELLE VETTE LA FORNISCE DENIS. Piano:
+         C:\Users\lenovo\.claude\plans\camoscio-2000-appennino-collezione.md
 
->>> ALTRE APERTE, non urgenti (dettaglio in vault 04-Da-Fare.md):
-    livelli ORIGINALI del punto 63b + calcolo automatico del raggio
-    (punto 42a) — Denis deve ancora pensarci; dominio email proprio
-    (rimandato) — causa vera delle email che non arrivano (spam).
-    FILONE B: collezione "I 2000 dell'Appennino" — bloccato, LA LISTA
-    UFFICIALE DELLE VETTE LA FORNISCE DENIS. Piano:
-      C:\Users\lenovo\.claude\plans\camoscio-2000-appennino-collezione.md
+>>> ALTRE APERTE, non urgenti:
+    dominio email proprio (rimandato) - causa vera delle email che non
+    arrivano (spam, es. Camilla).
 
 >>> RESTA VALIDO:
   - Hook "Stop" di auto-save: commit locale (MAI push) a fine di
@@ -177,7 +186,9 @@ MAI piu' (congelato); cose_da_fare.txt quando un punto si chiude o ne arriva uno
     aggiunto a una rotta senza try/catch, test verde su una premessa falsa,
     select:false non vale su un campo assegnato in memoria, select:false su
     findByIdAndUpdate va reso condizionale su una rotta condivisa, un gate privacy
-    condiviso va dichiarato fail-closed): tutte in
+    condiviso va dichiarato fail-closed, un subagent puo' dichiarare falsamente di
+    aver aggiornato la memoria - due volte confermato, due funzioni di render sullo
+    stesso dato ma DOM diversi non danno errore se chiami quella sbagliata): tutte in
     ../camoscio memoria/07-Trappole-Tecniche.md — quella e' la sede dove si guarda
     prima di toccare codice a rischio.
 ===================================================================

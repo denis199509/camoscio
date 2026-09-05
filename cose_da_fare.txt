@@ -10266,6 +10266,104 @@ toccato (congelato).
   camoscio commit 64a21d1 + f6bb53a + a6fc5b3 su master, NON pushati:
   in attesa del via esplicito di Denis.
 
+  --- SESSIONE 32 (05/09/2026): chiusi B-5, M-4, B-2 - ultimi tre
+  della revisione sicurezza - poi il giro agente sul cumulativo ---
+
+  Denis apre con "abbiamo altre cose lasciate in sospeso?" - rundown
+  completo di tutto l'aperto. Risponde con un messaggio unico:
+  "allora cominciamo con b-2, m-4 e b-5. Lasciamo ancora aperto il
+  punto con il professionista. Possiamo considerare verificato la
+  prova V2 e responsive Dashboard. Tutto il flusso di invito squadra
+  direzionale, sul sito vero spiegami meglio che tipo di prova devo
+  fare. nella prossima sessione mi devi proporre il lavoro preparato
+  ma senza una riga di codice, faremmo quello in caso mi dimentico
+  proponi tu stesso quella parte. Il punto 63b e 42a non servono
+  piu'." I tre punti lavorati in ordine dal piu' piccolo (B-5 -> M-4
+  -> B-2), ognuno con prova nuova + controprova, poi un giro
+  security-privacy sul cumulativo.
+
+  FATTO 1 - B-5 (nessun commit a se', dentro 617edde): la propria
+  foto profilo non si sincronizzava piu' fra schede/dispositivi
+  diversi (regressione accettata dal fix MEDIO della 31a, che ha
+  tolto profilePhoto da GET /api/users). public/js/app.js: un
+  listener visibilitychange ri-scarica SOLO la propria foto (GET
+  /api/users/:id/photo, gia' esistente) quando la scheda torna
+  visibile - non a ogni refreshState, per non reintrodurre lo spreco
+  di banda appena tolto.
+
+  FATTO 2 - M-4: GET /api/users caricava email/emergencyContacts/
+  birthDate/homeCity/... per INTERO per ogni utente, per poi
+  cancellarli in JS - minimizzazione mancata su dati di TERZE
+  PERSONE (i contatti di emergenza). routes/users.js: la query verso
+  gli ALTRI utenti usa ora una proiezione che li esclude; il PROPRIO
+  documento resta una query separata senza quella proiezione (altrimenti
+  currentUser perderebbe i propri stessi campi a ogni refreshState).
+  Tolto anche l'N+1 di areSquadmates (una query Squad per ogni utente
+  SoloAmici incontrato): squadmateSetFor calcola l'insieme una volta
+  sola.
+
+  FATTO 3 - B-2: tre punti (completions.js, hikes.js, lib/percorso.js)
+  rimandavano e.message di un errore del percorso al client senza
+  controllare se fosse sicuro. Scoperta utile: il marcatore e.utente
+  che la 31a dava per "da inventare" esisteva gia' (ErroreGpx/
+  ErroreFit) - si perdeva solo a ogni ri-lancio dentro
+  calcolaDaPercorso. Nuovo erroreUtente(msg) applicato a tutti i
+  ~14 punti throw del file; i tre punti che rimandano l'errore al
+  client mostrano il messaggio vero solo se marcato, altrimenti un
+  generico + log server.
+
+  Prove nuove: prova-lista-utenti-minimizzata.js (31/31) e
+  prova-percorso-errori-sicuri.js (19/19), entrambe con controprova
+  vera. Regressioni rilanciate verdi (93, 116, 113-gpx, fit,
+  foto-profilo, foto-profilo-privacy, eliminazione-account,
+  squadre-consenso, configurazione, validazione-registrazione,
+  registrazione-senza-email). npm audit --omit=dev = 0.
+
+  GIRO security-privacy sul cumulativo: GO, 3 MEDIO + 4 BASSO, tutti
+  chiusi nello stesso blocco (commit 617edde):
+   - MEDIO-1 (funzionale): il tentativo di ridisegnare la pagina
+     Profilo dopo il sync chiamava renderProfileCard invece di
+     renderMyProfilePage - zero effetto sulla vista. Corretto e
+     verificato dal vivo con l'estensione Chrome (due schede, account
+     demo Marco Alpinista): la foto si vede sia sull'header sia sulla
+     pagina Profilo senza ricaricare.
+   - MEDIO-2: il secchio di lettura della propria foto e' condiviso
+     con chi apre il profilo di ALTRI utenti - aggiunta una soglia di
+     5 minuti fra due controlli.
+   - MEDIO-3: il Set di squadmateSetFor non era legato al viewerId
+     per cui era stato calcolato - ora viaggia insieme, fail-closed
+     se un domani non combaciasse.
+   - BASSO-1/2/3/4: try/catch mancante su GET /users, log
+     dell'errore originale quando parseGpx/parseFit falliscono in
+     modo imprevisto, due rifiniture alle prove nuove, due difese a
+     costo zero.
+
+  NOTA: il giro agente ha DI NUOVO dichiarato falsamente (come nella
+  31a) di aver aggiornato la memoria personale di Claude Code -
+  verificato, nessun file toccato. Secondo caso confermato dello
+  stesso pattern. I rilievi tecnici restano validi.
+
+  ALTRE DECISIONI DI DENIS in questa sessione (nessun codice):
+  professionista/GDPR invariato; prova mobile v2 + responsive
+  Dashboard <900px dichiarati verificati; punto 63b (livelli
+  originali della zona esperto locale) e punto 42a (calcolo
+  automatico del raggio) NON SERVONO PIU', tolti dagli aperti.
+  Spiegato a Denis, a sua richiesta, che tipo di prova serve per
+  l'invito squadra direzionale sul sito vero (invito a una squadra,
+  invito squadra a un'escursione, uscita/successione - serve piu' di
+  un account). Richiesta per la prossima sessione: proporre da soli
+  il lavoro preparato ma non scritto (Tasto Indietro, ritocchi
+  visivi, 2000 dell'Appennino) se Denis non lo porta su lui stesso -
+  vedi leggimi.txt.
+
+  Dettaglio decisioni in ../camoscio memoria/03-Decisioni-
+  Architetturali.md "Chiusura follow-up revisione sicurezza (32a)".
+  Due trappole nuove in ../camoscio memoria/07-Trappole-Tecniche.md.
+
+  camoscio commit 617edde su master (un solo commit: gli auto-save
+  di sessione rifusi con git reset --soft), NON pushato: in attesa
+  del via esplicito di Denis.
+
 ===============================================================
 AUDIT VISIVO DEL SITO (29a sessione, 03/09/2026)
 ===============================================================
