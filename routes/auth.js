@@ -193,7 +193,11 @@ router.post('/register', registrazioneLimiter, authLimiter, async (req, res) => 
         res.json(risposta);
     } catch (e) {
         if (e.code === 11000) {
-            console.error('Errore registrazione:', e);
+            // B-1, giro agente sul fix BASSO: stesso principio del ramo ValidationError qui
+            // sotto - console.error(e) intero avrebbe scritto l'email (o l'username) in
+            // chiaro nel log (e.keyValue, aggiunto dal driver Mongo su un duplicato), con la
+            // retention dei log di Render fuori dal nostro controllo. Solo il nome del campo.
+            console.error('Errore registrazione (duplicato):', Object.keys(e.keyValue || {}));
             return res.status(409).json({ error: 'Email o username già in uso' });
         }
         if (e.name === 'ValidationError') {

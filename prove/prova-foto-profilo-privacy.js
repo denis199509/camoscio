@@ -69,7 +69,7 @@ function corpoRegistrazione(suffix, extra) {
         ok('server di prova partito', pronto);
         if (!pronto) throw new Error('server non risponde');
 
-        console.log('\nSetup: 5 account di prova + una squadra fittizia (fixture diretta)');
+        console.log('\nSetup: 6 account di prova + una squadra fittizia (fixture diretta)');
 
         const foto = fintoJpeg();
         const registra = async (suffix, extra) => {
@@ -84,7 +84,12 @@ function corpoRegistrazione(suffix, extra) {
         const ami = await registra('ami', { privacySetting: 'SoloAmici', profilePhoto: foto });
         const amico = await registra('amico', {});
         const estraneo = await registra('estraneo', {});
-        ok('le 5 registrazioni sono riuscite', [pub, priv, ami, amico, estraneo].every(u => u.id), JSON.stringify({ pub, priv, ami, amico, estraneo }));
+        // B-3, giro agente: un account in eliminazione (grazia dei 30 giorni, A-3.4) ha ANCORA
+        // la foto vera sul documento - lo scrub la toglie solo al giorno 30 - quindi e' l'unico
+        // punto che dimostra il guardrail eliminato() sulla nuova rotta.
+        const elim = await registra('elim', { privacySetting: 'Pubblico', profilePhoto: foto });
+        ok('le 6 registrazioni sono riuscite', [pub, priv, ami, amico, estraneo, elim].every(u => u.id), JSON.stringify({ pub, priv, ami, amico, estraneo, elim }));
+        await Utenti.updateOne({ _id: new mongoose.Types.ObjectId(elim.id) }, { $set: { pendingDeletionAt: new Date() } });
 
         // Fixture diretta (bypassa l'inviter+accept flow, non serve provarlo qui): "ami" e
         // "amico" nella stessa squadra, cosi' areSquadmates() li riconosce.
@@ -132,6 +137,9 @@ function corpoRegistrazione(suffix, extra) {
 
         const rInesistente = await chiama('GET', `/api/users/${new mongoose.Types.ObjectId()}/photo`, undefined, estraneo.cookie);
         ok('id inesistente -> 404', rInesistente.status === 404, JSON.stringify(rInesistente.corpo));
+
+        const rEliminato = await chiama('GET', `/api/users/${elim.id}/photo`, undefined, estraneo.cookie);
+        ok('account in eliminazione (grazia A-3.4, foto ancora sul documento) -> 404, la foto non esce', rEliminato.status === 404, JSON.stringify(rEliminato.corpo));
 
         const rAnonimo = await fetch(BASE + `/api/users/${pub.id}/photo`);
         ok('senza sessione -> 401', rAnonimo.status === 401);

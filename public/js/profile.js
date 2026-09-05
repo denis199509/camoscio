@@ -401,12 +401,15 @@ async function saveProfilePhotoAndBio() {
         if (response.ok) {
             // MEDIO, follow-up sicurezza: GET /api/users non porta piu' profilePhoto
             // (select:false a schema) - refreshState() da solo non aggiornerebbe piu' la
-            // foto appena salvata. La risposta di QUESTA put la contiene ancora (rotta
-            // dedicata al proprio profilo, .select('+profilePhoto') in routes/users.js): si
-            // scrive su currentUser PRIMA di refreshState, che la preserva (vedi il commento
-            // li' sopra).
+            // foto appena salvata. La risposta di QUESTA put la contiene ancora, ma SOLO
+            // quando il salvataggio tocca davvero la foto (routes/users.js, rilievo M-1 del
+            // giro agente: select condizionale, altrimenti ogni PUT pesa fino a ~800 KB).
+            // 'profilePhoto' in dati (rilievo M-2), non un truthy/?? check: un salvataggio di
+            // sola bio non la tocca, la chiave e' ASSENTE dalla risposta - scriverci sopra
+            // "null" cancellerebbe la foto dall'header senza che sul server sia cambiato
+            // niente.
             const dati = await response.json().catch(() => null);
-            if (dati && window.CamoscioState.currentUser) {
+            if (dati && window.CamoscioState.currentUser && 'profilePhoto' in dati) {
                 window.CamoscioState.currentUser.profilePhoto = dati.profilePhoto ?? null;
             }
             newProfilePhotoDataUrl = null;

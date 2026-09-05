@@ -94,12 +94,23 @@ async function areSquadmates(userIdA, userIdB) {
 // viewerId. Estratta da serializeUserForViewer (MEDIO, follow-up revisione sicurezza) per non
 // riscrivere la stessa regola nella nuova GET /:id/photo qui sotto - due copie
 // divergerebbero in silenzio, stessa lezione di usciteVisibili/uscitaVisibile.
+// CONTRATTO (rilievo M-3 del giro agente): targetUser deve portare ALMENO _id e
+// privacySetting. I due chiamanti passano documenti diversi - serializeUserForViewer passa
+// il documento INTERO, GET /:id/photo ne passa uno proiettato (.select(...)) - quindi se
+// domani questa regola guarda un campo nuovo, va aggiunto anche a QUELLA proiezione, non
+// solo qui. L'elenco esplicito 'Pubblico'/undefined (invece del vecchio "tutto cio' che non
+// e' Privato/SoloAmici") non cambia il risultato per i tre valori dell'enum ne' per un utente
+// pre-esistente senza il campo (undefined resta trattato come il default reale 'Pubblico',
+// voluto: non e' distinguibile da "proiezione che l'ha escluso" solo guardando il valore, e
+// negarlo rischierebbe di chiudere di colpo il profilo di account vecchi) - ma nega, invece
+// di concedere per esclusione, un valore CORROTTO o scritto con un typo (es. "privato"
+// minuscolo), che col vecchio confronto a catena sarebbe scivolato nel ramo "tutto il resto
+// e' pubblico".
 async function campiPrivacyVisibiliA(targetUser, viewerId) {
     const isSelf = viewerId && String(viewerId) === String(targetUser._id);
     if (isSelf) return true;
-    if (targetUser.privacySetting === 'Privato') return false;
     if (targetUser.privacySetting === 'SoloAmici') return areSquadmates(viewerId, targetUser._id);
-    return true; // 'Pubblico' (default)
+    return targetUser.privacySetting === 'Pubblico' || targetUser.privacySetting === undefined;
 }
 
 // Prepara il profilo di targetUser per gli occhi di viewerId, nascondendo i campi
@@ -166,7 +177,11 @@ router.get('/users/me/export', requireAuth, exportLimiter, async (req, res) => {
             invitiSquadraRicevuti, invitiEscursioneRicevuti,
             richiesteSquadraInviate, richiesteEscursioneInviate
         ] = await Promise.all([
-            User.findById(uid).lean(),                  // passwordHash e' select:false: non esce
+            // +profilePhoto (ALTO, giro agente sul fix MEDIO): select:false a schema - senza
+            // questo l'export smetteva di contenere la foto profilo pur dichiarando nel
+            // _nota sotto di contenere "tutto cio' che il sito conserva collegato al tuo
+            // account". Query self-only dietro exportLimiter (3/giorno): nessun rischio RAM.
+            User.findById(uid).select('+profilePhoto').lean(),   // passwordHash e' select:false: non esce
             ActiveHikeSession.find({ userId: uid }).select('-points -offTrailBuffer').lean(),
             Completion.find({ userId: uid }).lean(),
             Hike.find({ creatorId: uid }).lean(),
@@ -455,13 +470,19 @@ router.put('/users/:id', requireAuth, fotoProfiloLimiter, async (req, res) => {
             if (errore) return res.status(400).json({ error: errore });
         }
 
-        // .select('+profilePhoto') (MEDIO, follow-up revisione sicurezza): il campo e'
-        // select:false a schema - findByIdAndUpdate rispetta la proiezione anche sul
-        // documento "new" restituito (a differenza di doc.save(), dove un valore assegnato a
-        // mano sopravvive comunque - vedi la trappola gia' pagata su Squad.photo). Qui e' il
-        // proprietario che rilegge il proprio profilo appena salvato: nessun rischio RAM/
-        // privacy, e profile.js usa gia' questa risposta per aggiornare l'anteprima.
-        const user = await User.findByIdAndUpdate(req.params.id, update, { new: true, runValidators: true }).select('+profilePhoto');
+        // .select('+profilePhoto') (MEDIO, follow-up revisione sicurezza) SOLO quando il
+        // salvataggio tocca davvero la foto: findByIdAndUpdate rispetta la proiezione anche
+        // sul documento "new" restituito (a differenza di doc.save(), dove un valore assegnato
+        // a mano sopravvive comunque - vedi la trappola gia' pagata su Squad.photo), quindi
+        // senza questo "if" ogni PUT (anche una sola bio) tornerebbe a pesare fino a ~800 KB -
+        // riaprirebbe su questa rotta la stessa asimmetria RAM appena chiusa su GET /api/users
+        // (rilievo M-1 del giro agente sul fix MEDIO; questa rotta ha solo apiLimiter quando
+        // non tocca la foto, fotoProfiloLimiter scatta solo se la tocca). Il proprietario che
+        // rilegge il proprio profilo appena salvato non e' un rischio RAM/privacy in se':
+        // e' l'incondizionalita' del select a esserlo.
+        const query = User.findByIdAndUpdate(req.params.id, update, { new: true, runValidators: true });
+        if (update.profilePhoto !== undefined) query.select('+profilePhoto');
+        const user = await query;
         if (user) {
             res.json(user);
         } else {

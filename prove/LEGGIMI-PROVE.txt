@@ -29,12 +29,33 @@ poi, in un'altra finestra:
     node prove/prova-configurazione.js               9 controlli  (non serve il server)
     node prove/prova-registrazione-senza-email.js    7 controlli  (ne avvia uno suo sulla 3100)
     node prove/prova-foto-profilo.js                14 controlli  (ne avvia uno suo sulla 3130)
+    node prove/prova-validazione-registrazione.js   10 controlli  (ne avvia uno suo sulla 3131)
+    node prove/prova-foto-profilo-privacy.js        18 controlli  (ne avvia uno suo sulla 3132)
 
     La prova FOTO PROFILO (30a sessione, follow-up sicurezza ALTO su User.profilePhoto):
     verifica che POST /api/auth/register e PUT /api/users/:id rifiutino byte senza una
     vera firma JPEG (anche con l'etichetta giusta), un formato diverso da JPEG (es. un PNG
     vero), e byte decodificati oltre il tetto (600 KB) - stesso controllo gia' verificato
     su Squad.photo in prova-squadre-consenso.js.
+
+    La prova VALIDAZIONE REGISTRAZIONE (follow-up sicurezza BASSO, 31a sessione): un
+    birthDate non parsabile arriva intatto a User.create() (i controlli manuali della rotta
+    non lo coprono, e calculateAge() non blocca su NaN) - verifica che il ValidationError di
+    Mongoose che ne segue NON rispecchi piu' il valore grezzo, ne' al client ne' nel log del
+    server, solo i nomi dei campi. Controprova sul codice precedente: 4 controlli cadono, il
+    valore compare davvero in risposta e in log.
+
+    La prova FOTO PROFILO PRIVACY (follow-up sicurezza MEDIO, 31a sessione: GET /api/users
+    caricava profilePhoto per ogni utente ad ogni refreshState - stessa asimmetria RAM di
+    Squad.photo/MEDIO-3, ma qui il campo e' anche PRIVACY_GATED_FIELDS): verifica che
+    GET /api/users e GET /api/users/:id non portino MAI profilePhoto (nemmeno per un utente
+    Pubblico, nemmeno sul proprio id), che la nuova GET /api/users/:id/photo rispetti
+    Pubblico/Privato/SoloAmici esattamente come serializeUserForViewer (fixture Squad
+    inserita a mano per il caso "compagno di squadra vero"), il self-override, l'id
+    inesistente, l'account in eliminazione (grazia A-3.4: la foto e' ancora sul documento,
+    deve restare 404) e l'assenza di sessione. Controprova avvenuta per errore in corso
+    d'opera: la prima stesura di models/User.js aveva il commento su select:false ma non
+    l'opzione vera - la prova e' caduta su 6 controlli, confermando che verifica sul serio.
 
 La prova del PASSO NON MISURATO (16/08/2026) non vuole il server acceso, ma legge il
 database (in SOLA lettura: l'unica interrogazione vera e' su un id inesistente, quindi non
