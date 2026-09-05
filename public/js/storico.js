@@ -105,13 +105,13 @@
     // ci arriva pulito dentro data-outing-name senza rompere l'HTML.
     function bottonePubblica(sessionId, publishedAt, nomeAttuale) {
         if (!sessionId) {
-            return `<button type="button" class="btn btn-sm btn-secondary" style="padding:2px 8px;" data-pub-notrack="1" title="${esc(T('publish.serveTracciaTitle') || 'Serve una traccia GPS per pubblicare nel feed')}"><i data-lucide="upload-cloud"></i> ${esc(T('publish.pubblica') || 'Pubblica nel feed')}</button>`;
+            return `<button type="button" class="btn btn-xs btn-secondary" data-pub-notrack="1" title="${esc(T('publish.serveTracciaTitle') || 'Serve una traccia GPS per pubblicare nel feed')}"><i data-lucide="upload-cloud"></i> ${esc(T('publish.pubblica') || 'Pubblica nel feed')}</button>`;
         }
         const nomeAttr = ` data-outing-name="${esc(nomeAttuale || '')}"`;
         if (publishedAt) {
-            return `<button type="button" class="btn btn-sm btn-success" style="padding:2px 8px;" data-pub-outing="${esc(sessionId)}" data-published="1"${nomeAttr} title="${esc(T('publish.pubblicataTitle') || 'Nel feed di chi ti segue. Clic per toglierla.')}"><i data-lucide="check"></i> ${esc(T('publish.pubblicata') || 'Pubblicata')}</button>`;
+            return `<button type="button" class="btn btn-xs btn-success" data-pub-outing="${esc(sessionId)}" data-published="1"${nomeAttr} title="${esc(T('publish.pubblicataTitle') || 'Nel feed di chi ti segue. Clic per toglierla.')}"><i data-lucide="check"></i> ${esc(T('publish.pubblicata') || 'Pubblicata')}</button>`;
         }
-        return `<button type="button" class="btn btn-sm btn-primary" style="padding:2px 8px;" data-pub-outing="${esc(sessionId)}"${nomeAttr} title="${esc(T('publish.pubblicaTitle') || 'Rendi visibile questa uscita a chi ti segue')}"><i data-lucide="upload-cloud"></i> ${esc(T('publish.pubblica') || 'Pubblica nel feed')}</button>`;
+        return `<button type="button" class="btn btn-xs btn-primary" data-pub-outing="${esc(sessionId)}"${nomeAttr} title="${esc(T('publish.pubblicaTitle') || 'Rendi visibile questa uscita a chi ti segue')}"><i data-lucide="upload-cloud"></i> ${esc(T('publish.pubblica') || 'Pubblica nel feed')}</button>`;
     }
 
     // Punto 115: la matita per rinominare. Vale per ogni uscita propria (importata o
@@ -233,7 +233,7 @@
             // Il ⬆ per allegare un .gpx a posteriori vale finché c'è un mio Completion a cui
             // agganciarlo.
             const bottoneCaricaGpx = completion ? `
-                <button class="btn btn-sm btn-secondary" style="padding:2px 6px;" onclick="uploadCompletionGpx('${completion.id}')" title="${esc(T('hikeCard.caricaGpxTitle') || 'Carica un file .gpx per avere il tempo reale di questa escursione')}">
+                <button class="btn btn-xs btn-secondary" onclick="uploadCompletionGpx('${completion.id}')" title="${esc(T('hikeCard.caricaGpxTitle') || 'Carica un file .gpx per avere il tempo reale di questa escursione')}">
                     <i data-lucide="upload"></i>
                 </button>` : '';
             // Il cestino cambia significato secondo chi guarda (02/09/2026):

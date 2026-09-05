@@ -183,7 +183,7 @@ h1, h2, h3, h4, h5, h6 {
     transition: all var(--transition-speed);
 }
 
-.nav-btn i {
+.nav-btn i, .nav-btn svg {
     width: 20px;
     height: 20px;
     stroke-width: 2;
@@ -586,7 +586,7 @@ h1, h2, h3, h4, h5, h6 {
     border-color: rgba(255, 255, 255, 0.2);
 }
 
-.notification-bell-btn i {
+.notification-bell-btn i, .notification-bell-btn svg {
     width: 18px;
     height: 18px;
 }
@@ -655,7 +655,10 @@ h1, h2, h3, h4, h5, h6 {
     position: absolute;
     top: calc(100% + 8px);
     right: 0;
-    width: 320px;
+    /* Audit visivo Fascia A6 (29a sessione): 320px fisse ancorate a right:0 sul
+       wrapper, non sul bordo schermo - sotto ~380px di larghezza il bordo sinistro
+       va in negativo, ~50-60px fuori schermo. min() la stringe quando serve. */
+    width: min(320px, calc(100vw - 24px));
     max-height: 380px;
     background: #1A2436;
     border: 1px solid var(--border-color);
@@ -814,7 +817,7 @@ h1, h2, h3, h4, h5, h6 {
     }
 }
 
-.emergency-banner-content i {
+.emergency-banner-content i, .emergency-banner-content svg {
     width: 18px;
     height: 18px;
 }
@@ -914,9 +917,32 @@ h1, h2, h3, h4, h5, h6 {
     text-decoration: none;
 }
 
+/* Audit visivo Fascia A1 (29a sessione): nessuna regola generica esisteva per le icone
+   dentro un bottone - uscivano a 24px (misura di default di Lucide) invece di allinearsi
+   al testo 0.8-0.9rem del bottone. Rende ridondanti alcune regole one-off dedicate (es.
+   .weather-here-btn i), lasciate intatte: specificità pari, l'ultima dichiarata vince,
+   nessun conflitto a toglierle in futuro. */
+.btn i, .btn svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
 .btn-sm {
     padding: 6px 12px;
     font-size: 0.8rem;
+    border-radius: 8px;
+}
+
+/* Audit visivo Fascia A5 (29a sessione): 20 bottoni (Mappa/Chat/preferito/Accetta/
+   Rifiuta/cestino/pubblica nel feed - i comandi piu' toccati da telefono, su schede
+   sempre aperte e mai su un modale) avevano un padding scritto a mano nell'HTML
+   (style="padding:2px 6px/8px"), una quinta taglia informale non dichiarata da nessuna
+   parte: 2px + testo 0,8rem ~ 23px di altezza, sotto ai ~44px minimi da dito. .btn-xs e'
+   quella taglia fatta classe vera, leggermente sotto .btn-sm - altezza risultante ~34px. */
+.btn-xs {
+    padding: 6px 10px;
+    font-size: 0.78rem;
     border-radius: 8px;
 }
 
@@ -960,7 +986,12 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .btn-success:hover {
-    background: #0D9F6E;
+    /* Audit visivo Fascia A3 (29a sessione): era un verde-acqua neon (#0D9F6E), unico
+       bottone che al passaggio del mouse cambiava tinta invece di scurirsi come
+       primary/danger. #3D6337 e' lo stesso scurimento (~20% per canale) gia' applicato a
+       --accent-orange (#C1662E -> #9A5225) qui sopra, ma sul verde del progetto
+       (--accent-green: #4C7A44) - stessa tinta, contrasto del testo bianco 3,39:1 -> ~5,8:1. */
+    background: #3D6337;
     transform: translateY(-1px);
 }
 
@@ -1027,6 +1058,37 @@ h1, h2, h3, h4, h5, h6 {
 
 .italic {
     font-style: italic;
+}
+
+/* Audit visivo Fascia A2 (29a sessione): residui di un mockup Bootstrap/Tailwind, usate
+   in ~55 punti (per lo piu' stati vuoti) ma mai dichiarate - senza queste regole
+   ".text-center py-4" non centrava ne' spaziava niente. Scala py-2/3/4 allineata al
+   ritmo di spaziatura gia' in uso nel progetto (4/6/8/10/12/14/16/18/20/24). */
+.text-center {
+    text-align: center;
+}
+
+.text-secondary {
+    color: var(--color-text-secondary);
+}
+
+.py-2 {
+    padding-top: 8px;
+    padding-bottom: 8px;
+}
+
+.py-3 {
+    padding-top: 16px;
+    padding-bottom: 16px;
+}
+
+.py-4 {
+    padding-top: 24px;
+    padding-bottom: 24px;
+}
+
+.col-span-2 {
+    grid-column: 1 / -1;
 }
 
 /* Form */
@@ -1250,7 +1312,9 @@ option {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    max-width: 360px;
+    /* Audit visivo Fascia A6 (29a sessione): 360px senza vincolo di viewport - su
+       telefoni stretti sporgeva. .tracking-mini-bar ha gia' lo stesso rimedio. */
+    max-width: min(360px, calc(100vw - 48px));
 }
 
 .toast {
@@ -1404,7 +1468,7 @@ option {
     color: var(--color-text-secondary);
 }
 
-.dash-hero-adventure .btn i {
+.dash-hero-adventure .btn i, .dash-hero-adventure .btn svg {
     width: 16px;
     height: 16px;
 }
@@ -1819,6 +1883,13 @@ option {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    /* Audit visivo Fascia A7 (29a sessione): senza flex-wrap, il titolo "Escursioni di
+       Gruppo" e il bottone "Crea Nuova Escursione" (entrambi lunghi) non avevano modo
+       di andare a capo su schermi stretti - si stringevano/sforavano invece di
+       impilarsi. gap sostituisce lo spazio che space-between non da' piu' fra le due
+       righe quando va a capo. */
+    flex-wrap: wrap;
+    gap: 12px;
     margin-bottom: 24px;
 }
 
@@ -1858,7 +1929,7 @@ option {
     gap: 6px;
 }
 
-.filter-group-search label i {
+.filter-group-search label i, .filter-group-search label svg {
     width: 16px;
     height: 16px;
 }
@@ -1900,7 +1971,10 @@ option {
 }
 
 .hike-card-title {
-    color: #FFF;
+    /* Audit visivo Fascia A4 (29a sessione): #FFF era bianco freddo puro, unico residuo
+       della vecchia palette neon su un titolo - il resto del testo primario del sito
+       usa il bianco caldo dichiarato in --color-text-primary. */
+    color: var(--color-text-primary);
     margin: 0;
 }
 
@@ -2097,7 +2171,7 @@ option {
     color: var(--accent-orange);
 }
 
-.trail-match-line i {
+.trail-match-line i, .trail-match-line svg {
     width: 14px;
     height: 14px;
     flex-shrink: 0;
@@ -2243,7 +2317,7 @@ option {
     gap: 6px;
 }
 
-.map-record-setup-toggle i {
+.map-record-setup-toggle i, .map-record-setup-toggle svg {
     width: 17px;
     height: 17px;
     flex-shrink: 0;
@@ -2280,7 +2354,7 @@ option {
     gap: 8px;
 }
 
-.map-record-btn i {
+.map-record-btn i, .map-record-btn svg {
     width: 18px;
     height: 18px;
 }
@@ -2300,7 +2374,7 @@ option {
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.35);
 }
 
-.map-recenter-btn i {
+.map-recenter-btn i, .map-recenter-btn svg {
     width: 15px;
     height: 15px;
 }
@@ -2329,7 +2403,7 @@ option {
     background: rgba(20, 21, 15, 0.96);
 }
 
-.map-gps-real-btn i {
+.map-gps-real-btn i, .map-gps-real-btn svg {
     width: 16px;
     height: 16px;
 }
@@ -2343,7 +2417,7 @@ option {
     color: #9CC8F0;
 }
 
-.map-gps-real-btn.is-active i {
+.map-gps-real-btn.is-active i, .map-gps-real-btn.is-active svg {
     color: #2F7FD6;
 }
 
@@ -2381,7 +2455,7 @@ option {
     transform: translateY(-1px);
 }
 
-.map-sos-btn i {
+.map-sos-btn i, .map-sos-btn svg {
     width: 17px;
     height: 17px;
 }
@@ -3323,6 +3397,11 @@ option {
     display: flex;
     flex-direction: column;
     gap: 6px;
+    /* Audit visivo Fascia A8 (29a sessione): fuori dalla @media apposta - una colonna di
+       griglia non scende mai sotto la larghezza minima del suo contenuto (qui l'etichetta
+       "Attrezzatura Adeguata (1-5)") a meno di dirglielo esplicitamente, anche quando la
+       riga sopra passa a una sola colonna. Stessa lezione gia' pagata da .dash-col. */
+    min-width: 0;
 }
 
 .rating-group label {
@@ -3636,7 +3715,7 @@ option {
     margin: 10px 0 16px;
 }
 
-.privacy-alert-box i {
+.privacy-alert-box i, .privacy-alert-box svg {
     flex-shrink: 0;
     width: 18px;
     height: 18px;
@@ -4101,7 +4180,7 @@ option {
     color: var(--color-text-primary);
 }
 
-.my-hikes-group-title i {
+.my-hikes-group-title i, .my-hikes-group-title svg {
     width: 20px;
     height: 20px;
     color: var(--accent-orange);
@@ -5077,7 +5156,7 @@ option {
     color: var(--color-text-secondary);
 }
 
-.local-expert-line i {
+.local-expert-line i, .local-expert-line svg {
     color: var(--accent-green);
     width: 18px;
     height: 18px;
@@ -5086,7 +5165,7 @@ option {
 /* Punto 63b, 17/08/2026: stessa riga, ma per una cima GUADAGNATA (badge + livello) invece
    che dichiarata a mano - icona diversa (montagna, non stella) e colore coerente col tema
    arancione gia' usato per i badge/il livello, non il verde della dichiarazione manuale. */
-.local-expert-line.earned i {
+.local-expert-line.earned i, .local-expert-line.earned svg {
     color: var(--accent-orange);
 }
 
@@ -5153,7 +5232,7 @@ option {
     gap: 6px;
 }
 
-.weather-here-btn i {
+.weather-here-btn i, .weather-here-btn svg {
     width: 15px;
     height: 15px;
 }
@@ -5209,7 +5288,7 @@ option {
     align-items: flex-start;
 }
 
-.trailhead-chosen-main i {
+.trailhead-chosen-main i, .trailhead-chosen-main svg {
     width: 18px;
     height: 18px;
     color: var(--accent-green);
@@ -5515,7 +5594,7 @@ option {
         padding: 8px;
     }
 
-    #btn-logout i {
+    #btn-logout i, #btn-logout svg {
         margin: 0;
     }
 
@@ -5750,6 +5829,16 @@ option {
 
     .map-picker-footer .btn {
         width: 100%;
+    }
+
+    /* Audit visivo Fascia A8 (29a sessione): .form-row-ratings (Recensioni, 3 colonne)
+       serve ~330px, a 320px ne restano ~268 - eccedenza non contenuta. .checkbox-group
+       (2 colonne) non passava mai da qui: i 16 interessi della registrazione la
+       forzavano a 3 colonne con uno style inline in index.html (tolto, vedi li'), su un
+       .auth-card a 320px. Una colonna sola per entrambe sotto i 900px. */
+    .form-row-ratings,
+    .checkbox-group {
+        grid-template-columns: 1fr;
     }
 }
 

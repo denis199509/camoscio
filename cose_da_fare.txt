@@ -10495,9 +10495,10 @@ TASTO INDIETRO / HISTORY API (29a sessione 03/09/2026 progettato,
   come da piano) - solo verifica dal vivo. npm audit non toccato
   (nessuna dipendenza cambiata). Console pulita in ogni passo.
 
-  STATO: codice scritto e verificato, NON ANCORA COMMITTATO (in
-  attesa che Denis lo dica - vedi anche il commit 617edde della 32a
-  sessione, gia' in attesa di push).
+  STATO: FATTO. Denis ha detto "committa e pusha entrambi" (questo +
+  il 617edde della 32a, rimasto in sospeso): commit `7793426` +
+  `617edde` pushati su `origin/master` (verificato con un secondo
+  `git push` di rete, risposto "Everything up-to-date").
 
   Piano originale (29a sessione) agli atti, con l'analisi di
   navigazione completa e il censimento degli 8 modali:
@@ -10514,3 +10515,168 @@ TASTO INDIETRO / HISTORY API (29a sessione 03/09/2026 progettato,
   Convive col pushState che auth.js gia' usa per il wizard di
   registrazione (chiavi di stato distinte). Nessuna prova
   automatica -> verifica dal vivo nel browser.
+
+===============================================================
+COMPLETAMENTO DA TRACCIAMENTO DAL VIVO NON CHIEDE "CHI ERA CON TE"
+(33a sessione, 05/09/2026) - SOLO DA SEGNARE, NIENTE CODICE
+===============================================================
+
+  Trovato da Denis usando il sito dal vivo (non un rilievo di
+  un agente): "avevo in programma un'escursione con Marco Alpinista.
+  io ho completato l'escursione, con tanto di registrazione
+  dall'app. Marco Alpinista (sono entrato sul suo profilo) non ha
+  il tasto conferma escursione. [...] quando ho registrato e
+  confermato l'escursione non mi e' stato chiesto se Marco era
+  presente. adesso lui non puo' chiudere l'escursione. [...] e
+  siccome la traccia la metto io, ai partecipanti serve l'opzione
+  di importare la loro traccia (di base entra la mia, ma con la
+  possibilita' di aggiungere una loro, magari loro sono piu' lenti
+  e quindi il tempo in camminata risulta di piu', pure se il tempo
+  totale e' quasi sempre uguale)". Sua stessa conclusione: "questo
+  e' solo da segnare. lo faremo in un'altra sessione" - nessun
+  codice toccato in questa sessione.
+
+  CAUSA VERA (verificata leggendo il codice, non solo dedotta dal
+  sintomo): il sito ha GIA' due percorsi di completamento diversi,
+  e Denis e' passato per quello che non chiede compagni.
+   - `POST /api/hikes/:id/complete-group` (routes/hikes.js:917,
+     bottone "Completa escursione" -> modale con la checklist dei
+     partecipanti, social.js) e' l'UNICO che chiede "chi era con
+     te": prende `confirmedUserIds` e riscrive `hike.participants`
+     per intero. Un .gpx facoltativo qui e' condiviso: se caricato,
+     lo stesso `actualTimeHours`/`movingTimeHours` (calcolato UNA
+     volta da QUEL file) viene applicato IDENTICO a ognuno dei
+     `confirmedUserIds` nel ciclo (righe 1025-1029) - oggi non
+     esiste alcuna traccia per-persona, la richiesta di Denis
+     ("possibilita' di aggiungere una loro [traccia]") sarebbe
+     davvero nuova, non un'estensione di qualcosa gia' li'.
+   - `POST /api/hikes/:id/complete` (routes/hikes.js:874) e' il
+     completamento PERSONALE (chiunque sia loggato marca SE STESSO,
+     "Solo i partecipanti [...] possono segnarla come completata").
+     E' quello che chiama `tracking.js` (`completeLinkedHike`, riga
+     345) in automatico a fine tracciamento dal vivo - manda solo
+     `actualTimeHours` (i secondi del cronometro), NESSUNA domanda
+     su chi altro c'era, NESSUN .gpx allegato (la traccia vera resta
+     nella sessione di tracciamento, non passa da questa rotta). Il
+     commento nel codice lo conferma per esteso: "Questo flusso
+     (auto-completamento, es. dal tracciamento dal vivo) non porta
+     un .gpx: nessun movingTimeHours, il passo personale ricade sul
+     totale come sempre" - e soprattutto non tocca mai
+     `hike.participants`, quindi Marco resta "non confermato" e non
+     vede il proprio tasto di conferma.
+
+  DUE RICHIESTE DISTINTE, da chiudere insieme perche' nascono dallo
+  stesso momento (fine tracciamento):
+   1. Quando il tracciamento dal vivo e' collegato a un'escursione
+      (`trackingState.hikeId`), a fine registrazione chiedere "chi
+      era con te" (stessa checklist di complete-group) invece di
+      completare SOLO se stessi in silenzio - probabilmente vuol
+      dire far confluire `completeLinkedHike` dentro lo stesso
+      percorso di `complete-group` (o farlo chiamare subito dopo,
+      con la traccia appena registrata gia' pronta), non due
+      funzioni indipendenti che divergono nel tempo.
+   2. Dentro quel momento, dare a ogni partecipante confermato la
+      possibilita' di allegare la PROPRIA traccia (invece di
+      ereditare per forza quella di chi ha registrato) - perche' il
+      tempo di CAMMINO dipende dal passo personale (chi e' piu'
+      lento cammina piu' a lungo) anche quando il tempo TOTALE
+      dell'uscita e' lo stesso per tutti. Tocca il modello dati di
+      `complete-group` (oggi un solo .gpx condiviso per l'intero
+      gruppo) e il passo personale di ognuno (lib/hikeStats.js,
+      che oggi riceve un `movingTimeHours` unico per chiamata).
+
+  Da decidere quando si riprende (non ovvio, non deciso da Denis in
+  questa sessione): la UI del "importa la tua traccia" - subito nel
+  momento del complete-group, o come azione separata sulla propria
+  card "completata" per chi non l'ha fatto li' per li'; e se un
+  partecipante SENZA una propria traccia GPS continua a ereditare
+  quella di chi ha registrato (probabile) o resta senza tempo di
+  cammino separato.
+
+  CONFERMA, STESSA SESSIONE: Denis ha segnalato un secondo sintomo
+  della stessa causa mentre si lavorava sui ritocchi visivi - "io
+  adesso non riesco a recensire marco e marco non riesce a
+  recensirmi. non so se si risolve pure questo? gia' abbiamo segnato
+  in cose da fare". Verificato leggendo `routes/reviews.js`
+  (`POST /api/reviews`, righe 90-108): per recensirsi a vicenda
+  servono DUE cose, entrambe vere per ciascuna delle due persone -
+  stare in `hike.participants` E avere un `Completion` per quella
+  escursione (commento nel codice: "Potrete recensirvi solo dopo
+  aver segnato entrambi l'escursione come completata"). Trovato
+  anche il dettaglio che spiega perche' Marco non ha NESSUN tasto,
+  non solo quello del gruppo: il bottone "Completa escursione"
+  (`social.js:975`, `openCompleteGroupModal`) e' dietro
+  `if (isCreatorMe)` - lo vede SOLO chi ha creato l'escursione.
+  L'UNICA altra strada verso un `Completion` e'
+  `completeLinkedHike` (`tracking.js:345`), automatica a fine
+  tracciamento dal vivo, mai un bottone manuale. Risultato: un
+  partecipante che NON e' il creatore E NON ha tracciato dal vivo
+  lui stesso (il caso di Marco qui) non ha OGGI nessuna via per
+  ottenere un proprio `Completion` - ne' un bottone ne' un percorso
+  automatico. Stessa causa del punto qui sopra, sintomo diverso e
+  più stretto: il fix (far chiedere "chi era con te" al momento del
+  tracciamento dal vivo, sul modello di complete-group) risolverebbe
+  ANCHE questo, perche' creerebbe il `Completion` mancante di Marco
+  e aggiornerebbe `hike.participants` per entrambi. Confermato a
+  Denis, nessun codice toccato (stesso "lo faremo in un'altra
+  sessione" di prima).
+
+===============================================================
+2FA (GOOGLE AUTHENTICATOR) - DA FARE. LOGIN CON GOOGLE - IN SOSPESO
+(33a sessione, 05/09/2026) - SOLO DA SEGNARE, NIENTE CODICE
+===============================================================
+
+  Denis: "possiamo introdurre il Google autonticator. pure magari
+  per le persone che si vogliono iscrivere al sito. tipo entra con
+  Google?" - due richieste diverse dentro la stessa domanda,
+  separate prima di rispondere:
+
+  1. **Google Authenticator** = un secondo fattore TOTP (RFC 6238,
+     standard aperto) - funziona con QUALUNQUE app che parla lo
+     stesso standard (Google Authenticator, Authy, Bitwarden,
+     1Password...), non e' una dipendenza da Google. Libreria open
+     source (es. `otplib`/`speakeasy`), coerente col vincolo hard
+     "tutto open source" del progetto.
+  2. **"Accedi con Google"** = login OAuth che sostituisce/affianca
+     email+password con un account Google - una dipendenza VERA da
+     Google, la terza eccezione al vincolo open source dopo Render e
+     MongoDB Atlas (vedi [[02-Vincoli-Hard]] nel vault, punto 2: le
+     eccezioni non si estendono "senza motivo forte"). In piu',
+     l'OAuth consent screen di Google in genere pretende una Privacy
+     Policy reale e pubblicata - che oggi NON esiste (e' la "NOTA
+     LEGALE" gia' aperta da tempo, in attesa del professionista
+     GDPR/privacy, vedi la voce piu' sopra e in [[04-Da-Fare]]).
+
+  Decisione di Denis dopo il confronto: **procedere col 2FA TOTP**
+  (segnato come DA FARE, sotto), **login con Google IN SOSPESO**
+  almeno finche' non c'e' l'Informativa Privacy vera - "aggiorna i
+  file da fare con questo punto. per login con Google lasciamo in
+  sospeso".
+
+  DA FARE (2FA TOTP) - non progettato nel dettaglio in questa
+  sessione, solo la direzione:
+   - Aggiunta all'account (Impostazioni > Sicurezza), FACOLTATIVA:
+     mai obbligatoria per chi non la vuole - coerente col principio
+     gia' in uso nel progetto (privacy/consenso sempre opt-in, mai
+     imposto).
+   - Generazione segreto TOTP + QR code da inquadrare con l'app,
+     verifica di un codice prima di attivare per davvero (altrimenti
+     un errore di battitura sul segreto blocca l'account al primo
+     login).
+   - Codici di recupero (backup codes) monouso, da mostrare UNA sola
+     volta alla generazione - senza, chi perde il telefono resta
+     fuori per sempre (nessuna email di recupero ha senso qui: e'
+     un secondo fattore apposta per non fidarsi solo dell'email).
+   - Da decidere quando si riprende: se richiederlo anche al login
+     demo (probabile NO, rallenterebbe le prove automatiche e le
+     dimostrazioni); dove si incastra rispetto al link di recupero
+     password esistente (punto 7) - un reset password non dovrebbe
+     poter scavalcare il secondo fattore, stessa famiglia di
+     attenzione gia' avuta per la grazia dei 30 giorni
+     dell'eliminazione account (punto A-3.4).
+
+  IN SOSPESO (login con Google) - nessun piano, nessuna scelta
+  tecnica presa. Riprendere solo dopo che la Privacy Policy vera
+  esiste (nota legale, vedi sopra); a quel punto rivalutare se vale
+  la deroga al vincolo open source per la comodita' d'iscrizione che
+  offre.

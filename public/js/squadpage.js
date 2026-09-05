@@ -147,8 +147,8 @@ function renderSquadJoinBox(squad, isMember, canManage, box) {
                 <div class="veto-request-item">
                     <span>${avatar} <b>${nome}</b></span>
                     <div class="veto-actions">
-                        <button class="btn btn-sm btn-success" style="padding:2px 6px;" onclick="approveSquadRequest('${squad.id}','${id}')">${esc(T('squadPage.accetta') || 'Accetta')}</button>
-                        <button class="btn btn-sm btn-danger" style="padding:2px 6px;" onclick="declineSquadRequest('${squad.id}','${id}')">${esc(T('squadPage.rifiuta') || 'Rifiuta')}</button>
+                        <button class="btn btn-xs btn-success" onclick="approveSquadRequest('${squad.id}','${id}')">${esc(T('squadPage.accetta') || 'Accetta')}</button>
+                        <button class="btn btn-xs btn-danger" onclick="declineSquadRequest('${squad.id}','${id}')">${esc(T('squadPage.rifiuta') || 'Rifiuta')}</button>
                     </div>
                 </div>
             `;
@@ -162,7 +162,7 @@ function renderSquadJoinBox(squad, isMember, canManage, box) {
                 <div class="veto-request-item">
                     <span>${avatar} <b>${nome}</b> <span class="small text-muted">${esc(T('squadPage.invitatoInAttesa') || 'invitato, in attesa')}</span></span>
                     <div class="veto-actions">
-                        <button class="btn btn-sm btn-secondary" style="padding:2px 6px;" onclick="annullaInvitoSquadra('${squad.id}','${id}')">${esc(T('squadPage.annullaInvito') || 'Annulla')}</button>
+                        <button class="btn btn-xs btn-secondary" onclick="annullaInvitoSquadra('${squad.id}','${id}')">${esc(T('squadPage.annullaInvito') || 'Annulla')}</button>
                     </div>
                 </div>
             `;
@@ -330,7 +330,7 @@ function renderSquadMembers(squad, canManage, box) {
             actionHtml += isAdmin
                 ? ` <button class="btn btn-sm btn-secondary" onclick="demoteSquadMember('${squad.id}','${memberId}')">${esc(T('squadPage.rimuoviAdmin') || 'Rimuovi admin')}</button>`
                 : ` <button class="btn btn-sm btn-secondary" onclick="promoteSquadMember('${squad.id}','${memberId}')">${esc(T('squadPage.rendiAdmin') || 'Rendi admin')}</button>`;
-            actionHtml += ` <button class="btn btn-sm btn-danger" style="padding:2px 8px;" title="${esc(T('squadPage.rimuoviMembro') || 'Rimuovi dalla squadra')}" onclick="rimuoviMembroSquadra('${squad.id}','${memberId}')">✕</button>`;
+            actionHtml += ` <button class="btn btn-xs btn-danger" title="${esc(T('squadPage.rimuoviMembro') || 'Rimuovi dalla squadra')}" onclick="rimuoviMembroSquadra('${squad.id}','${memberId}')">✕</button>`;
         }
 
         return `

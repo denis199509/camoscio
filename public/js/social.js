@@ -845,10 +845,10 @@ function buildHikeCard(hike) {
     // presa nota in leggimi.txt per chatpanel.js/buildHikeCard - mai un id fisso su un
     // elemento di un componente che vive in piu' copie.
     const completionToolsHtml = miaCompletion ? `
-        <button class="btn btn-sm btn-secondary" style="padding:2px 6px;" onclick="uploadCompletionGpx('${miaCompletion.id}')" title="${escapeHtml(T('hikeCard.caricaGpxTitle') || 'Carica un file .gpx per avere il tempo reale di questa escursione')}">
+        <button class="btn btn-xs btn-secondary" onclick="uploadCompletionGpx('${miaCompletion.id}')" title="${escapeHtml(T('hikeCard.caricaGpxTitle') || 'Carica un file .gpx per avere il tempo reale di questa escursione')}">
             <i data-lucide="upload"></i>
         </button>
-        <button class="btn btn-sm btn-secondary" style="padding:2px 6px; color:var(--accent-red);" onclick="deleteCompletion('${miaCompletion.id}', '${hike.id}')" title="${escapeHtml(T('hikeCard.cancellaGiaFattaTitle') || "Cancella questa escursione dalle tue 'gia' fatte'")}">
+        <button class="btn btn-xs btn-secondary" style="color:var(--accent-red);" onclick="deleteCompletion('${miaCompletion.id}', '${hike.id}')" title="${escapeHtml(T('hikeCard.cancellaGiaFattaTitle') || "Cancella questa escursione dalle tue 'gia' fatte'")}">
             <i data-lucide="trash-2"></i>
         </button>
     ` : "";
@@ -912,15 +912,15 @@ function buildHikeCard(hike) {
         // rispondiInvito): "partecipi" e' vero solo dopo la risposta del server, perche' qui
         // significa "sei nel gruppo mesh/SOS".
         actionBtnHtml =
-            `<button class="btn btn-sm btn-success" style="padding:2px 8px;" onclick="rispondiInvito('${hike.id}', true)">${escapeHtml(T('hikeCard.accettaInvitoBtn') || 'Accetta')}</button>` +
-            `<button class="btn btn-sm btn-danger" style="padding:2px 8px; margin-left:4px;" onclick="rispondiInvito('${hike.id}', false)">${escapeHtml(T('hikeCard.rifiutaInvitoBtn') || 'Rifiuta')}</button>`;
+            `<button class="btn btn-xs btn-success" onclick="rispondiInvito('${hike.id}', true)">${escapeHtml(T('hikeCard.accettaInvitoBtn') || 'Accetta')}</button>` +
+            `<button class="btn btn-xs btn-danger" style="margin-left:4px;" onclick="rispondiInvito('${hike.id}', false)">${escapeHtml(T('hikeCard.rifiutaInvitoBtn') || 'Rifiuta')}</button>`;
     } else if (escursioneNonPiuAperta(hike)) {
         // Passato il giorno previsto niente piu' "Iscriviti" (decisione di Denis). Dopo
         // isParticipant/isPending: chi era gia' dentro continua a vedere il suo stato. Un
         // invitato puo' ancora RIFIUTARE (per togliersi la card di dosso), non accettare.
         const chiuse = `<span class="badge" title="${escapeHtml(T('hikeCard.iscrizioniChiuseTitle') || 'Il giorno previsto è passato: non si accettano più iscrizioni')}">${escapeHtml(T('hikeCard.iscrizioniChiuse') || 'Iscrizioni chiuse')}</span>`;
         actionBtnHtml = isInvited
-            ? `<button class="btn btn-sm btn-danger" style="padding:2px 8px;" onclick="rispondiInvito('${hike.id}', false)">${escapeHtml(T('hikeCard.rifiutaInvitoBtn') || 'Rifiuta')}</button> ${chiuse}`
+            ? `<button class="btn btn-xs btn-danger" onclick="rispondiInvito('${hike.id}', false)">${escapeHtml(T('hikeCard.rifiutaInvitoBtn') || 'Rifiuta')}</button> ${chiuse}`
             : chiuse;
     } else {
         actionBtnHtml = `<button class="btn btn-sm btn-primary" onclick="joinHikeRequest('${hike.id}', ${eligibility.eligible})">${escapeHtml(T('hikeCard.iscrivitiBtn') || 'Iscriviti')}</button>`;
@@ -940,8 +940,8 @@ function buildHikeCard(hike) {
                 <div class="veto-request-item">
                     <span>${pendingUser.avatar} <b>${escapeHtml(pendingUser.username)}</b> (Rep: ${pendingUser.reputation}%, ${pendingUser.experienceLevel})</span>
                     <div class="veto-actions">
-                        <button class="btn btn-sm btn-success" style="padding:2px 6px;" onclick="approveParticipant('${hike.id}', '${pendingId}')">${escapeHtml(T('hikeCard.accettaBtn') || 'Accetta')}</button>
-                        <button class="btn btn-sm btn-danger" style="padding:2px 6px;" onclick="declineParticipant('${hike.id}', '${pendingId}')">${escapeHtml(T('hikeCard.rifiutaBtn') || 'Rifiuta')}</button>
+                        <button class="btn btn-xs btn-success" onclick="approveParticipant('${hike.id}', '${pendingId}')">${escapeHtml(T('hikeCard.accettaBtn') || 'Accetta')}</button>
+                        <button class="btn btn-xs btn-danger" onclick="declineParticipant('${hike.id}', '${pendingId}')">${escapeHtml(T('hikeCard.rifiutaBtn') || 'Rifiuta')}</button>
                     </div>
                 </div>
             `;
@@ -1054,11 +1054,11 @@ function buildHikeCard(hike) {
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <span class="small text-muted">${escapeHtml(T('hikeCard.partecipantiLabel', hike.participants.length) || `Partecipanti (${hike.participants.length}):`)}</span>
                     <div style="display:flex; gap:6px;">
-                        <button class="btn btn-sm btn-secondary" style="padding:2px 6px;" onclick="loadHikeOnMapDirectly('${hike.id}')" title="${escapeHtml(T('hikeCard.vediMappaTitle') || 'Vedi sentiero sulla mappa')}">${escapeHtml(T('hikeCard.mappaBtn') || 'Mappa')}</button>
-                        <button class="btn btn-sm btn-secondary bookmark-toggle-btn ${isBookmarked ? 'is-bookmarked' : ''}" style="padding:2px 6px;" onclick="toggleBookmark('${hike.id}')" title="${isBookmarked ? escapeHtml(T('hikeCard.rimuoviPreferitiTitle') || 'Rimuovi dai preferiti') : escapeHtml(T('hikeCard.aggiungiPreferitiTitle') || 'Aggiungi ai preferiti')}">
+                        <button class="btn btn-xs btn-secondary" onclick="loadHikeOnMapDirectly('${hike.id}')" title="${escapeHtml(T('hikeCard.vediMappaTitle') || 'Vedi sentiero sulla mappa')}">${escapeHtml(T('hikeCard.mappaBtn') || 'Mappa')}</button>
+                        <button class="btn btn-xs btn-secondary bookmark-toggle-btn ${isBookmarked ? 'is-bookmarked' : ''}" onclick="toggleBookmark('${hike.id}')" title="${isBookmarked ? escapeHtml(T('hikeCard.rimuoviPreferitiTitle') || 'Rimuovi dai preferiti') : escapeHtml(T('hikeCard.aggiungiPreferitiTitle') || 'Aggiungi ai preferiti')}">
                             🐐
                         </button>
-                        ${isParticipant ? `<button class="btn btn-sm btn-secondary" style="padding:2px 6px;" onclick="showHikePage('${hike.id}')" title="${escapeHtml(T('hikeCard.chatTitle') || 'Chat tra i partecipanti')}">${escapeHtml(T('hikeCard.chatBtn') || 'Chat')}</button>` : ""}
+                        ${isParticipant ? `<button class="btn btn-xs btn-secondary" onclick="showHikePage('${hike.id}')" title="${escapeHtml(T('hikeCard.chatTitle') || 'Chat tra i partecipanti')}">${escapeHtml(T('hikeCard.chatBtn') || 'Chat')}</button>` : ""}
                         ${completionToolsHtml}
                     </div>
                 </div>
@@ -2035,8 +2035,8 @@ function renderOtherSquadsList() {
                         <div class="squad-members-row">${avatars}</div>
                     </div>
                     <div style="display:flex; gap:4px;">
-                        <button class="btn btn-sm btn-success" style="padding:2px 8px;" onclick="rispondiInvitoSquadra('${squad.id}', true)">${escapeHtml(T('social.acceptSquadInvite') || 'Accetta')}</button>
-                        <button class="btn btn-sm btn-danger" style="padding:2px 8px;" onclick="rispondiInvitoSquadra('${squad.id}', false)">${escapeHtml(T('social.declineSquadInvite') || 'Rifiuta')}</button>
+                        <button class="btn btn-xs btn-success" onclick="rispondiInvitoSquadra('${squad.id}', true)">${escapeHtml(T('social.acceptSquadInvite') || 'Accetta')}</button>
+                        <button class="btn btn-xs btn-danger" onclick="rispondiInvitoSquadra('${squad.id}', false)">${escapeHtml(T('social.declineSquadInvite') || 'Rifiuta')}</button>
                     </div>
                 </div>`;
             }).join("");

@@ -1,97 +1,145 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-09-05 (TRENTATREESIMA sessione — Denis ha aperto con "abbiamo
-delle cose già progettate, possiamo cominciare con il codice": i tre lavori
-preparati ma mai scritti (vedi 32a sessione) proposti via AskUserQuestion,
-scelto il TASTO INDIETRO / HISTORY API. Implementato per intero e verificato
-DAL VIVO con l'estensione Chrome (non solo a schermo: history.state e l'esito
-delle promise letti con javascript_tool a ogni passo).
+Aggiornato: 2026-09-05 (TRENTATREESIMA sessione, CHIUSA QUI su richiesta
+di Denis ("ci fermiamo qui") — Tasto Indietro implementato/verificato/
+committato/pushato; poi RITOCCHI VISIVI Fascia A uno alla volta, A1-A8
+fatti e verificati dal vivo, fermati prima di A9 (prossimo passo, vedi
+sotto); nel mezzo due segnalazioni/domande di Denis, entrambe solo da
+segnare, nessun codice (completamento da tracciamento GPS + gate
+recensioni, stessa causa; 2FA/login Google). SI RIPARTE DA A9.
 
---- COSA E' STATO FATTO ---
+--- TASTO INDIETRO / HISTORY API: FATTO, COMMITTATO, PUSHATO ---
 Il tasto Indietro (telefono e PC) buttava fuori dal sito invece di tornare
-alla pagina/sezione precedente, perche' la SPA non toccava mai la cronologia
-del browser. Piano gia' pronto dalla 29a sessione (ambito pieno: sezioni +
-pagine con id + modali; Indietro sulla home esce dal sito).
+alla pagina/sezione precedente. Implementato per intero (nucleo in
+public/js/app.js: navigateTo() unico punto che pusha, gestore popstate
+unico, registro modali apriModaleStorico/chiudiModaleStorico/
+scollegaModaleStorico) e verificato DAL VIVO con l'estensione Chrome
+(history.state e l'esito delle promise letti a ogni passo, non solo
+schermate). Tre difetti veri trovati e corretti nella sessione (due solo
+provando dal vivo): deep-link che non risincronizzava la sezione al
+ritorno da un Indietro; modale orfano su una pagina con id che mostrava il
+profilo sbagliato; Confirm risolto come Annulla. Denis ha detto "committa
+e pusha entrambi": commit `7793426` (Tasto Indietro) + `617edde` (32a
+sessione, B-5/M-4/B-2) pushati su origin/master, verificato con un secondo
+`git push` di rete ("Everything up-to-date"). Render dovrebbe aver
+ridistribuito. Dettaglio completo (i tre bug uno per uno): cose_da_fare.txt
+sotto "TASTO INDIETRO / HISTORY API". Piano: C:\Users\lenovo\.claude\plans\
+camoscio-tasto-indietro-history-api.md (aggiornato con lo stato).
 
-Nucleo in public/js/app.js: navigateTo() e' l'unico punto che fa
-history.pushState (flag sopprimiPush per non ripushare quando la chiamata
-arriva gia' da un popstate); un gestore popstate unico; un registro modali
-(apriModaleStorico/chiudiModaleStorico/scollegaModaleStorico) che pianta una
-entry all'apertura di un modale e la CONSUMA con un history.back() alla
-chiusura, invece di nascondere e basta - senza, un Indietro successivo
-troverebbe una entry morta e servirebbe un secondo Indietro per uscire
-davvero dalla sezione sotto. squadpage.js/hikepage.js/userprofile.js/
-outingpage.js passano l'id della pagina come stato.entita; gli 8 modali del
-censimento della 29a agganciati uno per uno (create-hike-modal,
-complete-group-modal, invite-squad-modal, follow-list-modal, generic-modal,
-map-picker-modal, image-lightbox, report-panel). tracking-panel ESCLUSO di
-proposito (resta un pannello di stato, non un dialogo).
+--- RITOCCHI VISIVI FASCIA A: A1-A8 FATTI. SI RIPARTE DA A9 ---
+Denis ha chiesto di proseguire con questo lavoro preparato (rapporto:
+C:\Users\lenovo\.claude\plans\camoscio-audit-visivo-29a.md), UN PUNTO ALLA
+VOLTA, fermandosi dopo ognuno per il suo ok esplicito prima del successivo
+("mi raccomando un punto alla volta, proseguiamo dopo il mio ok"). Alla
+fine ha detto "ci fermiamo qui" prima di A9 - RIPARTIRE PROPONENDO A9,
+non chiedere di nuovo se continuare i ritocchi: e' gia' la richiesta in
+sospeso di Denis. Solo public/css/styles.css toccato, tranne A5 (anche
+social.js/squadpage.js/storico.js, per togliere lo stile inline) e A2/A8
+(anche index.html). Ogni punto verificato dal vivo (misure/colori
+renderizzati via javascript_tool, non solo a occhio) e con CSS a graffe
+bilanciate. Rifusi gli 11 auto-save della sessione con `git reset --soft
+7793426` e committato in un commit solo (vedi in fondo per l'hash) - NON
+PUSHATO, in attesa del via di Denis (non ancora chiesto in questa sessione).
 
->>> TRE DIFETTI VERI TROVATI E CORRETTI in questa sessione (due SOLO
-    provando dal vivo, uno rileggendo il codice appena scritto):
-  1. La entry d'ingresso di un deep-link (es. un link salvato su #map-section)
-     non portava camoscioNav: un Indietro che vi tornava dopo aver navigato
-     altrove non risincronizzava la sezione VISIBILE (l'URL cambiava, il
-     contenuto restava quello di prima). Corretto con un replaceState che
-     etichetta subito quella entry.
-  2. apriModaleStorico non portava avanti l'entita' (es. l'id utente) della
-     pagina su cui si apre un modale: chiudendo il modale con un'azione che
-     naviga altrove (es. click su una riga della lista follower che apre un
-     ALTRO profilo), un Indietro successivo su quella entry ormai orfana
-     mostrava il profilo SBAGLIATO (l'ultimo aperto, non quello di partenza).
-     Corretto portando avanti entita'/scrollToId dalla entry precedente.
-  3. chiudiModaleStorico eseguiva SEMPRE la chiusura piantata all'apertura
-     invece di quella passata dal bottone premuto - un Confirm sarebbe stato
-     risolto come se fosse un Annulla. Trovato rileggendo il codice prima di
-     testare dal vivo, corretto subito.
+  FATTI:
+   A1 - 19 regole CSS scritte solo per <i> (morte: Lucide sostituisce con
+        <svg>) estese a ", <sel> svg"; + nuova regola generica
+        ".btn i, .btn svg { width:16px; height:16px; flex-shrink:0 }".
+   A2 - 6 classi utility usate nel codice (~55 punti) ma mai dichiarate:
+        .text-center, .text-secondary, .py-2/3/4, .col-span-2. Aggiunte in
+        "Utility Testi", scala py-2/3/4 = 8/16/24px (ritmo gia' in uso).
+   A3 - .btn-success:hover era verde-acqua neon (#0D9F6E) invece di
+        scurirsi in tinta come gli altri bottoni -> #3D6337 (stesso ~20%
+        di scurimento di --accent-orange). Contrasto bianco 3,39->6,91:1.
+   A4 - .hike-card-title era #FFF (bianco freddo, residuo neon) ->
+        var(--color-text-primary) (#F3EFE6, bianco caldo del tema).
+   A5 - 20 bottoni ("Mappa"/"Chat"/preferito/Accetta/Rifiuta/cestino/
+        "Pubblica nel feed") con style="padding:2px..." inline, ~23px di
+        tocco -> nuova classe .btn-xs (padding 6px 10px), tolto lo style
+        da tutti e 20 in social.js/squadpage.js/storico.js. Altezza
+        misurata dal vivo: ~30px.
+   A6 - .notification-dropdown (320px ancorate a right:0 sul wrapper) e
+        .toast-container (max-width 360px) sporgevano sotto ~380px di
+        schermo -> entrambe con min(Npx, calc(100vw - Mpx)). NON
+        verificato a schermo stretto per davvero (vedi limite sotto).
+   A7 - .hikes-header-row (titolo + "Crea Nuova Escursione") senza
+        flex-wrap -> flex-wrap:wrap; gap:12px.
+   A8 - .form-row-ratings (Recensioni, 3 colonne) e .checkbox-group (16
+        interessi registrazione, forzata a 3 colonne con uno style
+        inline ora tolto) sfondavano sotto i 900px -> una colonna sola in
+        quella @media; + .rating-group{min-width:0} fuori dalla media
+        (senza, una colonna di griglia non si restringe mai da sola).
 
->>> VERIFICATO DAL VIVO (Chrome, account demo Marco Alpinista), esito atteso
-    confermato per ognuno: sezione->sezione senza mai uscire dal sito;
-    Dashboard->Indietro = esce (corretto, nessuna entry sotto); pagina con id
-    (hike-page) torna al punto di partenza; deep-link diretto su un URL con
-    hash apre subito quella sezione; create-hike-modal (Indietro chiude senza
-    navigare, il tasto X consuma la entry); generic-modal (Conferma/Annulla/
-    Indietro risolvono la promise col valore giusto); showAlertModal, cioe'
-    l'allarme del Dead Man's Switch (punto 37) - un Indietro premuto per
-    sbaglio NON lo chiude, si ripianta la stessa entry, va riconosciuto col
-    bottone; image-lightbox; follow-list-modal (click su una riga chiude il
-    modale E naviga su un altro profilo senza corrompere la cronologia - il
-    caso piu' delicato del piano). NON riverificati uno per uno dal vivo
-    (stesso aggancio, stesso pattern gia' provato corretto su due casi
-    diversi): complete-group-modal, invite-squad-modal, map-picker-modal,
-    report-panel.
+  LIMITE DI VERIFICA (A6/A7/A8): lo strumento di ridimensionamento
+  finestra in questa sessione non ha mai cambiato la larghezza effettiva
+  della pagina (resta ~1536px anche dopo il resize - limite dell'ambiente
+  browser di questa sessione, non del codice). Confermato solo che il CSS
+  e' valido e non rompe nulla a schermo largo; il comportamento sotto i
+  380-900px si basa su @media/min()/calc() standard gia' usati con
+  successo altrove in questo stesso foglio di stile, MAI visto renderizzare
+  per davvero stretto. Da confermare al telefono vero o con un resize che
+  funzioni, se si vuole la controprova visiva completa.
 
->>> STATO A FINE 33a SESSIONE:
-      - camoscio: scritto e verificato, NON ANCORA COMMITTATO (si somma al
-        commit 617edde della 32a sessione, gia' in attesa di push - in
-        attesa del via esplicito di Denis per entrambi).
-      - Nessuna prova automatica (la navigazione frontend non ne ha, come da
-        piano) - solo verifica dal vivo, sopra.
-      - npm audit non toccato (nessuna dipendenza cambiata).
-      - Console pulita a ogni passo della verifica dal vivo.
+  DA FARE (in ordine dal piano, si riparte da qui):
+   A9 - .safety-contact-row (lista contatti Dead Man's Switch) senza
+        NESSUNA riga di CSS - l'unico componente completamente nudo del
+        sito, nella schermata di sicurezza. PROSSIMO PASSO.
+   A10 - titoli di scheda (h4/h5) a misura del testo corrente, nessuna
+        gerarchia visiva.
+   (da B4) - .settings-placeholder opacity .65 -> .85 (leggibilita').
+  Blocco Fascia B/C del piano non ancora nemmeno proposti (empty state
+  unificato, descrizione escursione tagliata, contrasti sotto soglia,
+  palette fredda residua, responsive login/registrazione, colori JS
+  duplicati) - restano nel piano, si decide quando/se affrontarli.
 
->>> DETTAGLIO COMPLETO (i tre bug uno per uno, cosa e' stato verificato):
-    cose_da_fare.txt, sotto "TASTO INDIETRO / HISTORY API".
-    Piano originale (29a sessione): C:\Users\lenovo\.claude\plans\
-    camoscio-tasto-indietro-history-api.md (aggiornato con lo stato attuale).
+--- NUOVO, SOLO DA SEGNARE (nessun codice) ---
+Denis, usando il sito dal vivo: ha completato un'escursione col
+tracciamento GPS dell'app; il compagno (Marco Alpinista) e' rimasto SENZA
+tasto di conferma, perche' il completamento da tracciamento dal vivo
+(POST /api/hikes/:id/complete, chiamato da tracking.js completeLinkedHike)
+non chiede mai "chi era con te" - solo POST /:id/complete-group (bottone
+"Completa escursione") lo fa e aggiorna hike.participants. Seconda parte
+della richiesta: dare a ogni partecipante confermato la possibilita' di
+allegare la PROPRIA traccia GPS invece di ereditare per forza quella di
+chi ha registrato (oggi complete-group applica un solo .gpx condiviso,
+identico per tutti - il tempo di CAMMINO dipende dal passo personale
+anche quando il tempo TOTALE e' uguale per tutti). Denis: "questo e' solo
+da segnare. lo faremo in un'altra sessione". Dettaglio tecnico completo
+(righe di codice vere, cosa fa oggi ognuna delle due rotte, le due
+decisioni di UI ancora aperte) in cose_da_fare.txt, sezione
+"COMPLETAMENTO DA TRACCIAMENTO DAL VIVO NON CHIEDE 'CHI ERA CON TE'".
 
->>> LAVORO FUTURO PREPARATO, ancora agli atti (NIENTE codice scritto):
-    A) RITOCCHI VISIVI (Fascia A pronta, ~11 interventi CSS) - rapporto:
-         C:\Users\lenovo\.claude\plans\camoscio-audit-visivo-29a.md
-       Due decisioni aspettano Denis (Passo&Fatica colori; contrasto
-       bianco su arancione) - non bloccano la Fascia A, vedi il piano.
-    B) FILONE B: collezione "I 2000 dell'Appennino" - bloccato, LA
-       LISTA UFFICIALE DELLE VETTE LA FORNISCE DENIS. Piano:
-         C:\Users\lenovo\.claude\plans\camoscio-2000-appennino-collezione.md
+CONFERMATO più tardi: Denis non riesce a recensire Marco ne' viceversa,
+stessa causa. routes/reviews.js richiede hike.participants + un
+Completion per ENTRAMBI; il bottone "Completa escursione" (social.js:975)
+e' dietro if(isCreatorMe) - lo vede solo il creatore. Un partecipante che
+non e' creatore E non traccia dal vivo lui stesso non ha oggi NESSUNA via
+verso un proprio Completion. Il fix gia' previsto sopra risolverebbe
+anche questo. Nessun codice.
+
+--- NUOVO, SOLO DA SEGNARE (nessun codice) ---
+Denis ha chiesto se si puo' introdurre "il Google authenticator" e/o
+"accedi con Google" per l'iscrizione. Sono due cose diverse: 2FA TOTP
+(standard aperto, non una dipendenza Google - segnato DA FARE, vedi sotto)
+e login OAuth "Accedi con Google" (dipendenza vera, terza eccezione al
+vincolo open source, Google di solito pretende una Privacy Policy
+pubblicata che qui non esiste ancora - IN SOSPESO su decisione di Denis,
+si riprende solo dopo la nota legale). Dettaglio (direzione del 2FA, cosa
+resta da decidere) in cose_da_fare.txt, sezione "2FA (GOOGLE
+AUTHENTICATOR) - DA FARE. LOGIN CON GOOGLE - IN SOSPESO".
 
 >>> APERTI (follow-up sicurezza della 32a, invariati):
-  - CONFORMITA' GDPR (professionista): invariata, su richiesta esplicita di
-    Denis. Serve un consulente privacy/avvocato GDPR (non un DPO formale)
-    per scrivere una vera Informativa Privacy + il testo di consenso prima
-    di accettare un invito.
+  - CONFORMITA' GDPR (professionista): invariata. Serve un consulente
+    privacy/avvocato GDPR (non un DPO formale) per una vera Informativa
+    Privacy + il testo di consenso prima di accettare un invito.
   - VERIFICA DAL VIVO di Denis su tutto l'invito squadra direzionale:
     invariata (invito a entrare in una squadra; invito squadra a
     un'escursione; uscita da una squadra e successione del creatore).
+
+>>> LAVORO FUTURO PREPARATO, ancora agli atti (NIENTE codice scritto):
+    FILONE B: collezione "I 2000 dell'Appennino" - bloccato, LA LISTA
+    UFFICIALE DELLE VETTE LA FORNISCE DENIS. Piano:
+      C:\Users\lenovo\.claude\plans\camoscio-2000-appennino-collezione.md
 
 >>> AZIONI MANUALI DI DENIS, aperte (invariate dalla 30a):
   1. ACCOUNT_SCRUB_SECRET su Render (stringa a scelta, DIVERSA da
