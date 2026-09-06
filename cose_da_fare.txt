@@ -11111,11 +11111,273 @@ AUDIT VISIVO §9 - LE DUE DECISIONI CHE ASPETTAVANO DENIS (35a, 06/09)
   fanno da testo" (chiuderebbe anche il verde di .lightning-alert.is-ok
   e .safety-honesty-note.is-ok).
 
-  FASCIA B - NON FATTE: B1 (empty-state unificato, 8 file JS), B3
-  (.hike-card-topright copre la freccia su desktop), B5 (consolidare le
-  32 misure di testo a 8, dopo A10).
+  --- B3: .hike-card-topright copre la freccia dell'header (fatto DOPO il
+      push dei 6 blocchi sopra - Denis: "poi con il piu' piccolo b") ---
+  Confermato dal vivo a 1536px: il badge difficolta' (.hike-card-topright,
+  position:absolute top:16 right:16) a card ESPANSA finiva sopra
+  .hike-card-toggle-icon (freccia, anch'essa in alto a destra) - overlap
+  ~20x15px, e document.elementFromPoint sul centro della freccia
+  restituiva il badge, non la freccia. Il @media stretto lo rendeva gia'
+  `static` per lo stesso motivo. -> reso `static` nella regola BASE
+  (align-self:flex-start, margin-bottom:-6px per assorbire un po' del
+  gap:14px di .hike-card-body), tolta la regola ora ridondante dal @media.
+  La difficolta' resta visibile solo a card aperta, come prima (primo
+  elemento del body, sopra "Organizzato da"). Spostarla nell'header
+  sempre-visibile e' la variante piu' grande dell'audit, NON fatta.
+  Verificato: overlap 0, freccia di nuovo cliccabile, console pulita,
+  layout coerente con mobile.
+
+  FASCIA B - NON FATTE: B1 (empty-state unificato, 8 file JS), B5
+  (consolidare le 32 misure di testo a 8, dopo A10).
   FASCIA C - NON FATTE: C1 (ritirare la palette fredda residua
   --bg-panel/--bg-overlay, scelta di prodotto, serve confronto
   affiancato), C2 (responsive login/registrazione, prova dal vivo passo
   per passo), C3 (i 5 colori palette copiati a mano in 6 file JS ->
   window.CAMOSCIO_COLORI, codice app).
+
+
+===============================================================
+REVISIONE 35a: RILIEVI code-reviewer + security-privacy
+(girati su 7496ea3..4289acc = Punto 1 + tre piccoli punti + audit 9 +
+Fascia B. TUTTO GIA' PUSHATO E IN PRODUZIONE. Nessun CRITICO da nessuno
+dei due. La prossima sessione RIPARTE DA QUI. I due rapporti completi
+sono solo in chat - questo e' il riassunto consolidato e verificato.)
+===============================================================
+
+  Denis alla fine della 35a: "commit e push, ci fermiamo qui... prepara
+  tutto per riprendere". Nessun fix applicato in questa sessione: tutti
+  i rilievi sotto sono per la 36a.
+
+  --- URGENTE (fix prima di tutto il resto) ---
+  MATH.MAX(...) SU TRACCIA LUNGA -> la registrazione non si chiude piu'.
+  routes/tracking.js:1119 (codice NUOVO del Punto 1: maxAltitudeM =
+  Math.round(Math.max(...quoteComplete))), + gemelli lib/percorso.js:63
+  e :70, + gemello PREESISTENTE lib/gpx.js:376. Su Node 24 lo spread si
+  rompe con RangeError da ~125.000 elementi (misurato dall'agente).
+  session.points non ha un tetto complessivo (MAX_POINTS_PER_BATCH=500
+  e' per singolo invio), il multi-day e' feature dichiarata -> ~35 h di
+  registrazione continua ci arriva. La RangeError e' PRIMA del $set
+  status:'ended' nel try/catch di POST /:id/end -> la sessione resta
+  aperta per sempre, a ogni tentativo, e openSession blocca l'avvio di
+  una nuova. Funzione di sicurezza che si autoblocca, raggiungibile
+  senza malizia. FIX (una riga, nei 3-4 punti):
+    quoteComplete.reduce((m,q)=>q>m?q:m,-Infinity)
+
+  --- CORRETTEZZA - Punto 1 / M-5 (piccoli, codice di stasera) ---
+  1. lib/percorso.js:82 - distanceKm NON arrotondato in misureDaSessione.
+     ActiveHikeSession.distanceKm e' somma di $inc di float (tracking.js
+     :1032) -> quasi sempre coda binaria (11.275999999999991). Ogni
+     altro scrittore arrotonda a 3 decimali; social.js:1048 lo stampa
+     grezzo. Prima chiusura di gruppo da tracciamento vero -> la card
+     mostra la coda. FIX: Math.round(sessione.distanceKm*1000)/1000.
+     La prova non lo vede (fixture con 6.3 scritto a mano).
+  2. routes/completions.js (ramo esistente.status==='ended' del ⬆) -
+     riscrive points/distanceKm/elevationGainM/movingTimeSec ma NON
+     maxAltitudeM (campo nuovo 35a) -> quota max di un'ALTRA traccia su
+     un doc i cui punti ora vengono dal file. misureDaSessione lo legge
+     per primo (percorso.js:75). movingTimeSec ha gia' il ramo else per
+     lo stesso motivo. FIX accanto: if(Number.isFinite(datiReali.
+     maxAltitude)) set.maxAltitudeM=...; else unset.maxAltitudeM=''.
+  3. routes/users.js:649 - DELETE contatto: $pull con filtro
+     {name,relationship} (email aggiunta solo se presente) toglie ANCHE
+     un omonimo con la stessa relazione che l'email ce l'ha. "Anna/
+     sorella" senza email + "Anna/sorella/anna@..." -> cancellandone uno
+     spariscono entrambi. Un contatto DMS raggiungibile sparisce in
+     silenzio; gestisciScadenza rilegge l'array alla scadenza -> si
+     scopre quando serve. FIX: filtroVoce.email = email ? email :
+     { $in: [null, ''] } (mai un filtro "qualunque email").
+  4. lib/percorso.js:64 - registrazione da dispositivo SENZA quota:
+     sanitizePoints (tracking.js:73,82) sostituisce la quota assente con
+     l'ultima nota, la prima con ZERO. Il client manda null quando
+     coords.altitude manca (tracking.js:629). -> tutti i punti a 0,
+     quote.length>0 vero (zeri veri), sostanziale vero -> la Hike prende
+     maxAltitude:0 e elevationGain:0 SOVRASCRIVENDO i valori scritti a
+     mano dall'organizzatore; con dislivello 0 salta anche il tempo CAI
+     della card. Il ramo file ha la guardia (percorso.js:306), il ramo
+     dal vivo no. FIX: quoteVere=quote.some(q=>q!==0); scrivere
+     maxAltitude/elevationGain solo se sostanziale && quoteVere,
+     lasciando comunque passare distanza/linea/tempi.
+  5. routes/hikes.js:1072 (ripiego D5) - la query {userId,hikeId,status:
+     'ended'} pesca ANCHE una sessione nata da un file caricato col ⬆
+     (routes/completions.js, importedFrom:'gpx'), e ci scrive
+     routeSource={kind:'live', nome:'Traccia registrata'} -> un file
+     Garmin diventa "traccia dal vivo" e importedName (punto 115)
+     sparisce. Percorso: registro dal vivo -> mi auto-completo -> carico
+     il .gpx buono col ⬆ -> chiudo il gruppo dalla card la sera. FIX:
+     kind: sessione.importedFrom==='gpx'?'gpx':'live'; nome:
+     sessione.importedName || 'Traccia registrata' (cap 80).
+  6. models/User.js:291 - validaUnContatto usa email.includes('@'),
+     routes/auth.js:124 usa validator.isEmail sullo STESSO campo (il
+     canale dell'allarme vero). a@ / @@ / x@y passano, falliscono solo
+     all'invio. validator e' gia' dipendenza. FIX: validator.isEmail.
+  7. safety.js:336 - DELETE contatto: toast "Contatto rimosso." anche
+     quando il $pull non ha tolto niente (fallimento vero, non il caso
+     due-schede). FIX: successo solo se il contatto non e' piu' nella
+     lista che torna (cosi' il caso "l'altra scheda l'ha gia' tolto"
+     resta un successo legittimo). Serve che la rotta lo dica (campo
+     'rimosso' o confronto lunghezze).
+  8. routes/users.js:606 - if(body.phone!==undefined) scrive phone:''
+     quando il client manda vuoto (contro vincolo spazio). FIX:
+     if(body.phone). + POST ammette doppioni (5x lo stesso contatto ->
+     5 email identiche alla scadenza): filtro $not/$elemMatch nella
+     findOneAndUpdate (chiude anche il limite del $pull per tutto cio'
+     che nasce dopo M-5), serve un terzo ramo nella diagnosi !user.
+  9. tracking.js:1152 - se /end fallisce per rete (rientro, rete
+     assente), sessionId = ... || trackingState.sessionId manda comunque
+     l'id di una sessione ancora 'active' -> routes/hikes.js:1049
+     risponde 409 e il gruppo non si chiude, nella situazione in cui D5
+     dovrebbe salvare. FIX: togliere || trackingState.sessionId (senza
+     id parte D5, che filtra status:'ended' e se non trova nulla chiude
+     il gruppo senza toccare i numeri). + finalSession=await res.json()
+     non guarda res.ok (:332, preesistente).
+  10. Minori: trackingSessionId non verificato come stringa prima di
+     ObjectId.isValid (accetta i numeri; innocuo 404; incoerente con il
+     check di squadId 3 righe dopo). gpxText:'' o tipo sbagliato scivola
+     nel ramo D5 senza dire niente (routes/hikes.js:992) -> 1 riga: se
+     gpxText!==undefined && !haGpxText -> 400.
+  11. tracking.js:1135 (=CR#9) - la scelta checklist vs completamento
+     singolo e' congelata al renderSummary (sonoCreatore/groupCompletedAt
+     da CamoscioState, che dopo ore di registrazione puo' essere
+     vecchio). Se db.hikes non ha ancora l'escursione il creatore ricade
+     in silenzio sul completamento singolo. FIX: spostare le 3 righe
+     DENTRO l'onclick (openCompleteGroupModal ricerca gia' la hike, con
+     if(!hike) return; tenere l'else verso completeLinkedHike).
+
+  --- DECISIONE DI DENIS (la D5) ---
+  security-privacy ALTO-1: il ripiego automatico D5 PUBBLICA la traccia
+  GPS reale del creatore senza un atto esplicito, senza avviso su quella
+  corsia, e senza modo di ritirarla.
+   - Chiudendo il gruppo dalla card (la via piu' usata la sera al
+     rientro): il server copia da se' i punti dell'ultima sessione
+     conclusa - che stanno in un archivio SOLO-PROPRIETARIO (GET
+     /api/tracking/sessions/:id/points) - in hike.routePath, leggibile
+     da tutti i confermati. Cambio di finalita' deciso dal server.
+   - La nota 'complete-group-tracking-note' (index.html:2450) compare
+     SOLO quando completeGroupTrackingSessionId e' valorizzato, cioe'
+     solo aprendo il modale dal riepilogo tracciamento. Sulla corsia D5
+     dalla card resta hidden: l'utente non sa che la sua traccia diventa
+     dato condiviso.
+   - routeSource e' in EDIT_LOCKED_FIELDS (routes/hikes.js:374) e
+     groupCompletedAt e' ormai impostato -> PUT /:id -> 409. L'unico
+     $unset di routePath sta nei rami routeSource della PUT, tutti
+     bloccati. Restano solo DELETE /api/hikes/:id (distrugge tutto per
+     tutti) e il ⬆ (sostituisce). NIENTE MODO DI RITIRARE LA TRACCIA.
+   - complete-group non passa da middleware/consensoGeo.js (solo /start,
+     /:id/points, /:id/resume): chi ha revocato il consenso geo dal
+     profilo puo' comunque, con questa rotta, far pubblicare una traccia
+     registrata prima della revoca.
+  E' la decisione D5 che Denis aveva preso apposta ("ripiego automatico
+  lato server, se il creatore chiude il gruppo dalla card ore dopo").
+  Proposta dell'agente: (a) flag esplicito dal client
+  (usaUltimaRegistrazione:true) invece dell'automatico; (b) nota + spunta
+  esplicita anche sulla corsia dalla card; (c) ammettere routePath:null
+  nella PUT /:id per il creatore anche a escursione conclusa, con $unset
+  - eccezione minima al lock del punto 76, e' l'unico campo di quel
+  blocco che contiene dati di posizione personale.
+  DA DECIDERE CON DENIS: se tenere l'automatismo D5 o passare al flag +
+  nota + via di revoca.
+
+  --- EFFETTI COLLATERALI DEL TTL NOTIFICATION (codice di stasera) ---
+  security-privacy MEDIO-1: FINESTRA (e caso di guasto durevole) in cui
+     routePath e' visibile a ogni utente autenticato. complete-group
+     scrive routePath a hike.save() (routes/hikes.js:~1087) ma
+     groupCompletedAt solo DOPO il ciclo per-confermato (User.findById +
+     recalculatePersonalPace + save, ~1094-1099) - con 200 confermati
+     sono secondi. In quella finestra la hike non e' "conclusa" -> GET
+     /api/hikes la da' a chiunque loggato, e hikeVisibileA toglie
+     carpool/backpackTemplate ma NON routePath. Se il ciclo solleva
+     (una User con un campo non valido, timeout Atlas) il catch risponde
+     400 e groupCompletedAt NON viene mai scritto -> l'escursione resta
+     PUBBLICA PER SEMPRE con la traccia reale del creatore. FIX: scrivere
+     groupCompletedAt nello stesso save() di routePath (spostando li'
+     participants/pendingApproval), lasciare dopo solo il ciclo. + per
+     difesa in profondita': delete pubblico.routePath nel ramo
+     non-partecipante di hikeVisibileA (routes/hikes.js:~220 - da
+     valutare col client: map.js:1452 ricade sul percorso fittizio se
+     manca, degrada bene).
+  BASSO-2: il TTL fa RISORGERE i promemoria di completamento ogni 90
+     giorni. La guardia anti-doppione di ensureCompletionReminders
+     (lib/hikeStats.js:277) e' Notification.findOne({userId,
+     relatedHikeId}); il TTL la cancella -> ricreato per ogni escursione
+     passata mai chiusa in gruppo, per sempre. FIX: marcatore su
+     Hike.completionReminderAt (default:undefined, zero spazio per chi
+     non ne ha), oppure limitare 'scadute' agli ultimi 90 giorni.
+  BASSO-3: il TTL cancella anche l'UNICA traccia di un allarme DMS
+     scattato (routes/safety.js:145, coi nomi dei contatti a cui l'invio
+     e' FALLITO - riga 137-139, il solo appiglio per avvisarli a mano).
+     Niente scheduler ne' push -> quella notifica e' l'unico canale.
+     FIX: escluderla dal TTL con un expiresAt esplicito (come Report),
+     o registrare l'evento di sicurezza altrove.
+  MEDIO-2: l'indice TTL NON e' stato verificato sul DB vero (la prova e'
+     solo di schema). Se su 'notifications' esistesse gia' un createdAt_1
+     semplice, createIndex con expireAfterSeconds fallisce con
+     IndexOptionsConflict (85) e Mongoose lo INGHIOTTE -> TTL
+     inesistente, e il commento in accountDeletion.js diventa una
+     promessa falsa. FIX: controllo una tantum contro Atlas ora che il
+     deploy e' fatto (Notification.collection.indexes() -> deve avere
+     createdAt_1 con expireAfterSeconds 7776000). Se non c'e':
+     dropIndex('createdAt_1') + riavvio, MAI collMod (negato su questo
+     utente Atlas, vedi trappola Report).
+
+  --- MINORI (security-privacy BASSO) ---
+  BASSO-1: console.error con l'oggetto errore intero su routes/users.js
+     :629,661 - un ValidationError/CastError Mongoose porta .value
+     (nome/email di un terzo) come proprieta' enumerabile, util.inspect
+     la stampa. OGGI NON RAGGIUNGIBILE (validaUnContatto rifiuta gia'
+     tutto cio' che lo schema rifiuterebbe), diventa vero il giorno che
+     si aggiunge un vincolo di schema senza aggiornare l'helper. FIX:
+     console.error(msg, e && e.name, e && e.message).
+  BASSO-4: trackingSessionId non verificato come stringa (=CR#10).
+  BASSO-5: ripiego D5 etichetta un file come "Traccia registrata"
+     (=CORRETTEZZA #5).
+  BASSO-6: doppioni in POST + phone:'' (=CORRETTEZZA #8).
+
+  --- GIA' NOTI / SERVE UN PROFESSIONISTA ---
+  security-privacy ALTO-2: l'INFORMATIVA PRIVACY non esiste (nessuna
+     pagina/modale/link in public/) ma la registrazione fa accettare
+     "Termini + Informativa privacy" e senza spunta rifiuta. E' la "NOTA
+     LEGALE" gia' aperta + la conformita' GDPR: si raccolgono posizione
+     in tempo reale, piani di spostamento, nome+email di terzi. Vincolo
+     hard 7. Serve una pagina statica public/privacy.html col contenuto
+     verificato da un professionista.
+  security-privacy MEDIO-5: i tempi misurati dal creatore
+     (actualTimeHours/movingTimeHours) si applicano IDENTICI a ogni
+     confermato (applyHikeCompletionStats) e recalculatePersonalPace li
+     usa per scrivere averagePaceUp/Down sull'utente -> Dashboard li
+     mostra come "Velocita' Ascesa X m/h". Preesistente (valeva col .gpx
+     a mano), il Punto 1 lo rende raggiungibile PER DEFAULT. GDPR art.
+     5(1)(d) esattezza. MA E' LA DECISIONE CHE DENIS HA GIA' PRESO
+     APPOSTA (33a/35a: "tempo di cammino UNIFORME per tutti i confermati,
+     contro il consiglio dell'architect, il singolo lo sostituisce col
+     ⬆"). Se un domani si vuole chiudere: campo Completion.tempiDalCreatore
+     (default:undefined) + etichetta "tempo del gruppo, non misurato da
+     te", oppure non propagare i tempi ai non-creatori nella corsia D5.
+
+  --- LACUNE NELLE PROVE (da colmare insieme ai fix) ---
+  - prova-contatti-emergenza.js: DELETE con {name:{$ne:null},...} -> 400
+    e lista INTATTA (oggi passa per String() ma e' una regressione a una
+    riga); il caso MEDIO-3 (omonimi, uno senza email); concorrenza vera
+    sul tetto (Promise.all di due POST con l'array a 4 -> un 200 e un
+    400, 5 sul DB).
+  - prova-punto1-tracciamento-gruppo.js: il caso "sessione senza quota"
+    (tutti i punti a 0) e "distanceKm con coda binaria" - la fixture
+    attuale scrive i numeri a mano.
+
+  --- VERIFICATO PULITO da security-privacy (non toccare, e' a posto) ---
+  Nessun IDOR sulla corsia trackingSessionId (findById + String(userId)
+  !== -> 404, status!=='ended' -> 409, hikeId.equals -> 400; ramo D5 ha
+  userId/hikeId nella query). Disciplina polilinea rispettata
+  (routePathDaPunti = simplifyTrack 18m + cap 400). routeSource.kind
+  :'live' e' solo discriminante d'ingresso, nessuna decisione lo rilegge.
+  M-5: TOCTOU sul tetto chiuso davvero dal DB (findOneAndUpdate con
+  $expr sotto lock di documento); 400/404 non e' un oracolo di
+  enumerazione (self-only gia' passata); $pull non iniettabile
+  (String() su ogni valore, chiavi letterali, sempre req.session.userId);
+  emergencyContacts fuori da PUT confermato, registrazione non rotta
+  (validaContattiEmergenza include il tetto di 5 + validator.isEmail);
+  serializzaContatti non fa uscire campi interni (_id:false);
+  contattiLimiter dedicato, non condiviso con sicurezzaLimiter.
+  npm audit --omit=dev = 0. Nessuna posizione GPS nei log applicativi
+  (catena parseGpx -> sanitizePoints -> points -> routePath garantisce
+  lat/lng finiti, il console.error di complete-group non stampa
+  coordinate).
