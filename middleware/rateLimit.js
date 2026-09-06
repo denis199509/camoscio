@@ -237,8 +237,23 @@ const fotoProfiloLetturaLimiter = rateLimit({
     message: messaggioTroppiTentativi
 });
 
+// POST|DELETE /api/users/:id/emergency-contacts (M-5): aggiunta/rimozione atomica di un
+// contatto di emergenza. Secchio DEDICATO, stessa regola di cancellazioneLimiter e
+// invitoLimiter: modificare i propri contatti non deve poter esaurire - ne' essere esaurito
+// da - altre scritture, e MENO CHE MAI la rotta del soccorso (sicurezzaLimiter). L'array e'
+// cappato a 5 voci (User.MAX_CONTATTI_EMERGENZA), quindi un uso in buona fede sta in una
+// manciata di richieste: 30/ora e' larghissimo, stretto per uno script che martella $push.
+const contattiLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    limit: 30,
+    skip: soloInProduzione,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: messaggioTroppiTentativi
+});
+
 module.exports = {
     authLimiter, emailLimiter, apiLimiter, matchLimiter, exportLimiter, scritturaLimiter,
     sicurezzaLimiter, cancellazioneLimiter, invitoLimiter, fotoLimiter, fotoLetturaLimiter,
-    fotoProfiloLimiter, registrazioneLimiter, fotoProfiloLetturaLimiter
+    fotoProfiloLimiter, registrazioneLimiter, fotoProfiloLetturaLimiter, contattiLimiter
 };

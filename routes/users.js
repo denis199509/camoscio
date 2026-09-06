@@ -4,7 +4,7 @@ const router = express.Router();
 const User = require('../models/User');
 const Squad = require('../models/Squad');
 const { requireAuth } = require('../middleware/auth');
-const { exportLimiter, scritturaLimiter, fotoProfiloLimiter, fotoProfiloLetturaLimiter } = require('../middleware/rateLimit');
+const { exportLimiter, scritturaLimiter, fotoProfiloLimiter, fotoProfiloLetturaLimiter, contattiLimiter } = require('../middleware/rateLimit');
 const { validaFotoProfiloJpeg } = require('../lib/profilePhoto'); // ALTO, follow-up revisione sicurezza (30ª): stesso buco di MEDIO-2/3 su Squad.photo
 const { chiudiTutteLeSessioni } = require('../db/sessionStore');
 // Punto A-3.4: eliminazione account. La logica sta in lib/accountDeletion.js (serve
@@ -81,10 +81,16 @@ const PRIVACY_GATED_FIELDS = ['bio', 'profilePhoto', 'interests', 'hikingLevel',
 // interessi) e nessuna schermata attuale lo rende modificabile, quindi tenerlo fuori dalla
 // whitelist chiude la via piu' semplice per intestare a se' stessi un valore malevolo, senza
 // dover rincorrere ogni punto dell'interfaccia dove un avatar altrui viene mostrato.
+// "emergencyContacts" volutamente escluso (M-5): si modifica SOLO tramite le rotte atomiche
+// POST/DELETE /users/:id/emergency-contacts qui sotto. La vecchia via - riscrivere l'intero
+// array da questa PUT - perdeva in silenzio le modifiche fatte da un'altra scheda aperta
+// (l'ultimo a salvare vinceva) e faceva "resuscitare" un contatto tolto altrove, cioe' dati
+// di un terzo che non ha acconsentito (A-3.2). Il wizard di registrazione passa da
+// POST /api/auth/register, non da qui, quindi non e' toccato.
 const SELF_EDITABLE_FIELDS = [
     'nome', 'cognome', 'username', 'trainingGoal', 'localExpert', 'homeCity',
     'hikingLevel', 'interests', 'preferredDifficulty', 'geoPreferences',
-    'profilePhoto', 'bio', 'emergencyContacts', 'geolocationConsent', 'privacySetting',
+    'profilePhoto', 'bio', 'geolocationConsent', 'privacySetting',
     'birthDate', 'ageRange'
 ];
 
@@ -525,16 +531,10 @@ router.put('/users/:id', requireAuth, fotoProfiloLimiter, async (req, res) => {
             if (!v.ok) return res.status(400).json({ error: v.errore });
         }
 
-        // A-NUOVO-1 (ri-review sicurezza, 2° giro): il vero controllo su emergencyContacts va
-        // QUI - Mongoose non valida in modo affidabile i sotto-documenti degli array su
-        // findByIdAndUpdate. Senza, un array gigante o campi enormi passano, e alla scadenza
-        // del Dead Man's Switch il server manda un'email per ogni voce (relay verso terzi).
-        // R-3 (3° giro): le stesse regole servono anche in POST /api/auth/register - helper
-        // condiviso in models/User.js per non tenerne due copie.
-        if (update.emergencyContacts !== undefined) {
-            const errore = User.validaContattiEmergenza(update.emergencyContacts);
-            if (errore) return res.status(400).json({ error: errore });
-        }
+        // I contatti di emergenza NON passano piu' da questa PUT (M-5, vedi SELF_EDITABLE_FIELDS
+        // sopra): si aggiungono/tolgono uno alla volta dalle rotte atomiche
+        // POST/DELETE /users/:id/emergency-contacts qui sotto. La validazione dell'array intero
+        // (User.validaContattiEmergenza) resta viva per POST /api/auth/register.
 
         // .select('+profilePhoto') (MEDIO, follow-up revisione sicurezza) SOLO quando il
         // salvataggio tocca davvero la foto: findByIdAndUpdate rispetta la proiezione anche
@@ -557,6 +557,109 @@ router.put('/users/:id', requireAuth, fotoProfiloLimiter, async (req, res) => {
     } catch (e) {
         console.error('Errore aggiornamento profilo:', e);
         res.status(400).json({ error: 'Impossibile aggiornare il profilo' });
+    }
+});
+
+// --- M-5: contatti di emergenza, aggiunta/rimozione ATOMICA -----------------------------
+//
+// Perche' rotte a se' e non la PUT /users/:id: quella riscriveva TUTTO l'array
+// emergencyContacts. Con due schede aperte sulla stessa lista di partenza, l'ultima a
+// salvare sovrascriveva la modifica dell'altra senza un errore - e un contatto tolto da una
+// scheda "resuscitava" per via del salvataggio dell'altra. Sono dati di un terzo che non ha
+// acconsentito a nulla (A-3.2), quindi una cancellazione che si annulla da sola non va bene.
+// Qui si fa $push / $pull della SOLA voce toccata, cosi' due schede che agiscono su contatti
+// diversi si compongono invece di sovrascriversi.
+//
+// Identificazione PER CONTENUTO (nome + relazione + email), non per id: emergencyContactSchema
+// ha _id:false di proposito (vincolo spazio, 02-Vincoli-Hard del vault) - non c'e' un id
+// stabile su cui puntare. Limite noto e accettato: due contatti identici in tutti e tre i
+// campi verrebbero rimossi entrambi da un solo $pull. E' un doppione, caso di errore
+// dell'utente, non un dato distinto che si perde.
+//
+// contattiLimiter (middleware/rateLimit.js): secchio dedicato, come cancellazioneLimiter -
+// modificare i contatti non deve poter esaurire ne' essere esaurito da altre scritture, meno
+// che mai la rotta del soccorso (POST /api/safety/activate, sicurezzaLimiter).
+
+// Serializza le sotto-voci in oggetti semplici per la risposta (lo schema ha _id:false,
+// quindi non c'e' nessun campo interno da nascondere - resta esplicito per chiarezza).
+function serializzaContatti(user) {
+    return (user.emergencyContacts || []).map(c => {
+        const out = { name: c.name, relationship: c.relationship, email: c.email || '' };
+        if (c.phone) out.phone = c.phone;
+        return out;
+    });
+}
+
+// Aggiunge UN contatto. $push condizionato al fatto che si stia sotto il tetto, in una sola
+// query atomica: due schede che aggiungono insieme quando l'array e' quasi pieno non possono
+// sforare (il secondo $push non trova il documento che soddisfa la condizione).
+router.post('/users/:id/emergency-contacts', requireAuth, contattiLimiter, async (req, res) => {
+    if (req.params.id !== req.session.userId) {
+        return res.status(403).json({ error: 'Puoi modificare solo il tuo profilo' });
+    }
+    const body = req.body || {};
+    const contatto = {
+        name: String(body.name || '').trim(),
+        relationship: String(body.relationship || '').trim(),
+        email: String(body.email || '').trim().toLowerCase()
+    };
+    if (body.phone !== undefined) contatto.phone = String(body.phone || '').trim();
+
+    const errore = User.validaUnContatto(contatto);
+    if (errore) return res.status(400).json({ error: errore });
+
+    try {
+        const user = await User.findOneAndUpdate(
+            {
+                _id: req.params.id,
+                $expr: { $lt: [{ $size: { $ifNull: ['$emergencyContacts', []] } }, User.MAX_CONTATTI_EMERGENZA] }
+            },
+            { $push: { emergencyContacts: contatto } },
+            { new: true, runValidators: true }
+        );
+        if (user) return res.json({ emergencyContacts: serializzaContatti(user) });
+        // Nessun match: o l'utente non esiste, o e' gia' al tetto dei 5 contatti.
+        const esiste = await User.exists({ _id: req.params.id });
+        return res.status(esiste ? 400 : 404).json({
+            error: esiste
+                ? `Puoi salvare al massimo ${User.MAX_CONTATTI_EMERGENZA} contatti di emergenza`
+                : 'Utente non trovato'
+        });
+    } catch (e) {
+        console.error('Errore aggiunta contatto di emergenza:', e);
+        res.status(400).json({ error: 'Impossibile aggiungere il contatto' });
+    }
+});
+
+// Rimuove UN contatto, per contenuto. $pull che non trova nulla e' un no-op (200): due
+// schede che tolgono lo STESSO contatto - la seconda non trova piu' niente e va bene cosi'.
+router.delete('/users/:id/emergency-contacts', requireAuth, contattiLimiter, async (req, res) => {
+    if (req.params.id !== req.session.userId) {
+        return res.status(403).json({ error: 'Puoi modificare solo il tuo profilo' });
+    }
+    const body = req.body || {};
+    const nome = String(body.name || '');
+    const relazione = String(body.relationship || '');
+    const email = String(body.email || '').trim().toLowerCase();
+    if (!nome || !relazione) {
+        return res.status(400).json({ error: 'Serve almeno nome e relazione del contatto da rimuovere' });
+    }
+    // email nel filtro solo se il contatto ne ha una: i contatti vecchi senza email
+    // combaciano su nome+relazione (vedi il limite noto nel commento di blocco sopra).
+    const filtroVoce = { name: nome, relationship: relazione };
+    if (email) filtroVoce.email = email;
+
+    try {
+        const user = await User.findByIdAndUpdate(
+            req.params.id,
+            { $pull: { emergencyContacts: filtroVoce } },
+            { new: true }
+        );
+        if (!user) return res.status(404).json({ error: 'Utente non trovato' });
+        res.json({ emergencyContacts: serializzaContatti(user) });
+    } catch (e) {
+        console.error('Errore rimozione contatto di emergenza:', e);
+        res.status(400).json({ error: 'Impossibile rimuovere il contatto' });
     }
 });
 

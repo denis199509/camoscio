@@ -273,4 +273,27 @@ User.validaContattiEmergenza = function (ec) {
     return null;
 };
 
+// M-5: validazione di UN singolo contatto, per le rotte atomiche
+// POST/DELETE /api/users/:id/emergency-contacts. validaContattiEmergenza qui sopra lavora
+// sull'ARRAY intero (conta gli elementi, non pretende i campi: deve tollerare i contatti
+// vecchi senza email e il wizard di registrazione). Un contatto NUOVO invece deve avere
+// nome, relazione ed email veri - le stesse tre condizioni gia' chieste dal form
+// (salvaNuovoContatto in public/js/safety.js), qui portate lato server dove contano.
+// Ritorna un messaggio pronto per il client, o null se il contatto va bene.
+User.validaUnContatto = function (c) {
+    if (!c || typeof c !== 'object') return 'Contatto non valido';
+    const name = String(c.name || '').trim();
+    const relationship = String(c.relationship || '').trim();
+    const email = String(c.email || '').trim();
+    if (!name || !relationship || !email) {
+        return 'Servono nome, relazione ed email del contatto';
+    }
+    if (!email.includes('@')) return "L'email del contatto non sembra valida";
+    if (name.length > 80 || relationship.length > 60 || email.length > 120
+        || String(c.phone || '').length > 30) {
+        return 'Un contatto di emergenza ha un campo troppo lungo';
+    }
+    return null;
+};
+
 module.exports = User;

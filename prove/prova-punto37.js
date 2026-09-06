@@ -129,13 +129,21 @@ async function chiama(metodo, percorso, corpo, cookie) {
         const senzaSessione = await chiama('POST', '/api/safety/activate', { expiresAt: scadenzaFutura }, null);
         ok('attivare senza sessione viene rifiutato (401)', senzaSessione.status === 401, `status ${senzaSessione.status}`);
 
-        await chiama('PUT', `/api/users/${demoId}`, { emergencyContacts: soloSenzaEmail }, cookie);
+        // M-5: emergencyContacts non passa piu' da PUT /api/users/:id (rotte atomiche
+        // dedicate, testate in prove/prova-contatti-emergenza.js). Qui e' solo impianto di
+        // scena per il test del TIMER: si scrive direttamente sul DB, come per deadManExpiresAt
+        // piu' sotto. Il caso "contatto senza email" non passerebbe comunque dalla POST nuova
+        // (che l'email la pretende).
+        await User.findByIdAndUpdate(demoId, { emergencyContacts: soloSenzaEmail });
         const senzaEmail = await chiama('POST', '/api/safety/activate', { expiresAt: scadenzaFutura }, cookie);
         ok('attivare senza NESSUN contatto con email viene rifiutato (400)',
             senzaEmail.status === 400, `status ${senzaEmail.status}`);
 
-        const salvataggio = await chiama('PUT', `/api/users/${demoId}`, { emergencyContacts: conDueEmail }, cookie);
-        ok('contatti di prova salvati (uno senza email, due con)', salvataggio.status === 200, JSON.stringify(salvataggio.corpo));
+        await User.findByIdAndUpdate(demoId, { emergencyContacts: conDueEmail });
+        const dopoSalvataggio = await User.findById(demoId);
+        ok('contatti di prova salvati (uno senza email, due con)',
+            (dopoSalvataggio.emergencyContacts || []).length === 3,
+            JSON.stringify(dopoSalvataggio.emergencyContacts));
 
         const attivazione = await chiama('POST', '/api/safety/activate', { expiresAt: scadenzaFutura }, cookie);
         ok('attivazione accettata con almeno un contatto con email', attivazione.status === 200, JSON.stringify(attivazione.corpo));

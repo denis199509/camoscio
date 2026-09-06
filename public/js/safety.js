@@ -268,20 +268,20 @@ async function salvaNuovoContatto() {
     btn.disabled = true;
     btn.textContent = T('safety.dms.salvataggio') || "Salvataggio…";
 
-    // Si manda l'elenco COMPLETO e non solo il nuovo: emergencyContacts e' un array e il
-    // server lo sostituisce per intero (SELF_EDITABLE_FIELDS in routes/users.js). Mandare
-    // solo l'ultimo cancellerebbe gli altri.
-    const nuovi = contattiUtente().concat([{ name: nome, relationship: relazione, email }]);
-
+    // M-5: si manda SOLO il contatto nuovo, il server fa un $push atomico
+    // (POST /api/users/:id/emergency-contacts). Prima si rimandava l'intero array via
+    // PUT /users/:id: con due schede aperte l'ultima a salvare sovrascriveva la modifica
+    // dell'altra. La risposta riporta l'elenco aggiornato dal server (fonte di verita').
     try {
-        const res = await fetch(`/api/users/${usr.id}`, {
-            method: 'PUT',
+        const res = await fetch(`/api/users/${usr.id}/emergency-contacts`, {
+            method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ emergencyContacts: nuovi })
+            body: JSON.stringify({ name: nome, relationship: relazione, email })
         });
         if (!res.ok) throw new Error('Salvataggio rifiutato');
+        const dati = await res.json();
 
-        usr.emergencyContacts = nuovi;
+        usr.emergencyContacts = dati.emergencyContacts || [];
         document.getElementById("safety-new-name").value = "";
         document.getElementById("safety-new-rel").value = "";
         document.getElementById("safety-new-email").value = "";
@@ -300,6 +300,11 @@ async function salvaNuovoContatto() {
 // a nulla, quindi deve esserci un modo per toglierli. Alla scadenza l'allarme va comunque a
 // TUTTI i contatti con email rimasti: se era l'unico, il timer semplicemente non avra' piu'
 // nessuno da avvisare (e renderContattiEmergenza disabilita il tasto "Attiva").
+// M-5: l'indice serve SOLO a ritrovare, in questa scheda, la voce che l'utente ha cliccato;
+// al server si manda il CONTENUTO (nome+relazione+email) e la rimozione e' un $pull atomico
+// di quella sola voce. Cosi' una seconda scheda con la lista ormai vecchia non puo' far
+// cancellare la voce sbagliata: manda comunque i dati della SUA voce, e il $pull o la trova
+// o e' un no-op.
 async function rimuoviContatto(idx) {
     const usr = window.CamoscioState && window.CamoscioState.currentUser;
     if (!usr) return;
@@ -314,17 +319,15 @@ async function rimuoviContatto(idx) {
     );
     if (!procedi) return;
 
-    // Si manda l'array COMPLETO senza quello rimosso: il server sostituisce l'intero campo
-    // (SELF_EDITABLE_FIELDS in routes/users.js), come gia' fa salvaNuovoContatto.
-    const nuovi = contatti.filter((_, i) => i !== idx);
     try {
-        const res = await fetch(`/api/users/${usr.id}`, {
-            method: 'PUT',
+        const res = await fetch(`/api/users/${usr.id}/emergency-contacts`, {
+            method: 'DELETE',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ emergencyContacts: nuovi })
+            body: JSON.stringify({ name: c.name, relationship: c.relationship, email: c.email || '' })
         });
         if (!res.ok) throw new Error('Rimozione rifiutata');
-        usr.emergencyContacts = nuovi;
+        const dati = await res.json();
+        usr.emergencyContacts = dati.emergencyContacts || [];
         renderContattiEmergenza();
 
         if (deadManActive && !contattiConEmail().length) {
