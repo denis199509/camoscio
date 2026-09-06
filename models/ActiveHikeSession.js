@@ -95,6 +95,18 @@ const activeHikeSessionSchema = new mongoose.Schema({
     // contiene gia' il momento di creazione).
     movingTimeSec: { type: Number, default: undefined },
 
+    // --- Punto 1 (35a): quota massima della registrazione ---
+    // Come movingTimeSec qui sopra: calcolata UNA VOLTA SOLA a POST /:id/end sui punti
+    // COMPLETI (prima di simplifyTrack), mai piu' ricalcolata. Serve al completamento di
+    // gruppo da tracciamento (routes/hikes.js /:id/complete-group con trackingSessionId):
+    // la quota massima e' uno dei tre numeri CONDIVISI dell'escursione, e dopo la
+    // semplificazione 2D di simplifyTrack (Douglas-Peucker su lat/lng, non sulla quota) il
+    // punto piu' alto puo' non esserci piu' - su una traversata di cresta cade spesso su un
+    // tratto quasi rettilineo. ASSENTE = registrata prima di questo campo, o senza quote nei
+    // punti: chi legge ricade sul massimo dei punti semplificati (misureDaSessione,
+    // lib/percorso.js). default: undefined, vincolo hard sullo spazio, come movingTimeSec.
+    maxAltitudeM: { type: Number, default: undefined },
+
     // --- Punto 113: uscita pubblicata nel feed dei follower ---
     // publishedAt assente = non nel feed. Presente = visibile a chi segue l'autore, e ordina
     // il feed (piu' recente prima). Spubblicare fa $unset di entrambi - MAI assegnare

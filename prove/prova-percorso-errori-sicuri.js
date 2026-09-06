@@ -159,6 +159,20 @@ function corpoRegistrazione(suffix) {
             !!completeGroup.corpo && completeGroup.corpo.error === messaggioGpxNonValido,
             JSON.stringify(completeGroup.corpo));
 
+        console.log('\n4d. POST /api/hikes/:id/complete-group (punto 1, 35a) - gpxText e trackingSessionId INSIEME');
+        // Il ramo nuovo del punto 1: due fonti per lo stesso dato vengono rifiutate PRIMA di
+        // provare a leggere l'una o l'altra (nessun parsing del gpx, nessuna query sulla
+        // sessione). trackingSessionId qui e' un id qualsiasi: la mutua esclusione viene prima.
+        const dueFonti = await chiama('POST', `/api/hikes/${hikeFixture.insertedId}/complete-group`, {
+            confirmedUserIds: [idUtente],
+            gpxText: 'questo non e\' un gpx valido',
+            trackingSessionId: new mongoose.Types.ObjectId().toString()
+        }, utente.cookie);
+        ok('gpxText + trackingSessionId insieme -> 400', dueFonti.status === 400, JSON.stringify(dueFonti.corpo));
+        ok('...messaggio "una sola fonte" (non prova nemmeno a leggere il gpx)',
+            !!dueFonti.corpo && /una sola fonte/i.test(dueFonti.corpo.error || '') && dueFonti.corpo.error !== messaggioGpxNonValido,
+            JSON.stringify(dueFonti.corpo));
+
     } catch (e) {
         console.error('\nERRORE DURANTE LA PROVA:', e);
         falliti++;

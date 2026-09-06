@@ -1712,6 +1712,13 @@ let completeGroupHikeId = null;
 // (non ha senso ritrovare fra i risultati chi si e' appena aggiunto) e per ricostruire la
 // checklist dopo ogni aggiunta senza perdere le spunte tolte a mano.
 let completeGroupExtraIds = [];
+// Punto 1 (35a): valorizzati SOLO quando il modale e' aperto dal riepilogo tracciamento
+// (tracking.js passa { trackingSessionId, onSuccess }). Dalla card di "Le mie escursioni"
+// restano null e il modale si comporta esattamente come prima. trackingSessionId va nel
+// body di complete-group (mutuamente esclusivo con un file); onSuccess richiude il riepilogo
+// del tracciamento a completamento riuscito.
+let completeGroupTrackingSessionId = null;
+let completeGroupOnSuccess = null;
 
 // Stessa soglia di public/js/peoplesearch.js (4 lettere, "Dani" -> "DaniWoll", confermata
 // con Denis) - ripetuta qui invece di letta da la' perche' questo modale non dipende
@@ -1803,18 +1810,29 @@ window.addToCompleteGroup = function(userId) {
     if (window.lucide) window.lucide.createIcons();
 };
 
-window.openCompleteGroupModal = function(hikeId) {
+window.openCompleteGroupModal = function(hikeId, opzioni) {
     const db = window.CamoscioState;
     const hike = db.hikes.find(h => h.id === hikeId);
     if (!hike) return;
 
     completeGroupHikeId = hikeId;
     completeGroupExtraIds = [];
+    // Punto 1 (35a): { trackingSessionId, onSuccess } quando si arriva dal riepilogo
+    // tracciamento; assenti quando si arriva dalla card di "Le mie escursioni".
+    completeGroupTrackingSessionId = (opzioni && opzioni.trackingSessionId) || null;
+    completeGroupOnSuccess = (opzioni && typeof opzioni.onSuccess === "function") ? opzioni.onSuccess : null;
 
     document.getElementById("complete-group-hike-title").textContent = hike.title;
     document.getElementById("complete-group-search-input").value = "";
     document.getElementById("complete-group-search-results").innerHTML = "";
     document.getElementById("complete-group-gpx-file").value = "";
+    // Punto 1: con la registrazione appena conclusa il file non si offre nemmeno (due fonti
+    // per lo stesso dato = 400 lato server; per sostituire la traccia con un file c'e' gia'
+    // il tasto ⬆ in "Le mie escursioni", 34a). Si nasconde la riga e compare la nota.
+    const gpxRow = document.getElementById("complete-group-gpx-row");
+    const notaTracc = document.getElementById("complete-group-tracking-note");
+    if (gpxRow) gpxRow.classList.toggle("hidden", !!completeGroupTrackingSessionId);
+    if (notaTracc) notaTracc.classList.toggle("hidden", !completeGroupTrackingSessionId);
     renderCompleteGroupChecklist();
 
     document.getElementById("complete-group-modal").classList.remove("hidden");
@@ -1826,6 +1844,10 @@ function closeCompleteGroupModal() {
     document.getElementById("complete-group-modal").classList.add("hidden");
     completeGroupHikeId = null;
     completeGroupExtraIds = [];
+    // Punto 1: senza azzerarli, la prossima apertura DALLA CARD si porterebbe dietro un
+    // trackingSessionId/onSuccess morti - stessa classe di bug di completeGroupExtraIds.
+    completeGroupTrackingSessionId = null;
+    completeGroupOnSuccess = null;
 }
 
 async function submitCompleteGroup() {
@@ -1843,14 +1865,18 @@ async function submitCompleteGroup() {
     // Punto 67: facoltativo. Letto qui e non lasciato al server come multipart per restare
     // coerenti con come il resto del sito manda gia' un .gpx (routeSource alla creazione,
     // punto 43): testo semplice dentro lo stesso JSON, nessuna libreria di upload in piu'.
+    // Punto 1 (35a): con una registrazione dal vivo la fonte e' quella - il file non si
+    // legge nemmeno (il server rifiuta le due fonti insieme con un 400).
     let gpxText;
-    const gpxFile = document.getElementById("complete-group-gpx-file").files[0];
-    if (gpxFile) {
-        try {
-            gpxText = await gpxFile.text();
-        } catch (e) {
-            window.showToast(T('completeGroupModal.gpxNonLetto') || "Non è stato possibile leggere il file .gpx.", "error");
-            return;
+    if (!completeGroupTrackingSessionId) {
+        const gpxFile = document.getElementById("complete-group-gpx-file").files[0];
+        if (gpxFile) {
+            try {
+                gpxText = await gpxFile.text();
+            } catch (e) {
+                window.showToast(T('completeGroupModal.gpxNonLetto') || "Non è stato possibile leggere il file .gpx.", "error");
+                return;
+            }
         }
     }
 
@@ -1858,12 +1884,22 @@ async function submitCompleteGroup() {
         const response = await fetch(`/api/hikes/${completeGroupHikeId}/complete-group`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ confirmedUserIds, gpxText })
+            body: JSON.stringify({ confirmedUserIds, gpxText, trackingSessionId: completeGroupTrackingSessionId || undefined })
         });
 
         if (response.ok) {
+            // Punto 1: chiudiModaleStorico -> closeCompleteGroupModal azzera
+            // completeGroupOnSuccess (subito, o al popstate): se ne tiene una copia locale e
+            // la si chiama DOPO refreshState, cosi' tracking.js aggiorna il riepilogo su uno
+            // stato gia' fresco. onSuccess non naviga mai (solo un flag + un classList).
+            const onSuccess = completeGroupOnSuccess;
             window.chiudiModaleStorico('complete-group-modal', closeCompleteGroupModal);
             await refreshState();
+            // onSuccess PRIMA di renderHikesList: agisce solo sul pannello tracciamento
+            // (un flag + nascondere un bottone), non dipende dalla lista escursioni - e se
+            // renderHikesList lanciasse, il bottone "Completa" resterebbe cliccabile su
+            // un'escursione ormai chiusa (-> 409 al secondo clic).
+            if (onSuccess) onSuccess();
             renderHikesList(); // ridisegna anche "Le mie escursioni", vedi commento su renderHikesList
             window.showToast(T('completeGroupModal.completataSuccesso') || "Escursione completata per il gruppo!", "success");
         } else {

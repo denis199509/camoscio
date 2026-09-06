@@ -17,7 +17,7 @@ const { haversineKm } = require('../lib/geometry');
 const { movimentoSecAttendibile } = require('../lib/gpx');
 // Punto 80/A: calcolaDaPercorso e' stata estratta in lib/percorso.js perche' ora la usa
 // anche routes/completions.js (aggiungere un .gpx retroattivo a un completamento).
-const { calcolaDaPercorso, risolviPercorso } = require('../lib/percorso');
+const { calcolaDaPercorso, risolviPercorso, misureDaSessione } = require('../lib/percorso');
 const { mongoose } = require('../db/mongo');
 // Ri-review sicurezza (2° giro): limiter mirati su una rotta di campionamento e su due scritture.
 // invitoLimiter (M-5, revisione 27ª): il ciclo invita/annulla non e' coperto da tetto+idempotenza.
@@ -974,13 +974,31 @@ router.post('/:id/complete-group', requireAuth, scritturaLimiter, async (req, re
         // vera, ma non deve poter creare un completamento fantasma in silenzio).
         const partecipantiPrima = new Set((hike.participants || []).map(String));
 
-        // Punto 67: un file .gpx facoltativo, "per avere i dati veri dell'escursione" (parole
-        // di Denis) - non chiede mai le ore a mano, quelle il file le porta gia' con se'.
-        // Stessa validazione di regione/dimensione di calcolaDaPercorso (sopra, punto 43), che
-        // ora restituisce anche il gpx gia' letto (gpxLetto) invece di doverlo riparsare qui.
+        // --- Punto 1 (35a): misure e tempi CONDIVISI, da tre fonti in ordine di priorita' ---
+        // 1. un file .gpx caricato a mano nel modale (punto 67, comportamento di sempre);
+        // 2. la registrazione dal vivo appena conclusa (trackingSessionId, mandato dal
+        //    riepilogo tracciamento quando il creatore chiude il gruppo li' per li');
+        // 3. se non arriva ne' l'uno ne' l'altro, l'ULTIMA registrazione conclusa per questa
+        //    escursione (ripiego per "chiudo dalla card la sera, la rete al rientro mancava").
+        //
+        // .gpx e trackingSessionId INSIEME -> 400: due fonti per lo stesso dato. Non "vince il
+        // file" (che sarebbe coerente con routes/completions.js) perche' li' il file vince
+        // SOSTITUENDO anche la sessione; qui farlo pulito vorrebbe dire una seconda copia di
+        // quella logica, e senza la sostituzione il passo del creatore resterebbe calcolato
+        // sulla registrazione. Chi vuole rimpiazzare la registrazione con un file lo fa dopo,
+        // col tasto ⬆ in "Le mie escursioni".
         let actualTimeHours = null;
         let movingTimeHours = null;
-        if (req.body && typeof req.body.gpxText === 'string' && req.body.gpxText.trim()) {
+        const haGpxText = !!(req.body && typeof req.body.gpxText === 'string' && req.body.gpxText.trim());
+        const trackingSessionId = req.body && req.body.trackingSessionId;
+
+        if (haGpxText && trackingSessionId) {
+            return res.status(400).json({ error: 'Scegli una sola fonte: la registrazione appena conclusa oppure un file.' });
+        }
+
+        if (haGpxText) {
+            // Stessa validazione di regione/dimensione di calcolaDaPercorso (sopra, punto 43),
+            // che restituisce anche il gpx gia' letto (gpxLetto) invece di riparsarlo qui.
             let datiReali;
             try {
                 datiReali = await calcolaDaPercorso({ kind: 'gpx', gpxText: req.body.gpxText }, req.session.userId);
@@ -995,6 +1013,13 @@ router.post('/:id/complete-group', requireAuth, scritturaLimiter, async (req, re
             hike.elevationGain = datiReali.elevationGain;
             hike.distanceKm = datiReali.distanceKm;
             hike.routeSource = datiReali.routeSource;
+            // Punto 116 (fix 35a): la linea sulla mappa. datiReali.routePath e' gia' pronto in
+            // lib/percorso.js e prima veniva ignorato qui - l'escursione restava con
+            // l'etichetta "percorso collegato" e nessuna linea. Se il file e' degenere
+            // (< 2 punti) datiReali.routePath e' assente: si toglie quella vecchia con un
+            // $unset vero (hike.set(...,undefined) su un documento Mongoose lo produce).
+            if (datiReali.routePath) hike.routePath = datiReali.routePath;
+            else hike.set('routePath', undefined);
 
             const letto = datiReali.gpxLetto;
             if (!letto.durataIgnota && letto.inizio && letto.fine) {
@@ -1008,20 +1033,64 @@ router.post('/:id/complete-group', requireAuth, scritturaLimiter, async (req, re
                 const movimento = movimentoSecAttendibile(letto.punti, haversineKm);
                 if (movimento.sec) movingTimeHours = movimento.sec / 3600;
             }
+        } else {
+            // Ramo registrazione: sessione esplicita (trackingSessionId) oppure ripiego (D5).
+            let sessione = null;
+            if (trackingSessionId) {
+                if (!mongoose.Types.ObjectId.isValid(trackingSessionId)) {
+                    return res.status(400).json({ error: 'Identificativo della registrazione non valido.' });
+                }
+                sessione = await ActiveHikeSession.findById(trackingSessionId);
+                // 404 e non 403 su sessione di un altro: non si conferma nemmeno l'esistenza
+                // dell'id (stesso criterio di routes/tracking.js).
+                if (!sessione || String(sessione.userId) !== String(req.session.userId)) {
+                    return res.status(404).json({ error: 'Registrazione non trovata.' });
+                }
+                if (sessione.status !== 'ended') {
+                    return res.status(409).json({ error: 'Questa registrazione non è ancora terminata.' });
+                }
+                if (!sessione.hikeId || !sessione.hikeId.equals(hike._id)) {
+                    return res.status(400).json({ error: 'Questa registrazione non è collegata a questa escursione.' });
+                }
+            } else {
+                // D5 (decisione di Denis): nessuna fonte esplicita -> l'ultima registrazione
+                // conclusa per questa escursione, di chi sta chiudendo (il creatore). Gli
+                // stessi controlli di sopra stanno nella query (userId + hikeId + ended). Se
+                // non c'e', si chiude il gruppo senza toccare i numeri, come un complete-group
+                // "a mano". Documento Mongoose, non .lean(): misureDaSessione usa un virtual.
+                sessione = await ActiveHikeSession
+                    .findOne({ userId: req.session.userId, hikeId: hike._id, status: 'ended' })
+                    .sort({ endedAt: -1 });
+            }
+
+            if (sessione) {
+                const misure = misureDaSessione(sessione);
+                if (misure.sostanziale) {
+                    hike.maxAltitude = misure.maxAltitude;
+                    hike.elevationGain = misure.elevationGain;
+                    hike.distanceKm = misure.distanceKm;
+                    hike.routeSource = { kind: 'live', nome: 'Traccia registrata' };
+                    if (misure.routePath) hike.routePath = misure.routePath;
+                }
+                if (misure.actualTimeHours) actualTimeHours = misure.actualTimeHours;
+                if (misure.movingTimeHours) movingTimeHours = misure.movingTimeHours;
+            }
         }
 
-        // Punto 80/A: se il .gpx qui sopra ha corretto il dislivello, va salvato PRIMA del
-        // ciclo qui sotto. applyHikeCompletionStats ora ricalcola il passo personale
-        // rileggendo TUTTI i Completion dell'utente dal database (mai in modo incrementale,
-        // vedi lib/hikeStats.js) - e questa stessa escursione e' fra quelli: se il
-        // salvataggio restasse dopo il ciclo, la prima persona ricalcolata leggerebbe ancora
-        // il dislivello vecchio. Senza un file .gpx questo save() non scrive nulla di nuovo
-        // (nessun campo modificato).
+        // Punto 80/A: se il ramo misure qui sopra (file .gpx, o registrazione dal vivo -
+        // punto 1) ha corretto distanza/dislivello, va salvato PRIMA del ciclo qui sotto.
+        // applyHikeCompletionStats ricalcola il passo personale rileggendo TUTTI i Completion
+        // dell'utente dal database (mai in modo incrementale, vedi lib/hikeStats.js) - e
+        // questa stessa escursione e' fra quelli: se il salvataggio restasse dopo il ciclo, la
+        // prima persona ricalcolata leggerebbe ancora il dislivello vecchio. Senza nessuna
+        // fonte di misure questo save() non scrive nulla di nuovo (nessun campo modificato).
         await hike.save();
 
-        // Senza un file .gpx, il tempo reale non c'entra in questo flusso: Denis non ne ha
-        // mai parlato per il completamento di gruppo "a mano", riguarda solo "chi c'era" -
-        // actualTimeHours e movingTimeHours restano null, esattamente come prima di questo punto.
+        // Senza una fonte di misure (nessun file, nessuna registrazione), actualTimeHours e
+        // movingTimeHours restano null: il completamento di gruppo "a mano" riguarda solo
+        // "chi c'era", esattamente come prima del punto 1. Con una registrazione dal vivo
+        // (punto 1) i due tempi ci sono, e - decisione di Denis - vengono applicati IDENTICI a
+        // ogni confermato: chi vuole il proprio tempo di cammino lo sostituisce col ⬆.
         for (const u of utentiConfermati) {
             const persona = await User.findById(u._id);
             if (!persona) continue; // sparito fra la query sopra e questa, caso limite innocuo

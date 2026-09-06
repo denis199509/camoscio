@@ -122,7 +122,11 @@ const hikeSchema = new mongoose.Schema({
             // viene cancellato.
             // 'fit' (punto 116): traccia importata nel formato nativo Garmin - stessa
             // idraulica di 'gpx' in lib/percorso.js/calcolaDaPercorso, mancava solo qui.
-            kind: { type: String, enum: ['draft', 'gpx', 'fit', 'saved'], required: true },
+            // 'live' (punto 1, 35a): la registrazione dal vivo diventata la traccia
+            // condivisa dell'escursione quando il creatore chiude il gruppo a fine
+            // tracciamento (routes/hikes.js /:id/complete-group con trackingSessionId). Come
+            // gli altri e' solo un'etichetta: i tre numeri restano validi comunque.
+            kind: { type: String, enum: ['draft', 'gpx', 'fit', 'saved', 'live'], required: true },
             nome: { type: String, required: true },
             // Il progetto c'e' e il tracciato/la distanza vengono da lui, ma quota massima e
             // dislivello li ha scritti il creatore perche' la fonte delle quote non

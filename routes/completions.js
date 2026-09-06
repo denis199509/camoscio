@@ -116,6 +116,13 @@ router.post('/:id/gpx', requireAuth, async (req, res) => {
                 hike.elevationGain = datiReali.elevationGain;
                 hike.maxAltitude = datiReali.maxAltitude;
                 hike.routeSource = datiReali.routeSource;
+                // Punto 116 (fix 35a): la linea sulla mappa. Prima si scriveva routeSource
+                // senza routePath, pur avendolo pronto in datiReali - l'escursione restava
+                // con l'etichetta "percorso collegato" e nessuna linea (es. il .fit Garmin
+                // di "Castel San Pietro..."). File degenere (< 2 punti): via quella vecchia
+                // ($unset vero via hike.set(...,undefined)).
+                if (datiReali.routePath) hike.routePath = datiReali.routePath;
+                else hike.set('routePath', undefined);
                 await hike.save();
             }
         } catch (e) {

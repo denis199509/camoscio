@@ -30,6 +30,11 @@ function numTracc(n, cifre) {
 // (setSyncBadge e renderSummary partono da un argomento).
 let ultimoStatoSync = null;
 let ultimaSessioneRiepilogo;
+// Punto 1 (35a): a completamento avvenuto (checklist di gruppo O completeLinkedHike) il
+// bottone "Completa escursione" del riepilogo non deve piu' ricomparire - nemmeno quando
+// renderSummary viene rigiocata da CamoscioI18n.onChange al cambio lingua (era un difetto
+// gia' in produzione). Azzerato in resetToIdleUi, quando si riparte da zero.
+let completamentoGiaFatto = false;
 
 const trackingState = {
     sessionId: null,
@@ -365,6 +370,10 @@ async function completeLinkedHike(durationSeconds) {
         window.showToast(T('track.erroreCompletamento') || "Non è stato possibile segnare l'escursione come completata.", "error");
     }
 
+    // Punto 1 (35a): come per il ramo checklist, il flag impedisce che un ridisegno del
+    // riepilogo (cambio lingua, CamoscioI18n.onChange) faccia ricomparire il bottone su
+    // un'escursione ormai completata.
+    completamentoGiaFatto = true;
     const btn = document.getElementById('btn-tracking-mark-complete');
     if (btn) btn.classList.add('hidden');
 }
@@ -1121,11 +1130,32 @@ function renderSummary(finalSession) {
 
     const btnComplete = document.getElementById('btn-tracking-mark-complete');
     if (btnComplete) {
-        if (trackingState.hikeId) {
-            btnComplete.classList.remove('hidden');
-            btnComplete.onclick = () => completeLinkedHike(durationSeconds);
-        } else {
+        const db = window.CamoscioState;
+        const hike = (trackingState.hikeId && db) ? (db.hikes || []).find(h => h.id === trackingState.hikeId) : null;
+        const sonoCreatore = !!(hike && db.currentUser && hike.creatorId === db.currentUser.id);
+        // Punto 1 (35a): la checklist "chi era con te" (POST /:id/complete-group) serve SOLO
+        // al creatore, su un'escursione non ancora chiusa in gruppo, e solo se social.js ha
+        // davvero esposto il modale (script classici: mai dare per scontato che un modulo si
+        // sia collegato). Chi non e' il creatore resta sul completamento singolo di sempre
+        // (completeLinkedHike -> POST /:id/complete), che complete-group e' creator-only.
+        const puoAprireChecklist = sonoCreatore && !hike.groupCompletedAt
+            && typeof window.openCompleteGroupModal === 'function';
+
+        if (!trackingState.hikeId || completamentoGiaFatto) {
             btnComplete.classList.add('hidden');
+        } else {
+            btnComplete.classList.remove('hidden');
+            // finalSession e' il documento serializzato di POST /:id/end (ha .id, mai _id);
+            // null se quella fetch e' fallita per rete -> si ripiega su trackingState.sessionId
+            // (stesso valore). Se mancano entrambi, la checklist parte senza trackingSessionId:
+            // il gruppo si chiude, i numeri della Hike non si aggiornano (degradazione corretta).
+            const sessionId = (finalSession && finalSession.id) || trackingState.sessionId || null;
+            btnComplete.onclick = puoAprireChecklist
+                ? () => window.openCompleteGroupModal(trackingState.hikeId, {
+                      trackingSessionId: sessionId,
+                      onSuccess: () => { completamentoGiaFatto = true; btnComplete.classList.add('hidden'); }
+                  })
+                : () => completeLinkedHike(durationSeconds);
         }
     }
 
@@ -1153,6 +1183,7 @@ function resetToIdleUi() {
     trackingState.durationSeconds = 0;
     trackingState.avgSpeedKmh = 0;
     trackingState.lastAccuracy = null;
+    completamentoGiaFatto = false; // punto 1 (35a): nuovo riepilogo, il bottone puo' ricomparire
     resetLocalStats();
     nearbyTrailSegments = null;
     if (window.clearLiveTrackPolyline) window.clearLiveTrackPolyline();

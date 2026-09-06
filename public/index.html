@@ -2447,10 +2447,15 @@
                 <div id="complete-group-search-results" class="hike-carpools-list"></div>
             </div>
 
+            <!-- Punto 1 (35a): quando il modale e' aperto a fine tracciamento dal riepilogo,
+                 i numeri arrivano dalla registrazione appena conclusa - il campo file qui
+                 sotto viene nascosto (social.js) e compare questa nota al suo posto. -->
+            <p id="complete-group-tracking-note" class="small text-muted hidden" style="margin-top: 16px;" data-i18n="completeGroupModal.daTracciamento">I dati dell'escursione (distanza, dislivello, durata, traccia) arrivano dalla registrazione che hai appena concluso.</p>
+
             <!-- Punto 67: facoltativo - se c'e' un file, i numeri reali (quota, dislivello,
                  distanza, durata) sostituiscono quelli scritti a mano alla creazione. Senza,
                  tutto resta come oggi: nessuna domanda su quanto tempo ci si e' messo. -->
-            <div class="form-group" style="margin-top: 16px;">
+            <div class="form-group" id="complete-group-gpx-row" style="margin-top: 16px;">
                 <label for="complete-group-gpx-file" data-i18n="completeGroupModal.gpxLabel">Traccia .gpx (facoltativa, per i dati reali dell'escursione):</label>
                 <input type="file" id="complete-group-gpx-file" accept=".gpx">
             </div>

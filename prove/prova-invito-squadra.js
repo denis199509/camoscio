@@ -99,7 +99,10 @@ function caricaSocial(statoIniziale, rispostaFetch) {
         localStorage: { getItem: () => null, setItem() {}, removeItem() {} },
         navigator: {}, location: { href: '' },
         // definita in app.js, non in social.js: resta lo stub (nessuna dichiarazione la copre)
-        refreshState: async () => { if (statoIniziale.alRefresh) statoIniziale.alRefresh(contesto.window.CamoscioState); }
+        refreshState: async () => { if (statoIniziale.alRefresh) statoIniziale.alRefresh(contesto.window.CamoscioState); },
+        // Registro modali della History API (Tasto Indietro, 33a sessione): anch'esse vivono
+        // in app.js, e social.js le chiama aprendo/chiudendo i suoi modali - stub come refreshState.
+        apriModaleStorico() {}, chiudiModaleStorico() {}, scollegaModaleStorico() {}
     };
     contesto.window = contesto;
     contesto.window.CamoscioState = statoIniziale.stato;

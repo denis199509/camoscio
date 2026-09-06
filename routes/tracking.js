@@ -1110,6 +1110,14 @@ router.post('/:id/end', requireAuth, async (req, res) => {
             const movimentoFineTracciamento = movimentoSecAttendibile(session.points, haversineKm);
             const movingTimeSec = movimentoFineTracciamento.sec;
 
+            // Punto 1 (35a): quota massima sui punti COMPLETI, per la stessa ragione di
+            // movingTimeSec qui sopra - dopo la semplificazione 2D il punto piu' alto puo'
+            // sparire. Serve al completamento di gruppo da tracciamento (routes/hikes.js).
+            // Ogni punto e' [lng, lat, altitudineMetri, ...]: p[2] e' la quota, assente su
+            // una registrazione senza dato di elevazione (allora il campo resta undefined).
+            const quoteComplete = (session.points || []).map(p => p[2]).filter(q => Number.isFinite(q));
+            const maxAltitudeM = quoteComplete.length ? Math.round(Math.max(...quoteComplete)) : undefined;
+
             // Una volta archiviata la traccia dettagliata non serve piu' punto per punto:
             // viene semplificata per risparmiare spazio (vincolo hard di cose_da_fare.txt),
             // le statistiche sopra sono gia' state calcolate sui dati completi prima d'ora.
@@ -1143,7 +1151,9 @@ router.post('/:id/end', requireAuth, async (req, res) => {
                         pausedAt: null,
                         points: simplifiedPoints,
                         // Punto 92: assente se non misurabile, mai zero.
-                        ...(movingTimeSec ? { movingTimeSec } : {})
+                        ...(movingTimeSec ? { movingTimeSec } : {}),
+                        // Punto 1 (35a): assente se la registrazione non porta quote.
+                        ...(maxAltitudeM !== undefined ? { maxAltitudeM } : {})
                     },
                     $unset: { openSession: 1, offTrailBuffer: 1 }
                 },

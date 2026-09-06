@@ -421,6 +421,7 @@
             'completeGroupModal.aggiungiLabel': "Add someone who wasn't on the sign-up list:",
             'completeGroupModal.cercaPlaceholder': 'Search by username...',
             'completeGroupModal.gpxLabel': ".gpx track (optional, for the hike's real data):",
+            'completeGroupModal.daTracciamento': "The hike's data (distance, elevation gain, duration, track) comes from the recording you just finished.",
             'completeGroupModal.confermaBtn': 'Confirm completion',
             'completeGroupModal.aggiungiBtn': 'Add',
             'completeGroupModal.confermaAlmeno': 'Confirm at least one person present.',
