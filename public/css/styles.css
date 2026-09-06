@@ -83,6 +83,23 @@ h1, h2, h3, h4, h5, h6 {
     letter-spacing: -0.02em;
 }
 
+/* Audit visivo Fascia A10 (29a sessione): h4 e h5 non avevano NESSUNA regola di
+   dimensione - h4 usciva 1rem, identico al corpo del testo, quindi un titolo di scheda
+   si distingueva solo per il font Outfit e il grassetto; h5 restava a 0.83rem di
+   default con quattro override sparsi quasi uguali (0.85rem in .backpack-add-* /
+   .sms-log-box / .chat-box, 0.90 in .squad-item, 0.95 in .backpack-category).
+   Qui una base sola: h4 appena sopra il corpo, h5 appena sotto. Gli override a 0.85
+   e lo 0.90 di .squad-item si tolgono (ora ereditano da qui); .backpack-category tiene
+   lo 0.95 di proposito - e' un'intestazione di categoria con riga sotto e colore
+   accento, non sedimento. h3 resta al default del browser (1.17em): gia' si stacca. */
+h4 {
+    font-size: 1.05rem;
+}
+
+h5 {
+    font-size: 0.9rem;
+}
+
 /* Scrollbar personalizzata per un look premium */
 ::-webkit-scrollbar {
     width: 6px;
@@ -1849,8 +1866,11 @@ option {
     gap: 12px;
 }
 
+/* Audit visivo Fascia A/B4 (29a sessione): a 0.65 il testo della card "Altre
+   impostazioni" (gia' su --color-text-muted) scendeva a ~2:1 di contrasto, di fatto
+   illeggibile. 0.85 lo riporta leggibile restando percepito come segnaposto. */
 .settings-placeholder {
-    opacity: 0.65;
+    opacity: 0.85;
 }
 
 .settings-placeholder-list {
@@ -2864,7 +2884,6 @@ option {
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: 0.85rem;
     margin-bottom: 12px;
 }
 
@@ -2888,7 +2907,6 @@ option {
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: 0.85rem;
     margin-bottom: 12px;
 }
 
@@ -3038,6 +3056,40 @@ option {
     margin-bottom: 10px;
 }
 
+/* A9 (audit visivo 29a): la lista contatti del Dead Man's Switch era l'unico
+   componente del sito senza una riga di CSS - <div> nudi, con nome ed email
+   attaccati al tasto "Rimuovi" e nessun separatore fra un contatto e l'altro.
+   Stesso linguaggio di .veto-request-item (riga flex con separatore fra le
+   righe); in piu' flex-wrap, perche' su schermo stretto il tasto deve andare
+   a capo invece di schiacciare l'email. */
+.safety-contact-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.8rem;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.safety-contact-row:last-child {
+    border-bottom: none;
+}
+
+/* flex:1 + min-width:0 + overflow-wrap: un'email lunga senza spazi va a capo
+   dentro la riga invece di allargare la card oltre il bordo. */
+.safety-contact-info {
+    flex: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    line-height: 1.4;
+}
+
+.btn-rimuovi-contatto {
+    flex-shrink: 0;
+}
+
 /* Avviso che il messaggio NON parte davvero. Colore d'allarme e non grigio da nota a
    pie' di pagina: e' il genere di avvertenza che, se passa inosservata, fa contare su
    una sicurezza che non c'e'. */
@@ -3094,7 +3146,6 @@ option {
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: 0.85rem;
     margin-bottom: 10px;
 }
 
@@ -3250,7 +3301,6 @@ option {
 
 .mesh-chat-box h5,
 .chat-box h5 {
-    font-size: 0.85rem;
     margin-bottom: 10px;
 }
 
@@ -3370,7 +3420,6 @@ option {
 }
 
 .squad-item h5 {
-    font-size: 0.9rem;
     margin-bottom: 4px;
 }
 

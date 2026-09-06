@@ -1,96 +1,76 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-09-05 (TRENTATREESIMA sessione, CHIUSA QUI su richiesta
-di Denis ("ci fermiamo qui") — Tasto Indietro implementato/verificato/
-committato/pushato; poi RITOCCHI VISIVI Fascia A uno alla volta, A1-A8
-fatti e verificati dal vivo, fermati prima di A9 (prossimo passo, vedi
-sotto); nel mezzo due segnalazioni/domande di Denis, entrambe solo da
-segnare, nessun codice (completamento da tracciamento GPS + gate
-recensioni, stessa causa; 2FA/login Google). SI RIPARTE DA A9.
+Aggiornato: 2026-09-06 (TRENTAQUATTRESIMA sessione — FASCIA A DELL'AUDIT
+VISIVO CHIUSA. Ripresa da A9 come da coda della 33a; fatti A9, A10 e il
+punto "(da B4)" .settings-placeholder, uno alla volta col via di Denis a
+ognuno, tutti verificati dal vivo con l'estensione Chrome. Su richiesta di
+Denis rifusi gli auto-save in UN commit con `git reset --soft d9d6edf` -
+NON PUSHATO (via non chiesto). SI RIPARTE: Fascia A finita; restano Fascia
+B/C mai proposte + la verifica al telefono di A6/A7/A8/A9/A10 insieme.)
 
---- TASTO INDIETRO / HISTORY API: FATTO, COMMITTATO, PUSHATO ---
-Il tasto Indietro (telefono e PC) buttava fuori dal sito invece di tornare
-alla pagina/sezione precedente. Implementato per intero (nucleo in
-public/js/app.js: navigateTo() unico punto che pusha, gestore popstate
-unico, registro modali apriModaleStorico/chiudiModaleStorico/
-scollegaModaleStorico) e verificato DAL VIVO con l'estensione Chrome
-(history.state e l'esito delle promise letti a ogni passo, non solo
-schermate). Tre difetti veri trovati e corretti nella sessione (due solo
-provando dal vivo): deep-link che non risincronizzava la sezione al
-ritorno da un Indietro; modale orfano su una pagina con id che mostrava il
-profilo sbagliato; Confirm risolto come Annulla. Denis ha detto "committa
-e pusha entrambi": commit `7793426` (Tasto Indietro) + `617edde` (32a
-sessione, B-5/M-4/B-2) pushati su origin/master, verificato con un secondo
-`git push` di rete ("Everything up-to-date"). Render dovrebbe aver
-ridistribuito. Dettaglio completo (i tre bug uno per uno): cose_da_fare.txt
-sotto "TASTO INDIETRO / HISTORY API". Piano: C:\Users\lenovo\.claude\plans\
-camoscio-tasto-indietro-history-api.md (aggiornato con lo stato).
+--- TASTO INDIETRO / HISTORY API (33a): FATTO, PUSHATO (`7793426`) ---
+Il tasto Indietro non tornava indietro, buttava fuori dal sito. Riscritto
+il nucleo di navigazione in public/js/app.js (navigateTo unico a pushare,
+un solo gestore popstate, registro modali apri/chiudi/scollegaModaleStorico)
+e verificato dal vivo. Tre bug trovati e corretti in corso. Dettaglio:
+cose_da_fare.txt "TASTO INDIETRO / HISTORY API". Piano aggiornato:
+C:\Users\lenovo\.claude\plans\camoscio-tasto-indietro-history-api.md
 
---- RITOCCHI VISIVI FASCIA A: A1-A8 FATTI. SI RIPARTE DA A9 ---
-Denis ha chiesto di proseguire con questo lavoro preparato (rapporto:
-C:\Users\lenovo\.claude\plans\camoscio-audit-visivo-29a.md), UN PUNTO ALLA
-VOLTA, fermandosi dopo ognuno per il suo ok esplicito prima del successivo
-("mi raccomando un punto alla volta, proseguiamo dopo il mio ok"). Alla
-fine ha detto "ci fermiamo qui" prima di A9 - RIPARTIRE PROPONENDO A9,
-non chiedere di nuovo se continuare i ritocchi: e' gia' la richiesta in
-sospeso di Denis. Solo public/css/styles.css toccato, tranne A5 (anche
-social.js/squadpage.js/storico.js, per togliere lo stile inline) e A2/A8
-(anche index.html). Ogni punto verificato dal vivo (misure/colori
-renderizzati via javascript_tool, non solo a occhio) e con CSS a graffe
-bilanciate. Rifusi gli 11 auto-save della sessione con `git reset --soft
-7793426` e committato in un commit solo (vedi in fondo per l'hash) - NON
-PUSHATO, in attesa del via di Denis (non ancora chiesto in questa sessione).
+--- RITOCCHI VISIVI FASCIA A (33a-34a): CHIUSA ---
+Lavoro preparato dall'audit dell'agente designer (rapporto:
+C:\Users\lenovo\.claude\plans\camoscio-audit-visivo-29a.md). Fatto UN PUNTO
+ALLA VOLTA col via esplicito di Denis a ognuno; ogni punto verificato dal
+vivo (misure/colori renderizzati via javascript_tool, non a occhio), CSS
+sempre a graffe bilanciate. Solo public/css/styles.css, tranne A5 (anche
+social.js/squadpage.js/storico.js) e A2/A8 (anche index.html).
 
-  FATTI:
-   A1 - 19 regole CSS scritte solo per <i> (morte: Lucide sostituisce con
-        <svg>) estese a ", <sel> svg"; + nuova regola generica
-        ".btn i, .btn svg { width:16px; height:16px; flex-shrink:0 }".
-   A2 - 6 classi utility usate nel codice (~55 punti) ma mai dichiarate:
-        .text-center, .text-secondary, .py-2/3/4, .col-span-2. Aggiunte in
-        "Utility Testi", scala py-2/3/4 = 8/16/24px (ritmo gia' in uso).
-   A3 - .btn-success:hover era verde-acqua neon (#0D9F6E) invece di
-        scurirsi in tinta come gli altri bottoni -> #3D6337 (stesso ~20%
-        di scurimento di --accent-orange). Contrasto bianco 3,39->6,91:1.
-   A4 - .hike-card-title era #FFF (bianco freddo, residuo neon) ->
-        var(--color-text-primary) (#F3EFE6, bianco caldo del tema).
-   A5 - 20 bottoni ("Mappa"/"Chat"/preferito/Accetta/Rifiuta/cestino/
-        "Pubblica nel feed") con style="padding:2px..." inline, ~23px di
-        tocco -> nuova classe .btn-xs (padding 6px 10px), tolto lo style
-        da tutti e 20 in social.js/squadpage.js/storico.js. Altezza
-        misurata dal vivo: ~30px.
-   A6 - .notification-dropdown (320px ancorate a right:0 sul wrapper) e
-        .toast-container (max-width 360px) sporgevano sotto ~380px di
-        schermo -> entrambe con min(Npx, calc(100vw - Mpx)). NON
-        verificato a schermo stretto per davvero (vedi limite sotto).
-   A7 - .hikes-header-row (titolo + "Crea Nuova Escursione") senza
-        flex-wrap -> flex-wrap:wrap; gap:12px.
-   A8 - .form-row-ratings (Recensioni, 3 colonne) e .checkbox-group (16
-        interessi registrazione, forzata a 3 colonne con uno style
-        inline ora tolto) sfondavano sotto i 900px -> una colonna sola in
-        quella @media; + .rating-group{min-width:0} fuori dalla media
-        (senza, una colonna di griglia non si restringe mai da sola).
+  A1  19 regole icona morte (<i> -> "<sel> i, <sel> svg") + generica
+      ".btn i,.btn svg{width:16px;height:16px;flex-shrink:0}".
+  A2  6 classi utility fantasma dichiarate (.text-center/.text-secondary/
+      .py-2/3/4/.col-span-2), ~55 usi.
+  A3  .btn-success:hover da verde neon #0D9F6E a #3D6337 (scurimento in
+      tinta). Contrasto bianco 3,39->6,91:1.
+  A4  .hike-card-title da #FFF a var(--color-text-primary).
+  A5  20 bottoni con style="padding:2px..." inline (~23px di tocco) ->
+      classe .btn-xs (~30px misurati), style rimosso da tutti e 20.
+  A6  .notification-dropdown / .toast-container con min(Npx,calc(100vw-Mpx))
+      per non sporgere sotto ~380px.
+  A7  .hikes-header-row -> flex-wrap:wrap; gap:12px.
+  A8  .form-row-ratings / .checkbox-group a 1 colonna sotto i 900px (+
+      style inline a 3 col tolto da index.html); .rating-group{min-width:0}
+      fuori dalla media.
+  A9  .safety-contact-row (era SENZA css) -> riga flex con separatore,
+      stesso linguaggio di .veto-request-item; .safety-contact-info
+      flex:1+min-width:0+overflow-wrap:anywhere (email lunga va a capo
+      dentro la card); .btn-rimuovi-contatto flex-shrink:0. Verificato dal
+      vivo a 325px e forzato a 250px: niente sfora, console pulita, nessuna
+      scrittura DB (contatti di prova solo nel DOM).
+  A10 h4 e h5 non avevano NESSUNA regola di dimensione. Base sola: h4
+      1.05rem, h5 0.9rem (subito dopo h1..h6). Tolti 5 font-size di
+      sedimento (.backpack-add-*/.sms-log-box/.chat-box a 0.85rem;
+      .squad-item a 0.9rem). Tenuto .backpack-category h5 a 0.95rem di
+      proposito. h3 non toccato. Verificato su Dashboard/Escursioni/modale/
+      Impostazioni/Community: 0 clip, 0 a-capo nuovi, 0 inversioni h5>=h4.
+  (da B4)  .settings-placeholder opacity .65 -> .85. Migliora la card
+      "Altre impostazioni"; la sotto-lista grigia resta sotto AA finche'
+      non si alza --color-text-muted stesso (quello e' B4 vero, Fascia B).
 
-  LIMITE DI VERIFICA (A6/A7/A8): lo strumento di ridimensionamento
-  finestra in questa sessione non ha mai cambiato la larghezza effettiva
-  della pagina (resta ~1536px anche dopo il resize - limite dell'ambiente
-  browser di questa sessione, non del codice). Confermato solo che il CSS
-  e' valido e non rompe nulla a schermo largo; il comportamento sotto i
-  380-900px si basa su @media/min()/calc() standard gia' usati con
-  successo altrove in questo stesso foglio di stile, MAI visto renderizzare
-  per davvero stretto. Da confermare al telefono vero o con un resize che
-  funzioni, se si vuole la controprova visiva completa.
+  DA VERIFICARE AL TELEFONO (o con un resize che funzioni): A6/A7/A8/A9/A10
+  insieme. L'estensione Chrome non cambiava la larghezza effettiva della
+  pagina; il comportamento stretto e' su @media/min()/calc() standard gia'
+  usati altrove, mai visto renderizzare per davvero < ~380px.
 
-  DA FARE (in ordine dal piano, si riparte da qui):
-   A9 - .safety-contact-row (lista contatti Dead Man's Switch) senza
-        NESSUNA riga di CSS - l'unico componente completamente nudo del
-        sito, nella schermata di sicurezza. PROSSIMO PASSO.
-   A10 - titoli di scheda (h4/h5) a misura del testo corrente, nessuna
-        gerarchia visiva.
-   (da B4) - .settings-placeholder opacity .65 -> .85 (leggibilita').
-  Blocco Fascia B/C del piano non ancora nemmeno proposti (empty state
-  unificato, descrizione escursione tagliata, contrasti sotto soglia,
-  palette fredda residua, responsive login/registrazione, colori JS
-  duplicati) - restano nel piano, si decide quando/se affrontarli.
+  COMMIT: `git reset --soft d9d6edf` ha rifuso `487a9c5` + 3 auto-save in
+  UN commit ("Ritocchi visivi Fascia A9-A10 + .settings-placeholder").
+  `d9d6edf` (A1-A8) resta com'era. `git log origin/master..HEAD` = d9d6edf
+  + il nuovo, due commit, NON PUSHATI (origin/master = 7793426). Il giro
+  `code-reviewer` su a886ae4..HEAD non e' mai stato completato (interrotto
+  nella 33a) - da rilanciare prima di un push se si vuole.
+
+  FASCIA B/C dell'audit: mai proposte. Empty state unificato, descrizione
+  escursione tagliata, --color-text-muted sotto soglia, palette fredda
+  residua (--bg-panel/--bg-overlay), responsive login/registrazione, colori
+  JS duplicati. Restano nel piano, si decide quando/se.
 
 --- NUOVO, SOLO DA SEGNARE (nessun codice) ---
 Denis, usando il sito dal vivo: ha completato un'escursione col
