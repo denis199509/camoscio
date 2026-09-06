@@ -309,8 +309,8 @@ function renderWeatherData(data, placeName, simulato) {
         triggerLightningPushNotification(riskMessage);
     } else {
         html += `
-            <div class="lightning-alert" style="background: rgba(76, 122, 68, 0.15); border-color: var(--accent-green); color: #B8CBA8;">
-                <i data-lucide="check-circle" style="color:var(--accent-green); width:16px; height:16px;"></i>
+            <div class="lightning-alert is-ok">
+                <i data-lucide="check-circle" style="width:16px; height:16px;"></i>
                 <span>${T('weather.nessunRischio') || 'Nessun rischio fulmini rilevato per le prossime ore.'}</span>
             </div>
         `;

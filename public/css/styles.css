@@ -13,7 +13,15 @@
 
     --color-text-primary: #F3EFE6;
     --color-text-secondary: #A8A090;
-    --color-text-muted: #6B6558;
+    /* Audit visivo Fascia B4 (35a sessione): #6B6558 dava 3,17:1 sul fondo principale e
+       2,78:1 sulle card - sotto la soglia AA di 4,5 per il testo piccolo (quasi tutti gli
+       usi sono ~11px: .stamp-date, .badge-card-count, .tracking-stat-label, .feed-item-when,
+       .nav-block-label...). #8F887A: 5,22:1 sul fondo, 4,57:1 sulle card - passa AA in
+       entrambi i casi (l'audit proponeva ~#857E6E, che pero' restava a 3,99 sulle card).
+       Tutti i 16 usi sono `color:`, nessuno sfondo/bordo. La gerarchia muted -> secondary
+       (#A8A090) -> primary resta netta. .settings-placeholder opacity e' gia' stata alzata
+       (Fascia A); le due varianti green/red-come-testo dell'audit restano da fare, a se'. */
+    --color-text-muted: #8F887A;
 
     /* Accenti "montagna" */
     --accent-orange: #C1662E;
@@ -2024,6 +2032,24 @@ option {
     gap: 14px;
 }
 
+/* Audit visivo Fascia B2 (35a sessione): la descrizione dell'escursione stava in un <p> con
+   height:60px FISSO + overflow:hidden inline - riservava 60px di vuoto anche quando
+   description manca (non e' required, models/Hike.js) e tagliava di netto a meta' riga senza
+   "…" (text-overflow:ellipsis non vale su piu' righe). Ora: -webkit-line-clamp a 3 righe
+   (troncamento multi-riga CON i puntini, supportato da tutti i browser correnti nonostante
+   il prefisso -webkit-), niente altezza fissa, e in social.js il <p> non si disegna proprio
+   se la descrizione e' vuota. Il colore era dato da .text-secondary: ora se lo porta la
+   classe. La spaziatura la da' il gap:14px di .hike-card-body, non un margine. */
+.hike-card-desc {
+    margin: 0;
+    color: var(--color-text-secondary);
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
 .hike-card-topright {
     position: absolute;
     top: 16px;
@@ -2562,6 +2588,24 @@ option {
     align-items: center;
     gap: 8px;
     font-size: 0.75rem;
+}
+
+/* Audit visivo Fascia B6 (35a sessione): il ramo "nessun rischio fulmini" (weather.js)
+   riusava .lightning-alert - una classe di ALLARME rosso - e la ridipingeva verde con tre
+   override inline (+ un #B8CBA8 che non esisteva da nessun'altra parte). Stesso identico
+   caso gia' risolto per il Dead Man's Switch con .safety-honesty-note.is-ok (piu' sotto):
+   un modificatore che riusa i token --accent-green. Il contrasto del testo verde su fondo
+   scuro (~3,65:1, sotto AA) e' un problema noto e condiviso con .safety-honesty-note.is-ok:
+   lo chiude la voce B4 dell'audit (--accent-green-text schiarito), non questa. */
+.lightning-alert.is-ok {
+    background: var(--accent-green-glow);
+    border-color: var(--accent-green);
+    color: var(--accent-green);
+}
+
+.lightning-alert.is-ok i,
+.lightning-alert.is-ok svg {
+    color: var(--accent-green);
 }
 
 /* Sun Exposure Widget */
@@ -4055,6 +4099,17 @@ option {
 
 .app-fab:hover {
     transform: scale(1.06);
+}
+
+/* Audit visivo Fascia B7 (35a sessione): il FAB segnalazione portava una ⚠️ come testo
+   (dimensionata da font-size:1.6rem qui sopra). Ora e' l'icona Lucide alert-triangle, gia'
+   usata 7+ volte in questa pagina: serve una misura esplicita perche' createIcons() la
+   sostituisce con un <svg> che nasce a 24px. Regola su .app-fab (non .report-fab) cosi'
+   copre anche un eventuale secondo FAB futuro - la classe e' nata apposta generica. */
+.app-fab i,
+.app-fab svg {
+    width: 26px;
+    height: 26px;
 }
 
 .report-fab {

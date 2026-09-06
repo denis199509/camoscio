@@ -1032,7 +1032,7 @@ function buildHikeCard(hike) {
             </div>
             <p class="small text-muted" style="margin-bottom: 8px;">${escapeHtml(T('hikeCard.organizzatoDa') || 'Organizzato da:')} <b class="user-link" onclick="showUserProfile('${hike.creatorId}')">${escapeHtml(creatorName)}</b>${creatorBadgeHtml}</p>
 
-            <p class="small text-secondary" style="line-height:1.4; height: 60px; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(hike.description)}</p>
+            ${hike.description ? `<p class="small hike-card-desc">${escapeHtml(hike.description)}</p>` : ""}
 
             <div class="hike-meta-row">
                 <div class="hike-meta-item">
