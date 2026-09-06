@@ -424,6 +424,12 @@
             const ora = new Date();
             const importateQuestoMese = sessioni.filter(s => {
                 if (s.importedFrom !== 'gpx') return false;
+                // Il tetto mensile (routes/tracking.js /import-gpx) conta SOLO le uscite
+                // importate a se' (hikeId:null): un .gpx aggiunto col ⬆ a un'escursione gia'
+                // completata (routes/completions.js /:id/gpx) crea una sessione con hikeId
+                // != null e NON consuma un posto del mese. Senza questo filtro il contatore
+                // a schermo saliva pur senza che il server bloccasse davvero.
+                if (s.hikeId) return false;
                 // La data del CARICAMENTO sta nell'_id (ObjectId): i primi 8 caratteri esadecimali
                 // sono i secondi Unix. Si usa quella e non startedAt, che e' la data
                 // dell'escursione e per un file del 2019 sarebbe il conto sbagliato.

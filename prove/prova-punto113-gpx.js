@@ -172,21 +172,56 @@ function gpxSenzaNome(giornoIso) {
         ok('caption CONSERVATA dopo il ri-upload', sess2[0].caption === MARCA);
         ok('importedName aggiornato al nuovo file', sess2[0].importedName === (MARCA + '-t2'), sess2[0].importedName);
 
-        // === 4. Una sessione REGISTRATA DAL VIVO non viene toccata dal ⬆ ===
-        console.log('\n4. Il ⬆ NON tocca una sessione registrata dal vivo (importedFrom assente)');
+        // === 4. Una sessione REGISTRATA DAL VIVO e GIA' CONCLUSA viene SOSTITUITA dal ⬆ ===
+        // (2026-09-06): prima si teneva la registrazione dal vivo "perche' migliore"; ora un
+        // file completo caricato apposta sul PROPRIO completamento la rimpiazza - una
+        // registrazione con GPS fermo a schermo spento e' peggiore del file.
+        console.log('\n4. Il ⬆ SOSTITUISCE una sessione dal vivo gia\' conclusa con il file caricato');
         const { HID: HID2, CID: CID2 } = await creaHikeCompletato('registrata');
-        const viva = await sessions.insertOne({
+        await sessions.insertOne({
             userId: oid(idA), hikeId: oid(HID2), status: 'ended',
             startedAt: new Date('2026-08-02T05:00:00Z'), endedAt: new Date('2026-08-02T12:00:00Z'), lastPointAt: new Date('2026-08-02T12:00:00Z'),
-            distanceKm: 11.5, elevationGainM: 950, points: [[13.56, 42.46, 1500, 0, 5], [13.57, 42.47, 1900, 3600, 5]], movingTimeSec: 20000
+            distanceKm: 11.5, elevationGainM: 950, points: [[13.56, 42.46, 1500, 0, 5], [13.57, 42.47, 1900, 3600, 5]], movingTimeSec: 20000,
+            // campi di SOLO tracciamento dal vivo che il file non ha: devono sparire dopo il ⬆
+            pausedMs: 900000, pausedAt: null, elevationRefM: 1480, offTrailBuffer: [[13.565, 42.465, 1600, 100, 8]]
         });
+        // 4a: prima la pubblico nel feed - il ⬆ deve tenere publishedAt/caption anche quando
+        // sostituisce una registrazione dal vivo (e' la stessa uscita, traccia aggiornata).
+        const vivaDoc = await sessions.findOne({ hikeId: oid(HID2) });
+        const pubViva = await chiama('POST', `/api/tracking/sessions/${vivaDoc._id}/publish`, { caption: MARCA + '-viva' }, cookieA);
+        ok('4a  publish della sessione dal vivo -> 200', pubViva.status === 200, `status ${pubViva.status}`);
+
         const up3 = await chiama('POST', `/api/completions/${CID2}/gpx`, { gpxText: gpx(MARCA + '-t3', '2026-08-02') }, cookieA);
         ok('POST /:id/gpx su un hike con sessione dal vivo -> 200', up3.status === 200);
         const sessViva = await sessions.find({ hikeId: oid(HID2) }).toArray();
-        ok('sempre 1 sola sessione (non ne crea una seconda)', sessViva.length === 1, `trovate ${sessViva.length}`);
-        ok('e\' quella dal vivo, INTATTA (importedFrom ancora assente, distanceKm 11.5)',
-            sessViva[0].importedFrom === undefined && sessViva[0].distanceKm === 11.5,
-            JSON.stringify({ imp: sessViva[0].importedFrom, d: sessViva[0].distanceKm }));
+        ok('sempre 1 sola sessione (aggiornata in loco, nessun doppione)', sessViva.length === 1, `trovate ${sessViva.length}`);
+        const V = sessViva[0];
+        ok('e\' lo STESSO documento (stesso _id, non ricreato)', String(V._id) === String(vivaDoc._id));
+        ok('SOSTITUITA: importedFrom ora \'gpx\', distanceKm != 11.5',
+            V.importedFrom === 'gpx' && V.distanceKm !== 11.5,
+            JSON.stringify({ imp: V.importedFrom, d: V.distanceKm }));
+        ok('SOSTITUITA: geometria dal file (2 punti del gpx di prova)', Array.isArray(V.points) && V.points.length >= 2);
+        ok('publishedAt/caption CONSERVATI (stessa uscita)', V.publishedAt instanceof Date && V.caption === (MARCA + '-viva'));
+        ok('campi di solo-tracciamento AZZERATI/TOLTI (pausedMs 0, pausedAt null, no elevationRefM/offTrailBuffer)',
+            V.pausedMs === 0 && (V.pausedAt === null || V.pausedAt === undefined)
+            && V.elevationRefM === undefined && (V.offTrailBuffer === undefined || V.offTrailBuffer.length === 0),
+            JSON.stringify({ p: V.pausedMs, pa: V.pausedAt, er: V.elevationRefM, ob: V.offTrailBuffer }));
+
+        // 4b: una sessione NON conclusa (status != 'ended') non si tocca - stato che non
+        // dovrebbe capitare (il Completion esiste solo dopo la fine) ma clobberare una
+        // sessione viva sarebbe il danno peggiore.
+        const { HID: HID4, CID: CID4 } = await creaHikeCompletato('non-conclusa');
+        await sessions.insertOne({
+            userId: oid(idA), hikeId: oid(HID4), status: 'paused',
+            startedAt: new Date('2026-08-02T05:00:00Z'), lastPointAt: new Date('2026-08-02T09:00:00Z'),
+            distanceKm: 7.7, elevationGainM: 400, points: [[13.5, 42.4, 1000, 0, 5], [13.51, 42.41, 1200, 3600, 5]]
+        });
+        const up4 = await chiama('POST', `/api/completions/${CID4}/gpx`, { gpxText: gpx(MARCA + '-t4', '2026-08-02') }, cookieA);
+        ok('4b  POST /:id/gpx con sessione non conclusa -> 200', up4.status === 200);
+        const sessNC = await sessions.find({ hikeId: oid(HID4) }).toArray();
+        ok('4b  sessione non conclusa INTATTA (status paused, distanceKm 7.7, importedFrom assente)',
+            sessNC.length === 1 && sessNC[0].status === 'paused' && sessNC[0].distanceKm === 7.7 && sessNC[0].importedFrom === undefined,
+            JSON.stringify({ n: sessNC.length, s: sessNC[0] && sessNC[0].status, d: sessNC[0] && sessNC[0].distanceKm, imp: sessNC[0] && sessNC[0].importedFrom }));
 
         // === 5. Il tetto mensile delle importazioni non conta le sessioni con hikeId ===
         console.log('\n5. /import-gpx: il tetto conta solo hikeId:null');

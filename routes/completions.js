@@ -107,6 +107,13 @@ router.post('/:id/gpx', requireAuth, async (req, res) => {
         // caricato. La sessione ha hikeId != null quindi NON conta nel tetto mensile delle
         // importazioni (quello e' per le uscite a se', vedi routes/tracking.js /import-gpx).
         // Non blocca: se questo fallisce, gli orari sono comunque stati aggiornati.
+        // 2026-09-06: se per questa escursione/utente esiste GIA' una sessione CONCLUSA
+        // (registrata dal vivo o da un .gpx precedente), il file caricato ora la
+        // SOSTITUISCE - prima si teneva la registrazione dal vivo "perche' migliore", ma
+        // una registrazione con GPS fermo a schermo spento (buchi grossi, distanza
+        // sottostimata) e' peggiore del file completo che l'utente sta caricando apposta.
+        // Vale solo sulla PROPRIA traccia (l'ownership del Completion e' gia' verificata
+        // sopra). Una sessione ancora APERTA (tracciamento in corso) non si tocca.
         try {
             const puntiSemplificati = simplifyTrack(letto.punti, 8); // ~8 m, come /import-gpx e fine tracciamento
             const campiTraccia = {
@@ -138,25 +145,32 @@ router.post('/:id/gpx', requireAuth, async (req, res) => {
                     ...(nomeDefault ? { importedName: nomeDefault } : {}),
                     ...(movimento.sec ? { movingTimeSec: movimento.sec } : {})
                 });
-            } else if (esistente.importedFrom === 'gpx') {
-                // Ricaricamento: si sostituisce geometria/misure, si lasciano stare
-                // publishedAt/caption (e' la stessa uscita, traccia aggiornata).
+            } else if (esistente.status === 'ended') {
+                // Sessione gia' conclusa (ricaricamento di un .gpx, OPPURE una registrazione
+                // dal vivo che il file completo va a sostituire): si aggiornano geometria,
+                // misure e tempi; si lasciano stare publishedAt/caption (e' la stessa uscita,
+                // traccia aggiornata). importedFrom passa a 'gpx' via campiTraccia: da qui in
+                // poi quella sessione E' basata su un file.
                 const set = { ...campiTraccia };
-                const unset = {};
+                // Campi di SOLO tracciamento dal vivo che un file non ha: se la sessione
+                // sostituita era una registrazione, vanno azzerati/tolti, altrimenti il
+                // virtuale durationSeconds (feed/totali) resterebbe falsato da un pausedMs
+                // di un'altra uscita. Su una sessione gia' da .gpx sono no-op innocui.
+                const unset = { elevationRefM: '', offTrailBuffer: '', openSession: '' };
+                set.pausedMs = 0;
+                set.pausedAt = null;
                 if (movimento.sec) set.movingTimeSec = movimento.sec; else unset.movingTimeSec = '';
                 // Il nome: se il nuovo file ne porta uno, quello vince (l'utente sta
-                // ricaricando quella traccia). Se non ne porta (es. .fit) NON si tocca:
+                // caricando quella traccia). Se non ne porta (es. .fit) NON si tocca:
                 // un nome messo a mano con la matita (punto 115) o quello vecchio restano.
                 // Solo se non c'era proprio niente si mette il titolo dell'escursione.
                 if (nomeFile) set.importedName = nomeFile;
                 else if (!esistente.importedName && hike && hike.title) set.importedName = hike.title.slice(0, 120);
-                const upd = { $set: set };
-                if (Object.keys(unset).length) upd.$unset = unset;
-                await ActiveHikeSession.updateOne({ _id: esistente._id }, upd);
+                await ActiveHikeSession.updateOne({ _id: esistente._id }, { $set: set, $unset: unset });
             }
-            // Se esiste ma NON e' importedFrom:'gpx' (registrata dal vivo): non si tocca -
-            // i suoi dati sono migliori di un file caricato dopo, e l'escursione e' gia'
-            // pubblicabile.
+            // Se esiste ma NON e' 'ended' (tracciamento ancora aperto per questa
+            // escursione): non si tocca. Non dovrebbe capitare - un Completion esiste solo
+            // dopo la fine - ma clobberare una sessione viva sarebbe il danno peggiore.
         } catch (e) {
             console.error('Traccia non salvata come sessione (gli orari sono comunque stati aggiornati):', e);
         }
