@@ -2050,10 +2050,17 @@ option {
     overflow: hidden;
 }
 
+/* Audit visivo Fascia B3 (35a sessione): era position:absolute top:16 right:16, e a card
+   ESPANSA finiva sopra la freccia dell'header (.hike-card-toggle-icon, anch'essa in alto a
+   destra) - overlap ~20x15px, e un click sul centro della freccia colpiva il badge
+   difficolta' invece della freccia. Il @media stretto lo rendeva gia' `static` per lo stesso
+   motivo ("appiccicato sopra il titolo"): ora e' `static` ovunque - primo elemento del
+   flex-column .hike-card-body, sopra "Organizzato da". Il margine negativo assorbe un po'
+   del gap:14px del contenitore. La difficolta' resta visibile solo a card aperta, come
+   prima (spostarla nell'header sempre-visibile e' la variante piu' grande, non fatta). */
 .hike-card-topright {
-    position: absolute;
-    top: 16px;
-    right: 16px;
+    align-self: flex-start;
+    margin-bottom: -6px;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -5881,18 +5888,12 @@ option {
 
     /* --- Schede escursione su schermo stretto ---
        Due colonne su 390px lasciano ~150px per scheda: titolo e numeri diventano
-       illeggibili. Una colonna sola, e il riquadro della difficolta' smette di essere
-       "appiccicato" sopra il titolo (in assoluto lo copriva). Vale per l'elenco
-       generale e per "Le mie escursioni", che usano le stesse schede. */
+       illeggibili. Una colonna sola. (Il riquadro della difficolta' non e' piu' in
+       posizione assoluta - vedi .hike-card-topright, Fascia B3 - quindi non serve piu'
+       forzarlo `static` qui.) Vale per l'elenco generale e per "Le mie escursioni". */
     .hikes-grid {
         grid-template-columns: 1fr;
         gap: 16px;
-    }
-
-    .hike-card-topright {
-        position: static;
-        align-self: flex-start;
-        margin-bottom: -6px;
     }
 
     /* I tre dati (dislivello, quota, distanza) affiancati si schiacciavano:
