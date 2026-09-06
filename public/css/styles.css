@@ -969,7 +969,15 @@ h5 {
 }
 
 .btn-primary {
-    background: var(--accent-orange);
+    /* Audit visivo 29a, decisione di Denis (35a): bianco su --accent-orange (#C1662E) e'
+       4,03:1, sotto la soglia AA di 4,5 per il testo non-grande (le etichette dei bottoni
+       sono 0,9rem/600). #B25E2A e' lo stesso arancione scurito ~8% per canale: bianco sopra
+       -> 4,64:1, passa AA, e lo scarto di tinta dal marchio e' impercettibile. Scurito QUI
+       e non nella variabile --accent-orange: quella regge anche l'arancione-COME-TESTO su
+       fondo scuro (titoli, nav attiva, badge), gia' a ~3,5:1, che uno scurimento
+       peggiorerebbe. :hover resta piu' scuro ancora (#9A5225). Stesso identico caso non
+       toccato, per scelta: .wizard-progress-dot.active e .badge-card-repeat-pill. */
+    background: #B25E2A;
     color: white;
     box-shadow: 0 4px 14px var(--accent-orange-glow);
 }
