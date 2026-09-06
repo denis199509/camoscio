@@ -1,16 +1,15 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-09-06 (TRENTAQUATTRESIMA sessione — DUE blocchi. (1) FASCIA
-A DELL'AUDIT VISIVO CHIUSA: A9, A10, "(da B4)" .settings-placeholder, uno
-alla volta col via di Denis, verificati dal vivo. (2) Poi il grosso: il
-problema "Marco non puo' chiudere/recensire l'escursione di ieri" - scavato
-fino alla causa, 4 modifiche al codice + un fix-dati mirato, TUTTO PUSHATO E
-IN PRODUZIONE (origin/master = `18af140`). SI RIPARTE DAL PUNTO 1: a fine
-tracciamento collegato a un'escursione, aprire la checklist "chi era con
-me" (come complete-group) invece di completare solo se stessi in silenzio -
-e' la causa vera, quello di stasera ha sistemato il caso singolo. Denis:
-"lo affrontiamo in un'altra sessione". Restano anche: Fascia B/C mai
-proposte, verifica al telefono di A6/A7/A8/A9/A10 insieme.)
+Aggiornato: 2026-09-06 (TRENTACINQUESIMA sessione — PUNTO 1 IMPLEMENTATO,
+backend + frontend, verificato (browser + prove). Commit `d8f5e45` su
+master, NON PUSHATO (origin/master resta `18af140`). A fine tracciamento
+collegato a un'escursione, il CREATORE apre la checklist "chi era con te"
+(complete-group) invece di completare solo se stesso: complete-group
+accetta un `trackingSessionId`, la registrazione dal vivo diventa la
+traccia condivisa. Progetto validato con l'agente architect. 4 decisioni
+di Denis prese in corsa (vedi sotto). RESTA: la prova al telefono con un
+GPS vero (solo Denis) + il giro code-reviewer/security-privacy prima di un
+push. Fascia B/C dell'audit visivo: sempre mai proposte.)
 
 --- TASTO INDIETRO / HISTORY API (33a): FATTO, PUSHATO (`7793426`) ---
 Il tasto Indietro non tornava indietro, buttava fuori dal sito. Riscritto
@@ -77,68 +76,72 @@ social.js/squadpage.js/storico.js) e A2/A8 (anche index.html).
   residua (--bg-panel/--bg-overlay), responsive login/registrazione, colori
   JS duplicati. Restano nel piano, si decide quando/se.
 
---- COMPLETAMENTO / TRACCIA IMPORTATA (34a): 4 modifiche + fix Marco, TUTTO
-    IN PRODUZIONE. RESTA IL PUNTO 1. ---
-Il problema di partenza (33a): Denis completa un'escursione col tracciamento
-dal vivo; il compagno Marco resta senza tasto di conferma e non si possono
-recensire. Causa: `POST /api/hikes/:id/complete` (auto, da completeLinkedHike)
-completa SOLO te in silenzio - mai "chi era con te", mai groupCompletedAt -
-e poi l'escursione finisce in "Gia' fatte", dove il tasto "Completa
-escursione" NON esiste. Un partecipante non-creatore che non ha tracciato
-lui stesso non ha OGGI nessuna via verso un Completion.
+--- PUNTO 1 (35a): FATTO, backend + frontend, verificato. Commit `d8f5e45`,
+    NON PUSHATO. RESTA LA PROVA AL TELEFONO. ---
+Antefatto (33a-34a): il completamento da tracciamento dal vivo passava per
+`POST /api/hikes/:id/complete` (da completeLinkedHike) - completa SOLO te in
+silenzio, mai "chi era con te", mai groupCompletedAt. I compagni restavano
+senza Completion, niente recensioni. Nella 34a il caso singolo di Marco fu
+chiuso a mano (commit 8b19006/18af140, pushati) + 4 modifiche collaterali
+(il ⬆ sostituisce una registrazione dal vivo; dislivello grezzo per i file
+di dispositivo, soglia 0 vs 10; il ⬆ del creatore aggiorna la Hike). La
+CAUSA restava aperta = questo punto.
 
-FATTO STASERA (commit `8b19006` poi `18af140`, pushati e deployati):
-  1. `routes/completions.js` POST /:id/gpx (tasto ⬆): se esiste gia' una
-     sessione CONCLUSA per quell'escursione/utente (dal vivo O da un .gpx
-     precedente), il file caricato la SOSTITUISCE - prima si teneva la
-     registrazione dal vivo "perche' migliore", ma una con GPS fermo a
-     schermo spento (buchi, distanza sottostimata) e' peggiore. Solo sulla
-     propria traccia. Campi di solo-tracciamento (pausedMs...) azzerati.
-  2. `public/js/storico.js`: il contatore "X file questo mese" escludeva
-     solo per importedFrom, non per hikeId - ora esclude anche quelle
-     collegate a un'escursione (il tetto vero, /import-gpx, gia' lo fa).
-  3. DISLIVELLO DELLE TRACCE IMPORTATE = grezzo, nessuna lisciatura.
-     `lib/gpx.js` nuova SOGLIA_DISLIVELLO_IMPORT_M = 0, separata dai 10 m.
-     10 resta per le quote STIMATE (percorso progettato, GPS telefono);
-     0 per un FILE di dispositivo (.gpx/.fit, altimetro barometrico).
-     Decisione di Denis: "se importo una traccia voglio i dati della
-     traccia senza correzioni". Misurato sul .fit di Denis: soglia 10 dava
-     1304 m, soglia 0 da' 1555 m (il Garmin ~1503). Dettaglio e "perche'
-     due valori" in lib/gpx.js sopra SOGLIA_DISLIVELLO_M, e in
-     [[03-Decisioni-Architetturali]].
-  4. `routes/completions.js`: se chi carica col ⬆ e' il CREATORE, il file
-     aggiorna anche i numeri CONDIVISI della Hike (distanza/dislivello/
-     quota max/routeSource), come complete-group. Non-creatore: solo il
-     suo Completion.
-  Denis ha ricaricato il .fit Garmin di "Castel San Pietro..." in
-  produzione: card ora 28,6 km / 1555 m / quota max 1215, CAI 9h 6m.
-  Prove: prova-punto113-gpx.js 58/58 (2 sez. nuove), + 113/116/fit/
-  passo-non-misurato/93 verdi. prova-punto33 55/4/8 (i falliti/saltati
-  sono il noto rumore Open-Meteo live, path NON toccato).
+FATTO ORA (progetto validato con l'agente architect; piano completo in
+C:\Users\lenovo\.claude\plans\camoscio-punto1-completamento-tracciamento.md):
+  BACKEND
+  - `routes/hikes.js` POST /:id/complete-group: nuovo `trackingSessionId`
+    opzionale. Mutuamente esclusivo con `gpxText` -> 400 "una sola fonte"
+    (PRIMA di leggere l'uno o l'altro). Validazioni: sessione esiste, e' di
+    chi chiude (404), ended (409), hikeId combacia (400). RIPIEGO: se non
+    arriva ne' file ne' id, cerca da se' ActiveHikeSession.findOne({userId,
+    hikeId, status:'ended'}).sort({endedAt:-1}) - "chiudo dalla card la
+    sera, la rete al rientro mancava" (decisione D5 di Denis).
+  - `lib/percorso.js`: `misureDaSessione()` (nuova) - una sessione conclusa
+    -> numeri condivisi + tempi + routePath, nella stessa forma di
+    calcolaDaPercorso. "sostanziale" (dist>50m, >=2 punti, >=1 quota): sotto
+    quella soglia i numeri della Hike NON si toccano. `routePathDaPunti()`
+    estratta e riusata dal ramo gpx/fit.
+  - `models/ActiveHikeSession.js`: nuovo `maxAltitudeM`, scritto UNA VOLTA a
+    /:id/end sui punti COMPLETI (dopo simplifyTrack 2D il punto piu' alto
+    puo' sparire). Ripiego per le sessioni vecchie: max dei punti
+    semplificati.
+  - `models/Hike.js`: routeSource.kind enum + 'live'.
+  - FIX COLLATERALE: il ramo `gpxText` di complete-group E il ⬆ del creatore
+    (`routes/completions.js`) scrivevano `routeSource` senza `routePath` ->
+    etichetta e nessuna linea (es. il .fit di "Castel San Pietro..."). Ora
+    scrivono routePath (o lo tolgono se il file e' degenere).
+  FRONTEND
+  - `public/js/tracking.js` renderSummary: il bottone del riepilogo si
+    biforca - CREATORE di un'escursione non chiusa in gruppo -> apre la
+    checklist con {trackingSessionId, onSuccess}; altrimenti resta
+    completeLinkedHike (complete-group e' creator-only). Nuovo flag
+    `completamentoGiaFatto` (azzerato in resetToIdleUi): dopo un
+    completamento il bottone NON ricompare al cambio lingua (era un difetto
+    gia' in produzione).
+  - `public/js/social.js`: openCompleteGroupModal(hikeId, opzioni) nasconde
+    la riga file / mostra una nota quando c'e' una sessione; submitCompleteGroup
+    mette trackingSessionId nel body; onSuccess chiamato dopo refreshState e
+    PRIMA di renderHikesList. `public/index.html` + `i18n.js`: id sulla riga
+    file, nota nuova, chiave EN.
 
-  FIX-DATI MIRATO per Marco (non codice, script one-off buttato):
-  creato il Completion di Marco per "Castel San Pietro..."
-  (`6a9907f8cd712e34f924bd4f`) con actualTimeHours 8.4425 EREDITATO da
-  Denis (niente movingTimeHours: e' per-persona); Marco completedHikes
-  34->35, livello invariato; hike.groupCompletedAt impostato. GATE
-  RECENSIONI ORA PASSA (Denis<->Marco). Passo demo di Marco (231/330) era
-  stato azzerato da un giro di prova-punto113-gpx.js (login come Marco =
-  elenco[0]) - ripristinato a mano nello stesso script. Vedi
-  [[07-Trappole-Tecniche]] (il test spazza il passo del demo).
+  4 DECISIONI DI DENIS: innesco = bottone gia' presente; tempo totale al
+  netto delle pause; tempo di cammino UNIFORME per tutti (contro il consiglio
+  dell'architect - sostituibile dal singolo col ⬆); linea sulla mappa si';
+  ripiego D5 lato server si'. Dettaglio in cose_da_fare.txt e
+  [[03-Decisioni-Architetturali]].
 
-PUNTO 1, ANCORA APERTO - E' DA QUI CHE SI RIPARTE:
-  a fine tracciamento collegato a un'escursione (trackingState.hikeId),
-  aprire la checklist "chi era con te" (riusare il modale complete-group)
-  invece di completare solo se stessi. Probabile: far confluire
-  completeLinkedHike (tracking.js:345) dentro il percorso di complete-group,
-  con la traccia appena registrata gia' pronta. Cosi' i partecipanti
-  ottengono un Completion e non serve piu' il fix a mano.
-  RICHIESTA 2 di Denis (traccia per-partecipante) e' GIA' quasi possibile:
-  un partecipante CON un Completion vede gia' il tasto ⬆ (storico.js) e
-  puo' caricare il PROPRIO .gpx/.fit -> aggiorna il suo Completion + crea
-  la sua sessione. Manca solo il Completion di partenza, che lo da' il
-  punto 1. Dettaglio in cose_da_fare.txt "COMPLETAMENTO DA TRACCIAMENTO
-  DAL VIVO NON CHIEDE 'CHI ERA CON TE'".
+  PROVE: nuova prova-punto1-tracciamento-gruppo.js 48/48 (controprova 19
+  rossi su HEAD); prova-percorso-errori-sicuri +sez.4d; prova-invito-squadra
+  stub aggiunto (era rotto dalla 33a, non una regressione) -> 54/54;
+  regressioni tutte verdi; npm audit invariato; verifica frontend nel
+  browser (creatore/non-creatore, payload, cambio lingua, tasto Indietro).
+
+  RESTA: prova al telefono con un GPS vero (solo Denis) - registra, termina,
+  checklist col GPS caldo; poi la RICHIESTA 2 (un partecipante che dopo
+  carica la sua traccia col ⬆, ora che ha il Completion). Poi il giro
+  code-reviewer su `a886ae4..HEAD` (mai completato dalla 33a) + un giro
+  security-privacy sul nuovo complete-group, prima di un push.
 
 --- NUOVO, SOLO DA SEGNARE (nessun codice) ---
 Denis ha chiesto se si puo' introdurre "il Google authenticator" e/o

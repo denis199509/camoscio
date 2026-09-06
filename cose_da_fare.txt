@@ -10705,6 +10705,125 @@ COMPLETAMENTO DA TRACCIAMENTO DAL VIVO NON CHIEDE "CHI ERA CON TE"
   partecipante debba anche apparire da qualche parte piu' evidente
   della lista "Gia' fatte".
 
+  --- 35a sessione (06/09/2026): PUNTO 1 IMPLEMENTATO (backend +
+      frontend), verificato. RESTA LA PROVA AL TELEFONO. ---
+  Denis: "possiamo ripartire dal punto 1". Progetto e validazione con
+  l'agente architect (piano: C:\Users\lenovo\.claude\plans\
+  camoscio-punto1-completamento-tracciamento.md), poi implementazione.
+
+  QUATTRO DECISIONI di Denis (in aggiunta alle 3 gia' prese: innesco
+  creatore-only, la traccia dal vivo e' la traccia condivisa, richiesta
+  2 fuori):
+   - INNESCO: il bottone "Completa escursione" gia' presente nel
+     riepilogo tracciamento (non un modale automatico, non un bottone
+     separato).
+   - TEMPO TOTALE: al netto delle pause (durationSeconds della sessione,
+     gia' cosi' quello che il tracciamento salva oggi).
+   - TEMPO DI CAMMINO: UNIFORME per tutti i confermati, come oggi
+     complete-group (Denis ha scelto contro il consiglio dell'architect,
+     sapendo che cosi' un partecipante puo' vedersi ricalcolare passo/
+     livello sulla camminata del creatore finche' non carica la sua
+     traccia col ⬆). "se il partecipante decide di caricare la propria
+     traccia in quel caso viene sostituito con il suo tempo".
+   - LINEA SULLA MAPPA: si', routeSource.kind:'live' + routePath.
+   - RECUPERO TARDIVO: si', ripiego automatico lato server - se il
+     creatore chiude il gruppo dalla card ore dopo (rete assente al
+     rientro), complete-group cerca da se' l'ultima ActiveHikeSession
+     conclusa per quell'escursione. Effetto accettato: anche la
+     chiusura dalla card inizia a portarsi i numeri della registrazione.
+
+  FATTO, commit `d8f5e45` (NON pushato - i due auto-save dell'hook Stop
+  rifusi con git reset --soft 7496ea3):
+   BACKEND
+   - `routes/hikes.js` POST /:id/complete-group: nuovo `trackingSessionId`
+     opzionale nel body, mutuamente esclusivo con `gpxText` (400 "una
+     sola fonte" PRIMA di leggere l'uno o l'altro). Validazioni sulla
+     sessione: esiste, e' di chi chiude (404 altrimenti), status ended
+     (409), hikeId combacia (400). Se non arriva ne' file ne'
+     trackingSessionId -> ripiego: ActiveHikeSession.findOne({userId,
+     hikeId, status:'ended'}).sort({endedAt:-1}).
+   - `lib/percorso.js`: `misureDaSessione(sessione)` (nuova) traduce una
+     sessione conclusa nella stessa forma di calcolaDaPercorso (numeri
+     condivisi + tempi + routePath); "sostanziale" = distanza > 50 m,
+     >=2 punti, >=1 quota - sotto quella soglia i numeri della Hike NON
+     si toccano, si chiude solo "chi c'era". `routePathDaPunti(punti)`
+     (nuova) estratta e riusata dal ramo gpx/fit.
+   - `models/ActiveHikeSession.js`: nuovo `maxAltitudeM` (default
+     undefined), scritto UNA VOLTA a POST /:id/end sui punti COMPLETI
+     (dopo simplifyTrack 2D il punto piu' alto puo' sparire - stesso
+     precedente di movingTimeSec). Ripiego per le sessioni vecchie: il
+     max dei punti semplificati.
+   - `models/Hike.js`: routeSource.kind enum + 'live'. Il valore e'
+     letto SOLO come discriminante d'ingresso in calcolaDaPercorso, mai
+     riletto da una Hike salvata (verificato) - rischio basso.
+   - FIX COLLATERALE (§5.4 del piano): il ramo `gpxText` di
+     complete-group E il ⬆ del creatore (`routes/completions.js`)
+     scrivevano `routeSource` SENZA `routePath` pur avendolo pronto ->
+     etichetta "percorso collegato" e nessuna linea. Es. il .fit Garmin
+     di "Castel San Pietro..." ricaricato nella 34a. Ora scrivono
+     entrambi routePath (o lo tolgono con hike.set(...,undefined) se il
+     file e' degenere).
+   - Dislivello dal vivo: soglia 10 m (SOGLIA_DISLIVELLO_M, gia'
+     applicata a elevationGainM in /:id/end) - NON la soglia 0 dei file
+     di dispositivo. E' coerente con la doppia soglia del 06/09.
+   FRONTEND
+   - `public/js/tracking.js`: renderSummary biforca - se chi guarda e'
+     il CREATORE di un'escursione non ancora chiusa in gruppo e social.js
+     ha esposto il modale, il bottone apre openCompleteGroupModal(hikeId,
+     {trackingSessionId, onSuccess}); altrimenti resta completeLinkedHike
+     di sempre (complete-group e' creator-only). Nuovo flag di modulo
+     `completamentoGiaFatto` (azzerato in resetToIdleUi): impedisce che
+     un ridisegno del riepilogo da CamoscioI18n.onChange faccia
+     ricomparire il bottone dopo un completamento - DIFETTO GIA' IN
+     PRODUZIONE, ora chiuso. completeLinkedHike alza lo stesso flag.
+   - `public/js/social.js`: openCompleteGroupModal(hikeId, opzioni) -
+     con trackingSessionId nasconde la riga file .gpx e mostra una nota;
+     submitCompleteGroup non legge il file e mette trackingSessionId nel
+     body; closeCompleteGroupModal azzera i due nuovi campi. onSuccess
+     chiamato DOPO refreshState e PRIMA di renderHikesList (agisce solo
+     sul pannello tracciamento, non deve restare ostaggio di un errore
+     nel redisegno della lista).
+   - `public/index.html`: id sulla riga file (`complete-group-gpx-row`)
+     + `<p id="complete-group-tracking-note">`.
+   - `public/js/i18n.js`: chiave EN `completeGroupModal.daTracciamento`.
+
+  PROVE:
+   - NUOVA `prove/prova-punto1-tracciamento-gruppo.js` 48/48 (porta
+     3135, 9 sezioni: contratto/misure/sessione degenere/senza tempo di
+     cammino/tempo uniforme/idempotenza/routePath/creator-only/ripiego
+     D5). Controprova su HEAD pre-modifica: 19 controlli cadono.
+   - `prove/prova-percorso-errori-sicuri.js`: sezione 4d nuova
+     (trackingSessionId + gpxText -> 400).
+   - `prove/prova-invito-squadra.js`: aggiunto lo stub di
+     apri/chiudi/scollegaModaleStorico (era rotto dalla 33a - il Tasto
+     Indietro aveva aggiunto quelle chiamate in social.js senza che la
+     prova le stubbasse; verificato rotto identico su HEAD pulito, NON
+     una regressione di questa sessione). Torna 54/54.
+   - Regressioni verdi: partecipanti-forzati 43, punto116 42,
+     punto113-gpx 58, fit 33, punto92 62, punto93 28, invito-direzionale
+     46, elimina-escursione 53, punto77 17, passo-non-misurato 28,
+     punto79 26, punto113 103, dislivello-vivo 119.
+   - npm audit invariato (zero dipendenze nuove).
+   - Verifica FRONTEND nel browser (app locale, loggato Marco): ramo
+     creatore apre la checklist col file nascosto e la nota; payload
+     submit = {confirmedUserIds, trackingSessionId}; ramo non-creatore
+     chiama POST /:id/complete; bottone resta nascosto al cambio lingua
+     dopo un completamento; tasto Indietro dal modale sopra il pannello
+     tracciamento chiude SOLO il modale (pannello e riepilogo restano,
+     hash invariato). 0 errori console.
+
+  RESTA:
+   - PROVA AL TELEFONO (solo Denis): registrare un'escursione vera
+     collegata, terminarla, checklist col GPS caldo e schermo del
+     telefono; poi verificare la RICHIESTA 2 - un partecipante che dopo
+     carica la sua traccia col ⬆ (deve avere il Completion, che ora il
+     punto 1 gli da').
+   - Giro `code-reviewer` su tutta la coda `a886ae4..HEAD` (mai
+     completato dalla 33a) + un giro `security-privacy` sul nuovo
+     complete-group, prima di un push.
+   - Da decidere ancora (non deciso): se il ⬆ del partecipante debba
+     comparire da qualche parte piu' evidente della lista "Gia' fatte".
+
 ===============================================================
 2FA (GOOGLE AUTHENTICATOR) - DA FARE. LOGIN CON GOOGLE - IN SOSPESO
 (33a sessione, 05/09/2026) - SOLO DA SEGNARE, NIENTE CODICE
