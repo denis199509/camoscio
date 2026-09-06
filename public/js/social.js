@@ -844,13 +844,20 @@ function buildHikeCard(hike) {
     // stessa escursione due volte), e un id fisso qui ripeterebbe la stessa trappola gia'
     // presa nota in leggimi.txt per chatpanel.js/buildHikeCard - mai un id fisso su un
     // elemento di un componente che vive in piu' copie.
+    // Il cestino (deleteCompletion) sparisce sulle escursioni chiuse in gruppo: li' toglierebbe
+    // solo in silenzio il proprio tempo misurato e il proprio conteggio, senza rimuovere la card
+    // (ci pensa groupCompletedAt). Stessa scelta gia' applicata in "Le mie escursioni" (storico.js,
+    // renderCompletate). Il creatore ha comunque "Elimina escursione" nel menu ⋮ (piu' sotto), che
+    // cancella per tutti. Il tasto "carica gpx" resta sempre: un partecipante confermato puo'
+    // allegare la propria traccia (Punto 1 / Richiesta 2).
     const completionToolsHtml = miaCompletion ? `
         <button class="btn btn-xs btn-secondary" onclick="uploadCompletionGpx('${miaCompletion.id}')" title="${escapeHtml(T('hikeCard.caricaGpxTitle') || 'Carica un file .gpx per avere il tempo reale di questa escursione')}">
             <i data-lucide="upload"></i>
         </button>
+        ${!hike.groupCompletedAt ? `
         <button class="btn btn-xs btn-secondary" style="color:var(--accent-red);" onclick="deleteCompletion('${miaCompletion.id}', '${hike.id}')" title="${escapeHtml(T('hikeCard.cancellaGiaFattaTitle') || "Cancella questa escursione dalle tue 'gia' fatte'")}">
             <i data-lucide="trash-2"></i>
-        </button>
+        </button>` : ""}
     ` : "";
 
     // Verifica idoneità fisica
