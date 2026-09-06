@@ -1,12 +1,16 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-09-06 (TRENTAQUATTRESIMA sessione — FASCIA A DELL'AUDIT
-VISIVO CHIUSA. Ripresa da A9 come da coda della 33a; fatti A9, A10 e il
-punto "(da B4)" .settings-placeholder, uno alla volta col via di Denis a
-ognuno, tutti verificati dal vivo con l'estensione Chrome. Su richiesta di
-Denis rifusi gli auto-save in UN commit con `git reset --soft d9d6edf` -
-NON PUSHATO (via non chiesto). SI RIPARTE: Fascia A finita; restano Fascia
-B/C mai proposte + la verifica al telefono di A6/A7/A8/A9/A10 insieme.)
+Aggiornato: 2026-09-06 (TRENTAQUATTRESIMA sessione — DUE blocchi. (1) FASCIA
+A DELL'AUDIT VISIVO CHIUSA: A9, A10, "(da B4)" .settings-placeholder, uno
+alla volta col via di Denis, verificati dal vivo. (2) Poi il grosso: il
+problema "Marco non puo' chiudere/recensire l'escursione di ieri" - scavato
+fino alla causa, 4 modifiche al codice + un fix-dati mirato, TUTTO PUSHATO E
+IN PRODUZIONE (origin/master = `18af140`). SI RIPARTE DAL PUNTO 1: a fine
+tracciamento collegato a un'escursione, aprire la checklist "chi era con
+me" (come complete-group) invece di completare solo se stessi in silenzio -
+e' la causa vera, quello di stasera ha sistemato il caso singolo. Denis:
+"lo affrontiamo in un'altra sessione". Restano anche: Fascia B/C mai
+proposte, verifica al telefono di A6/A7/A8/A9/A10 insieme.)
 
 --- TASTO INDIETRO / HISTORY API (33a): FATTO, PUSHATO (`7793426`) ---
 Il tasto Indietro non tornava indietro, buttava fuori dal sito. Riscritto
@@ -60,42 +64,81 @@ social.js/squadpage.js/storico.js) e A2/A8 (anche index.html).
   pagina; il comportamento stretto e' su @media/min()/calc() standard gia'
   usati altrove, mai visto renderizzare per davvero < ~380px.
 
-  COMMIT: `git reset --soft d9d6edf` ha rifuso `487a9c5` + 3 auto-save in
-  UN commit ("Ritocchi visivi Fascia A9-A10 + .settings-placeholder").
-  `d9d6edf` (A1-A8) resta com'era. `git log origin/master..HEAD` = d9d6edf
-  + il nuovo, due commit, NON PUSHATI (origin/master = 7793426). Il giro
-  `code-reviewer` su a886ae4..HEAD non e' mai stato completato (interrotto
-  nella 33a) - da rilanciare prima di un push se si vuole.
+  COMMIT: `7bd9c78` ("Ritocchi visivi Fascia A9-A10 + .settings-placeholder"),
+  `d9d6edf` (A1-A8) intatto. Entrambi PUSHATI stasera (sono partiti insieme
+  al deploy del blocco GPX qui sotto, su "vai con commit e push" di Denis) -
+  origin/master ora e' `18af140`. Il giro `code-reviewer` su tutta la coda
+  post-`a886ae4` non e' MAI stato completato (interrotto nella 33a) - se lo
+  si vuole va rilanciato ora su `a886ae4..18af140`, il codice e' gia' in
+  produzione.
 
   FASCIA B/C dell'audit: mai proposte. Empty state unificato, descrizione
   escursione tagliata, --color-text-muted sotto soglia, palette fredda
   residua (--bg-panel/--bg-overlay), responsive login/registrazione, colori
   JS duplicati. Restano nel piano, si decide quando/se.
 
---- NUOVO, SOLO DA SEGNARE (nessun codice) ---
-Denis, usando il sito dal vivo: ha completato un'escursione col
-tracciamento GPS dell'app; il compagno (Marco Alpinista) e' rimasto SENZA
-tasto di conferma, perche' il completamento da tracciamento dal vivo
-(POST /api/hikes/:id/complete, chiamato da tracking.js completeLinkedHike)
-non chiede mai "chi era con te" - solo POST /:id/complete-group (bottone
-"Completa escursione") lo fa e aggiorna hike.participants. Seconda parte
-della richiesta: dare a ogni partecipante confermato la possibilita' di
-allegare la PROPRIA traccia GPS invece di ereditare per forza quella di
-chi ha registrato (oggi complete-group applica un solo .gpx condiviso,
-identico per tutti - il tempo di CAMMINO dipende dal passo personale
-anche quando il tempo TOTALE e' uguale per tutti). Denis: "questo e' solo
-da segnare. lo faremo in un'altra sessione". Dettaglio tecnico completo
-(righe di codice vere, cosa fa oggi ognuna delle due rotte, le due
-decisioni di UI ancora aperte) in cose_da_fare.txt, sezione
-"COMPLETAMENTO DA TRACCIAMENTO DAL VIVO NON CHIEDE 'CHI ERA CON TE'".
+--- COMPLETAMENTO / TRACCIA IMPORTATA (34a): 4 modifiche + fix Marco, TUTTO
+    IN PRODUZIONE. RESTA IL PUNTO 1. ---
+Il problema di partenza (33a): Denis completa un'escursione col tracciamento
+dal vivo; il compagno Marco resta senza tasto di conferma e non si possono
+recensire. Causa: `POST /api/hikes/:id/complete` (auto, da completeLinkedHike)
+completa SOLO te in silenzio - mai "chi era con te", mai groupCompletedAt -
+e poi l'escursione finisce in "Gia' fatte", dove il tasto "Completa
+escursione" NON esiste. Un partecipante non-creatore che non ha tracciato
+lui stesso non ha OGGI nessuna via verso un Completion.
 
-CONFERMATO più tardi: Denis non riesce a recensire Marco ne' viceversa,
-stessa causa. routes/reviews.js richiede hike.participants + un
-Completion per ENTRAMBI; il bottone "Completa escursione" (social.js:975)
-e' dietro if(isCreatorMe) - lo vede solo il creatore. Un partecipante che
-non e' creatore E non traccia dal vivo lui stesso non ha oggi NESSUNA via
-verso un proprio Completion. Il fix gia' previsto sopra risolverebbe
-anche questo. Nessun codice.
+FATTO STASERA (commit `8b19006` poi `18af140`, pushati e deployati):
+  1. `routes/completions.js` POST /:id/gpx (tasto ⬆): se esiste gia' una
+     sessione CONCLUSA per quell'escursione/utente (dal vivo O da un .gpx
+     precedente), il file caricato la SOSTITUISCE - prima si teneva la
+     registrazione dal vivo "perche' migliore", ma una con GPS fermo a
+     schermo spento (buchi, distanza sottostimata) e' peggiore. Solo sulla
+     propria traccia. Campi di solo-tracciamento (pausedMs...) azzerati.
+  2. `public/js/storico.js`: il contatore "X file questo mese" escludeva
+     solo per importedFrom, non per hikeId - ora esclude anche quelle
+     collegate a un'escursione (il tetto vero, /import-gpx, gia' lo fa).
+  3. DISLIVELLO DELLE TRACCE IMPORTATE = grezzo, nessuna lisciatura.
+     `lib/gpx.js` nuova SOGLIA_DISLIVELLO_IMPORT_M = 0, separata dai 10 m.
+     10 resta per le quote STIMATE (percorso progettato, GPS telefono);
+     0 per un FILE di dispositivo (.gpx/.fit, altimetro barometrico).
+     Decisione di Denis: "se importo una traccia voglio i dati della
+     traccia senza correzioni". Misurato sul .fit di Denis: soglia 10 dava
+     1304 m, soglia 0 da' 1555 m (il Garmin ~1503). Dettaglio e "perche'
+     due valori" in lib/gpx.js sopra SOGLIA_DISLIVELLO_M, e in
+     [[03-Decisioni-Architetturali]].
+  4. `routes/completions.js`: se chi carica col ⬆ e' il CREATORE, il file
+     aggiorna anche i numeri CONDIVISI della Hike (distanza/dislivello/
+     quota max/routeSource), come complete-group. Non-creatore: solo il
+     suo Completion.
+  Denis ha ricaricato il .fit Garmin di "Castel San Pietro..." in
+  produzione: card ora 28,6 km / 1555 m / quota max 1215, CAI 9h 6m.
+  Prove: prova-punto113-gpx.js 58/58 (2 sez. nuove), + 113/116/fit/
+  passo-non-misurato/93 verdi. prova-punto33 55/4/8 (i falliti/saltati
+  sono il noto rumore Open-Meteo live, path NON toccato).
+
+  FIX-DATI MIRATO per Marco (non codice, script one-off buttato):
+  creato il Completion di Marco per "Castel San Pietro..."
+  (`6a9907f8cd712e34f924bd4f`) con actualTimeHours 8.4425 EREDITATO da
+  Denis (niente movingTimeHours: e' per-persona); Marco completedHikes
+  34->35, livello invariato; hike.groupCompletedAt impostato. GATE
+  RECENSIONI ORA PASSA (Denis<->Marco). Passo demo di Marco (231/330) era
+  stato azzerato da un giro di prova-punto113-gpx.js (login come Marco =
+  elenco[0]) - ripristinato a mano nello stesso script. Vedi
+  [[07-Trappole-Tecniche]] (il test spazza il passo del demo).
+
+PUNTO 1, ANCORA APERTO - E' DA QUI CHE SI RIPARTE:
+  a fine tracciamento collegato a un'escursione (trackingState.hikeId),
+  aprire la checklist "chi era con te" (riusare il modale complete-group)
+  invece di completare solo se stessi. Probabile: far confluire
+  completeLinkedHike (tracking.js:345) dentro il percorso di complete-group,
+  con la traccia appena registrata gia' pronta. Cosi' i partecipanti
+  ottengono un Completion e non serve piu' il fix a mano.
+  RICHIESTA 2 di Denis (traccia per-partecipante) e' GIA' quasi possibile:
+  un partecipante CON un Completion vede gia' il tasto ⬆ (storico.js) e
+  puo' caricare il PROPRIO .gpx/.fit -> aggiorna il suo Completion + crea
+  la sua sessione. Manca solo il Completion di partenza, che lo da' il
+  punto 1. Dettaglio in cose_da_fare.txt "COMPLETAMENTO DA TRACCIAMENTO
+  DAL VIVO NON CHIEDE 'CHI ERA CON TE'".
 
 --- NUOVO, SOLO DA SEGNARE (nessun codice) ---
 Denis ha chiesto se si puo' introdurre "il Google authenticator" e/o
@@ -199,6 +242,12 @@ MAI piu' (congelato); cose_da_fare.txt quando un punto si chiude o ne arriva uno
     stesso dato ma DOM diversi non danno errore se chiami quella sbagliata, un
     history.back() e' asincrono e corre contro un pushState immediatamente successivo,
     una navigazione che cambia solo l'hash non ricarica la SPA - il codice di init
-    non si rieseguisce): tutte in ../camoscio memoria/07-Trappole-Tecniche.md — quella
-    e' la sede dove si guarda prima di toccare codice a rischio.
+    non si rieseguisce, il service worker MV3 dell'estensione Chrome si sospende
+    ("attiva" != "connessa"), una prova che fa login come account demo e lancia
+    recalculateAndApplyPace ne AZZERA il passo assegnato a mano - da 16/08 zero
+    osservazioni = campo tolto - se non lo ripristina in finally): tutte in
+    ../camoscio memoria/07-Trappole-Tecniche.md — quella e' la sede dove si guarda
+    prima di toccare codice a rischio. NB dal 06/09: il dislivello ha DUE soglie -
+    0 per le tracce importate da un file di dispositivo (grezzo), 10 per le quote
+    stimate (percorso progettato, GPS dal vivo). Vedi lib/gpx.js.
 ===================================================================

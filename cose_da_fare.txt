@@ -10621,6 +10621,90 @@ COMPLETAMENTO DA TRACCIAMENTO DAL VIVO NON CHIEDE "CHI ERA CON TE"
   Denis, nessun codice toccato (stesso "lo faremo in un'altra
   sessione" di prima).
 
+  --- 34a sessione (06/09/2026): AGGREDITO IL CASO SINGOLO + 4
+      MODIFICHE COLLATERALI. IL PUNTO 1 RESTA APERTO. ---
+  Denis: "adesso vediamo di risolvere il problema di marco alpinista
+  che non puo chiudere l'escursione completata ieri". Poi, sul come:
+  "se risolviamo il punto 1 che a fine escursione registrata si apre
+  la checklist 'chi era con me' il tasto completa in 'gia fatte' non
+  serve. Serve solo la possibilita' ai partecipanti di aggiungere una
+  loro traccia se vogliono. Io registro e completo l'escursione per me
+  e per i partecipanti con la mia traccia. Ai partecipanti serve la
+  possibilita' di aggiungere una loro traccia eventualmente e basta
+  (se vogliono altrimenti resta quella registrata dal creatore).
+  Adesso basta segnare l'escursione di marco di ieri come fatta da
+  poter recensire".
+
+  Guardando i dati veri: Marco era GIA' in `hike.participants` di
+  "Castel San Pietro Romano - Capranica Prenestina - Guadagnolo"
+  (05/09, `_id 6a9907f8cd712e34f924bd4f`). Mancava solo il suo
+  `Completion`. Il completamento dal vivo di Denis aveva anche spinto
+  l'escursione in "Gia' fatte" (Denis ha un Completion), dove il tasto
+  "Completa escursione" NON esiste - quindi nemmeno Denis, creatore,
+  poteva piu' lanciare complete-group dalla UI.
+
+  Nel mezzo Denis ha voluto ricaricare la traccia vera (file .fit
+  Garmin, non .gpx): la sua registrazione dal vivo aveva GPS a ~1
+  punto ogni 45 s (12,2 km su 25,8 reali). Il tasto ⬆ pero' aggiornava
+  solo il TEMPO, non la LINEA (teneva la registrazione dal vivo
+  "perche' migliore"), e non i numeri della `Hike`. E il dislivello
+  usciva 1304 m contro i ~1503 del Garmin, per la lisciatura anti-
+  tremolio (soglia 10 m, punto 33). Denis: "se importo una traccia
+  voglio vedere i dati della traccia importati senza correzioni",
+  "mi fido piu' della registrazione Garmin".
+
+  CHIUSO in 2 commit pushati e deployati (`8b19006`, `18af140`):
+   (a) `POST /api/completions/:id/gpx`: se c'e' gia' una sessione
+       CONCLUSA (dal vivo o gpx) per quell'escursione/utente, il file
+       la SOSTITUISCE (geometria, misure, tempi); campi di solo-
+       tracciamento azzerati; publishedAt/caption tenuti. Solo la
+       propria traccia.
+   (b) `public/js/storico.js` aggiornaQuotaDalServer: il contatore
+       "X file questo mese" ora esclude anche le sessioni con hikeId
+       (come gia' il tetto vero di /import-gpx).
+   (c) DISLIVELLO TRACCE IMPORTATE = grezzo: `lib/gpx.js` nuova
+       `SOGLIA_DISLIVELLO_IMPORT_M = 0`, separata dai 10 m. 10 resta
+       per le quote STIMATE (percorso progettato, GPS dal vivo); 0
+       per un file di dispositivo. Sul .fit di Denis: 10 -> 1304 m,
+       0 -> 1555 m. Decisione architetturale, vedi il vault.
+   (d) `POST /api/completions/:id/gpx`: se chi carica e' il CREATORE,
+       il file aggiorna anche i numeri CONDIVISI della `Hike`
+       (distanza/dislivello/quota max/routeSource), come complete-
+       group. Non-creatore: solo il proprio Completion.
+   Denis ha ricaricato il .fit in produzione: card ora 28,6 km /
+   1555 m / quota max 1215, CAI 9h 6m.
+   Prove: `prova-punto113-gpx.js` 58/58 (2 sez. nuove: ⬆ sostituisce
+   la registrazione dal vivo; il ⬆ del creatore aggiorna la Hike),
+   + regressioni verdi (113, 116, fit, passo-non-misurato, 93).
+   `prova-punto33` 55/4/8 - i falliti/saltati sono il noto rumore
+   Open-Meteo live, path (lib/elevation.js) NON toccato.
+
+  FIX-DATI MIRATO per Marco (script one-off, non committato): creato
+  il `Completion` di Marco per quell'escursione con
+  `actualTimeHours 8.4425` EREDITATO da Denis (niente movingTimeHours
+  - il tempo di cammino e' per-persona, Marco lo puo' aggiungere col
+  ⬆ se vuole). Marco `completedHikes` 34->35, livello invariato;
+  `hike.groupCompletedAt` impostato (~12:04 ora italiana). GATE
+  RECENSIONI ora PASSA (Denis<->Marco). Il passo demo di Marco
+  (231/330) era stato azzerato da un giro di `prova-punto113-gpx.js`
+  (login come Marco = elenco[0], recalculateAndApplyPace su 0
+  osservazioni) - ripristinato a mano nello stesso script. Lezione
+  in 07-Trappole-Tecniche.
+
+  PUNTO 1 - ANCORA APERTO, E' DA QUI CHE SI RIPARTE. Il caso singolo
+  e' chiuso, la CAUSA no: a fine tracciamento collegato a
+  un'escursione (`trackingState.hikeId`) va aperta la checklist "chi
+  era con te" (riusare il modale complete-group) invece di completare
+  solo se stessi in silenzio. Probabile: far confluire
+  `completeLinkedHike` (tracking.js:345) dentro il percorso di
+  complete-group, con la traccia appena registrata gia' pronta.
+  RICHIESTA 2 (traccia per-partecipante): gia' quasi possibile - un
+  partecipante CON un Completion vede gia' il ⬆ e puo' caricare il
+  proprio file. Manca solo il Completion di partenza, che lo da' il
+  punto 1. Da decidere ancora (non deciso da Denis): se il ⬆ del
+  partecipante debba anche apparire da qualche parte piu' evidente
+  della lista "Gia' fatte".
+
 ===============================================================
 2FA (GOOGLE AUTHENTICATOR) - DA FARE. LOGIN CON GOOGLE - IN SOSPESO
 (33a sessione, 05/09/2026) - SOLO DA SEGNARE, NIENTE CODICE
