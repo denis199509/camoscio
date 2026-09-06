@@ -9423,6 +9423,10 @@ getta nello scratchpad, cancellato dopo.
 Camilla accede con EMAIL camilla.orsini@gmail.com + camilla2026, poi la
 cambia da Impostazioni > Cambia password. DA RICORDARE: e' una password
 temporanea, va cambiata.
+-> CHIUSO il 06/09/2026: Denis ha comunicato che Camilla ha cambiato la
+   password. La causa di fondo (email di recupero che finiscono in spam,
+   invio da Gmail via Mailjet senza dominio proprio) resta il punto 3
+   rimandato, non specifico di Camilla.
 
 --- APERTO / RIMANDATO dopo questa sessione ---
 - prova mobile v2 sul telefono, sul sito LIVE (invariato)
@@ -10883,3 +10887,235 @@ COMPLETAMENTO DA TRACCIAMENTO DAL VIVO NON CHIEDE "CHI ERA CON TE"
   esiste (nota legale, vedi sopra); a quel punto rivalutare se vale
   la deroga al vincolo open source per la comodita' d'iscrizione che
   offre.
+
+
+===============================================================
+TRE PICCOLI PUNTI (35a sessione, 06/09/2026)
+===============================================================
+
+  Denis, dopo il rundown degli aperti: "Piccoli punti di codice
+  aperti poi Audit visivo 9 poi Fascia B/C dell'audit visivo. uno
+  alla volta". Poi "si procedi" a ognuno. I tre punti chiusi in
+  ordine, dal piu' piccolo. NIENTE PUSHATO (restano il giro
+  code-reviewer su a886ae4..HEAD + security-privacy prima di un push,
+  vedi la coda del Punto 1).
+
+  --- 1. CESTINO SULLE CARD "COMPLETATE IN GRUPPO" ---
+  Vecchio micro-rimando (25a): su un'escursione chiusa in gruppo il
+  cestino (deleteCompletion) non rimuove la card - ci pensa
+  groupCompletedAt - quindi toglie solo, in silenzio, il proprio
+  tempo misurato e il proprio conteggio. In "Le mie escursioni"
+  (storico.js) era gia' gestito dal 02/09. Restava in
+  social.js buildHikeCard (completionToolsHtml, ~riga 857).
+  -> Indagando: quel ramo di buildHikeCard e' DORMIENTE. La revisione
+     UX v2 passo 9 manda ogni escursione completata alla lista
+     compatta storico.js (renderCompletate), mai piu' a buildHikeCard
+     (unico chiamante: social.js:641, solo disponibili/in programma).
+     Il punto era quindi gia' de-facto chiuso.
+  -> Aggiunto comunque il guard ${!hike.groupCompletedAt ? ... : ""}
+     attorno al bottone deleteCompletion, per coerenza con storico.js
+     e col commento accanto che prevede "Escursioni Completate".
+     Il tasto "carica gpx" resta sempre. Denis: "resta cosi".
+  Verificato dal vivo: output di buildHikeCard sull'escursione chiusa
+  in gruppo di Marco -> niente deleteCompletion, uploadCompletionGpx
+  presente; su una completata NON in gruppo -> entrambi + "Elimina
+  escursione" nel menu del creatore.
+
+  --- 2. M-5: RACE DEL CANCELLA-CONTATTO EMERGENZA A 2 SCHEDE ---
+  (vecchio M-5, diverso dagli M della revisione sicurezza 27a-32a)
+  Problema: emergencyContacts non aveva rotte dedicate. salvaNuovo-
+  Contatto e rimuoviContatto (public/js/safety.js) riscrivevano
+  l'INTERO array via PUT /api/users/:id. Due schede sulla stessa
+  lista di partenza -> l'ultima a salvare sovrascrive la modifica
+  dell'altra, e un contatto tolto da una scheda RESUSCITA per via del
+  salvataggio dell'altra. Sono dati di un terzo che non ha
+  acconsentito (A-3.2): una cancellazione che si annulla da sola non
+  va bene. La meta' "spaventosa" (deadManContactIndex, puntatore
+  posizionale al contatto dell'allarme) era gia' chiusa dalla 21a
+  (A-3.2: l'allarme va a TUTTI i contatti con email).
+  Denis ha scelto: fix INLINE (non tocca la logica dell'allarme, solo
+  il CRUD dell'array), col giro security-privacy gia' in coda a
+  coprire il codice sensibile.
+  -> models/User.js: nuovo User.validaUnContatto (un contatto solo:
+     nome/relazione/email obbligatori, @, lunghezze). validaContatti-
+     Emergenza (array intero) resta per POST /api/auth/register.
+  -> routes/users.js: emergencyContacts TOLTO da SELF_EDITABLE_FIELDS
+     (la PUT whole-array non li tocca piu' - la via della race e'
+     chiusa del tutto; il wizard di registrazione passa da
+     POST /register, non toccato). Due rotte nuove, self-only (403),
+     dietro contattiLimiter:
+       POST /api/users/:id/emergency-contacts -> $push atomico,
+         condizionato al tetto di 5 in UNA query (findOneAndUpdate con
+         $expr $lt $size) -> niente TOCTOU sul cap.
+       DELETE /api/users/:id/emergency-contacts -> $pull PER CONTENUTO
+         (nome+relazione+email; se il contatto non ha email si
+         combacia su nome+relazione). No-op 200 se gia' tolto
+         (idempotente: due schede che tolgono lo stesso contatto).
+     emergencyContactSchema ha _id:false di proposito (vincolo spazio,
+     02-Vincoli-Hard) -> identificazione per contenuto, non per id.
+     Limite noto e accettato (commento in rotta): due contatti
+     identici in tutti e tre i campi -> $pull li toglie entrambi.
+  -> middleware/rateLimit.js: contattiLimiter (30/ora), secchio
+     dedicato come cancellazioneLimiter/invitoLimiter - modificare i
+     contatti non deve poter esaurire ne' essere esaurito da altre
+     scritture, meno che mai la rotta del soccorso (sicurezzaLimiter).
+  -> public/js/safety.js: salvaNuovoContatto -> POST, rimuoviContatto
+     -> DELETE per contenuto. L'indice locale serve solo a capire
+     quale riga ha cliccato l'utente in QUESTA scheda; il server
+     lavora sul contenuto, quindi una seconda scheda con la lista
+     vecchia non puo' far cancellare la voce sbagliata.
+  Prove: prova-contatti-emergenza.js NUOVA 28/28 (POST/validazione/
+     tetto/403; DELETE per contenuto/idempotenza/403; sezione RACE:
+     scheda 1 toglie RB, scheda 2 con vista vecchia toglie RC ->
+     resta [RA], RB non resuscita; e "la PUT non tocca piu' i
+     contatti"). Regressioni verdi: prova-punto37 28, prova-
+     eliminazione-account 57, prova-foto-profilo 14, prova-
+     validazione-registrazione 10, prova-registrazione-senza-email 7.
+     npm audit --omit=dev = 0. prova-punto37.js ritoccata: l'impianto
+     di scena scrive i contatti dritto su Mongoose (scaffolding per il
+     test del timer), non via PUT.
+  Verificato dal vivo (Marco, locale, DUE schede vere): aggiunta ->
+     POST, rimozione -> DELETE per contenuto; race a due schede -> RB
+     non resuscita, server [RA]; console pulita; contatti di Marco
+     riportati a [] (stato di partenza).
+
+  --- 3. TTL SULLE NOTIFICATION CHE NOMINANO UN UTENTE ---
+  Problema: Notification.text e' una stringa libera generata dal
+  server, spesso col NOME di un altro utente ("Mario Rossi ha chiesto
+  di..."). scrubAccount (lib/accountDeletion.js) cancella le notifiche
+  DI chi si elimina, non quelle SU DI LUI gia' nelle liste altrui ->
+  il nome restava a tempo indefinito. La nota lo dava per "cambio
+  schema app-wide + migrazione -> a se'".
+  -> In realta' createdAt esiste GIA' (timestamps) su tutte le 414
+     righe -> NIENTE migrazione. Serve solo un indice TTL.
+  Denis (AskUserQuestion): retention = 90 giorni.
+  -> models/Notification.js:
+       notificationSchema.index({ createdAt: 1 },
+         { expireAfterSeconds: 90*24*60*60 });
+     Su createdAt e non altrove: a differenza di Report (dove un TTL
+     su createdAt uccideva le segnalazioni RINNOVATE -> spostato su
+     expiresAt) le notifiche non si rinnovano mai. Con autoIndex
+     attivo anche in prod (verificato: il TTL di `reports` esiste
+     davvero sul DB) l'indice si crea al primo uso del modello; il TTL
+     monitor spazza entro ~60s. Oggi cancella 0 righe (la piu' vecchia
+     ha ~45 giorni). Cambiare i 90 giorni in futuro: dropIndex +
+     createIndex, mai collMod (negato su questo utente Atlas).
+  -> lib/accountDeletion.js: commento accanto a
+     Notification.deleteMany({ userId }) che spiega che le notifiche
+     "su di lui" le porta via il TTL, non e' una svista.
+  Prove: prova-ttl-notifiche.js NUOVA 4/4 (solo schema: chiave
+     createdAt, 90 giorni esatti, un solo indice TTL - nessun indice
+     creato su Atlas dalla prova). Regressioni verdi: prova-
+     eliminazione-account 57, prova-punto37 28.
+  RESTA POSSIBILE, "a se'" (non fatto, non chiesto): la versione
+  strutturale - campo relatedActorId su Notification + backfill + il
+  nome tolto/rifatto all'eliminazione - se un domani si vuole che il
+  nome sparisca SUBITO invece che entro 90 giorni.
+
+
+===============================================================
+AUDIT VISIVO §9 - LE DUE DECISIONI CHE ASPETTAVANO DENIS (35a, 06/09)
+===============================================================
+
+  Dal rapporto camoscio-audit-visivo-29a.md §9. Denis: "vai".
+
+  --- 1. "Passo & Fatica" (aperta dal 10/08) ---
+  L'audit la poneva come "stesso dato, due colori": passo utente blu
+  nelle righe, arancione nel grafico. Verificato nel codice: FALSO
+  oggi. app.js:1841-1856 - il dataset "Tuo Passo Rilevato" e' BLU
+  (#4C7E90), lo "Standard CAI Alpino" arancione. E .pace-row strong
+  (styles.css:1794) e' blu. Quindi il passo utente e' gia' blu
+  ovunque (righe + grafico), l'arancione e' "il resto / il
+  riferimento CAI". La premessa dell'audit era invecchiata.
+  Denis (AskUserQuestion): "Lascio cosi". NESSUN CODICE.
+
+  --- 2. Bianco su --accent-orange sul CTA = 4,03:1 (sotto AA 4,5) ---
+  Il testo dei bottoni e' 0,9rem/600 -> non "large text" -> serve
+  4,5:1. --accent-orange (#C1662E) e' usato ANCHE come testo su fondo
+  scuro (titoli, nav attiva, badge), gia' a ~3,5:1: scurire la
+  variabile condivisa avrebbe migliorato il CTA e peggiorato quello.
+  Denis (AskUserQuestion): "Scurisco solo .btn-primary".
+  -> public/css/styles.css .btn-primary: background da
+     var(--accent-orange) a #B25E2A (stesso arancione scurito ~8% per
+     canale). Bianco sopra -> 4,64:1, passa AA. Scarto di tinta dal
+     marchio impercettibile. :hover resta #9A5225. --accent-orange
+     NON toccata. Commento esteso in loco.
+  Verificato dal vivo (Marco, locale): i .btn-primary renderizzano
+     #B25E2A, contrast 4,638:1 col bianco (calcolato sul colore
+     renderizzato), font 14,4px/600; Dashboard coerente, console
+     pulita.
+  SEGNALATO, NON TOCCATO per scelta di Denis ("solo .btn-primary"):
+     lo stesso bianco-su-#C1662E fallisce AA anche su
+     .wizard-progress-dot.active (numero dello step) e
+     .badge-card-repeat-pill ("xN" sulle card badge).
+
+  FASCIA B - LE PICCOLE, FATTE il 06/09 (35a). Denis: "Le piccole di B,
+  una alla volta" -> B6, B7(solo FAB), B2, B4(parte muted). Ognuna
+  verificata dal vivo. NON PUSHATE.
+
+  --- B6: .lightning-alert ridipinta verde con override inline ---
+  Il ramo "nessun rischio fulmini" (weather.js) riusava .lightning-alert
+  (classe di ALLARME rosso) con 3 override inline + un #B8CBA8 che non
+  esisteva altrove. -> nuovo .lightning-alert.is-ok in styles.css,
+  speculare a .safety-honesty-note.is-ok (stesso caso gia' risolto per
+  il Dead Man's Switch): usa --accent-green-glow / --accent-green.
+  weather.js:312 -> class="lightning-alert is-ok", via gli override.
+  Verificato: is-ok -> verde da token, ramo .blink (rischio) invariato
+  rosso. Il contrasto verde-testo ~3,65:1 (sotto AA) resta, condiviso
+  con .safety-honesty-note.is-ok -> lo chiude B4 (--accent-green-text),
+  non questo. Nota nel commento.
+
+  --- B7: 3 emoji -> Lucide. FATTO SOLO il FAB (Denis: "solo il FAB") ---
+  index.html: la ⚠️ del FAB segnalazione (#report-fab) -> <i data-lucide=
+  "alert-triangle">. styles.css: .app-fab i,.app-fab svg{width:26px;
+  height:26px} (l'SVG nasce a 24). Verificato dal vivo sulla Mappa: SVG
+  bianco 26x26 nel cerchio rosso, --accent-red invariato, console pulita.
+  NON FATTE, piu' grandi del "S" dell'audit, si lasciano:
+   - 🔴 mini-barra tracciamento: tracking.js:956 alterna 🔴/⏸️ via
+     .textContent - con un SVG serve icon-swap + lucide.createIcons() in
+     quella riga, nel percorso tracciamento. Non un ritocco.
+   - ✅ conferma-email.html + reimposta-password.html: quelle pagine NON
+     caricano lucide.js, e il ✅ sta dentro una stringa i18n. Servirebbe
+     aggiungere lo script (o un SVG inline) a due pagine tenute minime.
+     Fuori dalla regola stessa di B7 ("emoji dove Lucide c'e' gia'").
+
+  --- B2: descrizione escursione tagliata + 60px riservati a vuoto ---
+  social.js:1035 aveva <p ... style="height:60px;overflow:hidden;
+  text-overflow:ellipsis"> - riservava 60px anche senza descrizione
+  (non required, Hike.js max 2000) e tagliava di netto a meta' riga
+  senza "…". -> nuova .hike-card-desc (styles.css): -webkit-line-clamp:3
+  + -webkit-box, niente altezza fissa, colore --color-text-secondary
+  (come prima, era .text-secondary), spaziatura dal gap:14px di
+  .hike-card-body. social.js: il <p> si disegna SOLO se hike.description
+  c'e'. Verificato: desc lunga -> 54px = 3 righe esatte, scrollH 90 >
+  clientH 54 -> troncata coi puntini; desc corta -> 18px naturali,
+  niente vuoto; desc assente -> buildHikeCard non emette il <p>.
+
+  --- B4: --color-text-muted sotto soglia (SOLO questa parte) ---
+  #6B6558 -> #8F887A. #6B6558 dava 3,17:1 sul fondo e 2,78 sulle card
+  (testo ~11px: .nav-block-label, .tracking-mini-hint, .badge-card-state
+  /count, .divider, .sidebar-footer). #8F887A: 5,22:1 sul fondo, 4,57
+  sulle card - passa AA in ENTRAMBI (l'audit proponeva ~#857E6E, che
+  pero' restava a 3,99 sulle card). Tutti i 16 usi sono `color:`,
+  definizione unica, nessun override. Verificato dal vivo su Dashboard
+  (5,48:1) e Progressi ("Non ancora conquistato" a 10,9px -> 5,44:1);
+  gerarchia muted->secondary->primary intatta a schermo.
+  DA SAPERE (trovato facendo B4, l'audit li confondeva): (a) la utility
+  .text-muted -> var(--color-text-secondary), NON --color-text-muted
+  (quindi i tanti <p class="small text-muted"> NON sono toccati, e vanno
+  gia' bene a 7:1); (b) .feed-item-when usa var(--text-muted, rgba(255,
+  255,255,.5)) - un nome di variabile SENZA --color-, mai definito ->
+  ripiega sul rgba. Refuso preesistente, non in B4, da sistemare a se'.
+  RESTA di B4, non fatto (Denis ha scoped alla sola parte muted): le due
+  varianti --accent-green-text / --accent-red-text schiarite "solo dove
+  fanno da testo" (chiuderebbe anche il verde di .lightning-alert.is-ok
+  e .safety-honesty-note.is-ok).
+
+  FASCIA B - NON FATTE: B1 (empty-state unificato, 8 file JS), B3
+  (.hike-card-topright copre la freccia su desktop), B5 (consolidare le
+  32 misure di testo a 8, dopo A10).
+  FASCIA C - NON FATTE: C1 (ritirare la palette fredda residua
+  --bg-panel/--bg-overlay, scelta di prodotto, serve confronto
+  affiancato), C2 (responsive login/registrazione, prova dal vivo passo
+  per passo), C3 (i 5 colori palette copiati a mano in 6 file JS ->
+  window.CAMOSCIO_COLORI, codice app).

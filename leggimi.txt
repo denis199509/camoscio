@@ -71,10 +71,36 @@ social.js/squadpage.js/storico.js) e A2/A8 (anche index.html).
   si vuole va rilanciato ora su `a886ae4..18af140`, il codice e' gia' in
   produzione.
 
-  FASCIA B/C dell'audit: mai proposte. Empty state unificato, descrizione
-  escursione tagliata, --color-text-muted sotto soglia, palette fredda
-  residua (--bg-panel/--bg-overlay), responsive login/registrazione, colori
-  JS duplicati. Restano nel piano, si decide quando/se.
+  AUDIT §9 (le 2 domande per Denis): DECISE il 06/09 (35a). (1) "Passo &
+  Fatica": lascio - la premessa era invecchiata, il passo utente e' gia' blu
+  ovunque (righe + grafico), nessun codice. (2) Bianco su arancione sul CTA
+  (4,03:1, sotto AA): scurito SOLO .btn-primary -> background #B25E2A
+  (bianco 4,64:1), --accent-orange condivisa NON toccata. Verificato dal
+  vivo. Dettaglio in cose_da_fare.txt "AUDIT VISIVO §9".
+
+  FASCIA B - LE PICCOLE, FATTE il 06/09 (35a), una alla volta, ognuna
+  verificata dal vivo. NON PUSHATE. Dettaglio in cose_da_fare.txt "FASCIA B
+  - LE PICCOLE".
+    B6  .lightning-alert (widget meteo) ridipinta verde con 3 override
+        inline -> nuovo .lightning-alert.is-ok (come .safety-honesty-note
+        .is-ok), weather.js senza override.
+    B7  SOLO il FAB: la ⚠️ di #report-fab -> <i data-lucide="alert-triangle">
+        + .app-fab i,svg{26px}. Il 🔴 (alterna con ⏸️ in tracking.js) e il
+        ✅ (pagine senza lucide.js) NON fatti, piu' grandi del "S", lasciati.
+    B2  descrizione escursione: via lo style inline (height:60px fisso +
+        taglio netto), nuova .hike-card-desc con -webkit-line-clamp:3; il
+        <p> non si disegna se la descrizione manca.
+    B4  (solo la parte muted) --color-text-muted #6B6558 -> #8F887A: passa
+        AA sul fondo (5,22:1) E sulle card (4,57:1). NB: la utility
+        .text-muted punta a --color-text-secondary, non a questa; .feed-
+        item-when usa un --text-muted mai definito (refuso, a se').
+        RESTA di B4: le varianti --accent-green-text/--accent-red-text.
+
+  FASCIA B/C - NON FATTE: B1 (empty-state unificato, 8 file JS), B3
+  (.hike-card-topright copre la freccia su desktop), B5 (32 misure di testo
+  -> 8). C1 (palette fredda residua --bg-panel/--bg-overlay, scelta di
+  prodotto), C2 (responsive login/registrazione), C3 (5 colori palette
+  copiati in 6 file JS -> window.CAMOSCIO_COLORI). Restano nel piano.
 
 --- PUNTO 1 (35a): FATTO, backend + frontend, verificato. Commit `d8f5e45`,
     NON PUSHATO. RESTA LA PROVA AL TELEFONO. ---
@@ -176,22 +202,26 @@ AUTHENTICATOR) - DA FARE. LOGIN CON GOOGLE - IN SOSPESO".
      all'avvio in produzione. Fail-safe, ma da fare.
   2. Ricaricare il .gpx/.fit col ⬆ per le vecchie escursioni da
      pubblicare nel feed (l'originale non era stato conservato).
-  3. Camilla: `camilla2026` e' TEMPORANEA. Deve cambiarla da
-     Impostazioni > Cambia password. Accede con EMAIL
-     camilla.orsini@gmail.com (il login e' per email, non username).
+  (Camilla ha cambiato la password temporanea il 06/09/2026 - chiuso.)
 
->>> APERTO, non bloccante (invariato):
+>>> APERTO, non bloccante:
   - NOTA LEGALE: index.html fa accettare "Termini + Informativa
     privacy" senza documento dietro. Stesso professionista del punto
     GDPR sopra puo' chiuderli insieme.
-  - M-5 (il vecchio, diverso dagli M della revisione sicurezza): race
-    del cancella-contatto emergenza con 2 schede aperte (serve una
-    DELETE per contenuto/id, non per indice posizionale).
-  - TTL sulle Notification che nominano un utente: un "Mario Rossi
-    ha chiesto di..." resta per sempre nelle notifiche altrui col
-    nome vero anche dopo l'eliminazione di Mario. Cambio schema
-    app-wide + migrazione -> a se'.
-  - nascondere il cestino sulle card "completate in gruppo".
+
+  >>> I TRE PICCOLI PUNTI DI CODICE (35a): TUTTI CHIUSI il 06/09/2026,
+      uno alla volta, ognuno verificato dal vivo. NON PUSHATI. Dettaglio
+      in cose_da_fare.txt "TRE PICCOLI PUNTI (35a)".
+    1. Cestino sulle card "completate in gruppo": guard !groupCompletedAt
+       nel ramo dormiente di buildHikeCard (gia' de-facto chiuso dalla v2
+       passo 9). Denis: "resta cosi".
+    2. M-5, race cancella-contatto emergenza a 2 schede: rotte ATOMICHE
+       POST/DELETE /api/users/:id/emergency-contacts ($push/$pull della sola
+       voce, per contenuto). Nuova prova-contatti-emergenza.js 28/28.
+    3. TTL sulle Notification: indice TTL su createdAt, 90 giorni
+       (models/Notification.js) - createdAt esiste gia', niente migrazione.
+       Nuova prova-ttl-notifiche.js 4/4. Versione grande (relatedActorId +
+       scrub all'eliminazione, nome via SUBITO) resta "a se'", non chiesta.
 
 >>> ALTRE APERTE, non urgenti:
     dominio email proprio (rimandato) - causa vera delle email che non
