@@ -33,4 +33,22 @@ const notificationSchema = new mongoose.Schema({
     relatedSessionId: { type: mongoose.Schema.Types.ObjectId, ref: 'ActiveHikeSession', default: undefined }
 }, { timestamps: { createdAt: true, updatedAt: false } });
 
+// TTL, 90 giorni. Motivo PRIVACY prima ancora che spazio: `text` e' una stringa libera
+// generata dal server e spesso contiene il NOME di un altro utente ("Mario Rossi ha chiesto
+// di partecipare..."). Quando quell'utente elimina l'account, scrubAccount
+// (lib/accountDeletion.js) cancella le notifiche SUE, non quelle SU DI LUI gia' finite nelle
+// liste degli altri: senza questo indice quel nome resterebbe visibile a tempo indefinito.
+// Il TTL le fa scadere da sole - la campanella e' un flusso transitorio, una notifica di tre
+// mesi fa non ha piu' nessuna funzione.
+//
+// Su `createdAt` (non su un altro campo): a differenza di Report - dove un TTL su `createdAt`
+// uccideva le segnalazioni RINNOVATE, per questo li' e' stato spostato su `expiresAt`, vedi
+// models/Report.js - le notifiche non si rinnovano e non si prorogano mai. `createdAt` e' la
+// data giusta, ed esiste gia' su tutte le righe (`timestamps`): NIENTE migrazione. Con
+// `autoIndex` attivo l'indice si crea al primo uso del modello e il TTL monitor di MongoDB
+// spazza le righe scadute entro ~60s. Oggi non ne cancella nessuna (la piu' vecchia ha ~45
+// giorni). Per cambiare i 90 giorni in futuro: dropIndex + createIndex, MAI `collMod`
+// (negato su questo utente Atlas - vedi ../camoscio memoria/07-Trappole-Tecniche.md).
+notificationSchema.index({ createdAt: 1 }, { expireAfterSeconds: 90 * 24 * 60 * 60 });
+
 module.exports = mongoose.models.Notification || mongoose.model('Notification', notificationSchema);
