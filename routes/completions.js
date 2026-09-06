@@ -100,6 +100,28 @@ router.post('/:id/gpx', requireAuth, async (req, res) => {
             : { $set: { actualTimeHours }, $unset: { movingTimeHours: '' } };
         await Completion.updateOne({ _id: completion._id }, mongoUpdate);
 
+        // 2026-09-06: se chi carica e' il CREATORE dell'escursione, il file aggiorna anche i
+        // numeri CONDIVISI della Hike (distanza / dislivello / quota max / routeSource) -
+        // come fa gia' complete-group. La traccia del creatore e' quella "ufficiale"
+        // dell'uscita; per un partecipante NON creatore la stessa cosa non vale (il commento
+        // in cima alla rotta: "i dati dell'escursione restano quelli di chi l'ha
+        // organizzata"). Fatto PRIMA di recalculateAndApplyPace piu' sotto, cosi' il passo
+        // del creatore si ricalcola sul dislivello nuovo. Non blocca: gli orari del
+        // Completion sono gia' scritti sopra, un problema qui si risolve ricaricando.
+        let hike = null;
+        try {
+            hike = await Hike.findById(completion.hikeId);
+            if (hike && String(completion.userId) === String(hike.creatorId)) {
+                hike.distanceKm = datiReali.distanceKm;
+                hike.elevationGain = datiReali.elevationGain;
+                hike.maxAltitude = datiReali.maxAltitude;
+                hike.routeSource = datiReali.routeSource;
+                await hike.save();
+            }
+        } catch (e) {
+            console.error('Numeri della Hike non aggiornati dal .gpx del creatore (gli orari sono comunque stati aggiornati):', e);
+        }
+
         // Punto 113 (fix 30/08/2026): oltre agli orari, si salva anche la TRACCIA come
         // ActiveHikeSession collegata all'escursione (hikeId impostato). Cosi' l'escursione
         // completata diventa pubblicabile nel feed - prima serviva averla registrata dal
@@ -132,7 +154,9 @@ router.post('/:id/gpx', requireAuth, async (req, res) => {
             // ha uno, allora si ripiega sul TITOLO dell'escursione, cosi' nel feed non
             // compare una data nuda al posto di "Ascesa al Corno Grande".
             const nomeFile = (letto.nome || '').slice(0, 120) || null;
-            const hike = await Hike.findById(completion.hikeId).select('title').lean();
+            // hike e' gia' caricato sopra (blocco "numeri della Hike"); se quel load e'
+            // fallito ed e' rimasto null, findById lo riprende.
+            if (!hike) hike = await Hike.findById(completion.hikeId).select('title').lean();
             const nomeDefault = nomeFile || ((hike && hike.title) ? hike.title.slice(0, 120) : null);
 
             const esistente = await ActiveHikeSession.findOne({ userId: completion.userId, hikeId: completion.hikeId });

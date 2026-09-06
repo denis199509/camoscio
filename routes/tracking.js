@@ -13,7 +13,7 @@ const { requireAuth } = require('../middleware/auth');
 const richiedeConsensoGeo = require('../middleware/consensoGeo');
 const { isFiniteNum, haversineKm, simplifyTrack } = require('../lib/geometry');
 const { regionForPoint } = require('../lib/regions');
-const { parseGpx, statisticheTraccia, ErroreGpx, SOGLIA_DISLIVELLO_M, movimentoSecAttendibile } = require('../lib/gpx');
+const { parseGpx, statisticheTraccia, ErroreGpx, SOGLIA_DISLIVELLO_M, SOGLIA_DISLIVELLO_IMPORT_M, movimentoSecAttendibile } = require('../lib/gpx');
 const { parseFit, ErroreFit } = require('../lib/fit'); // punto 114: stessa uscita di parseGpx, sorgente binaria
 const trailIndex = require('../lib/trailIndex');
 const { mongoose } = require('../db/mongo');
@@ -28,8 +28,9 @@ const { nomeVisibile } = require('../lib/accountDeletion'); // A-3.4: nome pseud
 const MAX_POINTS_PER_BATCH = 500; // un client onesto ne manda ~60-180 ogni 20-30s, mai a uno a uno
 // LA SOGLIA DEL DISLIVELLO DAL VIVO NON ESISTE PIU' COME NUMERO A PARTE. Fino al 2026-07-28
 // c'era MIN_ELEVATION_DELTA_M = 3, applicata al salto fra due punti consecutivi, ed e' stata
-// tolta: si usa SOGLIA_DISLIVELLO_M di lib/gpx.js, la stessa dei file importati. Il perche'
-// e' scritto per esteso dove si calcola, nella rotta /:id/points.
+// tolta: dal vivo si usa SOGLIA_DISLIVELLO_M (10) di lib/gpx.js - il GPS di un telefono
+// sbaglia sulla quota di parecchi metri e va lisciato. Le tracce IMPORTATE da un file usano
+// invece SOGLIA_DISLIVELLO_IMPORT_M (0) dal 2026-09-06: il perche' e' in lib/gpx.js.
 const SIMPLIFY_TOLERANCE_M = 8; // stessa scala dell'errore medio OSM (~10m) citato in tutto il progetto
 const MIN_CANDIDATE_POINTS = 5; // sotto questa lunghezza un tratto "fuori sentiero" e' solo rumore GPS, non un percorso da segnalare
 
@@ -60,11 +61,9 @@ const MAX_BYTE_GPX = 10 * 1024 * 1024;
 // progetto: controllarli tutti su una traccia da 30.000 punti sarebbe sprecato, il
 // campione dice la stessa cosa.
 const CAMPIONE_REGIONE = 40;
-// Soglia del dislivello per le tracce IMPORTATE. LA DEFINIZIONE E IL PERCHE' STANNO ORA IN
-// lib/gpx.js (spostati col punto 33): da quel giorno la usano in due, il caricamento .gpx e
-// il dislivello dei percorsi progettati, e deve restare un valore solo. Il nome locale resta
-// per non toccare i punti in cui e' gia' usata.
-const SOGLIA_DISLIVELLO_IMPORT_M = SOGLIA_DISLIVELLO_M;
+// Soglia del dislivello per le tracce IMPORTATE (/import-gpx): DEFINIZIONE E PERCHE' in
+// lib/gpx.js. Dal 2026-09-06 vale 0 (nessuna lisciatura su un file di un dispositivo) -
+// non e' piu' lo stesso valore del dislivello dal vivo. Importata qui sopra da lib/gpx.js.
 
 // Ripulisce un gruppo di punti mandati dal client: scarta tuple malformate o fuori dai
 // range possibili (lat/lng invalide), tollera l'altitudine mancante (frequente sui telefoni

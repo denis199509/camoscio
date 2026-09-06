@@ -302,6 +302,51 @@ function gpxSenzaNome(giornoIso) {
         ok('7b  sempre 1 solo timbro (nessun doppione)',
             await stamps.countDocuments({ userId: oid(idA), stampId: stampProva }) === 1);
 
+        // === 8. Il ⬆ del CREATORE aggiorna i numeri condivisi della Hike; quello di un
+        //        partecipante NON creatore no (2026-09-06) ===
+        console.log('\n8. Il ⬆ del creatore aggiorna distanza/dislivello/quota max della Hike');
+        const { HID: HID8, CID: CID8 } = await creaHikeCompletato('creatore');
+        // valori di partenza noti (creaHikeCompletato): distanceKm 10, elevationGain 900, maxAltitude 2912
+        const u8 = await chiama('POST', `/api/completions/${CID8}/gpx`, { gpxText: gpx(MARCA + '-h', '2026-08-02') }, cookieA);
+        ok('8  POST /:id/gpx (creatore) -> 200', u8.status === 200, JSON.stringify(u8.corpo && u8.corpo.error));
+        const h8 = await hikes.findOne({ _id: oid(HID8) });
+        const s8 = await sessions.findOne({ hikeId: oid(HID8) });
+        ok('8  Hike.distanceKm aggiornato dal file (!= 10, = quello della sessione)',
+            h8.distanceKm !== 10 && h8.distanceKm === s8.distanceKm,
+            JSON.stringify({ hike: h8.distanceKm, sess: s8.distanceKm }));
+        ok('8  Hike.elevationGain aggiornato dal file (!= 900, = quello della sessione)',
+            h8.elevationGain !== 900 && h8.elevationGain === s8.elevationGainM,
+            JSON.stringify({ hike: h8.elevationGain, sess: s8.elevationGainM }));
+        ok('8  Hike.maxAltitude aggiornato dal file (!= 2912)', h8.maxAltitude !== 2912 && Number.isFinite(h8.maxAltitude),
+            JSON.stringify({ hike: h8.maxAltitude }));
+        ok('8  Hike.routeSource marcato come venuto da un file', h8.routeSource && h8.routeSource.kind === 'gpx',
+            JSON.stringify(h8.routeSource));
+
+        // 8b: chi carica NON e' il creatore -> il suo Completion si aggiorna, ma i numeri
+        //     della Hike (comuni a tutti) NON si toccano. Hike creata da un altro utente
+        //     (idAltro), Completion e upload di A. Si riusa A come uploader di proposito:
+        //     ha gia' tutti i badge di quella zona, cosi' la traccia sintetica non lascia
+        //     un timbro nuovo da ripulire.
+        console.log('\n8b. Il ⬆ di chi non e\' il creatore non tocca i numeri della Hike');
+        const idAltro = elenco[1].id;
+        const h8bDoc = await hikes.insertOne({
+            title: MARCA + ' non-creatore', description: 'x', difficulty: 'Esperto', date: '2026-08-01',
+            creatorId: oid(idAltro), participants: [oid(idAltro), oid(idA)], pendingApproval: [],
+            distanceKm: 10, elevationGain: 900, maxAltitude: 2912,
+            location: { type: 'Point', coordinates: [13.5644, 42.4686] },
+            trailhead: { lat: 42.4686, lng: 13.5644, name: MARCA }
+        });
+        hikeIdsCreati.push(h8bDoc.insertedId);
+        const c8b = await comps.insertOne({ userId: oid(idA), hikeId: h8bDoc.insertedId, dateCompleted: new Date('2026-08-02') });
+        const u8b = await chiama('POST', `/api/completions/${c8b.insertedId}/gpx`, { gpxText: gpx(MARCA + '-hb', '2026-08-02') }, cookieA);
+        ok('8b  POST /:id/gpx (non creatore) -> 200', u8b.status === 200, JSON.stringify(u8b.corpo && u8b.corpo.error));
+        ok('8b  il Completion di chi carica SI aggiorna (actualTimeHours > 0)',
+            u8b.corpo && u8b.corpo.completion && u8b.corpo.completion.actualTimeHours > 0);
+        const h8b = await hikes.findOne({ _id: h8bDoc.insertedId });
+        ok('8b  i numeri della Hike NON cambiano (10 / 900 / 2912)',
+            h8b.distanceKm === 10 && h8b.elevationGain === 900 && h8b.maxAltitude === 2912,
+            JSON.stringify({ d: h8b.distanceKm, e: h8b.elevationGain, m: h8b.maxAltitude }));
+
     } catch (e) {
         console.error('\nERRORE DELLA PROVA:', e);
         falliti++; fallimenti.push('la prova stessa e\' andata in errore: ' + e.message);
