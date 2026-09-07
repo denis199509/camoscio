@@ -10829,8 +10829,10 @@ COMPLETAMENTO DA TRACCIAMENTO DAL VIVO NON CHIEDE "CHI ERA CON TE"
      comparire da qualche parte piu' evidente della lista "Gia' fatte".
 
 ===============================================================
-2FA (GOOGLE AUTHENTICATOR) - DA FARE. LOGIN CON GOOGLE - IN SOSPESO
-(33a sessione, 05/09/2026) - SOLO DA SEGNARE, NIENTE CODICE
+2FA (GOOGLE AUTHENTICATOR) - PROGETTATO (38a). LOGIN CON GOOGLE - IN SOSPESO
+(33a sessione 05/09/2026: la domanda. 38a sessione 07/09/2026: piano
+completo con l'agente architect, 2 revisioni - ANCORA NIENTE CODICE.
+Piano: C:\Users\lenovo\.claude\plans\camoscio-2fa-totp.md)
 ===============================================================
 
   Denis: "possiamo introdurre il Google autonticator. pure magari
@@ -10887,6 +10889,182 @@ COMPLETAMENTO DA TRACCIAMENTO DAL VIVO NON CHIEDE "CHI ERA CON TE"
   esiste (nota legale, vedi sopra); a quel punto rivalutare se vale
   la deroga al vincolo open source per la comodita' d'iscrizione che
   offre.
+
+  ---------------------------------------------------------------
+  AGGIORNAMENTO 38a SESSIONE (07/09/2026) - PROGETTATO, NIENTE CODICE
+  ---------------------------------------------------------------
+
+  Denis: "proviamo a fare il punto google authenticator". Progettato
+  e validato il 2FA TOTP con l'agente `architect` (2 revisioni). Il
+  piano completo (contratti, scheletri, prove, confini dei commit,
+  rischi) e' in C:\Users\lenovo\.claude\plans\camoscio-2fa-totp.md.
+  Nessuna riga di codice del sito toccata in questa sessione.
+
+  TRE SCELTE DI DENIS FATTE VIA AskUserQuestion:
+
+  1. NIENTE DIPENDENZE npm NUOVE. Il TOTP si scrive a mano in
+     lib/totp.js (nuovo) sul modulo `crypto` di Node - HMAC-SHA1 +
+     troncamento dinamico, RFC 4226/6238 - stessa filosofia di
+     lib/tokens.js (crypto-only apposta). Il QR lo disegna il
+     BROWSER da una libreria vendorizzata in public/vendor/qrcode/
+     (convenzione gia' in uso: vendor/leaflet, vendor/chartjs,
+     vendor/lucide). Consigliata: `qrcode-generator` di Kazuhiko
+     Arase, MIT, file singolo ES5, global window.qrcode,
+     createSvgTag() -> SVG inline. Scartato ogni QR via URL a un
+     server terzo: manderebbe il segreto in chiaro fuori.
+
+  2. IL RESET PASSWORD COL 2FA ATTIVO CHIEDE IL SECONDO FATTORE...
+     ...MA con una VIA DI SCAMPO: recupero via email SENZA secondo
+     fattore, con 7 GIORNI DI ATTESA + email di avviso, annullabile
+     dall'app finche' l'utente ha ancora il 2FA (OPZIONE C, scelta
+     da Denis contro "solo secondo fattore" e contro "la mail da
+     sola basta subito"). Effetto sulla natura della feature: il 2FA
+     NON e' piu' un lucchetto ma un "ritardo con allarme". La
+     sicurezza vera durante i 7 giorni e' il BANNER IN-APP GLOBALE,
+     non l'email: se la casella e' gia' compromessa l'avviso lo
+     legge l'attaccante, mentre il proprietario continua a fare
+     login col suo 2FA e vede il banner - e' l'unico canale che
+     l'attaccante non controlla. Il banner ha un commit tutto suo.
+     Caveat detto a Denis: le email di Camoscio finiscono spesso in
+     spam (punto "dominio email proprio", ancora aperto), quindi
+     "ti avvisiamo via email" vale meno di quanto sembri.
+
+  3. GIRO MINIMO. Solo TOTP + ~10 codici di recupero monouso,
+     codice chiesto a OGNI login. NIENTE "ricorda questo
+     dispositivo per 30 giorni" (sarebbe un secondo tipo di
+     credenziale con la sua revoca/scadenza/elenco - fuori). NIENTE
+     re-prompt del 2FA sulle azioni sensibili (cambio password e
+     DELETE account gia' chiedono la password attuale; i contatti
+     di emergenza sono gia' un punto loro).
+
+  DECISIONI MINORI GIA' PRESE (raccomandazioni architect; Denis puo'
+  ancora ribaltarle - dettaglio sez. 13 del piano):
+   - D-1: twoFactorEnabledAt e' una DATA, non un booleano (il
+     vincolo spazio vieta comunque default:false; la data regala
+     "attivo dal ..." gratis).
+   - D-2: codici di recupero da 12 caratteri (60 bit), Crockford
+     base32, formato XXXX-XXXX-XXXX. Impronte in sha256 (riusa
+     impronta() di lib/tokens.js) con l'userId in testa - NON
+     bcrypt: a ogni tentativo sbagliato bcrypt farebbe fino a 10
+     confronti = ~1s di CPU per richiesta su Render, un vettore DoS.
+   - D-3: la rigenerazione dei codici chiede password + TOTP, non
+     accetta un codice di recupero (chi ha perso il telefono passa
+     dalla disattivazione, dove il codice di recupero E' accettato).
+   - D-5: disattivando il 2FA le altre sessioni RESTANO aperte,
+     coerente con /change-password.
+
+  DECISIONI ANCORA APERTE PER DENIS:
+   - D-4: pretendere l'indirizzo email confermato PRIMA di poter
+     accendere il 2FA? Con l'opzione C la risposta e' cambiata: ORA
+     si consiglia SI. L'email e' diventata l'unica via di rientro;
+     un 2FA acceso su un indirizzo mai confermato = lockout
+     permanente (non ricevera' mai un token PasswordReset, quindi
+     non puo' nemmeno avviare il recupero ritardato). Costa 2 righe
+     in /2fa/enable.
+   - D-6: tono del testo sul lockout. Quasi svuotata dall'opzione C
+     (niente piu' lockout permanente). Resta solo: nella schermata
+     di attivazione dire "7 giorni" o la data vera? Consiglio "7
+     giorni", la data vera solo quando un recupero esiste davvero.
+   - D-7: ATTESA DEL RECUPERO 7 O 14 GIORNI? architect consiglia 14:
+     7 giorni sono esattamente la durata di un trekking lungo, e
+     questa app e' per gente che sta giorni senza campo - chi parte
+     lunedi' e torna domenica non vede mai il banner. E' una
+     costante in un punto solo, MA maturaIl e' immutabile per
+     progetto: i recuperi gia' avviati non si sposterebbero, meglio
+     decidere prima di partire.
+   - D-8: promemoria email a giorno 3 e 6? Consiglio NO, fuori dal
+     giro minimo (nel solo scenario che conta li legge l'attaccante;
+     costano un terzo segreto su Render + un secondo job cron-job).
+   - D-9: il link di completamento del recupero - subito nell'email
+     o seconda email alla maturita'? Consiglio: subito ma INERTE
+     fino alla maturita' (stato 'nonMaturo'), una sola email,
+     nessun cron.
+   - D-10: link "annulla" anche dentro l'email di avviso? Consiglio
+     SI come comodita', con un token DIVERSO da quello di
+     completamento. L'annullamento autorevole resta dall'app
+     loggata. Rimandabile senza toccare il resto.
+
+  TRAPPOLE GIA' INDIVIDUATE DALL'ARCHITECT NEL CODICE (da non
+  ripagare in fase di implementazione):
+   a) lib/accountDeletion.js scrubAccount() (righe ~147-182) fa
+      $unset esplicito campo per campo (passwordHash compreso) +
+      deleteMany di PasswordReset/EmailVerification: i 5 campi 2FA
+      nuovi vanno aggiunti alla lista, e AccountRecovery va tra i
+      deleteMany - o un account cancellato si tiene addosso il
+      segreto TOTP e le impronte dei codici per sempre (stessa
+      regressione dell'ALTO della 31a, l'export senza foto).
+   b) il toJSON globale di db/mongo.js (righe 5-13) fa gia'
+      delete ret.passwordHash come rete oltre al select:false: i
+      due campi segreti nuovi (twoFactorSecret, twoFactorPending)
+      vanno nella stessa rete.
+   c) creaToken() e trovaValido() di lib/tokens.js NON sono
+      riusabili per AccountRecovery. creaToken fa deleteMany({userId})
+      PRIMA di creare -> ogni nuova richiesta farebbe ripartire i 7
+      giorni da zero (l'opposto dell'idempotenza). trovaValido
+      misura un'eta' da createdAt contro una durata fissa; la
+      validita' di un recupero e' un intervallo che comincia nel
+      FUTURO. Serve lib/recuperoAccount.js (nuovo).
+   d) models/Report.js:38-42 documenta che su un campo con indice
+      TTL il default:undefined del vincolo spazio NON si applica:
+      un documento senza data li' viene saltato da Mongo e diventa
+      immortale in silenzio. AccountRecovery.expiresAt deve avere
+      un default vero.
+   e) lo stato del recupero NON puo' stare in currentUser:
+      refreshState() lo sostituisce con la versione da
+      GET /api/users e perde in silenzio i campi che quella lista
+      non porta (e' successo a profilePhoto, MEDIO 31a + B-5 32a).
+      Rotta dedicata GET /api/auth/recovery/status.
+   f) req.session.userId e' l'UNICO campo di sessione che l'intera
+      app legge (requireAuth, GET /me, upgrade WebSocket del mesh -
+      verificato con grep). Quindi "non scrivere mai userId finche'
+      il secondo fattore non e' passato" basta da solo a tenere
+      chiusa tutta l'app. Lo stato intermedio va in
+      req.session.pending2fa (5 min, max 5 tentativi), il primo
+      campo di sessione aggiuntivo mai introdotto.
+
+  9 BLOCCHI DI COMMIT (piano sez. 11), uno alla volta col via di
+  Denis, ognuno verificato prima del successivo:
+   1) lib/totp.js + prove sui vettori RFC (logica pura, zero DB)
+   2) schema User + modelli + reti di sicurezza (nessun cambio di
+      comportamento)
+   3) login + reset a due passi (SOLO SERVER) - inerte finche'
+      nessun documento ha twoFactorEnabledAt
+   4) rotte di gestione /2fa/setup|enable|disable|recovery-codes
+   5) recupero ritardato backend (AccountRecovery +
+      lib/recuperoAccount.js + rotte /recovery/start|status|cancel|
+      check|complete + emailRecuperoRitardato in lib/mailer.js +
+      recuperoLimiter)
+   6) vendor QR + pannello Impostazioni -> Sicurezza (2FA + riquadro
+      "recupero in corso")
+   7) BANNER GLOBALE (public/js/app.js) - commit a se': e' il
+      meccanismo di sicurezza dell'opzione C, tocca il file piu'
+      condiviso del progetto, ha la trappola (e) sopra
+   8) viste login (auth-2fa-view) + reimposta-password + chiavi i18n
+   9) prove complete (prova-2fa.js, prova-recupero-ritardato.js,
+      prova-browser-2fa.js) + LEGGIMI-PROVE.txt + docs + vault
+  Confine NON negoziabile: (3) PRIMA di (4). "Prima l'applicazione,
+  poi l'interruttore che l'accende" - l'ordine inverso aprirebbe
+  una finestra in cui l'interfaccia dice "protetto" e il login non
+  chiede niente (vincolo hard 7). code-reviewer + security-privacy
+  sul cumulativo prima di qualsiasi push - su una funzione di
+  autenticazione non e' facoltativo.
+
+  FILE NUOVI previsti: lib/totp.js, lib/recuperoAccount.js,
+  models/AccountRecovery.js, public/js/twofactor.js,
+  public/vendor/qrcode/qrcode.js (+LICENSE), prove/prova-2fa.js,
+  prove/prova-recupero-ritardato.js, prove/prova-browser-2fa.js.
+  FILE MODIFICATI previsti: models/User.js, models/PasswordReset.js,
+  db/mongo.js, lib/accountDeletion.js, lib/mailer.js, routes/auth.js,
+  routes/users.js, middleware/rateLimit.js, public/index.html,
+  public/reimposta-password.html, public/js/auth.js, public/js/app.js,
+  public/js/profile.js, public/js/i18n.js, public/css/styles.css,
+  prove/LEGGIMI-PROVE.txt.
+  NON toccati (da verificare che restino tali): server.js,
+  middleware/auth.js, db/sessionStore.js, lib/tokens.js,
+  models/EmailVerification.js.
+
+  LA 39a RIPARTE DAL BLOCCO 1 (a meno che Denis non voglia prima
+  chiudere D-4 e D-7).
 
 
 ===============================================================

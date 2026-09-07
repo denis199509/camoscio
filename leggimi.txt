@@ -1,74 +1,98 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-09-07 (TRENTASETTESIMA sessione, CHIUSA. Committato e
-pushato: `fa0f533` (C1 + C2) + `6368ad3` (allineamento .form-row) + il
-commit di chiusura docs. Deploy Render automatico. Vault committato e
-pushato a parte.
+Aggiornato: 2026-09-07 (TRENTOTTESIMA sessione, CHIUSA. NESSUN CODICE
+SCRITTO - solo progettazione. Niente da committare nel repo del codice.
+Vault committato e pushato a parte.
 
-  Fatta la FASCIA C dell'audit visivo (C1 + C2). L'AUDIT VISIVO DELLA 29a
-  E' COMPLETO (A + B + C). Solo frontend. Dettaglio in cose_da_fare.txt
-  "AUDIT VISIVO 37a".
-   - C1: 9 superfici erano rimaste sul blu-ardesia della vecchia palette
-     neon (mai spazzate al passaggio ai marroni caldi). Nuova :root
-     --bg-panel #1A1B14 (il valore che .tracking-panel gia' scriveva a
-     mano): .notification-dropdown / .toast / .hike-card-menu-dropdown /
-     .leaflet-popup(-tip) / .tracking-panel -> var(--bg-panel), un colore
-     solo. .sidebar e .top-header -> rgba(20,21,15, .95/.8) = canali di
-     --bg-dark, opacita' invariate. #map e .map-picker-canvas ->
-     var(--bg-dark). Solo colori. Le variabili --bg-panel/--bg-overlay
-     che l'audit citava NON esistevano: era il nome della proposta.
-     Confermato da Denis sul telefono.
-   - C2: la registrazione su telefono tagliava la parte alta dei passi
-     lunghi (2 e 5, segnalato da Denis) in modo IRRAGGIUNGIBILE. .auth-
-     gate era flex align-items:center + overflow -> card piu' alta del
-     viewport centrata, ~147px in cima persi. Fix (styles.css + auth.js):
-     align-items:flex-start + margin:auto 0 sulla card (misurato -147px
-     -> +24px; card corta ancora centrata); renderWizardStep() riporta
-     #auth-gate in cima a ogni passo; @media 480px per padding card
-     (32->20) e pallini avanzamento (28->24 / linee ->12); #report-fab
-     nascosto su login/registrazione (copriva "Avanti", li' non serve).
-   - C2 bis (Denis, stesso giro): in una .form-row se una label va a capo
-     e l'altra no i due input si disallineano (Password / Conferma
-     password). .form-row .form-group > input:last-child { margin-top:
-     auto } -> l'input scende in fondo alla colonna, si allineano.
-     Generico, nessuna @media. Commit a se' `6368ad3`.
-   - DA RIVERIFICARE SUL TELEFONO: i pezzi <480px di C2 (pallini,
-     padding) - l'estensione Chrome non stringe il viewport, verificati
-     solo per regola compilata + aritmetica. Il resto (scroll, clip,
-     FAB, allineamento) verificato in locale.
+  Denis: "proviamo a fare il punto google authenticator". PROGETTATO il
+  2FA TOTP con l'agente `architect` (2 revisioni). Piano completo:
+  C:\Users\lenovo\.claude\plans\camoscio-2fa-totp.md
+  "Accedi con Google" (OAuth) resta IN SOSPESO come dalla 33a: serve
+  prima l'informativa privacy vera.
 
-  ►►► LA 38a RIPARTE DA: i RILIEVI di code-reviewer + security-privacy
-  (girati a fine 35a, NESSUN CRITICO, niente fixato) - ne' la 36a ne' la
-  37a li hanno toccati. Riassunto consolidato in cose_da_fare.txt
-  "REVISIONE 35a: RILIEVI". In sintesi:
-   1. URGENTE: Math.max(...) su traccia lunga (>~125k punti) -> RangeError
-      -> la registrazione non si chiude PIU'. routes/tracking.js:1119 +
-      gemelli lib/percorso.js:63,70 + lib/gpx.js:376. Fix:
-      .reduce((m,q)=>q>m?q:m,-Infinity).
-   2. ~9 fix di correttezza piccoli in Punto 1 / M-5 (distanceKm non
-      arrotondato; maxAltitudeM non aggiornato dal ⬆; $pull che toglie
-      omonimi col DMS; registrazione senza quota che azzera i numeri
-      dell'organizzatore; D5 che etichetta un file come "dal vivo"; email
-      includes('@') vs validator.isEmail; toast "rimosso" che mente;
-      phone:''; /end fallito -> 409; ecc.).
-   3. DECISIONE DI DENIS: la D5 pubblica la traccia GPS del creatore senza
-      atto esplicito, senza avviso sulla corsia card, senza modo di
-      ritirarla (security-privacy ALTO-1). Tenere l'automatismo o passare a
-      flag esplicito + nota + via di revoca?
-   4. Effetti collaterali del TTL Notification: promemoria che risorgono
-      ogni 90gg; il TTL cancella l'unica traccia di un allarme DMS
-      scattato; l'indice TTL non verificato sul DB vero.
-   5. GIA' NOTI: informativa privacy inesistente (nota legale);
-      propagazione tempi del creatore (decisione gia' presa da Denis).
-  + colmare le lacune nelle prove insieme ai fix.
+  DECISIONI DI DENIS:
+   - Zero dipendenze npm nuove: TOTP a mano in lib/totp.js sul crypto
+     di Node (RFC 4226/6238); QR disegnato dal browser da
+     qrcode-generator di K. Arase (MIT) vendorizzato in
+     public/vendor/qrcode/.
+   - Reset password col 2FA attivo: chiede il secondo fattore, MA
+     esiste il recupero via email SENZA secondo fattore con 7 giorni
+     di ATTESA + avviso (OPZIONE C). Il 2FA da lucchetto diventa
+     "ritardo con allarme": la difesa vera e' il BANNER IN-APP durante
+     i 7 giorni (se la casella e' gia' compromessa l'email di avviso
+     la legge l'attaccante; il proprietario invece fa login col suo
+     2FA e vede il banner), annullabile dall'app finche' ha il 2FA.
+   - Giro minimo: TOTP + ~10 codici di recupero monouso, codice a ogni
+     login. Niente "ricorda dispositivo", niente re-prompt sulle
+     azioni sensibili.
 
-  FASCIA C dell'audit: CHIUSA nella 37a (C1 + C2 sopra; C3 nella 36a).
-  RESTA fuori Fascia C, punto a se': #9CA3AF degli assi Chart.js ->
-  --color-text-secondary (piccolo, cambio visivo).
+  DECISIONI MINORI GIA' PRESE (raccomandazioni architect, ribaltabili):
+  D-1 twoFactorEnabledAt come Data non booleano; D-2 codici di recupero
+  da 12 caratteri; D-3 la rigenerazione codici chiede password+TOTP
+  (non un codice di recupero); D-5 disattivando il 2FA le altre
+  sessioni RESTANO aperte (come /change-password).
 
-  ANCORA APERTO invariato: prova al telefono con GPS vero del Punto 1
-  (solo Denis); conformita' GDPR (professionista); verifica dal vivo
-  invito squadra direzionale.)
+  DECISIONI ANCORA APERTE PER DENIS (dettaglio: sez. 13 del piano):
+   - D-4: pretendere l'email confermata prima di accendere il 2FA?
+     Con l'opzione C ORA si consiglia SI - l'email e' l'unica via di
+     rientro, un 2FA acceso su un indirizzo mai confermato = lockout
+     permanente (non riceve mai un token di reset).
+   - D-7: attesa del recupero 7 o 14 giorni? architect consiglia 14
+     (7 gg = durata di un trekking lungo, chi e' in cammino non vede
+     mai il banner). Costante in un punto solo, ma maturaIl e'
+     immutabile per progetto: meglio decidere prima di partire.
+   - D-8 promemoria email giorno 3/6 (consiglio NO, fuori giro minimo);
+     D-9 forma del link di completamento (consiglio: subito ma inerte
+     fino alla maturita'); D-10 link "annulla" nell'email con token
+     diverso (consiglio SI come comodita'). Nessuno di questi blocca.
+   - D-6 quasi vuota: niente piu' lockout permanente da annunciare.
+
+  9 BLOCCHI DI COMMIT (piano sez. 11), uno alla volta col via di Denis:
+   (1) lib/totp.js + prove vettori RFC   (2) schema + reti di sicurezza
+       (toJSON / ALWAYS_PRIVATE_FIELDS / $unset nello scrub)
+   (3) login + reset a due passi (SOLO SERVER, inerte finche' nessuno
+       ha il 2FA)   (4) rotte /2fa/setup|enable|disable|recovery-codes
+   (5) recupero ritardato backend (models/AccountRecovery.js +
+       lib/recuperoAccount.js + rotte /recovery/*)
+   (6) vendor QR + pannello Impostazioni   (7) BANNER GLOBALE (commit a
+       se': e' il meccanismo di sicurezza dell'opzione C, tocca app.js)
+   (8) viste login / reimposta-password + i18n   (9) prove + docs.
+  Confine NON negoziabile: (3) prima di (4) - "prima l'applicazione,
+  poi l'interruttore che l'accende", altrimenti l'interfaccia dice
+  "protetto" mentre il login non chiede niente (vincolo 7).
+  code-reviewer + security-privacy sul cumulativo prima di ogni push.
+
+  TRAPPOLE gia' individuate dall'architect, da non ripagare:
+   - scrubAccount() (lib/accountDeletion.js) fa $unset campo per campo +
+     deleteMany di PasswordReset/EmailVerification -> aggiungere i 5
+     campi 2FA e la collezione AccountRecovery, o un account cancellato
+     si tiene il segreto per sempre (regressione dell'ALTO 31a).
+   - il toJSON globale di db/mongo.js (toglie gia' passwordHash) deve
+     togliere anche twoFactorSecret e twoFactorPending.
+   - creaToken()/trovaValido() di lib/tokens.js NON riusabili per
+     AccountRecovery: creaToken fa deleteMany prima di creare (=
+     ripartirebbero i 7 giorni ogni volta); trovaValido misura un'eta'
+     contro durata fissa, non un intervallo che comincia nel futuro.
+   - Report.js:38-42: su un campo con indice TTL il default:undefined
+     del vincolo 1 NON vale (Mongo salta il doc senza data e lo rende
+     immortale) -> AccountRecovery.expiresAt serve un default vero.
+   - lo stato del recupero NON in currentUser: refreshState() lo
+     sostituisce da GET /api/users e perde i campi non portati (e'
+     successo a profilePhoto, 2 sessioni) -> rotta GET /api/auth/
+     recovery/status dedicata.
+
+  ►►► LA 39a RIPARTE DAL BLOCCO 1: lib/totp.js + le prove sui vettori
+  RFC 4226/6238, zero database. Prima, se vuole, Denis chiude D-4 e D-7.
+
+  ►►► ANCORA APERTO, NON TOCCATO DALLA 38a: i RILIEVI di code-reviewer +
+  security-privacy della 35a (Math.max -> RangeError su traccia lunga,
+  routes/tracking.js:1119 + gemelli; ~9 fix di correttezza Punto 1/M-5;
+  decisione D5 sulla traccia GPS del creatore; effetti collaterali TTL
+  Notification). Riassunto in cose_da_fare.txt "REVISIONE 35a: RILIEVI".
+  Inoltre invariati: prova al telefono col GPS vero del Punto 1 (solo
+  Denis); conformita' GDPR (professionista); verifica dal vivo invito
+  squadra direzionale. Punto a se' fuori audit: #9CA3AF degli assi
+  Chart.js -> --color-text-secondary.)
 
 --- TASTO INDIETRO / HISTORY API (33a): FATTO, PUSHATO (`7793426`) ---
 Il tasto Indietro non tornava indietro, buttava fuori dal sito. Riscritto
