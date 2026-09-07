@@ -83,15 +83,19 @@ tutti su disco, mancavano solo i commit di chiusura, fatti al riavvio.
      successo a profilePhoto, 2 sessioni) -> rotta GET /api/auth/
      recovery/status dedicata.
 
-  ►►► LA 39a RIPARTE DAL BLOCCO 1: lib/totp.js + le prove sui vettori
-  RFC 4226/6238, zero database. Prima, se vuole, Denis chiude D-4 e D-7.
+  ►►► ORDINE DECISO DA DENIS PER LA 39a (e seguito):
+   1. BLOCCO 1 del piano 2FA: lib/totp.js + le prove sui vettori
+      RFC 4226/6238, zero database.
+   2. POI le decisioni D-4 (email confermata prima di accendere il
+      2FA) e D-7 (attesa recupero 7 o 14 giorni) - dettaglio sez. 13
+      del piano.
+   3. POI i RILIEVI di code-reviewer + security-privacy della 35a
+      (Math.max -> RangeError su traccia lunga, routes/tracking.js:1119
+      + gemelli; ~9 fix di correttezza Punto 1/M-5; decisione D5 sulla
+      traccia GPS del creatore; effetti collaterali TTL Notification).
+      Riassunto in cose_da_fare.txt "REVISIONE 35a: RILIEVI".
 
-  ►►► ANCORA APERTO, NON TOCCATO DALLA 38a: i RILIEVI di code-reviewer +
-  security-privacy della 35a (Math.max -> RangeError su traccia lunga,
-  routes/tracking.js:1119 + gemelli; ~9 fix di correttezza Punto 1/M-5;
-  decisione D5 sulla traccia GPS del creatore; effetti collaterali TTL
-  Notification). Riassunto in cose_da_fare.txt "REVISIONE 35a: RILIEVI".
-  Inoltre invariati: prova al telefono col GPS vero del Punto 1 (solo
+  ANCORA APERTO, invariato: prova al telefono col GPS vero del Punto 1 (solo
   Denis); conformita' GDPR (professionista); verifica dal vivo invito
   squadra direzionale. Punto a se' fuori audit: #9CA3AF degli assi
   Chart.js -> --color-text-secondary.)

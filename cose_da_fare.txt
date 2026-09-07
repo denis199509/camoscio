@@ -11063,8 +11063,12 @@ Piano: C:\Users\lenovo\.claude\plans\camoscio-2fa-totp.md)
   middleware/auth.js, db/sessionStore.js, lib/tokens.js,
   models/EmailVerification.js.
 
-  LA 39a RIPARTE DAL BLOCCO 1 (a meno che Denis non voglia prima
-  chiudere D-4 e D-7).
+  ORDINE DECISO DA DENIS PER LA 39a (fine 38a):
+   1. BLOCCO 1: lib/totp.js + prove sui vettori RFC 4226/6238, zero DB.
+   2. POI le decisioni D-4 (pretendere l'email confermata prima di
+      accendere il 2FA) e D-7 (attesa recupero 7 o 14 giorni).
+   3. POI i rilievi di code-reviewer + security-privacy della 35a
+      (sezione "REVISIONE 35a: RILIEVI" piu' sotto).
 
   --- CHIUSURA ---
   Denis: "quando e' pronto, salva tutto, proseguiamo nella prossima
@@ -11072,8 +11076,9 @@ Piano: C:\Users\lenovo\.claude\plans\camoscio-2fa-totp.md)
   fine sessione. Alla ripresa: i file erano gia' tutti su disco (il
   piano camoscio-2fa-totp.md 1447 righe, leggimi, cose_da_fare, vault
   03/04/06) - nessuna perdita, mancavano solo i commit. Fatti al
-  riavvio: commit docs nel repo (niente push, nessun codice), commit +
-  push del vault.
+  riavvio: commit docs nel repo (poi pushati su richiesta di Denis) +
+  commit e push del vault. Denis ha anche fissato l'ordine della 39a
+  qui sopra.
 
 
 ===============================================================
