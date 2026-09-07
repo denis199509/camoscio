@@ -1,8 +1,9 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
 Aggiornato: 2026-09-07 (TRENTOTTESIMA sessione, CHIUSA. NESSUN CODICE
-SCRITTO - solo progettazione: nel repo solo il commit di chiusura docs
-(leggimi + cose_da_fare), nessun push. Vault committato e pushato a parte.
+SCRITTO - solo progettazione: nel repo solo i commit di chiusura docs
+(leggimi + cose_da_fare), committati e PUSHATI (ba6f59c). Vault
+committato e pushato a parte (be4141e).
 NB: sessione salvata dopo un arresto improvviso del PC - i file erano gia'
 tutti su disco, mancavano solo i commit di chiusura, fatti al riavvio.
 
