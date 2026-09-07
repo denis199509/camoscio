@@ -1,8 +1,10 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
 Aggiornato: 2026-09-07 (TRENTOTTESIMA sessione, CHIUSA. NESSUN CODICE
-SCRITTO - solo progettazione. Niente da committare nel repo del codice.
-Vault committato e pushato a parte.
+SCRITTO - solo progettazione: nel repo solo il commit di chiusura docs
+(leggimi + cose_da_fare), nessun push. Vault committato e pushato a parte.
+NB: sessione salvata dopo un arresto improvviso del PC - i file erano gia'
+tutti su disco, mancavano solo i commit di chiusura, fatti al riavvio.
 
   Denis: "proviamo a fare il punto google authenticator". PROGETTATO il
   2FA TOTP con l'agente `architect` (2 revisioni). Piano completo:
