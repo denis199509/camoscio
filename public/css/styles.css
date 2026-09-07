@@ -20,7 +20,8 @@
        entrambi i casi (l'audit proponeva ~#857E6E, che pero' restava a 3,99 sulle card).
        Tutti i 16 usi sono `color:`, nessuno sfondo/bordo. La gerarchia muted -> secondary
        (#A8A090) -> primary resta netta. .settings-placeholder opacity e' gia' stata alzata
-       (Fascia A); le due varianti green/red-come-testo dell'audit restano da fare, a se'. */
+       (Fascia A); le due varianti green/red-come-testo dell'audit sono le --accent-green-text
+       / --accent-red-text qui sotto (36a sessione). */
     --color-text-muted: #8F887A;
 
     /* Accenti "montagna" */
@@ -33,6 +34,19 @@
 
     --accent-green: #4C7A44;
     --accent-green-glow: rgba(76, 122, 68, 0.2);
+    /* Audit visivo Fascia B4, parte green/red-come-TESTO (36a sessione). --accent-green e
+       --accent-red pieni, usati come colore di primo piano (testo o icona), stanno sotto la
+       soglia AA di 4,5:1: ~3,65:1 il verde, ~2,91:1 il rosso sul fondo principale, ancora
+       meno sulle card. Queste due varianti schiarite valgono SOLO dove l'accento fa da primo
+       piano (ogni `color:`); sfondi, bordi e ombre restano sull'accento pieno. Misure sul
+       renderizzato: verde #74A466 -> ~6,3:1 sul fondo pagina, ~5,5-6,0:1 sulle card, 4,51:1
+       nel caso peggiore (una pill .badge-green, il cui sfondo --accent-green-glow si somma
+       al fondo della card). Rosso: #ee7361 (il valore gia' scritto a mano in
+       .hike-card-menu-item-danger) si fermava a 4,42:1 in quel caso-pill -> schiarito ~2%
+       per canale a #f07866, stessa tinta all'occhio, ora 4,61:1 li' e 5,6-6,6:1 altrove.
+       I due -text hanno luminanza quasi uguale, cosi' il segnale "ok" e "attenzione"
+       pesano uguale. Il residuo vero della pill e' il suo sfondo traslucido (Fascia B). */
+    --accent-green-text: #74A466;
 
     --accent-blue: #4C7E90;
     --accent-blue-glow: rgba(76, 126, 144, 0.25);
@@ -45,6 +59,7 @@
 
     --accent-red: #A83B2E;
     --accent-red-glow: rgba(168, 59, 46, 0.3);
+    --accent-red-text: #f07866;   /* rosso schiarito per il primo piano - vedi la nota su --accent-green-text */
 
     --accent-tan: #A88F6B;
 
@@ -96,17 +111,40 @@ h1, h2, h3, h4, h5, h6 {
    si distingueva solo per il font Outfit e il grassetto; h5 restava a 0.83rem di
    default con quattro override sparsi quasi uguali (0.85rem in .backpack-add-* /
    .sms-log-box / .chat-box, 0.90 in .squad-item, 0.95 in .backpack-category).
-   Qui una base sola: h4 appena sopra il corpo, h5 appena sotto. Gli override a 0.85
-   e lo 0.90 di .squad-item si tolgono (ora ereditano da qui); .backpack-category tiene
-   lo 0.95 di proposito - e' un'intestazione di categoria con riga sotto e colore
-   accento, non sedimento. h3 resta al default del browser (1.17em): gia' si stacca. */
+   Qui una base sola: h4 sopra il corpo, h5 appena sotto. Gli override a 0.85 e lo 0.90
+   di .squad-item si tolgono (ora ereditano da qui). h3 resta al default del browser
+   (1.17em): gia' si stacca.
+   AGGIORNATO da B5 (36a): h4 1.05 -> 1.15rem (il gradino "titolo di scheda", condiviso
+   con i titoli di gruppo); .backpack-category h5, che A10 aveva tenuto a 0.95 di
+   proposito, ora sta a 1rem - resta un'intestazione di categoria piu' marcata del
+   corpo, ma su un gradino della scala invece che a se'. */
 h4 {
-    font-size: 1.05rem;
+    font-size: 1.15rem;
 }
 
 h5 {
     font-size: 0.9rem;
 }
+
+/* Audit visivo Fascia B5 (36a sessione): la scala tipografica. Prima c'erano ~30 misure
+   di testo distinte, molte a 0,3px l'una dall'altra (0,68 / 0,70 / 0,72 rem ...): sedimento,
+   non scelta. Consolidate a OTTO gradini - ogni `font-size` che porta TESTO usa uno di questi:
+       0,7rem   micro-etichette (contatori, date timbro, tag)
+       0,8rem   testo piccolo (.small, righe di dettaglio, hint)
+       0,85rem  testo di scheda / voci di menu / label di form
+       0,9rem   testo secondario, h5, navigazione
+       1rem     corpo, intestazioni di categoria
+       1,15rem  titoli di scheda (h4) e di gruppo, valori in evidenza
+       1,4rem   titoli di sezione, wordmark
+       1,9rem   numeri-hero (contatori Dashboard, timer, statistiche tracciamento)
+   FUORI dalla scala di proposito, perche' NON sono testo o non sono in rem:
+   il font-size che dimensiona un'emoji/glifo-icona (.stamp-icon, .badge-card-icon,
+   .logo-icon, .avatar-icon, .close-modal-btn, il glifo interno di .p-avatar e la ★ di
+   .p-avatar.local-expert::before tarata sul cerchio da 14px, .feed-item-avatar,
+   .mi-piace-emoji ...), il residuo 1,6rem di .app-fab (vestigiale: dopo B7 il FAB e' un
+   SVG con regola propria), i due clamp() responsivi di .dash-hero-*, lo 0,9em di
+   .moderation-list-count (scala col genitore) e il font-size:0 di #btn-logout (trucco
+   icona-sola). h3 resta al default del browser. Vedi anche il commento A10 qui sopra. */
 
 /* Scrollbar personalizzata per un look premium */
 ::-webkit-scrollbar {
@@ -202,7 +240,7 @@ h5 {
     display: flex;
     align-items: center;
     gap: 12px;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     font-weight: 500;
     text-align: left;
     transition: all var(--transition-speed);
@@ -263,7 +301,7 @@ h5 {
     display: flex;
     align-items: center;
     gap: 12px;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     font-weight: 500;
     text-align: left;
     transition: all var(--transition-speed);
@@ -401,7 +439,7 @@ h5 {
     display: flex;
     align-items: center;
     gap: 12px;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     font-weight: 600;
     text-align: left;
     width: 100%;
@@ -513,7 +551,7 @@ h5 {
 }
 
 .section-title {
-    font-size: 1.6rem;
+    font-size: 1.4rem;
     color: var(--color-text-primary);
 }
 
@@ -664,7 +702,7 @@ h5 {
     right: -4px;
     background: var(--accent-red);
     color: white;
-    font-size: 0.65rem;
+    font-size: 0.7rem;
     font-weight: 700;
     min-width: 16px;
     height: 16px;
@@ -773,7 +811,7 @@ h5 {
 .user-sub-details {
     display: flex;
     gap: 8px;
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     color: var(--color-text-secondary);
 }
 
@@ -967,7 +1005,7 @@ h5 {
    quella taglia fatta classe vera, leggermente sotto .btn-sm - altezza risultante ~34px. */
 .btn-xs {
     padding: 6px 10px;
-    font-size: 0.78rem;
+    font-size: 0.8rem;
     border-radius: 8px;
 }
 
@@ -1043,7 +1081,7 @@ h5 {
 .badge {
     padding: 4px 8px;
     border-radius: 6px;
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     font-weight: 600;
 }
 
@@ -1060,12 +1098,12 @@ h5 {
 
 .badge-green {
     background: var(--accent-green-glow);
-    color: var(--accent-green);
+    color: var(--accent-green-text);
 }
 
 .badge-red {
     background: var(--accent-red-glow);
-    color: var(--accent-red);
+    color: var(--accent-red-text);
 }
 
 /* Utility Testi */
@@ -1122,6 +1160,44 @@ h5 {
 
 .col-span-2 {
     grid-column: 1 / -1;
+}
+
+/* Audit visivo Fascia B1 (36a sessione): stato vuoto unificato. Una dozzina di riquadri
+   "non c'e' ancora niente" erano <div class="glass-card text-center py-4 text-muted"> -
+   quattro classi di utility (due, .text-center e .py-4, esistono solo dalla A2) e nessuna
+   struttura: una riga di testo grigio. Ora un componente solo, con l'impronta degli stati
+   vuoti curati della Dashboard (#dash-journey-empty): emoji sopra, testo centrato, spazio
+   attorno. Lo emette window.statoVuoto(testo, icona, classiExtra) in app.js; va sempre
+   su un <div class="empty-state glass-card">. */
+.empty-state {
+    text-align: center;
+    padding: 28px 24px;
+}
+
+.empty-state-icon {
+    display: block;
+    margin-bottom: 10px;
+    font-size: 1.9rem;
+    line-height: 1;
+}
+
+.empty-state-title {
+    margin: 0 0 6px;
+    font-weight: 700;
+    color: var(--color-text-primary);
+}
+
+.empty-state-text {
+    max-width: 44ch;
+    margin: 0 auto;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    color: var(--color-text-muted);
+}
+
+.empty-state-text b,
+.empty-state-text strong {
+    color: var(--color-text-secondary);
 }
 
 /* Form */
@@ -1256,14 +1332,14 @@ option {
     background: transparent;
     border: none;
     color: var(--color-text-secondary);
-    font-size: 1.1rem;
+    font-size: 1.15rem;
     line-height: 1;
     cursor: pointer;
     padding: 0 4px;
 }
 
 .btn-inline-remove:hover {
-    color: var(--accent-red);
+    color: var(--accent-red-text);
 }
 
 .input-with-btn {
@@ -1323,7 +1399,7 @@ option {
 }
 
 .close-modal-btn:hover {
-    color: var(--accent-red);
+    color: var(--accent-red-text);
 }
 
 .generic-modal-content {
@@ -1459,7 +1535,7 @@ option {
 
 .dash-hero-adv-title {
     margin: 0;
-    font-size: 1.25rem;
+    font-size: 1.15rem;
     font-weight: 700;
     line-height: 1.2;
 }
@@ -1557,7 +1633,7 @@ option {
    (era 0.75rem qui, 0.72rem nei totali - una differenza senza motivo). */
 .total-lbl,
 .pace-row span {
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     color: var(--color-text-secondary);
 }
 
@@ -1640,7 +1716,7 @@ option {
 }
 
 .stamp-name {
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     font-weight: 600;
     color: var(--color-text-primary);
     /* Senza questo "Rifugio Pino Ciuffarella" (nome vero del catalogo badge) allarga la
@@ -1651,7 +1727,7 @@ option {
 }
 
 .stamp-date {
-    font-size: 0.65rem;
+    font-size: 0.7rem;
     color: var(--color-text-secondary);
     overflow-wrap: anywhere;
 }
@@ -1678,7 +1754,7 @@ option {
 
 .dash-journey-peaks strong {
     font-family: 'Outfit', sans-serif;
-    font-size: 2rem;
+    font-size: 1.9rem;
     font-weight: 700;
     color: var(--accent-orange);
     margin-right: 6px;
@@ -1756,7 +1832,7 @@ option {
 
 .total-val {
     font-family: 'Outfit', sans-serif; /* stesso font dei numeri grandi delle altre schede */
-    font-size: 1.5rem;
+    font-size: 1.4rem;
     font-weight: 700;
     color: var(--accent-orange);
     line-height: 1.1;
@@ -1805,7 +1881,7 @@ option {
 /* La spaziatura fra etichetta e valore la da' il gap del riquadro condiviso: il
    margin-bottom che c'era qui la raddoppiava solo in questa scheda. */
 .pace-row strong {
-    font-size: 1.1rem;
+    font-size: 1.15rem;
     font-family: 'Outfit', sans-serif;
     color: var(--accent-blue);
 }
@@ -1899,7 +1975,7 @@ option {
 /* Timer Dead Man */
 .timer-display-large {
     font-family: 'Outfit', sans-serif;
-    font-size: 2.8rem;
+    font-size: 1.9rem;
     font-weight: 800;
     color: var(--accent-orange);
     text-align: center;
@@ -2122,11 +2198,13 @@ option {
     background: rgba(255, 255, 255, 0.06);
 }
 
-/* "Elimina escursione": voce distruttiva del menu. Un rosso PIU' CHIARO di --accent-red
-   (#A83B2E): quello su fondo tendina #1A2436 sta sotto la soglia di leggibilità per il
-   testo (~2,5:1); regge sull'icona .outing-card-del ma non su una riga di testo a 0.85rem. */
+/* "Elimina escursione": voce distruttiva del menu. Usa --accent-red-text: --accent-red pieno
+   (#A83B2E) su fondo tendina scuro sta sotto la soglia di leggibilità per il testo (~2,5:1).
+   Questo era il primo punto a usare un rosso schiarito a mano (#ee7361); dalla voce B4
+   dell'audit (36a sessione) vive nella variabile - ritoccata a #f07866 - condivisa con
+   gli altri testi e icone rossi. */
 .hike-card-menu-item-danger {
-    color: #ee7361;
+    color: var(--accent-red-text);
 }
 
 .hike-meta-row {
@@ -2161,7 +2239,7 @@ option {
     border: 1px solid var(--border-color);
     padding: 4px 8px;
     border-radius: 6px;
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     color: var(--color-text-secondary);
 }
 
@@ -2202,7 +2280,7 @@ option {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     position: relative;
     cursor: pointer;
 }
@@ -2594,25 +2672,26 @@ option {
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: 0.75rem;
+    font-size: 0.8rem;
 }
 
 /* Audit visivo Fascia B6 (35a sessione): il ramo "nessun rischio fulmini" (weather.js)
    riusava .lightning-alert - una classe di ALLARME rosso - e la ridipingeva verde con tre
    override inline (+ un #B8CBA8 che non esisteva da nessun'altra parte). Stesso identico
    caso gia' risolto per il Dead Man's Switch con .safety-honesty-note.is-ok (piu' sotto):
-   un modificatore che riusa i token --accent-green. Il contrasto del testo verde su fondo
-   scuro (~3,65:1, sotto AA) e' un problema noto e condiviso con .safety-honesty-note.is-ok:
-   lo chiude la voce B4 dell'audit (--accent-green-text schiarito), non questa. */
+   un modificatore che riusa i token --accent-green. Il contrasto del testo (e dell'icona)
+   verde su fondo scuro era ~3,65:1, sotto AA: dalla voce B4 dell'audit (36a sessione) il
+   primo piano usa --accent-green-text schiarito, lo sfondo e il bordo restano sull'accento
+   pieno. Stesso trattamento su .safety-honesty-note.is-ok. */
 .lightning-alert.is-ok {
     background: var(--accent-green-glow);
     border-color: var(--accent-green);
-    color: var(--accent-green);
+    color: var(--accent-green-text);
 }
 
 .lightning-alert.is-ok i,
 .lightning-alert.is-ok svg {
-    color: var(--accent-green);
+    color: var(--accent-green-text);
 }
 
 /* Sun Exposure Widget */
@@ -2653,7 +2732,7 @@ option {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 0.75rem;
+    font-size: 0.8rem;
 }
 
 .waze-item-desc {
@@ -2662,7 +2741,7 @@ option {
 }
 
 .waze-item-resolve {
-    color: var(--accent-green);
+    color: var(--accent-green-text);
     cursor: pointer;
     background: transparent;
     border: none;
@@ -2726,7 +2805,7 @@ option {
     border: 1px solid var(--border-color);
     border-radius: 999px;
     color: var(--color-text-secondary);
-    font-size: 0.88rem;
+    font-size: 0.85rem;
     cursor: pointer;
     transition: background var(--transition-speed), color var(--transition-speed), border-color var(--transition-speed);
 }
@@ -2799,11 +2878,11 @@ option {
     border-top: 1px solid var(--border-color);
     padding-top: 8px;
     margin-top: 8px;
-    font-size: 1.05rem;
+    font-size: 1.15rem;
 }
 
 .result-row.highlight strong {
-    color: var(--accent-green);
+    color: var(--accent-green-text);
 }
 
 /* Address Privacy matching widget */
@@ -2824,7 +2903,7 @@ option {
 
 .privacy-status.matching {
     background: rgba(76, 122, 68, 0.1);
-    color: var(--accent-green);
+    color: var(--accent-green-text);
     border: 1px solid rgba(76, 122, 68, 0.2);
 }
 
@@ -2908,7 +2987,7 @@ option {
 
 .backpack-rules-notice.danger i,
 .backpack-rules-notice.danger svg {
-    color: var(--accent-red);
+    color: var(--accent-red-text);
 }
 
 .backpack-rules-notice.danger ul {
@@ -2950,7 +3029,7 @@ option {
 .backpack-add-shared h5 svg {
     width: 16px;
     height: 16px;
-    color: var(--accent-green);
+    color: var(--accent-green-text);
     flex-shrink: 0;
 }
 
@@ -2973,7 +3052,7 @@ option {
 .backpack-add-personal h5 svg {
     width: 16px;
     height: 16px;
-    color: var(--accent-green);
+    color: var(--accent-green-text);
     flex-shrink: 0;
 }
 
@@ -2990,7 +3069,7 @@ option {
     background: rgba(76, 122, 68, 0.12);
     border: 1px solid var(--accent-green);
     border-radius: 10px;
-    color: var(--accent-green);
+    color: var(--accent-green-text);
     font-size: 0.85rem;
 }
 
@@ -3027,7 +3106,7 @@ option {
 }
 
 .backpack-category h5 {
-    font-size: 0.95rem;
+    font-size: 1rem;
     border-bottom: 1px solid var(--border-color);
     padding-bottom: 6px;
     margin-bottom: 10px;
@@ -3071,15 +3150,15 @@ option {
     display: flex;
     align-items: center;
     gap: 12px;
-    font-size: 0.75rem;
+    font-size: 0.8rem;
 }
 
 .item-mandatory-tag {
     background: rgba(168, 59, 46, 0.15);
-    color: var(--accent-red);
+    color: var(--accent-red-text);
     padding: 2px 6px;
     border-radius: 4px;
-    font-size: 0.65rem;
+    font-size: 0.7rem;
     font-weight: 700;
 }
 
@@ -3176,21 +3255,22 @@ option {
     height: 16px;
     flex-shrink: 0;
     margin-top: 2px;
-    color: var(--accent-red);
+    color: var(--accent-red-text);
 }
 
 /* Punto 37 (08/08/2026): stessa nota, ma per dire che qualcosa FUNZIONA (l'allarme vero
    parte davvero) invece che manca - il rosso da avviso sarebbe fuorviante quanto il testo
-   sbagliato. Riusa i token --accent-green gia' in uso altrove (es. .toast.success). */
+   sbagliato. Riusa i token --accent-green gia' in uso altrove (es. .toast.success); il primo
+   piano passa a --accent-green-text dalla voce B4 dell'audit (36a sessione, come sopra). */
 .safety-honesty-note.is-ok {
     background: var(--accent-green-glow);
     border-color: var(--accent-green);
-    color: var(--accent-green);
+    color: var(--accent-green-text);
 }
 
 .safety-honesty-note.is-ok i,
 .safety-honesty-note.is-ok svg {
-    color: var(--accent-green);
+    color: var(--accent-green-text);
 }
 
 .sms-log-box {
@@ -3221,7 +3301,7 @@ option {
     border: 1px solid rgba(168, 59, 46, 0.2);
     padding: 8px;
     border-radius: 6px;
-    font-size: 0.75rem;
+    font-size: 0.8rem;
 }
 
 /* Mesh Connection Indicator */
@@ -3326,7 +3406,7 @@ option {
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 0.75rem;
+    font-size: 0.8rem;
 }
 
 .dot-sample {
@@ -3383,7 +3463,7 @@ option {
 }
 
 .message {
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     padding: 6px 10px;
     border-radius: 6px;
     max-width: 80%;
@@ -3513,7 +3593,7 @@ option {
 }
 
 .rating-group label {
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     color: var(--color-text-secondary);
 }
 
@@ -3663,7 +3743,7 @@ option {
 }
 
 .auth-brand h1 {
-    font-size: 1.6rem;
+    font-size: 1.4rem;
     background: linear-gradient(135deg, #FFF 30%, var(--accent-orange) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -3720,7 +3800,7 @@ option {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     font-weight: 700;
     flex-shrink: 0;
 }
@@ -3746,13 +3826,13 @@ option {
 }
 
 .wizard-step-title {
-    font-size: 1.1rem;
+    font-size: 1.15rem;
     margin-bottom: 4px;
 }
 
 .wizard-step-desc {
     color: var(--color-text-secondary);
-    font-size: 0.82rem;
+    font-size: 0.8rem;
     margin-bottom: 18px;
 }
 
@@ -3818,7 +3898,7 @@ option {
     display: flex;
     align-items: flex-start;
     gap: 8px;
-    font-size: 0.78rem;
+    font-size: 0.8rem;
     font-weight: 600;
     margin: 10px 0 16px;
 }
@@ -3847,17 +3927,17 @@ option {
     border: none;
     color: var(--color-text-muted);
     cursor: pointer;
-    font-size: 1.1rem;
+    font-size: 1.15rem;
     line-height: 1;
 }
 
 .emergency-contact-row .btn-remove-contact:hover {
-    color: var(--accent-red);
+    color: var(--accent-red-text);
 }
 
 .char-counter {
     text-align: right;
-    font-size: 0.72rem;
+    font-size: 0.7rem;
     color: var(--color-text-muted);
 }
 
@@ -3945,7 +4025,7 @@ option {
     color: #DCA396;
     padding: 10px 12px;
     border-radius: 8px;
-    font-size: 0.82rem;
+    font-size: 0.8rem;
     margin-bottom: 16px;
 }
 
@@ -4007,7 +4087,7 @@ option {
     color: var(--accent-blue);
     padding: 4px 12px;
     border-radius: 20px;
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -4051,7 +4131,7 @@ option {
 
 .demo-account-btn .demo-level {
     color: var(--color-text-secondary);
-    font-size: 0.72rem;
+    font-size: 0.7rem;
 }
 
 /* ==========================================================================
@@ -4151,7 +4231,7 @@ option {
 
 .tracking-mini-hint {
     color: var(--color-text-muted);
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     font-weight: 400;
 }
 
@@ -4191,14 +4271,14 @@ option {
 }
 
 .tracking-stat-label {
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     color: var(--color-text-muted);
     text-transform: uppercase;
     letter-spacing: 0.04em;
 }
 
 .tracking-stat-value {
-    font-size: 1.7rem;
+    font-size: 1.9rem;
     font-weight: 700;
     font-family: 'Outfit', sans-serif;
     color: var(--color-text-primary);
@@ -4247,7 +4327,7 @@ option {
     position: relative;
     z-index: 1;
     padding: 0 10px;
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     color: var(--color-text-secondary);
 }
 
@@ -4280,7 +4360,7 @@ option {
 }
 
 .my-hikes-counters span {
-    font-size: 0.78rem;
+    font-size: 0.8rem;
     color: var(--color-text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.04em;
@@ -4402,14 +4482,14 @@ option {
     border-color: rgba(76, 122, 68, 0.45);
 }
 .gpx-import-result.ok > i,
-.gpx-import-result.ok > svg { color: var(--accent-green); }
+.gpx-import-result.ok > svg { color: var(--accent-green-text); }
 
 .gpx-import-result.errore {
     background: rgba(168, 59, 46, 0.12);
     border-color: rgba(168, 59, 46, 0.45);
 }
 .gpx-import-result.errore > i,
-.gpx-import-result.errore > svg { color: var(--accent-red); }
+.gpx-import-result.errore > svg { color: var(--accent-red-text); }
 
 .gpx-import-result.attesa {
     background: rgba(76, 126, 144, 0.10);
@@ -4423,7 +4503,7 @@ option {
 
 .gpx-import-warn {
     margin-top: 8px;
-    font-size: 0.78rem;
+    font-size: 0.8rem;
     color: var(--accent-tan);
 }
 
@@ -4475,7 +4555,7 @@ option {
     align-items: center;
     gap: 4px;
     white-space: nowrap;
-    font-size: 0.65rem;
+    font-size: 0.7rem;
 }
 
 .outing-tag i,
@@ -4492,7 +4572,7 @@ option {
     border: none;
     padding: 2px;
     cursor: pointer;
-    color: var(--accent-red);
+    color: var(--accent-red-text);
     opacity: 0.85;
     transition: opacity 0.15s;
     line-height: 1;
@@ -4515,7 +4595,7 @@ option {
 .outing-card-sub {
     display: block;
     margin-top: 2px;
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     color: var(--color-text-secondary);
 }
 
@@ -4539,7 +4619,7 @@ option {
 }
 
 .outing-card-stats span {
-    font-size: 0.68rem;
+    font-size: 0.7rem;
     color: var(--color-text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.03em;
@@ -4607,7 +4687,7 @@ option {
 }
 
 .badges-counter-numbers span {
-    font-size: 0.78rem;
+    font-size: 0.8rem;
     color: var(--color-text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.04em;
@@ -4710,7 +4790,7 @@ option {
 }
 
 .progress-zone-row.is-complete .progress-zone-left {
-    color: var(--accent-green);
+    color: var(--accent-green-text);
 }
 
 /* V2 UX PASSO 11b - "Le tue statistiche" (#progress-stats): controlli data +
@@ -4728,7 +4808,7 @@ option {
     display: flex;
     flex-direction: column;
     gap: 4px;
-    font-size: 0.82rem;
+    font-size: 0.8rem;
     color: var(--color-text-secondary);
 }
 
@@ -4779,7 +4859,7 @@ option {
     right: 8px;
     background: var(--accent-orange);
     color: #fff;
-    font-size: 0.65rem;
+    font-size: 0.7rem;
     font-weight: 700;
     line-height: 1;
     padding: 3px 7px;
@@ -4897,7 +4977,7 @@ option {
     font-family: Georgia, 'Times New Roman', serif;
     font-style: italic;
     font-weight: 700;
-    font-size: 1.35rem;
+    font-size: 1.4rem;
     line-height: 1;
     cursor: pointer;
     display: flex;
@@ -4930,14 +5010,14 @@ option {
 
 .image-lightbox-info h4 {
     margin: 0 0 6px;
-    font-size: 1.05rem;
+    font-size: 1.15rem;
     font-weight: 700;
     color: #fff;
 }
 
 .image-lightbox-info p {
     margin: 0;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     line-height: 1.5;
 }
 
@@ -4961,12 +5041,12 @@ option {
     justify-content: center;
     gap: 5px;
     margin-top: 4px;
-    font-size: 0.68rem;
+    font-size: 0.7rem;
     color: var(--color-text-muted);
 }
 
 .badge-card-state.won {
-    color: var(--accent-green);
+    color: var(--accent-green-text);
 }
 
 .badge-card-state i,
@@ -4979,7 +5059,7 @@ option {
 /* Punto 42b: quante volte, sotto lo stato "Conquistato il...". Stesso peso visivo di
    badge-card-context (non è un secondo "stato", è un dettaglio in più). */
 .badge-card-count {
-    font-size: 0.68rem;
+    font-size: 0.7rem;
     color: var(--color-text-muted);
     font-style: italic;
 }
@@ -5174,7 +5254,7 @@ option {
     border: 1px solid var(--border-color);
     background: rgba(243, 239, 230, 0.05);
     color: var(--color-text-primary);
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     cursor: pointer;
     transition: background var(--transition-speed), border-color var(--transition-speed);
 }
@@ -5276,7 +5356,7 @@ option {
 }
 
 .local-expert-line i, .local-expert-line svg {
-    color: var(--accent-green);
+    color: var(--accent-green-text);
     width: 18px;
     height: 18px;
 }
@@ -5410,7 +5490,7 @@ option {
 .trailhead-chosen-main i, .trailhead-chosen-main svg {
     width: 18px;
     height: 18px;
-    color: var(--accent-green);
+    color: var(--accent-green-text);
     flex-shrink: 0;
     margin-top: 2px;
 }
@@ -5423,7 +5503,7 @@ option {
     padding-top: 10px;
     border-top: 1px solid var(--border-color);
     font-family: monospace;
-    font-size: 0.82rem;
+    font-size: 0.8rem;
     color: var(--color-text-secondary);
     flex-wrap: wrap;
 }
@@ -5435,7 +5515,7 @@ option {
     border: 1px solid var(--accent-red);
     background: var(--accent-red-glow);
     color: var(--color-text-primary);
-    font-size: 0.82rem;
+    font-size: 0.8rem;
 }
 
 /* Finestra con la mappa per scegliere il punto */
@@ -5774,7 +5854,7 @@ option {
     .map-gps-real-btn {
         top: 10px;
         right: 10px;
-        font-size: 0.72rem;
+        font-size: 0.7rem;
         padding: 6px 10px;
     }
 
@@ -5785,7 +5865,7 @@ option {
     .map-sos-btn {
         top: 10px;
         left: 10px;
-        font-size: 0.78rem;
+        font-size: 0.8rem;
         padding: 8px 11px;
     }
 
@@ -5843,7 +5923,7 @@ option {
     .map-record-btn {
         justify-content: center;
         padding: 14px 16px;
-        font-size: 0.95rem;
+        font-size: 0.9rem;
     }
 
     .map-recenter-btn {
@@ -5908,11 +5988,11 @@ option {
     }
 
     .my-hikes-counters strong {
-        font-size: 1.5rem;
+        font-size: 1.4rem;
     }
 
     .my-hikes-group-title {
-        font-size: 1.02rem;
+        font-size: 1rem;
     }
 
     /* Punto 8 su schermo stretto: ricerca e pulsante mappa uno sotto l'altro
@@ -6091,7 +6171,7 @@ option {
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: 0.82rem;
+    font-size: 0.8rem;
 }
 
 .rp-num {
@@ -6131,7 +6211,7 @@ option {
 
 .rp-del:hover,
 .rp-del:focus-visible {
-    color: var(--accent-red);
+    color: var(--accent-red-text);
     opacity: 1;
 }
 
@@ -6151,7 +6231,7 @@ option {
 .rp-num-ritorno {
     background: none;
     border: 1.5px dashed var(--accent-green);
-    color: var(--accent-green);
+    color: var(--accent-green-text);
     font-size: 0.85rem;
 }
 
@@ -6178,7 +6258,7 @@ option {
 }
 
 .rp-tipo-anello {
-    color: var(--accent-green);
+    color: var(--accent-green-text);
 }
 
 .rp-tipo i,
@@ -6214,7 +6294,7 @@ option {
 }
 
 .rp-totali strong {
-    font-size: 1.05rem;
+    font-size: 1.15rem;
     color: var(--accent-orange);
     line-height: 1.2;
 }
@@ -6252,7 +6332,7 @@ option {
     gap: 8px;
     align-items: center;
     font-size: 0.8rem;
-    color: var(--accent-green);
+    color: var(--accent-green-text);
 }
 
 .rp-tutto-bene i,
@@ -6294,7 +6374,7 @@ option {
 .rp-fonte {
     display: block;
     margin-top: 4px;
-    font-size: 0.72rem;
+    font-size: 0.7rem;
     opacity: 0.85;
 }
 
@@ -6344,7 +6424,7 @@ option {
 }
 
 .rp-bozza-dati {
-    font-size: 0.72rem;
+    font-size: 0.7rem;
     color: var(--color-text-secondary);
 }
 
@@ -6364,7 +6444,7 @@ option {
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 0.82rem;
+    font-size: 0.8rem;
     margin-bottom: 6px;
 }
 
@@ -6394,7 +6474,7 @@ option {
 }
 
 .rp-sole-barre small {
-    font-size: 0.68rem;
+    font-size: 0.7rem;
     color: var(--color-text-secondary);
     text-transform: uppercase;
 }
@@ -6418,7 +6498,7 @@ option {
     border: 1px solid var(--accent-red);
 }
 .settings-card.settings-danger h4 {
-    color: var(--accent-red);
+    color: var(--accent-red-text);
 }
 
 .account-deleted-overlay {

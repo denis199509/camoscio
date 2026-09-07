@@ -635,7 +635,7 @@ function riempiGruppo(idContenitore, escursioni, messaggioVuoto) {
     box.innerHTML = "";
 
     if (!escursioni.length) {
-        box.innerHTML = `<div class="glass-card text-center py-4 text-muted col-span-2">${messaggioVuoto}</div>`;
+        box.innerHTML = window.statoVuoto(messaggioVuoto, '🥾', 'col-span-2');
         return;
     }
     escursioni.forEach(h => box.appendChild(buildHikeCard(h)));
@@ -716,7 +716,7 @@ function renderMyHikes() {
     if (riepilogo) {
         const totale = create.length + partecipo.length + fatte.length + invitato.length;
         riepilogo.innerHTML = totale === 0
-            ? `<div class="glass-card text-center py-4 text-muted">${escapeHtml(T('myHikes.riepilogoVuoto') || 'Qui compariranno le tue escursioni: quelle che organizzi, quelle a cui ti iscrivi e quelle che hai già fatto.')}</div>`
+            ? window.statoVuoto(escapeHtml(T('myHikes.riepilogoVuoto') || 'Qui compariranno le tue escursioni: quelle che organizzi, quelle a cui ti iscrivi e quelle che hai già fatto.'), '🥾')
             : `<div class="glass-card my-hikes-counters">
                    <div><strong>${create.length}</strong><span>${escapeHtml(T('myHikes.organizzateLabel') || 'organizzate')}</span></div>
                    <div><strong>${partecipo.length}</strong><span>${escapeHtml(T('myHikes.programmaLabel') || 'in programma')}</span></div>

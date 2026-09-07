@@ -99,7 +99,7 @@ function renderProfileIdentity(utente, timbri, els, ascese) {
         const presi = stato.filter(b => b.sbloccato)
             .sort((a, b) => String(b.data || '').localeCompare(String(a.data || '')));
         if (presi.length === 0) {
-            els.badgesGrid.innerHTML = `<div class="glass-card text-center py-4 text-muted">${esc(T('profile.nessunBadge') || 'Nessun badge conquistato per ora.')}</div>`;
+            els.badgesGrid.innerHTML = window.statoVuoto(esc(T('profile.nessunBadge') || 'Nessun badge conquistato per ora.'), '🏅');
         } else {
             presi.forEach(b => els.badgesGrid.appendChild(window.CamoscioBadges.schedaBadge(b)));
         }
@@ -356,7 +356,7 @@ async function renderProfileHikes(userId, container) {
 
     container.innerHTML = tutte.length
         ? `<div class="outings-grid">${tutte.map(v => v.html).join('')}</div>`
-        : `<div class="glass-card text-center py-4 text-muted">${window.escapeHtml(T('profile.nessunaEscursione') || 'Nessuna escursione da mostrare per ora.')}</div>`;
+        : window.statoVuoto(window.escapeHtml(T('profile.nessunaEscursione') || 'Nessuna escursione da mostrare per ora.'), '🥾');
 
     if (window.lucide) window.lucide.createIcons();
 }
@@ -406,7 +406,7 @@ function renderProfileBookmarks(userId, container) {
 
     container.innerHTML = hikes.length
         ? `<div class="outings-grid">${hikes.map(h => schedaSentieroPreferito(h, isOwnProfile, container.id)).join('')}</div>`
-        : `<div class="glass-card text-center py-4 text-muted">${window.escapeHtml(T('profile.nessunSentieroPreferito') || 'Nessun sentiero nei preferiti per ora.')}</div>`;
+        : window.statoVuoto(window.escapeHtml(T('profile.nessunSentieroPreferito') || 'Nessun sentiero nei preferiti per ora.'), '🐐');
 
     if (window.lucide) window.lucide.createIcons();
 }

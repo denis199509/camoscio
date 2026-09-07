@@ -181,7 +181,7 @@ function disegnaTracciaHikePage(hike) {
     // #4C7E90: lo stesso blu "percorso da seguire" della mappa grande (map.js
     // loadActiveHikeOnMap) e di disegnaPercorsoSalvato - un percorso PREVISTO, non una
     // traccia registrata dal vivo.
-    hpMiniLayer = L.polyline(latlng, { color: '#4C7E90', weight: 4, opacity: 0.9 }).addTo(hpMiniMap);
+    hpMiniLayer = L.polyline(latlng, { color: window.CAMOSCIO_COLORI.blu, weight: 4, opacity: 0.9 }).addTo(hpMiniMap);
     hpMiniMap.fitBounds(hpMiniLayer.getBounds(), { padding: [24, 24] });
 
     // Il pannello Dettagli e' appena diventato visibile: Leaflet deve rimisurare il

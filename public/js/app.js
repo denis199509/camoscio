@@ -36,6 +36,23 @@ window.escapeHtml = function(str) {
         .replace(/'/g, '&#39;');
 };
 
+// Stato vuoto unificato (Audit visivo B1, 36a sessione). Prima ~12 riquadri "non c'e'
+// ancora niente" erano <div class="glass-card text-center py-4 text-muted">${msg}</div> -
+// quattro classi di utility e nessuna struttura. Qui un solo componente, con l'impronta
+// degli stati vuoti curati della Dashboard: emoji + testo centrato (CSS: .empty-state).
+//   testo       stringa gia' tradotta. Inserita VERBATIM: se viene da dati utente il
+//               chiamante deve gia' averla passata da escapeHtml (come faceva prima).
+//   icona       un'emoji, opzionale, sopra il testo (decorativa, aria-hidden).
+//   classiExtra classi extra sul contenitore, es. "col-span-2" per una griglia a 2 colonne.
+// testo assente -> stringa vuota (il chiamante che passava "" otteneva un riquadro nudo).
+window.statoVuoto = function (testo, icona, classiExtra) {
+    if (!testo) return '';
+    return '<div class="empty-state glass-card' + (classiExtra ? ' ' + classiExtra : '') + '">'
+        + (icona ? '<span class="empty-state-icon" aria-hidden="true">' + icona + '</span>' : '')
+        + '<p class="empty-state-text">' + testo + '</p>'
+        + '</div>';
+};
+
 // --- COMPONENTE TOAST/MODAL NON BLOCCANTE (sostituisce alert/confirm/prompt nativi) ---
 // "Chrome globale" dell'app, non legato a un singolo modulo/funzionalità - stesso criterio già
 // usato per window.CamoscioState.
@@ -1842,7 +1859,7 @@ function renderPaceChart(user, passoMisurato) {
         label: T('dash.chartTuoPasso') || 'Tuo Passo Rilevato',
         data: [Number(user.averagePaceUp), Number(user.averagePaceDown)],
         backgroundColor: 'rgba(76, 126, 144, 0.65)',
-        borderColor: '#4C7E90',
+        borderColor: window.CAMOSCIO_COLORI.blu,
         borderWidth: 2,
         borderRadius: 6
     };
@@ -1850,7 +1867,7 @@ function renderPaceChart(user, passoMisurato) {
         label: T('dash.chartCaiStandard') || 'Standard CAI Alpino',
         data: [400, 600],
         backgroundColor: 'rgba(193, 102, 46, 0.25)',
-        borderColor: '#C1662E',
+        borderColor: window.CAMOSCIO_COLORI.arancio,
         borderWidth: 2,
         borderRadius: 6
     };

@@ -494,7 +494,7 @@ function resetLiveTrackPolyline() {
     // resta in famiglia con la palette e si stacca bene dal verde del percorso
     // pianificato e dall'arancione degli accenti.
     liveTrackPolyline = L.polyline([], {
-        color: '#7FB5C7',
+        color: window.CAMOSCIO_COLORI.bluChiaro,
         weight: 5,
         opacity: 0.95,
         lineCap: 'round',
@@ -534,7 +534,7 @@ window.disegnaPercorsoSalvato = function (punti, opzioni) {
     // #4C7E90: lo stesso blu del percorso PROGETTATO (routeplanner COLORE_SENTIERO) - un
     // percorso DA SEGUIRE, non la traccia registrata dal vivo (#7FB5C7) ne' il verde di
     // un'escursione pianificata.
-    savedRoutePolyline = L.polyline(latlng, { color: '#4C7E90', weight: 4, opacity: 0.9 }).addTo(window.mapInstance);
+    savedRoutePolyline = L.polyline(latlng, { color: window.CAMOSCIO_COLORI.blu, weight: 4, opacity: 0.9 }).addTo(window.mapInstance);
     // Sotto la traccia registrata dal vivo (liveTrackPolyline, #7FB5C7), che si aggiunge
     // dopo: questa e' un riferimento, non il dato che stai raccogliendo. I due blu della
     // palette (progettato vs registrato) sono gia' la distinzione in uso nel progetto.
@@ -604,7 +604,7 @@ function checkGeofencing(lat, lng) {
             userGpsMarker.bindPopup(`
                 <div style="color: white; font-family: inherit; text-align: center;">
                     <h4 style="margin: 0 0 4px 0;">🎉 ${T('map.geo.vettaRaggiunta') || 'Vetta Raggiunta!'}</h4>
-                    <h5 style="margin: 0 0 8px 0; color: #C1662E;">${foundNearPeak.name} (${foundNearPeak.altitude}m)</h5>
+                    <h5 style="margin: 0 0 8px 0; color: ${window.CAMOSCIO_COLORI.arancio};">${foundNearPeak.name} (${foundNearPeak.altitude}m)</h5>
                     <p style="font-size: 0.8rem; margin: 0 0 10px 0;">${T('map.geo.aSoliMetri', Math.round(distance)) || ('Sei a soli ' + Math.round(distance) + 'm dalla cima.')}</p>
                     <button class="btn btn-sm btn-primary" onclick="unlockStampDirectly('${stampId}', '${foundNearPeak.name}')">${T('map.geo.timbraBtn') || 'TIMBRA PASSAPORTO'}</button>
                 </div>
@@ -1170,7 +1170,7 @@ function drawStampablePoints() {
 
         const peakIcon = L.divIcon({
             className: 'peak-leaflet-marker',
-            html: `<div style="font-size: 1.6rem; background: rgba(0,0,0,0.6); padding: 4px; border-radius: 50%; border: 1.5px solid #4C7E90; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">🏔️</div>`,
+            html: `<div style="font-size: 1.6rem; background: rgba(0,0,0,0.6); padding: 4px; border-radius: 50%; border: 1.5px solid ${window.CAMOSCIO_COLORI.blu}; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">🏔️</div>`,
             iconSize: [32, 32],
             iconAnchor: [16, 16]
         });
@@ -1244,7 +1244,7 @@ function renderMapMarkers() {
 
         const customIcon = L.divIcon({
             className: 'waze-leaflet-marker',
-            html: `<div style="font-size: 1.8rem; background: rgba(0,0,0,0.6); padding: 4px; border-radius: 50%; border: 1.5px solid #A83B2E; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;">${emoji}</div>`,
+            html: `<div style="font-size: 1.8rem; background: rgba(0,0,0,0.6); padding: 4px; border-radius: 50%; border: 1.5px solid ${window.CAMOSCIO_COLORI.rosso}; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;">${emoji}</div>`,
             iconSize: [36, 36],
             iconAnchor: [18, 18]
         });
@@ -1274,7 +1274,7 @@ function renderMapMarkers() {
         const dataRep = new Date(rep.createdAt).toLocaleDateString(loc);
         marker.bindPopup(`
             <div style="color: white; font-family: inherit;">
-                <h5 style="margin: 0 0 4px 0; color: #A83B2E;">${title}</h5>
+                <h5 style="margin: 0 0 4px 0; color: ${window.CAMOSCIO_COLORI.rosso};">${title}</h5>
                 <p style="font-size: 0.8rem; margin: 0 0 8px 0;">${escapeHtml(rep.description)}</p>
                 ${fotoHtml}
                 <span class="small text-muted">${T('map.reportPopup.segnalatoIl', dataRep) || ('Segnalato il: ' + dataRep)}</span>
@@ -1428,7 +1428,7 @@ function loadActiveHikeOnMap(hikeId) {
     if (Number.isFinite(hike.trailhead.lat) && Number.isFinite(hike.trailhead.lng)) {
         const trailheadIcon = L.divIcon({
             className: 'trailhead-leaflet-marker',
-            html: `<div style="font-size: 1.6rem; background: rgba(0,0,0,0.6); padding: 4px; border-radius: 50%; border: 1.5px solid #4C7A44; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">📍</div>`,
+            html: `<div style="font-size: 1.6rem; background: rgba(0,0,0,0.6); padding: 4px; border-radius: 50%; border: 1.5px solid ${window.CAMOSCIO_COLORI.verde}; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">📍</div>`,
             iconSize: [32, 32],
             iconAnchor: [16, 16]
         });
@@ -1456,7 +1456,7 @@ function loadActiveHikeOnMap(hikeId) {
     if (haPercorsoVero) {
         activeHikePath = rp.map(p => [p[1], p[0]]); // [lng,lat] -> [lat,lng] per Leaflet
         hikePolyline = L.polyline(activeHikePath, {
-            color: '#4C7E90',
+            color: window.CAMOSCIO_COLORI.blu,
             weight: 5,
             opacity: 0.9
         }).addTo(window.mapInstance);
@@ -1472,7 +1472,7 @@ function loadActiveHikeOnMap(hikeId) {
             [centerLat + 0.02, centerLng + 0.015] // Cima (Versante Sud)
         ];
         hikePolyline = L.polyline(activeHikePath, {
-            color: '#4C7A44',
+            color: window.CAMOSCIO_COLORI.verde,
             weight: 6,
             opacity: 0.8
         }).addTo(window.mapInstance);

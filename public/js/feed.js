@@ -70,7 +70,7 @@ function disegnaFeed() {
         } else {
             msg = T('feed.nessunSeguito') || 'Non segui ancora nessuno. Trova le persone in "Cerca Persone" o nel loro profilo e seguile: le loro uscite pubblicate compariranno qui.';
         }
-        box.innerHTML = `<div class="glass-card text-center py-4 text-muted">${window.escapeHtml(msg)}</div>`;
+        box.innerHTML = window.statoVuoto(window.escapeHtml(msg), feedErrore ? '⚠️' : '🧭');
         return;
     }
 

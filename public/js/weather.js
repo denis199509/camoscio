@@ -300,7 +300,7 @@ function renderWeatherData(data, placeName, simulato) {
     if (lightningRisk) {
         html += `
             <div class="lightning-alert blink">
-                <i data-lucide="zap" style="color:#A83B2E; fill:#A83B2E; width:16px; height:16px;"></i>
+                <i data-lucide="zap" style="color:${window.CAMOSCIO_COLORI.rosso}; fill:${window.CAMOSCIO_COLORI.rosso}; width:16px; height:16px;"></i>
                 <span>${riskMessage}</span>
             </div>
         `;

@@ -241,9 +241,9 @@
                 if (miniMapLayer) { miniMap.removeLayer(miniMapLayer); miniMapLayer = null; }
 
                 if (latlng.length >= 2) {
-                    // #7FB5C7: il colore della traccia REGISTRATA in tutto il progetto (map.js) -
+                    // bluChiaro: il colore della traccia REGISTRATA in tutto il progetto (map.js) -
                     // ed è esattamente cosa stiamo guardando.
-                    miniMapLayer = L.polyline(latlng, { color: '#7FB5C7', weight: 4, opacity: 0.9 }).addTo(miniMap);
+                    miniMapLayer = L.polyline(latlng, { color: window.CAMOSCIO_COLORI.bluChiaro, weight: 4, opacity: 0.9 }).addTo(miniMap);
                     miniMap.fitBounds(miniMapLayer.getBounds(), { padding: [24, 24] });
                 } else if (latlng.length === 1) {
                     miniMapLayer = L.marker(latlng[0]).addTo(miniMap);

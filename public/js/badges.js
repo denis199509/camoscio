@@ -312,13 +312,13 @@
         return el;
     }
 
-    function riempiGruppo(idContenitore, idContatore, elenco, messaggioVuoto) {
+    function riempiGruppo(idContenitore, idContatore, elenco, messaggioVuoto, icona) {
         const box = document.getElementById(idContenitore);
         if (!box) return;
         box.innerHTML = '';
 
         if (!elenco.length) {
-            box.innerHTML = `<div class="glass-card text-center py-4 text-muted">${messaggioVuoto}</div>`;
+            box.innerHTML = window.statoVuoto(messaggioVuoto, icona);
         } else {
             elenco.forEach(b => box.appendChild(schedaBadge(b)));
         }
@@ -348,9 +348,9 @@
         const rifugi = tutti.filter(b => b.tipo === 'rifugio').sort(perQuota);
 
         riempiGruppo('badges-cime', 'count-badges-cime', cime,
-            T('badges.vuoto.cime') || 'Nessuna cima in elenco.');
+            T('badges.vuoto.cime') || 'Nessuna cima in elenco.', '🏔️');
         riempiGruppo('badges-rifugi', 'count-badges-rifugi', rifugi,
-            T('badges.vuoto.rifugi') || 'Nessun rifugio in elenco.');
+            T('badges.vuoto.rifugi') || 'Nessun rifugio in elenco.', '🛖');
 
         // Punto 57: stesso riquadro gia' costruito per la pagina profilo (punto 50),
         // qui per l'utente collegato invece che per un altro - CamoscioPersonalBadges
@@ -411,7 +411,7 @@
         const zone = progressoZone({ tutte: true });
 
         if (!zone.length) {
-            box.innerHTML = `<div class="glass-card text-center py-4 text-muted">${esc(T('progress.zoneVuoto') || 'Nessuna zona con vette a catalogo.')}</div>`;
+            box.innerHTML = window.statoVuoto(esc(T('progress.zoneVuoto') || 'Nessuna zona con vette a catalogo.'), '🗺️');
             return;
         }
 

@@ -27,10 +27,10 @@
     const lingua = () => (window.CamoscioI18n && window.CamoscioI18n.getLang()) || 'it';
 
     // Blu lago della palette di montagna (--accent-blue): il percorso PROGETTATO non deve
-    // confondersi con quello REGISTRATO dal vivo, che e' blu chiaro (#7FB5C7, punto 14).
-    const COLORE_SENTIERO = '#4C7E90';
+    // confondersi con quello REGISTRATO dal vivo, che e' blu chiaro (bluChiaro, punto 14).
+    const COLORE_SENTIERO = window.CAMOSCIO_COLORI.blu;
     // Rosso mattone (--accent-red): e' il colore che nel resto del sito vuol dire "attenzione".
-    const COLORE_RETTA = '#A83B2E';
+    const COLORE_RETTA = window.CAMOSCIO_COLORI.rosso;
 
     // Lo stesso tetto di routes/routing.js. Qui serve per FERMARE il punto di troppo con una
     // spiegazione, invece di lasciar arrivare un 400 che sull'interfaccia sembra un guasto.
@@ -637,7 +637,7 @@
             bozze = await rB.json();
             percorsi = await rP.json();
         } catch (e) {
-            box.innerHTML = `<div class="glass-card text-center py-4 text-muted">${T('rp.prog.erroreCarica') || 'Non è stato possibile caricare i tuoi progetti. Riprova più tardi.'}</div>`;
+            box.innerHTML = window.statoVuoto(T('rp.prog.erroreCarica') || 'Non è stato possibile caricare i tuoi progetti. Riprova più tardi.', '⚠️');
             return;
         }
 
@@ -645,9 +645,7 @@
         if (contatore) contatore.textContent = bozze.length + percorsi.length;
 
         if (!bozze.length && !percorsi.length) {
-            box.innerHTML = `<div class="glass-card text-center py-4 text-muted">
-                ${T('rp.prog.vuoto') || 'Nessun progetto per ora. Vai su <b>Mappa &amp; Sentieri</b>, apri "Progetta un percorso" e tocca i punti che vuoi collegare.'}
-            </div>`;
+            box.innerHTML = window.statoVuoto(T('rp.prog.vuoto') || 'Nessun progetto per ora. Vai su <b>Mappa &amp; Sentieri</b>, apri "Progetta un percorso" e tocca i punti che vuoi collegare.', '🗺️');
             return;
         }
 

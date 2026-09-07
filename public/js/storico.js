@@ -295,14 +295,12 @@
         if (contatore) contatore.textContent = tutte.length;
 
         if (tutte.length === 0 && !erroreSessioni) {
-            box.innerHTML = `<div class="glass-card text-center py-4 text-muted">
-                ${esc(T('myHikes.completateVuoto') || "Nessuna escursione completata per ora. Dopo un'uscita ricordati di segnarla come completata, oppure carica qui sopra un file .gpx di un'uscita già fatta.")}
-            </div>`;
+            box.innerHTML = window.statoVuoto(esc(T('myHikes.completateVuoto') || "Nessuna escursione completata per ora. Dopo un'uscita ricordati di segnarla come completata, oppure carica qui sopra un file .gpx di un'uscita già fatta."), '🥾');
             return;
         }
 
         const avvisoErrore = erroreSessioni
-            ? `<div class="glass-card text-center py-3 text-muted">${esc(T('myHikes.erroreCaricaUscite') || "Le escursioni completate sono aggiornate; non è stato possibile caricare anche le uscite registrate col GPS. Riprova più tardi.")}</div>`
+            ? window.statoVuoto(esc(T('myHikes.erroreCaricaUscite') || "Le escursioni completate sono aggiornate; non è stato possibile caricare anche le uscite registrate col GPS. Riprova più tardi."), '⚠️')
             : '';
         box.innerHTML = avvisoErrore + (tutte.length ? `<div class="outings-grid">${tutte.map(v => v.html).join('')}</div>` : '');
 
