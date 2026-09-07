@@ -156,6 +156,13 @@ function renderWizardStep() {
     document.getElementById('btn-wizard-prev').classList.toggle('hidden', currentWizardStep === 1);
     document.getElementById('btn-wizard-next').classList.toggle('hidden', currentWizardStep === TOTAL_WIZARD_STEPS);
     document.getElementById('btn-wizard-submit').classList.toggle('hidden', currentWizardStep !== TOTAL_WIZARD_STEPS);
+
+    // Audit visivo C2 (37a sessione): ogni passo riparte dall'alto. Senza questo, dopo un
+    // "Avanti" da un passo lungo (2 e 5, segnalati dall'utente) si resta scrollati a meta'
+    // e la barra dei pallini + il titolo del passo nuovo finiscono sopra il bordo visibile.
+    // Vale per Avanti, Indietro e il tasto-back del telefono: passano tutti di qui.
+    const gate = document.getElementById('auth-gate');
+    if (gate) gate.scrollTop = 0;
 }
 
 // Valida il passo corrente. Ritorna un messaggio di errore, oppure null se tutto ok.
