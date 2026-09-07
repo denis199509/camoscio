@@ -1310,6 +1310,18 @@ option {
     flex: 1;
 }
 
+/* Audit visivo C2 (37a sessione): in una .form-row i due .form-group sono alti uguale
+   (align-items:stretch), ma dentro ognuno l'input sta sotto la label - se una label va
+   a capo e l'altra no (es. "Password (minimo 8 caratteri):" vs "Conferma password:" a
+   registrazione, segnalato da Denis) i due input si disallineano. margin-top:auto
+   spinge l'input in fondo alla colonna: si allineano a prescindere dalle righe di label.
+   Solo quando l'input/select e' l'ultimo elemento del gruppo (un gruppo con una nota
+   dopo l'input non va toccato). */
+.form-row .form-group > input:last-child,
+.form-row .form-group > select:last-child {
+    margin-top: auto;
+}
+
 .checkbox-group {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
