@@ -1,39 +1,46 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-09-07 (TRENTASEIESIMA sessione, CHIUSA. Committato e
-pushato: `e2bd998` (tutto il codice) + il commit di chiusura docs. Deploy
-Render automatico. Vault committato e pushato a parte.
+Aggiornato: 2026-09-07 (TRENTASETTESIMA sessione, CHIUSA. Committato e
+pushato: `fa0f533` (C1 + C2) + `6368ad3` (allineamento .form-row) + il
+commit di chiusura docs. Deploy Render automatico. Vault committato e
+pushato a parte.
 
-  Fatta la CODA DELL'AUDIT VISIVO - la FASCIA B e' CHIUSA. Quattro punti,
-  uno alla volta col via di Denis, ognuno verificato dal vivo (valori
-  renderizzati via javascript_tool: lo screenshot dell'estensione va in
-  timeout, trappola nota). Solo CSS/JS del frontend. Dettaglio in
-  cose_da_fare.txt "AUDIT VISIVO 36a".
-   - resto di B4: due variabili nuove --accent-green-text #74A466 /
-     --accent-red-text #f07866; ogni `color: var(--accent-green|red)` (31)
-     passa alle schiarite, sfondi/bordi/ombre restano sull'accento pieno.
-     Tutti i testi ora >= AA (4,5:1). #ee7361 di .hike-card-menu-item-danger
-     de-hardcodato.
-   - B5: scala tipografica agli 8 gradini dell'audit (0,7 / 0,8 / 0,85 /
-     0,9 / 1 / 1,15 / 1,4 / 1,9 rem). Da ~30 misure di testo a 8. Denis ha
-     scelto "gli 8 pieni" -> ridimensionati anche elementi grossi:
-     .section-title 1,6->1,4 ; .timer-display-large 2,8->1,9 ;
-     .tracking-stat-value 1,7->1,9 ; .total-val 1,5->1,4 ; h4 1,05->1,15
-     (= titoli di gruppo). Emoji-icone, clamp(), 0,9em, font-size:0 fuori
-     scala di proposito (commento nel file).
-   - B1: window.statoVuoto(testo, icona, classiExtra) in app.js +
-     componente .empty-state. 12 riquadri "non c'e' niente" in 6 file
-     (badges/feed/userprofile/storico/social/routeplanner) da
-     <div class="glass-card text-center py-4 text-muted"> al componente,
-     ognuno con un'emoji. Risolto il bug col-span-2 di social.js.
-   - C3: public/js/colori.js nuovo -> window.CAMOSCIO_COLORI (frozen),
-     gemello di :root per i 5 colori che vanno in Leaflet/Chart.js. 14
-     punti in 6 file da hex a mano alla variabile. Refactor puro.
+  Fatta la FASCIA C dell'audit visivo (C1 + C2). L'AUDIT VISIVO DELLA 29a
+  E' COMPLETO (A + B + C). Solo frontend. Dettaglio in cose_da_fare.txt
+  "AUDIT VISIVO 37a".
+   - C1: 9 superfici erano rimaste sul blu-ardesia della vecchia palette
+     neon (mai spazzate al passaggio ai marroni caldi). Nuova :root
+     --bg-panel #1A1B14 (il valore che .tracking-panel gia' scriveva a
+     mano): .notification-dropdown / .toast / .hike-card-menu-dropdown /
+     .leaflet-popup(-tip) / .tracking-panel -> var(--bg-panel), un colore
+     solo. .sidebar e .top-header -> rgba(20,21,15, .95/.8) = canali di
+     --bg-dark, opacita' invariate. #map e .map-picker-canvas ->
+     var(--bg-dark). Solo colori. Le variabili --bg-panel/--bg-overlay
+     che l'audit citava NON esistevano: era il nome della proposta.
+     Confermato da Denis sul telefono.
+   - C2: la registrazione su telefono tagliava la parte alta dei passi
+     lunghi (2 e 5, segnalato da Denis) in modo IRRAGGIUNGIBILE. .auth-
+     gate era flex align-items:center + overflow -> card piu' alta del
+     viewport centrata, ~147px in cima persi. Fix (styles.css + auth.js):
+     align-items:flex-start + margin:auto 0 sulla card (misurato -147px
+     -> +24px; card corta ancora centrata); renderWizardStep() riporta
+     #auth-gate in cima a ogni passo; @media 480px per padding card
+     (32->20) e pallini avanzamento (28->24 / linee ->12); #report-fab
+     nascosto su login/registrazione (copriva "Avanti", li' non serve).
+   - C2 bis (Denis, stesso giro): in una .form-row se una label va a capo
+     e l'altra no i due input si disallineano (Password / Conferma
+     password). .form-row .form-group > input:last-child { margin-top:
+     auto } -> l'input scende in fondo alla colonna, si allineano.
+     Generico, nessuna @media. Commit a se' `6368ad3`.
+   - DA RIVERIFICARE SUL TELEFONO: i pezzi <480px di C2 (pallini,
+     padding) - l'estensione Chrome non stringe il viewport, verificati
+     solo per regola compilata + aritmetica. Il resto (scroll, clip,
+     FAB, allineamento) verificato in locale.
 
-  ►►► LA 37a RIPARTE DA: i RILIEVI di code-reviewer + security-privacy
-  (girati a fine 35a, NESSUN CRITICO, niente fixato) - la 36a NON li ha
-  toccati. Riassunto consolidato in cose_da_fare.txt "REVISIONE 35a:
-  RILIEVI". In sintesi:
+  ►►► LA 38a RIPARTE DA: i RILIEVI di code-reviewer + security-privacy
+  (girati a fine 35a, NESSUN CRITICO, niente fixato) - ne' la 36a ne' la
+  37a li hanno toccati. Riassunto consolidato in cose_da_fare.txt
+  "REVISIONE 35a: RILIEVI". In sintesi:
    1. URGENTE: Math.max(...) su traccia lunga (>~125k punti) -> RangeError
       -> la registrazione non si chiude PIU'. routes/tracking.js:1119 +
       gemelli lib/percorso.js:63,70 + lib/gpx.js:376. Fix:
@@ -55,11 +62,9 @@ Render automatico. Vault committato e pushato a parte.
       propagazione tempi del creatore (decisione gia' presa da Denis).
   + colmare le lacune nelle prove insieme ai fix.
 
-  FASCIA C dell'audit, NON fatta (i due che restano): C1 (ritirare la
-  palette fredda residua --bg-panel / --bg-overlay - scelta di prodotto,
-  serve confronto affiancato), C2 (responsive login/registrazione - da
-  provare dal vivo passo per passo). Tutti e due vogliono l'occhio di
-  Denis prima di partire.
+  FASCIA C dell'audit: CHIUSA nella 37a (C1 + C2 sopra; C3 nella 36a).
+  RESTA fuori Fascia C, punto a se': #9CA3AF degli assi Chart.js ->
+  --color-text-secondary (piccolo, cambio visivo).
 
   ANCORA APERTO invariato: prova al telefono con GPS vero del Punto 1
   (solo Denis); conformita' GDPR (professionista); verifica dal vivo

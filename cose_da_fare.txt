@@ -11129,10 +11129,10 @@ AUDIT VISIVO §9 - LE DUE DECISIONI CHE ASPETTAVANO DENIS (35a, 06/09)
 
   FASCIA B - FATTA PER INTERO nella 36a (resto B4 + B5 + B1, vedi sotto
   "AUDIT VISIVO 36a").
-  FASCIA C - restano C1 (ritirare la palette fredda residua
-  --bg-panel/--bg-overlay, scelta di prodotto, serve confronto
-  affiancato), C2 (responsive login/registrazione, prova dal vivo passo
-  per passo). C3 fatto nella 36a.
+  FASCIA C - CHIUSA. C3 nella 36a; C1 + C2 nella 37a (vedi sotto "AUDIT
+  VISIVO 37a"). L'AUDIT VISIVO DELLA 29a E' COMPLETO (A + B + C). Resta
+  solo, fuori Fascia C, #9CA3AF degli assi Chart.js su
+  --color-text-secondary (piccolo, cambio visivo, punto a se').
 
 
 ===============================================================
@@ -11489,8 +11489,100 @@ AUDIT VISIVO 36a (07/09/2026) - la Fascia B e' CHIUSA. Commit e2bd998.
   per hunk a fine sessione non valeva il rischio. Poi il commit docs.
   Push, deploy Render automatico. Vault a parte.
 
-  RESTA (Fascia C): C1 (palette fredda residua --bg-panel/--bg-overlay -
-  scelta di prodotto, serve confronto affiancato), C2 (responsive
-  login/registrazione - prova dal vivo passo per passo). Entrambi
-  vogliono l'occhio di Denis prima di partire. + #9CA3AF degli assi
-  Chart.js su --color-text-secondary (piccolo, cambio visivo).
+  FASCIA C: C1 + C2 chiuse nella 37a (vedi sotto "AUDIT VISIVO 37a").
+  RESTA solo #9CA3AF degli assi Chart.js su --color-text-secondary
+  (piccolo, cambio visivo, fuori Fascia C - punto a se').
+
+
+===============================================================
+AUDIT VISIVO 37a (07/09/2026) - FASCIA C CHIUSA (C1 + C2). Push fa0f533
+(C1 + C2) + 6368ad3 (allineamento .form-row) + commit docs. L'audit
+visivo della 29a e' COMPLETO (A + B + C). Non toccati i rilievi 35a -
+quelli restano la 38a.
+===============================================================
+
+  Denis: "dai punti audit sono rimasti C1 e C2. mi spieghi meglio cosa
+  devo controllare visivamente io". Spiegati i due, poi "scalda tutti i
+  colori" per C1 e il giro sul telefono per C2. Solo frontend.
+
+  --- C1: palette fredda residua -> tutta calda ---
+  9 superfici erano rimaste sul blu-ardesia della vecchia palette neon
+  (mai spazzate quando il sito e' passato ai marroni caldi). NB: le
+  variabili --bg-panel / --bg-overlay che l'audit citava NON esistevano -
+  erano il NOME della proposta; i valori erano hardcoded.
+  Nuova var :root --bg-panel: #1A1B14 (lo stesso valore che .tracking-
+  panel gia' scriveva a mano). Passano a var(--bg-panel):
+  .notification-dropdown, .toast, .hike-card-menu-dropdown,
+  .leaflet-popup-content-wrapper, .leaflet-popup-tip, .tracking-panel
+  (de-hardcodata). I 5 pannelli sospesi + il bottom-sheet ora sono UN
+  colore solo, caldo.
+  .sidebar (rgba(10,14,23,.95)) e .top-header (rgba(11,15,25,.8)) ->
+  rgba(20,21,15, .95/.8) = i canali di --bg-dark, opacita' invariate,
+  scritte a mano perche' diverse (non una variabile).
+  #map e .map-picker-canvas (#111b27, il vuoto dietro le tile) ->
+  var(--bg-dark).
+  Solo colori, zero layout. Verificato dal vivo sul foglio renderizzato:
+  --bg-panel risolve, zero residui #1A2436/#111b27/rgba freddi, contrasto
+  testo primario sui pannelli 13,56 -> 15,11:1 (migliora). C1 confermato
+  da Denis sul telefono.
+
+  --- C2: responsive login/registrazione ---
+  Denis ha trovato sul telefono (produzione): a registrazione, passi 2 e
+  5, "la parte in alto viene tagliata" - pallini di avanzamento + titolo
+  del passo fuori dal bordo, IRRAGGIUNGIBILI. Causa (riprodotta e
+  misurata in locale, viewport 390x520, passo 2: card 815-843px):
+  .auth-gate e' flex align-items:center + overflow-y:auto -> una card
+  piu' alta del viewport viene centrata e l'eccedenza tagliata SOPRA e
+  sotto, e il taglio sopra (~147px) e' irraggiungibile scrollando (bug
+  noto di align-items:center + overflow). In piu' renderWizardStep() non
+  riportava mai lo scroll in alto al cambio passo. FIX (styles.css +
+  auth.js):
+   - .auth-gate: align-items:center -> flex-start ; .auth-card: margin:
+     auto 0 -> centrata quando c'e' spazio, ancorata in alto e TUTTA
+     scrollabile quando non ce n'e'. Verificato: bordo alto da -147px a
+     +24px; card corta (login, password dimenticata) ancora centrata
+     (scarto sopra/sotto 209=209).
+   - auth.js renderWizardStep(): #auth-gate.scrollTop = 0 a ogni cambio
+     passo (Avanti / Indietro / tasto-back del telefono passano tutti di
+     qui). renderWizardStep e' l'unico punto: un solo posto da toccare.
+   - @media (max-width:480px): .auth-card padding 32 -> 20 ; pallini
+     avanzamento .wizard-progress-dot 28 -> 24px, .wizard-progress-line
+     24 -> 12px, gap 6 -> 4 (a 390px stavano gia', sotto no). Le regole
+     sono compilate nel blocco giusto + i conti tornano (min ~184px in
+     ~232 disponibili a 320px) MA il rendering <480px NON e' verificabile
+     con l'estensione (non stringe il viewport) -> ricontrollo di Denis
+     sul telefono.
+   - FAB "segnala un pericolo": .auth-gate:not(.hidden) ~ #report-fab
+     { display:none }. Il FAB e' position:fixed e non veniva mai nascosto
+     per sezione -> su login/registrazione copriva "Avanti" e li' non ha
+     senso (nessuna sessione per inviare). Fratello di #auth-gate, dopo
+     nel DOM -> combinatore ~. Verificato: gate visibile -> display:none,
+     loggato -> flex.
+
+  --- C2 bis: input disallineati in una .form-row (trovato da Denis nello
+      stesso giro) ---
+  A registrazione passo 1 "Password (minimo 8 caratteri):" va a 2 righe,
+  "Conferma password:" a 1 -> i due input partono ad altezze diverse. I
+  .form-group di una .form-row sono alti uguale (align-items:stretch) ma
+  dentro ognuno l'input sta subito sotto la label. FIX generico (nessuna
+  @media, vale per ogni .form-row a due campi dell'app):
+    .form-row .form-group > input:last-child,
+    .form-row .form-group > select:last-child { margin-top: auto; }
+  L'input scende in fondo alla colonna -> i due si allineano a
+  prescindere dalle righe di label. :last-child cosi' un gruppo con una
+  nota DOPO l'input non viene toccato. Verificato in locale (colonna
+  ristretta a ~140px): senza fix input password 13px piu' in basso, con
+  fix scarto 0. Riga nome/cognome (label uguali) invariata. Commit a se'
+  6368ad3.
+
+  --- CHIUSURA ---
+  Denis: "pusha, cosi' ricontrollo tutto sul telefono", poi "aggiorna
+  leggimi e vault, C1 e C2 chiusi". Push: fa0f533 (C1 + C2, i 2 auto-save
+  dell'hook Stop rifusi con git reset --soft 30cb7b2 in un commit),
+  6368ad3 (.form-row, 1 auto-save rifuso), poi il commit docs. Deploy
+  Render automatico. Vault a parte.
+  C1 confermato da Denis. C2: da riverificare sul telefono i pezzi <480px
+  (pallini, padding); il resto (scroll, clip, FAB, allineamento)
+  verificato in locale.
+  Nuova trappola: align-items:center + overflow taglia in modo
+  irraggiungibile -> ../camoscio memoria/07-Trappole-Tecniche.md.
