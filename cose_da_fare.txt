@@ -11127,13 +11127,12 @@ AUDIT VISIVO §9 - LE DUE DECISIONI CHE ASPETTAVANO DENIS (35a, 06/09)
   Verificato: overlap 0, freccia di nuovo cliccabile, console pulita,
   layout coerente con mobile.
 
-  FASCIA B - NON FATTE: B1 (empty-state unificato, 8 file JS), B5
-  (consolidare le 32 misure di testo a 8, dopo A10).
-  FASCIA C - NON FATTE: C1 (ritirare la palette fredda residua
+  FASCIA B - FATTA PER INTERO nella 36a (resto B4 + B5 + B1, vedi sotto
+  "AUDIT VISIVO 36a").
+  FASCIA C - restano C1 (ritirare la palette fredda residua
   --bg-panel/--bg-overlay, scelta di prodotto, serve confronto
   affiancato), C2 (responsive login/registrazione, prova dal vivo passo
-  per passo), C3 (i 5 colori palette copiati a mano in 6 file JS ->
-  window.CAMOSCIO_COLORI, codice app).
+  per passo). C3 fatto nella 36a.
 
 
 ===============================================================
@@ -11381,3 +11380,117 @@ sono solo in chat - questo e' il riassunto consolidato e verificato.)
   (catena parseGpx -> sanitizePoints -> points -> routePath garantisce
   lat/lng finiti, il console.error di complete-group non stampa
   coordinate).
+
+
+===============================================================
+AUDIT VISIVO 36a (07/09/2026) - la Fascia B e' CHIUSA. Commit e2bd998.
+===============================================================
+
+  Denis: "andiamo con l'audit visivo", poi i punti scelti uno alla volta
+  via AskUserQuestion. Non toccati i rilievi 35a (quelli sono la 37a).
+  Tutto frontend, ogni punto verificato dal vivo con l'estensione Chrome
+  MISURANDO i valori renderizzati (getComputedStyle / contrasto WCAG
+  calcolato in-page) - lo screenshot dell'estensione andava in timeout
+  tutta la sessione. Trappole della verifica dal vivo (cache del browser
+  che serve css/js vecchi anche dopo navigate; location.reload() come
+  rimedio) in ../camoscio memoria/07-Trappole-Tecniche.md.
+
+  --- resto di B4: verde/rosso come TESTO sotto AA ---
+  Due variabili nuove in :root: --accent-green-text #74A466,
+  --accent-red-text #f07866. Ogni `color: var(--accent-green|red)` (31
+  dichiarazioni, testo o icona) -> variante schiarita. background /
+  border / box-shadow / glow restano sull'accento PIENO (verificato:
+  nessun `color:` residuo sui pieni). #ee7361 di .hike-card-menu-item-
+  danger (il primo rosso-testo a mano, 29a) de-hardcodato -> variabile.
+  Il rosso NON e' #ee7361: quel valore lasciava la pill .badge-red dentro
+  una card (sfondo --accent-red-glow translucido che si somma al fondo)
+  a 4,42:1, sotto AA di 0,08 -> Denis (AskUserQuestion) ha scelto di
+  schiarirlo ~2% a #f07866 (tinta impercettibile, luminanza allineata al
+  verde), come .btn-primary in §9 -> .badge-red 4,61:1. Contrasti
+  misurati sul renderizzato: .result-row.highlight strong (€/persona
+  spese) ~3,6 -> 6,06 ; .settings-danger h4 ~2,9 -> 5,53 ;
+  .badge-card-state.won ~3,6 -> 5,98 ; .lightning-alert.is-ok /
+  .safety-honesty-note.is-ok 4,86 / 4,51 ; .hike-card-menu-item-danger
+  5,62. Solo public/css/styles.css.
+
+  --- B5: scala tipografica agli 8 gradini dell'audit ---
+  0,7 / 0,8 / 0,85 / 0,9 / 1 / 1,15 / 1,4 / 1,9 rem. Da ~30 misure di
+  testo distinte a 8 (177 dichiarazioni font-size in totale). Denis
+  (AskUserQuestion) ha scelto "GLI 8 PIENI" contro "solo il sedimento
+  piccolo" -> si consolida anche la fascia alta, quindi si ridimensionano
+  elementi gia' visibili (SCELTA, non refuso - NON "sistemarli"):
+    .section-title     1,6 -> 1,4 rem   (header di ogni pagina)
+    .timer-display-large 2,8 -> 1,9 rem (countdown Dead Man's Switch)
+    .tracking-stat-value 1,7 -> 1,9 rem
+    .total-val         1,5 -> 1,4 rem   (totale spese)
+    .dash-journey-peaks strong  2 -> 1,9 rem
+    h4                 1,05 -> 1,15 rem (= titoli di gruppo)
+  FUORI scala di proposito (elenco nel commento in :root): il font-size
+  che dimensiona un'emoji/glifo-icona (.stamp-icon, .badge-card-icon,
+  .logo-icon, .avatar-icon, .close-modal-btn, la ★ di
+  .p-avatar.local-expert::before, .feed-item-avatar, .mi-piace-emoji...),
+  i 2 clamp() di .dash-hero-*, lo 0,9em di .moderation-list-count, il
+  font-size:0 di #btn-logout, il residuo 1,6rem vestigiale di .app-fab.
+  .backpack-category h5 (0,95rem tenuto apposta da A10) -> 1rem; commento
+  A10 aggiornato per non contraddire. Zero testo troncato introdotto
+  (verificato su Dashboard / Le mie escursioni / Progressi / Sicurezza /
+  Escursioni / Impostazioni). Residuo noto: h4 a 1,15 ~= <h3> nudo
+  (default browser 1,17em) - lasciato h3 al default come diceva l'audit;
+  se si vuole gerarchia netta, h3 -> 1,4rem. Solo styles.css.
+
+  --- B1: stato vuoto unificato ---
+  Nuovo window.statoVuoto(testo, icona, classiExtra) in app.js (accanto
+  a escapeHtml, "chrome globale") + componente .empty-state in styles.css
+  (centrato, emoji display:block 1,9rem sopra, testo 0,8rem
+  --color-text-muted, max-width 44ch, dentro .glass-card). 12 call site
+  in 6 file passano da <div class="glass-card text-center py-4 text-
+  muted">${msg}</div> a window.statoVuoto(...), ognuno con un'emoji di
+  contesto:
+    badges.js    x2  (riempiGruppo con nuovo param icona: 🏔️ cime /
+                      🛖 rifugi) + zone (🗺️)
+    feed.js      x1  (🧭 vuoto / ⚠️ errore)
+    userprofile.js x3 (🏅 badge / 🥾 escursioni / 🐐 preferiti)
+    storico.js   x2  (🥾 completate vuote / ⚠️ errore GPS)
+    social.js    x2  (riempiGruppo 🥾 + col-span-2 ; riepilogo 🥾)
+    routeplanner.js x2 (⚠️ errore / 🗺️ progetti vuoti)
+  Il caso col-span-2 di social.js (il bug dell'audit: l'empty state
+  "occupa mezza riga, colonna destra vuota" in una griglia a 2 colonne)
+  ora spana l'intera larghezza (grid-column: 1 / -1, verificato
+  1206/1206px). Guardia: statoVuoto('') -> '' (il chiamante
+  riempiGruppo("my-hikes-invited", [], "") non disegna piu' un riquadro
+  nudo). Stringhe dei messaggi NON toccate (nessuna modifica i18n;
+  l'helper accetta gia' titolo/cta per un domani). Verificato il
+  code-path reale (CamoscioProfileBookmarks.render con lista vuota ->
+  markup corretto). 8 file toccati (i 6 + app.js + styles.css), come
+  previsto dall'audit.
+
+  --- C3: colori della palette in un posto solo ---
+  Nuovo public/js/colori.js: window.CAMOSCIO_COLORI (Object.freeze),
+  gemello di :root per i 5 colori che finiscono in Leaflet/Chart.js (che
+  vogliono una stringa, non un var(--...)): arancio #C1662E, verde
+  #4C7A44, rosso #A83B2E, blu #4C7E90 (percorso "da seguire"), bluChiaro
+  #7FB5C7 (traccia registrata dal vivo). Caricato PER PRIMO fra i moduli
+  in index.html (routeplanner.js lo legge in un const di modulo). 14
+  punti in 6 file (map.js x9, app.js x2 nel grafico, routeplanner.js x2
+  nei const COLORE_*, hikepage.js, outingpage.js, weather.js) da hex a
+  mano -> window.CAMOSCIO_COLORI.x. REFACTOR PURO, output renderizzato
+  identico (verificato: borderColor del dataset CAI resta #C1662E, la
+  liveTrackPolyline resta #7FB5C7). Lasciati hardcoded di proposito:
+  #9CA3AF (grigio freddo degli assi del grafico - l'audit lo vuole su
+  --color-text-secondary ma e' un CAMBIO VISIVO, punto a se'), #2F7FD6
+  (POS_DOT_COLOR, blu del puntino GPS scelto diverso apposta), #FFF dei
+  bordi marker. I commenti che citano l'hex per tracciabilita' lasciati.
+
+  --- CHIUSURA ---
+  Denis: "commit e push, salva tutto, chiudiamo la sessione". I 4
+  auto-save dell'hook Stop (uno per punto) rifusi con git reset --soft
+  502834b in UN commit e2bd998 - non separati un-blocco-uno perche'
+  app.js e routeplanner.js sono toccati sia da B1 sia da C3 e lo split
+  per hunk a fine sessione non valeva il rischio. Poi il commit docs.
+  Push, deploy Render automatico. Vault a parte.
+
+  RESTA (Fascia C): C1 (palette fredda residua --bg-panel/--bg-overlay -
+  scelta di prodotto, serve confronto affiancato), C2 (responsive
+  login/registrazione - prova dal vivo passo per passo). Entrambi
+  vogliono l'occhio di Denis prima di partire. + #9CA3AF degli assi
+  Chart.js su --color-text-secondary (piccolo, cambio visivo).

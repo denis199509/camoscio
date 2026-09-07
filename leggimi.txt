@@ -1,46 +1,69 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-09-06 (TRENTACINQUESIMA sessione, CHIUSA. TUTTO PUSHATO:
-`7496ea3..844967b` (8 commit) + il commit di chiusura, deploy Render fatto.
+Aggiornato: 2026-09-07 (TRENTASEIESIMA sessione, CHIUSA. Committato e
+pushato: `e2bd998` (tutto il codice) + il commit di chiusura docs. Deploy
+Render automatico. Vault committato e pushato a parte.
 
-  Fatto e in produzione: PUNTO 1 (completamento di gruppo da tracciamento
-  dal vivo, il CREATORE apre la checklist "chi era con te", complete-group
-  accetta `trackingSessionId`, ripiego D5 lato server) + i TRE PICCOLI
-  PUNTI (cestino card completate in gruppo / M-5 contatti emergenza
-  atomici / TTL 90gg sulle Notification) + AUDIT visivo §9 (contrasto CTA
-  #B25E2A; "Passo & Fatica" lasciato) + FASCIA B piccole (B6 lightning-
-  alert.is-ok / B7 solo il FAB / B2 hike-card-desc / B4 --color-text-muted
-  #8F887A / B3 .hike-card-topright static). Dettaglio: cose_da_fare.txt.
+  Fatta la CODA DELL'AUDIT VISIVO - la FASCIA B e' CHIUSA. Quattro punti,
+  uno alla volta col via di Denis, ognuno verificato dal vivo (valori
+  renderizzati via javascript_tool: lo screenshot dell'estensione va in
+  timeout, trappola nota). Solo CSS/JS del frontend. Dettaglio in
+  cose_da_fare.txt "AUDIT VISIVO 36a".
+   - resto di B4: due variabili nuove --accent-green-text #74A466 /
+     --accent-red-text #f07866; ogni `color: var(--accent-green|red)` (31)
+     passa alle schiarite, sfondi/bordi/ombre restano sull'accento pieno.
+     Tutti i testi ora >= AA (4,5:1). #ee7361 di .hike-card-menu-item-danger
+     de-hardcodato.
+   - B5: scala tipografica agli 8 gradini dell'audit (0,7 / 0,8 / 0,85 /
+     0,9 / 1 / 1,15 / 1,4 / 1,9 rem). Da ~30 misure di testo a 8. Denis ha
+     scelto "gli 8 pieni" -> ridimensionati anche elementi grossi:
+     .section-title 1,6->1,4 ; .timer-display-large 2,8->1,9 ;
+     .tracking-stat-value 1,7->1,9 ; .total-val 1,5->1,4 ; h4 1,05->1,15
+     (= titoli di gruppo). Emoji-icone, clamp(), 0,9em, font-size:0 fuori
+     scala di proposito (commento nel file).
+   - B1: window.statoVuoto(testo, icona, classiExtra) in app.js +
+     componente .empty-state. 12 riquadri "non c'e' niente" in 6 file
+     (badges/feed/userprofile/storico/social/routeplanner) da
+     <div class="glass-card text-center py-4 text-muted"> al componente,
+     ognuno con un'emoji. Risolto il bug col-span-2 di social.js.
+   - C3: public/js/colori.js nuovo -> window.CAMOSCIO_COLORI (frozen),
+     gemello di :root per i 5 colori che vanno in Leaflet/Chart.js. 14
+     punti in 6 file da hex a mano alla variabile. Refactor puro.
 
-  ►►► LA 36a RIPARTE DA QUI: i RILIEVI di code-reviewer + security-privacy
-  (girati a fine 35a su 7496ea3..HEAD, NESSUN CRITICO, niente fixato).
-  Riassunto consolidato e verificato in cose_da_fare.txt sezione
-  "REVISIONE 35a: RILIEVI...". In sintesi:
+  ►►► LA 37a RIPARTE DA: i RILIEVI di code-reviewer + security-privacy
+  (girati a fine 35a, NESSUN CRITICO, niente fixato) - la 36a NON li ha
+  toccati. Riassunto consolidato in cose_da_fare.txt "REVISIONE 35a:
+  RILIEVI". In sintesi:
    1. URGENTE: Math.max(...) su traccia lunga (>~125k punti) -> RangeError
-      -> la registrazione non si chiude PIU'. routes/tracking.js:1119
-      (codice mio del Punto 1) + gemelli lib/percorso.js:63,70 +
-      lib/gpx.js:376. Fix: .reduce((m,q)=>q>m?q:m,-Infinity).
+      -> la registrazione non si chiude PIU'. routes/tracking.js:1119 +
+      gemelli lib/percorso.js:63,70 + lib/gpx.js:376. Fix:
+      .reduce((m,q)=>q>m?q:m,-Infinity).
    2. ~9 fix di correttezza piccoli in Punto 1 / M-5 (distanceKm non
-      arrotondato -> "11.27599..km"; maxAltitudeM non aggiornato dal ⬆;
-      $pull che toglie omonimi col DMS; registrazione senza quota che
-      azzera i numeri dell'organizzatore; D5 che etichetta un file come
-      "dal vivo"; email includes('@') vs validator.isEmail; toast
-      "rimosso" che mente; phone:''; /end fallito -> 409; ecc.).
-   3. DECISIONE DI DENIS: la D5 pubblica la traccia GPS del creatore
-      senza atto esplicito, senza avviso sulla corsia card, senza modo
-      di ritirarla (security-privacy ALTO-1). Tenere l'automatismo o
-      passare a flag esplicito + nota + via di revoca?
-   4. Effetti collaterali del TTL Notification: promemoria di
-      completamento che risorgono ogni 90gg; il TTL cancella l'unica
-      traccia di un allarme DMS scattato; l'indice TTL non e' stato
-      verificato sul DB vero (potrebbe non esistere).
+      arrotondato; maxAltitudeM non aggiornato dal ⬆; $pull che toglie
+      omonimi col DMS; registrazione senza quota che azzera i numeri
+      dell'organizzatore; D5 che etichetta un file come "dal vivo"; email
+      includes('@') vs validator.isEmail; toast "rimosso" che mente;
+      phone:''; /end fallito -> 409; ecc.).
+   3. DECISIONE DI DENIS: la D5 pubblica la traccia GPS del creatore senza
+      atto esplicito, senza avviso sulla corsia card, senza modo di
+      ritirarla (security-privacy ALTO-1). Tenere l'automatismo o passare a
+      flag esplicito + nota + via di revoca?
+   4. Effetti collaterali del TTL Notification: promemoria che risorgono
+      ogni 90gg; il TTL cancella l'unica traccia di un allarme DMS
+      scattato; l'indice TTL non verificato sul DB vero.
    5. GIA' NOTI: informativa privacy inesistente (nota legale);
       propagazione tempi del creatore (decisione gia' presa da Denis).
   + colmare le lacune nelle prove insieme ai fix.
 
+  FASCIA C dell'audit, NON fatta (i due che restano): C1 (ritirare la
+  palette fredda residua --bg-panel / --bg-overlay - scelta di prodotto,
+  serve confronto affiancato), C2 (responsive login/registrazione - da
+  provare dal vivo passo per passo). Tutti e due vogliono l'occhio di
+  Denis prima di partire.
+
   ANCORA APERTO invariato: prova al telefono con GPS vero del Punto 1
   (solo Denis); conformita' GDPR (professionista); verifica dal vivo
-  invito squadra direzionale. FASCIA B/C non fatte: B1, B5, C1, C2, C3.)
+  invito squadra direzionale.)
 
 --- TASTO INDIETRO / HISTORY API (33a): FATTO, PUSHATO (`7793426`) ---
 Il tasto Indietro non tornava indietro, buttava fuori dal sito. Riscritto
