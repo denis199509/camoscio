@@ -11638,17 +11638,21 @@ riassunto consolidato e verificato.)
 
 ===============================================================
 REVISIONE DEL CUMULATIVO 39a: code-reviewer + security-privacy
+>>> CHIUSA il 09/09/2026 (40a sessione). Tutto il batch applicato, le due
+>>> decisioni prese, un SECONDO giro di revisione fatto e consolidato
+>>> (blocco "CONSOLIDAMENTO 40a" piu' sotto). RIFUSO E PUSHATO in ab06f07.
 (girati l'08/09/2026 su `git diff 193c234` = i 6 commit auto-save locali
 + working tree. NESSUN CRITICO. Nessuna regressione di sicurezza in cio'
 che la 39a ha introdotto: tutto verificato e regge - security-privacy
 ha ESEGUITO i controlli - proiezioni, toJSON del sotto-schema, casting
 Mongoose, export sul Router. I due rapporti completi erano solo in chat,
-questo e' il consolidato. LA PROSSIMA SESSIONE RIPARTE DA QUI.)
+questo e' il consolidato.)
 ===============================================================
 
-  >>> STATO: i 6 auto-save NON sono pushati. Prima del push: applicare il
-      batch qui sotto, decidere ALTO-1 e MEDIO-2(D5-pulsante), rifondere
-      con `git reset --soft 193c234`, poi push col via di Denis.
+  >>> STATO (09/09): TUTTO FATTO E PUSHATO in ab06f07. Il batch qui sotto e'
+      stato applicato voce per voce; ALTO-1 e MEDIO-2 decisi da Denis (vedi
+      il blocco "CONSOLIDAMENTO 40a"). ALTO-1 poi CORRETTO dal secondo giro
+      (kind:'saved' e' una registrazione, non un itinerario proposto).
 
   --- ALTO-1 (PREESISTENTE, non introdotto ora - serve una DECISIONE) ---
   routes/completions.js righe ~111-127: il CREATORE che si auto-completa
@@ -11835,6 +11839,138 @@ questo e' il consolidato. LA PROSSIMA SESSIONE RIPARTE DA QUI.)
   indeterminato -> va nell'informativa privacy (che non esiste come
   documento). Base giuridica per conservare il nome di una persona
   non-utente: da verificare con un professionista.
+
+
+===============================================================
+CONSOLIDAMENTO 40a (09/09/2026) - applicazione del batch, le due decisioni,
+e un SECONDO giro code-reviewer + security-privacy sul cumulativo.
+>>> TUTTO PUSHATO in ab06f07 ("2FA blocco 1 + rilievi revisioni 35a/39a/40a",
+>>> 193c234..ab06f07). npm audit --omit=dev = 0. Regressione (rilanciata in
+>>> serie) verde.
+===============================================================
+
+  DENIS (parole sue): "possiamo continuare con i punti rimasti dall'ultima
+  sessione" -> via libera un blocco alla volta -> "fondi tutto, commit e
+  push" -> "prossima sessione passo 5".
+
+  --- DUE DECISIONI (via AskUserQuestion) ---
+  ALTO-1 (la traccia GPS del creatore usciva a ogni loggato): Denis ha
+    scelto "Filtro in hikeVisibileA" (contro "traccia pubblica di proposito
+    + informativa" e "lascio aperto come rilievo").
+  MEDIO-2 (il ripiego D5 pubblica la traccia senza avviso ne' via di
+    ritiro): Denis ha scelto "Tutto ora" - nota nel modale + comando ⋮
+    "Togli la mia traccia" sulla card, subito (contro "nota ora, pulsante
+    dopo" e "tutto in una passata frontend dedicata").
+
+  --- IL BATCH DI FIX CHIARI: applicato voce per voce ---
+  lib/totp.js: guardia chiave.length < 16 -> throw (propagato da
+    verificaCodice/scartoDiPasso; commento per chi scrivera' le rotte: un
+    throw async non gestito in Express fa cadere il processo su Node 24);
+    finestra e maxPassi -> Math.min(Math.max(0, Math.floor(...)), N);
+    adessoMs -> Number.isFinite(...) ? ... : Date.now(); TOLTA la riga
+    `if (b >= 248) continue;` in generaCodiciRecupero + commento corretto
+    (il piano §7 era gia' stato corretto in 39a). prova-2fa 62 -> 77
+    (nuovo blocco 1i + i casi frazionari/non-numerici di B-1/B-2).
+  deadManLastFired: ramo "nessun contatto con email" scrive comunque
+    (falliti.length || !raggiungibili.length) con contattiNonRaggiunti:[];
+    aggiornaAvvisoUltimoAllarme ha un testo dedicato per []; DELETE contatto
+    -> $pull anche di 'deadManLastFired.contattiNonRaggiunti': nome, poi
+    $unset se resta vuoto (con CAS su .at + $size:0, in un try/catch SUO -
+    il contatto e' gia' rimosso, la pulizia estetica non deve far
+    rispondere 400); tetto 180 giorni: NON solo nel client - updateMany in
+    controllaScadenzeHandler (updateMany e non un TTL: cancellerebbe l'User).
+  DMS corse fra schede: "Ho capito" -> POST /api/safety/ultimo-allarme/visto
+    (nuova, $unset del solo deadManLastFired) invece di /deactivate; CAS in
+    gestisciScadenza -> findOneAndUpdate({_id, deadManExpiresAt: <letto>});
+    guardia `if (!user.deadManExpiresAt) return` (la CAS degradava a update
+    incondizionato - Mongoose toglie le chiavi undefined dal filtro);
+    try/catch PER-UTENTE nel ciclo del cron (un utente storto saltava gli
+    altri scaduti e ri-mandava le sue coordinate al giro dopo).
+    RATE LIMITER: NON sicurezzaLimiter su /deactivate. Due secchi nuovi,
+    chiave per UTENTE (ipKeyGenerator come fallback) - checkinLimiter 200/h
+    su /deactivate, presaVisioneLimiter 30/h su /ultimo-allarme/visto.
+    sicurezzaLimiter resta solo su /activate. MOTIVO (rilievo A-1): un 429
+    sul check-in fa partire un falso allarme di soccorso, e per IP un
+    vicino di rete (wifi rifugio, CGNAT) poteva provocarlo saturando
+    /ultimo-allarme/visto.
+  Client contatti (safety.js): salvaNuovoContatto e rimuoviContatto leggono
+    body.error sul 4xx (409 doppione / 400 email non valida) invece del
+    "Riprova" generico; check email client da includes('@') a
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.
+  routes/hikes.js: ramo D5 della PUT -> `else if` (con {routeSource valido,
+    routePath:null} insieme dava ConflictingUpdateOperators -> 400 opaco).
+    prova-percorso-errori-sicuri sez. 4e (+ controprova: col vecchio codice
+    torna "Impossibile aggiornare l'escursione").
+  i18n: chiavi EN nuove (safety.dms.ultimoAllarmeOk/OkErrore/Fallito/
+    SenzaContatti; hikeCard.ritiraTraccia; hikeConfirm.ritiraTraccia*;
+    hikeToast.tracciaRitirata/erroreRitiraTraccia;
+    completeGroupModal.ripiegoTraccia).
+  prova-deadman-esito-fallito: nasce con scadenza FUTURA, portata nel
+    passato solo l'istante prima di gestisciScadenza (collisione col cron
+    di produzione); + sez. caso [], sez. CAS, sez. B-4, sez. spazzata 180gg.
+    8 -> 18.
+  MINORI applicati: prova-contatti-emergenza:265 etichetta corretta (il 400
+    arriva dalla type guard, non "dopo String()"). NON fatti di proposito
+    (come la nota stessa li marcava): spostare gestisciScadenza in
+    lib/deadMan.js; unificare validaUnContatto con la registrazione; nota
+    quoteVere quote parziali (solo agli atti).
+
+  --- SECONDO GIRO code-reviewer + security-privacy (sul cumulativo 1-4) ---
+  1 CRITICO + 3 ALTO, TUTTI applicati:
+  * C-1 (security-privacy) / ALTO-1 (code-reviewer): la prima stesura del
+    filtro esentava kind:'saved' credendolo "condiviso da altri". FALSO: un
+    SavedRoute si crea SOLO da una ActiveHikeSession (routes/routing.js), e
+    lib/percorso.js lo rilegge con {_id, userId} -> e' sempre la traccia GPS
+    di qualcuno, quasi sempre la propria. Catena: registro da casa -> "Crea
+    percorso" dalla mia uscita -> escursione con routeSource:{kind:'saved'}
+    -> la polyline dal cancello di casa esce a ogni loggato. CORRETTO:
+    hikeVisibileA toglie routePath SEMPRE per i non-partecipanti (solo
+    'draft' non ne ha comunque). routeSource RESTA (serve al tempo CAI
+    sulla card - toglierla la faceva mentire "nessun percorso reale
+    scelto"). prova-punto77 sez. 4b riscritta; controprova: col vecchio
+    codice C vede la linea 'saved'. Vedi ../camoscio memoria/
+    07-Trappole-Tecniche.md e 03-Decisioni-Architetturali.md.
+  * A-1 (security-privacy): sicurezzaLimiter su /deactivate + /ultimo-
+    allarme/visto (per IP) -> saturando /ultimo-allarme/visto si bloccava
+    il check-in di chiunque sullo stesso NAT. CORRETTO come sopra (due
+    secchi dedicati, chiave per utente). Ribalta un punto del batch 39a.
+  * A-2 / #5 (entrambi): il comando ⋮ "Togli la mia traccia" compariva solo
+    per kind:'live', ma ActiveHikeSession.importedFrom ha enum:['gpx'] (ci
+    finiscono anche i .fit) -> il ripiego D5 etichetta 'gpx' OGNI sessione
+    da file, e la nota del modale promette un menu che non c'e'. CORRETTO:
+    kindRitirabile = ['live','gpx','fit'].
+  * M-1 (entrambi): il tetto 180gg era solo di RENDERING nel client (scatta
+    se e quando l'utente riapre la pagina). CORRETTO: updateMany server in
+    controllaScadenzeHandler.
+  MEDIO/BASSO applicati: M-2 (try/catch + CAS sul $unset - vedi sopra); M-3
+    (try/catch per-utente nel cron - preesistente, ma e' la funzione del
+    soccorso); B-1/B-2 (Math.floor + clamp su finestra/maxPassi, adessoMs
+    Number.isFinite); B-3 (commento in codiceDaPasso: try/catch obbligatorio
+    per i chiamanti); B-4 (guardia deadManExpiresAt assente); #8 (3 commenti
+    diventati falsi corretti: hikes.js:~1146, safety.js:~124, safety.js
+    client:~687); #9 (LEGGIMI-PROVE.txt conteggi); #10 (ritiraTraccia catch
+    di rete -> common.erroreServer).
+  Per un professionista (entrambi gli agenti l'hanno esplicitato):
+    conformita' GDPR dell'automatismo D5 (pubblicazione di una traccia GPS
+    al gruppo senza opt-in esplicito) e base giuridica per la conservazione
+    dei nomi dei contatti di emergenza (dati di terzi).
+
+  --- PROVE ---
+  prova-2fa 77, prova-punto77 29, prova-deadman-esito-fallito 18,
+  prova-contatti-emergenza 55, prova-percorso-errori-sicuri 23. Regressione
+  RILANCIATA IN SERIE (in parallelo i conteggi DB impazziscono, vedi
+  07-Trappole-Tecniche.md): punto37 28, punto1-tracc 74, punto116 42,
+  invito-direzionale 46, elimina-escursione 53, invito-squadra 54,
+  partecipanti-forzati 43, squadre-consenso 71, eliminazione-account 58,
+  punto45 46, punto113-gpx 58, + il giro completo di inizio 40a
+  (fit/79/92/93/111/113/115/dislivello-vivo/foto-profilo/quote-traccia-lunga/
+  promemoria-completamento/passo-non-misurato/... e punto7/verifica-email/
+  guasto-invio/punto108 col server sulla :3000).
+
+  --- DA VERIFICARE DAL VIVO (Denis) ---
+  Correttezza #9 e #11 in tracking.js; il riquadro "ultimo allarme fallito"
+  nel pannello Sicurezza; il comando ⋮ "Togli la mia traccia" + la nota nel
+  modale "Completa"; la prova al telefono del Punto 1 (+ la richiesta 2).
 
 
 ===============================================================

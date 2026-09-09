@@ -1,148 +1,113 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-09-08 (TRENTANOVESIMA sessione. Denis: "riprendiamo il
-lavoro", poi via libera un pezzo alla volta. Seguito per intero l'ordine
-deciso a fine 38a: (1) blocco 1 del 2FA -> (2) decisioni D-4/D-7 ->
-(3) tutti i rilievi della revisione 35a.
+Aggiornato: 2026-09-09 (QUARANTESIMA sessione. Denis: "possiamo continuare
+con i punti rimasti dall'ultima sessione", via libera un blocco alla volta,
+poi "fondi tutto, commit e push", poi "prossima sessione passo 5".
 
-CODICE: sta in 5 COMMIT AUTO-SAVE LOCALI, MAI PUSHATI (l'hook Stop). Vanno
-rifusi con `git reset --soft <ultimo pushato>` in commit veri, DOPO il giro
-code-reviewer + security-privacy sul cumulativo (il piano 2FA lo impone
-prima di ogni push, e questa tornata tocca DMS / contatti emergenza /
-consenso geo / eliminazione account). Ultimo commit pushato: 193c234.
+CODICE: TUTTO PUSHATO. I 12 commit auto-save locali (39a + 40a) rifusi con
+`git reset --soft 193c234` in UN commit unico `ab06f07` e pushati su master
+(193c234..ab06f07; origin/master = ab06f07; verificato con un secondo push;
+deploy Render automatico). Working tree pulito.
 
-  --- (1) BLOCCO 1 DEL 2FA TOTP: FATTO ---
-  lib/totp.js (nuovo, zero dipendenze: crypto + impronta di lib/tokens.js).
-  base32 RFC 4648, HOTP RFC 4226, TOTP RFC 6238, uriOtpauth, codici di
-  recupero (Crockford base32, impronta sha256 con userId in testa).
-  prove/prova-2fa.js SOLO la sezione 1 (vettori RFC, niente server/DB):
-  62/62, con controprova (rotta la trappola 1 -> 23 rossi). Nessun file del
-  sito toccato, niente lo importa ancora -> inerte. Le sezioni 2-10 e i
-  blocchi 2-9 del piano restano da fare.
-  NB: prova-2fa.js dice "porta 3136" ma la 3136 e' gia' di
-  prova-contatti-emergenza -> i blocchi 2+ useranno 3137/3138.
+`ab06f07` ("2FA blocco 1 + rilievi revisioni 35a/39a/40a", 30 file) contiene:
+  - 2FA BLOCCO 1: lib/totp.js (zero dipendenze: crypto + impronta di
+    lib/tokens.js) + prove/prova-2fa.js sez.1 (vettori RFC 4226/6238 + le 4
+    guardie della 40a). INERTE: niente lo importa ancora.
+  - BACKLOG REVISIONE 35a (era il lavoro della 39a): Math.max -> RangeError
+    su traccia lunga (sostituito con .reduce); 11 fix di correttezza
+    contatti/Punto 1/tracking.js; MEDIO-1 (complete-group: un solo save()
+    atomico); effetti TTL Notification; User.deadManLastFired; decisione D5
+    (+ via di ritiro della traccia).
+  - DECISIONI 40a (via AskUserQuestion): ALTO-1 e MEDIO-2 - vedi sotto.
+  - SECONDO giro code-reviewer + security-privacy sul cumulativo: 1 CRITICO
+    + 3 ALTO, TUTTI applicati (dettaglio in cose_da_fare.txt
+    "CONSOLIDAMENTO 40a").
 
-  --- (2) DECISIONI D-4 e D-7: PRESE ---
-  D-4 = SI: /2fa/enable pretendera' emailVerified (blocco 4).
-  D-7 = 14 GIORNI di attesa del recupero ritardato.
-  Registrate nel piano C:\Users\lenovo\.claude\plans\camoscio-2fa-totp.md
-  (sez. 13 + costante §1b + riquadro in testa). Le "7 giorni" residue nel
-  piano riferite all'ATTESA vanno lette 14; la finestra POST-maturita' resta 7.
+  --- ALTO-1 / C-1: la traccia GPS del creatore usciva a ogni loggato ---
+  Il ⬆ del creatore su un proprio Completion scrive hike.routePath SENZA
+  groupCompletedAt -> GET /api/hikes lo serviva a chiunque loggato (gemello
+  di MEDIO-1). Deciso da Denis: filtro in hikeVisibileA (non lo schema, non
+  forzare groupCompletedAt). security-privacy ha bocciato la prima stesura
+  (C-1): kind:'saved' NON e' "condiviso da altri" - un SavedRoute si crea
+  SOLO da una ActiveHikeSession propria (lib/percorso.js lo cerca con
+  {_id, userId}). FINALE: hikeVisibileA toglie routePath a chi non partecipa
+  SEMPRE (solo 'draft' non ne ha comunque); routeSource RESTA (e' l'etichetta,
+  serve al tempo CAI sulla card, calcolato su dati gia' pubblici).
 
-  --- (3) RILIEVI REVISIONE 35a: TUTTI CHIUSI ---
-  (code-reviewer + security-privacy girati a fine 35a, nessun CRITICO.
-   Dettaglio voce per voce in cose_da_fare.txt "REVISIONE 35a: RILIEVI".)
+  --- MEDIO-2: il ripiego D5 pubblicava la traccia senza avviso ne' ritiro ---
+  Deciso da Denis "tutto ora": nota nel modale "Completa" aperto dalla card
+  + comando ⋮ "Togli la mia traccia" sulla card di un'escursione conclusa
+  registrata (kind live/gpx/fit - il ripiego D5 etichetta 'gpx' OGNI
+  sessione da file, anche i .fit), solo creatore -> PUT {routePath:null}.
+  + ramo D5 della PUT: `if` separato -> `else if` (con {routeSource valido,
+  routePath:null} insieme dava ConflictingUpdateOperators -> 400 opaco).
 
-  URGENTE - Math.max(...array) -> RangeError oltre ~1,2e5 elementi (Node 24;
-    una registrazione multi-day di quote ci arriva) -> la sessione non si
-    chiudeva piu' e restava aperta per sempre. Sostituito con .reduce in
-    lib/gpx.js (min E max), lib/percorso.js, routes/tracking.js. Nuova
-    prova-quote-traccia-lunga.js 9/9 (+ controprova d'ambiente inclusa).
+  --- A-1: REVERSIONE di un punto del batch 39a ---
+  La 39a chiedeva sicurezzaLimiter su /deactivate. Ma quel secchio e' per IP
+  e condiviso con /ultimo-allarme/visto: ~30 richieste da un account
+  qualsiasi bloccavano il CHECK-IN di chiunque sullo stesso NAT ->
+  disattivaSulServer ritorna res.ok, il timer resta armato, alla scadenza le
+  coordinate partono a un terzo ("le allerte non si attivano da terzi",
+  rovesciata). FINALE: due secchi DEDICATI, chiave per UTENTE non per IP -
+  checkinLimiter (200/h) su /deactivate, presaVisioneLimiter (30/h) su
+  /ultimo-allarme/visto. sicurezzaLimiter resta solo su /activate.
 
-  11 VOCI DI CORRETTEZZA (M-5 contatti emergenza + Punto 1 backend +
-    tracking.js frontend):
-    1  distanceKm arrotondato a 3 decimali in misureDaSessione (era coda binaria)
-    2  maxAltitudeM aggiunto a campiTraccia del ⬆ (routes/completions.js)
-    3  DELETE contatto: email SEMPRE nel filtro ({$in:[null,'']} se assente)
-       - non porta piu' via l'omonimo con email
-    4  registrazione senza quota (punti a 0) NON sovrascrive maxAltitude/
-       elevationGain messi a mano; distanza e linea passano comunque
-    5  ripiego D5 su sessione da ⬆ (importedFrom:'gpx') -> etichetta 'gpx'
-       + tiene importedName, non 'live'/'Traccia registrata'
-    6  validator.isEmail in validaUnContatto (era includes('@'))
-    7  toast "Contatto rimosso" solo se la voce e' davvero sparita
-    8  phone:'' non scritto sul sotto-documento; niente doppioni ($elemMatch
-       nel filtro atomico -> 409)
-    9  /end fallito: non si passa piu' l'id di una sessione ancora 'active'
-       (era 409); + res.ok prima di res.json()
-    10 trackingSessionId verificato come stringa; gpxText presente ma vuoto -> 400
-    11 scelta checklist-vs-completamento-singolo decisa AL CLICK, non al
-       renderSummary con CamoscioState vecchio
-    Prove: prova-contatti-emergenza 28->48, prova-punto1-tracciamento-gruppo
-    49->74 (controprove -12 / -11).
+  --- DMS / deadManLastFired ---
+  Il ramo "nessun contatto con email" scrive deadManLastFired (esito
+  peggiore, prima scadeva col TTL della notifica). La DELETE contatto toglie
+  il nome anche da deadManLastFired.contattiNonRaggiunti (+ $unset se resta
+  vuoto, con CAS, in un try/catch suo). "Ho capito" -> rotta dedicata
+  POST /api/safety/ultimo-allarme/visto (non /deactivate: fra due schede
+  poteva disarmare un timer riarmato). CAS in gestisciScadenza su
+  deadManExpiresAt + try/catch per-utente nel ciclo del cron + guardia
+  deadManExpiresAt assente + SPAZZATA SERVER dei nomi oltre 180 giorni in
+  controllaScadenzeHandler (il tetto client era solo di rendering). Client:
+  check email piu' stretto, body.error nei toast, testo distinto per
+  contattiNonRaggiunti:[], tetto 180gg in lettura.
 
-  MEDIO-1 - complete-group scriveva routePath e groupCompletedAt in due
-    save() separati: finestra (e caso di guasto durevole) in cui la traccia
-    GPS del creatore era pubblica a ogni loggato; se il ciclo per-confermato
-    sollevava, l'escursione restava PUBBLICA PER SEMPRE. Ora un solo save()
-    atomico (groupCompletedAt/participants/pendingApproval prima del ciclo).
+  --- lib/totp.js: le guardie ---
+  Segreto < 128 bit -> throw (propagato da verificaCodice/scartoDiPasso: chi
+  scrivera' le rotte 2FA deve incapsularle in try/catch - un throw async non
+  gestito in Express fa CADERE il processo su Node 24, spegne anche il DMS).
+  finestra e maxPassi con Math.floor + clamp (finestra:1.5 dava RangeError;
+  maxPassi enorme bloccava l'event loop ~15s). adessoMs solo se
+  Number.isFinite. Tolto il rifiuto del modulo in generaCodiciRecupero
+  (256 = 32*8: introduceva il bias, non lo toglieva).
 
-  TTL NOTIFICATION:
-    MEDIO-2 - verificato su Atlas (scripts/verifica-indici-notifiche.js,
-      sola lettura): l'indice TTL createdAt_1 c'e', expireAfterSeconds 90gg,
-      nessun IndexOptionsConflict inghiottito. Nessuna azione.
-    BASSO-2 - i promemoria "completa l'escursione in gruppo" risorgevano ogni
-      90 giorni (il TTL cancellava la guardia anti-doppione). ensureCompletion
-      Reminders ora guarda solo le escursioni scadute negli ultimi 60 giorni
-      (< 90 del TTL). Nuova prova-promemoria-completamento.js 7/7.
-    BASSO-3 - il TTL cancellava l'unica traccia di un allarme DMS scattato coi
-      nomi dei contatti non raggiunti. Nuovo User.deadManLastFired (at +
-      contattiNonRaggiunti), niente TTL, privato (ALWAYS_PRIVATE_FIELDS), tolto
-      da scrubAccount e da /activate + /deactivate. Riquadro persistente nel
-      pannello sicurezza con "Ho capito". Nuova prova-deadman-esito-fallito.js
-      8/8 (monkeypatch di inviaEmail, gestisciScadenza esportata per il test).
+  PROVE: prova-2fa 77, prova-punto77 29, prova-deadman-esito-fallito 18,
+  prova-contatti-emergenza 55, prova-percorso-errori-sicuri 23; regressione
+  RILANCIATA IN SERIE (in parallelo i conteggi DB impazziscono - vedi
+  ../camoscio memoria/07-Trappole-Tecniche.md), tutte verdi. npm audit
+  --omit=dev = 0.
 
-  BASSO-1 - i due console.error dei contatti loggano e.name/e.message, non
-    l'oggetto intero (un ValidationError porta .value = dati di terzi).
+  ►►► DA DOVE SI RIPARTE (41a sessione): PASSO 5 = 2FA BLOCCO 2 del piano
+  (C:\Users\lenovo\.claude\plans\camoscio-2fa-totp.md, sez. 11):
+   2. schema User (5 campi 2FA) + modelli + reti di sicurezza (scrubAccount
+      in lib/accountDeletion.js, toJSON di db/mongo.js, AccountRecovery con
+      expiresAt DEFAULT VERO - su un indice TTL il default:undefined non
+      vale)  ->
+   3. login + reset a due passi (solo server, inerte finche' nessuno ha il
+      2FA)  ->  4. rotte /2fa/setup|enable|disable|recovery-codes  ->
+   5. recupero ritardato backend (AccountRecovery + lib/recuperoAccount.js +
+      rotte /recovery/* + recuperoLimiter)  ->  6. vendor QR + pannello
+      Impostazioni  ->  7. BANNER GLOBALE (commit a se', tocca app.js)  ->
+   8. viste login/reimposta-password + i18n  ->  9. prove + docs.
+   CONFINE NON NEGOZIABILE: blocco 3 prima del 4 ("prima l'applicazione, poi
+   l'interruttore che l'accende"). code-reviewer + security-privacy sul
+   cumulativo prima di ogni push.
+   D-4 = SI (/2fa/enable pretende emailVerified), D-7 = 14 GIORNI di attesa
+   del recupero; la finestra post-maturita' resta 7. NB: prova-2fa.js dice
+   "porta 3136" ma e' gia' di prova-contatti-emergenza -> i blocchi 2+
+   useranno 3137/3138.
 
-  D5 (DECISIONE DI DENIS, 08/09/2026): tenuto l'automatismo del ripiego lato
-    server, MA aggiunte due difese ->
-    - PUT /api/hikes/:id { routePath: null } (da solo): il creatore RITIRA la
-      traccia GPS auto-pubblicata anche a escursione conclusa. Unica eccezione
-      al lock del punto 76; toglie routePath + azzera routeSource.
-    - complete-group SALTA il ripiego D5 se il creatore ha revocato il
-      consenso geo (con un trackingSessionId ESPLICITO invece procede: e' un
-      atto suo). I demo bypassano (nessun consenso vero).
-    prova-punto1-tracciamento-gruppo sez. 11 (12 controlli, controprova -6).
-
-  REGRESSIONI: 28 suite tutte verdi, npm audit --omit=dev = 0.
-
-  DA VERIFICARE DAL VIVO (frontend, niente prove di navigazione automatiche):
-   - correttezza #9 e #11 in tracking.js (checklist vs singolo, /end fallito);
-   - il riquadro "ultimo allarme fallito" nel pannello sicurezza (BASSO-3).
-
-  --- GIRO code-reviewer + security-privacy: FATTO (08/09) ---
-  Girati sul cumulativo `git diff 193c234` (6 auto-save + working tree).
-  NESSUN CRITICO. Nessuna regressione di sicurezza in cio' che la 39a ha
-  introdotto (security-privacy ha ESEGUITO i controlli). Il consolidato
-  completo dei rilievi e' in cose_da_fare.txt "REVISIONE DEL CUMULATIVO
-  39a". In sintesi:
-
-  * ALTO-1 (PREESISTENTE, serve una DECISIONE di Denis): routes/
-    completions.js - il creatore che si auto-completa e carica il .gpx
-    col ⬆ scrive hike.routePath SENZA groupCompletedAt -> visibile a ogni
-    loggato (hikeVisibileA non toglie routePath ai non-partecipanti).
-    Gemello identico di MEDIO-1. Opzioni: (a) filtro in hikeVisibileA per
-    kind 'live'/'fit'; (b) "e' pubblico di proposito" -> informativa +
-    avviso; (c) lasciarlo aperto come rilievo dedicato (il push va avanti
-    lo stesso).
-  * MEDIO-2 (serve una DECISIONE): la via di ritiro D5 (PUT {routePath:
-    null}) e' provata ma NESSUN pulsante la chiama, e il modale non
-    avvisa sul ripiego automatico. Da decidere se cablare nota+pulsante
-    ora o in una passata frontend dedicata.
-  * BATCH DI FIX CHIARI da applicare (nessuna decisione): lib/totp.js
-    (guardia segreto vuoto -> HMAC con chiave vuota non lancia su Node 24;
-    tetto su `finestra`; TOGLIERE il rifiuto del modulo in
-    generaCodiciRecupero - 256 E' 32*8, il rifiuto INTRODUCE il bias, e'
-    un errore ereditato dal piano §7; scartoDiPasso con adessoMs).
-    deadManLastFired (ramo "nessun contatto con email"; togliere il nome
-    dal $pull della DELETE contatto - sopravvive nell'export GDPR; tetto
-    180gg in lettura). DMS corse fra schede (endpoint dedicato "Ho
-    capito", non /deactivate; CAS in gestisciScadenza su deadManExpiresAt;
-    sicurezzaLimiter su /deactivate). salvaNuovoContatto legge body.error
-    + stringere il check email client. Ramo D5 della PUT -> `else if`.
-    3 chiavi i18n EN. prova-deadman-esito-fallito con scadenza futura.
-    2 commenti + nota quoteVere (quote parziali).
-
-  ►►► DA DOVE SI RIPARTE:
-   1. Decidere ALTO-1 e MEDIO-2 con Denis.
-   2. Applicare il BATCH DI FIX CHIARI (+ le decisioni prese).
-   3. Rifondere i 6 auto-save in commit veri (git reset --soft 193c234),
-      poi push (col via di Denis).
-   4. Verifiche dal vivo di Denis: correttezza #9/#11 in tracking.js,
-      riquadro "ultimo allarme fallito", + prova al telefono del Punto 1.
-   5. 2FA: blocco 2 del piano (schema User + reti di sicurezza), poi
-      3..9. Confine non negoziabile: blocco 3 prima del 4.
+  DA VERIFICARE DAL VIVO (Denis, niente prove di navigazione automatiche):
+   - correttezza #9 e #11 in tracking.js (checklist vs singolo; /end fallito)
+   - il riquadro "ultimo allarme fallito" nel pannello Sicurezza
+   - il comando ⋮ "Togli la mia traccia" + la nota nel modale "Completa"
+     (frontend nuovo della 40a)
+   - la prova al telefono del Punto 1 (registrare un'escursione vera
+     collegata, terminarla, checklist col GPS caldo) + la RICHIESTA 2 (un
+     partecipante che dopo carica la sua traccia col ⬆).
 
 --- 2FA TOTP - DIREZIONE (dal piano, per contesto) ---
 "Accedi con Google" (OAuth) resta IN SOSPESO (33a): serve prima l'informativa
@@ -155,12 +120,14 @@ l'email di avviso la legge l'attaccante). 9 blocchi di commit, piano §11.
   - CONFORMITA' GDPR + NOTA LEGALE: index.html fa accettare "Termini +
     Informativa privacy" senza documento dietro. Serve un consulente privacy/
     avvocato GDPR (non un DPO) per l'Informativa vera + il testo di consenso
-    prima di accettare un invito. security-privacy 35a lo segna ALTO-2.
+    prima di accettare un invito. security-privacy 35a lo segna ALTO-2. I
+    due agenti della 40a hanno esplicitato altri due trattamenti da far
+    validare: (a) l'automatismo D5 pubblica una traccia GPS al gruppo senza
+    opt-in esplicito (la nota nel modale, aggiunta ora, e' l'unica base);
+    (b) deadManLastFired conserva i nomi di persone non-utenti (contatti di
+    emergenza non raggiunti) - serve una base giuridica.
   - VERIFICA DAL VIVO di Denis su tutto l'invito squadra direzionale (entrare
     in una squadra; invito squadra a un'escursione; uscita e successione del creatore).
-  - PROVA AL TELEFONO del Punto 1 (solo Denis): registrare un'escursione vera
-    collegata, terminarla, checklist col GPS caldo. Poi la RICHIESTA 2 (un
-    partecipante che dopo carica la sua traccia col ⬆).
   - MEDIO-5 (security-privacy 35a): i tempi misurati dal creatore si applicano
     identici a ogni confermato e finiscono in "Velocita' Ascesa X m/h" sulla
     Dashboard. GDPR art. 5(1)(d). MA E' LA DECISIONE CHE DENIS HA GIA' PRESO
@@ -181,6 +148,8 @@ l'email di avviso la legge l'attaccante). 9 blocchi di commit, piano §11.
        https://camoscio.onrender.com/api/users/scrub-eliminati?chiave=<segreto>
      Senza, gli account eliminati restano "Account eliminato" PER SEMPRE.
      Il server lo urla nei log all'avvio in produzione. Fail-safe, ma da fare.
+     NB: il job SAFETY_CRON_SECRET (scadenze DMS) ora fa ANCHE la spazzata
+     dei deadManLastFired oltre 180 giorni - se non esiste ancora, va creato.
   2. Ricaricare il .gpx/.fit col ⬆ per le vecchie escursioni da pubblicare
      nel feed (l'originale non era stato conservato).
 
@@ -200,7 +169,7 @@ l'email di avviso la legge l'attaccante). 9 blocchi di commit, piano §11.
   - "Account eliminato" (punto A-3.4) SI traduce: common.accountEliminato ->
     "Deleted account".
 
---- LAVORI DELLE SESSIONI 33a-35a, FATTI E PUSHATI (per contesto) ---
+--- LAVORI DELLE SESSIONI 33a-40a, FATTI E PUSHATI (per contesto) ---
   TASTO INDIETRO / History API (33a): riscritto il nucleo di navigazione in
     public/js/app.js. Pushato (7793426).
   RITOCCHI VISIVI FASCIA A/B/C (33a-37a): audit dell'agente designer,
@@ -213,6 +182,9 @@ l'email di avviso la legge l'attaccante). 9 blocchi di commit, piano §11.
   TRE PICCOLI PUNTI (35a): cestino card completate (Denis: "resta cosi");
     M-5 rotte atomiche POST/DELETE contatti emergenza; TTL 90gg Notification.
     Pushati.
+  2FA BLOCCO 1 + BACKLOG 35a + DECISIONI/CONSOLIDAMENTO 40a: pushati in
+    ab06f07 (vedi in cima). Il 2FA e' ancora INERTE: i blocchi 2..9 sono la
+    41a e oltre.
 
 ===================================================================
 
@@ -253,7 +225,10 @@ MAI piu' (congelato); cose_da_fare.txt quando un punto si chiude o ne arriva uno
     Math.max(...array) va in RangeError oltre ~1,2e5 elementi - usare .reduce,
     flippare isDemoAccount su un demo in una prova rompe .save() - usare un utente
     vero temporaneo, monkeypatch di un import destrutturato va fatto PRIMA di
-    require del modulo che lo destruttura): tutte in
+    require del modulo che lo destruttura, routeSource.kind:'saved' e' SEMPRE una
+    traccia GPS registrata - non un "percorso condiviso da altri", le prove di
+    prove/ NON si lanciano in parallelo - condividono il DB Atlas e i conteggi
+    di riconciliazione impazziscono): tutte in
     ../camoscio memoria/07-Trappole-Tecniche.md — quella e' la sede dove si guarda
     prima di toccare codice a rischio. NB dal 06/09: il dislivello ha DUE soglie -
     0 per le tracce importate da un file di dispositivo (grezzo), 10 per le quote
