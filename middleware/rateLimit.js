@@ -7,7 +7,7 @@
 // finisce tutto in un secchio solo. Store in memoria (default): va bene su Render free,
 // che gira come istanza singola; se un giorno si scala a piu' istanze servira' uno store
 // condiviso (Mongo/Redis), ed e' l'unico motivo per cui questo file esiste separato.
-const { rateLimit } = require('express-rate-limit');
+const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
 
 const messaggioTroppiTentativi = {
     error: 'Troppi tentativi da questo dispositivo. Aspetta qualche minuto e riprova.'
@@ -109,9 +109,48 @@ const scritturaLimiter = rateLimit({
 // escursioni, chiuderle in gruppo, cancellare l'account, tutte su scritturaLimiter, e dietro
 // un NAT (wifi di un rifugio) la quota e' condivisa fra persone diverse. 60/ora: riarmare il
 // timer piu' volte durante un'uscita e' un uso normale. MEDIO-1, revisione sicurezza 28ª.
+// SOLO /activate: /deactivate (il CHECK-IN) e /ultimo-allarme/visto hanno secchi loro qui
+// sotto (revisione del cumulativo 40a) - un 429 sul check-in fa partire un falso allarme di
+// soccorso, quindi non deve MAI condividere una quota con nessuno.
 const sicurezzaLimiter = rateLimit({
     windowMs: 60 * 60 * 1000,
     limit: 60,
+    skip: soloInProduzione,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: messaggioTroppiTentativi
+});
+
+// POST /api/safety/deactivate (il CHECK-IN del Dead Man's Switch). Un 429 qui e' l'unico
+// rifiuto del sito che fa DANNO: disattivaSulServer() ritorna res.ok, il client mostra "non
+// sono riuscito ad avvisare il server", il timer resta armato e alla scadenza le coordinate
+// partono ai contatti di emergenza. Quindi: (a) quota della PERSONA, non dell'IP - dietro il
+// wifi di un rifugio o il CGNAT mobile, un vicino di rete non deve poter esaurire la quota e
+// impedire alla vittima di disarmare (la regola "le funzioni di allerta non si attivano da
+// terzi", rovesciata); (b) 200/ora, molto oltre qualunque numero di check-in in buona fede.
+const checkinLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    limit: 200,
+    keyGenerator: (req) => (req.session && req.session.userId)
+        ? `u:${req.session.userId}`
+        : ipKeyGenerator(req.ip),
+    skip: soloInProduzione,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: messaggioTroppiTentativi
+});
+
+// POST /api/safety/ultimo-allarme/visto ("Ho capito" sul riquadro dell'ultimo allarme, +
+// pulizia opportunistica del client oltre i 180 giorni). Gesto raro, secchio SUO: non deve
+// condividere quota col check-in (senza, 30 richieste da un account qualsiasi bloccavano il
+// /deactivate di chiunque sullo stesso IP - era il vettore ALTO della revisione 40a). Anche
+// qui la chiave e' per persona. $unset di un campo quasi sempre assente: 30/ora bastano.
+const presaVisioneLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    limit: 30,
+    keyGenerator: (req) => (req.session && req.session.userId)
+        ? `u:${req.session.userId}`
+        : ipKeyGenerator(req.ip),
     skip: soloInProduzione,
     standardHeaders: true,
     legacyHeaders: false,
@@ -254,6 +293,7 @@ const contattiLimiter = rateLimit({
 
 module.exports = {
     authLimiter, emailLimiter, apiLimiter, matchLimiter, exportLimiter, scritturaLimiter,
-    sicurezzaLimiter, cancellazioneLimiter, invitoLimiter, fotoLimiter, fotoLetturaLimiter,
-    fotoProfiloLimiter, registrazioneLimiter, fotoProfiloLetturaLimiter, contattiLimiter
+    sicurezzaLimiter, checkinLimiter, presaVisioneLimiter, cancellazioneLimiter, invitoLimiter,
+    fotoLimiter, fotoLetturaLimiter, fotoProfiloLimiter, registrazioneLimiter,
+    fotoProfiloLetturaLimiter, contattiLimiter
 };

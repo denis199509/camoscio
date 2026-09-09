@@ -422,6 +422,7 @@
             'completeGroupModal.cercaPlaceholder': 'Search by username...',
             'completeGroupModal.gpxLabel': ".gpx track (optional, for the hike's real data):",
             'completeGroupModal.daTracciamento': "The hike's data (distance, elevation gain, duration, track) comes from the recording you just finished.",
+            'completeGroupModal.ripiegoTraccia': "If you recorded this hike live, your GPS track will become the outing's route, visible to participants. You can remove it from the card's ⋮ menu after completing.",
             'completeGroupModal.confermaBtn': 'Confirm completion',
             'completeGroupModal.aggiungiBtn': 'Add',
             'completeGroupModal.confermaAlmeno': 'Confirm at least one person present.',
@@ -474,6 +475,7 @@
             'hikeCard.iscrizioniChiuseData': function (data) { return 'This hike was scheduled for ' + data + ': it no longer accepts sign-ups after that day.'; },
             'hikeCard.eliminaEscursione': 'Delete hike',
             'hikeCard.eliminaEscursioneTitle': 'Delete this hike for every participant',
+            'hikeCard.ritiraTraccia': 'Remove my track',
 
             // --- Messaggi/conferme azioni escursione (social.js) ---
             'hikeToast.scegliProgetto': 'Choose a project from the list.',
@@ -503,6 +505,10 @@
             'hikeConfirm.eliminaHikeIrreversibile': 'This cannot be undone.',
             'hikeToast.hikeEliminata': 'Hike deleted.',
             'hikeToast.erroreEliminaHike': 'Could not delete this hike.',
+            'hikeConfirm.ritiraTracciaTitolo': 'Remove your GPS track from this hike?',
+            'hikeConfirm.ritiraTracciaSpiega': 'The route line will disappear from the map, for you and for the participants. The hike figures (distance, elevation gain, duration) stay. You can always upload a track again with the ⬆ button in "My hikes".',
+            'hikeToast.tracciaRitirata': 'Track removed from the hike.',
+            'hikeToast.erroreRitiraTraccia': "Couldn't remove the track.",
             // Invito squadra direzionale (27ª): esito della risposta all'invito.
             'hikeToast.invitoAccettato': 'You are now taking part in this hike.',
             'hikeToast.invitoRifiutato': 'Invitation declined.',
@@ -847,6 +853,11 @@
             'safety.dms.erroreContatto': 'I couldn\'t save the contact. Try again.',
             'safety.dms.timerLocaleNonServer': 'The timer is active on this phone, but I couldn\'t notify the server: if you close the page the automatic alert might not go out. Try again when you have signal.',
             'safety.dms.checkinNonServer': 'I couldn\'t tell the server you\'re safe. Your emergency contact might still get an alert when the time runs out. Try again as soon as you have signal, or reach out to them directly yourself.',
+            // BASSO-3: riquadro persistente "ultimo allarme fallito" (safety.js + index.html)
+            'safety.dms.ultimoAllarmeOk': 'Got it',
+            'safety.dms.ultimoAllarmeOkErrore': "I couldn't dismiss the notice. Try again.",
+            'safety.dms.ultimoAllarmeFallito': function (quando, nomi) { return 'On ' + quando + ' the safety timer expired and the alert to ' + nomi + " didn't go out. If you haven't already, contact them directly."; },
+            'safety.dms.ultimoAllarmeSenzaContatti': function (quando) { return 'On ' + quando + ' the safety timer expired, but you had no contact with an email: no alert went out.'; },
 
             // --- Registro avvisi (logSimulatedSms) e allarme scaduto (safety.js) ---
             'safety.log.sistema': '[SYSTEM]',

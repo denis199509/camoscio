@@ -1116,7 +1116,10 @@ router.post('/:id/end', requireAuth, async (req, res) => {
             // Ogni punto e' [lng, lat, altitudineMetri, ...]: p[2] e' la quota, assente su
             // una registrazione senza dato di elevazione (allora il campo resta undefined).
             const quoteComplete = (session.points || []).map(p => p[2]).filter(q => Number.isFinite(q));
-            const maxAltitudeM = quoteComplete.length ? Math.round(Math.max(...quoteComplete)) : undefined;
+            // reduce, non Math.max(...quoteComplete): lo spread di un array lungo (una registrazione
+            // multi-day di quote ci arriva) lancia RangeError - e qui sarebbe PRIMA del $set
+            // status:'ended' nel try/catch, quindi lascerebbe la sessione aperta per sempre.
+            const maxAltitudeM = quoteComplete.length ? Math.round(quoteComplete.reduce((m, q) => (q > m ? q : m), -Infinity)) : undefined;
 
             // Una volta archiviata la traccia dettagliata non serve piu' punto per punto:
             // viene semplificata per risparmiare spazio (vincolo hard di cose_da_fare.txt),

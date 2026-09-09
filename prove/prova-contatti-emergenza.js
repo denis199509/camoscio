@@ -126,6 +126,14 @@ const nomi = (arr) => (arr || []).map(c => c.name).sort();
             { name: 'MailStorta', relationship: 'x', email: 'non-una-mail' }, cookieA);
         ok('POST rifiuta un\'email senza @ (400)', r.status === 400, JSON.stringify(r.corpo));
 
+        // Item 6 della revisione 35a: validator.isEmail, non includes('@'). "x@y" e "a@"
+        // passavano il vecchio controllo e fallivano solo alla scadenza del timer.
+        for (const mail of ['x@y', 'a@', '@esempio.it', 'due@@chiocciole.it']) {
+            r = await chiama('POST', `/api/users/${idA}/emergency-contacts`,
+                { name: 'Storta', relationship: 'x', email: mail }, cookieA);
+            ok(`POST rifiuta l'email malformata ${JSON.stringify(mail)} (400)`, r.status === 400, JSON.stringify(r.corpo));
+        }
+
         // === 3. POST: tetto di 5 ===
         // ne ha gia' 2 (Anna, Bruno): 3 buoni -> 5, il quarto (=sesto) deve fallire.
         for (const n of ['C3', 'C4', 'C5']) {
@@ -197,6 +205,127 @@ const nomi = (arr) => (arr || []).map(c => c.name).sort();
             JSON.stringify(nomi(dopoLaPut.emergencyContacts)) === JSON.stringify(nomi(primaDellaPut.emergencyContacts))
             && !nomi(dopoLaPut.emergencyContacts).includes('FORZATO'),
             JSON.stringify(dopoLaPut.emergencyContacts));
+
+        // === 9. POST: niente doppioni (item 8 della revisione 35a) ===
+        await User.findByIdAndUpdate(idA, { emergencyContacts: [] });
+        r = await chiama('POST', `/api/users/${idA}/emergency-contacts`,
+            { name: 'Dup', relationship: 'zio', email: em('dup') }, cookieA);
+        ok('POST: primo inserimento di "Dup" -> 200', r.status === 200);
+        r = await chiama('POST', `/api/users/${idA}/emergency-contacts`,
+            { name: 'Dup', relationship: 'zio', email: em('dup') }, cookieA);
+        ok('POST: lo STESSO contatto una seconda volta -> 409', r.status === 409, JSON.stringify(r.corpo));
+        const dopoDup = await User.findById(idA);
+        ok('sul DB "Dup" c\'e\' una volta sola', (dopoDup.emergencyContacts || []).filter(c => c.name === 'Dup').length === 1);
+        // ...ma email diversa = contatto diverso, si aggiunge
+        r = await chiama('POST', `/api/users/${idA}/emergency-contacts`,
+            { name: 'Dup', relationship: 'zio', email: em('dup2') }, cookieA);
+        ok('POST: stesso nome/relazione ma email diversa -> 200 (contatto distinto)', r.status === 200, JSON.stringify(r.corpo));
+
+        // === 10. POST: phone vuoto NON viene scritto (item 8, vincolo spazio) ===
+        await User.findByIdAndUpdate(idA, { emergencyContacts: [] });
+        r = await chiama('POST', `/api/users/${idA}/emergency-contacts`,
+            { name: 'NoTel', relationship: 'x', email: em('notel'), phone: '' }, cookieA);
+        ok('POST con phone:"" -> 200', r.status === 200);
+        r = await chiama('POST', `/api/users/${idA}/emergency-contacts`,
+            { name: 'NoTel2', relationship: 'x', email: em('notel2'), phone: '   ' }, cookieA);
+        ok('POST con phone di soli spazi -> 200', r.status === 200);
+        const dopoTel = await User.findById(idA).lean();
+        ok('nessuno dei due contatti ha il campo phone sul sotto-documento',
+            (dopoTel.emergencyContacts || []).every(c => c.phone === undefined),
+            JSON.stringify(dopoTel.emergencyContacts));
+
+        // === 11. DELETE: omonimi, uno SENZA email (MEDIO-3 / item 3) ===
+        // I contatti senza email sono legacy (pre-16/08/2026): validaUnContatto non ne accetta
+        // piu' via POST, quindi si scrivono dritti sul DB come farebbe un dato vecchio.
+        await User.findByIdAndUpdate(idA, { emergencyContacts: [
+            { name: 'Anna', relationship: 'sorella' },                    // niente email (legacy)
+            { name: 'Anna', relationship: 'sorella', email: em('anna') }, // omonima, con email
+            { name: 'Zeno', relationship: 'amico', email: em('zeno') }
+        ] });
+        r = await chiama('DELETE', `/api/users/${idA}/emergency-contacts`,
+            { name: 'Anna', relationship: 'sorella' }, cookieA); // niente email nel corpo
+        ok('DELETE "Anna sorella" senza email -> 200', r.status === 200, JSON.stringify(r.corpo));
+        const dopoOmonimi = await User.findById(idA).lean();
+        const anne = (dopoOmonimi.emergencyContacts || []).filter(c => c.name === 'Anna');
+        ok('resta UNA "Anna" (quella con email non e\' stata portata via)', anne.length === 1, JSON.stringify(anne));
+        ok('la "Anna" rimasta e\' quella CON email', anne[0] && anne[0].email === em('anna'), JSON.stringify(anne[0]));
+        ok('"Zeno" non e\' stato toccato', (dopoOmonimi.emergencyContacts || []).some(c => c.name === 'Zeno'));
+        // e ora si toglie anche quella con email, passandola nel corpo
+        r = await chiama('DELETE', `/api/users/${idA}/emergency-contacts`,
+            { name: 'Anna', relationship: 'sorella', email: em('anna') }, cookieA);
+        ok('DELETE "Anna sorella" con email -> 200, nessuna Anna resta', r.status === 200
+            && !nomi(r.corpo.emergencyContacts).includes('Anna'), JSON.stringify(r.corpo));
+
+        // === 12. DELETE: un filtro non-stringa nel corpo non pesca niente (guardia String()) ===
+        await User.findByIdAndUpdate(idA, { emergencyContacts: [
+            { name: 'Fisso', relationship: 'x', email: em('fisso') }
+        ] });
+        r = await chiama('DELETE', `/api/users/${idA}/emergency-contacts`,
+            { name: { $ne: null }, relationship: { $ne: null }, email: { $ne: null } }, cookieA);
+        ok('DELETE con {$ne:null} al posto dei nomi -> 400 (li ferma la type guard: typeof !== "string")',
+            r.status === 400, JSON.stringify(r.corpo));
+        const dopoIniezione = await User.findById(idA).lean();
+        ok('...e il contatto "Fisso" e\' ancora li\'', (dopoIniezione.emergencyContacts || []).some(c => c.name === 'Fisso'));
+
+        // === 13. POST: due richieste in parallelo al tetto -> una passa, una no, 5 sul DB ===
+        await User.findByIdAndUpdate(idA, { emergencyContacts: [
+            { name: 'P1', relationship: 'x', email: em('p1') },
+            { name: 'P2', relationship: 'x', email: em('p2') },
+            { name: 'P3', relationship: 'x', email: em('p3') },
+            { name: 'P4', relationship: 'x', email: em('p4') }
+        ] });
+        const [g1, g2] = await Promise.all([
+            chiama('POST', `/api/users/${idA}/emergency-contacts`, { name: 'G1', relationship: 'x', email: em('g1') }, cookieA),
+            chiama('POST', `/api/users/${idA}/emergency-contacts`, { name: 'G2', relationship: 'x', email: em('g2') }, cookieA)
+        ]);
+        const esiti = [g1.status, g2.status].sort();
+        ok('due POST concorrenti al tetto: uno 200 e uno 400', esiti.join() === '200,400', JSON.stringify(esiti));
+        const dopoGara = await User.findById(idA).lean();
+        ok('sul DB restano ESATTAMENTE 5 contatti (il tetto ha retto la corsa)',
+            (dopoGara.emergencyContacts || []).length === 5, String((dopoGara.emergencyContacts || []).length));
+
+        // === 14. DELETE toglie il nome anche da deadManLastFired.contattiNonRaggiunti
+        //         (revisione del cumulativo 39a): e' il dato di un terzo, non deve
+        //         sopravvivere alla rimozione del contatto ne' finire nell'export GDPR. ===
+        await User.findByIdAndUpdate(idA, {
+            $set: {
+                emergencyContacts: [
+                    { name: 'Mario', relationship: 'amico', email: em('mario') },
+                    { name: 'Anna', relationship: 'sorella', email: em('anna') }
+                ],
+                deadManLastFired: { at: new Date(), contattiNonRaggiunti: ['Mario', 'Anna'] }
+            }
+        });
+        r = await chiama('DELETE', `/api/users/${idA}/emergency-contacts`,
+            { name: 'Mario', relationship: 'amico', email: em('mario') }, cookieA);
+        ok('DELETE "Mario" -> 200', r.status === 200, JSON.stringify(r.corpo));
+        let dm = (await User.findById(idA).lean()).deadManLastFired;
+        ok('"Mario" tolto anche da deadManLastFired.contattiNonRaggiunti',
+            dm && JSON.stringify(dm.contattiNonRaggiunti) === JSON.stringify(['Anna']),
+            JSON.stringify(dm && dm.contattiNonRaggiunti));
+        ok('deadManLastFired c\'e\' ancora (l\'elenco non e\' vuoto)', !!dm && !!dm.at);
+
+        r = await chiama('DELETE', `/api/users/${idA}/emergency-contacts`,
+            { name: 'Anna', relationship: 'sorella', email: em('anna') }, cookieA);
+        ok('DELETE "Anna" (l\'ultimo non-raggiunto) -> 200', r.status === 200);
+        dm = (await User.findById(idA).lean()).deadManLastFired;
+        ok('svuotato l\'elenco -> deadManLastFired $unset per intero (niente { at } orfano)',
+            dm === undefined, JSON.stringify(dm));
+
+        // 14b: un DELETE che non tocca nessun non-raggiunto lascia deadManLastFired intatto
+        await User.findByIdAndUpdate(idA, {
+            $set: {
+                emergencyContacts: [{ name: 'Boh', relationship: 'x', email: em('boh') }],
+                deadManLastFired: { at: new Date(), contattiNonRaggiunti: ['QualcunAltro'] }
+            }
+        });
+        r = await chiama('DELETE', `/api/users/${idA}/emergency-contacts`,
+            { name: 'Boh', relationship: 'x', email: em('boh') }, cookieA);
+        ok('14b: DELETE "Boh" -> 200', r.status === 200);
+        dm = (await User.findById(idA).lean()).deadManLastFired;
+        ok('14b: deadManLastFired intatto (il nome tolto non era fra i non-raggiunti)',
+            dm && JSON.stringify(dm.contattiNonRaggiunti) === JSON.stringify(['QualcunAltro']),
+            JSON.stringify(dm));
 
     } catch (e) {
         console.error('\nERRORE DELLA PROVA:', e);

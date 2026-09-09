@@ -19,6 +19,7 @@
 require('dotenv').config({ path: __dirname + '/../.env' });
 const { spawn } = require('child_process');
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const Hike = require('../models/Hike');
 const Completion = require('../models/Completion');
@@ -102,6 +103,8 @@ async function creaSessione(userId, hikeId, opts = {}) {
     };
     if (opts.movingTimeSec != null) base.movingTimeSec = opts.movingTimeSec;
     if (opts.maxAltitudeM != null) base.maxAltitudeM = opts.maxAltitudeM;
+    if (opts.importedFrom) base.importedFrom = opts.importedFrom;
+    if (opts.importedName) base.importedName = opts.importedName;
     const s = await ActiveHikeSession.create(base);
     sessioniCreate.push(s._id);
     return s;
@@ -119,6 +122,7 @@ async function creaSessione(userId, hikeId, opts = {}) {
     let server, log = '';
     const hikeIds = [];
     let idA, idB, idC, paceA, paceB, paceC;
+    let idReale = null; // account VERO temporaneo per la sez. 11b (i demo bypassano il consenso geo)
 
     try {
         server = spawn(process.execPath, ['server.js'], { cwd: __dirname + '/..', env: Object.assign({}, process.env, { PORT: String(PORTA) }) });
@@ -164,6 +168,20 @@ async function creaSessione(userId, hikeId, opts = {}) {
         const idNonValido = await chiama('POST', `/api/hikes/${h1}/complete-group`,
             { confirmedUserIds: [idA, idB], trackingSessionId: 'non-un-objectid' }, ckA);
         ok('trackingSessionId non valido -> 400', idNonValido.status === 400, `status ${idNonValido.status}`);
+
+        // Item 10 della revisione 35a: trackingSessionId dev'essere una STRINGA (ObjectId.isValid
+        // accetta anche i numeri, incoerente col check di squadId).
+        const idNumerico = await chiama('POST', `/api/hikes/${h1}/complete-group`,
+            { confirmedUserIds: [idA, idB], trackingSessionId: 123456789012 }, ckA);
+        ok('trackingSessionId numerico (non stringa) -> 400', idNumerico.status === 400, `status ${idNumerico.status}`);
+
+        // Item 10: gpxText nel body ma vuoto -> 400, NON scivola in silenzio sul ripiego D5
+        // (che qui troverebbe sessValida e chiuderebbe h1).
+        for (const vuoto of ['', '   ']) {
+            const r = await chiama('POST', `/api/hikes/${h1}/complete-group`,
+                { confirmedUserIds: [idA, idB], gpxText: vuoto }, ckA);
+            ok(`gpxText vuoto ${JSON.stringify(vuoto)} -> 400`, r.status === 400, `status ${r.status} ${JSON.stringify(r.corpo)}`);
+        }
 
         const sessDiC = await creaSessione(idC, h1, {});
         const sessAltrui = await chiama('POST', `/api/hikes/${h1}/complete-group`,
@@ -274,6 +292,13 @@ async function creaSessione(userId, hikeId, opts = {}) {
             Array.isArray(h7db.routePath) && h7db.routePath.length >= 2 && h7db.routePath.length <= 400 &&
             h7db.routePath.every(p => Array.isArray(p) && p.length === 2 && Number.isFinite(p[0]) && Number.isFinite(p[1])),
             JSON.stringify(h7db.routePath));
+        // MEDIO-1 (revisione 35a): routePath (la traccia GPS reale del creatore) e
+        // groupCompletedAt sono scritti nello STESSO save(). Finche' groupCompletedAt non c'e',
+        // GET /api/hikes darebbe l'escursione, routePath compreso, a QUALUNQUE utente loggato -
+        // e se il ciclo per-confermato solleva, groupCompletedAt non si scrive mai. La hike che
+        // ha la traccia deve sempre essere anche gia' conclusa (= solo-partecipanti).
+        ok('MEDIO-1: la hike con routePath e\' anche conclusa (mai "traccia senza chiusura")',
+            !!h7db.routePath && !!h7db.groupCompletedAt);
 
         // === 8. Solo il CREATORE: un partecipante non passa ===
         console.log('\n--- 8. complete-group resta creator-only ---');
@@ -297,6 +322,119 @@ async function creaSessione(userId, hikeId, opts = {}) {
         const compA9 = await Completion.findOne({ userId: oid(idA), hikeId: oid(h9) }).lean();
         ok('D5: actualTimeHours ~4.0 dal ripiego', compA9 && Math.abs(compA9.actualTimeHours - DURATA_ATTESA_ORE) < 0.05, `${compA9 && compA9.actualTimeHours}`);
 
+        // === 10. Rilievi di correttezza della revisione 35a ===
+        console.log('\n--- 10. Correttezza 35a: coda binaria, sessione senza quota, etichetta gpx ---');
+
+        // Item 1: distanceKm con coda binaria (somma di $inc di float) -> arrotondato a 3 decimali.
+        const hCoda = await preparaHike('coda', { conB: true });
+        await creaSessione(idA, hCoda, { distanceKm: 11.275999999999991, maxAltitudeM: 1500 });
+        const rCoda = await chiama('POST', `/api/hikes/${hCoda}/complete-group`, { confirmedUserIds: [idA, idB] }, ckA);
+        ok('coda binaria: complete-group -> 200', rCoda.status === 200, JSON.stringify(rCoda.corpo && rCoda.corpo.error));
+        const hCodaDb = await Hike.findById(hCoda).lean();
+        ok(`distanceKm arrotondato a 3 decimali (${hCodaDb.distanceKm})`, hCodaDb.distanceKm === 11.276, String(hCodaDb.distanceKm));
+
+        // Item 4: registrazione SENZA dato di elevazione (tutti i punti a quota 0) NON deve
+        // sovrascrivere i valori di quota messi a mano dall'organizzatore - ma distanza e linea si'.
+        const hZero = await preparaHike('zeroquota', { conB: true });
+        await Hike.findByIdAndUpdate(hZero, { maxAltitude: 1234, elevationGain: 678 });
+        const puntiPiani = [
+            [13.50, 42.40, 0, 0, 5], [13.51, 42.41, 0, 1800, 5],
+            [13.52, 42.42, 0, 3600, 5], [13.53, 42.41, 0, 5400, 5]
+        ];
+        await creaSessione(idA, hZero, { points: puntiPiani, elevationGainM: 0, distanceKm: 5.5 });
+        const rZero = await chiama('POST', `/api/hikes/${hZero}/complete-group`, { confirmedUserIds: [idA, idB] }, ckA);
+        ok('sessione senza quota: complete-group -> 200', rZero.status === 200, JSON.stringify(rZero.corpo && rZero.corpo.error));
+        const hZeroDb = await Hike.findById(hZero).lean();
+        ok('quota max a mano NON sovrascritta (1234)', hZeroDb.maxAltitude === 1234, String(hZeroDb.maxAltitude));
+        ok('dislivello a mano NON sovrascritto (678)', hZeroDb.elevationGain === 678, String(hZeroDb.elevationGain));
+        ok('la distanza della registrazione E\' entrata comunque (5.5)', hZeroDb.distanceKm === 5.5, String(hZeroDb.distanceKm));
+        ok('la linea sulla mappa c\'e\' comunque', Array.isArray(hZeroDb.routePath) && hZeroDb.routePath.length >= 2, JSON.stringify(hZeroDb.routePath));
+
+        // Item 5: il ripiego D5 trova una sessione nata da un FILE (importedFrom:'gpx') -> la
+        // etichetta 'gpx' e ne tiene il nome, non 'live' / 'Traccia registrata'.
+        const hFile = await preparaHike('filed5', { conB: true });
+        await creaSessione(idA, hFile, { importedFrom: 'gpx', importedName: 'Corno Grande da Campo Imperatore', maxAltitudeM: 2912 });
+        const rFile = await chiama('POST', `/api/hikes/${hFile}/complete-group`, { confirmedUserIds: [idA, idB] }, ckA);
+        ok('D5 su sessione da file: complete-group -> 200', rFile.status === 200, JSON.stringify(rFile.corpo && rFile.corpo.error));
+        const hFileDb = await Hike.findById(hFile).lean();
+        ok('routeSource.kind = "gpx" (non "live")', hFileDb.routeSource && hFileDb.routeSource.kind === 'gpx', JSON.stringify(hFileDb.routeSource));
+        ok('routeSource.nome tiene il nome del file', hFileDb.routeSource && hFileDb.routeSource.nome === 'Corno Grande da Campo Imperatore', JSON.stringify(hFileDb.routeSource));
+
+        // === 11. D5 (decisione di Denis 08/09/2026): via di ritiro + rispetto della revoca geo ===
+        console.log('\n--- 11. D5: ritiro della traccia e consenso geo ---');
+
+        // 11a. Il creatore ritira la traccia auto-pubblicata (routePath:null nella PUT), anche
+        //      a escursione conclusa. E' l'unica eccezione al lock del punto 76.
+        const hRit = await preparaHike('ritiro', { conB: true });
+        await creaSessione(idA, hRit, { maxAltitudeM: 1450 });
+        await chiama('POST', `/api/hikes/${hRit}/complete-group`, { confirmedUserIds: [idA, idB] }, ckA);
+        let hRitDb = await Hike.findById(hRit).lean();
+        ok('11a: dopo il D5 la hike ha routePath e routeSource:live',
+            Array.isArray(hRitDb.routePath) && hRitDb.routeSource && hRitDb.routeSource.kind === 'live');
+        const putAltrui = await chiama('PUT', `/api/hikes/${hRit}`, { routePath: null }, ckB);
+        ok('11a: un NON creatore non puo\' ritirare la traccia -> 403', putAltrui.status === 403, `status ${putAltrui.status}`);
+        const putRoutesource = await chiama('PUT', `/api/hikes/${hRit}`, { routeSource: null }, ckA);
+        ok('11a: routeSource nel body su una conclusa resta bloccato -> 409', putRoutesource.status === 409, `status ${putRoutesource.status}`);
+        const putRitiro = await chiama('PUT', `/api/hikes/${hRit}`, { routePath: null }, ckA);
+        ok('11a: il creatore ritira con { routePath: null } -> 200', putRitiro.status === 200, `status ${putRitiro.status} ${JSON.stringify(putRitiro.corpo && putRitiro.corpo.error)}`);
+        hRitDb = await Hike.findById(hRit).lean();
+        ok('11a: routePath e\' sparito', hRitDb.routePath === undefined, JSON.stringify(hRitDb.routePath));
+        ok('11a: routeSource e\' sparito (non descrive piu\' niente senza la linea)', hRitDb.routeSource == null, JSON.stringify(hRitDb.routeSource));
+
+        // 11b. Consenso geo revocato -> il ripiego AUTOMATICO D5 non pesca la sessione; un
+        //      trackingSessionId ESPLICITO invece si'. Serve un account VERO (i demo hanno un
+        //      bypass del consenso), creato dritto sul DB e cancellato nel finally.
+        const pwdReale = `pw-${MARCA}-Zx`;
+        const uReale = await User.create({
+            username: `PROVA-P1-${MARCA}-reale`, email: `prova-p1-${MARCA}-reale@esempio-di-prova.invalid`,
+            passwordHash: bcrypt.hashSync(pwdReale, 10), nome: 'Prova', cognome: 'Reale',
+            termsAcceptedAt: new Date(), emailVerified: true, geolocationConsent: false
+        });
+        idReale = String(uReale._id);
+        const rLogin = await fetch(BASE + '/api/auth/login', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: uReale.email, password: pwdReale })
+        });
+        const ckReale = (rLogin.headers.getSetCookie ? rLogin.headers.getSetCookie() : [rLogin.headers.get('set-cookie')])
+            .filter(Boolean).map(c => c.split(';')[0]).join('; ');
+
+        // creatore = uReale, si conferma solo se stesso (e' gia' "in relazione" come creatore).
+        const mkHikeReale = async (suffix) => {
+            const r = await chiama('POST', '/api/hikes', {
+                title: `PROVA-P1-${MARCA}-${suffix}`, difficulty: 'Principiante', date: dataFutura,
+                tribeTags: [], trailhead: { lat: 42.4, lng: 13.5, name: `p1r${MARCA}${suffix}` }
+            }, ckReale);
+            const id = r.corpo && (r.corpo.id || r.corpo._id);
+            if (id) hikeIds.push(id);
+            return id;
+        };
+
+        const hNoConsenso = await mkHikeReale('noconsenso');
+        await creaSessione(idReale, hNoConsenso, { maxAltitudeM: 1600, distanceKm: 9.1 });
+        const rNoConsenso = await chiama('POST', `/api/hikes/${hNoConsenso}/complete-group`, { confirmedUserIds: [idReale] }, ckReale);
+        ok('11b: complete-group si chiude comunque -> 200', rNoConsenso.status === 200, JSON.stringify(rNoConsenso.corpo && rNoConsenso.corpo.error));
+        const hNoConsensoDb = await Hike.findById(hNoConsenso).lean();
+        ok('11b: consenso geo revocato -> il ripiego D5 NON ha pubblicato la traccia', hNoConsensoDb.routePath === undefined, JSON.stringify(hNoConsensoDb.routePath));
+        ok('11b: ...e i numeri della sessione non sono entrati (niente routeSource:live)', !hNoConsensoDb.routeSource || hNoConsensoDb.routeSource.kind !== 'live', JSON.stringify(hNoConsensoDb.routeSource));
+
+        const hEsplicito = await mkHikeReale('esplicito');
+        const sessEspl = await creaSessione(idReale, hEsplicito, { maxAltitudeM: 1700, distanceKm: 8.8 });
+        const rEsplicito = await chiama('POST', `/api/hikes/${hEsplicito}/complete-group`,
+            { confirmedUserIds: [idReale], trackingSessionId: String(sessEspl._id) }, ckReale);
+        ok('11b: con trackingSessionId ESPLICITO si procede lo stesso -> 200', rEsplicito.status === 200, JSON.stringify(rEsplicito.corpo && rEsplicito.corpo.error));
+        const hEspDb = await Hike.findById(hEsplicito).lean();
+        ok('11b: la traccia esplicita E\' entrata (routeSource:live + routePath)',
+            hEspDb.routeSource && hEspDb.routeSource.kind === 'live' && Array.isArray(hEspDb.routePath), JSON.stringify(hEspDb.routeSource));
+
+        // ...e con il consenso RIDATO, il ripiego automatico torna a funzionare.
+        await User.findByIdAndUpdate(idReale, { $set: { geolocationConsent: true } });
+        const hRidato = await mkHikeReale('consensoridato');
+        await creaSessione(idReale, hRidato, { maxAltitudeM: 1800, distanceKm: 7.2 });
+        await chiama('POST', `/api/hikes/${hRidato}/complete-group`, { confirmedUserIds: [idReale] }, ckReale);
+        const hRidatoDb = await Hike.findById(hRidato).lean();
+        ok('11b: consenso ridato -> il ripiego D5 pubblica di nuovo', Array.isArray(hRidatoDb.routePath)
+            && hRidatoDb.routeSource && hRidatoDb.routeSource.kind === 'live', JSON.stringify(hRidatoDb.routeSource));
+
     } catch (e) {
         console.error('\nERRORE DELLA PROVA:', e);
         falliti++; fallimenti.push('la prova stessa e\' andata in errore');
@@ -312,6 +450,13 @@ async function creaSessione(userId, hikeId, opts = {}) {
         const idsProva = [idA, idB, idC].filter(Boolean).map(oid);
         await Notification.deleteMany({ userId: { $in: idsProva }, text: /PROVA-P1-/ }).catch(() => {});
         await ripristinaPace(idA, paceA); await ripristinaPace(idB, paceB); await ripristinaPace(idC, paceC);
+        // Sez. 11b: l'account VERO temporaneo e i suoi documenti.
+        if (idReale) {
+            await Completion.deleteMany({ userId: oid(idReale) }).catch(() => {});
+            await ActiveHikeSession.deleteMany({ userId: oid(idReale) }).catch(() => {});
+            await Notification.deleteMany({ userId: oid(idReale) }).catch(() => {});
+            await User.deleteOne({ _id: oid(idReale) }).catch(() => {});
+        }
 
         const fine = {
             hikes: await conta('hikes'), completions: await conta('completions'),

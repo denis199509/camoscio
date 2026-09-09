@@ -152,6 +152,11 @@ router.post('/:id/gpx', requireAuth, async (req, res) => {
                 lastPointAt: letto.fine,
                 distanceKm: datiReali.distanceKm,
                 elevationGainM: datiReali.elevationGain,
+                // maxAltitudeM (campo 35a): senza, il ramo status==='ended' qui sotto lasciava
+                // la quota max di un'ALTRA traccia su una sessione i cui punti ora vengono dal
+                // file, e misureDaSessione la legge per prima. datiReali.maxAltitude e' sempre
+                // finito qui (calcolaDaPercorso lancia se il file non ha quote).
+                maxAltitudeM: datiReali.maxAltitude,
                 points: puntiSemplificati,
                 importedFrom: 'gpx'
                 // importedName gestito a parte qui sotto (punto 115): la creazione e il

@@ -1,4 +1,5 @@
 const { mongoose } = require('../db/mongo');
+const validator = require('validator'); // stessa libreria gia' usata in routes/auth.js per l'email dell'account
 
 const INTERESSI = [
     'Passeggiate facili', 'Trekking giornalieri', 'Trekking di più giorni', 'Ferrate',
@@ -213,6 +214,23 @@ const userSchema = new mongoose.Schema({
     deadManActive: { type: Boolean, default: undefined },
     deadManExpiresAt: { type: Date, default: undefined },
 
+    // BASSO-3 (revisione 35a): quando il timer SCADE e l'invio dell'email ad almeno un
+    // contatto FALLISCE, la notifica in campanella (routes/safety.js) e' l'unico appiglio per
+    // sapere CHI non e' stato raggiunto e chiamarlo a mano - ma da quando le Notification
+    // hanno un TTL di 90 giorni (models/Notification.js) quell'appiglio scade. Questo campo
+    // e' la copia durevole: sul documento persona, niente TTL, incluso nell'export dei dati,
+    // tolto da scrubAccount. default: undefined - lo avra' solo chi ha avuto un allarme
+    // fallito e non ha ancora riarmato il timer (l'/activate successivo lo cancella).
+    // I nomi di terzi restano qui solo nel caso di FALLIMENTO, dove servono all'utente per
+    // il soccorso - stesso criterio del testo della notifica in routes/safety.js.
+    deadManLastFired: {
+        type: new mongoose.Schema({
+            at: { type: Date, required: true },
+            contattiNonRaggiunti: { type: [String], default: [] }
+        }, { _id: false }),
+        default: undefined
+    },
+
     // --- 12. Moderazione segnalazioni sentiero (punto 45) ---
     // Ruolo DI SITO, non scoped a una singola squadra come Squad.admins (punto 48, vedi
     // 03-Decisioni-Architetturali.md del vault): chi puo' confermare o rifiutare le
@@ -288,7 +306,11 @@ User.validaUnContatto = function (c) {
     if (!name || !relationship || !email) {
         return 'Servono nome, relazione ed email del contatto';
     }
-    if (!email.includes('@')) return "L'email del contatto non sembra valida";
+    // validator.isEmail, NON email.includes('@'): questo e' il canale dell'allarme vero del
+    // Dead Man's Switch (punto 37), e routes/auth.js:124 valida gia' cosi' gli stessi contatti
+    // in registrazione. Con includes('@') un "a@" o "x@y" passava e falliva solo all'invio -
+    // un contatto che non ricevera' mai niente, salvato senza che nessuno se ne accorga.
+    if (!validator.isEmail(email)) return "L'email del contatto non sembra valida";
     if (name.length > 80 || relationship.length > 60 || email.length > 120
         || String(c.phone || '').length > 30) {
         return 'Un contatto di emergenza ha un campo troppo lungo';

@@ -57,6 +57,54 @@ poi, in un'altra finestra:
     d'opera: la prima stesura di models/User.js aveva il commento su select:false ma non
     l'opzione vera - la prova e' caduta su 6 controlli, confermando che verifica sul serio.
 
+Le due prove degli EFFETTI COLLATERALI DEL TTL NOTIFICATION (rilievi BASSO-2 / BASSO-3 della
+revisione 35a) NON vogliono un server acceso - chiamano le funzioni direttamente:
+
+    node prove/prova-promemoria-completamento.js    7 controlli  (creatorId sintetico)
+    node prove/prova-deadman-esito-fallito.js      ~19 controlli  (account vero temporaneo)
+
+    (prova-deadman-esito-fallito e' cresciuta con la revisione del cumulativo 40a: caso
+    "nessun contatto con email" -> deadManLastFired con [], CAS su deadManExpiresAt che non
+    disarma un timer riarmato, guardia deadManExpiresAt assente, e la spazzata server-side
+    dei 180 giorni in controllaScadenzeHandler.)
+
+    BASSO-2: il promemoria "completa l'escursione in gruppo" (punto 64) risorgeva ogni 90
+    giorni perche' il TTL delle Notification cancellava la guardia anti-doppione. Il fix
+    limita ensureCompletionReminders alle escursioni scadute negli ultimi 60 giorni (< 90 del
+    TTL). La prova crea 4 Hike (100 / 10 / 5-chiusa / 20-gia'-avvisata giorni fa) e verifica
+    che la vecchia non prenda mai un promemoria, nemmeno al secondo giro; sez. 3 e' una
+    controprova interna (il vecchio filtro includerebbe la vecchia).
+
+    BASSO-3: alla scadenza del timer, se un invio email FALLISCE, i nomi da richiamare stavano
+    solo nella notifica in campanella - che scade col TTL. Il fix li tiene anche su
+    User.deadManLastFired (niente TTL, privato, tolto da scrubAccount e da /activate). La
+    prova monkeypatcha inviaEmail PRIMA di caricare routes/safety.js (che la destruttura) e
+    chiama gestisciScadenza a mano: un server spawnato non basta, li' inviaEmail riesce
+    sempre (chiavi Mailjet vuote). Controprova: sul codice vecchio la prova non parte nemmeno
+    (gestisciScadenza non e' esportata). prova-eliminazione-account.js (58, +1) verifica lo
+    scrub del campo.
+
+MEDIO-2 (stessa revisione) e' stato verificato una tantum l'08/09/2026 con
+scripts/verifica-indici-notifiche.js (sola lettura): l'indice TTL su notifications.createdAt
+esiste su Atlas con expireAfterSeconds 7776000 (90 giorni), nessun IndexOptionsConflict
+inghiottito. Lo script resta per ricontrollare se un domani si tocca quell'indice.
+
+Le prove dei CONTATTI DI EMERGENZA e del 2FA (blocco 1) - nessuna vuole un server acceso a
+parte contatti-emergenza che ne avvia uno suo:
+
+    node prove/prova-contatti-emergenza.js         ~55 controlli  (ne avvia uno suo sulla 3136)
+    node prove/prova-2fa.js                         ~80 controlli  (non serve il server)
+    node prove/prova-punto77.js                     ~25 controlli  (ne avvia uno suo sulla 3104)
+
+    prova-contatti-emergenza: POST/DELETE /api/users/:id/emergency-contacts atomici (M-5),
+    validazione email server-side, niente doppioni, tetto 5, RACE fra due schede, e (dalla
+    40a) la rimozione che toglie il nome anche da deadManLastFired.contattiNonRaggiunti.
+    prova-2fa: SOLO la sezione 1 del piano - lib/totp.js contro i vettori RFC 4226/6238,
+    base32, finestra, codici di recupero, e le guardie della revisione del cumulativo
+    (segreto corto -> throw, tetto finestra, finestra frazionaria, adessoMs non numerico).
+    prova-punto77: escursione conclusa visibile ai soli partecipanti; sez. 4b (dalla 40a):
+    hikeVisibileA toglie la LINEA (routePath) a chi non partecipa per ogni traccia GPS.
+
 La prova del PASSO NON MISURATO (16/08/2026) non vuole il server acceso, ma legge il
 database (in SOLA lettura: l'unica interrogazione vera e' su un id inesistente, quindi non
 crea e non pulisce niente):
@@ -479,6 +527,21 @@ sua sezione 6 - quella che conta - vuole il server acceso, perche' manda i punti
 vera invece di provare una copia della regola:
 
     node prove/prova-dislivello-vivo.js             28 controlli
+
+La prova della TRACCIA LUNGA (rilievo URGENTE della revisione 35a): Math.max(...array) e
+Math.min(...array) vanno in RangeError oltre ~1,2e5 elementi (lo spread esaurisce lo stack
+degli argomenti), e il tracciamento multi-day ci arriva. Il punto peggiore era il maxAltitudeM
+del Punto 1 in routes/tracking.js, calcolato PRIMA del $set status:'ended' -> la RangeError
+lasciava la sessione aperta per sempre. Sostituito con .reduce in lib/gpx.js, lib/percorso.js
+e routes/tracking.js.
+
+    node prove/prova-quote-traccia-lunga.js         9 controlli  (non serve il server)
+
+    Prova le due funzioni pure che avevano lo spread (statisticheTraccia, misureDaSessione)
+    con 200.000 punti, piu' una controprova d'ambiente (che lo spread si rompe DAVVERO su
+    questo Node) e l'equivalenza con Math.max/min su una traccia corta. Controprova fatta
+    l'08/09/2026 (git stash dei tre file corretti): 5 controlli su 9 cadono con "Maximum
+    call stack size exceeded".
 
 Le due prove del PUNTO 38 (il tasto "Torna all'inizio", cioe' chiudere l'anello). Vanno
 lanciate INSIEME: si dividono il lavoro, e nessuna delle due da sola basta.

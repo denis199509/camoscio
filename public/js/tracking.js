@@ -329,7 +329,9 @@ async function endTracking() {
     let finalSession = null;
     try {
         const res = await fetch(`/api/tracking/${trackingState.sessionId}/end`, { method: 'POST' });
-        finalSession = await res.json();
+        // res.ok, non solo il parse: su un 4xx/5xx res.json() darebbe {error:...}, che
+        // renderSummary tratterebbe come un documento sessione (distanceKm = NaN, ecc.).
+        finalSession = res.ok ? await res.json() : null;
     } catch (e) {
         console.error("Errore chiusura tracciamento:", e);
     }
@@ -1130,32 +1132,39 @@ function renderSummary(finalSession) {
 
     const btnComplete = document.getElementById('btn-tracking-mark-complete');
     if (btnComplete) {
-        const db = window.CamoscioState;
-        const hike = (trackingState.hikeId && db) ? (db.hikes || []).find(h => h.id === trackingState.hikeId) : null;
-        const sonoCreatore = !!(hike && db.currentUser && hike.creatorId === db.currentUser.id);
-        // Punto 1 (35a): la checklist "chi era con te" (POST /:id/complete-group) serve SOLO
-        // al creatore, su un'escursione non ancora chiusa in gruppo, e solo se social.js ha
-        // davvero esposto il modale (script classici: mai dare per scontato che un modulo si
-        // sia collegato). Chi non e' il creatore resta sul completamento singolo di sempre
-        // (completeLinkedHike -> POST /:id/complete), che complete-group e' creator-only.
-        const puoAprireChecklist = sonoCreatore && !hike.groupCompletedAt
-            && typeof window.openCompleteGroupModal === 'function';
-
         if (!trackingState.hikeId || completamentoGiaFatto) {
             btnComplete.classList.add('hidden');
         } else {
             btnComplete.classList.remove('hidden');
-            // finalSession e' il documento serializzato di POST /:id/end (ha .id, mai _id);
-            // null se quella fetch e' fallita per rete -> si ripiega su trackingState.sessionId
-            // (stesso valore). Se mancano entrambi, la checklist parte senza trackingSessionId:
-            // il gruppo si chiude, i numeri della Hike non si aggiornano (degradazione corretta).
-            const sessionId = (finalSession && finalSession.id) || trackingState.sessionId || null;
-            btnComplete.onclick = puoAprireChecklist
-                ? () => window.openCompleteGroupModal(trackingState.hikeId, {
-                      trackingSessionId: sessionId,
-                      onSuccess: () => { completamentoGiaFatto = true; btnComplete.classList.add('hidden'); }
-                  })
-                : () => completeLinkedHike(durationSeconds);
+            // CR#9 (35a): la scelta "checklist di gruppo" vs "completamento singolo" si decide
+            // AL CLICK, non qui. A questo punto db.hikes puo' essere ancora vecchio (ore di
+            // registrazione, CamoscioState non ancora rinfrescato): la trovava null e il
+            // creatore ricadeva IN SILENZIO sul completamento singolo. Al click, invece, un
+            // refreshState e' quasi sempre gia' passato.
+            btnComplete.onclick = () => {
+                const db = window.CamoscioState;
+                const hike = (trackingState.hikeId && db) ? (db.hikes || []).find(h => h.id === trackingState.hikeId) : null;
+                // La checklist "chi era con te" (POST /:id/complete-group) e' creator-only, su
+                // un'escursione non ancora chiusa in gruppo, e solo se social.js ha davvero
+                // esposto il modale (script classici: mai darlo per scontato).
+                const puoAprireChecklist = !!(hike && db.currentUser && hike.creatorId === db.currentUser.id)
+                    && !hike.groupCompletedAt && typeof window.openCompleteGroupModal === 'function';
+                if (puoAprireChecklist) {
+                    // finalSession = il documento serializzato di POST /:id/end (ha .id, mai
+                    // _id). null se quella fetch e' fallita per rete: si passa null e NON
+                    // trackingState.sessionId, che punterebbe a una sessione ancora 'active'
+                    // (l'/end non e' andato a buon fine) -> complete-group risponderebbe 409 e
+                    // il gruppo non si chiuderebbe, proprio nel caso in cui il ripiego D5
+                    // dovrebbe salvare. Con null, D5 non trova nulla e chiude il gruppo senza
+                    // toccare i numeri (degradazione corretta).
+                    window.openCompleteGroupModal(trackingState.hikeId, {
+                        trackingSessionId: (finalSession && finalSession.id) || null,
+                        onSuccess: () => { completamentoGiaFatto = true; btnComplete.classList.add('hidden'); }
+                    });
+                } else {
+                    completeLinkedHike(durationSeconds);
+                }
+            };
         }
     }
 

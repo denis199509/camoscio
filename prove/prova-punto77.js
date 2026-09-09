@@ -129,6 +129,42 @@ function vedeEscursione(risposta, hikeId) {
         ok('escursione ancora programmata visibile a B (partecipante)', vedeEscursione(primaB, hikeId));
         ok('escursione ancora programmata visibile a C (estraneo)', vedeEscursione(primaC, hikeId));
 
+        // --- 4b. ALTO-1 (revisione del cumulativo 39a; corretto nella 40a). A un NON-partecipante
+        //         la LINEA (routePath) della traccia GPS del creatore non esce mai: 'live'/'fit'/
+        //         'gpx' sono registrazioni e 'saved' e' COPIATO da una registrazione (l'unica via
+        //         per un SavedRoute e' da una ActiveHikeSession propria). routeSource RESTA - e'
+        //         l'etichetta, serve al tempo CAI sulla card. Scrittura diretta sul documento: si
+        //         prova il serializzatore, non la rotta. ---
+        const oidHike = new mongoose.Types.ObjectId(hikeId);
+        const lineaFinta = [[13.55, 42.45], [13.56, 42.46], [13.57, 42.47]];
+        async function vistaHike(cookie) {
+            const r = await chiama('GET', '/api/hikes', null, cookie);
+            // solo h.id: h._id qui mascherava una regressione di serializzazione (toObject
+            // invece di toJSON) - stessa trappola gia' pagata due volte su questo progetto.
+            return (Array.isArray(r.corpo) ? r.corpo : []).find(h => h.id === hikeId) || null;
+        }
+        for (const kind of ['saved', 'gpx', 'fit', 'live']) {
+            await mongoose.connection.collection('hikes').updateOne(
+                { _id: oidHike },
+                { $set: { routeSource: { kind, nome: `PROVA-77-${MARCA}` }, routePath: lineaFinta } }
+            );
+            const perA = await vistaHike(cookieA);
+            const perC = await vistaHike(cookieC);
+            ok(`4b: A (creatore) vede routePath + routeSource (kind ${kind})`,
+                !!perA && Array.isArray(perA.routePath) && !!perA.routeSource && perA.routeSource.kind === kind,
+                JSON.stringify(perA && { rp: Array.isArray(perA.routePath), rs: perA.routeSource }));
+            ok(`4b: C (estraneo) NON vede la LINEA (routePath) per una registrazione (kind ${kind})`,
+                !!perC && perC.routePath === undefined,
+                JSON.stringify(perC && { rp: perC.routePath }));
+            ok(`4b: C (estraneo) vede comunque routeSource (etichetta per il tempo CAI) (kind ${kind})`,
+                !!perC && !!perC.routeSource && perC.routeSource.kind === kind,
+                JSON.stringify(perC && { rs: perC.routeSource }));
+        }
+        // rimesso com'era, cosi' i passi 5-7 non vengono disturbati
+        await mongoose.connection.collection('hikes').updateOne(
+            { _id: oidHike }, { $unset: { routeSource: '', routePath: '' } }
+        );
+
         // --- 5. A conferma il completamento di gruppo, ma SOLO per se stesso: B non viene
         //        confermato presente (torna fuori dai partecipanti, hike.participants=[A]) ---
         const completamento = await chiama('POST', `/api/hikes/${hikeId}/complete-group`,

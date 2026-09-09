@@ -59,7 +59,10 @@ const ALWAYS_PRIVATE_FIELDS = [
     'email', 'emailVerified', 'emergencyContacts', 'birthDate', 'ageRange',
     'geolocationConsent', 'termsAcceptedAt', 'nome', 'cognome', 'homeCity',
     'deadManActive', 'deadManExpiresAt', 'canModerateReports',
-    'receivesReportAlerts'
+    'receivesReportAlerts',
+    // BASSO-3 (35a): l'esito dell'ultimo allarme fallito - contiene nomi di contatti di
+    // emergenza (terzi) e rivela un evento di sicurezza. Stessa categoria di deadMan* sopra.
+    'deadManLastFired'
 ];
 // M-4 (follow-up revisione sicurezza, 31a): proiezione Mongo derivata dallo stesso elenco,
 // cosi' i due non possono divergere in silenzio (lezione gia' pagata altrove nel progetto).
@@ -603,7 +606,11 @@ router.post('/users/:id/emergency-contacts', requireAuth, contattiLimiter, async
         relationship: String(body.relationship || '').trim(),
         email: String(body.email || '').trim().toLowerCase()
     };
-    if (body.phone !== undefined) contatto.phone = String(body.phone || '').trim();
+    // if (body.phone), non (body.phone !== undefined): un phone vuoto o di soli spazi
+    // scriveva phone:'' sul sotto-documento, contro il vincolo spazio (mai un campo opzionale
+    // valorizzato a vuoto). Il campo phone esiste solo per non perdere i numeri gia' salvati.
+    const tel = String(body.phone || '').trim();
+    if (tel) contatto.phone = tel;
 
     const errore = User.validaUnContatto(contatto);
     if (errore) return res.status(400).json({ error: errore });
@@ -612,21 +619,37 @@ router.post('/users/:id/emergency-contacts', requireAuth, contattiLimiter, async
         const user = await User.findOneAndUpdate(
             {
                 _id: req.params.id,
-                $expr: { $lt: [{ $size: { $ifNull: ['$emergencyContacts', []] } }, User.MAX_CONTATTI_EMERGENZA] }
+                $expr: { $lt: [{ $size: { $ifNull: ['$emergencyContacts', []] } }, User.MAX_CONTATTI_EMERGENZA] },
+                // Niente doppioni: un contatto identico per nome+relazione+email non si aggiunge
+                // di nuovo (5 volte lo stesso -> 5 email identiche alla scadenza del timer). Va
+                // nel filtro, non in un controllo a parte, per restare atomico come il tetto.
+                emergencyContacts: { $not: { $elemMatch: {
+                    name: contatto.name, relationship: contatto.relationship, email: contatto.email
+                } } }
             },
             { $push: { emergencyContacts: contatto } },
             { new: true, runValidators: true }
         );
         if (user) return res.json({ emergencyContacts: serializzaContatti(user) });
-        // Nessun match: o l'utente non esiste, o e' gia' al tetto dei 5 contatti.
-        const esiste = await User.exists({ _id: req.params.id });
-        return res.status(esiste ? 400 : 404).json({
-            error: esiste
-                ? `Puoi salvare al massimo ${User.MAX_CONTATTI_EMERGENZA} contatti di emergenza`
-                : 'Utente non trovato'
+        // Nessun match: utente inesistente, oppure gia' al tetto, oppure il contatto c'e' gia'.
+        const attuale = await User.findById(req.params.id).select('emergencyContacts').lean();
+        if (!attuale) return res.status(404).json({ error: 'Utente non trovato' });
+        const lista = attuale.emergencyContacts || [];
+        const giaPresente = lista.some(c =>
+            (c.name || '') === contatto.name &&
+            (c.relationship || '') === contatto.relationship &&
+            (c.email || '') === contatto.email);
+        if (giaPresente) {
+            return res.status(409).json({ error: 'Questo contatto è già fra i tuoi contatti di emergenza' });
+        }
+        return res.status(400).json({
+            error: `Puoi salvare al massimo ${User.MAX_CONTATTI_EMERGENZA} contatti di emergenza`
         });
     } catch (e) {
-        console.error('Errore aggiunta contatto di emergenza:', e);
+        // BASSO-1 (35a): non l'oggetto errore intero - un ValidationError/CastError Mongoose
+        // porta .value (nome/email di un terzo) come proprieta' enumerabile e util.inspect la
+        // stamperebbe. Oggi non raggiungibile (validaUnContatto pre-filtra), difesa a costo zero.
+        console.error('Errore aggiunta contatto di emergenza:', e && e.name, e && e.message);
         res.status(400).json({ error: 'Impossibile aggiungere il contatto' });
     }
 });
@@ -638,27 +661,67 @@ router.delete('/users/:id/emergency-contacts', requireAuth, contattiLimiter, asy
         return res.status(403).json({ error: 'Puoi modificare solo il tuo profilo' });
     }
     const body = req.body || {};
-    const nome = String(body.name || '');
-    const relazione = String(body.relationship || '');
+    // I campi devono essere stringhe: un oggetto ({$ne:null}, ...) verrebbe comunque
+    // neutralizzato dal String() qui sotto ("[object Object]" non combacia niente), ma lo si
+    // rifiuta esplicitamente - stesso criterio del check su squadId in routes/hikes.js.
+    if (typeof body.name !== 'string' || typeof body.relationship !== 'string'
+        || (body.email !== undefined && body.email !== null && typeof body.email !== 'string')) {
+        return res.status(400).json({ error: 'Dati del contatto da rimuovere non validi' });
+    }
+    const nome = body.name.trim();
+    const relazione = body.relationship.trim();
     const email = String(body.email || '').trim().toLowerCase();
     if (!nome || !relazione) {
         return res.status(400).json({ error: 'Serve almeno nome e relazione del contatto da rimuovere' });
     }
-    // email nel filtro solo se il contatto ne ha una: i contatti vecchi senza email
-    // combaciano su nome+relazione (vedi il limite noto nel commento di blocco sopra).
-    const filtroVoce = { name: nome, relationship: relazione };
-    if (email) filtroVoce.email = email;
+    // L'email e' SEMPRE nel filtro: se il contatto ne ha una si combacia quella, se non ne
+    // ha ({$in:[null,'']} copre campo assente, null e stringa vuota) si combaciano SOLO i
+    // contatti senza email. Mai un filtro "qualunque email": con {name,relationship} soli, il
+    // $pull di "Anna sorella" senza email portava via ANCHE "Anna sorella anna@..." - un
+    // contatto DMS raggiungibile che spariva in silenzio.
+    const filtroVoce = { name: nome, relationship: relazione, email: email ? email : { $in: [null, ''] } };
 
     try {
+        // Revisione del cumulativo 39a: nello STESSO update si toglie il nome del contatto anche
+        // da deadManLastFired.contattiNonRaggiunti (l'esito di un allarme fallito, BASSO-3). E'
+        // il dato di un terzo: se l'utente lo rimuove dai contatti deve sparire anche da li',
+        // altrimenti sopravvive a tempo indeterminato e nell'export GDPR. $pull su un percorso
+        // assente e' un no-op (quasi nessun utente ha deadManLastFired), quindi e' sicuro sempre.
         const user = await User.findByIdAndUpdate(
             req.params.id,
-            { $pull: { emergencyContacts: filtroVoce } },
+            { $pull: {
+                emergencyContacts: filtroVoce,
+                'deadManLastFired.contattiNonRaggiunti': nome
+            } },
             { new: true }
         );
         if (!user) return res.status(404).json({ error: 'Utente non trovato' });
+        // Se quel $pull ha svuotato l'elenco dei non-raggiunti, il riquadro "ultimo allarme"
+        // non descrive piu' niente di utile: via l'intero sotto-documento (resterebbe solo un
+        // { at } orfano). Caso di confine noto e accettato: se deadManLastFired esisteva gia'
+        // con contattiNonRaggiunti:[] (timer scaduto senza alcun contatto con email), cancellare
+        // un contatto qualsiasi chiude comunque quell'avviso - e' un avviso, non un dato, e chi
+        // sta gestendo i contatti l'ha di fatto gia' superato.
+        // (revisione del cumulativo 40a) In un try/catch SUO: la rimozione del contatto e' gia'
+        // avvenuta sopra, questa e' pulizia estetica - se lancia (timeout Atlas) NON deve far
+        // rispondere 400 "impossibile rimuovere" su un contatto che invece E' stato rimosso.
+        // E con lo stesso CAS di gestisciScadenza: se gestisciScadenza ha scritto un
+        // deadManLastFired NUOVO (allarme appena scaduto) nella finestra fra le due chiamate,
+        // non e' quello che stiamo chiudendo.
+        const lf = user.deadManLastFired;
+        if (lf && lf.at && Array.isArray(lf.contattiNonRaggiunti) && lf.contattiNonRaggiunti.length === 0) {
+            try {
+                await User.updateOne(
+                    { _id: req.params.id, 'deadManLastFired.at': lf.at, 'deadManLastFired.contattiNonRaggiunti': { $size: 0 } },
+                    { $unset: { deadManLastFired: 1 } }
+                );
+            } catch (e2) {
+                console.error('deadManLastFired non ripulito (il contatto e\' comunque stato rimosso):', e2 && e2.name, e2 && e2.message);
+            }
+        }
         res.json({ emergencyContacts: serializzaContatti(user) });
     } catch (e) {
-        console.error('Errore rimozione contatto di emergenza:', e);
+        console.error('Errore rimozione contatto di emergenza:', e && e.name, e && e.message); // BASSO-1 (35a): mai l'oggetto intero (.value = dati di terzi)
         res.status(400).json({ error: 'Impossibile rimuovere il contatto' });
     }
 });

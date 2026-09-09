@@ -188,7 +188,12 @@ async function login(email, password) {
         await Follow.create({ followerId: A._id, followingId: B._id });
         await Follow.create({ followerId: B._id, followingId: A._id });
 
-        await User.findByIdAndUpdate(A._id, { deadManActive: true, deadManExpiresAt: new Date(Date.now() + 3600 * 1000) });
+        await User.findByIdAndUpdate(A._id, {
+            deadManActive: true, deadManExpiresAt: new Date(Date.now() + 3600 * 1000),
+            // BASSO-3 (35a): esito di un allarme fallito, con un nome di terzi. Sopravvive alla
+            // grazia (annullabile), lo scrub deve cancellarlo.
+            deadManLastFired: { at: new Date(), contattiNonRaggiunti: ['Contatto Terzo'] }
+        });
 
         const eliminazione = await chiama('DELETE', '/api/users/me', { password: pwdA }, cookieA);
         ok('la richiesta di eliminazione e\' accettata (200 ok)',
@@ -301,6 +306,8 @@ async function login(email, password) {
             Ascrubato.pendingDeletionAt === undefined && Ascrubato.deletionScrubAt === undefined);
         ok('email e passwordHash sono spariti',
             Ascrubato.email === undefined && Ascrubato.passwordHash === undefined);
+        ok('deadManLastFired e\' sparito (BASSO-3: conteneva un nome di terzi)',
+            Ascrubato.deadManLastFired === undefined, JSON.stringify(Ascrubato.deadManLastFired));
         ok('nome/cognome sono SEGNAPOSTO (non undefined: il doc resta valido per i .save() altrui)',
             Ascrubato.nome === 'Utente' && Ascrubato.cognome === 'eliminato' && Ascrubato.completedHikes === 0);
         ok('username e\' diventato il token stabile "utente-eliminato-<id>"',

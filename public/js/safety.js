@@ -43,6 +43,23 @@ function setupSafetyEvents() {
     if (btnDeactivate) btnDeactivate.addEventListener("click", checkinHandler);
     if (btnBannerCheckin) btnBannerCheckin.addEventListener("click", checkinHandler);
 
+    // BASSO-3 (35a): "Ho capito" sull'avviso dell'ultimo allarme fallito. Rotta DEDICATA
+    // (revisione del cumulativo 39a), NON /deactivate: se in un'altra scheda / dal telefono il
+    // timer e' stato riarmato mentre questa mostra ancora il riquadro vecchio, /deactivate lo
+    // spegnerebbe in silenzio. /ultimo-allarme/visto tocca solo deadManLastFired.
+    const btnUltimoAllarmeOk = document.getElementById("btn-dead-man-last-fired-ok");
+    if (btnUltimoAllarmeOk) btnUltimoAllarmeOk.addEventListener("click", async () => {
+        try {
+            const res = await fetch('/api/safety/ultimo-allarme/visto', { method: 'POST' });
+            if (!res.ok) throw new Error('rifiutato');
+            const usr = window.CamoscioState && window.CamoscioState.currentUser;
+            if (usr) delete usr.deadManLastFired;
+            aggiornaAvvisoUltimoAllarme();
+        } catch (e) {
+            window.showToast(T('safety.dms.ultimoAllarmeOkErrore') || "Non sono riuscito a chiudere l'avviso. Riprova.", "error");
+        }
+    });
+
     // Punto 20 - il tasto SOS verso il 112, sulla mappa.
     const btnSos = document.getElementById("btn-sos-112");
     if (btnSos) btnSos.addEventListener("click", chiamaSos);
@@ -255,7 +272,11 @@ async function salvaNuovoContatto() {
         window.showToast(T('safety.dms.campiObbligatori') || "Servono tutti e tre i campi: nome, chi è ed email.", "error");
         return;
     }
-    if (!email.includes('@')) {
+    // Controllo di cortesia: il gate vero e' validator.isEmail lato server. `includes('@')` era
+    // piu' lasco (revisione del cumulativo 39a) - "a@" lo passava e il server lo rifiutava
+    // senza spiegazione. Questo rifiuta local/dominio vuoti, dominio senza punto, spazi/a-capo
+    // (iniezione header), "Nome<a@b>": all'incirca quello che rifiuta anche il server.
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         window.showToast(T('safety.dms.emailNonValida') || "L'email non sembra valida.", "error");
         return;
     }
@@ -278,7 +299,14 @@ async function salvaNuovoContatto() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name: nome, relationship: relazione, email })
         });
-        if (!res.ok) throw new Error('Salvataggio rifiutato');
+        if (!res.ok) {
+            // Revisione del cumulativo 39a: i rifiuti nuovi (409 doppione, 400 email non
+            // valida) sono DEFINITIVI - il messaggio del server dice il perche', il generico
+            // "Riprova" sarebbe un consiglio sbagliato. Stesso schema di social.js.
+            const body = await res.json().catch(() => ({}));
+            window.showToast(body.error || (T('safety.dms.erroreContatto') || "Non sono riuscito a salvare il contatto. Riprova."), "error");
+            return;
+        }
         const dati = await res.json();
 
         usr.emergencyContacts = dati.emergencyContacts || [];
@@ -325,12 +353,27 @@ async function rimuoviContatto(idx) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name: c.name, relationship: c.relationship, email: c.email || '' })
         });
-        if (!res.ok) throw new Error('Rimozione rifiutata');
+        if (!res.ok) {
+            // Revisione del cumulativo 39a: leggere body.error (400 dati non validi, 403) invece
+            // del solo "Riprova" generico. Stesso schema di social.js e di salvaNuovoContatto.
+            const body = await res.json().catch(() => ({}));
+            window.showToast(body.error || (T('safety.dms.erroreRimozione') || "Non sono riuscito a rimuovere il contatto. Riprova."), "error");
+            return;
+        }
         const dati = await res.json();
         usr.emergencyContacts = dati.emergencyContacts || [];
         renderContattiEmergenza();
 
-        if (deadManActive && !contattiConEmail().length) {
+        // La voce e' ancora nella lista che il server ha rimandato? Allora il $pull non ha
+        // combaciato: NON e' il caso "un'altra scheda l'ha gia' tolta" (quello la farebbe
+        // sparire), e' una rimozione che non e' avvenuta. Non annunciarla come riuscita.
+        const ancoraLi = (usr.emergencyContacts).some(x =>
+            (x.name || '') === c.name &&
+            (x.relationship || '') === c.relationship &&
+            (x.email || '') === (c.email || ''));
+        if (ancoraLi) {
+            window.showToast(T('safety.dms.erroreRimozione') || "Non sono riuscito a rimuovere il contatto. Riprova.", "error");
+        } else if (deadManActive && !contattiConEmail().length) {
             window.showToast(T('safety.dms.rimossoUltimoConEmail') || "Hai rimosso l'ultimo contatto con email mentre il timer è attivo: alla scadenza non partirà nessun avviso.", "error");
         } else {
             window.showToast(T('safety.dms.contattoRimosso') || "Contatto rimosso.", "success");
@@ -434,6 +477,10 @@ async function activateDeadManSwitch() {
 
     startSafetyCountdown();
     aggiornaStatoTimer();
+    // Nuovo ciclo: il server ha gia' fatto l'$unset di deadManLastFired (routes/safety.js
+    // /activate). Si allinea lo stato locale e si toglie il riquadro.
+    { const u = window.CamoscioState && window.CamoscioState.currentUser; if (u) delete u.deadManLastFired; }
+    aggiornaAvvisoUltimoAllarme();
 }
 
 async function deactivateDeadManSwitch(isSafeCheckin) {
@@ -471,6 +518,10 @@ async function deactivateDeadManSwitch(isSafeCheckin) {
     aggiornaStatoTimer();
 
     if (isSafeCheckin) {
+        // Il check-in vale anche come presa visione dell'ultimo allarme fallito: /deactivate
+        // ne fa gia' l'$unset lato server, qui si allinea lo stato locale.
+        const u = window.CamoscioState && window.CamoscioState.currentUser; if (u) delete u.deadManLastFired;
+        aggiornaAvvisoUltimoAllarme();
         logSimulatedSms("SAFE", T('safety.log.checkinOk') || "Check-in completato con successo. Dispositivo disattivato. Stazione Sicura.");
     }
 
@@ -497,6 +548,8 @@ function restoreDeadManState() {
             localStorage.removeItem("deadman_timestamp");
         }
     }
+
+    aggiornaAvvisoUltimoAllarme();
 
     const isActive = localStorage.getItem("deadman_active") === "true";
     const ts = parseInt(localStorage.getItem("deadman_timestamp")) || 0;
@@ -629,6 +682,49 @@ function aggiornaStatoTimer() {
     btnDisattiva.classList.toggle("hidden", !deadManActive);
     if (banner) banner.classList.toggle("hidden", !deadManActive);
     if (contatore) contatore.classList.toggle("hidden", !deadManActive);
+}
+
+// BASSO-3 (revisione 35a): mostra, finche' non viene chiuso, l'esito dell'ultimo allarme in
+// cui l'invio ad almeno un contatto e' fallito (o non c'era nessun contatto con un'email). La
+// notifica in campanella scade col TTL di 90 giorni; questo riquadro legge
+// currentUser.deadManLastFired, che vive sul documento persona. Si azzera riarmando il timer
+// (/activate), col check-in (/deactivate), o con "Ho capito" (/ultimo-allarme/visto) - e dal
+// server oltre i 180 giorni (controllaScadenzeHandler). Vedi routes/safety.js.
+function aggiornaAvvisoUltimoAllarme() {
+    const box = document.getElementById("dead-man-last-fired");
+    const testoEl = document.getElementById("dead-man-last-fired-text");
+    if (!box || !testoEl) return;
+    const usr = window.CamoscioState && window.CamoscioState.currentUser;
+    const info = usr && usr.deadManLastFired;
+    if (!info || !info.at) {
+        box.classList.add("hidden");
+        return;
+    }
+    // Tetto a 180 giorni in lettura (revisione del cumulativo 39a): un nome di terzi tenuto
+    // "per sempre" e' difficile da giustificare in minimizzazione, e l'utilita' pratica
+    // dell'avviso (chi richiamare a mano) e' di settimane. Oltre i 180 giorni - o con una data
+    // illeggibile - si nasconde e si chiude sul server con un colpo opportunistico verso la
+    // rotta dedicata (mai /deactivate: non deve poter toccare il timer).
+    const eta = Date.now() - new Date(info.at).getTime();
+    if (Number.isNaN(eta) || eta > 180 * 86400000) {
+        box.classList.add("hidden");
+        if (usr) delete usr.deadManLastFired;
+        fetch('/api/safety/ultimo-allarme/visto', { method: 'POST' }).catch(() => {});
+        return;
+    }
+    const locData = (window.CamoscioI18n && window.CamoscioI18n.getLang() === 'en') ? 'en-GB' : 'it-IT';
+    const quando = new Date(info.at).toLocaleString(locData, { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' });
+    // contattiNonRaggiunti puo' essere [] (revisione del cumulativo 39a): il timer e' scaduto
+    // ma non c'era NESSUN contatto con un'email - non e' partito niente a nessuno, e va detto
+    // con parole diverse dal caso "l'invio ad alcuni e' fallito".
+    const nomi = Array.isArray(info.contattiNonRaggiunti) ? info.contattiNonRaggiunti.filter(Boolean) : [];
+    testoEl.textContent = nomi.length
+        ? (T('safety.dms.ultimoAllarmeFallito', quando, nomi.join(', '))
+            || `Il ${quando} il timer di sicurezza è scaduto e l'avviso a ${nomi.join(', ')} non è partito. Se non l'hai già fatto, avvisali direttamente.`)
+        : (T('safety.dms.ultimoAllarmeSenzaContatti', quando)
+            || `Il ${quando} il timer di sicurezza è scaduto ma non avevi nessun contatto con un'email: nessun avviso è partito.`);
+    box.classList.remove("hidden");
+    if (window.lucide && window.lucide.createIcons) window.lucide.createIcons();
 }
 
 // --- MESH NETWORKING SIMULATOR ---

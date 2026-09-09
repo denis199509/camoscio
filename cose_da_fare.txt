@@ -10891,6 +10891,40 @@ Piano: C:\Users\lenovo\.claude\plans\camoscio-2fa-totp.md)
   offre.
 
   ---------------------------------------------------------------
+  AGGIORNAMENTO 39a SESSIONE (08/09/2026) - BLOCCO 1 FATTO, D-4/D-7 DECISE
+  ----------------------------------------------------------------------
+
+  BLOCCO 1 del piano: nuovo lib/totp.js (zero dipendenze: crypto +
+  impronta di lib/tokens.js). base32 RFC 4648 a mano, HOTP RFC 4226,
+  TOTP RFC 6238 (finestra +/-1, ritorna il `passo` per il CAS
+  anti-riuso), uriOtpauth (etichetta/emittente percent-codificati),
+  scartoDiPasso (diagnostica orologio), codici di recupero Crockford
+  base32 con rifiuto del modulo, normalizzaCodiceRecupero (I/L->1,
+  O->0), improntaCodiceRecupero (sha256 con userId in testa, NON
+  bcrypt). Le tre trappole HOTP scritte in testa al file.
+  prove/prova-2fa.js SOLO la sezione 1 (vettori RFC 4226 App.D e RFC
+  6238 App.B riga SHA1, T=59..20000000000; base32; finestra; zeri
+  davanti; URI; codici di recupero): 62/62, con controprova (rotta la
+  trappola 1 -> 23 rossi). NIENTE lo importa ancora -> inerte. npm
+  audit invariato. NB: prova-2fa.js dice "porta 3136" ma e' gia' di
+  prova-contatti-emergenza -> i blocchi 2+ useranno 3137/3138.
+
+  DECISIONI D-4 e D-7 (via AskUserQuestion):
+   - D-4 = SI: /2fa/enable pretendera' emailVerified (blocco 4). Con
+     l'opzione C l'email e' l'unica via di rientro; un 2FA su un
+     indirizzo mai confermato = lockout permanente.
+   - D-7 = 14 GIORNI di attesa del recupero ritardato. 7 = durata di un
+     trekking lungo, chi e' in cammino non vede mai il banner. La
+     finestra POST-maturita' resta 7.
+   Registrate nel piano camoscio-2fa-totp.md (sez. 13 + costante §1b +
+   riquadro in testa). Le "7 giorni" residue del piano riferite
+   all'ATTESA vanno lette 14.
+
+  RESTA: blocchi 2-9 del piano (schema User + reti di sicurezza -> ...
+  -> banner globale -> viste -> prove/docs). Confine ③ prima di ④.
+
+  --- Sotto, l'aggiornamento della 38a: ---
+
   AGGIORNAMENTO 38a SESSIONE (07/09/2026) - PROGETTATO, NIENTE CODICE
   ---------------------------------------------------------------
 
@@ -10898,7 +10932,7 @@ Piano: C:\Users\lenovo\.claude\plans\camoscio-2fa-totp.md)
   e validato il 2FA TOTP con l'agente `architect` (2 revisioni). Il
   piano completo (contratti, scheletri, prove, confini dei commit,
   rischi) e' in C:\Users\lenovo\.claude\plans\camoscio-2fa-totp.md.
-  Nessuna riga di codice del sito toccata in questa sessione.
+  Nessuna riga di codice del sito toccata in quella sessione.
 
   TRE SCELTE DI DENIS FATTE VIA AskUserQuestion:
 
@@ -11329,15 +11363,43 @@ AUDIT VISIVO §9 - LE DUE DECISIONI CHE ASPETTAVANO DENIS (35a, 06/09)
 
 ===============================================================
 REVISIONE 35a: RILIEVI code-reviewer + security-privacy
+>>> TUTTI CHIUSI il 08/09/2026 (39a sessione). <<<
 (girati su 7496ea3..4289acc = Punto 1 + tre piccoli punti + audit 9 +
 Fascia B. TUTTO GIA' PUSHATO E IN PRODUZIONE. Nessun CRITICO da nessuno
-dei due. La prossima sessione RIPARTE DA QUI. I due rapporti completi
-sono solo in chat - questo e' il riassunto consolidato e verificato.)
+dei due. I due rapporti completi sono solo in chat - questo e' il
+riassunto consolidato e verificato.)
 ===============================================================
 
+  CHIUSURA 08/09/2026 (39a): tutti i rilievi sotto applicati, ognuno con
+  la sua controprova (git stash del codice nuovo -> i controlli cadono).
+  Il codice sta in 5 commit auto-save locali NON pushati: vanno rifusi
+  DOPO un giro code-reviewer + security-privacy sul cumulativo. Prove
+  nuove: prova-quote-traccia-lunga (9), prova-promemoria-completamento
+  (7), prova-deadman-esito-fallito (8); prova-contatti-emergenza 28->48,
+  prova-punto1-tracciamento-gruppo 49->74. 28 suite tutte verdi, npm
+  audit=0. Dettaglio delle scelte in
+  ../camoscio memoria/03-Decisioni-Architetturali.md "Rilievi revisione 35a".
+  Esito per voce:
+   - URGENTE Math.max: .reduce in gpx.js/percorso.js/tracking.js. FATTO.
+   - Correttezza 1..11: tutte FATTE (vedi sotto, ogni voce marcata).
+   - MEDIO-1: complete-group scrive routePath+groupCompletedAt in un solo
+     save() atomico prima del ciclo. FATTO.
+   - D5: DECISO da Denis - tenuto l'automatismo + PUT {routePath:null}
+     per ritirare la traccia anche a conclusa + guardia consenso geo sul
+     ripiego D5. FATTO.
+   - TTL: MEDIO-2 verificato su Atlas (indice c'e', 90gg). BASSO-2
+     finestra 60gg in ensureCompletionReminders. BASSO-3
+     User.deadManLastFired. FATTI.
+   - BASSO-1: console.error senza l'oggetto intero. FATTO.
+   - GIA' NOTI (ALTO-2 informativa privacy, MEDIO-5 propagazione tempi):
+     restano aperti - ALTO-2 serve un professionista, MEDIO-5 e' la
+     decisione che Denis ha gia' preso apposta (33a/35a).
+
+  --- Sotto, il testo originale dei rilievi (per il dettaglio tecnico): ---
+
   Denis alla fine della 35a: "commit e push, ci fermiamo qui... prepara
-  tutto per riprendere". Nessun fix applicato in questa sessione: tutti
-  i rilievi sotto sono per la 36a.
+  tutto per riprendere". Nessun fix applicato nella 35a: tutti i rilievi
+  sotto erano per dopo, chiusi nella 39a.
 
   --- URGENTE (fix prima di tutto il resto) ---
   MATH.MAX(...) SU TRACCIA LUNGA -> la registrazione non si chiude piu'.
@@ -11572,6 +11634,207 @@ sono solo in chat - questo e' il riassunto consolidato e verificato.)
   (catena parseGpx -> sanitizePoints -> points -> routePath garantisce
   lat/lng finiti, il console.error di complete-group non stampa
   coordinate).
+
+
+===============================================================
+REVISIONE DEL CUMULATIVO 39a: code-reviewer + security-privacy
+(girati l'08/09/2026 su `git diff 193c234` = i 6 commit auto-save locali
++ working tree. NESSUN CRITICO. Nessuna regressione di sicurezza in cio'
+che la 39a ha introdotto: tutto verificato e regge - security-privacy
+ha ESEGUITO i controlli - proiezioni, toJSON del sotto-schema, casting
+Mongoose, export sul Router. I due rapporti completi erano solo in chat,
+questo e' il consolidato. LA PROSSIMA SESSIONE RIPARTE DA QUI.)
+===============================================================
+
+  >>> STATO: i 6 auto-save NON sono pushati. Prima del push: applicare il
+      batch qui sotto, decidere ALTO-1 e MEDIO-2(D5-pulsante), rifondere
+      con `git reset --soft 193c234`, poi push col via di Denis.
+
+  --- ALTO-1 (PREESISTENTE, non introdotto ora - serve una DECISIONE) ---
+  routes/completions.js righe ~111-127: il CREATORE che si auto-completa
+  (POST /api/hikes/:id/complete, non chiede groupCompletedAt) e poi carica
+  il .gpx/.fit col tasto ⬆ (POST /api/completions/:id/gpx) scrive
+  hike.routePath SENZA groupCompletedAt. Con groupCompletedAt assente,
+  routes/hikes.js:245 (`!h.groupCompletedAt || isHikeParticipant`) lascia
+  l'escursione a OGNI utente loggato, e hikeVisibileA per un
+  non-partecipante toglie solo carpool/backpackTemplate -> routePath esce
+  intatto. E' il GEMELLO IDENTICO del buco MEDIO-1 appena chiuso su
+  complete-group. Un .gpx da dispositivo parte spesso dal cancello di casa.
+  Preesistente a 193c234 (il diff su completions.js aggiunge solo
+  maxAltitudeM); segnalato ALTO perche' la 39a ha appena chiuso l'identico
+  buco a due file di distanza -> lasciarlo aperto e' una divergenza
+  consapevole.
+  OPZIONI (da decidere con Denis):
+   (a) filtro in uscita in hikeVisibileA, ramo non-partecipante:
+       delete pubblico.routePath quando routeSource.kind e' 'live'/'fit'
+       (registrazione o file di dispositivo), NON per 'gpx'/'saved'/'draft'
+       (itinerario proposto). ~3 righe. NB: il ⬆ del creatore ora etichetta
+       una sessione da file come kind:'gpx' (fix item 5), quindi valutare
+       se includere anche 'gpx' o discriminare su routeSource.nome.
+   (b) "il tracciato dell'organizzatore e' pubblico di proposito" -> va
+       nell'informativa privacy (che non esiste) + avviso a schermo prima
+       del caricamento; e MEDIO-1 andrebbe riletto (le due rotte direbbero
+       cose opposte).
+   (c) lasciarlo aperto come rilievo ALTO dedicato, si chiude in una
+       sessione con l'informativa privacy. Il push della 39a va avanti
+       lo stesso (non peggiora nulla).
+
+  --- BATCH DI FIX CHIARI (da applicare, nessuna decisione richiesta) ---
+  lib/totp.js (blocco 1 - da ritoccare prima che 8 blocchi ci si appoggino):
+   - GUARDIA SEGRETO VUOTO: decodificaBase32('') -> Buffer vuoto, e su
+     Node 24 crypto.createHmac('sha1', Buffer.alloc(0)) NON lancia
+     (verificato) -> un twoFactorSecret vuoto/troncato con 2FA attivo
+     renderebbe il secondo fattore calcolabile da fuori, in silenzio.
+     In codiceDaPasso: `if (chiave.length < 16) throw` (16 byte = 80 bit,
+     minimo RFC 4226 R6).
+   - TETTO SU `finestra` in verificaCodice: `{finestra: 1e9}` bloccherebbe
+     il processo. `Math.min(Number(opzioni.finestra ?? FINESTRA) || 0, 10)`.
+   - TOGLIERE IL RIFIUTO DEL MODULO in generaCodiciRecupero: 256 = 32*8,
+     quindi b%32 su un byte uniforme e' GIA' uniforme; scartare b>=248
+     lascia 248 valori (non multiplo di 32) e INTRODUCE il bias (indici
+     0-23 escono 8 volte, 24-31 sette - misurato). Togliere la riga
+     `if (b >= 248) continue;` e correggere il commento ("256 e' multiplo
+     di 32: nessun rifiuto necessario"). NB: e' un errore ereditato dal
+     piano camoscio-2fa-totp.md §7 ("rifiuto del modulo... 256 non e'
+     multiplo di 32") - correggere anche li'.
+   - scartoDiPasso(segreto, codice, maxPassi=10, adessoMs=Date.now()):
+     accettare l'orologio come verificaCodice.
+
+  deadManLastFired (routes/safety.js, routes/users.js, models/User.js,
+  public/js/safety.js):
+   - RAMO "nessun contatto con email" (routes/safety.js:118, !raggiungibili
+     .length): e' l'esito PEGGIORE (non parte niente a nessuno) e la sua
+     notifica scade col TTL uguale. Scriverlo anche li':
+     `if (falliti.length || !raggiungibili.length)`. + gestire
+     contattiNonRaggiunti:[] in aggiornaAvvisoUltimoAllarme (con [] il
+     testo diventa "l'avviso a  non e' partito").
+   - CANCELLAZIONE DEL NOME COL $pull: la DELETE contatto emergenza non
+     tocca deadManLastFired.contattiNonRaggiunti -> il nome di un terzo
+     "rimosso" sopravvive a tempo indeterminato E nell'export GDPR.
+     Aggiungere al $pull: `'deadManLastFired.contattiNonRaggiunti': nome`,
+     e $unset dell'intero deadManLastFired se l'array resta vuoto.
+   - TETTO A 180 GIORNI IN LETTURA: aggiornaAvvisoUltimoAllarme nasconde
+     il riquadro oltre i 180 giorni + $unset opportunistico (un nome di
+     terzi conservato "per sempre" e' difficile da giustificare in
+     minimizzazione; l'utilita' pratica dell'avviso e' di settimane).
+     NB normativo: da confermare con un professionista (base giuridica
+     per conservare il nome di una persona non-utente).
+
+  DMS - corse fra schede / cron (routes/safety.js, public/js/safety.js):
+   - "HO CAPITO" non deve passare da /deactivate: fra due schede puo'
+     DISARMARE un timer riarmato altrove (scheda A mostra il riquadro,
+     l'utente riarma da B/telefono, clicca "Ho capito" in A -> DMS spento
+     in silenzio, e restoreDeadManState sincronizza in una direzione
+     sola). Endpoint dedicato `POST /api/safety/ultimo-allarme/visto` che
+     fa solo `$unset deadManLastFired`. Il $unset dentro /deactivate resta
+     (il check-in E' presa visione).
+   - CAS in gestisciScadenza: fra la User.find({deadManActive:true}) del
+     cron e il findByIdAndUpdate finale ci sono N invii email SINCRONI
+     (secondi). Un utente che riarma in quella finestra si vede il timer
+     spento dal cron subito dopo, senza segnale (vincolo hard 7 rovesciato).
+     `findOneAndUpdate({ _id, deadManExpiresAt: user.deadManExpiresAt },
+     aggiornamento)` - scrivi solo se e' ancora la scadenza letta.
+   - `sicurezzaLimiter` su POST /deactivate (ce l'ha /activate, non
+     /deactivate; ora /deactivate ha un 2o significato e una 3a scrittura).
+
+  Client contatti (public/js/safety.js):
+   - salvaNuovoContatto (~riga 296) e rimuoviContatto (~343): leggere
+     `body.error` nel catch (pattern gia' in social.js:1915). I rifiuti
+     nuovi sono DEFINITIVI (409 doppione, 400 email non valida) e il toast
+     generico "Riprova" e' un consiglio sbagliato.
+   - il check client (~riga 273) e' ancora email.includes('@'), piu' lasco
+     del validator.isEmail del server -> "a@" passa il client e viene
+     rifiutato dal server senza spiegazione. Stringere il check client.
+
+  routes/hikes.js:
+   - RAMO D5 della PUT -> `else if` nella catena `if (body.routeSource
+     !== undefined) {...} else if (isCreator && ...) {...}`. Cosi' com'e'
+     (if separato) + un routeSource valido nel body su una NON conclusa
+     produce lo stesso campo routePath in $set (da r.dati) e in $unset ->
+     ConflictingUpdateOperators (errore 40) -> 400 opaco. Irraggiungibile
+     dal client di oggi ma mina per quando si scrive la UI di MEDIO-2. Il
+     commento a riga ~424 promette proprio l'invariante che si romperebbe.
+
+  i18n: 3 chiavi EN mancanti in public/js/i18n.js: safety.dms.
+  ultimoAllarmeFallito, ultimoAllarmeOk, ultimoAllarmeOkErrore. (Non
+  ultimoAllarmeOkErrore... verificato: erroreRimozione ESISTE gia' riga
+  840. Solo le 3 ultimoAllarme*.) Nessun crash - t() ritorna null e il ||
+  ripiega sull'italiano - ma in inglese un messaggio di soccorso resta in
+  italiano.
+
+  prove/prova-deadman-esito-fallito.js:53 - nasce con deadManExpiresAt
+  NEL PASSATO sullo stesso Atlas di produzione: se il cron esterno passa
+  fra User.create e il finally, gestisciScadenza gira sul processo di
+  produzione (inviaEmail non monkeypatchata). Danno nullo oggi (indirizzi
+  @esempio-di-prova.invalid, TLD riservato) ma e' una collisione prova/
+  produzione. FIX: nascere con scadenza FUTURA, portarla nel passato solo
+  l'istante prima di chiamare gestisciScadenza a mano.
+
+  MINORI: prova-contatti-emergenza.js:249 - il commento dice "400 dopo
+  String()" ma dopo l'item 9 il 400 arriva dalla type guard (aggiornare
+  il commento). routes/safety.js export sul Router: funziona (verificato,
+  non apre nulla) ma e' l'unico file di routes/ che lo fa - alternativa a
+  costo zero: spostare gestisciScadenza in lib/deadMan.js (non usa req/
+  res). lib/percorso.js quoteVere: `some(q=>q!==0)` NON copre le quote
+  PARZIALI - `[0,0,0,1200,1250,...]` passa la guardia e elevationGainM ha
+  gia' contato il salto 0->1200 come 1200 m (l'accumulo sta in tracking.js,
+  non introdotto ora - residuo dell'item 4, da tenere agli atti).
+  validaUnContatto e' ora esattamente il ciclo inline della registrazione
+  (routes/auth.js:116-127) - si potrebbe unificare (la registrazione
+  chiama l'helper), MA cambia il testo dell'errore in registrazione ->
+  verificare che nessuna prova ci faccia === sopra (scartato per ora).
+
+  --- MEDIO-2: la via di ritiro D5 esiste ma NESSUN pulsante la chiama ---
+  (serve una DECISIONE su quando/come cablarla lato client)
+  PUT /api/hikes/:id {routePath:null} (creator-only, ritira la traccia
+  auto-pubblicata anche a escursione conclusa) e' provata (prova-punto1
+  §11a) ma IRRAGGIUNGIBILE dall'app: grep su public/ - nessun file manda
+  routePath:null. E il modale (openCompleteGroupModal, social.js:1820)
+  mostra la nota tracciamento SOLO con un trackingSessionId esplicito ->
+  mai nel caso del ripiego automatico, che e' proprio quello in cui
+  l'utente non sa che sta pubblicando. La decisione D5 di Denis regge SOLO
+  se il creatore puo' ritirare. OPZIONI: (1) nota nel modale quando NON
+  c'e' trackingSessionId + comando "Togli la mia traccia" sulla card di
+  un'escursione conclusa con routeSource.kind:'live' (solo creatore) ->
+  PUT {routePath:null}; (2) solo la nota ora, il pulsante in una passata
+  frontend dedicata; (3) tutto in una passata frontend dedicata (insieme
+  alle verifiche dal vivo di correttezza #9/#11 e del riquadro allarme).
+
+  --- VERIFICATO PULITO dalle due revisioni (non ritoccare) ---
+  URGENT Math.max chiuso davvero (l'unico spread residuo e' offline-map.js
+  su array piccolo). MEDIO-1: atomicita' regge, applyHikeCompletionStats
+  non legge participants/groupCompletedAt, partecipantiPrima catturato
+  prima, effetto collaterale POSITIVO (un non-confermato prende 404 subito
+  dopo il save). Eccezione D5 nella PUT: davvero solo {routePath:null} del
+  creatore (routePath non in EDIT_LOCKED_FIELDS ne' CREATOR_ONLY_FIELDS,
+  nessun passthrough generico; un routePath NON-null dal client resta
+  ignorato ovunque). gpxText vuoto: nessuna regressione client (social.js
+  lascia gpxText undefined). deadManLastFired end-to-end: ALWAYS_PRIVATE
+  _FIELDS + delete di serializeUserForViewer (due strati), documento
+  proprio non proiettato, toJSON del sotto-schema _id:false non lascia
+  id:null spuri, scrub lo prende, entra nell'export GDPR. Nessuna via per
+  un terzo di scrivere/cancellare deadManLastFired (self-only, requireAuth,
+  cronSecret fail-closed in produzione). /activate {$set,$unset}
+  equivalente alla forma vecchia. Export di gestisciScadenza sul Router
+  non apre nulla (router.stack invariato). Contatti: $pull non iniettabile
+  (type guard + String()), {$in:[null,'']} copre esattamente assente/null/
+  '', .lean() non e' un oracolo (403 e' la prima istruzione).
+  validator.isEmail e' un irrigidimento reale (rifiuta a@ x@y a@localhost
+  Nome<a@b> e header injection verso Mailjet). D5 gate consenso: fail-
+  closed (User non trovata -> nessuna sessione), predicato identico a
+  consensoGeo.js. Lock EDIT_LOCKED_FIELDS non indebolito ({routePath:null,
+  routeSource:null} -> 409 PRIMA del ramo D5). lib/totp.js: inerte (grep -
+  nessun require), nessun console.*, timingSafeEqual con lunghezza prima,
+  randomBytes(20)=160 bit, sha256-non-bcrypt motivato bene, uriOtpauth
+  ASCII puro. ensureCompletionReminders: solo ampiezza query, 60<90 del
+  TTL. Nessun innerHTML/eval/document.write aggiunto (il riquadro nuovo
+  usa textContent). Nessun segreto nel diff.
+
+  --- NB PRIVACY (di competenza professionista) ---
+  deadManLastFired e' un TRATTAMENTO NUOVO di dati di terzi a tempo
+  indeterminato -> va nell'informativa privacy (che non esiste come
+  documento). Base giuridica per conservare il nome di una persona
+  non-utente: da verificare con un professionista.
 
 
 ===============================================================

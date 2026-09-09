@@ -173,6 +173,25 @@ function corpoRegistrazione(suffix) {
             !!dueFonti.corpo && /una sola fonte/i.test(dueFonti.corpo.error || '') && dueFonti.corpo.error !== messaggioGpxNonValido,
             JSON.stringify(dueFonti.corpo));
 
+        console.log('\n4e. PUT /api/hikes/:id con routeSource valido E routePath:null insieme (revisione cumulativo 39a)');
+        // Il ramo D5 della PUT era un `if` a se': con un routeSource valido nel body, routePath
+        // finiva sia in $set (da r.dati) sia in $unset -> ConflictingUpdateOperators (errore 40)
+        // -> 400 opaco. Ora e' un `else if`: il ramo routeSource vince, nessun conflitto.
+        const gpxBuono = '<?xml version="1.0"?><gpx version="1.1"><trk><name>4e</name><trkseg>'
+            + '<trkpt lat="41.9028" lon="12.4964"><ele>100</ele></trkpt>'
+            + '<trkpt lat="41.9060" lon="12.5010"><ele>180</ele></trkpt>'
+            + '<trkpt lat="41.9090" lon="12.5060"><ele>240</ele></trkpt>'
+            + '</trkseg></trk></gpx>';
+        const putConflitto = await chiama('PUT', `/api/hikes/${hikeFixture.insertedId}`, {
+            routeSource: { kind: 'gpx', gpxText: gpxBuono },
+            routePath: null
+        }, utente.cookie);
+        ok('PUT {routeSource valido, routePath:null} -> 200 (nessun ConflictingUpdateOperators)',
+            putConflitto.status === 200, JSON.stringify(putConflitto.corpo));
+        ok('...e vince il routeSource nuovo (kind gpx), non il ritiro',
+            !!putConflitto.corpo && putConflitto.corpo.routeSource && putConflitto.corpo.routeSource.kind === 'gpx',
+            JSON.stringify(putConflitto.corpo && putConflitto.corpo.routeSource));
+
     } catch (e) {
         console.error('\nERRORE DURANTE LA PROVA:', e);
         falliti++;

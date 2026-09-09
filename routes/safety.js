@@ -9,7 +9,7 @@ const { inviaEmail, emailAllarmeDeadMan } = require('../lib/mailer');
 // MEDIO-1 (revisione sicurezza 28ª): secchio DEDICATO (sicurezzaLimiter), non piu' condiviso
 // con le altre scritture - il soccorso non deve poter finire la quota per colpa di chi crea
 // escursioni o cancella un account dallo stesso IP/NAT.
-const { sicurezzaLimiter } = require('../middleware/rateLimit');
+const { sicurezzaLimiter, checkinLimiter, presaVisioneLimiter } = require('../middleware/rateLimit');
 // Segreto condiviso per il trigger esterno (nessuno scheduler nel progetto). Estratto in
 // lib/cronSecret.js perche' serve la stessa logica anche allo scrub degli account
 // eliminati (routes/users.js), con una variabile d'ambiente sua.
@@ -51,8 +51,9 @@ router.post('/activate', requireAuth, sicurezzaLimiter, async (req, res) => {
         }
 
         await User.findByIdAndUpdate(req.session.userId, {
-            deadManActive: true,
-            deadManExpiresAt: scadenza
+            $set: { deadManActive: true, deadManExpiresAt: scadenza },
+            // Nuovo ciclo: l'esito dell'ultimo allarme fallito (BASSO-3) non serve piu'.
+            $unset: { deadManLastFired: 1 }
         });
         res.json({ ok: true });
     } catch (e) {
@@ -64,15 +65,42 @@ router.post('/activate', requireAuth, sicurezzaLimiter, async (req, res) => {
 // Disattiva il timer (check-in): SOLO il proprietario. $unset esplicito e non
 // "assegna undefined + save()" - con un default nello schema quest'ultimo non toglierebbe
 // davvero il campo (trappola gia' pagata su ActiveHikeSession.openSession, vedi routes/tracking.js).
-router.post('/deactivate', requireAuth, async (req, res) => {
+// checkinLimiter (revisione del cumulativo 40a): NON sicurezzaLimiter. Un 429 sul check-in fa
+// partire un falso allarme di soccorso (disattivaSulServer ritorna res.ok), quindi la quota
+// dev'essere della PERSONA e non dell'IP - dietro il wifi di un rifugio un vicino di rete non
+// deve poter impedire un disarmo - e larghissima (200/ora). La 39a aveva messo sicurezzaLimiter
+// qui per parita' con /activate, ma condividere quel secchio con /ultimo-allarme/visto (che il
+// client chiama in fire-and-forget) apriva un modo per bloccare il check-in altrui.
+router.post('/deactivate', requireAuth, checkinLimiter, async (req, res) => {
     try {
         await User.findByIdAndUpdate(req.session.userId, {
-            $unset: { deadManActive: 1, deadManExpiresAt: 1 }
+            // deadManLastFired (BASSO-3): il check-in vale anche come "presa visione"
+            // dell'ultimo allarme fallito - e' comunque un $unset innocuo se non c'era.
+            $unset: { deadManActive: 1, deadManExpiresAt: 1, deadManLastFired: 1 }
         });
         res.json({ ok: true });
     } catch (e) {
         console.error("Errore disattivazione Dead Man's Switch:", e);
         res.status(500).json({ error: 'Impossibile disattivare il timer sul server' });
+    }
+});
+
+// "Ho capito" sul riquadro dell'ultimo allarme fallito (BASSO-3). Rotta DEDICATA, NON
+// /deactivate (revisione del cumulativo 39a): con due schede aperte, se l'utente riarma il
+// timer da un'altra scheda o dal telefono mentre questa mostra ancora il riquadro vecchio, un
+// "Ho capito" che passasse da /deactivate spegnerebbe IN SILENZIO il timer appena riarmato
+// (restoreDeadManState sincronizza in una direzione sola). Qui si tocca SOLO deadManLastFired:
+// il caso peggiore e' un $unset di un campo gia' assente, mai un timer disarmato per sbaglio.
+// presaVisioneLimiter (40a): secchio SUO, mai condiviso col check-in (/deactivate) - il client
+// chiama questa rotta anche in automatico oltre i 180 giorni, ed e' traffico che non deve poter
+// erodere la quota del disarmo.
+router.post('/ultimo-allarme/visto', requireAuth, presaVisioneLimiter, async (req, res) => {
+    try {
+        await User.findByIdAndUpdate(req.session.userId, { $unset: { deadManLastFired: 1 } });
+        res.json({ ok: true });
+    } catch (e) {
+        console.error("Errore presa visione ultimo allarme:", e);
+        res.status(500).json({ error: "Impossibile chiudere l'avviso sul server" });
     }
 });
 
@@ -97,9 +125,15 @@ async function ultimaPosizioneNota(userId) {
 // Gestisce UN utente scaduto: manda l'email vera se possibile, lascia sempre una Notification
 // (cosi' chi ha attivato il timer scopre com'e' andata la prossima volta che apre il sito -
 // oggi e' l'unico modo, non essendoci ne' scheduler ne' push in questo progetto), poi
-// disattiva. Disattiva SEMPRE, anche se l'invio fallisce: altrimenti lo stesso allarme
-// ripartirebbe a ogni giro del cron finche' qualcuno non controlla a mano.
+// disattiva. Disattiva anche se l'invio fallisce, altrimenti lo stesso allarme ripartirebbe a
+// ogni giro del cron - MA solo se e' ancora la scadenza letta dal cron (CAS piu' sotto): se
+// l'utente ha riarmato / fatto check-in durante il ciclo di invii, il timer nuovo resta.
 async function gestisciScadenza(user) {
+    // Senza scadenza la CAS finale sarebbe un update INCONDIZIONATO (Mongoose toglie dal
+    // filtro le chiavi undefined). Non raggiungibile oggi (il cron filtra su $lte), esplicito
+    // a costo zero.
+    if (!user.deadManExpiresAt) return;
+
     const oraAttesa = user.deadManExpiresAt.toLocaleString('it-IT', {
         day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome'
     });
@@ -110,6 +144,8 @@ async function gestisciScadenza(user) {
     const raggiungibili = (user.emergencyContacts || []).filter(c => c && c.email);
 
     let esito;
+    const inviati = [];
+    const falliti = []; // popolato solo nel ramo else; letto anche sotto per deadManLastFired
     if (!raggiungibili.length) {
         esito = "Il timer di sicurezza è scaduto, ma non hai (più) nessun contatto di emergenza con un'email: nessun avviso è partito. Aggiungi un contatto e ricontrolla i tuoi dati.";
         console.error(`Dead Man's Switch scaduto per ${user.username} ma nessun contatto ha un'email.`);
@@ -117,8 +153,6 @@ async function gestisciScadenza(user) {
         const posizioneTesto = await ultimaPosizioneNota(user._id);
         const nomeEscursionista = `${user.nome || ''} ${user.cognome || ''}`.trim() || user.username;
 
-        const inviati = [];
-        const falliti = [];
         for (const contatto of raggiungibili) {
             // A-3.2: ogni destinatario sa chi sono gli ALTRI contatti avvisati, cosi' puo'
             // coordinarsi (se uno non risponde o non riesce a chiamare il 112, si muove un altro).
@@ -148,9 +182,28 @@ async function gestisciScadenza(user) {
     }
 
     await Notification.create({ userId: user._id, text: esito });
-    await User.findByIdAndUpdate(user._id, {
-        $unset: { deadManActive: 1, deadManExpiresAt: 1 }
-    });
+    // BASSO-3 (revisione 35a): la notifica qui sopra scade col TTL di 90 giorni. Se qualche
+    // invio e' FALLITO, i nomi da richiamare a mano vanno tenuti anche sul documento persona
+    // (niente TTL) - e' l'unico appiglio se l'utente riapre il sito dopo settimane (proprio il
+    // caso in cui il timer scade: era in cammino, senza campo). Lo cancella l'/activate
+    // successivo (nuovo ciclo) o "Ho capito" (presa visione).
+    // Revisione del cumulativo 39a: si tiene anche l'esito PEGGIORE - nessun contatto con
+    // un'email (contattiNonRaggiunti resta []) - che senza questo scadeva col TTL della
+    // notifica come tutti gli altri, pur essendo il caso in cui NON e' partito niente a nessuno.
+    const aggiornamento = { $unset: { deadManActive: 1, deadManExpiresAt: 1 } };
+    if (falliti.length || !raggiungibili.length) {
+        aggiornamento.$set = { deadManLastFired: { at: new Date(), contattiNonRaggiunti: falliti } };
+    }
+    // CAS sulla scadenza (revisione del cumulativo 39a): fra la User.find({deadManActive:true})
+    // del cron e questa scrittura sono passati N invii email SINCRONI (secondi, con molti
+    // contatti). Se l'utente ha fatto check-in o riarmato in quella finestra, deadManExpiresAt
+    // sul DB e' cambiato: NON si deve spegnere il timer nuovo (vincolo hard 7 - "spento in
+    // silenzio"). Gli invii gia' partiti non si annullano, ma il timer fresco sopravvive, e
+    // l'/activate ha gia' fatto il suo $unset di deadManLastFired.
+    await User.findOneAndUpdate(
+        { _id: user._id, deadManExpiresAt: user.deadManExpiresAt },
+        aggiornamento
+    );
 }
 
 // Chiamata da un trigger ESTERNO (nessuno scheduler in questo progetto): un cron non ha una
@@ -172,9 +225,32 @@ async function controllaScadenzeHandler(req, res) {
         });
 
         for (const user of scaduti) {
-            await gestisciScadenza(user);
+            try {
+                await gestisciScadenza(user);
+            } catch (e) {
+                // Un utente che va storto (timeout Atlas su Notification.create, un campo non
+                // valido) NON deve annullare l'allarme degli ALTRI scaduti di questo giro: il
+                // cron esterno passa ogni N minuti, e' l'unico giro che hanno. Per l'utente
+                // fallito le email possono essere gia' partite ma deadManActive resta true ->
+                // il giro dopo ritenta (i contatti potrebbero ricevere due volte le coordinate:
+                // meno peggio di un allarme mai partito).
+                console.error("Scadenza Dead Man's Switch non gestita per un utente:", user && user._id, e && e.message);
+            }
         }
-        res.json({ controllati: scaduti.length });
+
+        // Retention vera dei nomi di terzi in deadManLastFired (revisione del cumulativo 40a):
+        // il tetto a 180 giorni in public/js/safety.js e' solo di RENDERING - scatta se e
+        // quando l'utente riapre la pagina Sicurezza, e dipende dall'orologio del suo telefono.
+        // Chi non torna piu' (proprio lo scenario di BASSO-3) si terrebbe i nomi dei contatti a
+        // tempo indeterminato, anche nell'export dati. updateMany e NON un indice TTL: un TTL su
+        // quel campo cancellerebbe l'intero documento User.
+        const limite180 = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000);
+        const puliti = await User.updateMany(
+            { 'deadManLastFired.at': { $lt: limite180 } },
+            { $unset: { deadManLastFired: 1 } }
+        );
+
+        res.json({ controllati: scaduti.length, avvisiScaduti: puliti.modifiedCount });
     } catch (e) {
         console.error("Errore controllo scadenze Dead Man's Switch:", e);
         res.status(500).json({ error: 'Errore nel controllo delle scadenze' });
@@ -184,3 +260,8 @@ router.get('/controlla-scadenze', controllaScadenzeHandler);
 router.post('/controlla-scadenze', controllaScadenzeHandler);
 
 module.exports = router;
+// Esportati per le prove dirette (prove/prova-deadman-esito-fallito.js): gestisciScadenza
+// non e' provabile da un server spawnato perche' li' inviaEmail riesce sempre (chiavi
+// Mailjet vuote -> ritorna true), quindi il ramo "invio fallito" (BASSO-3) non scatterebbe mai.
+module.exports.gestisciScadenza = gestisciScadenza;
+module.exports.controllaScadenzeHandler = controllaScadenzeHandler;

@@ -1279,6 +1279,17 @@
                                     <button class="btn btn-danger hidden" id="btn-deactivate-switch" data-i18n="safety.dms.disattiva">Sono al sicuro (disattiva)</button>
                                 </div>
 
+                                <!-- BASSO-3 (revisione 35a): se l'ULTIMO allarme scaduto non e' riuscito
+                                     a raggiungere qualche contatto, il promemoria in campanella scade
+                                     dopo 90 giorni (TTL delle Notification). Questo riquadro tiene i nomi
+                                     da richiamare a mano finche' l'utente non riarma il timer o non fa
+                                     "Ho capito". Testo popolato da safety.js (currentUser.deadManLastFired). -->
+                                <p class="small safety-honesty-note hidden" id="dead-man-last-fired" role="alert">
+                                    <i data-lucide="alert-triangle"></i>
+                                    <span id="dead-man-last-fired-text"></span>
+                                    <button type="button" class="btn btn-xs" id="btn-dead-man-last-fired-ok" data-i18n="safety.dms.ultimoAllarmeOk">Ho capito</button>
+                                </p>
+
                                 <!-- Punto 37 chiuso l'08/08/2026: il conto alla rovescia vive sul
                                      server (routes/safety.js) e un trigger esterno (cron-job.org,
                                      ogni 5 minuti) manda l'email vera al contatto scelto quando
@@ -2451,6 +2462,12 @@
                  i numeri arrivano dalla registrazione appena conclusa - il campo file qui
                  sotto viene nascosto (social.js) e compare questa nota al suo posto. -->
             <p id="complete-group-tracking-note" class="small text-muted hidden" style="margin-top: 16px;" data-i18n="completeGroupModal.daTracciamento">I dati dell'escursione (distanza, dislivello, durata, traccia) arrivano dalla registrazione che hai appena concluso.</p>
+
+            <!-- MEDIO-2 (revisione del cumulativo 39a): aperto dalla card (senza trackingSessionId),
+                 il ripiego automatico D5 puo' pubblicare ai partecipanti la traccia che il creatore
+                 ha registrato dal vivo per questa escursione. Va detto - l'utente non lo sa - con
+                 la via per ritirarla (menu tre puntini della card). -->
+            <p id="complete-group-fallback-note" class="small text-muted hidden" style="margin-top: 16px;" data-i18n="completeGroupModal.ripiegoTraccia">Se hai registrato questa escursione dal vivo, la tua traccia GPS diventerà il percorso dell'uscita, visibile ai partecipanti. Potrai toglierla dal menu ⋮ della card dopo il completamento.</p>
 
             <!-- Punto 67: facoltativo - se c'e' un file, i numeri reali (quota, dislivello,
                  distanza, durata) sostituiscono quelli scritti a mano alla creazione. Senza,

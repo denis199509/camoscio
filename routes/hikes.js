@@ -219,6 +219,25 @@ function hikeVisibileA(hike, userId) {
     const pubblico = hike.toJSON ? hike.toJSON() : { ...hike };
     delete pubblico.carpool;
     delete pubblico.backpackTemplate;
+    // ALTO-1 (revisione del cumulativo 39a; corretto nella 40a dopo il giro security-privacy).
+    // A un NON-partecipante la traccia GPS reale del creatore non deve MAI uscire. GET /api/hikes
+    // serve un'escursione a chiunque loggato finche' non e' conclusa in gruppo (groupCompletedAt)
+    // - e il ⬆ del creatore su un proprio Completion (routes/completions.js) scrive hike.routePath
+    // SENZA groupCompletedAt: una registrazione da dispositivo, spesso partita dal cancello di
+    // casa, restava pubblica. Gemello identico di MEDIO-1, gia' chiuso su complete-group.
+    // Un routePath e' SEMPRE la geometria di un cammino reale: 'live'/'fit'/'gpx' sono
+    // registrazioni; 'saved' e' COPIATO da una registrazione (routes/routing.js: l'unica via per
+    // creare un SavedRoute e' da una ActiveHikeSession, e lib/percorso.js lo cerca fra i PROPRI -
+    // {_id, userId}, mai "condiviso da altri"); 'draft' non ha nemmeno un routePath (punti
+    // cliccati su una mappa, non un cammino). Quindi: via la linea per chi non partecipa, sempre.
+    // routeSource RESTA: e' l'etichetta (kind/nome, gia' sulla card per tutti) e serve al tempo
+    // CAI previsto, calcolato su distanceKm/elevationGain gia' pubblici - senza, la card direbbe
+    // "nessun percorso reale scelto", che e' falso. Trade-off accettato da Denis: chi non
+    // partecipa non vede la LINEA di nessun percorso finche' non entra (vede ritrovo, distanza,
+    // dislivello, quota, nome del percorso, tempo CAI).
+    if (pubblico.routePath) {
+        delete pubblico.routePath;
+    }
     // Invito squadra direzionale: un non-partecipante vede SOLO il proprio invito, mai la
     // lista intera (che direbbe a chiunque "Tizio e' invitato alla gita di Caio e non ha
     // ancora risposto"). I partecipanti veri ricevono `hike` intero col return anticipato
@@ -433,6 +452,21 @@ router.put('/:id', requireAuth, async (req, res) => {
             // quelli del percorso originale, quindi si toglie invece di lasciarla a mentire.
             update.routeSource = null;
             update.$unset = { ...(update.$unset || {}), routePath: 1 }; // punto 116: e con lei la linea
+        } else if (body.routePath === null) {
+            // D5 (decisione di Denis, 08/09/2026): il creatore puo' RITIRARE la traccia GPS che
+            // il ripiego automatico di complete-group ha pubblicato ai confermati - anche a
+            // escursione gia' conclusa. E' l'UNICA eccezione al lock del punto 76, e vale solo
+            // per `routePath` (l'unico campo di quel blocco che e' posizione personale) piu'
+            // l'etichetta `routeSource` che senza la linea non descriverebbe piu' niente. Body:
+            // { routePath: null } DA SOLO - `routeSource` nel body fa scattare il 409 di
+            // EDIT_LOCKED_FIELDS. `else if` (revisione del cumulativo 39a): un `routeSource`
+            // valido + `routePath: null` nello stesso body metteva `routePath` sia in $set (da
+            // r.dati) sia in $unset -> ConflictingUpdateOperators (errore 40) -> 400 opaco.
+            if (!isCreator) {
+                return res.status(403).json({ error: "Solo chi ha creato l'escursione può modificare questo campo" });
+            }
+            update.$unset = { ...(update.$unset || {}), routePath: 1 };
+            update.routeSource = null;
         }
 
         // Blocco "zaino/carpooling per-partecipanti": "escursione di piu' giorni" la decide
@@ -995,6 +1029,11 @@ router.post('/:id/complete-group', requireAuth, scritturaLimiter, async (req, re
         if (haGpxText && trackingSessionId) {
             return res.status(400).json({ error: 'Scegli una sola fonte: la registrazione appena conclusa oppure un file.' });
         }
+        // gpxText presente nel body ma vuoto / non stringa: e' una richiesta malformata, non
+        // un motivo per scivolare in silenzio sul ramo registrazione (ripiego D5).
+        if (req.body && req.body.gpxText !== undefined && !haGpxText) {
+            return res.status(400).json({ error: 'Il file allegato non è leggibile. Riprova.' });
+        }
 
         if (haGpxText) {
             // Stessa validazione di regione/dimensione di calcolaDaPercorso (sopra, punto 43),
@@ -1037,7 +1076,7 @@ router.post('/:id/complete-group', requireAuth, scritturaLimiter, async (req, re
             // Ramo registrazione: sessione esplicita (trackingSessionId) oppure ripiego (D5).
             let sessione = null;
             if (trackingSessionId) {
-                if (!mongoose.Types.ObjectId.isValid(trackingSessionId)) {
+                if (typeof trackingSessionId !== 'string' || !mongoose.Types.ObjectId.isValid(trackingSessionId)) {
                     return res.status(400).json({ error: 'Identificativo della registrazione non valido.' });
                 }
                 sessione = await ActiveHikeSession.findById(trackingSessionId);
@@ -1058,18 +1097,36 @@ router.post('/:id/complete-group', requireAuth, scritturaLimiter, async (req, re
                 // stessi controlli di sopra stanno nella query (userId + hikeId + ended). Se
                 // non c'e', si chiude il gruppo senza toccare i numeri, come un complete-group
                 // "a mano". Documento Mongoose, non .lean(): misureDaSessione usa un virtual.
-                sessione = await ActiveHikeSession
-                    .findOne({ userId: req.session.userId, hikeId: hike._id, status: 'ended' })
-                    .sort({ endedAt: -1 });
+                //
+                // Consenso geo (decisione di Denis, 08/09/2026): questo ripiego pubblica da SE'
+                // una traccia registrata in passato. Se il creatore ha REVOCATO il consenso
+                // alla geolocalizzazione, il server non deve piu' trattare quella posizione
+                // (A-3.1 / ritiro del consenso GDPR) - il gruppo si chiude lo stesso, senza
+                // numeri. Con un trackingSessionId ESPLICITO invece si procede: e' un atto
+                // dell'utente, appena compiuto. Gli account demo non hanno un consenso vero.
+                const chiude = await User.findById(req.session.userId).select('geolocationConsent isDemoAccount');
+                if (chiude && (chiude.geolocationConsent || chiude.isDemoAccount)) {
+                    sessione = await ActiveHikeSession
+                        .findOne({ userId: req.session.userId, hikeId: hike._id, status: 'ended' })
+                        .sort({ endedAt: -1 });
+                }
             }
 
             if (sessione) {
                 const misure = misureDaSessione(sessione);
                 if (misure.sostanziale) {
-                    hike.maxAltitude = misure.maxAltitude;
-                    hike.elevationGain = misure.elevationGain;
+                    // maxAltitude/elevationGain solo se misureDaSessione li ha calcolati da
+                    // quote VERE (null = registrazione senza dato di elevazione): altrimenti
+                    // si azzererebbero i valori messi a mano dall'organizzatore.
+                    if (misure.maxAltitude != null) hike.maxAltitude = misure.maxAltitude;
+                    if (misure.elevationGain != null) hike.elevationGain = misure.elevationGain;
                     hike.distanceKm = misure.distanceKm;
-                    hike.routeSource = { kind: 'live', nome: 'Traccia registrata' };
+                    // Se la sessione trovata (soprattutto dal ripiego D5) e' nata da un file
+                    // caricato col ⬆, e' un file, non una registrazione dal vivo: etichettarla
+                    // 'live' faceva sparire anche importedName (punto 115).
+                    hike.routeSource = sessione.importedFrom === 'gpx'
+                        ? { kind: 'gpx', nome: (sessione.importedName || 'Traccia caricata').slice(0, 80) }
+                        : { kind: 'live', nome: 'Traccia registrata' };
                     if (misure.routePath) hike.routePath = misure.routePath;
                 }
                 if (misure.actualTimeHours) actualTimeHours = misure.actualTimeHours;
@@ -1077,13 +1134,27 @@ router.post('/:id/complete-group', requireAuth, scritturaLimiter, async (req, re
             }
         }
 
-        // Punto 80/A: se il ramo misure qui sopra (file .gpx, o registrazione dal vivo -
-        // punto 1) ha corretto distanza/dislivello, va salvato PRIMA del ciclo qui sotto.
-        // applyHikeCompletionStats ricalcola il passo personale rileggendo TUTTI i Completion
-        // dell'utente dal database (mai in modo incrementale, vedi lib/hikeStats.js) - e
-        // questa stessa escursione e' fra quelli: se il salvataggio restasse dopo il ciclo, la
-        // prima persona ricalcolata leggerebbe ancora il dislivello vecchio. Senza nessuna
-        // fonte di misure questo save() non scrive nulla di nuovo (nessun campo modificato).
+        // UN SOLO save(), PRIMA del ciclo qui sotto, e con dentro ANCHE groupCompletedAt /
+        // participants / pendingApproval.
+        //
+        // Prima del ciclo (punto 80/A): se il ramo misure qui sopra (file .gpx, o registrazione
+        // dal vivo - punto 1) ha corretto distanza/dislivello, applyHikeCompletionStats
+        // ricalcola il passo personale rileggendo dal database TUTTI i Completion dell'utente
+        // (mai in modo incrementale, vedi lib/hikeStats.js) - e questa escursione e' fra quelli:
+        // salvare dopo il ciclo farebbe leggere alla prima persona il dislivello vecchio.
+        //
+        // groupCompletedAt nello STESSO save() di routePath (MEDIO-1, revisione 35a). Con due
+        // save() separati, se il ciclo per-confermato sollevava (una User con un campo non
+        // valido, un timeout Atlas) il catch rispondeva 400 e groupCompletedAt non veniva
+        // scritto MAI: l'escursione restava PROGRAMMATA per sempre con dentro la traccia GPS
+        // reale del creatore. (Dalla 40a hikeVisibileA toglie comunque routePath a chi non
+        // partecipa, ma l'atomicita' resta la difesa giusta a questo livello: o l'escursione
+        // non ha ancora la traccia, o e' gia' conclusa e quindi solo-partecipanti.) Se il ciclo
+        // fallisce, i passi personali di qualche confermato non vengono aggiornati: si
+        // recuperano da soli al primo completamento o traccia successivi.
+        hike.participants = confirmedUserIds;
+        hike.pendingApproval = []; // le richieste su un'escursione chiusa non contano piu' (PUT /:id le blocca comunque, EDIT_LOCKED_FIELDS)
+        hike.groupCompletedAt = new Date();
         await hike.save();
 
         // Senza una fonte di misure (nessun file, nessuna registrazione), actualTimeHours e
@@ -1097,15 +1168,6 @@ router.post('/:id/complete-group', requireAuth, scritturaLimiter, async (req, re
             const cambiato = await applyHikeCompletionStats(persona, hike, { actualTimeHours, movingTimeHours });
             if (cambiato) await persona.save();
         }
-
-        hike.participants = confirmedUserIds;
-        // Una richiesta di iscrizione a un'escursione appena chiusa non significa piu' niente
-        // (e PUT /:id ora rifiuta comunque qualunque tocco a participants/pendingApproval su
-        // un'escursione completata, vedi EDIT_LOCKED_FIELDS sopra): si azzera qui cosi' il
-        // pannello Veto del creatore non resta a proporre "accetta/rifiuta" su un fantasma.
-        hike.pendingApproval = [];
-        hike.groupCompletedAt = new Date();
-        await hike.save();
 
         // Invito squadra direzionale: un invito che nessuno puo' piu' accettare (l'escursione
         // e' ora chiusa) resterebbe una card morta nella pagina dell'invitato. Si toglie con

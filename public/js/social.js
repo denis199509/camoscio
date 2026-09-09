@@ -999,6 +999,20 @@ function buildHikeCard(hike) {
                     <i data-lucide="pencil"></i> ${escapeHtml(T('hikeCard.modificaBtn') || 'Modifica')}
                 </button>`;
     }
+    // MEDIO-2 (revisione del cumulativo 39a; esteso nella 40a): a escursione conclusa, se il
+    // ripiego automatico D5 di complete-group ha pubblicato ai confermati la traccia che il
+    // creatore aveva registrato o caricato, il creatore la puo' RITIRARE - unica eccezione al
+    // lock del punto 76 -> PUT { routePath: null }. Non solo 'live': il ripiego D5 etichetta
+    // 'gpx' OGNI sessione da file (importedFrom enum = ['gpx'], anche i .fit), quindi gatare su
+    // 'live' lasciava senza ritiro proprio le tracce da file - e la nota del modale lo promette
+    // lo stesso. Il server accetta il ritiro per qualunque kind.
+    const kindRitirabile = hike.routeSource && ['live', 'gpx', 'fit'].includes(hike.routeSource.kind);
+    if (isCreatorMe && hike.groupCompletedAt && kindRitirabile &&
+        Array.isArray(hike.routePath) && hike.routePath.length) {
+        vociMenu += `<button type="button" class="hike-card-menu-item" onclick="ritiraTracciaEscursione('${hike.id}')">
+                    <i data-lucide="eye-off"></i> ${escapeHtml(T('hikeCard.ritiraTraccia') || 'Togli la mia traccia')}
+                </button>`;
+    }
     if (isCreatorMe) {
         vociMenu += `<button type="button" class="hike-card-menu-item hike-card-menu-item-danger" onclick="deleteHike('${hike.id}')">
                     <i data-lucide="trash-2"></i> ${escapeHtml(T('hikeCard.eliminaEscursione') || 'Elimina escursione')}
@@ -1504,6 +1518,57 @@ window.deleteHike = async function(hikeId) {
     }
 };
 
+// --- RITIRA LA PROPRIA TRACCIA GPS DA UN'ESCURSIONE CONCLUSA (solo il creatore) ---
+//
+// MEDIO-2 (revisione del cumulativo 39a). Il ripiego automatico D5 di complete-group pubblica
+// ai confermati la traccia che il creatore aveva registrato dal vivo, anche quando chiude il
+// gruppo dalla card ore dopo senza saperlo. La decisione D5 di Denis (tenere l'automatismo)
+// regge solo se c'e' una via per ritirarla: PUT { routePath: null } DA SOLO, l'unica eccezione
+// al lock del punto 76 (routes/hikes.js). Toglie routePath + azzera routeSource; i numeri
+// dell'escursione (distanza, dislivello, durata) restano. Non ricalcola niente lato client:
+// refreshState riporta l'escursione senza linea.
+window.ritiraTracciaEscursione = async function(hikeId) {
+    document.querySelectorAll('.hike-card-menu-dropdown').forEach(d => d.classList.add('hidden'));
+
+    const db = window.CamoscioState;
+    const hike = (db.hikes || []).find(h => h.id === hikeId);
+    if (!hike) {
+        if (window.showToast) window.showToast(T('hikeToast.escursioneNonPiuEsiste') || 'Questa escursione non esiste più.', 'error');
+        return;
+    }
+
+    const righe = [
+        T('hikeConfirm.ritiraTracciaTitolo') || 'Togliere la tua traccia GPS da questa escursione?',
+        '',
+        T('hikeConfirm.ritiraTracciaSpiega') || 'La linea del percorso sparirà dalla mappa, per te e per i partecipanti. I numeri dell\'escursione (distanza, dislivello, durata) restano. Puoi sempre ricaricare una traccia con il tasto ⬆ in "Le mie escursioni".'
+    ];
+    const procedi = window.showConfirmModal
+        ? await window.showConfirmModal(righe.join('\n'), T('hikeCard.ritiraTraccia') || 'Togli la mia traccia', { cancelLabel: T('common.cancella') || 'Cancella', danger: true })
+        : window.confirm(righe.join('\n'));
+    if (!procedi) return;
+
+    try {
+        const res = await fetch(`/api/hikes/${encodeURIComponent(hikeId)}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ routePath: null })
+        });
+        const dati = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            if (window.showToast) window.showToast(dati.error || (T('hikeToast.erroreRitiraTraccia') || 'Non è stato possibile togliere la traccia.'), 'error');
+            return;
+        }
+        if (window.showToast) window.showToast(T('hikeToast.tracciaRitirata') || 'Traccia rimossa dall\'escursione.', 'success');
+        await refreshState();
+        renderHikesList();
+    } catch (e) {
+        console.error('Ritiro traccia fallito:', e);
+        // catch di rete (fetch che rigetta), non un errore applicativo: sull'app e' quasi
+        // sempre "niente campo" - stessa chiave di deleteHike.
+        if (window.showToast) window.showToast(T('common.erroreServer') || 'Non è stato possibile contattare il server.', 'error');
+    }
+};
+
 // --- CREAZIONE ESCURSIONE ---
 
 async function submitCreateHike() {
@@ -1840,6 +1905,11 @@ window.openCompleteGroupModal = function(hikeId, opzioni) {
     const notaTracc = document.getElementById("complete-group-tracking-note");
     if (gpxRow) gpxRow.classList.toggle("hidden", !!completeGroupTrackingSessionId);
     if (notaTracc) notaTracc.classList.toggle("hidden", !completeGroupTrackingSessionId);
+    // MEDIO-2 (revisione del cumulativo 39a): dalla card (nessun trackingSessionId) il ripiego
+    // automatico D5 puo' pubblicare la traccia registrata dal vivo. Lo si avvisa qui, dove
+    // l'azione parte; la via per ritirarla e' nel menu tre puntini della card conclusa.
+    const notaRipiego = document.getElementById("complete-group-fallback-note");
+    if (notaRipiego) notaRipiego.classList.toggle("hidden", !!completeGroupTrackingSessionId);
     renderCompleteGroupChecklist();
 
     document.getElementById("complete-group-modal").classList.remove("hidden");
