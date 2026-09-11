@@ -11115,6 +11115,60 @@ Piano: C:\Users\lenovo\.claude\plans\camoscio-2fa-totp.md)
   qui sopra.
 
 
+
+  --- IMPLEMENTAZIONE ---
+  39a (08/09/2026): BLOCCO 1 (lib/totp.js + prova-2fa.js sez. 1) +
+  decisioni D-4=SI' / D-7=14 giorni. In 5 auto-save locali.
+  40a (09/09/2026): blocco 1 rifuso e PUSHATO in ab06f07 (con le 4
+  guardie dei due giri di revisione). Il 2FA blocco 1 e' in produzione
+  ma INERTE (niente lo importa).
+  41a (10/09/2026): BLOCCHI 2-8 IMPLEMENTATI in una sessione, uno alla
+  volta col via di Denis ("vai col blocco N"). Tutto in 6 commit
+  auto-save locali 456c7ab..bbb123f, MAI PUSHATO. origin/master =
+  d0b8b35. Denis: "gli agenti li lanceremo in un'altra sessione, segna
+  i punti fatti oggi" - NIENTE code-reviewer/security-privacy stasera.
+    - Blocco 2: schema User sez. 15 (6 campi 2FA) + PasswordReset.
+      tentativi2fa + reti (toJSON, ALWAYS_PRIVATE_FIELDS, scrubAccount).
+    - Blocco 3: login/reset a due passi (solo server, inerte).
+      verificaSecondoFattore (helper unico, CAS spendiPasso), POST
+      /login apre req.session.pending2fa senza userId, POST /login/2fa,
+      /reset-password col gate 2FA. +secondoFattoreLimiter
+      +duefattoriLimiter in middleware/rateLimit.js.
+    - Blocco 4: /2fa/setup|enable|disable|recovery-codes +
+      caricaUtentePer2fa (403 demo). prova-2fa.js sez. 2-10 -> 144/144.
+    - Blocco 5 (commit a se'): models/AccountRecovery.js +
+      lib/recuperoAccount.js + emailRecuperoRitardato + rotte
+      /recovery/* + hook in /2fa/disable + scrubAccount +
+      recuperoLimiter. prova-recupero-ritardato.js (12 sez) -> 54/54.
+    - Blocco 6: vendor qrcode-generator@1.4.4 (MIT, da npm/jsdelivr -
+      il path GitHub del piano da' 404) + public/js/twofactor.js (IIFE)
+      + card #settings-2fa-card in Impostazioni (4 stati + riquadro
+      "recupero in corso"). Bug corretto: attributo hidden vs classe.
+    - Blocco 7 (commit a se'): banner globale #recovery-banner fuori da
+      .page-container; app.js aggiornaBannerRecupero() (stato in
+      CamoscioState.recuperoInSospeso, non currentUser; fail-safe).
+      prove/prova-browser-2fa.js (Puppeteer, blocchi 6+7) -> 19/19.
+    - Blocco 8 (ultimo di implementazione): #auth-2fa-view + submit2fa
+      + aggiornaCampo2fa; reimposta-password.html da 4 a 7 stati
+      (?token= / ?recupero=); i18n.js +71 chiavi EN (il nucleo).
+      Verifica Puppeteer (scratchpad) -> 14/14.
+  Regressione a ogni blocco, in serie, 13 suite verdi. npm audit
+  --omit=dev = 0 (zero dipendenze nuove).
+  DEVIAZIONI DAL PIANO (commentate nel codice, per gli agenti): (a)
+  toJSON toglie anche twoFactorRecoveryHashes; (b) /recovery/complete
+  fa il CAS PRIMA dello updateOne utente; (c) avviaOTrovaRecupero
+  corsa nello stesso ms non chiusa; (d) secondoFattoreLimiter anche
+  su /reset-password; (e) QR da npm non da GitHub. BUCHI DI TEST
+  NOTI: /2fa/recovery-codes senza sezione dedicata; ramo scartoMinuti
+  di /enable non asserito; i18n EN solo il nucleo. Dettaglio in
+  ..\camoscio memoria\03-Decisioni-Architetturali.md.
+  DA DOVE SI RIPARTE (42a): Denis da' il via -> code-reviewer +
+  security-privacy sul cumulativo git diff d0b8b35 -> applicare i
+  rilievi -> git reset --soft d0b8b35 + push col via -> prova al
+  telefono di Denis con Google Authenticator -> blocco 9 (prove
+  complete + docs).
+
+
 ===============================================================
 TRE PICCOLI PUNTI (35a sessione, 06/09/2026)
 ===============================================================
@@ -12177,3 +12231,133 @@ quelli restano la 38a.
   verificato in locale.
   Nuova trappola: align-items:center + overflow taglia in modo
   irraggiungibile -> ../camoscio memoria/07-Trappole-Tecniche.md.
+
+
+=====================================================================
+SEGUIRE LA LINEA ANCHE DA UN PERCORSO PROGETTATO DA ME (aperto, 10/09/2026)
+=====================================================================
+Denis, dal telefono sulla produzione, screenshot del pannello "Opzioni
+escursione" della registrazione, tendina "Percorso da seguire (facoltativo)"
+(le uniche voci: "Nessuno" e "DaniWoll - 30 agosto 2026", una traccia vera):
+
+  "da aggiungere in da fare. dopo aver creato il progetto per la
+   registrazione non viene proposta ma solo una traccia effettiva.
+   vorrei poter seguire la linea pure da un progetto creato da me"
+
+Cioe': la tendina "Percorso da seguire" della registrazione (la LINEA di
+riferimento sulla mappa, SENZA avvisi di fuori-percorso - vincolo hard 7,
+punto 113 passo 9) oggi elenca SOLO i SavedRoute (routeSource.kind:'saved',
+percorsi copiati da una traccia registrata di qualcuno). NON elenca i
+RouteDraft: i percorsi che l'utente ha disegnato da se' con "Progetta un
+percorso" / il route planner ("bozza tua, non collegata a nessuna
+escursione", come dice lo stesso pannello sotto). Denis vuole poter
+scegliere anche una sua bozza come linea da seguire durante la registrazione.
+
+DA GUARDARE quando si riprende:
+ - dove la tendina "Percorso da seguire" si popola (public/js/tracking.js,
+   pannello "Opzioni escursione" della registrazione) -> aggiungere i
+   RouteDraft dell'utente accanto ai SavedRoute (una fetch a /api/routing/
+   drafts o simile - verificare la rotta che gia' serve i draft al route
+   planner / storico);
+ - la geometria di RouteDraft.punti dovrebbe essere lo stesso formato
+   [[lng,lat],...] dei SavedRoute.punti -> il rendering della linea di
+   riferimento dovrebbe funzionare senza modifiche; verificarlo;
+ - etichetta: i SavedRoute mostrano "origineUsername - data"; una bozza
+   propria non ha origineUsername -> nome della bozza + data di creazione;
+ - NESSUN avviso di fuori-percorso, esattamente come per i SavedRoute (e'
+   una linea di riferimento, non un percorso "vincolante" - vincolo 7);
+ - un draft puo' essere un anello o avere molti punti: va bene per una
+   linea di riferimento.
+
+
+=====================================================================
+PROMEMORIA "STO REGISTRANDO" SOLO SE LA NOTIFICA INIZIALE E' STATA
+CANCELLATA (aperto - "se fattibile", 10/09/2026)
+=====================================================================
+Denis, screenshot dal telefono (lock screen, tre notifiche Camoscio: la
+persistente "Registrazione GPS dell'escursione in corso" di 1 h fa, e
+"ora" il promemoria "Il tracciamento GPS e' ancora attivo. Se hai ..."):
+
+  "questo pure da segnare se fattibile. ho fatto partire la registrazione
+   senza cancellare la notifica. dopo un ora e' comunque arrivata la
+   notifica che sto registrando. inizialmente avevo detto che le altre
+   notifiche dovevano arrivare solo in caso della cancellazione della
+   notifica iniziale. se non e' possibile lasciamo cosi"
+
+Cioe': il promemoria periodico "il tracciamento e' ancora attivo" (~1 h)
+deve scattare SOLO se l'utente ha gia' scartato (swipe) la notifica
+persistente iniziale "Registrazione GPS in corso" - e' il paracadute per
+chi ha tolto quella e potrebbe essersene dimenticato. Se la persistente
+e' ancora li', il promemoria e' rumore inutile.
+
+DA GUARDARE quando si riprende:
+ - dove nasce il promemoria periodico: probabilmente lato client
+   (service worker / public/js/tracking.js), perche' il progetto NON ha
+   scheduler server-side e il DMS usa l'email, non le push. Verificare.
+ - se e' client-side ed e' il service worker a rimostrarla, PRIMA di
+   rifarla si puo' controllare
+     self.registration.getNotifications({ tag: '<tag-della-persistente>' })
+   e saltare il promemoria se la lista NON e' vuota (persistente ancora
+   presente = utente NON l'ha scartata). E' l'unico modo per sapere se
+   una notifica precedente e' stata rimossa.
+ - se invece il promemoria e' una push dal server, il server non puo'
+   sapere lo stato della notifica sul telefono -> non fattibile senza un
+   ping dal client. In quel caso Denis ha gia' detto: "lasciamo cosi".
+Priorita' bassa, opzionale.
+
+
+=====================================================================
+RIFUGI SULLA MAPPA CON UN'EMOJI DA RIFUGIO, NON DA MONTAGNA
+(aperto, 10/09/2026)
+=====================================================================
+Denis:
+
+  "sempre in da fare, sulla mappa i rifugi vengono segnati con l'emoji di
+   una montagna, sostituire con una da rifugio (tipo casa o cose simili)"
+
+DOVE: public/js/map.js, il forEach su puntiTimbrabili (~riga 1165-1178) che
+disegna TUTTI i punti timbrabili - cime E rifugi - con lo STESSO peakIcon
+hardcodato a un 🏔️ (L.divIcon). Da fare: dentro quel ciclo, ramo su
+peak.tipo -> 'rifugio' = un'emoji da rifugio (🛖 la piu' letterale, oppure
+🏠 come dice Denis "casa o cose simili"); 'cima' = resta 🏔️.
+
+NB: ogni punto in badge-points.js ha gia' un campo `emoji` suo, ma e' il
+RIPIEGO per la SCHEDA badge quando manca la PNG (i rifugi hanno 🧗 / ❄️,
+non montagne) - quindi il colpevole e' l'icona del marker in map.js, non
+badge-points. Da decidere: usare peak.emoji, oppure un'emoji fissa per
+tipo (piu' coerente: un'icona sola per tutti i rifugi sulla mappa).
+Piccolo, un punto solo.
+
+
+=====================================================================
+DATA E ORA SOTTO OGNI MESSAGGIO DI CHAT (stile WhatsApp) - aperto, 10/09/2026
+=====================================================================
+Denis:
+
+  "le chat non segnano la data e l'orario di quando e' stato inviato il
+   messaggio. vorrei sotto il messaggio la data e orario, come su
+   whatsapp piu o meno"
+
+DOVE: tutto in public/js/chatpanel.js, renderChatMessages() (~riga 77-91).
+Oggi ogni messaggio e' solo <div class="message sent|received"><b>nome:</b>
+testo</div> - nessun orario. Il DATO c'e' gia': HikeMessage e SquadMessage
+hanno createdAt (mongoose timestamps) e arriva nella risposta API (m.createdAt).
+chatpanel.js e' il componente CONDIVISO fra chat escursione e chat squadra:
+un solo punto da toccare.
+
+DA FARE:
+ - sotto (o accanto) alla bolla, uno <span class="chat-time"> con
+   new Date(m.createdAt).toLocaleString(loc, { timeZone: 'Europe/Rome', ... })
+   - ORA ITALIANA. NB (Denis 10/09, insistendo): "spesso prendi l'orario
+   sbagliato di 2 ore" - il server e' UTC, l'Italia e' UTC+2 d'estate
+   (CEST) / UTC+1 d'inverno; SEMPRE { timeZone: 'Europe/Rome' }, mai un
+   toLocaleString nudo. Errore gia' fatto 19/08, 21/08 e ri-segnalato 10/09;
+ - loc = 'it-IT' o 'en-GB' secondo CamoscioI18n.getLang() (il TESTO della
+   chat resta italiano, punto 102, ma il formato data segue la lingua);
+ - "come whatsapp piu' o meno": ora su ogni messaggio, E i SEPARATORI
+   DI GIORNO fra messaggi di date diverse ("Oggi" / "Ieri" / "15
+   settembre") - Denis li ha confermati IN scope il 10/09 ("anche i
+   separatori di giorno"). Anche il "Oggi/Ieri" va calcolato in ora
+   italiana, non UTC;
+ - CSS: .chat-time piccola e muted sotto la bolla (styles.css).
+Piccolo, un file solo.
