@@ -22,6 +22,10 @@ let registerPhotoDataUrl = null;
 // mai history): i due percorsi restano indipendenti, ma finiscono nello stesso posto.
 let wizardHistoryGuardActive = false;
 
+// Blocco 8 del piano 2FA: nella vista del secondo passo del login, il campo passa da
+// "codice a 6 cifre dell'app" a "codice di recupero" (testo libero) e viceversa.
+let modo2faRecupero = false;
+
 function pushWizardHistoryGuard() {
     history.pushState({ camoscioRegWizard: true }, '');
     wizardHistoryGuardActive = true;
@@ -52,7 +56,10 @@ function hideAuthError(elId) {
 // Una sola funzione invece di tre righe ripetute in ognuna: con tre viste, dimenticarne
 // una da nascondere significa vederne due sovrapposte.
 function showAuthView(idVista) {
-    ['auth-login-view', 'auth-register-view', 'auth-forgot-view'].forEach(id => {
+    // 'auth-2fa-view' (blocco 8 del piano 2FA) va NELL'ARRAY, non solo in show2faView():
+    // il commento qui sopra vale - dimenticarne una da nascondere significa vederne due
+    // sovrapposte.
+    ['auth-login-view', 'auth-register-view', 'auth-forgot-view', 'auth-2fa-view'].forEach(id => {
         const vista = document.getElementById(id);
         if (vista) vista.classList.toggle('hidden', id !== idVista);
     });
@@ -82,6 +89,40 @@ function showForgotView() {
     // sempre quella giusta, e a chi arriva da un accesso fallito evita di riscriverla.
     const emailAccesso = document.getElementById('login-email').value.trim();
     if (emailAccesso && !campo.value) campo.value = emailAccesso;
+    campo.focus();
+}
+
+// Blocco 8 del piano 2FA: il secondo passo del login. Ci si arriva da submitLogin quando
+// /api/auth/login risponde { twoFactorRequired: true }.
+function show2faView() {
+    showAuthView('auth-2fa-view');
+    hideAuthError('auth-2fa-error');
+    modo2faRecupero = false;
+    aggiornaCampo2fa();
+    const campo = document.getElementById('login-2fa-code');
+    if (campo) { campo.value = ''; campo.focus(); }
+}
+
+// Passa il campo fra "codice a 6 cifre dell'app" e "codice di recupero" (testo libero).
+function aggiornaCampo2fa() {
+    const campo = document.getElementById('login-2fa-code');
+    const etichetta = document.getElementById('login-2fa-code-label');
+    const link = document.getElementById('link-2fa-recovery');
+    if (!campo || !etichetta || !link) return;
+    if (modo2faRecupero) {
+        campo.removeAttribute('inputmode');
+        campo.removeAttribute('pattern');
+        campo.removeAttribute('maxlength');
+        etichetta.textContent = T('auth.2faRecoveryLabel') || 'Codice di recupero:';
+        link.textContent = T('auth.2faUseApp') || 'Usa invece il codice dell\'app';
+    } else {
+        campo.setAttribute('inputmode', 'numeric');
+        campo.setAttribute('pattern', '[0-9]*');
+        campo.setAttribute('maxlength', '6');
+        etichetta.textContent = T('auth.2faCodeLabel') || 'Codice a 6 cifre:';
+        link.textContent = T('auth.2faUseRecovery') || 'Non ho il telefono: usa un codice di recupero';
+    }
+    campo.value = '';
     campo.focus();
 }
 
@@ -333,6 +374,13 @@ async function submitLogin(e) {
             return;
         }
         hideAuthError('auth-login-error');
+        // Blocco 8 del piano 2FA: se l'account ha il secondo fattore, /login risponde
+        // 200 { twoFactorRequired: true } SENZA nessun dato dell'utente e SENZA aprire la
+        // sessione - si passa alla vista del secondo passo.
+        if (data.twoFactorRequired) {
+            show2faView();
+            return;
+        }
         // Punto A-3.4: rientrare entro i 30 giorni annulla l'eliminazione. onAuthSuccess
         // ricarica la pagina, quindi un toast qui sparirebbe: si lascia un segno in
         // sessionStorage e lo mostra initApp() dopo il reload.
@@ -346,6 +394,65 @@ async function submitLogin(e) {
     }
 }
 
+// Blocco 8 del piano 2FA: il secondo passo. requireAuth NO: la sessione non e' ancora
+// aperta, lo stato intermedio e' req.session.pending2fa lato server.
+async function submit2fa(e) {
+    e.preventDefault();
+    const grezzo = document.getElementById('login-2fa-code').value.trim();
+    if (!grezzo) {
+        showAuthError('auth-2fa-error', T('auth.err.2faNoCode') || 'Inserisci il codice.');
+        return;
+    }
+    const corpo = modo2faRecupero
+        ? { recoveryCode: grezzo }
+        : { code: grezzo.replace(/\D+/g, '') };
+    const bottone = document.getElementById('btn-2fa-submit');
+
+    hideAuthError('auth-2fa-error');
+    bottone.disabled = true;
+    const testoIniziale = bottone.textContent;
+    bottone.textContent = T('auth.sending') || 'Invio…';
+
+    try {
+        const res = await fetch('/api/auth/login/2fa', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(corpo)
+        });
+        const data = await res.json();
+        if (!res.ok) {
+            // { ripartiDaCapo: true }: lo stato intermedio e' scaduto (5 minuti) o
+            // esaurito (5 tentativi) - si torna al primo passo.
+            if (data.ripartiDaCapo) {
+                showLoginView();
+                showAuthError('auth-login-error', T('auth.err.2faExpired') || 'La sessione di accesso è scaduta: riscrivi email e password.');
+                return;
+            }
+            showAuthError('auth-2fa-error', data.error || T('auth.err.2faInvalid') || 'Codice non valido.');
+            return;
+        }
+        hideAuthError('auth-2fa-error');
+        if (data.eliminazioneAnnullata) {
+            try { sessionStorage.setItem('camoscio_msg_ripristino', '1'); } catch (err) {}
+        }
+        // MEDIO-5 (revisione del cumulativo 42a): il server manda recoveryCodesRimasti SOLO
+        // quando il secondo passo e' stato superato con un codice di recupero (mai col TOTP) -
+        // e' proprio il momento in cui la scorta si sta consumando. Stessa tecnica di
+        // camoscio_msg_ripristino: onAuthSuccess ricarica la pagina, il toast al volo qui
+        // sparirebbe col reload.
+        if (typeof data.recoveryCodesRimasti === 'number') {
+            try { sessionStorage.setItem('camoscio_msg_codici_recupero', String(data.recoveryCodesRimasti)); } catch (err) {}
+        }
+        if (window.onAuthSuccess) window.onAuthSuccess();
+    } catch (err) {
+        console.error('Errore secondo fattore:', err);
+        showAuthError('auth-2fa-error', T('auth.err.serverUnreachable') || 'Impossibile contattare il server. Riprova.');
+    } finally {
+        bottone.disabled = false;
+        bottone.textContent = testoIniziale;
+    }
+}
+
 function setupAuthGate() {
     document.getElementById('auth-login-form').addEventListener('submit', submitLogin);
     document.getElementById('link-go-register').addEventListener('click', showRegisterView);
@@ -353,6 +460,15 @@ function setupAuthGate() {
     document.getElementById('link-go-forgot').addEventListener('click', showForgotView);
     document.getElementById('link-forgot-go-login').addEventListener('click', showLoginView);
     document.getElementById('auth-forgot-form').addEventListener('submit', submitForgotPassword);
+
+    // Blocco 8 del piano 2FA: il secondo passo del login.
+    document.getElementById('auth-2fa-form').addEventListener('submit', submit2fa);
+    document.getElementById('link-2fa-go-login').addEventListener('click', showLoginView);
+    document.getElementById('link-2fa-recovery').addEventListener('click', () => {
+        modo2faRecupero = !modo2faRecupero;
+        hideAuthError('auth-2fa-error');
+        aggiornaCampo2fa();
+    });
 
     document.getElementById('btn-wizard-next').addEventListener('click', () => {
         const error = validateCurrentStep();
@@ -448,4 +564,5 @@ async function performLogout() {
 window.setupAuthGate = setupAuthGate;
 window.showLoginView = showLoginView;
 window.showForgotView = showForgotView;
+window.show2faView = show2faView;
 window.performLogout = performLogout;

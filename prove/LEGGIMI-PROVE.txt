@@ -89,21 +89,60 @@ scripts/verifica-indici-notifiche.js (sola lettura): l'indice TTL su notificatio
 esiste su Atlas con expireAfterSeconds 7776000 (90 giorni), nessun IndexOptionsConflict
 inghiottito. Lo script resta per ricontrollare se un domani si tocca quell'indice.
 
-Le prove dei CONTATTI DI EMERGENZA e del 2FA (blocco 1) - nessuna vuole un server acceso a
-parte contatti-emergenza che ne avvia uno suo:
+Le prove dei CONTATTI DI EMERGENZA, del 2FA e del PUNTO 77 - contatti-emergenza e 2fa
+avviano un server loro (rispettivamente 3136 e 3137), punto77 pure (3104):
 
     node prove/prova-contatti-emergenza.js         ~55 controlli  (ne avvia uno suo sulla 3136)
-    node prove/prova-2fa.js                         ~80 controlli  (non serve il server)
+    node prove/prova-2fa.js                        ~150 controlli  (sez. 1 no server; 2-10 avviano il loro sulla 3137)
     node prove/prova-punto77.js                     ~25 controlli  (ne avvia uno suo sulla 3104)
 
     prova-contatti-emergenza: POST/DELETE /api/users/:id/emergency-contacts atomici (M-5),
     validazione email server-side, niente doppioni, tetto 5, RACE fra due schede, e (dalla
     40a) la rimozione che toglie il nome anche da deadManLastFired.contattiNonRaggiunti.
-    prova-2fa: SOLO la sezione 1 del piano - lib/totp.js contro i vettori RFC 4226/6238,
+    prova-2fa: SEZIONE 1 (blocco 1 del piano) - lib/totp.js contro i vettori RFC 4226/6238,
     base32, finestra, codici di recupero, e le guardie della revisione del cumulativo
     (segreto corto -> throw, tetto finestra, finestra frazionaria, adessoMs non numerico).
+    SEZIONI 2-10 (blocchi 3-4 del piano) - le rotte, con un server sulla 3137 e account
+    reali temporanei creati dritti sul DB: contratto (/2fa/* e /login/2fa senza sessione ->
+    401; demo -> 403; /setup idempotente), attivazione (/setup -> /enable -> 200 + 10
+    codici; stato sul DB; /me senza segreto; D-4 email non confermata; /setup su attivo ->
+    409), login a due passi (GET /me -> 401 FRA i due passi = il controllo centrale del
+    piano), anti-riuso TOTP (CAS), codice di recupero monouso + normalizzazione, SEZ. 6b
+    (revisione del cumulativo 42a, buco di test chiuso): rigenerazione dei codici di
+    recupero (/2fa/recovery-codes) - password+codice giusti -> 200 con 10 codici nuovi e
+    tutti diversi dai vecchi, sul DB esattamente 10 impronte (sostituzione, non
+    accodamento), un codice VECCHIO dopo la rigenerazione -> 401, un codice NUOVO -> 200;
+    reset a due passi (token intatto sul 2FA mancante/sbagliato; 5 tentativi -> token
+    morto), disattivazione (tutti e 6 i campi via $unset), stati speciali
+    (pendingDeletionAt + 2FA), scrub. Per non aspettare 30 s a ogni login la prova azzera
+    twoFactorLastStep sul DB (sbloccaPasso) dove sotto prova c'e' il flusso e non
+    l'anti-riuso - la sezione 5 NON sblocca. In testa al file le 4 controprove non
+    facoltative (git stash).
     prova-punto77: escursione conclusa visibile ai soli partecipanti; sez. 4b (dalla 40a):
     hikeVisibileA toglie la LINEA (routePath) a chi non partecipa per ogni traccia GPS.
+
+Il RECUPERO RITARDATO senza secondo fattore (opzione C, blocco 5 del piano 2FA) ha una
+prova sua - avvia un server sulla 3138, file separato da prova-2fa perche' scrive DATE nel
+passato sul DB e non deve sporcare i vettori RFC:
+
+    node prove/prova-recupero-ritardato.js         ~54 controlli  (ne avvia uno suo sulla 3138)
+
+    12 sezioni, utenti reali temporanei. /recovery/start (token PasswordReset in mano, mai
+    un'email nel body; 400 senza 2FA; 403 demo), IDEMPOTENZA (secondo start -> giaInCorso,
+    maturaIl IDENTICO, un solo documento, nessuna seconda email - il controllo che vale di
+    piu': se maturaIl si sposta il meccanismo e' svuotato), il link inerte prima della
+    maturita' (stato 'nonMaturo' + maturaIl, mai "link non valido"), il banner
+    (/recovery/status: rotta a se', NON un campo di /me), annullamento da loggato
+    (annullatoIl, documento NON cancellato, 404 se non c'e' niente), completamento dopo la
+    maturita' (2FA SPENTO -> login in un passo; sessioni chiuse; PasswordReset cancellati;
+    pendingDeletionAt ripristinato), idempotenza del completamento (CAS: stesso link due
+    volte -> 400 'completato'), finestra oltre i 7 giorni -> 'scaduto', /2fa/disable annulla
+    un recupero vivo (annullatoPerche '2fa-disattivato'), account deletedAt -> 400,
+    scrubAccount porta via il documento. Forzature dichiarate: sbloccaPasso() (twoFactorLastStep)
+    e forzaMaturaIl() (solo maturaIl, non expiresAt, cosi' il TTL non cancella il doc sotto).
+    In testa al file le 2 controprove non facoltative (git stash): avviaOTrovaRecupero ->
+    creaToken fa crollare la sez. 3; togliere lo $unset dei campi 2FA dal completamento fa
+    crollare la sez. 7.
 
 La prova del PASSO NON MISURATO (16/08/2026) non vuole il server acceso, ma legge il
 database (in SOLA lettura: l'unica interrogazione vera e' su un id inesistente, quindi non
@@ -573,8 +612,8 @@ punti, mentre il sito non ne chiede mai piu' di 500 per un percorso.
 Se il log sta altrove: CAMOSCIO_LOG=percorso/del/file.log node prove/...
 
 
-LE DUE PROVE NEL BROWSER
-------------------------
+LE PROVE NEL BROWSER
+-------------------
 Servono PUPPETEER, che per scelta del progetto NON va installato in package.json (vedi
 cronologia.txt): si installa in una cartella temporanea e gli si dice dov'e'.
 
@@ -584,10 +623,22 @@ cronologia.txt): si installa in una cartella temporanea e gli si dice dov'e'.
     PUPPETEER_PATH=/percorso/della/cartella/node_modules/puppeteer \
       node prove/prova-browser-punto7.js             56 controlli
     PUPPETEER_PATH=... node prove/prova-browser-verifica.js   38 controlli
+    PUPPETEER_PATH=... node prove/prova-browser-2fa.js       ~19 controlli  (serve il server sulla :3000)
 
 Girano a 1440 e a 390 px e SALVANO LE SCHERMATE qui dentro (o in CAMOSCIO_SCATTI).
 GUARDARLE FA PARTE DELLA PROVA: i difetti di impaginazione non li trova nessun controllo
 automatico - i due del punto 7 sono usciti solo cosi'.
+
+    prova-browser-2fa (blocchi 6-7 del piano 2FA): le due cose che nessuna prova server
+    vede. (1) IL QR in Impostazioni: che #tfa-qr abbia un <svg> non vuoto, che il riquadro
+    sia davvero bianco (getComputedStyle), e che con window.qrcode reso undefined compaia
+    il RIPIEGO col segreto invece di una scheda rotta. (2) IL BANNER GLOBALE "recupero in
+    corso": che compaia dopo il login a due passi, che resti visibile su >=3 sezioni dopo
+    aver navigato (e' fuori da .page-container), che NON sparisca dopo un refreshState()
+    forzato (la trappola di §4.7: lo stato sta in CamoscioState.recuperoInSospeso, MAI in
+    currentUser), che "Annulla" lo tolga SENZA ricaricare, e che a 390 px non trabocchi.
+    Utente reale temporaneo sul DB (2FA + un recupero avviato), cancellato nel finally.
+    Salva p2fa-qr-1440.png, p2fa-banner-1440.png, p2fa-banner-390.png.
 
 
 REGOLE RISPETTATE DA TUTTE, da non perdere se se ne scrivono altre

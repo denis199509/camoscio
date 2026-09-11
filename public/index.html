@@ -113,6 +113,44 @@
             </div>
         </div>
 
+        <!-- Vista "Secondo passo del login" (blocco 8 del piano 2FA).
+             Ci si arriva SOLO se POST /api/auth/login ha risposto { twoFactorRequired: true }:
+             la password e' gia' verificata, la sessione NON e' aperta (nessun dato
+             dell'utente e' arrivato), lo stato intermedio vive in req.session.pending2fa
+             lato server per 5 minuti. -->
+        <div id="auth-2fa-view" class="auth-card hidden">
+            <div class="auth-brand">
+                <img src="img/logo.png" alt="Camoscio" class="logo-icon logo-icon-img">
+                <h1>CAMOSCIO</h1>
+                <div class="lang-switcher" role="group" aria-label="Lingua / Language">
+                    <button type="button" class="lang-flag-btn" data-lang="it" title="Italiano" aria-label="Italiano" aria-pressed="true">
+                        <svg viewBox="0 0 3 2" aria-hidden="true"><rect width="1" height="2" fill="#009246"/><rect width="1" height="2" x="1" fill="#fff"/><rect width="1" height="2" x="2" fill="#ce2b37"/></svg>
+                    </button>
+                    <button type="button" class="lang-flag-btn" data-lang="en" title="English" aria-label="English" aria-pressed="false">
+                        <svg viewBox="0 0 60 30" aria-hidden="true"><rect width="60" height="30" fill="#00247d"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" stroke-width="6"/><path d="M30,0 V30 M0,15 H60" stroke="#fff" stroke-width="10"/><path d="M30,0 V30 M0,15 H60" stroke="#cf142b" stroke-width="6"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#cf142b" stroke-width="2"/></svg>
+                    </button>
+                </div>
+            </div>
+            <p class="auth-subtitle" id="auth-2fa-subtitle" data-i18n="auth.2faSubtitle">Apri la tua app authenticator e scrivi il codice a 6 cifre.</p>
+
+            <div id="auth-2fa-error" class="auth-error-box hidden"></div>
+
+            <form id="auth-2fa-form">
+                <div class="form-group">
+                    <label for="login-2fa-code" id="login-2fa-code-label" data-i18n="auth.2faCodeLabel">Codice a 6 cifre:</label>
+                    <input type="text" id="login-2fa-code" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="one-time-code" autofocus>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block" id="btn-2fa-submit" data-i18n="auth.2faSubmit">Verifica e accedi</button>
+            </form>
+
+            <div class="auth-switch-row">
+                <a id="link-2fa-recovery" data-i18n="auth.2faUseRecovery">Non ho il telefono: usa un codice di recupero</a>
+            </div>
+            <div class="auth-switch-row">
+                <a id="link-2fa-go-login" data-i18n="auth.backToLogin">Torna all'accesso</a>
+            </div>
+        </div>
+
         <!-- Vista Registrazione: percorso a 6 passi -->
         <div id="auth-register-view" class="auth-card hidden">
             <div class="auth-brand">
@@ -605,6 +643,33 @@
                         se un giorno la dimentichi. Controlla anche la posta indesiderata.
                     </span>
                     <button class="btn btn-sm btn-primary" id="btn-resend-verification">Rimanda l'email</button>
+                </div>
+            </div>
+
+            <!-- Banner globale "recupero account in corso" (opzione C, blocco 7 del piano 2FA).
+                 QUESTO NON E' UN ELEMENTO DI INTERFACCIA: e' il meccanismo di sicurezza. Se la
+                 casella email e' gia' compromessa, l'avviso via email lo legge l'attaccante;
+                 l'unico canale che l'attaccante NON controlla e' la sessione autenticata del
+                 proprietario, che nei 14 giorni continua a fare login col suo 2FA. Il banner
+                 e' quel canale.
+                 ROSSO (classe .emergency-banner) e NON il colore del verify-banner qui sopra:
+                 il commento di quello dice che usare il rosso per un promemoria toglierebbe
+                 forza a quello vero - ha ragione, ma un tentativo di presa dell'account IN
+                 corso E' un'emergenza, dell'unica altra categoria che questo sito riconosce.
+                 E' l'eccezione che conferma quella regola.
+                 NON dismissibile: nessuna X, nessun localStorage. Lo popola app.js
+                 (aggiornaBannerRecupero) da GET /api/auth/recovery/status; lo stato vive in
+                 window.CamoscioState.recuperoInSospeso, MAI in currentUser (refreshState lo
+                 perderebbe - la trappola di profilePhoto). -->
+            <div id="recovery-banner" class="emergency-banner hidden">
+                <div class="emergency-banner-content">
+                    <i data-lucide="shield-alert"></i>
+                    <span>
+                        <strong id="recovery-banner-titolo" data-i18n="settings.recuperoTitolo">Recupero account in corso.</strong>
+                        <span id="recovery-banner-testo" data-i18n="settings.recuperoTesto">Qualcuno ha chiesto di rientrare nel tuo account senza il codice del
+                        secondo fattore. Si completa il </span><strong id="recovery-banner-quando">—</strong>. <span id="recovery-banner-testo-fine" data-i18n="settings.recuperoTestoFine">Se non sei stato tu, annullalo adesso.</span>
+                    </span>
+                    <button class="btn btn-sm btn-danger" id="btn-recovery-cancel" data-i18n="settings.recuperoAnnullaBtn">Annulla il recupero</button>
                 </div>
             </div>
 
@@ -1827,6 +1892,100 @@
                         </div>
                     </div>
 
+                    <!-- Blocco 6 del piano 2FA TOTP: secondo fattore "Google Authenticator" +
+                         il gemello DENTRO la pagina del banner globale "recupero in corso"
+                         (opzione C). Opt-in, invisibile ai 4 account demo: li nasconde
+                         renderTwoFactorCard (public/js/twofactor.js), e il server rifiuta
+                         comunque ogni /2fa/* su un demo (403). I blocchi si alternano con
+                         [hidden]; l'HTML e' lo scheletro, il contenuto lo mette il JS. -->
+                    <div class="glass-card settings-card hidden" id="settings-2fa-card">
+                        <h4><i data-lucide="shield-check"></i> <span data-i18n="settings.2faTitolo">Secondo fattore (Google Authenticator)</span></h4>
+
+                        <!-- Riquadro d'allarme: un recupero dell'accesso senza secondo fattore
+                             e' in corso. E' il gemello del banner globale (blocco 7): chi
+                             arriva qui dal banner deve trovare il pulsante dove il banner ha
+                             promesso. Puo' comparire SOPRA lo stato "acceso". -->
+                        <div id="tfa-recupero-in-corso" class="tfa-alert" hidden>
+                            <p><strong data-i18n="settings.recuperoTitolo">Recupero account in corso.</strong>
+                               <span id="tfa-recupero-testo"></span></p>
+                            <button type="button" class="btn btn-sm btn-danger" id="tfa-btn-annulla-recupero" data-i18n="settings.recuperoAnnullaBtn">Annulla il recupero</button>
+                        </div>
+
+                        <!-- STATO 1: spento -->
+                        <div id="tfa-stato-spento" hidden>
+                            <p class="small text-muted" data-i18n="settings.2faDescSpento">Con il secondo fattore, per entrare servono la password E un codice che cambia ogni 30 secondi, generato da un'app come Google Authenticator o Aegis sul tuo telefono.</p>
+                            <p class="small text-muted" data-i18n-html="settings.2faNotaOnesta">Se perdi il telefono, per rientrare ti servono i <strong>codici di recupero</strong>: salvali adesso, in un posto diverso dal telefono. Se perdi anche quelli, resta una via: il recupero dalla tua email, che però richiede <strong>14 giorni di attesa</strong> — servono a darti il tempo di accorgerti se a chiederlo non sei stato tu. Durante quei giorni vedrai un avviso su ogni pagina del sito e potrai annullarlo con un clic.</p>
+                            <button type="button" class="btn btn-sm btn-primary" id="tfa-btn-attiva" data-i18n="settings.2faAttivaBtn">Attiva il secondo fattore</button>
+                        </div>
+
+                        <!-- STATO 2: configurazione (QR + verifica del primo codice) -->
+                        <div id="tfa-configurazione" hidden>
+                            <p class="small text-muted" data-i18n="settings.2faScansiona">Inquadra questo codice con la tua app authenticator. Se la fotocamera non collabora, inserisci la chiave qui sotto a mano.</p>
+                            <div class="qr-box" id="tfa-qr"></div>
+                            <p class="small text-muted" data-i18n="settings.2faOppureManuale">Chiave da inserire a mano:</p>
+                            <div class="tfa-secret-row">
+                                <code id="tfa-secret"></code>
+                                <button type="button" class="btn btn-sm btn-secondary" id="tfa-btn-copia-segreto" data-i18n="settings.2faSegretoCopia">Copia</button>
+                            </div>
+                            <div class="form-group">
+                                <label for="tfa-verify-pwd" data-i18n="settings.2faPwdLabel">Password:</label>
+                                <input type="password" id="tfa-verify-pwd" autocomplete="current-password">
+                            </div>
+                            <div class="form-group">
+                                <label for="tfa-verify-code" data-i18n="settings.2faVerificaLabel">Inserisci un codice dall'app per confermare:</label>
+                                <input type="text" id="tfa-verify-code" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="one-time-code">
+                            </div>
+                            <p class="small tfa-error" id="tfa-configurazione-err" hidden></p>
+                            <div class="tfa-btn-row">
+                                <button type="button" class="btn btn-sm btn-primary" id="tfa-btn-verifica" data-i18n="settings.2faVerificaBtn">Verifica e attiva</button>
+                                <button type="button" class="btn btn-sm btn-secondary" id="tfa-btn-annulla-config" data-i18n="settings.2faAnnullaConfig">Annulla</button>
+                            </div>
+                        </div>
+
+                        <!-- STATO 3: acceso -->
+                        <div id="tfa-stato-acceso" hidden>
+                            <p class="small" id="tfa-attivo-dal"></p>
+                            <p class="small text-muted" id="tfa-codici-rimasti"></p>
+                            <div class="settings-row">
+                                <span class="small text-muted" data-i18n="settings.2faRigeneraDesc">Se hai finito i codici di recupero, o pensi che qualcuno li abbia visti, generane di nuovi: i vecchi smettono di funzionare.</span>
+                                <button type="button" class="btn btn-sm btn-secondary" id="tfa-btn-rigenera" data-i18n="settings.2faRigeneraBtn">Genera nuovi codici</button>
+                            </div>
+                            <div class="settings-row">
+                                <span class="small text-muted" data-i18n="settings.2faDisattivaDesc">Per spegnere il secondo fattore servono la password e un codice.</span>
+                                <button type="button" class="btn btn-sm btn-danger" id="tfa-btn-disattiva" data-i18n="settings.2faDisattivaBtn">Disattiva</button>
+                            </div>
+                            <!-- form credenziali condiviso da "disattiva" e "genera nuovi codici" -->
+                            <div id="tfa-cred-form" hidden>
+                                <div class="form-group">
+                                    <label for="tfa-cred-pwd" data-i18n="settings.2faPwdLabel">Password:</label>
+                                    <input type="password" id="tfa-cred-pwd" autocomplete="current-password">
+                                </div>
+                                <div class="form-group">
+                                    <label for="tfa-cred-code" id="tfa-cred-code-label" data-i18n="settings.2faCodiceLabel">Codice dell'app:</label>
+                                    <input type="text" id="tfa-cred-code" inputmode="numeric" autocomplete="one-time-code">
+                                </div>
+                                <p class="small tfa-error" id="tfa-cred-err" hidden></p>
+                                <div class="tfa-btn-row">
+                                    <button type="button" class="btn btn-sm btn-primary" id="tfa-btn-cred-conferma" data-i18n="common.conferma">Conferma</button>
+                                    <button type="button" class="btn btn-sm btn-secondary" id="tfa-btn-cred-annulla" data-i18n="settings.2faAnnullaConfig">Annulla</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- I 10 codici di recupero, mostrati SOLO dopo un enable o un rigenera -->
+                        <div id="tfa-codici" hidden>
+                            <p class="small" data-i18n-html="settings.2faCodiciIstruzioni"><strong>Salva questi 10 codici di recupero</strong> in un posto sicuro, diverso dal telefono. Ognuno funziona <strong>una volta sola</strong>, al posto del codice dell'app. Non te li mostreremo più.</p>
+                            <ol class="tfa-recovery-list" id="tfa-codici-lista"></ol>
+                            <div class="tfa-btn-row">
+                                <button type="button" class="btn btn-sm btn-secondary" id="tfa-btn-copia-codici" data-i18n="settings.2faCodiciCopia">Copia</button>
+                                <button type="button" class="btn btn-sm btn-secondary" id="tfa-btn-scarica-codici" data-i18n="settings.2faCodiciScarica">Scarica</button>
+                                <button type="button" class="btn btn-sm btn-secondary" id="tfa-btn-stampa-codici" data-i18n="settings.2faCodiciStampa">Stampa</button>
+                            </div>
+                            <label class="tfa-salvati-check"><input type="checkbox" id="tfa-codici-salvati"> <span data-i18n="settings.2faCodiciSalvati">Li ho salvati in un posto sicuro</span></label>
+                            <button type="button" class="btn btn-sm btn-primary" id="tfa-btn-codici-fatto" disabled data-i18n="settings.2faCodiciFinito">Ho finito</button>
+                        </div>
+                    </div>
+
                     <!-- A-3 (revisione sicurezza 21a): privacy e posizione. Revoca del consenso
                          alla geolocalizzazione (GDPR: il consenso deve essere ritirabile con la
                          stessa facilita' con cui e' stato dato). -->
@@ -2739,6 +2898,11 @@
     <script src="vendor/leaflet/leaflet.js"></script>
     <!-- Script Chart.js (Open Source Graphs, vendorizzato in locale) -->
     <script src="vendor/chartjs/chart.umd.js"></script>
+    <!-- QR Code Generator di Kazuhiko Arase (MIT, vendorizzato in locale, blocco 6 del
+         piano 2FA): disegna il QR del segreto TOTP DENTRO il browser (createSvgTag ->
+         <svg> inline). Il segreto non lascia mai la pagina, a differenza di un QR
+         generato da un servizio terzo via URL. Espone window.qrcode. -->
+    <script src="vendor/qrcode/qrcode.js"></script>
 
     <!-- Moduli Applicativi Client -->
     <!-- colori.js per primissimo: gemello di :root per i colori che passano a
@@ -2747,6 +2911,9 @@
     <!-- i18n.js per primo: non dipende da nessun altro modulo, e badges.js si
          registra su CamoscioI18n.onChange gia' al proprio avvio. -->
     <script src="js/i18n.js"></script>
+    <!-- twofactor.js dopo i18n.js e prima di app.js: espone window.renderTwoFactorCard,
+         che renderSettingsPage (profile.js) chiama. IIFE come badges.js. -->
+    <script src="js/twofactor.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/safety.js"></script>
     <!-- cai-tempi.js va PRIMA di profile.js: contiene la formula CAI che profile.js legge

@@ -291,9 +291,99 @@ const contattiLimiter = rateLimit({
     message: messaggioTroppiTentativi
 });
 
+// --- Secondo fattore TOTP (piano 2FA: C:\Users\lenovo\.claude\plans\camoscio-2fa-totp.md) ---
+
+// POST /api/auth/login/2fa, poi /2fa/enable|disable|recovery-codes (blocco 4): le rotte
+// dove si INDOVINA un codice a 6 cifre. Secchio DEDICATO, stessa regola di
+// sicurezzaLimiter/invitoLimiter/contattiLimiter: chi martella il secondo fattore non deve
+// esaurire la quota di chi sta facendo il login (authLimiter e' condiviso con login,
+// registrazione, reset e conferma email), ne' viceversa. skipSuccessfulRequests come
+// authLimiter: chi digita il codice giusto non paga. 20 tentativi in un quarto d'ora: 6
+// cifre con finestra +/-1 sono ~3 codici validi su un milione, quindi 20 tentativi a vuoto
+// sono gia' un ordine di grandezza oltre qualunque errore di digitazione in buona fede.
+// NELLA CATENA VA SEMPRE PRIMA DI authLimiter (routes/auth.js). authLimiter ha
+// skipSuccessfulRequests e conta i 429 come fallimenti (stessa lezione di
+// registrazioneLimiter qui sopra): con l'ordine invertito ogni 429 del secondo fattore
+// andrebbe a rosicchiare la quota condivisa di login/registrazione/reset dietro lo stesso
+// NAT (il wifi di un rifugio). Il piu' stretto per primo.
+// keyGenerator PER PERSONA (revisione del cumulativo 42a, ALTO-1 - prima la chiave era
+// req.ip, e apriva due buchi insieme): (1) POST /login riscrive pending2fa DA ZERO a ogni
+// chiamata riuscita (risposta 200, authLimiter la salta per skipSuccessfulRequests) - senza
+// una chiave per account, il PRIMO passo del login e' gratis e illimitato per chi ha gia' la
+// password, e questo secchio per IP restava l'UNICO vero tetto ai tentativi TOTP: con un
+// pool di un centinaio di IP il conto tornava fattibile in poco piu' di un giorno; (2) era
+// condiviso con /reset-password (vedi sotto), quindi chi martellava un link di reset a caso
+// poteva esaurirlo e far ricevere 429 sul login a due passi di chiunque altro sullo stesso
+// NAT - sulla rotta del rientro, col Dead Man's Switch armato, un 429 impedisce il check-in.
+// pending2fa.userId copre POST /login/2fa (session.userId non esiste ancora, di proposito);
+// session.userId copre le /2fa/* (gia' dietro requireAuth). NON PIU' su POST /reset-password
+// (tolto da routes/auth.js in questo stesso giro, deviazione (d) della revisione): li' non
+// esiste ne' l'uno ne' l'altro prima di validare il token, quindi la chiave sarebbe rimasta
+// comunque l'IP - il freno vero li' e' gia' tentativi2fa (5 per link, su PasswordReset).
+const secondoFattoreLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 20,
+    skipSuccessfulRequests: true,
+    keyGenerator: (req) => {
+        const sessione = req.session || {};
+        if (sessione.pending2fa && sessione.pending2fa.userId) return `u:${sessione.pending2fa.userId}`;
+        if (sessione.userId) return `u:${sessione.userId}`;
+        return ipKeyGenerator(req.ip);
+    },
+    skip: soloInProduzione,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: messaggioTroppiTentativi
+});
+
+// POST /api/auth/2fa/setup|enable|disable|recovery-codes e /recovery/cancel: le SCRITTURE
+// di gestione del secondo fattore (blocchi 4-5). Separato da scritturaLimiter (condiviso con
+// la creazione escursioni) e da secondoFattoreLimiter (che conta i tentativi a vuoto):
+// accendere, spegnere o rigenerare i codici e' un gesto raro. 30/ora.
+// DEFINITO QUI, nel blocco 3, anche se lo aggancia il blocco 4: il blocco 3 e' l'unico che
+// tocca questo file prima di allora, e la rete si posa prima del filo (come i campi 2FA
+// dormienti dello schema, blocco 2). Finche' nessuna rotta lo usa e' inerte.
+// keyGenerator PER PERSONA (revisione del cumulativo 42a, ALTO-2): ogni rotta che lo usa e'
+// dietro requireAuth, quindi session.userId c'e' sempre - senza keyGenerator la chiave era
+// req.ip, e su un NAT condiviso (wifi di un rifugio, CGNAT mobile) un account qualsiasi
+// poteva esaurire il secchio e tenere bloccato per un'ora il bottone "Annulla il recupero"
+// (POST /recovery/cancel) di un altro utente, ripetibile per tutti i 14 giorni dell'attesa -
+// stessa classe di bug gia' chiusa su checkinLimiter/presaVisioneLimiter (revisione 40a).
+const duefattoriLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    limit: 30,
+    keyGenerator: (req) => (req.session && req.session.userId)
+        ? `u:${req.session.userId}`
+        : ipKeyGenerator(req.ip),
+    skip: soloInProduzione,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: messaggioTroppiTentativi
+});
+
+// POST /api/auth/recovery/start (opzione C, blocco 5): manda un'email di avviso a un
+// indirizzo che NON sceglie chi chiama (si ricava dal token PasswordReset che ha in mano),
+// quindi il bombardamento e' gia' limitato a monte dal tetto di 3 email/ora per indirizzo
+// di /forgot-password. Il secchio serve lo stesso, e SEPARATO da emailLimiter: un tentativo
+// di recupero non deve poter consumare la quota di chi sta semplicemente chiedendo un link
+// per la password (sarebbero due funzioni diverse nello stesso secchio, e la seconda e'
+// quella di cui c'e' piu' bisogno). Si contano TUTTE le richieste (niente
+// skipSuccessfulRequests): qui anche il successo manda un'email. 5/ora e' molto oltre
+// qualunque uso in buona fede - un recupero si avvia una volta. Nella catena va PRIMA di
+// emailLimiter (il piu' stretto per primo, stessa lezione di registrazioneLimiter).
+const recuperoLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    limit: 5,
+    skip: soloInProduzione,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: messaggioTroppiTentativi
+});
+
 module.exports = {
     authLimiter, emailLimiter, apiLimiter, matchLimiter, exportLimiter, scritturaLimiter,
     sicurezzaLimiter, checkinLimiter, presaVisioneLimiter, cancellazioneLimiter, invitoLimiter,
     fotoLimiter, fotoLetturaLimiter, fotoProfiloLimiter, registrazioneLimiter,
-    fotoProfiloLetturaLimiter, contattiLimiter
+    fotoProfiloLetturaLimiter, contattiLimiter,
+    secondoFattoreLimiter, duefattoriLimiter, recuperoLimiter
 };

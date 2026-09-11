@@ -9,21 +9,31 @@ const ScherzoDamiano = require('../models/ScherzoDamiano');
 const { mongoose } = require('../db/mongo');
 const { chiudiTutteLeSessioni } = require('../db/sessionStore');
 const { trovaValido, creaToken } = require('../lib/tokens');
+const totp = require('../lib/totp'); // secondo fattore TOTP (blocco 3 del piano 2FA)
+const AccountRecovery = require('../models/AccountRecovery'); // recupero ritardato 2FA (blocco 5)
+const { avviaOTrovaRecupero, trovaRecuperoUtilizzabile, recuperoVivoDi } = require('../lib/recuperoAccount');
 const {
-    inviaEmail, emailRecuperoPassword, emailVerificaIndirizzo, indirizzoBase,
+    inviaEmail, emailRecuperoPassword, emailRecuperoRitardato, emailVerificaIndirizzo, indirizzoBase,
     configurato: mailerConfigurato, inviiFunzionanti
 } = require('../lib/mailer');
 const { requireAuth } = require('../middleware/auth');
 // A-2 (revisione sicurezza 21a): forza bruta su credenziali + bombardamento email.
 // registrazioneLimiter (ALTO, follow-up revisione sicurezza 30ª): authLimiter da solo non
 // basta qui, vedi il commento sul limiter.
-const { authLimiter, emailLimiter, registrazioneLimiter } = require('../middleware/rateLimit');
+const { authLimiter, emailLimiter, registrazioneLimiter, secondoFattoreLimiter, duefattoriLimiter, recuperoLimiter } = require('../middleware/rateLimit');
 // Punto A-3.4: rientrare col login entro i 30 giorni annulla l'eliminazione dell'account.
 const { ripristinaAccount } = require('../lib/accountDeletion');
 // ALTO, follow-up revisione sicurezza (30ª): stesso buco di MEDIO-2/3 su Squad.photo.
 const { validaFotoProfiloJpeg } = require('../lib/profilePhoto');
 
 const MIN_PASSWORD = 8; // stessa regola della registrazione, in un posto solo
+
+// Blocco 4 del piano 2FA: quanto vive il segreto PROVVISORIO di POST /2fa/setup prima che
+// vada rigenerato. Ricontrollato NEL CODICE in /2fa/enable (niente TTL su questo campo: la
+// lezione di lib/tokens.js vale anche senza indice - la guardia e' la funzione).
+const PENDING_2FA_TTL_MS = 15 * 60 * 1000;
+// Emittente mostrato dall'app authenticator (otpauth:// URI). Un valore solo, qui.
+const EMITTENTE_2FA = 'Camoscio';
 
 function calculateAge(birthDate) {
     const ms = Date.now() - new Date(birthDate).getTime();
@@ -216,6 +226,64 @@ router.post('/register', registrazioneLimiter, authLimiter, async (req, res) => 
     }
 });
 
+// CAS anti-riuso su twoFactorLastStep (RFC 6238 5.2): "morde" (ritorna true) solo se quel
+// passo temporale non e' gia' stato speso. Update condizionale, mai leggi-poi-scrivi - due
+// login nello stesso minuto, da telefono e computer, sono una corsa reale. Usato dal login,
+// dal reset password e dalla rigenerazione codici: un posto solo. Blocco 3-4 del piano 2FA.
+async function spendiPasso(userId, passo) {
+    const r = await User.updateOne(
+        { _id: userId, $or: [{ twoFactorLastStep: { $lt: passo } }, { twoFactorLastStep: { $exists: false } }] },
+        { $set: { twoFactorLastStep: passo } }
+    );
+    return r.modifiedCount === 1;
+}
+
+// Verifica UN tentativo di secondo fattore (codice TOTP o codice di recupero) per `user`,
+// che DEVE essere stato caricato con .select('+twoFactorSecret +twoFactorRecoveryHashes').
+// Blocco 3 del piano 2FA. NON tocca la sessione ne' i contatori di tentativi: quelli li
+// tiene il chiamante, e sono due (login -> req.session.pending2fa.tentativi; reset password
+// -> PasswordReset.tentativi2fa). La parte che DECIDE se un codice e' buono sta qui, in un
+// posto solo: due copie divergerebbero in silenzio (stessa lezione di
+// usciteVisibili/uscitaVisibile e validaContattiEmergenza).
+//   -> { ok: true, codiciRimasti? }   codiciRimasti valorizzato SOLO se si e' speso un
+//                                      codice di recupero (il chiamante lo gira al client)
+//   -> { ok: false, motivo: 'assente' | 'nonValido' | 'giaUsato' | 'segretoRotto' }
+async function verificaSecondoFattore(user, corpo) {
+    const code = typeof corpo.code === 'string' ? corpo.code.trim() : '';
+    const recoveryCode = typeof corpo.recoveryCode === 'string' ? corpo.recoveryCode.trim() : '';
+    if (!code && !recoveryCode) return { ok: false, motivo: 'assente' };
+
+    if (code) {
+        let esito;
+        try {
+            esito = totp.verificaCodice(user.twoFactorSecret, code);
+        } catch (e) {
+            // lib/totp.js LANCIA apposta se il segreto e' assente o troncato: un 2FA non
+            // calcolabile non e' un "no". Qui si nega e si logga forte (campo corrotto, non
+            // un errore dell'utente) - ma il throw NON deve risalire: un unhandledRejection
+            // su Node 24 abbatte il processo, e con lui il Dead Man's Switch.
+            // SOLO il prefisso di e.message, non il messaggio intero (revisione del cumulativo
+            // 42a, BASSO): su un base32 corrotto lib/totp.js include il CARATTERE non valido
+            // nel messaggio - un frammento del segreto non deve finire nei log di Render.
+            console.error('2FA: segreto non verificabile per utente', String(user._id), '-', String(e.message).split(':')[0]);
+            return { ok: false, motivo: 'segretoRotto' };
+        }
+        if (!esito.ok) return { ok: false, motivo: 'nonValido' };
+        if (!(await spendiPasso(user._id, esito.passo))) return { ok: false, motivo: 'giaUsato' };
+        return { ok: true };
+    }
+
+    // Codice di recupero: monouso per costruzione. $pull condizionale, un solo comando: due
+    // richieste con lo stesso codice ne fanno passare UNA, e lo decide MongoDB.
+    const impronta = totp.improntaCodiceRecupero(String(user._id), recoveryCode);
+    const morso = await User.updateOne(
+        { _id: user._id, twoFactorRecoveryHashes: impronta },
+        { $pull: { twoFactorRecoveryHashes: impronta } }
+    );
+    if (morso.modifiedCount !== 1) return { ok: false, motivo: 'nonValido' };
+    return { ok: true, codiciRimasti: Math.max(0, (user.twoFactorRecoveryHashes || []).length - 1) };
+}
+
 // Login reale (email + password)
 router.post('/login', authLimiter, async (req, res) => {
     try {
@@ -237,6 +305,36 @@ router.post('/login', authLimiter, async (req, res) => {
         if (user.deletedAt) {
             return res.status(401).json({ error: 'Email o password non corretti' });
         }
+
+        // --- Secondo fattore TOTP (blocco 3 del piano 2FA) ---
+        // Con il 2FA attivo la password NON basta: si apre uno stato intermedio in
+        // req.session.pending2fa (5 minuti, max 5 tentativi) e si risponde
+        // 200 { twoFactorRequired: true } SENZA nessun dato dell'utente - oggi /login
+        // restituisce user.toJSON() (username, avatar, contatti di emergenza...), e chi
+        // conosce la password ma non il codice non deve ricevere niente.
+        // req.session.userId NON si scrive: e' l'unica chiave che guardano requireAuth,
+        // GET /me e l'upgrade WebSocket del mesh, quindi non aprirla tiene chiusa tutta
+        // l'app fino al secondo passo. ripristinaAccount() per un account in eliminazione si
+        // sposta a POST /login/2fa (riportarlo in vita sulla sola password sarebbe
+        // consegnarlo a chi il 2FA deve fermare). INERTE finche' nessuno accende il 2FA
+        // (blocco 4). twoFactorEnabledAt non e' select:false: e' gia' caricato qui.
+        if (user.twoFactorEnabledAt) {
+            // BASSO (revisione del cumulativo 42a): se questa sessione era gia' autenticata
+            // come un altro account (es. A loggato in un tab, prova ad accedere come B che ha
+            // il 2FA), il ramo senza 2FA qui sotto SOVRASCRIVE session.userId - questo ramo no,
+            // lasciando lo stato incoerente finche' il secondo passo non lo risolve. Nessuna
+            // scalata di privilegi (nessuno guadagna un accesso che non aveva gia'), ma va
+            // tolto comunque: e' l'unica rotta dove lo stato di sessione conta davvero.
+            delete req.session.userId;
+            req.session.pending2fa = {
+                userId: user._id.toString(),
+                scadenza: Date.now() + 5 * 60 * 1000,
+                tentativi: 0,
+                eraInEliminazione: !!user.pendingDeletionAt
+            };
+            return res.json({ twoFactorRequired: true });
+        }
+
         // Punto A-3.4: account in eliminazione -> rientrare entro i 30 giorni la ANNULLA.
         const eraInEliminazione = !!user.pendingDeletionAt;
         if (eraInEliminazione) {
@@ -251,6 +349,561 @@ router.post('/login', authLimiter, async (req, res) => {
         res.json(risposta);
     } catch (e) {
         console.error('Errore login:', e);
+        res.status(500).json({ error: 'Errore interno' });
+    }
+});
+
+// Secondo passo del login, per chi ha il 2FA attivo (blocco 3 del piano 2FA).
+// requireAuth NO: la sessione vera non e' ancora aperta - lo stato sta in
+// req.session.pending2fa, scritto da POST /login. I 5 minuti e i 5 tentativi si
+// ricontrollano QUI nel codice: le sessioni vivono su Mongo, sopravvivono a un riavvio di
+// Render, e non c'e' nessuno scheduler che le faccia scadere.
+// secondoFattoreLimiter PRIMA di authLimiter: vedi il commento sul limiter. INERTE finche'
+// nessuno ha twoFactorEnabledAt.
+router.post('/login/2fa', secondoFattoreLimiter, authLimiter, async (req, res) => {
+    try {
+        const pending = req.session && req.session.pending2fa;
+        if (!pending || Date.now() > pending.scadenza || (pending.tentativi || 0) >= 5) {
+            if (req.session) delete req.session.pending2fa;
+            return res.status(401).json({ error: 'La sessione di accesso è scaduta: riscrivi email e password.', ripartiDaCapo: true });
+        }
+
+        const user = await User.findById(pending.userId).select('+twoFactorSecret +twoFactorRecoveryHashes');
+        // Fra i due passi puo' essere cambiato tutto: si ricontrollano gli stati speciali.
+        if (!user || user.deletedAt) {
+            delete req.session.pending2fa;
+            return res.status(401).json({ error: 'La sessione di accesso è scaduta: riscrivi email e password.', ripartiDaCapo: true });
+        }
+
+        let codiciRimasti;
+        // Il 2FA puo' essersi SPENTO fra i due passi (un'altra scheda, o un recupero
+        // ritardato completato - blocco 5). NON si fa passare senza ricontrollare (revisione
+        // del cumulativo 42a, MEDIO-1): pending2fa nasce dalla password del PRIMO passo, e se
+        // nel frattempo e' stata cambiata - esattamente quello che fa /recovery/complete,
+        // insieme allo spegnimento del 2FA - quella prova non vale piu' niente. Lasciar
+        // entrare qui vorrebbe dire accettare una credenziale gia' revocata: chi ha fatto il
+        // primo passo con la password vecchia (magari un attaccante, mentre il proprietario
+        // completava il recupero negli stessi 5 minuti) entrerebbe comunque. Si riparte da
+        // capo: /login ricontrolla la password per davvero.
+        if (!user.twoFactorEnabledAt) {
+            delete req.session.pending2fa;
+            return res.status(401).json({
+                error: 'Il secondo fattore non è più attivo su questo account: riscrivi email e password.',
+                ripartiDaCapo: true
+            });
+        }
+        const v = await verificaSecondoFattore(user, req.body || {});
+        if (!v.ok) {
+            if (v.motivo === 'assente') {
+                return res.status(401).json({ error: 'Serve il codice del secondo fattore.' });
+            }
+            // Un tentativo a vuoto vero: si conta. A 5 il prossimo giro riparte da capo.
+            req.session.pending2fa.tentativi = (pending.tentativi || 0) + 1;
+            return res.status(401).json({
+                error: v.motivo === 'giaUsato'
+                    ? 'Questo codice è già stato usato: aspetta quello nuovo.'
+                    : 'Codice non valido.'
+            });
+        }
+        if (v.codiciRimasti !== undefined) codiciRimasti = v.codiciRimasti;
+
+        // Superato il secondo fattore: ORA, e solo ora, gli stati speciali del primo passo.
+        if (pending.eraInEliminazione && user.pendingDeletionAt) {
+            await ripristinaAccount(user);
+        }
+
+        delete req.session.pending2fa;
+        // regenerate prima di userId: difesa da session fixation, come POST /reset-password.
+        req.session.regenerate((err) => {
+            if (err) {
+                console.error('Errore rigenerazione sessione dopo il secondo fattore:', err);
+                return res.status(500).json({ error: 'Errore interno' });
+            }
+            req.session.userId = user._id.toString();
+            const risposta = user.toJSON();
+            delete risposta.pendingDeletionAt;
+            delete risposta.deletionScrubAt;
+            if (pending.eraInEliminazione) risposta.eliminazioneAnnullata = true;
+            if (codiciRimasti !== undefined) risposta.recoveryCodesRimasti = codiciRimasti;
+            res.json(risposta);
+        });
+    } catch (e) {
+        console.error('Errore login secondo fattore:', e);
+        res.status(500).json({ error: 'Errore interno' });
+    }
+});
+
+// =====================================================================================
+// GESTIONE DEL SECONDO FATTORE (2FA TOTP) - blocco 4 del piano
+// C:\Users\lenovo\.claude\plans\camoscio-2fa-totp.md
+//
+// Da QUI il 2FA si accende davvero: il blocco 3 (login/reset a due passi) e' gia' in
+// piedi e finora inerte. Opt-in da Impostazioni -> Sicurezza, mai obbligatorio.
+// =====================================================================================
+
+// Guardia comune a tutte le /2fa/*: carica il proprio documento (con i campi 2FA
+// select:false) e blocca i due casi in cui il secondo fattore non deve nemmeno esistere.
+// I 4 account demo sono CONDIVISI e senza password: un 2FA acceso su "Marco Alpinista"
+// renderebbe /demo inutilizzabile per chiunque, in modo definitivo (niente password da
+// reimpostare, /forgot-password esce subito sui demo, e il recupero ritardato dell'opzione
+// C richiede un token PasswordReset che per un demo non esiste). Nascondere il pannello
+// lato client non basta: la rotta si chiama con una fetch da console.
+// Ritorna il documento, oppure null DOPO aver gia' mandato la risposta d'errore.
+async function caricaUtentePer2fa(req, res) {
+    const user = await User.findById(req.session.userId).select(
+        '+passwordHash +twoFactorSecret +twoFactorPending +twoFactorPendingAt +twoFactorLastStep +twoFactorRecoveryHashes'
+    );
+    if (!user) { res.status(401).json({ error: 'Non autenticato' }); return null; }
+    if (user.isDemoAccount) {
+        res.status(403).json({ error: 'Gli account demo non usano il secondo fattore.' });
+        return null;
+    }
+    if (!user.passwordHash) {
+        res.status(400).json({ error: 'Questo account non usa una password.' });
+        return null;
+    }
+    return user;
+}
+
+// POST /api/auth/2fa/setup - avvia la configurazione: genera il segreto PROVVISORIO e
+// restituisce segreto + otpauth:// URI per il QR. NON accende ancora niente (serve
+// /2fa/enable con un codice valido).
+router.post('/2fa/setup', requireAuth, duefattoriLimiter, async (req, res) => {
+    try {
+        const user = await caricaUtentePer2fa(req, res);
+        if (!user) return;
+        if (user.twoFactorEnabledAt) {
+            return res.status(409).json({ error: 'Il secondo fattore è già attivo su questo account.' });
+        }
+
+        // Idempotente: se c'e' gia' un pending piu' giovane di 15 minuti si restituisce
+        // QUELLO. Rigenerarlo a ogni chiamata farebbe si' che una seconda scheda invalidi il
+        // QR appena inquadrato nella prima, e l'errore sarebbe "codice non valido" - il
+        // messaggio che fa pensare di aver sbagliato a digitare.
+        let segreto, pendingAtMs;
+        const pendingVivo = user.twoFactorPending && user.twoFactorPendingAt
+            && (Date.now() - new Date(user.twoFactorPendingAt).getTime()) < PENDING_2FA_TTL_MS;
+        if (pendingVivo) {
+            segreto = user.twoFactorPending;
+            pendingAtMs = new Date(user.twoFactorPendingAt).getTime();
+        } else {
+            segreto = totp.generaSegretoBase32();
+            pendingAtMs = Date.now();
+            await User.updateOne(
+                { _id: user._id },
+                { $set: { twoFactorPending: segreto, twoFactorPendingAt: new Date(pendingAtMs) } }
+            );
+        }
+
+        // Il segreto esce IN CHIARO: serve per la digitazione manuale quando la fotocamera
+        // non collabora. etichetta ed emittente vengono percent-codificati da uriOtpauth.
+        res.json({
+            segreto,
+            uri: totp.uriOtpauth({ segreto, etichetta: user.email || user.username, emittente: EMITTENTE_2FA }),
+            scadeIl: new Date(pendingAtMs + PENDING_2FA_TTL_MS)
+        });
+    } catch (e) {
+        console.error('Errore 2FA setup:', e);
+        res.status(500).json({ error: 'Errore interno' });
+    }
+});
+
+// POST /api/auth/2fa/enable - conferma un codice del segreto provvisorio e ACCENDE il 2FA.
+// Restituisce i 10 codici di recupero: escono SOLO qui, e MAI in un console.log.
+router.post('/2fa/enable', requireAuth, secondoFattoreLimiter, duefattoriLimiter, async (req, res) => {
+    try {
+        const user = await caricaUtentePer2fa(req, res);
+        if (!user) return;
+        if (user.twoFactorEnabledAt) {
+            return res.status(409).json({ error: 'Il secondo fattore è già attivo su questo account.' });
+        }
+        // Password, non solo il codice (revisione del cumulativo 42a, MEDIO-2): senza,
+        // l'asimmetria con /2fa/disable (che la chiede) era sfruttabile al contrario di come
+        // serve - una sessione aperta rubata (telefono prestato, PC condiviso) poteva accendere
+        // il 2FA sul proprio authenticator e chiudere fuori il proprietario vero, che si
+        // ritrova senza codice per spegnerlo e come unica via il recupero ritardato (14 giorni).
+        const { password } = req.body || {};
+        const okPassword = typeof password === 'string' && password && await bcrypt.compare(password, user.passwordHash);
+        if (!okPassword) {
+            return res.status(401).json({ error: 'Password non corretta.' });
+        }
+        // D-4 (decisione di Denis, 08/09/2026): l'indirizzo email dev'essere confermato prima
+        // di accendere il 2FA. Con l'opzione C l'email e' l'UNICA via di rientro se si perde
+        // telefono + codici (recupero ritardato, blocco 5): un 2FA su un indirizzo mai
+        // confermato = lockout permanente, non ricevera' mai un token di reset.
+        if (!user.emailVerified) {
+            return res.status(400).json({ error: "Conferma prima il tuo indirizzo email: è l'unica via per rientrare se perdi il telefono." });
+        }
+        // Scadenza del pending ricontrollata NEL CODICE (lezione di lib/tokens.js: la guardia
+        // e' la funzione; qui non c'e' nemmeno un indice TTL a fare le pulizie).
+        if (!user.twoFactorPending || !user.twoFactorPendingAt
+            || (Date.now() - new Date(user.twoFactorPendingAt).getTime()) >= PENDING_2FA_TTL_MS) {
+            // BASSO (revisione del cumulativo 42a): un pending scaduto non serve piu' a
+            // nessuno - ripulirlo invece di lasciarlo sul documento a tempo indeterminato (chi
+            // apre la configurazione e non la finisce se lo porterebbe dietro per sempre;
+            // inutilizzabile senza /enable, ma resta materiale di credenziale dormiente).
+            if (user.twoFactorPending) {
+                await User.updateOne({ _id: user._id }, { $unset: { twoFactorPending: 1, twoFactorPendingAt: 1 } });
+            }
+            return res.status(400).json({ error: 'La configurazione è scaduta. Ricomincia dall\'inizio.' });
+        }
+
+        const { code } = req.body || {};
+        const codice = typeof code === 'string' ? code.trim() : '';
+        let esito;
+        try {
+            esito = totp.verificaCodice(user.twoFactorPending, codice);
+        } catch (e) {
+            console.error('2FA enable: segreto pending non verificabile per', String(user._id), '-', String(e.message).split(':')[0]);
+            // Stesso motivo del ramo sopra: un pending corrotto non e' piu' recuperabile.
+            await User.updateOne({ _id: user._id }, { $unset: { twoFactorPending: 1, twoFactorPendingAt: 1 } });
+            return res.status(400).json({ error: 'La configurazione è scaduta. Ricomincia dall\'inizio.' });
+        }
+        if (!esito.ok) {
+            // SOLO in attivazione: si dice di QUANTO e' sfasato l'orologio del telefono
+            // invece di lasciare a indovinare. NON si accetta comunque (allargare la
+            // finestra per comodita' e' il modo di indebolire il meccanismo senza accorgersene).
+            let scartoMinuti;
+            try {
+                const passi = totp.scartoDiPasso(user.twoFactorPending, codice);
+                if (passi !== null && passi !== 0) scartoMinuti = Math.round(passi * totp.PASSO_SECONDI / 60);
+            } catch { /* segreto rotto: gia' gestito dal ramo esito qui sopra */ }
+            return res.status(401).json(scartoMinuti ? { error: 'Codice non valido.', scartoMinuti } : { error: 'Codice non valido.' });
+        }
+
+        // UN SOLO updateOne: segreto + data + 10 impronte + il passo appena speso, e via il
+        // pending. Cosi' non esiste nessuno stato intermedio "acceso ma senza codici".
+        const codici = totp.generaCodiciRecupero();
+        const attivoDal = new Date();
+        await User.updateOne(
+            { _id: user._id },
+            {
+                $set: {
+                    twoFactorSecret: user.twoFactorPending,
+                    twoFactorEnabledAt: attivoDal,
+                    twoFactorRecoveryHashes: codici.map(c => totp.improntaCodiceRecupero(String(user._id), c)),
+                    twoFactorLastStep: esito.passo
+                },
+                $unset: { twoFactorPending: 1, twoFactorPendingAt: 1 }
+            }
+        );
+        res.json({ success: true, recoveryCodes: codici, attivoDal });
+    } catch (e) {
+        console.error('Errore 2FA enable:', e);
+        res.status(500).json({ error: 'Errore interno' });
+    }
+});
+
+// POST /api/auth/2fa/disable - spegne il 2FA. Servono password E secondo fattore (codice
+// TOTP o codice di recupero). D-5: NON chiude le altre sessioni (come /change-password).
+router.post('/2fa/disable', requireAuth, secondoFattoreLimiter, duefattoriLimiter, async (req, res) => {
+    try {
+        const user = await caricaUtentePer2fa(req, res);
+        if (!user) return;
+        if (!user.twoFactorEnabledAt) {
+            return res.status(400).json({ error: 'Il secondo fattore non è attivo su questo account.' });
+        }
+        const { password } = req.body || {};
+        const okPassword = typeof password === 'string' && password && await bcrypt.compare(password, user.passwordHash);
+        if (!okPassword) {
+            return res.status(401).json({ error: 'Password non corretta.' });
+        }
+        const v = await verificaSecondoFattore(user, req.body || {});
+        if (!v.ok) {
+            return res.status(401).json({
+                error: v.motivo === 'giaUsato'
+                    ? 'Questo codice è già stato usato: aspetta quello nuovo.'
+                    : 'Codice del secondo fattore non valido.'
+            });
+        }
+        // $unset di TUTTI i campi: un twoFactorRecoveryHashes sopravvissuto tornerebbe buono
+        // alla riattivazione successiva - codici che l'utente crede morti e che invece aprono.
+        await User.updateOne(
+            { _id: user._id },
+            { $unset: {
+                twoFactorSecret: 1, twoFactorPending: 1, twoFactorPendingAt: 1,
+                twoFactorEnabledAt: 1, twoFactorLastStep: 1, twoFactorRecoveryHashes: 1
+            } }
+        );
+        // Opzione C (blocco 5): se c'era un recupero ritardato in corso, l'utente ha appena
+        // ritrovato il telefono e spento il 2FA da se' - il recupero non ha piu' oggetto.
+        // Lasciarlo maturare farebbe comparire un banner d'allarme per una cosa che non e'
+        // piu' un pericolo: il modo migliore per insegnare alla gente a ignorare quel banner.
+        // updateMany, non updateOne (revisione del cumulativo 42a, ALTO-3): avviaOTrovaRecupero
+        // puo' lasciare per un istante piu' di un vivo (corsa non chiusa, lib/recuperoAccount.js)
+        // - con updateOne ne restava annullato solo uno, e il secondo continuava a maturare
+        // senza che ne restasse traccia visibile qui.
+        await AccountRecovery.updateMany(
+            { userId: user._id, annullatoIl: { $exists: false }, completatoIl: { $exists: false } },
+            { $set: { annullatoIl: new Date(), annullatoPerche: '2fa-disattivato' } }
+        );
+        res.json({ success: true });
+    } catch (e) {
+        console.error('Errore 2FA disable:', e);
+        res.status(500).json({ error: 'Errore interno' });
+    }
+});
+
+// POST /api/auth/2fa/recovery-codes - rigenera i 10 codici di recupero, sostituendo l'intero
+// array. D-3: serve password + codice TOTP, NON un codice di recupero al posto del TOTP (chi
+// ha perso il telefono passa dalla disattivazione, dove il codice di recupero E' accettato).
+router.post('/2fa/recovery-codes', requireAuth, secondoFattoreLimiter, duefattoriLimiter, async (req, res) => {
+    try {
+        const user = await caricaUtentePer2fa(req, res);
+        if (!user) return;
+        if (!user.twoFactorEnabledAt) {
+            return res.status(400).json({ error: 'Il secondo fattore non è attivo su questo account.' });
+        }
+        const { password, code } = req.body || {};
+        const okPassword = typeof password === 'string' && password && await bcrypt.compare(password, user.passwordHash);
+        if (!okPassword) {
+            return res.status(401).json({ error: 'Password non corretta.' });
+        }
+        const codice = typeof code === 'string' ? code.trim() : '';
+        let esito;
+        try {
+            esito = totp.verificaCodice(user.twoFactorSecret, codice);
+        } catch (e) {
+            console.error('2FA recovery-codes: segreto non verificabile per', String(user._id), '-', String(e.message).split(':')[0]);
+            return res.status(401).json({ error: 'Codice del secondo fattore non valido.' });
+        }
+        if (!esito.ok) {
+            return res.status(401).json({ error: 'Codice del secondo fattore non valido.' });
+        }
+        if (!(await spendiPasso(user._id, esito.passo))) {
+            return res.status(401).json({ error: 'Questo codice è già stato usato: aspetta quello nuovo.' });
+        }
+        const codici = totp.generaCodiciRecupero();
+        await User.updateOne(
+            { _id: user._id },
+            { $set: { twoFactorRecoveryHashes: codici.map(c => totp.improntaCodiceRecupero(String(user._id), c)) } }
+        );
+        res.json({ success: true, recoveryCodes: codici });
+    } catch (e) {
+        console.error('Errore 2FA recovery-codes:', e);
+        res.status(500).json({ error: 'Errore interno' });
+    }
+});
+
+// =====================================================================================
+// RECUPERO RITARDATO SENZA SECONDO FATTORE (opzione C) - blocco 5 del piano
+//
+// Chi ha perso app authenticator + tutti i codici di recupero rientra dimostrando SOLO di
+// controllare la casella email - ma dopo un'ATTESA (AccountRecovery.DURATA_ATTESA_GIORNI),
+// durante la quale il proprietario legittimo vede un banner su ogni pagina e puo' annullare.
+// L'attesa + il banner SONO il meccanismo di sicurezza: l'email e' una cortesia (se la
+// casella e' gia' compromessa, l'email di avviso la legge l'attaccante).
+// =====================================================================================
+
+// Messaggio a schermo per uno stato di trovaRecuperoUtilizzabile() diverso da 'ok'.
+function messaggioStatoRecupero(stato) {
+    switch (stato) {
+        case 'nonMaturo':   return 'Questo link non è ancora attivo.';
+        case 'scaduto':     return 'Questo link è scaduto: avvia un nuovo recupero dalla pagina "password dimenticata".';
+        case 'annullato':   return 'Questo recupero è stato annullato.';
+        case 'completato':  return 'Questo recupero è già stato completato.';
+        default:            return 'Questo link non è valido.';
+    }
+}
+
+// POST /api/auth/recovery/start - avvia il recupero. requireAuth NO (chi la chiama non puo'
+// entrare per definizione). La prova che serve e' GIA' in mano a chi chiama: un token
+// PasswordReset valido, cioe' il link arrivato nella casella. NON si accetta un'email nel
+// body - sarebbe un modo per far partire un recupero contro chiunque conoscendone solo
+// l'indirizzo, e il banner d'allarme diventerebbe uno strumento di molestia.
+router.post('/recovery/start', recuperoLimiter, emailLimiter, async (req, res) => {
+    try {
+        const { token } = req.body || {};
+        const documento = await trovaTokenRecupero(token);
+        if (!documento) {
+            return res.status(400).json({ error: 'Questo link non è più valido: potrebbe essere scaduto o già usato. Chiedine un altro.' });
+        }
+        const user = await User.findById(documento.userId);
+        if (!user || user.deletedAt) {
+            return res.status(400).json({ error: 'Questo link non è più valido. Chiedine un altro.' });
+        }
+        if (user.isDemoAccount) {
+            return res.status(403).json({ error: 'Gli account demo non usano il secondo fattore.' });
+        }
+        if (!user.twoFactorEnabledAt) {
+            return res.status(400).json({ error: 'Questo account non ha il secondo fattore attivo: puoi reimpostare la password direttamente.' });
+        }
+
+        const { recupero, token: tokenRecupero, gia } = await avviaOTrovaRecupero(user._id);
+        if (gia) {
+            // Gia' in corso: NESSUNA email, NESSUNO spostamento di maturaIl, NESSUN token nuovo.
+            return res.json({ avviato: false, giaInCorso: true, maturaIl: recupero.maturaIl, avviatoIl: recupero.createdAt });
+        }
+
+        // L'email di avviso e' SINCRONA e il suo fallimento e' un ERRORE - unico punto del
+        // progetto dove va detto, perche' e' CONTRO la regola di /register ("l'invio non puo'
+        // far fallire"). Li' il ragionamento era: entrare nel sito non deve dipendere da un
+        // servizio esterno. Qui e' il contrario: l'email E' meta' dell'avviso, e avviare in
+        // silenzio un conto alla rovescia verso la presa di un account e' il vincolo hard 7
+        // al rovescio. Se inviaEmail fallisce: si annulla la creazione e si risponde 503.
+        const linkCompletamento = `${indirizzoBase()}/reimposta-password?recupero=${tokenRecupero}`;
+        const dataMaturita = new Date(recupero.maturaIl).toLocaleString('it-IT', {
+            timeZone: 'Europe/Rome',
+            day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
+        }) + ' (ora italiana)';
+        const { oggetto, testo, html } = emailRecuperoRitardato({
+            nome: user.nome || user.username, dataMaturita, linkCompletamento
+        });
+        const partita = await inviaEmail({ a: user.email, oggetto, testo, html });
+        if (!partita) {
+            await AccountRecovery.deleteOne({ _id: recupero._id });
+            return res.status(503).json({ error: "Non riusciamo a mandare l'email di avviso in questo momento. Riprova più tardi." });
+        }
+
+        // IL TOKEN PasswordReset NON SI CONSUMA: serve ancora - se l'utente ritrova i codici
+        // di recupero nel frattempo puo' usare lo stesso link per il reset normale col 2FA.
+        res.json({ avviato: true, maturaIl: recupero.maturaIl });
+    } catch (e) {
+        console.error('Errore avvio recupero ritardato:', e);
+        res.status(500).json({ error: 'Errore interno' });
+    }
+});
+
+// GET /api/auth/recovery/status - stato per il BANNER globale. requireAuth SI'.
+// Rotta A SE' e non un campo dentro GET /me: refreshState() sostituisce currentUser con la
+// versione di GET /api/users e perde i campi non portati (e' successo a profilePhoto, due
+// sessioni per rimetterlo a posto). Un banner di SICUREZZA che sparisce da solo al primo
+// refreshState e' peggio di un banner che non c'e' mai stato.
+router.get('/recovery/status', requireAuth, async (req, res) => {
+    try {
+        const rec = await recuperoVivoDi(req.session.userId);
+        if (!rec) return res.json({ inSospeso: false });
+        res.json({ inSospeso: true, maturaIl: rec.maturaIl, avviatoIl: rec.createdAt });
+    } catch (e) {
+        console.error('Errore stato recupero:', e);
+        res.status(500).json({ error: 'Errore interno' });
+    }
+});
+
+// POST /api/auth/recovery/cancel - annulla. requireAuth SI', ed e' tutto il punto: questa
+// sessione ha GIA' passato il 2FA. NON serve ne' la password ne' un codice TOTP: chi e'
+// dentro ha gia' dimostrato entrambi all'apertura, e questa e' l'azione DIFENSIVA - metterci
+// un attrito significa che qualcuno, di fretta, non la completa. L'asimmetria e' voluta:
+// avviare costa, annullare e' gratis. NON si cancella il documento (la storia e' informazione).
+// updateMany, non updateOne (revisione del cumulativo 42a, ALTO-3): stesso motivo del commento
+// gemello in /2fa/disable qui sopra - la corsa non chiusa di avviaOTrovaRecupero() puo'
+// lasciare per un istante piu' di un recupero vivo, e questo e' IL bottone difensivo
+// dell'opzione C: deve spegnerli tutti, non uno a caso.
+router.post('/recovery/cancel', requireAuth, duefattoriLimiter, async (req, res) => {
+    try {
+        const esito = await AccountRecovery.updateMany(
+            { userId: req.session.userId, annullatoIl: { $exists: false }, completatoIl: { $exists: false } },
+            { $set: { annullatoIl: new Date(), annullatoPerche: 'utente' } }
+        );
+        if (esito.modifiedCount < 1) {
+            return res.status(404).json({ error: 'Nessun recupero da annullare.' });
+        }
+        res.json({ annullato: true });
+    } catch (e) {
+        console.error('Errore annullamento recupero:', e);
+        res.status(500).json({ error: 'Errore interno' });
+    }
+});
+
+// POST (non GET) /api/auth/recovery/check - nessuna autenticazione. A differenza della
+// gemella /reset-password/check (token da un'ora, GET va bene), qui il token vale fino a 21
+// giorni e chi lo usa ottiene password nuova + 2FA spento + tutte le sessioni chiuse: un
+// token cosi' prezioso non deve finire in una query string, dove i log HTTP della piattaforma,
+// i referrer e i proxy di mezzo lo conserverebbero (revisione del cumulativo 42a, MEDIO-4). Lo
+// chiama solo JS (reimposta-password.html), nessuna navigazione del browser dipende dal GET.
+// Lo STATO distinto ('nonMaturo' + maturaIl) permette alla pagina di dire "questo link
+// funzionera' dal <data>" invece di "link non valido" (falso, e farebbe buttare via un link
+// ancora buono).
+router.post('/recovery/check', async (req, res) => {
+    try {
+        const { stato, maturaIl } = await trovaRecuperoUtilizzabile(req.body && req.body.token);
+        res.json(maturaIl ? { stato, maturaIl } : { stato });
+    } catch (e) {
+        console.error('Errore verifica link recupero:', e);
+        res.json({ stato: 'assente' });
+    }
+});
+
+// POST /api/auth/recovery/complete - { token, password }. La maturita' si controlla QUI,
+// pigramente, nel momento in cui l'utente segue il link. NESSUNO SCHEDULER.
+router.post('/recovery/complete', authLimiter, async (req, res) => {
+    try {
+        const { token, password } = req.body || {};
+        if (typeof password !== 'string' || password.length < MIN_PASSWORD) {
+            return res.status(400).json({ error: `La password deve avere almeno ${MIN_PASSWORD} caratteri` });
+        }
+
+        // bcrypt.hash PRIMA del CAS (revisione del cumulativo 42a, BASSO): non dipende dal suo
+        // esito, e togliendolo dalla finestra fra "CAS riuscito" e "utente aggiornato" si
+        // accorcia il tratto in cui un errore in mezzo (findById, ripristinaAccount) lascia il
+        // recupero segnato completatoIl senza aver davvero cambiato niente - chi lo trova cosi'
+        // deve rifare 14 giorni di attesa per un link che, di fatto, ha gia' usato.
+        const nuovoHash = await bcrypt.hash(password, 10);
+
+        const { stato, recupero } = await trovaRecuperoUtilizzabile(token);
+        if (stato !== 'ok') {
+            return res.status(400).json({ stato, error: messaggioStatoRecupero(stato) });
+        }
+
+        // CAS PRIMA di toccare l'utente: rende il completamento IDEMPOTENTE (come
+        // scrubAccount) e fa in modo che il pezzo IRREVERSIBILE (password + 2FA spento +
+        // sessioni chiuse) lo esegua UN SOLO chiamante. Se due richieste con lo stesso token
+        // arrivano insieme, qui ne passa una e lo decide MongoDB.
+        const marcato = await AccountRecovery.updateOne(
+            { _id: recupero._id, completatoIl: { $exists: false } },
+            { $set: { completatoIl: new Date() } }
+        );
+        if (marcato.modifiedCount !== 1) {
+            return res.status(400).json({ stato: 'completato', error: messaggioStatoRecupero('completato') });
+        }
+
+        const user = await User.findById(recupero.userId);
+        if (!user || user.deletedAt) {
+            // Il recupero e' gia' marcato completato sopra: non resta vivo. Un account
+            // scrubato non si recupera.
+            return res.status(400).json({ error: 'Questo link non è più valido.' });
+        }
+        if (user.pendingDeletionAt) {
+            // Come login e reset: seguire questo link E' un percorso di accesso a tutti gli
+            // effetti, quindi annulla l'eliminazione in corso.
+            await ripristinaAccount(user);
+        }
+
+        // UN SOLO updateOne: nuova password + IL 2FA SI SPEGNE. Non e' un effetto
+        // collaterale, e' il senso: chi arriva qui ha dimostrato di NON poter usare il 2FA.
+        // Lasciarlo acceso = consegnare una password nuova su un account che continua a
+        // chiedere un codice che nessuno sa produrre, cioe' rifare il lockout che questo
+        // intero meccanismo esiste per evitare.
+        await User.updateOne({ _id: user._id }, {
+            $set: { passwordHash: nuovoHash },
+            $unset: {
+                twoFactorSecret: 1, twoFactorPending: 1, twoFactorPendingAt: 1,
+                twoFactorEnabledAt: 1, twoFactorLastStep: 1, twoFactorRecoveryHashes: 1
+            }
+        });
+
+        // I link di reset in giro non valgono piu'.
+        await PasswordReset.deleteMany({ userId: user._id });
+
+        // IL MOMENTO CHE NON SI TORNA INDIETRO: se a completare e' l'attaccante, il vero
+        // proprietario viene buttato fuori da tutti i dispositivi, con la password cambiata e
+        // il 2FA spento. Se a completare e' il vero proprietario, succede lo stesso
+        // all'attaccante. NON c'e' modo di distinguerli: e' la conseguenza accettata
+        // dell'opzione C, e il motivo per cui i giorni di banner sono l'unica difesa che conta.
+        await chiudiTutteLeSessioni(user._id);
+
+        req.session.regenerate((err) => {
+            if (err) {
+                console.error('Errore rigenerazione sessione dopo il recupero:', err);
+                // La password NUOVA e' gia' salvata: non e' un fallimento, va solo rifatto
+                // l'accesso a mano.
+                return res.json({ success: true, loggedIn: false });
+            }
+            req.session.userId = user._id.toString();
+            res.json({ success: true, loggedIn: true });
+        });
+    } catch (e) {
+        console.error('Errore completamento recupero:', e);
         res.status(500).json({ error: 'Errore interno' });
     }
 });
@@ -308,7 +961,9 @@ router.get('/me', async (req, res) => {
     // a schema per tenerlo fuori da GET /api/users (lista), ma questa rotta restituisce SOLO
     // il proprio documento - nessun rischio RAM/privacy a riportarlo qui, ed e' il punto dove
     // il client popola currentUser all'avvio (app.js, checkAuthAndShowGate).
-    const user = await User.findById(req.session.userId).select('+profilePhoto');
+    // +twoFactorRecoveryHashes (MEDIO-5, revisione del cumulativo 42a): serve SOLO per
+    // contare, mai per esporre l'array - vedi piu' sotto.
+    const user = await User.findById(req.session.userId).select('+profilePhoto +twoFactorRecoveryHashes');
     if (!user) {
         return req.session.destroy(() => res.status(401).json({ error: 'Non autenticato' }));
     }
@@ -317,7 +972,17 @@ router.get('/me', async (req, res) => {
     if (user.pendingDeletionAt || user.deletedAt) {
         return req.session.destroy(() => res.status(401).json({ error: 'Non autenticato' }));
     }
-    res.json(user);
+    const risposta = user.toJSON();
+    // MEDIO-5: il piano (§7) prevedeva un avviso quando i codici di recupero scarseggiano, ma
+    // nessuna rotta lo esponeva fuori dalla risposta del login - chi non fa un login a due
+    // passi dopo averli consumati (es. li rigenera e poi li usa da un'altra sessione) non lo
+    // scopriva mai, fino a perdere anche il telefono: il momento in cui non puo' piu' farci
+    // niente. SOLO il conteggio: user.toJSON() ha gia' tolto twoFactorRecoveryHashes (i dati
+    // sensibili non attraversano mai questa risposta, nemmeno per un istante nel corpo JSON).
+    if (user.twoFactorEnabledAt && Array.isArray(user.twoFactorRecoveryHashes)) {
+        risposta.recoveryCodesRimasti = user.twoFactorRecoveryHashes.length;
+    }
+    res.json(risposta);
 });
 
 // =====================================================================================
@@ -499,7 +1164,14 @@ router.post('/forgot-password', emailLimiter, async (req, res) => {
 router.get('/reset-password/check', async (req, res) => {
     try {
         const documento = await trovaTokenRecupero(req.query.token);
-        res.json({ valid: !!documento });
+        if (!documento) return res.json({ valid: false });
+        // Blocco 3 del piano 2FA: se l'utente ha il secondo fattore attivo, la pagina deve
+        // mostrare il campo del codice dal primo istante invece di far compilare tutto e poi
+        // rifiutare (il modo migliore per far credere che il link sia rotto). Non e' una
+        // fuga: chi interroga questa rotta HA GIA' il token, cioe' controlla la casella, e
+        // lo scoprirebbe un attimo dopo con la POST.
+        const u = await User.findById(documento.userId).select('twoFactorEnabledAt');
+        res.json({ valid: true, twoFactorRequired: !!(u && u.twoFactorEnabledAt) });
     } catch (e) {
         console.error('Errore verifica token recupero:', e);
         res.json({ valid: false });
@@ -507,6 +1179,11 @@ router.get('/reset-password/check', async (req, res) => {
 });
 
 // Passo 3: si sceglie la password nuova.
+// SENZA secondoFattoreLimiter (tolto qui nella revisione del cumulativo 42a, deviazione d):
+// prima di validare il token non esiste ne' pending2fa ne' session.userId, quindi la sua
+// chiave per-persona sarebbe comunque ricaduta sull'IP - condividerlo con /login/2fa apriva
+// solo un modo per far ricevere 429 sul login a due passi di un altro utente sullo stesso
+// NAT. Il freno vero sul codice 2FA qui e' tentativi2fa (5 per link, vedi piu' sotto).
 router.post('/reset-password', authLimiter, async (req, res) => {
     try {
         const { token, password } = req.body || {};
@@ -520,7 +1197,7 @@ router.post('/reset-password', authLimiter, async (req, res) => {
             return res.status(400).json({ error: 'Questo link non è più valido: potrebbe essere scaduto o già usato. Chiedine un altro.' });
         }
 
-        const user = await User.findById(documento.userId);
+        const user = await User.findById(documento.userId).select('+twoFactorSecret +twoFactorRecoveryHashes');
         if (!user) {
             await PasswordReset.deleteOne({ _id: documento._id });
             return res.status(400).json({ error: 'Questo link non è più valido. Chiedine un altro.' });
@@ -532,6 +1209,40 @@ router.post('/reset-password', authLimiter, async (req, res) => {
             await PasswordReset.deleteOne({ _id: documento._id });
             return res.status(400).json({ error: 'Questo link non è più valido. Chiedine un altro.' });
         }
+
+        // --- Secondo fattore TOTP (blocco 3 del piano 2FA) ---
+        // Con il 2FA attivo il link da solo non reimposta niente: serve anche il codice
+        // (TOTP o di recupero). Il TOKEN RESTA INTATTO su un 2FA mancante o sbagliato - una
+        // cifra storta non deve costringere a rifare tutto il giro dell'email (tetto 3/ora
+        // per indirizzo). Si cancella dopo 5 tentativi a vuoto (tentativi2fa sul
+        // PasswordReset): e' L'UNICO freno sui tentativi di codice qui (niente
+        // secondoFattoreLimiter su questa rotta, vedi il commento sulla rotta piu' sopra) -
+        // senza, un link da solo varrebbe come indovinare un TOTP con tempo illimitato.
+        // ripristinaAccount() resta PIU' SOTTO, dopo questo controllo: annullare
+        // l'eliminazione e' un atto da login a tutti gli effetti, non lo si fa sulla sola
+        // casella. INERTE finche' nessuno accende il 2FA (blocco 4).
+        if (user.twoFactorEnabledAt) {
+            const v = await verificaSecondoFattore(user, req.body || {});
+            if (!v.ok) {
+                if (v.motivo === 'assente') {
+                    return res.status(401).json({ twoFactorRequired: true });
+                }
+                const aggiornato = await PasswordReset.findOneAndUpdate(
+                    { _id: documento._id }, { $inc: { tentativi2fa: 1 } }, { new: true }
+                );
+                if (!aggiornato || (aggiornato.tentativi2fa || 0) >= 5) {
+                    await PasswordReset.deleteOne({ _id: documento._id });
+                    return res.status(400).json({ error: 'Troppi tentativi con un codice non valido: chiedi un nuovo link.' });
+                }
+                return res.status(401).json({
+                    twoFactorRequired: true,
+                    error: v.motivo === 'giaUsato'
+                        ? 'Questo codice è già stato usato: aspetta quello nuovo.'
+                        : 'Codice non valido.'
+                });
+            }
+        }
+
         // Account in eliminazione: dimostrare di possedere la casella E scegliere una
         // password nuova vale quanto un login -> l'eliminazione si ANNULLA. Senza, chi ha
         // dimenticato la password userebbe questo link, si ritroverebbe dentro credendo di

@@ -112,6 +112,11 @@ function renderSettingsPage() {
         btnDelete.addEventListener("click", eliminaMioAccount);
     }
 
+    // Blocco 6 del piano 2FA: la card "Secondo fattore". Nasconde da se' la card ai demo
+    // e fa una query per lo stato del recupero ritardato (opzione C). IIFE a se'
+    // (public/js/twofactor.js), aggancia i propri eventi una volta sola.
+    if (typeof window.renderTwoFactorCard === "function") window.renderTwoFactorCard(usr);
+
     if (window.lucide) window.lucide.createIcons();
 }
 window.renderSettingsPage = renderSettingsPage;

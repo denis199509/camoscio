@@ -894,6 +894,18 @@ h5 {
     height: 18px;
 }
 
+/* Blocco 7 del piano 2FA: il banner "recupero in corso" riusa .emergency-banner (rosso) di
+   proposito - un tentativo di presa dell'account in corso E' un'emergenza. Il suo testo e'
+   piu' lungo di quello del Dead Man's Switch, quindi qui il contenuto va a capo su schermo
+   stretto invece di traboccare, e il pulsante non si stringe. */
+#recovery-banner .emergency-banner-content {
+    flex-wrap: wrap;
+    gap: 8px 12px;
+}
+#recovery-banner .emergency-banner-content .btn {
+    flex-shrink: 0;
+}
+
 /* Page container */
 .page-container {
     flex-grow: 1;
@@ -1992,6 +2004,68 @@ option {
     color: var(--color-text-muted);
     line-height: 1.7;
 }
+
+/* --- Secondo fattore TOTP (blocco 6 del piano 2FA) --- */
+
+/* Il QR va su fondo BIANCO: Camoscio e' a tema scuro (--bg-dark), moduli scuri su
+   fondo scuro non si leggono. Il padding e' anche la zona di rispetto visiva (la
+   createSvgTag di qrcode.js mette gia' un margin di 4 moduli dentro l'SVG). */
+.qr-box {
+    background: #fff;
+    padding: 12px;
+    border-radius: 8px;
+    width: max-content;
+    max-width: 100%;
+    margin: 10px 0;
+}
+.qr-box svg { display: block; width: 200px; height: 200px; max-width: 100%; }
+
+.tfa-secret-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+.tfa-secret-row code {
+    font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+    font-size: 1rem;
+    letter-spacing: 0.08em;
+    background: var(--bg-panel);
+    padding: 6px 10px;
+    border-radius: 6px;
+    word-break: break-all;
+}
+
+.tfa-btn-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+
+.tfa-error { color: var(--accent-red-text); margin: 6px 0 0; }
+
+/* Riquadro d'allarme "recupero in corso" - gemello del banner globale (blocco 7).
+   Rosso, come l'emergenza: un tentativo di presa dell'account IN corso e' un'emergenza. */
+.tfa-alert {
+    border: 1px solid var(--accent-red);
+    background: var(--accent-red-glow);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 14px;
+}
+.tfa-alert p { margin: 0 0 10px; }
+
+.tfa-recovery-list {
+    font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+    font-size: 1.05rem;
+    letter-spacing: 0.06em;
+    background: #fff;
+    color: #1a1a1a;
+    border-radius: 8px;
+    padding: 14px 14px 14px 40px;
+    margin: 10px 0;
+    line-height: 1.9;
+    columns: 2;
+}
+.tfa-salvati-check { display: block; margin: 12px 0; }
+.tfa-attivo-dal { color: var(--accent-green-text); }
 
 /* Timer Dead Man */
 .timer-display-large {

@@ -404,6 +404,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     // l'ascoltatore del tasto e' protetto da dataset.collegato e non si aggancia due volte.
     setupEmailVerifyBanner();
 
+    // Blocco 7 del piano 2FA: il banner "recupero in corso". Stesso motivo della fascia
+    // email qui sopra - subito, non in fondo a initApp() - e per una ragione in piu': e'
+    // il meccanismo di sicurezza dell'opzione C, deve comparire alla prima schermata utile.
+    aggiornaBannerRecupero();
+
     // STESSO BUG DEL 26/07/2026 QUI SOPRA, trovato di nuovo il 06/08/2026 mentre si
     // indagava il punto 7 (cambio password dal profilo): initProfileModule() collegava i
     // pulsanti della card profilo (cambio password, salva bio/foto, esperto locale) da
@@ -473,6 +478,9 @@ async function initApp() {
 
         // Fascia "conferma il tuo indirizzo email"
         setupEmailVerifyBanner();
+        // Banner "recupero in corso" (blocco 7): riallineato dopo refreshState, se lo stato
+        // e' cambiato altrove fra il caricamento pagina e la fine di initApp.
+        aggiornaBannerRecupero();
 
         // Forza il render della dashboard iniziale
         renderDashboard();
@@ -488,6 +496,34 @@ async function initApp() {
                         "Bentornato: l'eliminazione dell'account è stata annullata. Il timer di sicurezza era stato disarmato (riattivalo se ti serve); se eri l'unico amministratore di una squadra, il ruolo è passato a un altro membro.",
                         "success"
                     );
+                }
+            }
+        } catch (e) {}
+
+        // MEDIO-5 (revisione del cumulativo 42a): avviso sui codici di recupero rimasti dopo
+        // un login-a-due-passi fatto con UN CODICE (mai col TOTP - auth.js lo manda solo in
+        // quel caso). Senza, il piano (§7) prevedeva l'avviso ma nessuna pagina lo mostrava
+        // mai: si scopriva di averli finiti solo perdendo anche il telefono.
+        try {
+            const rimastiRaw = sessionStorage.getItem("camoscio_msg_codici_recupero");
+            if (rimastiRaw !== null) {
+                sessionStorage.removeItem("camoscio_msg_codici_recupero");
+                const rimasti = parseInt(rimastiRaw, 10);
+                if (window.showToast && Number.isFinite(rimasti)) {
+                    let modello, tipo;
+                    if (rimasti === 0) {
+                        modello = T("settings.2faCodiciFinitiAvviso") ||
+                            "Hai appena usato l'ultimo codice di recupero. Generane di nuovi da Impostazioni prima di restare senza.";
+                        tipo = "error";
+                    } else if (rimasti <= 2) {
+                        modello = T("settings.2faCodiciPochiAvviso") ||
+                            "Ti restano solo {n} codici di recupero: valuta di generarne di nuovi da Impostazioni.";
+                        tipo = "error";
+                    } else {
+                        modello = T("settings.2faCodiceUsatoAvviso") || "Codice di recupero usato: te ne restano {n}.";
+                        tipo = "success";
+                    }
+                    window.showToast(modello.replace("{n}", String(rimasti)), tipo);
                 }
             }
         } catch (e) {}
@@ -534,6 +570,11 @@ let ultimaVerificaFotoPropria = 0;
 const INTERVALLO_VERIFICA_FOTO_PROPRIA_MS = 5 * 60 * 1000;
 document.addEventListener('visibilitychange', async () => {
     if (document.visibilityState !== 'visible') return;
+    // Blocco 7 del piano 2FA: il banner "recupero in corso" si riallinea quando la scheda
+    // torna visibile - una scheda lasciata aperta per giorni e' il caso NORMALE di questo
+    // sito, e il banner deve comparire anche li'. PRIMA del freno sulla foto (che ha una
+    // soglia di 5 minuti): questo controllo e' leggero e non deve dipendere da quel timer.
+    aggiornaBannerRecupero();
     if (Date.now() - ultimaVerificaFotoPropria < INTERVALLO_VERIFICA_FOTO_PROPRIA_MS) return;
     ultimaVerificaFotoPropria = Date.now();
     const usr = window.CamoscioState.currentUser;
@@ -1800,6 +1841,99 @@ function setupEmailVerifyBanner() {
             } finally {
                 bottone.disabled = false;
                 bottone.textContent = testoIniziale;
+            }
+        });
+    }
+
+    if (window.lucide) lucide.createIcons();
+}
+
+// Banner globale "recupero account in corso" (opzione C, blocco 7 del piano 2FA).
+// QUESTO NON E' UN ELEMENTO DI INTERFACCIA: e' il meccanismo di sicurezza. Se la casella
+// email e' compromessa, l'avviso via email lo legge l'attaccante; l'unico canale che
+// l'attaccante NON controlla e' questa sessione autenticata, che nei 14 giorni continua a
+// fare login col 2FA. Percio': rosso, non dismissibile, il pulsante "Annulla" DENTRO il
+// banner (un passaggio in piu' e' un passaggio dove qualcuno si perde).
+//
+// LO STATO NON STA IN currentUser: sta in window.CamoscioState.recuperoInSospeso, riempito
+// da GET /api/auth/recovery/status. refreshState() rimpiazza currentUser con la versione di
+// GET /api/users e qualunque campo non portato da quella lista sparisce IN SILENZIO (e'
+// successo a profilePhoto: MEDIO 31a, poi B-5 32a, due sessioni per rimetterlo a posto). Un
+// banner di sicurezza che sparisce da solo al primo refreshState e' peggio di uno che non
+// c'e' mai stato: da' la falsa impressione di aver controllato.
+async function aggiornaBannerRecupero() {
+    const banner = document.getElementById("recovery-banner");
+    const usr = window.CamoscioState.currentUser;
+    if (!banner || !usr) return;
+    // I demo non hanno il 2FA, quindi non hanno recuperi: si evita la chiamata a ogni
+    // visibilitychange (la rotta risponderebbe comunque inSospeso:false).
+    if (usr.isDemoAccount) { banner.classList.add("hidden"); return; }
+
+    let stato;
+    try {
+        const res = await fetch('/api/auth/recovery/status');
+        if (!res.ok) return;   // vedi il fail-safe qui sotto
+        stato = await res.json();
+    } catch (e) {
+        // FAIL-SAFE: se la chiamata fallisce (rete assente, Render addormentato) il banner
+        // NON si nasconde se era gia' visibile - nascondere un allarme perche' non si e'
+        // riusciti a confermarlo e' il modo esatto in cui un allarme diventa inutile. Alla
+        // prima chiamata fallita, senza stato precedente, il banner semplicemente non
+        // compare: non c'e' niente di meglio da fare, ma e' una scelta, non una dimenticanza.
+        return;
+    }
+
+    const inSospeso = !!(stato && stato.inSospeso);
+    window.CamoscioState.recuperoInSospeso = inSospeso ? stato : null;
+    banner.classList.toggle("hidden", !inSospeso);
+    if (!inSospeso) return;
+
+    const quando = document.getElementById("recovery-banner-quando");
+    if (quando) {
+        const loc = (window.CamoscioI18n && window.CamoscioI18n.getLang() === 'en') ? 'en-GB' : 'it-IT';
+        try {
+            // timeZone esplicito (revisione del cumulativo 42a, cluster i18n): senza, si legge
+            // il fuso del dispositivo di chi guarda invece dell'ora italiana vera - trappola
+            // UTC/ora locale gia' pagata piu' volte, qui sulla data che decide quando un
+            // recupero completa. I gemelli (reimposta-password.html, twofactor.js) hanno lo
+            // stesso fix.
+            quando.textContent = new Date(stato.maturaIl).toLocaleString(loc, {
+                timeZone: 'Europe/Rome',
+                day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
+            });
+        } catch { quando.textContent = String(stato.maturaIl); }
+    }
+
+    const btn = document.getElementById("btn-recovery-cancel");
+    if (btn && !btn.dataset.collegato) {
+        btn.dataset.collegato = "1";
+        btn.addEventListener("click", async () => {
+            btn.disabled = true;
+            try {
+                const res = await fetch('/api/auth/recovery/cancel', { method: 'POST' });
+                const dati = await res.json().catch(() => ({}));
+                if (res.ok) {
+                    // Il server ha appena annullato TUTTI i recuperi vivi (updateMany, revisione
+                    // del cumulativo 42a, ALTO-3) - si ricontrolla lo stato invece di nascondere
+                    // il banner a mano: e' il server a sapere se e' rimasto qualcosa, non
+                    // l'ottimismo del click (con la vecchia updateOne poteva restarne uno vivo).
+                    await aggiornaBannerRecupero();
+                    // Stessa chiave i18n del riquadro gemello in twofactor.js (revisione del
+                    // cumulativo 42a): prima questo toast era scritto a mano solo in italiano,
+                    // il gemello lo traduceva - due copie della stessa frase che divergono.
+                    window.showToast(T("settings.recuperoAnnullatoAvviso") ||
+                        "Recupero annullato. Attenzione: chi l'ha avviato ha letto un'email arrivata nella tua casella. Cambia la password della tua email, e valuta di cambiare anche quella di Camoscio.", "success");
+                    // il pannello Impostazioni ha un riquadro gemello: riallinealo se e' aperto
+                    if (typeof window.renderTwoFactorCard === 'function' && window.CamoscioState.currentUser) {
+                        window.renderTwoFactorCard(window.CamoscioState.currentUser);
+                    }
+                } else {
+                    window.showToast(dati.error || "Non c'è nessun recupero da annullare.", "error");
+                }
+            } catch (e) {
+                window.showToast("Impossibile contattare il server. Riprova.", "error");
+            } finally {
+                btn.disabled = false;
             }
         });
     }

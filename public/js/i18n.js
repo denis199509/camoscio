@@ -309,11 +309,21 @@
             'common.elimina': 'Delete',
             'common.cancella': 'Cancel',
             'common.rimuovi': 'Remove',
+            // Chiavi mancanti trovate dalla revisione del cumulativo 42a (BASSO): i
+            // data-i18n puntavano a chiavi mai aggiunte al dizionario, quindi restavano
+            // sempre in italiano anche con l'interfaccia in inglese senza che si notasse
+            // (il ripiego e' il testo originale, non un buco visibile).
+            'common.annulla': 'Cancel',
+            'common.conferma': 'Confirm',
             // Punto A-3.4: nome mostrato al posto di quello di un account eliminato. E'
             // interfaccia (non contenuto utente), quindi si traduce.
             'common.accountEliminato': 'Deleted account',
             'common.erroreServer': 'Could not reach the server.',
             'common.copia': 'Copy',
+            // Suffisso di reimposta-password.html accanto a una data forzata a Europe/Rome
+            // (revisione del cumulativo 42a): la chiave mancava, quindi il suffisso restava
+            // sempre in italiano anche con l'interfaccia in inglese.
+            'common.oraItaliana': ' (Italian time)',
 
             // Vocabolario fisso, vedi nota (1) qui sopra - il VALORE salvato resta
             // sempre la stringa italiana usata come chiave.
@@ -692,6 +702,52 @@
             'settings.eliminatoTitolo': 'Account deleted',
             'settings.eliminatoTesto': 'Your account has been deleted. You have 30 days to change your mind: log back in with your credentials to cancel. After that, your personal data will be permanently erased.',
             'settings.ripristinoFatto': "Welcome back: the account deletion has been cancelled. The safety timer had been switched off (turn it back on if you need it); if you were the only admin of a squad, the role passed to another member.",
+            // --- Secondo fattore TOTP (blocchi 6-7 del piano 2FA). L'italiano vive
+            //     nell'HTML/JS: qui SOLO l'inglese. Le stringhe di toast transitorie non
+            //     ancora tradotte tengono il loro ripiego italiano (t() -> null). ---
+            'settings.2faTitolo': 'Two-factor (Google Authenticator)',
+            'settings.2faDescSpento': 'With two-factor on, logging in needs your password AND a code that changes every 30 seconds, from an app like Google Authenticator or Aegis on your phone.',
+            'settings.2faNotaOnesta': 'If you lose your phone, you get back in with your <strong>recovery codes</strong>: save them now, somewhere other than your phone. If you lose those too, one way is left: recovery via your email, which takes <strong>14 days</strong> — long enough for you to notice if it wasn\'t you who asked. During that time you\'ll see a warning on every page of the site and can cancel it with one click.',
+            'settings.2faAttivaBtn': 'Turn on two-factor',
+            'settings.2faScansiona': 'Scan this code with your authenticator app. If the camera won\'t cooperate, type the key below by hand.',
+            'settings.2faOppureManuale': 'Key to type by hand:',
+            'settings.2faSegretoCopia': 'Copy',
+            'settings.2faVerificaLabel': 'Enter a code from the app to confirm:',
+            'settings.2faVerificaBtn': 'Verify and turn on',
+            'settings.2faAnnullaConfig': 'Cancel',
+            'settings.2faAttivoDal': 'Two-factor active since ',
+            'settings.2faRigeneraDesc': 'If you\'ve run out of recovery codes, or think someone has seen them, generate new ones: the old ones stop working.',
+            'settings.2faRigeneraBtn': 'Generate new codes',
+            'settings.2faDisattivaDesc': 'Turning two-factor off needs your password and a code.',
+            'settings.2faDisattivaBtn': 'Turn off',
+            'settings.2faPwdLabel': 'Password:',
+            'settings.2faCodiceLabel': 'Code from the app:',
+            'settings.2faCodiceApp': 'Code from the app:',
+            'settings.2faCodiceAppORecupero': 'Code from the app (or a recovery code):',
+            'settings.2faCodiciIstruzioni': '<strong>Save these 10 recovery codes</strong> somewhere safe, other than your phone. Each one works <strong>once</strong>, in place of the app code. We won\'t show them again.',
+            'settings.2faCodiciCopia': 'Copy',
+            'settings.2faCodiciScarica': 'Download',
+            'settings.2faCodiciStampa': 'Print',
+            'settings.2faCodiciSalvati': 'I\'ve saved them somewhere safe',
+            'settings.2faCodiciFinito': 'Done',
+            'settings.2faQrNonDisponibile': "Can't draw the QR: type the key below into your app by hand.",
+            'settings.2faAttivato': 'Two-factor is on.',
+            'settings.2faDisattivato': 'Two-factor turned off.',
+            'settings.2faCodiciRigenerati': 'New recovery codes generated: the old ones no longer work.',
+            'settings.recuperoTitolo': 'Account recovery in progress.',
+            'settings.recuperoTesto': 'Someone asked to get back into your account without the second-factor code. It completes on ',
+            'settings.recuperoTestoFine': "If it wasn't you, cancel it now.",
+            'settings.recuperoAnnullaBtn': 'Cancel the recovery',
+            'settings.recuperoAnnullatoAvviso': "Recovery cancelled. Warning: whoever started it read an email that reached your inbox. Change your email password, and consider changing your Camoscio one too.",
+            // Revisione del cumulativo 42a: password richiesta anche per accendere il 2FA
+            // (MEDIO-2), avviso sui codici di recupero rimasti (MEDIO-5, sia il toast subito
+            // dopo averne usato uno sia il badge permanente nella card acceso).
+            'settings.2faPwdRichiesta': 'Enter your password.',
+            'settings.2faCodiciFinitiAvviso': "You just used your last recovery code. Generate new ones from Settings before you run out.",
+            'settings.2faCodiciPochiAvviso': 'Only {n} recovery codes left: consider generating new ones from Settings.',
+            'settings.2faCodiceUsatoAvviso': 'Recovery code used: {n} left.',
+            'settings.2faCodiciRimastiPochi': 'Warning: only {n} recovery codes left.',
+            'settings.2faCodiciRimasti': '{n} recovery codes left.',
             'myProfile.rimuoviFoto': 'Remove photo',
             'myProfile.bioLabel': 'Bio (max 250 characters):',
             'myProfile.bioPlaceholder': 'Tell us something about yourself...',
@@ -1939,6 +1995,17 @@
             'auth.sending': 'Sending…',
             'auth.forgotDoneFallback': "If that address is registered, we've sent you an email.",
 
+            // --- Gate: secondo passo del login (blocco 8 del piano 2FA) ---
+            'auth.2faSubtitle': 'Open your authenticator app and type the 6-digit code.',
+            'auth.2faCodeLabel': '6-digit code:',
+            'auth.2faRecoveryLabel': 'Recovery code:',
+            'auth.2faSubmit': 'Verify and log in',
+            'auth.2faUseRecovery': "I don't have my phone: use a recovery code",
+            'auth.2faUseApp': 'Use the app code instead',
+            'auth.err.2faInvalid': 'Invalid code.',
+            'auth.err.2faExpired': 'The login session has expired: type your email and password again.',
+            'auth.err.2faNoCode': 'Enter the code.',
+
             // --- Gate: wizard di registrazione, testo statico (index.html) ---
             'auth.step1Title': '1. Basic details',
             'auth.step1Desc': 'The essential information to create your account.',
@@ -2081,6 +2148,29 @@
             'pwdReset.changeFailed': 'Could not change the password.',
             'pwdReset.doneLoggedIn': "You're already in: you can go back to the site and carry on.",
             'pwdReset.doneNotLoggedIn': 'You can now log in with the new password.',
+            // --- reimposta-password.html: secondo fattore + recupero ritardato (blocco 8) ---
+            'pwdReset.2faLabel': 'Second-factor code (6 digits):',
+            'pwdReset.2faRecoveryLabel': 'Recovery code:',
+            'pwdReset.2faUseRecovery': "I don't have my phone: use a recovery code",
+            'pwdReset.2faUseApp': 'Use the app code instead',
+            'pwdReset.serveCodice': 'The second-factor code is required.',
+            'pwdReset.nonHoNiente': "I have neither my phone nor the recovery codes",
+            'pwdReset.nonHoNienteConferma': "A recovery will be started that completes in 14 days. We'll send you an email, and meanwhile, every time you log in with your second factor you'll see a warning and can cancel it.",
+            'pwdReset.nonHoNienteBtn': 'Yes, start the recovery',
+            'pwdReset.recuperoErrore': 'Could not start the recovery.',
+            'pwdReset.recuperoAvviatoTitolo': 'Recovery started.',
+            'pwdReset.recuperoAvviatoNota1': 'It completes on',
+            'pwdReset.recuperoAvviatoNota2': "We've sent you an email. If you find your phone or the recovery codes in the meantime, come back here and use the normal link with your second factor.",
+            'pwdReset.recuperoAvviatoNota3': 'Until that day, every time you log in with your second factor you\'ll see a warning and can cancel this recovery with one click.',
+            'pwdReset.recuperoAttesaTitolo': 'This link is not active yet.',
+            'pwdReset.recuperoAttesaNota1': 'It will work from',
+            'pwdReset.recuperoAttesaMancano': '{n} days still to go.',
+            'pwdReset.recuperoAttesaNota2': "The wait is there to give you time to notice if it wasn't you who asked for the recovery. If it was you, do nothing: set this email aside and open it again when the time comes.",
+            'pwdReset.recuperoModuloTitolo': 'Choose your new password.',
+            'pwdReset.recuperoModulo2faOff': 'On completing, the second factor will be turned off: whoever gets here has shown they can no longer use it. You\'ll also be logged out of every other device.',
+            'pwdReset.recuperoAnnullato': 'This recovery has been cancelled.',
+            'pwdReset.recuperoCompletato': 'This recovery has already been completed.',
+            'pwdReset.recuperoScaduto': 'This link has expired: start a new recovery from the «forgot password» page.',
 
             // --- diagnostica-gps.html (strumento di debug GPS) ---
             //  Pagina autonoma, dipendenze zero: carica i18n.js a fine <body>

@@ -262,7 +262,53 @@ const userSchema = new mongoose.Schema({
     // spazio, vedi 02-Vincoli-Hard del vault).
     pendingDeletionAt: { type: Date, default: undefined },
     deletionScrubAt: { type: Date, default: undefined },
-    deletedAt: { type: Date, default: undefined }
+    deletedAt: { type: Date, default: undefined },
+
+    // --- 15. Secondo fattore TOTP (2FA "Google Authenticator") ---
+    // Opt-in, si accende da Impostazioni -> Sicurezza, invisibile ai 4 account demo. TUTTI
+    // default: undefined (vincolo hard 1, vedi 02-Vincoli-Hard del vault): la stragrande
+    // maggioranza dei documenti non avra' mai nessuno di questi campi.
+    // Piano operativo completo: C:\Users\lenovo\.claude\plans\camoscio-2fa-totp.md (sez. 1).
+    // NB al 10/09/2026 (BLOCCO 2 del piano): NESSUNA rotta scrive o legge ancora questi
+    // campi. Esistono - con le loro reti di sicurezza (il toJSON globale di db/mongo.js,
+    // ALWAYS_PRIVATE_FIELDS in routes/users.js, lo $unset in lib/accountDeletion.js) - PRIMA
+    // del codice che li usera' (blocchi 3+): la rete va posata prima del filo.
+    //
+    // twoFactorSecret: segreto ATTIVO, base32 RFC 4648 senza padding (32 caratteri = 160
+    // bit). select:false come passwordHash: e' una credenziale, non deve uscire da nessuna
+    // rotta per sbaglio. Chi lo legge lo chiede a mano con .select('+twoFactorSecret').
+    twoFactorSecret: { type: String, default: undefined, select: false },
+
+    // Segreto PROVVISORIO: generato da POST /2fa/setup, non ancora confermato. Campo
+    // SEPARATO da twoFactorSecret perche' finche' l'utente non ha dimostrato di saper
+    // leggere un codice da quel segreto, scriverlo su twoFactorSecret sarebbe consegnargli
+    // un lucchetto di cui non ha la chiave. twoFactorPendingAt lo fa scadere (15 minuti) e
+    // rende /setup idempotente fra due schede.
+    twoFactorPending: { type: String, default: undefined, select: false },
+    twoFactorPendingAt: { type: Date, default: undefined, select: false },
+
+    // PRESENTE = 2FA ATTIVO. Data e non booleano di proposito (D-1, decisione architect 38a):
+    // stessa convenzione di pendingDeletionAt/deadManExpiresAt - il campo assente vale gia'
+    // "no" (vincolo hard 1: mai default:false) - e in piu' regala la data di attivazione da
+    // mostrare in Impostazioni senza un secondo campo. NON e' select:false: la card
+    // Impostazioni del proprietario e GET /api/auth/me devono vederlo. E' invece in
+    // ALWAYS_PRIVATE_FIELDS (routes/users.js): esce solo al proprietario, mai su un altro
+    // utente - sapere chi ha il secondo fattore, e da quando, e' un indizio su quali account
+    // conviene attaccare. Stessa categoria di deadManActive/canModerateReports.
+    twoFactorEnabledAt: { type: Date, default: undefined },
+
+    // Ultimo passo temporale (contatore da 30 s) gia' speso al login. RFC 6238 5.2: un
+    // codice non va accettato due volte. Si scrive con un update condizionale (CAS), non
+    // leggi-poi-scrivi - vedi il commento in lib/totp.js.
+    twoFactorLastStep: { type: Number, default: undefined, select: false },
+
+    // Impronte dei codici di recupero ANCORA SPENDIBILI. sha256 con l'userId in testa, NON
+    // bcrypt (D-2: a ogni tentativo sbagliato sarebbero fino a 10 confronti bcrypt ~ 1 s di
+    // CPU su Render gratuito, un vettore DoS; un codice a 60 bit da crypto.randomBytes non
+    // sta in nessun dizionario e non ha bisogno di un hash lento). improntaCodiceRecupero()
+    // in lib/totp.js e' l'unico punto che compone quella stringa. select:false: come
+    // twoFactorSecret, e' materiale di credenziale.
+    twoFactorRecoveryHashes: { type: [String], default: undefined, select: false }
 });
 
 const User = mongoose.models.User || mongoose.model('User', userSchema);

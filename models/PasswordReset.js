@@ -22,7 +22,16 @@ const passwordResetSchema = new mongoose.Schema({
     // un documento puo' sopravvivere fino a un minuto oltre la scadenza. La scadenza
     // va percio' RICONTROLLATA NEL CODICE al momento dell'uso (vedi routes/auth.js):
     // la cancellazione automatica fa le pulizie, non la guardia.
-    createdAt: { type: Date, default: Date.now, expires: DURATA_LINK_SECONDI }
+    createdAt: { type: Date, default: Date.now, expires: DURATA_LINK_SECONDI },
+
+    // Tentativi di SECONDO FATTORE falliti su QUESTO link di reset (blocco 3 del piano 2FA:
+    // POST /reset-password quando l'utente ha twoFactorEnabledAt). default: undefined
+    // (vincolo hard 1): nasce solo se qualcuno sbaglia davvero, con $inc. A quota 5 il link
+    // viene cancellato ("chiedine un altro"): e' il tetto vero contro chi prova a indovinare
+    // il codice - il rate limiter da solo lascerebbe passare ~80 tentativi per link (un'ora
+    // di validita', 20 tentativi ogni 15 minuti). Al 10/09/2026 (blocco 2) nessuna rotta lo
+    // scrive ancora. Vedi C:\Users\lenovo\.claude\plans\camoscio-2fa-totp.md sez. 6.
+    tentativi2fa: { type: Number, default: undefined }
 });
 
 const PasswordReset = mongoose.models.PasswordReset || mongoose.model('PasswordReset', passwordResetSchema);

@@ -16,6 +16,7 @@ const {
 const { segretoCronValido } = require('../lib/cronSecret');
 // A-3.3 (revisione sicurezza 21a): export dei propri dati - servono tutte le collezioni
 // che portano un riferimento all'utente.
+const AccountRecovery = require('../models/AccountRecovery');
 const ActiveHikeSession = require('../models/ActiveHikeSession');
 const Completion = require('../models/Completion');
 const Hike = require('../models/Hike');
@@ -62,7 +63,13 @@ const ALWAYS_PRIVATE_FIELDS = [
     'receivesReportAlerts',
     // BASSO-3 (35a): l'esito dell'ultimo allarme fallito - contiene nomi di contatti di
     // emergenza (terzi) e rivela un evento di sicurezza. Stessa categoria di deadMan* sopra.
-    'deadManLastFired'
+    'deadManLastFired',
+    // Blocco 2 del piano 2FA: se un account ha il secondo fattore attivo, e da quando, non
+    // riguarda gli altri utenti - e' un indizio su quali account conviene attaccare. A
+    // schema NON e' select:false (la card Impostazioni del proprietario deve vederlo, e la
+    // lista non applica la proiezione al proprio documento), quindi senza questa riga
+    // uscirebbe per ogni utente in GET /api/users. Stessa categoria di deadManActive.
+    'twoFactorEnabledAt'
 ];
 // M-4 (follow-up revisione sicurezza, 31a): proiezione Mongo derivata dallo stesso elenco,
 // cosi' i due non possono divergere in silenzio (lezione gia' pagata altrove nel progetto).
@@ -250,7 +257,7 @@ router.get('/users/me/export', requireAuth, exportLimiter, async (req, res) => {
             segnalazioni, squadreGrezze, msgEscursioni, msgSquadre,
             sentieriPreferiti, progetti, percorsiSalvati, recensioniRicevute, tracceCandidate,
             invitiSquadraRicevuti, invitiEscursioneRicevuti,
-            richiesteSquadraInviate, richiesteEscursioneInviate
+            richiesteSquadraInviate, richiesteEscursioneInviate, recuperiAccesso
         ] = await Promise.all([
             // +profilePhoto (ALTO, giro agente sul fix MEDIO): select:false a schema - senza
             // questo l'export smetteva di contenere la foto profilo pur dichiarando nel
@@ -291,7 +298,14 @@ router.get('/users/me/export', requireAuth, exportLimiter, async (req, res) => {
             // vero in entrambi i casi che sei "in attesa" su quell'escursione. Stessa
             // minimizzazione di B-5: solo i campi che identificano la richiesta.
             Squad.find({ pendingRequests: uid }).select('_id name').lean(),
-            Hike.find({ pendingApproval: uid }).select('_id title date').lean()
+            Hike.find({ pendingApproval: uid }).select('_id title date').lean(),
+            // MEDIO-3 (revisione del cumulativo 42a): mancava - un recupero ritardato
+            // (avviato, annullato o completato) e' un dato personale quanto un invito o una
+            // richiesta in sospeso, ed e' anche la traccia di un tentativo di presa
+            // dell'account. NON tokenHash: e' l'unica cosa che potrebbe ancora aprire un
+            // link vivo, lo stesso motivo per cui l'export non porta mai passwordHash.
+            AccountRecovery.find({ userId: uid })
+                .select('createdAt maturaIl annullatoIl annullatoPerche completatoIl').lean()
         ]);
 
         // Le escursioni a cui SOLO partecipi contengono anche dati di gruppo (carpooling e
@@ -353,7 +367,8 @@ router.get('/users/me/export', requireAuth, exportLimiter, async (req, res) => {
             invitiSquadraRicevuti,
             invitiEscursioneRicevuti,
             richiesteSquadraInviate,
-            richiesteEscursioneInviate
+            richiesteEscursioneInviate,
+            recuperiAccesso
         };
 
         const base = String((profilo && profilo.username) || 'utente').replace(/[^\w-]+/g, '_');

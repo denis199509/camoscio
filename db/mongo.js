@@ -8,6 +8,15 @@ mongoose.set('toJSON', {
     transform: (doc, ret) => {
         delete ret._id;
         delete ret.passwordHash; // non deve MAI uscire in una risposta API, qualunque rotta sia
+        // Secondo fattore TOTP (blocco 2 del piano 2FA): stessa rete di sicurezza di
+        // passwordHash, OLTRE al select:false sullo schema. Copre qualunque rotta che faccia
+        // .select('+twoFactorSecret ...') e poi restituisca il documento - il login a due
+        // passi (blocco 3) fa esattamente questo. twoFactorRecoveryHashes incluso: sono
+        // impronte e non il segreto, ma restano materiale di credenziale e la stessa
+        // .select() del login le tira su insieme al resto.
+        delete ret.twoFactorSecret;
+        delete ret.twoFactorPending;
+        delete ret.twoFactorRecoveryHashes;
         return ret;
     }
 });
