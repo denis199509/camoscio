@@ -32,12 +32,18 @@ let chatPollTimer = null;
 const FMT_GIORNO_CHAT = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit' });
 const FMT_ORA_CHAT = new Intl.DateTimeFormat('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome', hour12: false });
 
+// Number.isFinite(getTime()) invece di fidarsi e basta (revisione 43a, BASSO): un
+// Intl.DateTimeFormat.format() su una data non valida LANCIA RangeError - se un giorno un
+// messaggio arrivasse senza createdAt, l'intera messages.map() fallirebbe e la chat
+// resterebbe vuota (stessa classe del Math.max -> RangeError della 39a). Oggi createdAt e'
+// garantito dallo schema (HikeMessage/SquadMessage), ma il ripiego costa una riga.
 function chiaveGiornoChat(date) {
-    return FMT_GIORNO_CHAT.format(date);
+    return Number.isFinite(date.getTime()) ? FMT_GIORNO_CHAT.format(date) : null;
 }
 
 function etichettaGiornoChat(iso) {
     const data = new Date(iso);
+    if (!Number.isFinite(data.getTime())) return '';
     const chiave = chiaveGiornoChat(data);
     if (chiave === chiaveGiornoChat(new Date())) return T('chat.oggi') || 'Oggi';
     if (chiave === chiaveGiornoChat(new Date(Date.now() - 86400000))) return T('chat.ieri') || 'Ieri';
@@ -46,7 +52,8 @@ function etichettaGiornoChat(iso) {
 }
 
 function formattaOraChat(iso) {
-    return FMT_ORA_CHAT.format(new Date(iso));
+    const data = new Date(iso);
+    return Number.isFinite(data.getTime()) ? FMT_ORA_CHAT.format(data) : '';
 }
 
 // { box: elemento dove disegnare, apiBase: es. '/api/squads/ID' o '/api/hikes/ID'
@@ -116,9 +123,15 @@ function renderChatMessages(messages, log) {
         let giornoPrecedente = null;
         log.innerHTML = messages.map(m => {
             let separatore = '';
+            // chiave puo' essere null (createdAt non valido, non dovrebbe succedere per
+            // schema ma vedi la guardia sopra) - niente separatore in quel caso, non un
+            // errore che blocca l'intera chat.
             const chiave = chiaveGiornoChat(new Date(m.createdAt));
-            if (chiave !== giornoPrecedente) {
-                separatore = `<div class="chat-day-separator">${etichettaGiornoChat(m.createdAt)}</div>`;
+            if (chiave && chiave !== giornoPrecedente) {
+                // esc() anche se oggi e' sempre testo fidato (i18n statico o
+                // toLocaleDateString): e' l'unica interpolazione non escapata rimasta,
+                // costa nulla e non lascia una trappola a chi domani ci mettesse un nome.
+                separatore = `<div class="chat-day-separator">${esc(etichettaGiornoChat(m.createdAt))}</div>`;
                 giornoPrecedente = chiave;
             }
             const mittente = db.users.find(u => u.id === m.senderId);

@@ -1099,10 +1099,18 @@ async function renderRouteToFollowOptions() {
     }
 }
 
+// "Biglietto numerato" (revisione 43a, BASSO - stesso principio di giroCalcolo in
+// routeplanner.js): selezionare A, poi "Nessuno", poi di nuovo A prima che la prima /plan
+// risponda mandava due richieste identiche - innocuo ma evitabile. Solo il giro piu'
+// recente puo' ancora avere effetti visibili (toast/select/disegno); il risultato di un
+// giro superato si mette comunque in cache, non si butta via un calcolo gia' pagato.
+let giroPercorso = 0;
+
 // Disegna / toglie la linea di riferimento in base alla scelta del menu.
 async function applicaPercorsoDaSeguire() {
     const select = document.getElementById('tracking-route-select');
     if (!select) return;
+    const mioGiro = ++giroPercorso;
     const scelto = percorsiDaSeguire.find(p => p.id === select.value);
     if (!scelto) {
         if (window.clearPercorsoSalvato) window.clearPercorsoSalvato();
@@ -1120,7 +1128,7 @@ async function applicaPercorsoDaSeguire() {
     // scelto._tappeCalcolate al primo calcolo - si puo' riaprire/richiudere la tendina piu'
     // volte nella stessa sessione di tracciamento senza richiamare il server ogni volta.
     if (scelto._tappeCalcolate) {
-        window.disegnaPercorsoSalvato(null, { tratti: scelto._tappeCalcolate });
+        if (window.disegnaPercorsoSalvato) window.disegnaPercorsoSalvato(null, { tratti: scelto._tappeCalcolate });
         return;
     }
     if (window.clearPercorsoSalvato) window.clearPercorsoSalvato(); // via la linea vecchia mentre si calcola
@@ -1129,6 +1137,7 @@ async function applicaPercorsoDaSeguire() {
     // toglierebbe anche la possibilita' di riprovare. Si riporta il menu a "Nessuno" e si
     // avvisa, invece di lasciare scritto il nome di un percorso che sulla mappa non c'e'.
     const fallito = (messaggio) => {
+        if (mioGiro !== giroPercorso) return; // superato da una selezione successiva
         select.value = '';
         if (window.clearPercorsoSalvato) window.clearPercorsoSalvato();
         if (window.showToast) window.showToast(messaggio, 'error');
@@ -1157,10 +1166,11 @@ async function applicaPercorsoDaSeguire() {
             fallito(T('track.erroreCalcoloPercorso') || 'Non e\' stato possibile calcolare questo percorso ora.');
             return;
         }
-        scelto._tappeCalcolate = tappe;
-        // La tendina puo' essere cambiata nel frattempo (fetch lenta): disegna solo se e'
-        // ancora la scelta corrente, altrimenti si sovrapporrebbe alla linea giusta.
-        if (select.value === scelto.id && window.disegnaPercorsoSalvato) {
+        scelto._tappeCalcolate = tappe; // vale la pena metterlo in cache anche se il giro e' superato
+        // La tendina puo' essere cambiata nel frattempo (fetch lenta): disegna solo se il
+        // biglietto e' ancora quello dell'ultima selezione, altrimenti si sovrapporrebbe
+        // alla linea giusta.
+        if (mioGiro === giroPercorso && window.disegnaPercorsoSalvato) {
             // Revisione 43a (MEDIO): se nel frattempo e' gia' partita la registrazione (la
             // tendina si disabilita, ma una fetch iniziata prima resta in volo), niente
             // fitBounds - l'utente ha gia' ripreso a camminare guardando la mappa, farla
@@ -1603,6 +1613,11 @@ if (window.CamoscioI18n && window.CamoscioI18n.onChange) {
         const sez = document.getElementById('map-section');
         if (sez && sez.classList.contains('active') && trackingState.status === 'idle') {
             renderHikeSelectOptions();
+            // Revisione 43a (BASSO): mancava qui - dopo un cambio lingua le due etichette
+            // dei gruppi ("Percorsi salvati"/"I tuoi progetti", punto 43a) restavano nella
+            // lingua vecchia insieme a "Nessuno". Il ri-fetch e' innocuo: e' un'azione rara
+            // e voluta dall'utente, non il polling della chat.
+            renderRouteToFollowOptions();
         }
 
         if (trackingState.status === 'active' || trackingState.status === 'paused') {

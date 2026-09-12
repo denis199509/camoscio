@@ -92,7 +92,13 @@ const MAX_BOZZE = 50; // un tetto, non un razionamento: una bozza pesa pochissim
 
 router.get('/drafts', requireAuth, async (req, res) => {
     try {
-        const bozze = await RouteDraft.find({ userId: req.session.userId }).sort({ creataIl: -1 }).limit(MAX_BOZZE);
+        // .select() (revisione 43a, BASSO minimizzazione): questa lista viaggia ora anche a
+        // ogni apertura della sezione Mappa (tracking.js, "percorso da seguire"), non solo
+        // aprendo il route planner - restringere ai soli campi che qualche pagina legge
+        // davvero (userId e creataIl restano fuori, servono solo al filtro/ordinamento).
+        const bozze = await RouteDraft.find({ userId: req.session.userId })
+            .select('nome punti agganciaAiSentieri anello metriTotali salitaM metriRetta')
+            .sort({ creataIl: -1 }).limit(MAX_BOZZE);
         res.json(bozze);
     } catch (e) {
         console.error('Lettura bozze percorso fallita:', e);
@@ -189,7 +195,11 @@ const MAX_PERCORSI_SALVATI = 50;    // specchio di MAX_BOZZE
 
 router.get('/saved-routes', requireAuth, async (req, res) => {
     try {
+        // .select() (revisione 43a, BASSO minimizzazione): stesso motivo di GET /drafts -
+        // origineUserId non e' mai letto lato client (solo origineUsername, gia' pensato
+        // apposta per non doverlo seguire), userId/creatoIl servono solo al filtro/ordinamento.
         const percorsi = await SavedRoute.find({ userId: req.session.userId })
+            .select('nome punti origineUsername distanzaKm dislivelloM quotaMaxM')
             .sort({ creatoIl: -1 }).limit(MAX_PERCORSI_SALVATI);
         res.json(percorsi);
     } catch (e) {
