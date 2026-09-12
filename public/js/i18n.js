@@ -2398,7 +2398,9 @@
             // "Percorso da seguire" durante una registrazione (tracking.js, index.html)
             'track.percorsoDaSeguire': 'Route to follow (optional):',
             'track.nessunPercorso': 'None',
-            'track.percorsoDaSeguireNota': 'Just a reference line on the map. The site does not warn you if you stray from it.'
+            'track.percorsoDaSeguireNota': 'Just a reference line on the map. The site does not warn you if you stray from it.',
+            'track.percorsiSalvati': 'Saved routes',
+            'track.propriProgetti': 'Your own projects'
         }
     };
 

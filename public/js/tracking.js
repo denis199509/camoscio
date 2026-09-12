@@ -1043,39 +1043,94 @@ function renderHikeSelectOptions() {
     }
 }
 
-// Punto 113 passo 9: il menu "percorso da seguire" - i percorsi salvati dell'utente
-// (SavedRoute). Scegliendone uno, la sua linea compare sulla mappa come RIFERIMENTO: nessun
-// rilevamento di fuori-percorso, nessun avviso (vincolo 7). L'elenco fetchato si tiene in
-// cache qui cosi' il change handler trova i punti senza rifare la chiamata.
+// Punto 113 passo 9: il menu "percorso da seguire". Due provenienze (Denis, 10/09/2026:
+// "vorrei poter seguire la linea pure da un progetto creato da me" - prima elencava SOLO i
+// SavedRoute, copie di una traccia altrui):
+//  - SavedRoute: la linea e' GIA' calcolata e salvata (punti densi copiati da una traccia
+//    registrata) - si disegna cosi' com'e', come sempre.
+//  - RouteDraft (punto 13): salva SOLO i punti scelti sulla mappa (2-3 coordinate), MAI la
+//    linea calcolata - la stessa scelta di progetto del route planner, per non duplicare
+//    centinaia di coordinate quando bastano due o tre e la fonte dei sentieri puo' migliorare
+//    nel frattempo. Va quindi ricalcolata al momento della scelta con POST /api/routing/plan,
+//    esattamente come fa routeplanner.js riaprendo una bozza.
+// Scegliendo l'uno o l'altro, la linea compare sulla mappa come RIFERIMENTO: nessun
+// rilevamento di fuori-percorso, nessun avviso (vincolo 7) - invariato, vale anche pei
+// progetti propri. L'elenco fetchato si tiene in cache qui cosi' il change handler trova i
+// punti senza rifare la chiamata.
 // var, non let: questo file non e' in una IIFE (vedi la nota su "var T" in cima).
 var percorsiDaSeguire = [];
 async function renderRouteToFollowOptions() {
     const select = document.getElementById('tracking-route-select');
     if (!select) return;
     const currentValue = select.value;
+    let salvati = [], bozze = [];
     try {
-        const res = await fetch('/api/routing/saved-routes');
-        percorsiDaSeguire = res.ok ? await res.json() : [];
+        const [resSalvati, resBozze] = await Promise.all([
+            fetch('/api/routing/saved-routes'),
+            fetch('/api/routing/drafts')
+        ]);
+        salvati = resSalvati.ok ? await resSalvati.json() : [];
+        bozze = resBozze.ok ? await resBozze.json() : [];
     } catch (e) {
         console.error('Errore caricamento percorsi da seguire:', e);
-        percorsiDaSeguire = [];
     }
+    percorsiDaSeguire = [
+        ...salvati.map(p => ({ id: p.id, nome: p.nome, tipo: 'saved', punti: p.punti })),
+        ...bozze.map(b => ({ id: b.id, nome: b.nome, tipo: 'draft', punti: b.punti, agganciaAiSentieri: b.agganciaAiSentieri }))
+    ];
     select.innerHTML = `<option value="">${escapeHtml(T('track.nessunPercorso') || 'Nessuno')}</option>` +
-        percorsiDaSeguire.map(p => `<option value="${p.id}">${escapeHtml(p.nome)}</option>`).join('');
+        (salvati.length ? `<optgroup label="${escapeHtml(T('track.percorsiSalvati') || 'Percorsi salvati')}">` +
+            salvati.map(p => `<option value="${p.id}">${escapeHtml(p.nome)}</option>`).join('') + `</optgroup>` : '') +
+        (bozze.length ? `<optgroup label="${escapeHtml(T('track.propriProgetti') || 'I tuoi progetti')}">` +
+            bozze.map(b => `<option value="${b.id}">${escapeHtml(b.nome)}</option>`).join('') + `</optgroup>` : '');
     if (currentValue && percorsiDaSeguire.some(p => p.id === currentValue)) {
         select.value = currentValue;
     }
 }
 
 // Disegna / toglie la linea di riferimento in base alla scelta del menu.
-function applicaPercorsoDaSeguire() {
+async function applicaPercorsoDaSeguire() {
     const select = document.getElementById('tracking-route-select');
     if (!select) return;
     const scelto = percorsiDaSeguire.find(p => p.id === select.value);
-    if (scelto && Array.isArray(scelto.punti) && window.disegnaPercorsoSalvato) {
-        window.disegnaPercorsoSalvato(scelto.punti);
-    } else if (window.clearPercorsoSalvato) {
-        window.clearPercorsoSalvato();
+    if (!scelto) {
+        if (window.clearPercorsoSalvato) window.clearPercorsoSalvato();
+        return;
+    }
+    if (scelto.tipo === 'saved') {
+        if (Array.isArray(scelto.punti) && window.disegnaPercorsoSalvato) {
+            window.disegnaPercorsoSalvato(scelto.punti);
+        } else if (window.clearPercorsoSalvato) {
+            window.clearPercorsoSalvato();
+        }
+        return;
+    }
+    // tipo 'draft': niente linea gia' pronta, va ricalcolata. Messa in cache su
+    // scelto._lineaCalcolata al primo calcolo - si puo' riaprire/richiudere la tendina piu'
+    // volte nella stessa sessione di tracciamento senza richiamare il server ogni volta.
+    if (scelto._lineaCalcolata) {
+        window.disegnaPercorsoSalvato(scelto._lineaCalcolata);
+        return;
+    }
+    if (window.clearPercorsoSalvato) window.clearPercorsoSalvato(); // via la linea vecchia mentre si calcola
+    try {
+        const res = await fetch('/api/routing/plan', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ punti: scelto.punti, agganciaAiSentieri: scelto.agganciaAiSentieri !== false })
+        });
+        if (!res.ok) return;
+        const esito = await res.json();
+        const linea = Array.isArray(esito.tappe) ? esito.tappe.flatMap(t => t.coordinate) : [];
+        if (linea.length < 2) return;
+        scelto._lineaCalcolata = linea;
+        // La tendina puo' essere cambiata nel frattempo (fetch lenta): disegna solo se e'
+        // ancora la scelta corrente, altrimenti si sovrapporrebbe alla linea giusta.
+        if (select.value === scelto.id && window.disegnaPercorsoSalvato) {
+            window.disegnaPercorsoSalvato(linea);
+        }
+    } catch (e) {
+        console.error('Errore calcolo percorso da seguire (progetto proprio):', e);
     }
 }
 
