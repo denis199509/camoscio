@@ -12516,7 +12516,7 @@ aperto il profilo di un utente reale con foto vera (Denis, non un demo -
 i 4 account demo hanno tutti l'emoji, niente foto vera da ingrandire) ->
 click sulla foto apre il lightbox con l'immagine intera, Esc chiude.
 Committato a parte, separato dalle note di sessione della 42a:
-`1af4a87`. NON ANCORA PUSHATO (via di Denis in sospeso).
+`1af4a87`. PUSHATO su origin/master.
 
 Due cose lasciate aperte di proposito, scelte di Denis non ancora prese:
  - la X di chiusura del lightbox e' 36x36, sotto i 44px di area di tocco
@@ -12525,3 +12525,23 @@ Due cose lasciate aperte di proposito, scelte di Denis non ancora prese:
  - su telefono non c'e' l'hover, quindi l'unico indizio che la foto e'
    cliccabile e' un title (invisibile al tocco) - si potrebbe aggiungere
    una piccola lente in basso a destra sul cerchio, se Denis la vuole.
+
+
+=====================================================================
+INVITO SQUADRA DIREZIONALE (CHIUSO, 12/09/2026)
+=====================================================================
+Denis, verifica dal vivo: "invito squadra direzionale confermato,
+daniwool ha invitato la squadra per un'escursione. ho dovuto accettare
+l'invito per risultare come partecipante".
+
+CORRISPONDE AL PROGETTO: l'invito squadra e' un consenso chiesto alla
+persona (come pendingApproval, ma al contrario), non un'iscrizione
+automatica - lo dice esplicitamente il piano
+(camoscio-invito-squadra-direzionale.md). Nessun bug.
+
+Il punto originale copriva TRE casi: (1) entrare in una squadra da un
+invito diretto, (2) invito squadra a un'escursione, (3) uscita del
+creatore e successione automatica. Denis ha confermato dal vivo SOLO il
+caso (2) e ha scelto esplicitamente di chiudere il punto senza provare
+(1) e (3). Se un giorno emerge un problema li', tenerlo a mente: non
+sono mai stati verificati dal vivo.

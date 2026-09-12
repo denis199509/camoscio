@@ -107,6 +107,18 @@ sospeso, resta 2 commit avanti a `origin/master` (= `2f13451`).
       completamento recupero (per progetto) - da riaccendere quando vuole.
    Piano: C:\Users\lenovo\.claude\plans\camoscio-2fa-totp.md, sez. 11.
 
+INVITO SQUADRA DIREZIONALE — CHIUSO (12/09/2026): Denis ha confermato dal
+vivo il caso "invito squadra a un'escursione" (DaniWool ha invitato la
+squadra, Denis ha dovuto ACCETTARE l'invito per risultare partecipante -
+corrisponde al progetto: e' un consenso chiesto alla persona, non
+un'iscrizione automatica, stessa logica di pendingApproval ma al
+contrario). Gli altri due casi del punto originale (entrare in una
+squadra da un invito diretto; uscita del creatore e successione
+automatica) NON sono stati provati - Denis ha scelto esplicitamente di
+chiudere il punto senza provarli. Se un giorno emergesse un problema
+proprio li', vale la pena ricordare che non sono mai stati verificati
+dal vivo.
+
 >>> APERTI (invariati):
   - PERCORSO DA SEGUIRE anche da un RouteDraft PROPRIO: la tendina
     "Percorso da seguire" della registrazione (linea di riferimento, no
@@ -147,8 +159,6 @@ sospeso, resta 2 commit avanti a `origin/master` (= `2f13451`).
     non-utenti; (c) AccountRecovery (2FA) conserva per ~21 giorni la traccia
     di un tentativo di presa dell'account - serve una base giuridica anche
     per questo, e va nominato nell'informativa.
-  - VERIFICA DAL VIVO di Denis su tutto l'invito squadra direzionale (entrare
-    in una squadra; invito squadra a un'escursione; uscita e successione del creatore).
   - VERIFICHE DAL VIVO 40a: correttezza #9 e #11 in tracking.js; il riquadro
     "ultimo allarme fallito" nel pannello Sicurezza; il comando ⋮ "Togli la
     mia traccia" + la nota nel modale "Completa"; la prova al telefono del
