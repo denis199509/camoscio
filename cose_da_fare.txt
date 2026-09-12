@@ -12465,7 +12465,7 @@ RESTA APERTO: la prova al telefono di Denis con Google Authenticator
 
 
 =====================================================================
-FOTO PROFILO INGRANDIBILE AL CLICK (aperto, 11/09/2026)
+FOTO PROFILO INGRANDIBILE AL CLICK (CHIUSO, 12/09/2026)
 =====================================================================
 Denis:
 
@@ -12483,12 +12483,19 @@ resta non cliccabile, niente da ingrandire li'. L'avatarino piccolo
 nell'intestazione del sito (app.js, tutt'altro contesto) non e' stato
 toccato.
 
-Verificato SOLO con un banco Chrome headless a parte (CSS/markup veri, 7
-larghezze da 320 a 1440px: nessun overflow, l'anello di focus si vede
-davvero, Tab porta il fuoco sulla foto, Invio apre il modale) - NON
-nell'app vera: l'estensione Chrome non risultava connessa in questa
-sessione. Resta nel working tree (l'auto-save lo prende), non committato
-a parte in attesa della prova dal vivo.
+Verificato la sessione precedente SOLO con un banco Chrome headless a
+parte (CSS/markup veri, 7 larghezze da 320 a 1440px: nessun overflow,
+l'anello di focus si vede davvero, Tab porta il fuoco sulla foto, Invio
+apre il modale) - NON nell'app vera: l'estensione Chrome non risultava
+connessa in quella sessione.
+
+VERIFICATO DAL VIVO IL 12/09/2026 (43a sessione): riconnessa l'estensione
+Chrome, server locale acceso, login con l'account demo (Marco Alpinista),
+aperto il profilo di un utente reale con foto vera (Denis, non un demo -
+i 4 account demo hanno tutti l'emoji, niente foto vera da ingrandire) ->
+click sulla foto apre il lightbox con l'immagine intera, Esc chiude.
+Committato a parte, separato dalle note di sessione della 42a:
+`1af4a87`. NON ANCORA PUSHATO (via di Denis in sospeso).
 
 Due cose lasciate aperte di proposito, scelte di Denis non ancora prese:
  - la X di chiusura del lightbox e' 36x36, sotto i 44px di area di tocco
@@ -12497,6 +12504,3 @@ Due cose lasciate aperte di proposito, scelte di Denis non ancora prese:
  - su telefono non c'e' l'hover, quindi l'unico indizio che la foto e'
    cliccabile e' un title (invisibile al tocco) - si potrebbe aggiungere
    una piccola lente in basso a destra sul cerchio, se Denis la vuole.
-
-DA FARE quando si riprende: riconnettere l'estensione Chrome (o verifica
-di Denis da telefono/browser), click vero sulla foto profilo, poi commit.

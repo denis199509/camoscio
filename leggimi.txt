@@ -1,6 +1,10 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-09-11 (QUARANTADUESIMA sessione. Denis: "possiamo mandare gli
+Aggiornato: 2026-09-12 (QUARANTATREESIMA sessione. Denis: "possiamo partire
+con la modifica delle foto profilo" -> verificata dal vivo e committata a
+parte (vedi sotto). Frontmatter della 42a sotto, invariato.
+——
+2026-09-11 (QUARANTADUESIMA sessione. Denis: "possiamo mandare gli
 agenti per il controllo dell'ultima sessione", poi "vai a gruppi, parti dai 3
 alto" -> "vai col medio" -> "vai con il gruppo basso" -> "commit e push su
 tutto".
@@ -50,23 +54,28 @@ memoria con note nuove — controllato, false, stessa fabbricazione gia'
 vista alla 31a sessione (6 giorni prima, pattern ormai confermato
 ricorrente). Non tocca l'affidabilita' dei suoi rilievi tecnici.
 
-FUORI DAL 2FA, nella stessa sessione: controllo utenti registrati su
+FUORI DAL 2FA, nella 42a sessione: controllo utenti registrati su
 richiesta di Denis (nuovo iscritto dell'11/09, "Solly99"). Poi Denis ha
 chiesto di poter ingrandire la foto profilo al click ("se entro sul
 profilo di qualcuno non riesco a vedere bene la foto") — implementato
 dall'agente `designer`, che ha riusato il lightbox gia' esistente (nato
 per le icone dei badge) invece di farne uno nuovo: `userprofile.js`
 (`renderProfileIdentity`, condivisa col proprio profilo) + `styles.css` +
-`i18n.js`. Verificato SOLO geometricamente in un banco Chrome headless a
-parte (CSS/markup veri, 7 larghezze 320-1440px, nessun overflow, focus
-visibile, Tab/Invio funzionano) — NON nell'app vera: l'estensione Chrome
-non era connessa in questa sessione. Resta nel working tree (l'auto-save
-lo prende), non committato a parte.
+`i18n.js`.
 
-  >>> DA DOVE SI RIPARTE (43a sessione):
-   1. Riconnettere l'estensione Chrome (reinstalla/riavvia/verifica login
-      su claude.ai) e provare dal vivo il click sulla foto profilo — poi
-      commit a parte. In alternativa Denis puo' provarlo lui da telefono.
+FOTO PROFILO — VERIFICATA DAL VIVO E CHIUSA (43a sessione, 12/09): Denis
+"possiamo partire con la modifica delle foto profilo". Riconnessa
+l'estensione Chrome (era il blocco della 42a), server locale acceso,
+login demo (Marco Alpinista) → profilo di un utente reale con foto vera
+(Denis; i 4 account demo hanno solo l'emoji) → click apre il lightbox,
+Esc chiude. Committata a parte dall'auto-save della 42a (che la teneva
+insieme a nient'altro): `1af4a87` (codice) + `930c2fd` (le note di
+chiusura 42a, message invariato). NON ANCORA PUSHATO — via di Denis in
+sospeso, resta 2 commit avanti a `origin/master` (= `2f13451`).
+
+  >>> DA DOVE SI RIPARTE (44a sessione):
+   1. Via di Denis per il push di `1af4a87` + `930c2fd` (foto profilo +
+      note 42a) verso origin/master.
    2. PROVA AL TELEFONO di Denis con Google Authenticator — giro completo:
       accendi il 2FA da Impostazioni, logout, login a due passi, disattiva,
       reset password con 2FA attivo, e (forzando maturaIl sul DB) il
@@ -106,9 +115,6 @@ lo prende), non committato a parte.
     ("Oggi/Ieri/15 settembre") confermati da Denis il 10/09. Un file solo
     (chatpanel.js e' condiviso escursione+squadra). Dettaglio in
     cose_da_fare.txt.
-  - FOTO PROFILO INGRANDIBILE AL CLICK: implementata (vedi sopra), non
-    ancora verificata dal vivo ne' committata a parte. Vedi "DA DOVE SI
-    RIPARTE" sopra.
   - CONFORMITA' GDPR + NOTA LEGALE: index.html fa accettare "Termini +
     Informativa privacy" senza documento dietro. Serve un consulente privacy/
     avvocato GDPR (non un DPO) per l'Informativa vera + il testo di consenso
