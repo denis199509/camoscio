@@ -105,10 +105,21 @@ sospeso, resta 2 commit avanti a `origin/master` (= `2f13451`).
       di `/2fa/enable` non asserito), e i18n EN solo sul nucleo.
    2. Il 2FA sull'account vero di Denis e' rimasto SPENTO dalla prova di
       completamento recupero (per progetto) - da riaccendere quando vuole.
-   3. PERCORSO DA SEGUIRE anche da un RouteDraft PROPRIO (vedi sotto,
-      unico punto della lista richieste ancora aperto - gli altri tre
-      sono stati chiusi in questa stessa sessione, 43a).
    Piano: C:\Users\lenovo\.claude\plans\camoscio-2fa-totp.md, sez. 11.
+
+PERCORSO DA SEGUIRE anche da un RouteDraft PROPRIO — CHIUSO (12/09/2026,
+43a), commit `344f43f`, pushato. Era l'ultimo dei quattro punti della
+lista richieste di Denis (10/09): la tendina elencava solo i SavedRoute
+(copie di una traccia altrui), mai i propri progetti disegnati col
+route planner. `tracking.js` ora carica anche `/api/routing/drafts` in
+un secondo gruppo della tendina; una RouteDraft non ha la linea gia'
+pronta (salva solo i 2-3 punti scelti, per progetto - vedi punto 13),
+quindi si ricalcola al momento della scelta con `POST /api/routing/plan`
+(stessa via del route planner riaprendo una bozza), messa in cache
+sull'oggetto per non richiamare il server ogni volta. Verificato dal
+vivo: entrambi i gruppi, entrambi i rami disegnano la linea giusta,
+cache confermata. TUTTI E QUATTRO I PUNTI DELLA LISTA DI DENIS SONO
+CHIUSI.
 
 TRE PICCOLI PUNTI — CHIUSI (12/09/2026, 43a sessione), commit `08419f5`
 (rifugi+assi) e `1c76be3` (chat), pushati:
@@ -153,14 +164,6 @@ proprio li', vale la pena ricordare che non sono mai stati verificati
 dal vivo.
 
 >>> APERTI (invariati):
-  - PERCORSO DA SEGUIRE anche da un RouteDraft PROPRIO: la tendina
-    "Percorso da seguire" della registrazione (linea di riferimento, no
-    avvisi di fuori-percorso) oggi elenca SOLO i SavedRoute
-    (kind:'saved', copiati da una traccia altrui), non i percorsi che
-    l'utente ha disegnato da se' col route planner. Denis (10/09, dal
-    telefono): "vorrei poter seguire la linea pure da un progetto creato
-    da me". Da guardare: public/js/tracking.js, pannello "Opzioni
-    escursione". Dettaglio in cose_da_fare.txt.
   - CONFORMITA' GDPR + NOTA LEGALE: index.html fa accettare "Termini +
     Informativa privacy" senza documento dietro. Serve un consulente privacy/
     avvocato GDPR (non un DPO) per l'Informativa vera + il testo di consenso

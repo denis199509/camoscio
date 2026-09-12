@@ -12578,6 +12578,54 @@ quando la notifica persistente e' stata scartata.
 
 
 =====================================================================
+PERCORSO DA SEGUIRE ANCHE DA UN ROUTEDRAFT PROPRIO (CHIUSO, 12/09/2026)
+=====================================================================
+Denis (10/09, dal telefono): "vorrei poter seguire la linea pure da un
+progetto creato da me". La tendina "Percorso da seguire" della
+registrazione (public/js/tracking.js, pannello "Opzioni escursione")
+elencava SOLO i SavedRoute (percorsi copiati da una traccia registrata,
+gia' altrui o propria), mai i progetti disegnati a mano col route
+planner (RouteDraft, punto 13).
+
+public/js/tracking.js renderRouteToFollowOptions(): ora carica ANCHE
+GET /api/routing/drafts, in un secondo <optgroup> ("I tuoi progetti",
+separato da "Percorsi salvati"). LA DIFFERENZA DI FONDO fra le due
+provenienze: un SavedRoute ha gia' la linea calcolata e salvata (punti
+densi copiati da una traccia registrata), mentre un RouteDraft salva
+SOLO i 2-3 punti scelti sulla mappa - e' una scelta di progetto
+deliberata (vedi models/RouteDraft.js): salvare la linea intera
+sprecherebbe spazio per un dato ricalcolabile, e se la fonte dei
+sentieri OSM migliora una bozza riaperta ne approfitta, una linea
+congelata no.
+
+applicaPercorsoDaSeguire() ora distingue i due casi: 'saved' disegna i
+punti cosi' come sono (comportamento invariato); 'draft' li ricalcola al
+momento della scelta con POST /api/routing/plan (stessa via che usa gia'
+routeplanner.js riaprendo una bozza), appiattendo esito.tappe in
+un'unica linea (stesso pattern di lib/trailGraph.js
+dislivelloDelleTappe). Il risultato si mette in cache sull'oggetto
+scelto (scelto._lineaCalcolata) per non richiamare il server ogni volta
+che si riapre/richiude la tendina nella stessa sessione. Nessun avviso
+di fuori-percorso in nessuno dei due casi: invariato, resta solo una
+linea di riferimento (vincolo hard 7).
+
+Due chiavi i18n nuove (track.percorsiSalvati/track.propriProgetti) per
+le etichette dei due gruppi.
+
+Verificato dal vivo con l'estensione Chrome, account demo con un
+percorso salvato e un progetto propri gia' esistenti: la tendina mostra
+i due gruppi corretti; scegliendo il progetto ("Monte Gennaro") vengono
+calcolati e disegnati 888 punti; scegliendo il percorso salvato
+("Corno Grande") si disegna come sempre; "Nessuno" pulisce la linea;
+riscegliendo il progetto la linea riappare dalla cache (nessuna seconda
+chiamata al server). Commit `344f43f`.
+
+TUTTI E QUATTRO I PUNTI DELLA LISTA DI RICHIESTE DI DENIS DEL 10/09 SONO
+ORA CHIUSI (rifugi, colore assi, chat, percorso da seguire) + il
+promemoria condizionato chiuso senza codice per non fattibilita'.
+
+
+=====================================================================
 FOTO PROFILO INGRANDIBILE AL CLICK (CHIUSO, 12/09/2026)
 =====================================================================
 Denis:
