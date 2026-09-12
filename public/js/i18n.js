@@ -216,6 +216,7 @@
             'profile.nessunSentieroPreferito': 'No favorite trails yet.',
             'profile.togliPreferiti': 'Remove from favorites',
             'profile.fotoProfilo': 'Profile photo',
+            'profile.ingrandisciFoto': 'Enlarge photo',
             'profile.mDisliv': 'm gain',
             'profile.quotaMax': 'max alt.',
             'profile.durata': 'duration',

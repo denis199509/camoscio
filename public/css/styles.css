@@ -4158,7 +4158,12 @@ option {
     margin-bottom: 0;
 }
 
-/* Header profilo: foto reale al posto dell'emoji, quando presente */
+/* Header profilo: foto reale al posto dell'emoji, quando presente. Il contenitore che la
+   limita (56x56 + overflow:hidden per l'intestazione profilo, 40x40 per il widget utente in
+   alto) NON e' facoltativo: senza, width/height:100% non hanno un riferimento e la foto si
+   e' gia' presa mezzo schermo bloccando ogni click (punto 62, 10/08/2026).
+   Il ritaglio a cerchio nasconde pero' i bordi di una foto verticale: da qui la classe
+   .avatar-photo-zoom (click per ingrandirla), regola piu' sotto insieme alle icone badge. */
 .avatar-photo {
     width: 100%;
     height: 100%;
@@ -5017,18 +5022,36 @@ option {
 /* Cliccabili per aprire l'immagine ingrandita (public/js/app.js, delegazione su document) -
    object-fit:cover qui sopra ritaglia l'icona in un cerchio, quindi vale la pena vedere
    l'immagine vera intera, non solo il ritaglio piccolo della scheda. Vale anche per
-   .stamp-icon-img, l'anteprima Passaporto in Dashboard - stessa icona, componente diverso. */
+   .stamp-icon-img, l'anteprima Passaporto in Dashboard - stessa icona, componente diverso.
+   .avatar-photo-zoom (11/09/2026) e' la foto profilo nell'intestazione del profilo, propria
+   e altrui: stesso identico gesto, quindi stessa regola e non una copia quasi uguale. Unica
+   differenza, il suo click e' agganciato in userprofile.js invece che dalla delegazione qui
+   sopra - la classe sorella .avatar-photo la porta anche l'avatar del widget utente in alto,
+   che non deve ingrandirsi. */
 .badge-card-icon-img,
 .stamp-icon-img,
-.personal-badge-illustration {
+.personal-badge-illustration,
+.avatar-photo-zoom {
     cursor: pointer;
     transition: opacity 0.15s ease;
 }
 
 .badge-card-icon-img:hover,
 .stamp-icon-img:hover,
-.personal-badge-illustration:hover {
+.personal-badge-illustration:hover,
+.avatar-photo-zoom:hover,
+.avatar-photo-zoom:focus-visible {
     opacity: 0.8;
+}
+
+/* La foto profilo e' l'unica delle quattro raggiungibile da tastiera (role="button" +
+   tabindex), e vive dentro .user-profile-avatar, che ha overflow:hidden: un anello di focus
+   disegnato FUORI dal riquadro dell'immagine verrebbe ritagliato via e non si vedrebbe.
+   outline-offset negativo lo porta dentro l'immagine, dove segue il border-radius:50% di
+   .avatar-photo. Stesso arancione del focus dei campi (.form-group input:focus). */
+.avatar-photo-zoom:focus-visible {
+    outline: 2px solid var(--accent-orange);
+    outline-offset: -3px;
 }
 
 .image-lightbox-content {

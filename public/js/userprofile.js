@@ -45,8 +45,19 @@ function renderProfileIdentity(utente, timbri, els, ascese) {
     const esc = window.escapeHtml;
 
     if (els.header) {
+        // Denis, 11/09/2026: "se entro sul profilo di qualcuno non riesco a vedere bene la
+        // foto profilo. possiamo ingrandirla cliccando sopra?". Qui la foto vive in un
+        // cerchio di 56x56 ritagliato (.user-profile-avatar + object-fit:cover di
+        // .avatar-photo): di una foto verticale si vede si' e no la faccia. Cliccandola si
+        // apre intera nel modale #image-lightbox. Solo su questo ramo: quando la foto manca
+        // resta l'emoji (utente.avatar), che non ha niente da ingrandire.
+        // .avatar-photo-zoom e' una classe IN PIU', non al posto di .avatar-photo: serve ad
+        // agganciare il click QUI e solo qui, perche' la stessa .avatar-photo la porta anche
+        // l'avatar minuscolo del widget utente in alto (app.js:1319), che non si ingrandisce.
         const avatarHtml = utente.profilePhoto
-            ? `<img src="${esc(utente.profilePhoto)}" alt="${esc(T('profile.fotoProfilo') || 'Foto profilo')}" class="avatar-photo">`
+            ? `<img src="${esc(utente.profilePhoto)}" alt="${esc(T('profile.fotoProfilo') || 'Foto profilo')}"`
+                + ` class="avatar-photo avatar-photo-zoom" tabindex="0" role="button"`
+                + ` title="${esc(T('profile.ingrandisciFoto') || 'Ingrandisci la foto')}">`
             : esc(utente.avatar);
         const livelloTesto = T('profile.livelloReputazione', esc(utente.experienceLevel), utente.reputation)
             || `Livello: ${esc(utente.experienceLevel)} · Reputazione: ${utente.reputation}%`;
@@ -77,6 +88,33 @@ function renderProfileIdentity(utente, timbri, els, ascese) {
 
         const fb = els.header.querySelector('#btn-follow-toggle');
         if (fb) fb.addEventListener('click', () => window.toggleFollow(utente.id));
+
+        // Ingrandimento della foto: riusa il modale #image-lightbox gia' esistente (app.js,
+        // nato il 20/08/2026 per le icone dei badge) - stesso fondo scuro, stessa X, stesso
+        // Esc, stessa chiusura col tasto Indietro del telefono (apriModaleStorico), e
+        // l'immagine dentro e' gia' vincolata a 92vw/92vh con object-fit:contain, quindi non
+        // trabocca mai. Niente da disegnare da capo.
+        // Ascoltatore sull'elemento appena scritto e NON aggiunto alla delegazione su
+        // document di app.js (.badge-card-icon-img, .stamp-icon-img, ...): li' basterebbe una
+        // riga, ma il selettore prenderebbe anche l'avatar dell'header presente su OGNI
+        // pagina. Nessun ascoltatore accumulato: l'innerHTML qui sopra butta via l'elemento
+        // vecchio a ogni render, e questa funzione disegna sia il profilo di un altro utente
+        // sia il proprio (profile.js), quindi il click vale su entrambe le pagine.
+        const foto = els.header.querySelector('.avatar-photo-zoom');
+        if (foto && window.openImageLightbox) {
+            // Due soli argomenti: niente grigio (non e' un badge bloccato) e nessuno stampId,
+            // quindi nel modale la "i" delle schede badge resta nascosta.
+            const ingrandisci = () => window.openImageLightbox(foto.src, foto.alt);
+            foto.addEventListener('click', ingrandisci);
+            // role="button" + tabindex="0" nel markup: da tastiera si apre con Invio/Spazio
+            // come un bottone vero (la chiusura con Esc e' gia' gestita in app.js).
+            foto.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    ingrandisci();
+                }
+            });
+        }
     }
 
     if (els.badgeBox) {
