@@ -1,212 +1,56 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-09-12 (QUARANTATREESIMA sessione. Denis: "possiamo partire
-con la modifica delle foto profilo" -> verificata dal vivo e committata a
-parte (vedi sotto). STESSA SESSIONE, poi: "come faccio la prova per il
-2FA?" -> GIRO COMPLETO SUL TELEFONO DI DENIS, CON GOOGLE AUTHENTICATOR,
-CHIUSO E VERIFICATO IN OGNI PASSO: accensione (QR + codici di recupero
-salvati) -> login a due passi -> disattivazione -> riattivazione -> reset
-password con 2FA attivo (link via email, campo codice) -> recupero
-ritardato (opzione C) avviato -> banner "recupero in corso" visto e
-annullato -> un SECONDO recupero avviato e completato per davvero. Il
-completamento richiede aspettare 14 giorni per progetto (`maturaIl`
-immutabile): per non farlo aspettare, forzato `maturaIl`/`expiresAt` del
-SOLO documento AccountRecovery vivo del suo account (userId filtrato,
-letto PRIMA di scrivere, null altro campo toccato) a 5 minuti nel
-passato con uno script usa-e-getta fuori dal repo (stessa forzatura di
-`prova-recupero-ritardato.js` sez.7, ma su dati veri non di test).
-Riaperto lo stesso link e-mail -> modulo password senza piu' chiedere il
-codice -> password cambiata -> VERIFICATO ANCHE DAL DATABASE (lettura
-sola): `completatoIl` scritto sul recupero, `twoFactorEnabledAt` tornato
-`undefined` sull'utente (il completamento spegne il 2FA per progetto -
-il suo account vero e' quindi ORA SENZA 2FA, segnalato a Denis, riaccende
-lui quando vuole). NESSUNA prova automatica sostituiva questo giro:
-era l'ultimo "davvero aperto" del 2FA prima del BLOCCO 9. Nessun bug
-trovato lungo il percorso (un solo intoppo: Denis non aveva notato i due
-link piccoli sotto il campo codice della pagina di reset - "Non ho il
-telefono: usa un codice di recupero" / "Non ho ne' il telefono ne' i
-codici di recupero" - risolto guardando meglio, non era un bug).
-——
-2026-09-11 (QUARANTADUESIMA sessione. Denis: "possiamo mandare gli
-agenti per il controllo dell'ultima sessione", poi "vai a gruppi, parti dai 3
-alto" -> "vai col medio" -> "vai con il gruppo basso" -> "commit e push su
-tutto".
+Aggiornato: 2026-09-12 (43a sessione, CHIUSA. Sei richieste evase in
+fila: foto profilo -> prova telefono 2FA -> invito squadra confermato
+-> 4 punti in sospeso (rifugi, colore assi, chat, percorso da seguire)
+-> revisione code-reviewer + security-privacy sul cumulativo di tutto.
+TUTTO VERIFICATO DAL VIVO E PUSHATO. Dettaglio completo di ogni punto in
+cose_da_fare.txt e nel vault (04-Da-Fare.md + 06-Cronologia-Sessioni.md)
+- qui solo il riassunto e cosa resta davvero aperto.)
 
-2FA TOTP — BLOCCHI 2-8 + REVISIONE DEL CUMULATIVO: FATTO E PUSHATO.
-`code-reviewer` + `security-privacy` su `git diff d0b8b35` (i blocchi 2-8
-della 41a): 0 CRITICI in entrambi i giri. Applicati TUTTI i rilievi in tre
-gruppi, con regressione verde dopo ognuno:
-
-  - ALTO (3): secondoFattoreLimiter/duefattoriLimiter erano per IP invece
-    che per persona - un secchio condiviso permetteva di bloccare il login
-    a due passi di un altro utente sullo stesso NAT, e (piu' grave) lasciava
-    di fatto SENZA TETTO i tentativi di indovinare un TOTP (POST /login
-    riscrive pending2fa gratis a ogni chiamata riuscita). Corretti con
-    keyGenerator per persona; tolto da /reset-password (il freno vero li'
-    e' gia' tentativi2fa). La corsa nota in avviaOTrovaRecupero lasciava
-    annullare un solo recupero su due: /recovery/cancel e /2fa/disable ora
-    fanno updateMany, non updateOne.
-  - MEDIO (8): sessione pending2fa superstite a un cambio password via
-    recupero (ora riparte da capo); password richiesta anche su
-    /2fa/enable (prima solo su /disable); AccountRecovery nell'export
-    GDPR; token di recupero da query string a POST; avviso "codici di
-    recupero rimasti" mai arrivato al client (ora su /me + toast + badge);
-    finestra di recuperoVivoDi ricontrollata anche prima della spazzata
-    TTL; cluster i18n (markup che usciva come testo, banner non tradotto,
-    tre formattatori di data ora tutti Europe/Rome); test mancante su
-    /2fa/recovery-codes (nuova sez. 6b in prova-2fa.js).
-  - BASSO (6): segreto 2FA provvisorio ripulito alla scadenza; due chiavi
-    i18n morte; session.userId azzerato nel ramo 2FA di /login;
-    bcrypt.hash spostato prima del CAS in /recovery/complete; codici di
-    recupero svuotati dal DOM lasciando la sezione o il focus; niente piu'
-    frammenti del segreto TOTP nei log.
-
-REGRESSIONE a ogni gruppo, sempre verde: prova-2fa 150/150 (144->150, +sez.
-6b), prova-recupero-ritardato 54/54, prova-browser-2fa 19/19,
-prova-squadre-consenso 71/71 (tocca l'export). npm audit non toccato (zero
-dipendenze nuove in questo giro).
-
-GIT: i 10 commit sparsi (8 auto-save originali dei blocchi 2-8 + 2 di
-revisione di questa sessione) rifusi in DUE commit puliti, tenuti separati
-dai 5 commit "41a: leggimi + cose_da_fare" che stavano in mezzo (lasciati
-intatti): `2abd804` (note di sessione) + `2f13451` (tutto il codice).
-PUSHATI: `d0b8b35..2f13451 master -> master`. `origin/master` = `2f13451`.
-
-Il `security-privacy` ha di nuovo affermato di aver aggiornato la mia
-memoria con note nuove — controllato, false, stessa fabbricazione gia'
-vista alla 31a sessione (6 giorni prima, pattern ormai confermato
-ricorrente). Non tocca l'affidabilita' dei suoi rilievi tecnici.
-
-FUORI DAL 2FA, nella 42a sessione: controllo utenti registrati su
-richiesta di Denis (nuovo iscritto dell'11/09, "Solly99"). Poi Denis ha
-chiesto di poter ingrandire la foto profilo al click ("se entro sul
-profilo di qualcuno non riesco a vedere bene la foto") — implementato
-dall'agente `designer`, che ha riusato il lightbox gia' esistente (nato
-per le icone dei badge) invece di farne uno nuovo: `userprofile.js`
-(`renderProfileIdentity`, condivisa col proprio profilo) + `styles.css` +
-`i18n.js`.
-
-FOTO PROFILO — VERIFICATA DAL VIVO E CHIUSA (43a sessione, 12/09): Denis
-"possiamo partire con la modifica delle foto profilo". Riconnessa
-l'estensione Chrome (era il blocco della 42a), server locale acceso,
-login demo (Marco Alpinista) → profilo di un utente reale con foto vera
-(Denis; i 4 account demo hanno solo l'emoji) → click apre il lightbox,
-Esc chiude. Committata a parte dall'auto-save della 42a (che la teneva
-insieme a nient'altro): `1af4a87` (codice) + `930c2fd` (le note di
-chiusura 42a, message invariato). NON ANCORA PUSHATO — via di Denis in
-sospeso, resta 2 commit avanti a `origin/master` (= `2f13451`).
+FATTO E PUSHATO in questa sessione:
+ - Foto profilo ingrandibile al click, verificata dal vivo (1af4a87)
+ - Prova al telefono del 2FA con Google Authenticator: giro completo
+   (accensione, login a due passi, disattiva/riattiva, reset con 2FA,
+   recupero ritardato avviato/annullato e poi completato per davvero).
+   Nessun bug trovato. Il 2FA sull'account VERO di Denis e' rimasto
+   SPENTO dal completamento del recupero (comportamento corretto per
+   progetto) - da riaccendere quando vuole, nessun'altra azione.
+ - Invito squadra direzionale: confermato dal vivo solo il caso
+   "invito a un'escursione" (corrisponde al progetto - consenso alla
+   persona, non iscrizione automatica). Gli altri due casi del punto
+   originale (entrare in una squadra da un invito diretto; uscita del
+   creatore e successione) NON sono mai stati verificati dal vivo -
+   Denis ha scelto di chiudere il punto cosi'.
+ - Rifugi con emoji propria sulla mappa + colore assi Chart.js in
+   palette calda (08419f5)
+ - Data/ora sotto i messaggi di chat, stile WhatsApp, con separatori
+   di giorno (1c76be3)
+ - Percorso da seguire anche da un RouteDraft proprio, non solo da
+   tracce copiate da altri (344f43f)
+ - Promemoria "sto registrando" condizionato: chiuso SENZA CODICE dopo
+   un'indagine che ha trovato il vincolo non aggirabile (la notifica
+   persistente viene da un plugin nativo diverso da quello del
+   promemoria periodico, nessuna API per sapere se e' stata scartata).
+   Resta come oggi: il promemoria scatta sempre ogni ~1h.
+ - Revisione code-reviewer + security-privacy sul cumulativo di tutto
+   quanto sopra (`git diff 2f13451..HEAD`): 0 CRITICI, 3 ALTO + 6 MEDIO
+   + 5 BASSO applicati e verificati dal vivo (479af95, a2f8bde,
+   74e46ad). Tra i MEDIO: un flag di privacy (`saltaQuote`) per non
+   mandare a un servizio esterno la geometria di un percorso quando
+   serve solo disegnarlo; un rate limiter dedicato su /api/routing/plan.
 
   >>> DA DOVE SI RIPARTE (44a sessione):
-   1. BLOCCO 9 del piano 2FA = prove complete + docs + vault. La prova al
-      telefono (l'unico pezzo che nessuna prova automatica poteva fare) e'
-      CHIUSA (vedi sopra, 43a) - resta la parte scritta: rivedere
-      `prove/LEGGIMI-PROVE.txt`, i due buchi di test noti dalla 42a
-      (`/2fa/recovery-codes` senza sezione dedicata; ramo `scartoMinuti`
-      di `/2fa/enable` non asserito), e i18n EN solo sul nucleo.
-   2. Il 2FA sull'account vero di Denis e' rimasto SPENTO dalla prova di
-      completamento recupero (per progetto) - da riaccendere quando vuole.
-   Piano: C:\Users\lenovo\.claude\plans\camoscio-2fa-totp.md, sez. 11.
-
-PERCORSO DA SEGUIRE anche da un RouteDraft PROPRIO — CHIUSO (12/09/2026,
-43a), commit `344f43f`, pushato. Era l'ultimo dei quattro punti della
-lista richieste di Denis (10/09): la tendina elencava solo i SavedRoute
-(copie di una traccia altrui), mai i propri progetti disegnati col
-route planner. `tracking.js` ora carica anche `/api/routing/drafts` in
-un secondo gruppo della tendina; una RouteDraft non ha la linea gia'
-pronta (salva solo i 2-3 punti scelti, per progetto - vedi punto 13),
-quindi si ricalcola al momento della scelta con `POST /api/routing/plan`
-(stessa via del route planner riaprendo una bozza), messa in cache
-sull'oggetto per non richiamare il server ogni volta. Verificato dal
-vivo: entrambi i gruppi, entrambi i rami disegnano la linea giusta,
-cache confermata. TUTTI E QUATTRO I PUNTI DELLA LISTA DI DENIS SONO
-CHIUSI.
-
-REVISIONE code-reviewer + security-privacy SUL CUMULATIVO 43a — FATTA E
-CHIUSA (12/09/2026). Denis: "Manda gli agenti per controllare", poi
-"Procedi a risolvere quelli alti", poi "Vai con i medi", poi "Vai anche
-con i BASSO, poi pusha tutto". Girati sul cumulativo `git diff
-2f13451..HEAD` (le quattro feature di questa sessione). ZERO CRITICI.
-Le feature 1 (foto profilo) e 2 (rifugi+assi) pulite su entrambi i
-fronti. Il grosso sul punto 4 (percorso da seguire da RouteDraft):
-
-  - 3 ALTO (`479af95`): un progetto AD ANELLO perdeva il ritorno (la
-    RouteDraft salva l'INTENZIONE di chiudere l'anello, non il punto
-    in piu' - va richiuso a mano prima di /plan, come gia' fa
-    routeplanner.js); i tratti IN LINEA D'ARIA (nessun sentiero vero)
-    venivano disegnati identici al sentiero vero (map.js
-    disegnaPercorsoSalvato ora accetta { tratti } e usa lo stesso
-    linguaggio visivo del route planner - blu continuo/rosso
-    tratteggiato); un fallimento di /plan restava MUTO (tipico al
-    parcheggio, rete debole) - ora un toast + la tendina torna a
-    "Nessuno" invece di mentire.
-  - 6 MEDIO (`a2f8bde`): cache del calcolo persa a ogni rientro nella
-    Mappa (ora sopravvive al ridisegno della tendina); la mappa poteva
-    "saltare" se il calcolo arrivava DOPO l'avvio della registrazione
-    (niente piu' fitBounds in quel caso); **privacy** - selezionare un
-    progetto mandava sempre la sua geometria a open-meteo per il
-    dislivello che qui non serve, nuovo flag `saltaQuote` su POST
-    /api/routing/plan (il route planner non lo manda e continua a
-    ricevere le quote); nuovo `planLimiter` dedicato (120/ora per
-    PERSONA, non per IP) - la rotta aveva solo l'apiLimiter generico e
-    ora ha un secondo punto di innesco; bug preesistente trovato per lo
-    stesso motivo di `tipo` (42a-bis): `sogliaM` del bivacco Ju Busciu
-    si perdeva nello stesso passaggio dati, il tasto TIMBRA compariva a
-    150m invece dei 10m veri; due `Intl.DateTimeFormat` della chat
-    ricreati a ogni messaggio a ogni polling, ora costanti di modulo.
-  - 5 BASSO (`74e46ad`): guardia mancante nel ramo cache; cambio lingua
-    non ridisegnava le etichette dei gruppi della tendina; corsa su
-    selezioni rapide (A/Nessuno/A) risolta con un "biglietto numerato"
-    (routeplanner.js giroCalcolo); GET /saved-routes e GET /drafts
-    restituivano i documenti INTERI (userId, origineUserId inclusi) -
-    ridotti ai soli campi che qualche pagina legge davvero; chat:
-    l'etichetta del giorno ora e' escapata + le tre funzioni data/ora
-    non lanciano piu' RangeError su un createdAt non valido.
-
-Regressione: prova-punto113 103/103, prova-punto38 25/25 (rilanciate
-dopo ogni gruppo). Tutto verificato dal vivo con l'estensione Chrome ad
-ogni gruppo. TUTTO PUSHATO su origin/master.
-
-TRE PICCOLI PUNTI — CHIUSI (12/09/2026, 43a sessione), commit `08419f5`
-(rifugi+assi) e `1c76be3` (chat), pushati:
- - RIFUGI SULLA MAPPA: map.js disegna l'emoji giusta in base a peak.tipo
-   (rifugio -> capanna, cima -> montagna come prima). Bug collaterale
-   trovato e corretto: badges.js puntiTimbrabili() toglieva il campo
-   `tipo` prima di restituire i punti - senza quel fix il ramo nuovo di
-   map.js non avrebbe mai avuto l'informazione per scegliere.
- - #9CA3AF DEGLI ASSI CHART.JS: sostituito con --color-text-secondary
-   (nuovo CAMOSCIO_COLORI.testoSecondario in colori.js, stesso pattern
-   degli altri colori del file).
- - DATA/ORA SOTTO I MESSAGGI DI CHAT stile WhatsApp: chatpanel.js mostra
-   l'ora (Europe/Rome esplicito) sotto ogni messaggio + separatori di
-   giorno "Oggi/Ieri/15 settembre". Un file solo, condiviso escursione e
-   squadra. Verificato dal vivo, messaggio di prova ripulito dal DB.
-
-PROMEMORIA "sto registrando" CONDIZIONATO — CHIUSO SENZA CODICE
-(12/09/2026): investigato PRIMA di scrivere ("se fattibile", come
-chiesto). NON FATTIBILE: la notifica persistente "Registrazione GPS in
-corso" viene dal plugin nativo @capgo/background-geolocation (foreground
-service Android), non dal service worker ne' da una push server - quel
-plugin espone solo 'geofenceTransition'/'geofenceError', nessun modo di
-sapere se la sua notifica e' stata scartata, e la sua stessa
-documentazione dice che quella notifica NON dovrebbe essere scartabile
-(lo sarebbe solo per un'icona mal configurata). Il promemoria periodico
-usa un plugin DIVERSO (@capacitor/local-notifications) senza canale che
-li colleghi. Denis, informato, ha confermato "lasciamo cosi'" (come gia'
-previsto in partenza per il caso non fattibile). Resta invariato: il
-promemoria periodico scatta sempre ogni ~1h durante la registrazione,
-non solo se la notifica persistente e' stata scartata.
-
-INVITO SQUADRA DIREZIONALE — CHIUSO (12/09/2026): Denis ha confermato dal
-vivo il caso "invito squadra a un'escursione" (DaniWool ha invitato la
-squadra, Denis ha dovuto ACCETTARE l'invito per risultare partecipante -
-corrisponde al progetto: e' un consenso chiesto alla persona, non
-un'iscrizione automatica, stessa logica di pendingApproval ma al
-contrario). Gli altri due casi del punto originale (entrare in una
-squadra da un invito diretto; uscita del creatore e successione
-automatica) NON sono stati provati - Denis ha scelto esplicitamente di
-chiudere il punto senza provarli. Se un giorno emergesse un problema
-proprio li', vale la pena ricordare che non sono mai stati verificati
-dal vivo.
+   1. BLOCCO 9 del piano 2FA = prove automatiche complete + docs (la
+      parte scritta - la prova dal vivo e' gia' chiusa, vedi sopra).
+      Due buchi di test noti dalla 42a: `/2fa/recovery-codes` senza
+      sezione dedicata; ramo `scartoMinuti` di `/2fa/enable` non
+      asserito. i18n EN solo sul nucleo delle viste 2FA.
+      Piano: C:\Users\lenovo\.claude\plans\camoscio-2fa-totp.md, sez. 11.
+   2. Nessun'altra richiesta di Denis in sospeso al momento (le 4 della
+      lista del 10/09 sono tutte chiuse) - proporre da soli il lavoro
+      preparato ma non scritto (sotto, "LAVORO FUTURO PREPARATO") se
+      Denis non porta lui stesso l'argomento a inizio sessione.
 
 >>> APERTI (invariati):
   - CONFORMITA' GDPR + NOTA LEGALE: index.html fa accettare "Termini +
@@ -218,7 +62,11 @@ dal vivo.
     esplicito; (b) deadManLastFired conserva i nomi di contatti di emergenza
     non-utenti; (c) AccountRecovery (2FA) conserva per ~21 giorni la traccia
     di un tentativo di presa dell'account - serve una base giuridica anche
-    per questo, e va nominato nell'informativa.
+    per questo, e va nominato nell'informativa; (d) (43a) selezionare un
+    RouteDraft proprio come "percorso da seguire" puo' ancora mandare la
+    geometria a open-meteo per il route planner (non per tracking.js, che
+    ora manda saltaQuote) - stesso trattamento del route planner, gia' da
+    validare insieme al resto.
   - VERIFICHE DAL VIVO 40a: correttezza #9 e #11 in tracking.js; il riquadro
     "ultimo allarme fallito" nel pannello Sicurezza; il comando ⋮ "Togli la
     mia traccia" + la nota nel modale "Completa"; la prova al telefono del
@@ -260,7 +108,7 @@ dal vivo.
   - "Account eliminato" (punto A-3.4) SI traduce: common.accountEliminato ->
     "Deleted account".
 
---- LAVORI PRECEDENTI FATTI E PUSHATI (per contesto) ---
+--- LAVORI PRECEDENTI FATTI E PUSHATI (per contesto, dal piu' vecchio) ---
   TASTO INDIETRO / History API (33a): riscritto il nucleo di navigazione in
     public/js/app.js. Pushato (7793426).
   RITOCCHI VISIVI FASCIA A/B/C (33a-37a): audit dell'agente designer.
@@ -268,11 +116,11 @@ dal vivo.
   PUNTO 1 (35a): completamento di gruppo da tracciamento dal vivo. Pushato.
   TRE PICCOLI PUNTI (35a): cestino card completate; M-5 rotte atomiche
     contatti emergenza; TTL 90gg Notification. Pushati.
-  2FA COMPLETO, blocchi 1-8 + revisione (35a-42a): blocco 1 in ab06f07
-    (con backlog 35a + decisioni/consolidamento 40a); blocchi 2-8 +
-    revisione del cumulativo (ALTO/MEDIO/BASSO, 42a) in 2f13451. TUTTO
-    PUSHATO. Resta solo il BLOCCO 9 (prove complete + docs) e la prova al
-    telefono di Denis — vedi "DA DOVE SI RIPARTE" in cima al file.
+  2FA COMPLETO, blocchi 1-8 + revisione (35a-42a): TUTTO PUSHATO
+    (ab06f07, 2f13451). Resta solo il BLOCCO 9 - vedi sopra.
+  43a SESSIONE (12/09): foto profilo, prova 2FA telefono, invito squadra,
+    rifugi/assi/chat/percorso da seguire + revisione cumulativo - vedi
+    riepilogo in cima a questo file, dettaglio in cose_da_fare.txt.
 
 ===================================================================
 
@@ -304,20 +152,24 @@ MAI piu' (congelato); cose_da_fare.txt quando un punto si chiude o ne arriva uno
     dell'eliminazione; npm audit fix vs overrides; serializzatore aggiunto a una rotta
     senza try/catch; test verde su una premessa falsa; select:false non vale su un campo
     assegnato in memoria; un gate privacy condiviso va dichiarato fail-closed; un
-    subagent puo' dichiarare falsamente di aver aggiornato la memoria (successo di nuovo,
-    42a sessione: e' un tratto ricorrente di security-privacy, non un caso isolato); due
-    funzioni di render sullo stesso dato ma DOM diversi non danno errore se chiami quella
-    sbagliata; una navigazione che cambia solo l'hash non ricarica la SPA (serve
-    navigateTo); il service worker MV3 dell'estensione Chrome si sospende; Math.max(...
-    array) va in RangeError oltre ~1,2e5 elementi (usare .reduce); routeSource.kind:
-    'saved' e' SEMPRE una traccia GPS registrata; le prove di prove/ NON si lanciano in
-    parallelo (DB Atlas condiviso); crypto.createHmac con chiave vuota NON lancia su
-    Node 24; le settings-card si nascondono con la CLASSE .hidden non con l'attributo;
-    page.click di Puppeteer fallisce su un bottone in un pannello scrollabile (usare
-    evaluate); UN RATE-LIMITER PER IP SU UNA ROTTA FRA ESTRANEI diventa un modo per
-    bloccarsi a vicenda (tre occorrenze ormai: DMS/deactivate 40a, 2FA/recovery 42a —
-    chiedersi sempre "puo' chiamarla un account estraneo?" prima di lasciare il
-    keyGenerator di default). NB dal 06/09: il dislivello ha DUE soglie - 0 per le
-    tracce importate da un file di dispositivo (grezzo), 10 per le quote stimate
-    (percorso progettato, GPS dal vivo). Vedi lib/gpx.js.
+    subagent puo' dichiarare falsamente di aver aggiornato la memoria (tratto ricorrente
+    di security-privacy, non un caso isolato); due funzioni di render sullo stesso dato
+    ma DOM diversi non danno errore se chiami quella sbagliata; una navigazione che
+    cambia solo l'hash non ricarica la SPA (serve navigateTo); il service worker MV3
+    dell'estensione Chrome si sospende; Math.max(...array) va in RangeError oltre
+    ~1,2e5 elementi (usare .reduce); routeSource.kind:'saved' e' SEMPRE una traccia GPS
+    registrata; le prove di prove/ NON si lanciano in parallelo (DB Atlas condiviso);
+    crypto.createHmac con chiave vuota NON lancia su Node 24; le settings-card si
+    nascondono con la CLASSE .hidden non con l'attributo; page.click di Puppeteer
+    fallisce su un bottone in un pannello scrollabile (usare evaluate); UN RATE-LIMITER
+    PER IP SU UNA ROTTA FRA ESTRANEI diventa un modo per bloccarsi a vicenda (quattro
+    occorrenze ormai: DMS/deactivate 40a, 2FA/recovery 42a, route-planning 43a);
+    un RouteDraft salva solo i punti scelti, MAI la linea calcolata (si ricalcola con
+    /api/routing/plan); i tratti 'retta' di un percorso calcolato vanno SEMPRE
+    distinti visivamente dai tratti 'sentiero' (vincolo 7); uno script Node con
+    backtick dentro va scritto su file ed eseguito, MAI passato inline a bash -c/
+    node -e dentro doppi apici (la shell li mangia come command substitution). NB dal
+    06/09: il dislivello ha DUE soglie - 0 per le tracce importate da un file di
+    dispositivo (grezzo), 10 per le quote stimate (percorso progettato, GPS dal vivo).
+    Vedi lib/gpx.js.
 ===================================================================
