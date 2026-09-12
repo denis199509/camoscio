@@ -85,10 +85,14 @@
     // voluto dire toccare anche i popup, senza guadagnarci niente.
     // + tipo (Denis 10/09/2026): serve al marker della Mappa per disegnare i rifugi
     // con un'emoji diversa dalle cime - prima veniva tolto qui, quindi non arrivava mai.
+    // + sogliaM (revisione 43a, MEDIO - trovato per lo stesso motivo, non causato da
+    // questa sessione): checkGeofencing in map.js legge gia' `peak.sogliaM || 150` (Ju
+    // Busciu vuole 10, non 150), ma questa funzione lo toglieva - il tasto TIMBRA compariva
+    // 150 m prima che il server (soglia 10 m) fosse pronto ad accettarlo.
     function puntiTimbrabili() {
         return catalogo()
             .filter(b => Number.isFinite(b.lat) && Number.isFinite(b.lng))
-            .map(b => ({ name: b.nome, lat: b.lat, lng: b.lng, altitude: b.quota, stampId: b.stampId, tipo: b.tipo }));
+            .map(b => ({ name: b.nome, lat: b.lat, lng: b.lng, altitude: b.quota, stampId: b.stampId, tipo: b.tipo, sogliaM: b.sogliaM }));
     }
 
     // Catalogo + "questo l'ho preso, e quando", per un elenco di timbri qualunque.

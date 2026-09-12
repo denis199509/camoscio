@@ -1063,6 +1063,12 @@ async function renderRouteToFollowOptions() {
     const select = document.getElementById('tracking-route-select');
     if (!select) return;
     const currentValue = select.value;
+    // Revisione 43a (MEDIO): questa funzione si richiama ogni volta che si rientra nella
+    // sezione Mappa da idle (renderTrackingUi), ricostruendo percorsiDaSeguire con oggetti
+    // NUOVI - senza portare avanti la cache, un progetto gia' calcolato veniva ricalcolato
+    // da capo a ogni uscita/rientro, proprio quando si e' piu' probabile che manchi la rete
+    // (ci si allontana a controllare la mappa, si torna indietro).
+    const cacheVecchia = new Map(percorsiDaSeguire.filter(p => p._tappeCalcolate).map(p => [p.id, p._tappeCalcolate]));
     let salvati = [], bozze = [];
     try {
         const [resSalvati, resBozze] = await Promise.all([
@@ -1081,7 +1087,7 @@ async function renderRouteToFollowOptions() {
         // mano prima di mandare i punti a /plan, esattamente come fa gia' routeplanner.js
         // (puntiDaPercorrere). Senza, la linea da seguire si fermava a meta' anello, proprio
         // nel punto piu' lontano dall'auto.
-        ...bozze.map(b => ({ id: b.id, nome: b.nome, tipo: 'draft', punti: b.punti, anello: b.anello === true, agganciaAiSentieri: b.agganciaAiSentieri }))
+        ...bozze.map(b => ({ id: b.id, nome: b.nome, tipo: 'draft', punti: b.punti, anello: b.anello === true, agganciaAiSentieri: b.agganciaAiSentieri, _tappeCalcolate: cacheVecchia.get(b.id) }))
     ];
     select.innerHTML = `<option value="">${escapeHtml(T('track.nessunPercorso') || 'Nessuno')}</option>` +
         (salvati.length ? `<optgroup label="${escapeHtml(T('track.percorsiSalvati') || 'Percorsi salvati')}">` +
@@ -1134,7 +1140,11 @@ async function applicaPercorsoDaSeguire() {
         const res = await fetch('/api/routing/plan', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ punti: puntiDaProgettare, agganciaAiSentieri: scelto.agganciaAiSentieri !== false })
+            // saltaQuote (revisione 43a, MEDIO privacy): qui serve solo la linea, non il
+            // dislivello - saltando le quote non si manda a una fonte esterna (open-meteo,
+            // lib/elevation.js) la geometria di una camminata che l'utente sta per fare. Il
+            // route planner non manda questo flag e continua a ricevere le quote come sempre.
+            body: JSON.stringify({ punti: puntiDaProgettare, agganciaAiSentieri: scelto.agganciaAiSentieri !== false, saltaQuote: true })
         });
         if (!res.ok) {
             const dati = await res.json().catch(() => ({}));
@@ -1151,7 +1161,12 @@ async function applicaPercorsoDaSeguire() {
         // La tendina puo' essere cambiata nel frattempo (fetch lenta): disegna solo se e'
         // ancora la scelta corrente, altrimenti si sovrapporrebbe alla linea giusta.
         if (select.value === scelto.id && window.disegnaPercorsoSalvato) {
-            window.disegnaPercorsoSalvato(null, { tratti: tappe });
+            // Revisione 43a (MEDIO): se nel frattempo e' gia' partita la registrazione (la
+            // tendina si disabilita, ma una fetch iniziata prima resta in volo), niente
+            // fitBounds - l'utente ha gia' ripreso a camminare guardando la mappa, farla
+            // saltare da sola sarebbe peggio che lasciarla ferma.
+            const inRegistrazione = trackingState.status === 'active' || trackingState.status === 'paused';
+            window.disegnaPercorsoSalvato(null, { tratti: tappe, fit: !inRegistrazione });
         }
     } catch (e) {
         console.error('Errore calcolo percorso da seguire (progetto proprio):', e);

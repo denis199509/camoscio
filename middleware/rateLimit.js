@@ -380,10 +380,31 @@ const recuperoLimiter = rateLimit({
     message: messaggioTroppiTentativi
 });
 
+// POST /api/routing/plan: ogni chiamata legge un riquadro di sentieri da Mongo e costruisce
+// un grafo in memoria (lib/trailGraph.js), oltre a interrogare una fonte quote esterna se non
+// si chiede saltaQuote. Prima copriva solo apiLimiter (3000/5min, largo). Revisione 43a
+// (MEDIO): da questa sessione la rotta ha un SECONDO punto di innesco (tracking.js,
+// "percorso da seguire" da un proprio progetto), oltre al route planner - tetto dedicato,
+// per PERSONA e non per IP (progettare un percorso e' un'azione propria, non "fra
+// estranei", ma restare per IP esporrebbe comunque chi condivide un wifi di rifugio o un
+// CGNAT mobile a un limite altrui). 120/ora resta largo per il route planner, che chiama a
+// ogni punto aggiunto durante la progettazione.
+const planLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    limit: 120,
+    keyGenerator: (req) => (req.session && req.session.userId)
+        ? `u:${req.session.userId}`
+        : ipKeyGenerator(req.ip),
+    skip: soloInProduzione,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: messaggioTroppiTentativi
+});
+
 module.exports = {
     authLimiter, emailLimiter, apiLimiter, matchLimiter, exportLimiter, scritturaLimiter,
     sicurezzaLimiter, checkinLimiter, presaVisioneLimiter, cancellazioneLimiter, invitoLimiter,
     fotoLimiter, fotoLetturaLimiter, fotoProfiloLimiter, registrazioneLimiter,
     fotoProfiloLetturaLimiter, contattiLimiter,
-    secondoFattoreLimiter, duefattoriLimiter, recuperoLimiter
+    secondoFattoreLimiter, duefattoriLimiter, recuperoLimiter, planLimiter
 };

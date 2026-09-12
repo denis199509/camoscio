@@ -11,6 +11,7 @@
 const express = require('express');
 const router = express.Router();
 const { requireAuth } = require('../middleware/auth');
+const { planLimiter } = require('../middleware/rateLimit');
 const { isFiniteNum, simplifyTrack } = require('../lib/geometry');
 const { regionForPoint } = require('../lib/regions');
 const { progettaPercorso } = require('../lib/trailGraph');
@@ -34,7 +35,7 @@ const CAMPIONE_REGIONE = 40;
 // ma contro una richiesta costruita apposta: ogni tappa e' una ricerca su un grafo.
 const MAX_PUNTI = 25;
 
-router.post('/plan', requireAuth, async (req, res) => {
+router.post('/plan', requireAuth, planLimiter, async (req, res) => {
     try {
         const punti = req.body && req.body.punti;
         if (!Array.isArray(punti) || punti.length < 2) {
@@ -64,8 +65,14 @@ router.post('/plan', requireAuth, async (req, res) => {
             });
         }
 
+        // saltaQuote (revisione 43a, MEDIO privacy): chi vuole solo disegnare la linea
+        // (tracking.js, "percorso da seguire" durante la registrazione GPS) non ha bisogno
+        // del dislivello - saltarlo evita di mandare la geometria di una camminata futura a
+        // una fonte esterna (lib/elevation.js, open-meteo) quando quel dato non serve. Il
+        // route planner non manda questo flag e continua a ricevere le quote come sempre.
         const esito = await progettaPercorso(punti, {
-            agganciaAiSentieri: req.body.agganciaAiSentieri !== false
+            agganciaAiSentieri: req.body.agganciaAiSentieri !== false,
+            saltaQuote: req.body.saltaQuote === true
         });
 
         res.json(esito);

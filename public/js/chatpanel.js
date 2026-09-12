@@ -25,8 +25,15 @@ let chatPollTimer = null;
 // confrontare due date come stringhe, nel fuso di ROMA e non quello del dispositivo -
 // stessa trappola UTC/ora locale gia' presa piu' volte su questo progetto (vedi
 // ../camoscio memoria/07-Trappole-Tecniche.md).
+// Formattatori a livello di modulo, non uno per chiamata (revisione 43a, MEDIO): questa
+// funzione gira per OGNI messaggio a OGNI polling da 5s finche' la chat resta aperta, e
+// costruire un Intl.DateTimeFormat e' una delle operazioni piu' care del runtime - un
+// costo che qui si ripeteva a vuoto, sul telefono, con la batteria un vincolo dichiarato.
+const FMT_GIORNO_CHAT = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit' });
+const FMT_ORA_CHAT = new Intl.DateTimeFormat('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome', hour12: false });
+
 function chiaveGiornoChat(date) {
-    return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit' }).format(date);
+    return FMT_GIORNO_CHAT.format(date);
 }
 
 function etichettaGiornoChat(iso) {
@@ -39,7 +46,7 @@ function etichettaGiornoChat(iso) {
 }
 
 function formattaOraChat(iso) {
-    return new Date(iso).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome', hour12: false });
+    return FMT_ORA_CHAT.format(new Date(iso));
 }
 
 // { box: elemento dove disegnare, apiBase: es. '/api/squads/ID' o '/api/hikes/ID'
