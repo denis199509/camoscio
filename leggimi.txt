@@ -1,58 +1,59 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-09-12 (43a sessione, CHIUSA. Sei richieste evase in
-fila: foto profilo -> prova telefono 2FA -> invito squadra confermato
--> 4 punti in sospeso (rifugi, colore assi, chat, percorso da seguire)
--> revisione code-reviewer + security-privacy sul cumulativo di tutto.
-TUTTO VERIFICATO DAL VIVO E PUSHATO. Dettaglio completo di ogni punto in
-cose_da_fare.txt e nel vault (04-Da-Fare.md + 06-Cronologia-Sessioni.md)
-- qui solo il riassunto e cosa resta davvero aperto.)
+Aggiornato: 2026-09-12 (44a sessione, CHIUSA. Denis: "sfoltiamo qualche
+file se troppo grande, diamo un'occhiata al codice, verifica generale
+a blocchi". NESSUN CODICE MODIFICATO in questa sessione, solo lettura +
+documentazione: sfoltito il vault (04-Da-Fare.md) e fatta la verifica
+generale del codice sui primi due blocchi (routes/, lib/). Trovato 1
+CRITICO attivo in produzione, mai applicato il fix - vedi sotto. Dettaglio
+completo con snippet di fix nel vault (06-Cronologia-Sessioni.md, 44a).)
 
-FATTO E PUSHATO in questa sessione:
- - Foto profilo ingrandibile al click, verificata dal vivo (1af4a87)
- - Prova al telefono del 2FA con Google Authenticator: giro completo
-   (accensione, login a due passi, disattiva/riattiva, reset con 2FA,
-   recupero ritardato avviato/annullato e poi completato per davvero).
-   Nessun bug trovato. Il 2FA sull'account VERO di Denis e' rimasto
-   SPENTO dal completamento del recupero (comportamento corretto per
-   progetto) - da riaccendere quando vuole, nessun'altra azione.
- - Invito squadra direzionale: confermato dal vivo solo il caso
-   "invito a un'escursione" (corrisponde al progetto - consenso alla
-   persona, non iscrizione automatica). Gli altri due casi del punto
-   originale (entrare in una squadra da un invito diretto; uscita del
-   creatore e successione) NON sono mai stati verificati dal vivo -
-   Denis ha scelto di chiudere il punto cosi'.
- - Rifugi con emoji propria sulla mappa + colore assi Chart.js in
-   palette calda (08419f5)
- - Data/ora sotto i messaggi di chat, stile WhatsApp, con separatori
-   di giorno (1c76be3)
- - Percorso da seguire anche da un RouteDraft proprio, non solo da
-   tracce copiate da altri (344f43f)
- - Promemoria "sto registrando" condizionato: chiuso SENZA CODICE dopo
-   un'indagine che ha trovato il vincolo non aggirabile (la notifica
-   persistente viene da un plugin nativo diverso da quello del
-   promemoria periodico, nessuna API per sapere se e' stata scartata).
-   Resta come oggi: il promemoria scatta sempre ogni ~1h.
- - Revisione code-reviewer + security-privacy sul cumulativo di tutto
-   quanto sopra (`git diff 2f13451..HEAD`): 0 CRITICI, 3 ALTO + 6 MEDIO
-   + 5 BASSO applicati e verificati dal vivo (479af95, a2f8bde,
-   74e46ad). Tra i MEDIO: un flag di privacy (`saltaQuote`) per non
-   mandare a un servizio esterno la geometria di un percorso quando
-   serve solo disegnarlo; un rate limiter dedicato su /api/routing/plan.
+FATTO in questa sessione (nessun push di codice, solo vault):
+ - Vault: 04-Da-Fare.md sfoltito da 216 KB a poche decine di righe. Il
+   campo frontmatter aveva accumulato per intero il racconto di ogni
+   sessione dalla 36a alla 43a, duplicando 06-Cronologia-Sessioni.md.
+   Nel ripulire e' riemerso M-5 (race sul contatto d'emergenza, vedi
+   sotto) che era sparito dalle liste "aperti" senza mai essere chiuso.
+ - Verifica generale del codice (non un diff, tutta la cartella cosi'
+   com'e' oggi), a blocchi con code-reviewer + security-privacy:
+   BLOCCO 1 (routes/, 7684 righe) e BLOCCO 2 (lib/, 4246 righe) fatti.
+   BLOCCO 3 (public/js/, ~21000 righe) non ancora iniziato - Denis si e'
+   fermato apposta per chiudere la sessione in sicurezza.
 
-  >>> DA DOVE SI RIPARTE (44a sessione):
-   1. BLOCCO 9 del piano 2FA = prove automatiche complete + docs (la
-      parte scritta - la prova dal vivo e' gia' chiusa, vedi sopra).
+  >>> DA DOVE SI RIPARTE (45a sessione):
+   1. VERIFICA GENERALE DEL CODICE - PRIORITA' ASSOLUTA, 1 CRITICO ATTIVO
+      IN PRODUZIONE NON ANCORA CORRETTO:
+      - lib/gpx.js: la regex che estrae i punti da un .gpx va in
+        backtracking quadratico (misurato: 80.000 occorrenze/0,53 MB =
+        25,5 secondi; un file di pochi MB puo' bloccare l'event loop per
+        ORE). Render e' un solo processo -> tutto il sito giu', Dead
+        Man's Switch compreso. Sfruttabile da qualunque utente registrato
+        via /import-gpx o /completions/:id/gpx (nessun rate-limiter li').
+        Fix proposto (non applicato): restringere la classe di caratteri
+        della regex + contare i punti prima di costruire l'array dei
+        match. Decidere se correggerlo subito prima di continuare.
+      - Poi 7 ALTO fra i due blocchi: session fixation su login/
+        registrazione/demo-login (routes/auth.js, trovato da entrambi
+        gli agenti indipendentemente); tracking.js mostra uscite mai
+        pubblicate a chiunque; bookmarks.js restituisce i preferiti di
+        tutti; nessun tetto sui punti GPS per sessione (rischio
+        riempimento Atlas); douglasPeucker ricorsiva in lib/geometry.js
+        (RangeError misurato da ~4.000 punti); l'allarme DMS puo'
+        smettere di partire in silenzio se manca APP_BASE_URL (e in quel
+        caso logga posizione GPS + email dei contatti in chiaro);
+        Hike.routePath non e' incluso nello scrub dell'account eliminato.
+      - Poi BLOCCO 3 (public/js/) e il resto dei MEDIO/BASSO.
+      Dettaglio con file:riga e snippet di fix: vault, 06-Cronologia-
+      Sessioni.md sezione "44a sessione".
+   2. BLOCCO 9 del piano 2FA = prove automatiche complete + docs (la
+      parte scritta - la prova dal vivo e' gia' chiusa, 43a sessione).
       Due buchi di test noti dalla 42a: `/2fa/recovery-codes` senza
       sezione dedicata; ramo `scartoMinuti` di `/2fa/enable` non
       asserito. i18n EN solo sul nucleo delle viste 2FA.
       Piano: C:\Users\lenovo\.claude\plans\camoscio-2fa-totp.md, sez. 11.
-   2. Nessun'altra richiesta di Denis in sospeso al momento (le 4 della
-      lista del 10/09 sono tutte chiuse) - proporre da soli il lavoro
-      preparato ma non scritto (sotto, "LAVORO FUTURO PREPARATO") se
-      Denis non porta lui stesso l'argomento a inizio sessione.
+   3. Nessun'altra richiesta di Denis in sospeso al momento.
 
->>> APERTI (invariati):
+>>> APERTI (invariati salvo dove segnato 44a):
   - CONFORMITA' GDPR + NOTA LEGALE: index.html fa accettare "Termini +
     Informativa privacy" senza documento dietro. Serve un consulente privacy/
     avvocato GDPR (non un DPO) per l'Informativa vera + il testo di consenso
@@ -61,16 +62,22 @@ FATTO E PUSHATO in questa sessione:
     (a) l'automatismo D5 pubblica una traccia GPS al gruppo senza opt-in
     esplicito; (b) deadManLastFired conserva i nomi di contatti di emergenza
     non-utenti; (c) AccountRecovery (2FA) conserva per ~21 giorni la traccia
-    di un tentativo di presa dell'account - serve una base giuridica anche
-    per questo, e va nominato nell'informativa; (d) (43a) selezionare un
-    RouteDraft proprio come "percorso da seguire" puo' ancora mandare la
-    geometria a open-meteo per il route planner (non per tracking.js, che
-    ora manda saltaQuote) - stesso trattamento del route planner, gia' da
-    validare insieme al resto.
-  - VERIFICHE DAL VIVO 40a: correttezza #9 e #11 in tracking.js; il riquadro
+    di un tentativo di presa dell'account; (d) selezionare un RouteDraft
+    proprio come "percorso da seguire" puo' ancora mandare la geometria a
+    open-meteo per il route planner; (e) (44a) trasferimenti a terzi mai
+    dichiarati: opentopomap.org, nominatim/overpass (ricerca luoghi),
+    open-meteo (quote); (f) (44a) import-gpx e completions/:id/gpx creano
+    una sessione di posizione fuori dal gate di consenso geolocalizzazione;
+    (g) (44a) nessun TTL sulle tracce GPS, restano per sempre anche dopo
+    l'eliminazione dell'account.
+  - VERIFICHE DAL VIVO: correttezza #9 e #11 in tracking.js; il riquadro
     "ultimo allarme fallito" nel pannello Sicurezza; il comando ⋮ "Togli la
     mia traccia" + la nota nel modale "Completa"; la prova al telefono del
     Punto 1 (+ RICHIESTA 2, un partecipante che dopo carica la sua traccia).
+  - M-5 (44a, RIEMERSO): race sulla cancellazione di un contatto d'emergenza
+    per indice posizionale invece che per id - due schede aperte in corsa
+    possono cancellare il contatto sbagliato. Dalla 22a/24a sessione, mai
+    piu' comparso nelle liste "aperti" successive per dimenticanza.
   - MEDIO-5 (security-privacy 35a): i tempi misurati dal creatore si applicano
     identici a ogni confermato e finiscono in "Velocita' Ascesa X m/h" sulla
     Dashboard. GDPR art. 5(1)(d). MA E' LA DECISIONE CHE DENIS HA GIA' PRESO
@@ -94,6 +101,7 @@ FATTO E PUSHATO in questa sessione:
 
 >>> ALTRE APERTE, non urgenti:
     dominio email proprio (rimandato) - causa vera delle email in spam.
+    Punto 63b - livelli intermedi zona dichiarata a mano (Denis deve pensarci).
 
 >>> RESTA VALIDO:
   - Hook "Stop" di auto-save: commit locale (MAI push) a fine di ogni
@@ -120,7 +128,10 @@ FATTO E PUSHATO in questa sessione:
     (ab06f07, 2f13451). Resta solo il BLOCCO 9 - vedi sopra.
   43a SESSIONE (12/09): foto profilo, prova 2FA telefono, invito squadra,
     rifugi/assi/chat/percorso da seguire + revisione cumulativo - vedi
-    riepilogo in cima a questo file, dettaglio in cose_da_fare.txt.
+    dettaglio in cose_da_fare.txt.
+  44a SESSIONE (12/09): NESSUN CODICE PUSHATO. Sfoltimento vault +
+    verifica generale del codice (routes/, lib/) - vedi riepilogo sopra e
+    dettaglio in 06-Cronologia-Sessioni.md del vault.
 
 ===================================================================
 
@@ -157,7 +168,9 @@ MAI piu' (congelato); cose_da_fare.txt quando un punto si chiude o ne arriva uno
     ma DOM diversi non danno errore se chiami quella sbagliata; una navigazione che
     cambia solo l'hash non ricarica la SPA (serve navigateTo); il service worker MV3
     dell'estensione Chrome si sospende; Math.max(...array) va in RangeError oltre
-    ~1,2e5 elementi (usare .reduce); routeSource.kind:'saved' e' SEMPRE una traccia GPS
+    ~1,2e5 elementi (usare .reduce, e ATTENZIONE: douglasPeucker in lib/geometry.js e'
+    la stessa famiglia di bug, ricorsiva, RangeError misurato da ~4.000 punti - trovato
+    44a, non ancora corretto); routeSource.kind:'saved' e' SEMPRE una traccia GPS
     registrata; le prove di prove/ NON si lanciano in parallelo (DB Atlas condiviso);
     crypto.createHmac con chiave vuota NON lancia su Node 24; le settings-card si
     nascondono con la CLASSE .hidden non con l'attributo; page.click di Puppeteer
@@ -171,5 +184,8 @@ MAI piu' (congelato); cose_da_fare.txt quando un punto si chiude o ne arriva uno
     node -e dentro doppi apici (la shell li mangia come command substitution). NB dal
     06/09: il dislivello ha DUE soglie - 0 per le tracce importate da un file di
     dispositivo (grezzo), 10 per le quote stimate (percorso progettato, GPS dal vivo).
-    Vedi lib/gpx.js.
+    Vedi lib/gpx.js. NB dal 12/09 (44a): una regex "greedy" con una classe di
+    caratteri troppo larga (es. [^>] invece di [^<>]) puo' andare in backtracking
+    quadratico su input malformati - trovato in lib/gpx.js, CRITICO non ancora
+    corretto, misurare sempre eseguendo prima di giudicare una regex "sicura".
 ===================================================================

@@ -12790,3 +12790,109 @@ giusto, payload delle due liste senza piu' userId/origineUserId, le
 funzioni data/ora della chat non lanciano su input non validi.
 
 TUTTO PUSHATO su origin/master (`479af95`, `a2f8bde`, `74e46ad`).
+
+QUARANTAQUATTRESIMA SESSIONE (12/09/2026) - sfoltimento vault +
+verifica generale del codice a blocchi. NESSUN CODICE MODIFICATO.
+
+Denis, parole sue: "allora in questa sessione vediamo di sfoltire
+qualche file se troppo grande, diamo un'occhiata al codice, facciamo
+una verifica generale, se abbiamo troppo da controllare lo dividiamo a
+blocchi piu' piccoli". Poi, a meta' sessione, davanti alla mole di
+risultati che stava arrivando in parallelo: "ci fermiamo qui, salva
+tutto, aggiorna i file necessari, prepara tutto per riprendere il
+lavoro nella prossima sessione, poi controllo finale e conferma
+chiusura sessione in sicurezza".
+
+RAGIONAMENTO: erano passate 44 sessioni senza mai fare un controllo
+esteso sulla base di codice cosi' com'e' (le revisioni code-reviewer/
+security-privacy precedenti erano sempre su un `git diff` di sessione,
+mai sull'intera cartella). Nel frattempo il vault stesso aveva
+accumulato bloat - in particolare 04-Da-Fare.md, che per costruzione
+dovrebbe restare corto e rileggibile in due minuti a inizio sessione,
+era arrivato a 216 KB perche' il campo frontmatter "aggiornato" si era
+trasformato in una catena di racconti di sessione via via piu' lunga
+invece di restare solo "cosa e' aperto oggi".
+
+FATTO:
+
+1. SFOLTIMENTO VAULT (04-Da-Fare.md, 216 KB -> poche decine di righe).
+   Delegato a un fork con istruzioni di: leggere tutto il file,
+   verificare con Grep che il racconto duplicato fosse davvero gia' in
+   06-Cronologia-Sessioni.md (non fidarsi e basta - controllato prima
+   di cancellare), tenere solo i punti genuinamente ancora aperti oggi,
+   scrivere una bozza a parte (non toccare il file vero) prima
+   dell'approvazione. Il primo tentativo del fork ha risposto con un
+   piano invece di eseguirlo (zero letture, zero scritture, solo
+   testo) - corretto con un messaggio esplicito ("esegui tu stesso, non
+   descrivere un piano"), la seconda volta ha fatto il lavoro per
+   davvero. Effetto collaterale utile dello sfoltimento: e' riemerso
+   M-5 (race sulla cancellazione del contatto d'emergenza per indice
+   posizionale, dalla 22a/24a sessione) che era sparito dalle liste
+   "aperti" delle sessioni successive senza mai essere stato segnato
+   come chiuso - rimesso fra gli aperti.
+
+2. VERIFICA GENERALE DEL CODICE, a blocchi per cartella (non un diff):
+   code-reviewer + security-privacy in parallelo su ogni blocco, sola
+   lettura, nessun fix applicato. Denis ha chiesto di fermarsi fra un
+   blocco e l'altro per il suo ok ("aspetta il mio ok prima di
+   proseguire") invece del solito "procedi con tutto".
+
+   BLOCCO 1 (routes/, 14 file, 7684 righe): qualita' di base alta, i
+   problemi trovati sono trasversali - roba che nessun diff recente
+   poteva vedere perche' nessun diff singolo l'ha introdotta. I piu'
+   seri: DELETE /api/hikes/:id cancella tutto a cascata e controlla il
+   tetto di 200 utenti SOLO DOPO (hikes.js:790-842) - se sfora, i figli
+   sono gia' persi ma l'escursione resta viva; POST /tracking/start
+   accetta l'hikeId di un'escursione altrui senza controllare la
+   partecipazione; 8 handler async senza try/catch e NESSUNA rete
+   globale in server.js (niente unhandledRejection, niente error-
+   middleware) - un errore Atlas su una rotta molto chiamata puo'
+   abbattere l'intero processo, DMS compreso; login/registrazione/
+   demo-login non rigenerano la sessione (session fixation) mentre tre
+   altre rotte dello stesso file gia' lo fanno con lo stesso commento
+   di intento - trovato INDIPENDENTEMENTE anche da security-privacy
+   sullo stesso blocco. Il giro sicurezza aggiunge: GET /api/tracking/
+   sessions/:userId mostra a chiunque loggato le uscite MAI pubblicate
+   di una persona (scavalca il gate di pubblicazione usato ovunque
+   altrove); GET /api/bookmarks restituisce i preferiti di TUTTI, non
+   solo i propri; nessun tetto al totale di punti GPS per sessione ne'
+   rate-limit dedicato (rischio riempire i 512 MB di Atlas in mezz'ora
+   con un solo account). Poi una decina di MEDIO/BASSO e 5 punti GDPR.
+
+   BLOCCO 2 (lib/, ~4250 righe): qui security-privacy trova 1 CRITICO
+   MISURATO (non teorico) - lib/gpx.js, la regex che estrae i punti da
+   un .gpx va in backtracking quadratico: misurato eseguendo, 80.000
+   occorrenze/0,53 MB = 25,5 secondi; al tetto vero di 10 MB si parla
+   di ORE di event loop bloccato. Render e' un solo processo -> tutto
+   il sito giu', DMS compreso - e basta un utente registrato che carica
+   un file via /import-gpx o /completions/:id/gpx (nessun rate-limiter
+   dedicato li'). NON CORRETTO in questa sessione. Poi 4 ALTO:
+   douglasPeucker ricorsiva in lib/geometry.js (trovata anche dal
+   code-reviewer sullo stesso blocco, indipendentemente - RangeError
+   misurato a partire da ~4.000 punti su un file costruito ad arte);
+   lib/mailer.js - se APP_BASE_URL manca/e' sbagliata (variabile che
+   serve solo ai link, non all'allarme DMS) l'allarme del Dead Man's
+   Switch smette di partire E posizione GPS + email dei contatti
+   d'emergenza finiscono nei log in chiaro; lib/mailer.js - l'errore
+   Mailjet loggato per intero puo' contenere l'email del contatto
+   rifiutato; lib/accountDeletion.js - lo scrub svuota gia' le tracce
+   delle sessioni (dalla 39a) ma non Hike.routePath, la stessa
+   geometria copiata sull'escursione, che quindi sopravvive alla
+   cancellazione dell'account. Il code-reviewer aggiunge: il tetto
+   anti-memoria del parser GPX scatta dopo aver gia' speso la RAM
+   (misurato: un file da 13 MB porta l'heap a 143 MB); uno scrub-
+   account interrotto a meta' non viene mai ripreso; geofenceTimbri.js
+   usa toISOString() (UTC) per la data del timbro nello stesso file che
+   ha gia' corretto altrove questo identico errore; il titolo di
+   un'escursione importata puo' diventare il nome di un waypoint
+   privato tipo "Casa" se il file lo elenca prima della traccia vera.
+
+   BLOCCO 3 (public/js/, ~21.000 righe) NON ANCORA INIZIATO - Denis si
+   e' fermato qui per chiudere la sessione in sicurezza prima di
+   continuare.
+
+NESSUN FIX APPLICATO in questa sessione: tutto quanto sopra resta da
+decidere/applicare nella 45a, con priorita' al CRITICO perche' attivo
+in produzione oggi. Dettaglio completo con file:riga e snippet di fix
+proposti: vault, 06-Cronologia-Sessioni.md sezione "44a sessione", e
+riassunto operativo in leggimi.txt / 04-Da-Fare.md.
