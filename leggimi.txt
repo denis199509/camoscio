@@ -105,7 +105,40 @@ sospeso, resta 2 commit avanti a `origin/master` (= `2f13451`).
       di `/2fa/enable` non asserito), e i18n EN solo sul nucleo.
    2. Il 2FA sull'account vero di Denis e' rimasto SPENTO dalla prova di
       completamento recupero (per progetto) - da riaccendere quando vuole.
+   3. PERCORSO DA SEGUIRE anche da un RouteDraft PROPRIO (vedi sotto,
+      unico punto della lista richieste ancora aperto - gli altri tre
+      sono stati chiusi in questa stessa sessione, 43a).
    Piano: C:\Users\lenovo\.claude\plans\camoscio-2fa-totp.md, sez. 11.
+
+TRE PICCOLI PUNTI — CHIUSI (12/09/2026, 43a sessione), commit `08419f5`
+(rifugi+assi) e `1c76be3` (chat), pushati:
+ - RIFUGI SULLA MAPPA: map.js disegna l'emoji giusta in base a peak.tipo
+   (rifugio -> capanna, cima -> montagna come prima). Bug collaterale
+   trovato e corretto: badges.js puntiTimbrabili() toglieva il campo
+   `tipo` prima di restituire i punti - senza quel fix il ramo nuovo di
+   map.js non avrebbe mai avuto l'informazione per scegliere.
+ - #9CA3AF DEGLI ASSI CHART.JS: sostituito con --color-text-secondary
+   (nuovo CAMOSCIO_COLORI.testoSecondario in colori.js, stesso pattern
+   degli altri colori del file).
+ - DATA/ORA SOTTO I MESSAGGI DI CHAT stile WhatsApp: chatpanel.js mostra
+   l'ora (Europe/Rome esplicito) sotto ogni messaggio + separatori di
+   giorno "Oggi/Ieri/15 settembre". Un file solo, condiviso escursione e
+   squadra. Verificato dal vivo, messaggio di prova ripulito dal DB.
+
+PROMEMORIA "sto registrando" CONDIZIONATO — CHIUSO SENZA CODICE
+(12/09/2026): investigato PRIMA di scrivere ("se fattibile", come
+chiesto). NON FATTIBILE: la notifica persistente "Registrazione GPS in
+corso" viene dal plugin nativo @capgo/background-geolocation (foreground
+service Android), non dal service worker ne' da una push server - quel
+plugin espone solo 'geofenceTransition'/'geofenceError', nessun modo di
+sapere se la sua notifica e' stata scartata, e la sua stessa
+documentazione dice che quella notifica NON dovrebbe essere scartabile
+(lo sarebbe solo per un'icona mal configurata). Il promemoria periodico
+usa un plugin DIVERSO (@capacitor/local-notifications) senza canale che
+li colleghi. Denis, informato, ha confermato "lasciamo cosi'" (come gia'
+previsto in partenza per il caso non fattibile). Resta invariato: il
+promemoria periodico scatta sempre ogni ~1h durante la registrazione,
+non solo se la notifica persistente e' stata scartata.
 
 INVITO SQUADRA DIREZIONALE — CHIUSO (12/09/2026): Denis ha confermato dal
 vivo il caso "invito squadra a un'escursione" (DaniWool ha invitato la
@@ -128,27 +161,6 @@ dal vivo.
     telefono): "vorrei poter seguire la linea pure da un progetto creato
     da me". Da guardare: public/js/tracking.js, pannello "Opzioni
     escursione". Dettaglio in cose_da_fare.txt.
-  - PROMEMORIA "sto registrando" solo se la notifica persistente e'
-    stata scartata (Denis, "se fattibile"): il promemoria periodico "il
-    tracciamento e' ancora attivo" (~1 h) doveva scattare SOLO se
-    l'utente aveva gia' rimosso la notifica persistente "Registrazione
-    GPS in corso". Se e' il service worker a rifarla, si puo' gate con
-    self.registration.getNotifications({tag}); se e' una push dal server,
-    non fattibile e Denis dice "lasciamo cosi". Priorita' bassa.
-    Dettaglio in cose_da_fare.txt.
-  - RIFUGI SULLA MAPPA con un'emoji da rifugio, non da montagna (Denis
-    10/09): public/js/map.js, il forEach su puntiTimbrabili (~1165-1178)
-    disegna cime E rifugi con lo stesso peakIcon hardcodato a 🏔️ ->
-    ramo su peak.tipo, 'rifugio' -> 🛖 / 🏠. Piccolo, un punto solo.
-  - DATA E ORA sotto ogni messaggio di chat, stile WhatsApp (Denis
-    10/09): il createdAt c'e' gia' (HikeMessage/SquadMessage timestamps,
-    arriva in m.createdAt) ma chatpanel.js renderChatMessages (~77-91)
-    non lo mostra. Aggiungere uno <span> con l'ora ITALIANA
-    (toLocaleString timeZone Europe/Rome - non UTC, vedi la trappola in
-    ../camoscio memoria/07-Trappole-Tecniche.md). Separatori di giorno
-    ("Oggi/Ieri/15 settembre") confermati da Denis il 10/09. Un file solo
-    (chatpanel.js e' condiviso escursione+squadra). Dettaglio in
-    cose_da_fare.txt.
   - CONFORMITA' GDPR + NOTA LEGALE: index.html fa accettare "Termini +
     Informativa privacy" senza documento dietro. Serve un consulente privacy/
     avvocato GDPR (non un DPO) per l'Informativa vera + il testo di consenso
@@ -168,8 +180,6 @@ dal vivo.
     Dashboard. GDPR art. 5(1)(d). MA E' LA DECISIONE CHE DENIS HA GIA' PRESO
     APPOSTA (33a/35a: tempo di cammino uniforme, il singolo lo sostituisce
     col ⬆).
-  - #9CA3AF degli assi Chart.js -> --color-text-secondary (piccolo cambio
-    visivo, punto a se' fuori audit).
 
 >>> LAVORO FUTURO PREPARATO, agli atti (NIENTE codice):
     FILONE B: collezione "I 2000 dell'Appennino" - bloccato, LA LISTA

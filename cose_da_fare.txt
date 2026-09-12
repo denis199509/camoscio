@@ -12486,6 +12486,98 @@ vero e ora e' chiusa).
 
 
 =====================================================================
+RIFUGI SULLA MAPPA CON EMOJI PROPRIA (CHIUSO, 12/09/2026)
+=====================================================================
+Denis (10/09): i rifugi sulla mappa avevano la stessa emoji di montagna
+delle cime, ne voleva una diversa.
+
+public/js/map.js drawStampablePoints(): l'emoji ora dipende da
+peak.tipo ('rifugio' -> capanna 🛖, altrimenti la montagna 🏔️ di prima).
+
+TROVATO E CORRETTO UN BUG COLLATERALE lungo la strada: public/js/
+badges.js puntiTimbrabili() rimappava ogni punto in
+{name,lat,lng,altitude,stampId}, TOGLIENDO il campo `tipo` gia'
+calcolato dal catalogo - senza questo fix il ramo nuovo di map.js non
+avrebbe mai avuto l'informazione per distinguere un rifugio da una cima
+(sempre finita nel ramo "cima"). Aggiunto `tipo` a quella mappatura.
+
+Verificato dal vivo con l'estensione Chrome: sulla mappa demo compaiono
+entrambe le emoji, 9 marker rifugio su 24 disegnano la capanna. Commit
+`08419f5`, pushato.
+
+
+=====================================================================
+COLORE ASSI CHART.JS IN PALETTE CALDA (CHIUSO, 12/09/2026)
+=====================================================================
+Ultimo residuo dell'audit visivo (C1, 36a-37a sessione): il grafico
+"Passo & Fatica" della Dashboard aveva gli assi e la legenda ancora sul
+grigio freddo #9CA3AF della vecchia palette, mai spazzato insieme al
+resto (era stato lasciato a parte apposta, "cambio visivo, punto a se'
+fuori audit").
+
+public/js/colori.js: +CAMOSCIO_COLORI.testoSecondario ('#A8A090', gemello
+di --color-text-secondary, stesso pattern degli altri 5 colori del
+file). public/js/app.js: i tre '#9CA3AF' hardcoded nel grafico Chart.js
+sostituiti con quella variabile.
+
+Verificato dal vivo: il grafico legge #A8A090 su assi e legenda.
+Stesso commit della voce sopra (`08419f5`), pushato.
+
+
+=====================================================================
+DATA/ORA SOTTO I MESSAGGI DI CHAT, STILE WHATSAPP (CHIUSO, 12/09/2026)
+=====================================================================
+Denis (10/09): voleva l'ora sotto ogni messaggio di chat come su
+WhatsApp, confermando anche i separatori di giorno ("Oggi/Ieri/15
+settembre") quando proposti.
+
+public/js/chatpanel.js: createdAt (gia' presente su HikeMessage/
+SquadMessage, mai mostrato prima) formattato in ora ITALIANA esplicita
+(Intl con timeZone Europe/Rome, non il fuso del dispositivo - stessa
+attenzione gia' presa altrove nel progetto dopo i due errori di orario
+del 19/08 e 21/08) e mostrato sotto il testo del messaggio; un
+separatore di giorno quando la data cambia rispetto al messaggio
+precedente (confronto per chiave YYYY-MM-DD nel fuso di Roma, non per
+differenza di millisecondi - evita l'errore di mezzanotte). Due nuove
+chiavi i18n (chat.oggi/chat.ieri). Un file solo, condiviso fra chat
+escursione e chat squadra.
+
+Verificato dal vivo con l'estensione Chrome sulla chat di una squadra
+demo: separatore "Oggi" corretto, ora nel formato 24h, ed etichette
+"Ieri" e "23 agosto" corrette per date simulate via console. Messaggio
+di prova rimosso subito dopo dal database (filtrato per testo
+riconoscibile, "Prova timestamp chat"). Commit `1c76be3`, pushato.
+
+
+=====================================================================
+PROMEMORIA "STO REGISTRANDO" CONDIZIONATO - NON FATTIBILE, CHIUSO SENZA
+CODICE (12/09/2026)
+=====================================================================
+Denis: il promemoria periodico "il tracciamento e' ancora attivo" (~1h)
+doveva scattare SOLO se l'utente aveva gia' scartato la notifica
+persistente "Registrazione GPS in corso" - "se fattibile".
+
+INVESTIGATO PRIMA DI SCRIVERE CODICE, come chiesto. Non fattibile con i
+plugin attuali: la notifica persistente viene da @capgo/
+background-geolocation (foreground service Android), un plugin
+COMPLETAMENTE DIVERSO da quello del promemoria periodico
+(@capacitor/local-notifications) - nessun canale li collega. La
+documentazione del primo plugin espone solo due eventi
+('geofenceTransition', 'geofenceError'), nessuna API per sapere se la
+sua notifica e' ancora visibile o e' stata scartata; anzi dichiara
+esplicitamente che quella notifica NON dovrebbe essere scartabile
+dall'utente (lo sarebbe solo per un'icona di notifica mal configurata -
+un difetto da evitare, non un comportamento su cui costruire una
+funzione).
+
+Spiegato a Denis, che ha confermato di chiudere il punto cosi' com'e'
+(era gia' il suo piano B dichiarato in partenza per il caso non
+fattibile: "lasciamo cosi'"). NESSUN CODICE TOCCATO: il promemoria
+periodico continua a scattare sempre durante la registrazione, non solo
+quando la notifica persistente e' stata scartata.
+
+
+=====================================================================
 FOTO PROFILO INGRANDIBILE AL CLICK (CHIUSO, 12/09/2026)
 =====================================================================
 Denis:
