@@ -2,7 +2,30 @@
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
 Aggiornato: 2026-09-12 (QUARANTATREESIMA sessione. Denis: "possiamo partire
 con la modifica delle foto profilo" -> verificata dal vivo e committata a
-parte (vedi sotto). Frontmatter della 42a sotto, invariato.
+parte (vedi sotto). STESSA SESSIONE, poi: "come faccio la prova per il
+2FA?" -> GIRO COMPLETO SUL TELEFONO DI DENIS, CON GOOGLE AUTHENTICATOR,
+CHIUSO E VERIFICATO IN OGNI PASSO: accensione (QR + codici di recupero
+salvati) -> login a due passi -> disattivazione -> riattivazione -> reset
+password con 2FA attivo (link via email, campo codice) -> recupero
+ritardato (opzione C) avviato -> banner "recupero in corso" visto e
+annullato -> un SECONDO recupero avviato e completato per davvero. Il
+completamento richiede aspettare 14 giorni per progetto (`maturaIl`
+immutabile): per non farlo aspettare, forzato `maturaIl`/`expiresAt` del
+SOLO documento AccountRecovery vivo del suo account (userId filtrato,
+letto PRIMA di scrivere, null altro campo toccato) a 5 minuti nel
+passato con uno script usa-e-getta fuori dal repo (stessa forzatura di
+`prova-recupero-ritardato.js` sez.7, ma su dati veri non di test).
+Riaperto lo stesso link e-mail -> modulo password senza piu' chiedere il
+codice -> password cambiata -> VERIFICATO ANCHE DAL DATABASE (lettura
+sola): `completatoIl` scritto sul recupero, `twoFactorEnabledAt` tornato
+`undefined` sull'utente (il completamento spegne il 2FA per progetto -
+il suo account vero e' quindi ORA SENZA 2FA, segnalato a Denis, riaccende
+lui quando vuole). NESSUNA prova automatica sostituiva questo giro:
+era l'ultimo "davvero aperto" del 2FA prima del BLOCCO 9. Nessun bug
+trovato lungo il percorso (un solo intoppo: Denis non aveva notato i due
+link piccoli sotto il campo codice della pagina di reset - "Non ho il
+telefono: usa un codice di recupero" / "Non ho ne' il telefono ne' i
+codici di recupero" - risolto guardando meglio, non era un bug).
 ——
 2026-09-11 (QUARANTADUESIMA sessione. Denis: "possiamo mandare gli
 agenti per il controllo dell'ultima sessione", poi "vai a gruppi, parti dai 3
@@ -74,15 +97,14 @@ chiusura 42a, message invariato). NON ANCORA PUSHATO — via di Denis in
 sospeso, resta 2 commit avanti a `origin/master` (= `2f13451`).
 
   >>> DA DOVE SI RIPARTE (44a sessione):
-   1. Via di Denis per il push di `1af4a87` + `930c2fd` (foto profilo +
-      note 42a) verso origin/master.
-   2. PROVA AL TELEFONO di Denis con Google Authenticator — giro completo:
-      accendi il 2FA da Impostazioni, logout, login a due passi, disattiva,
-      reset password con 2FA attivo, e (forzando maturaIl sul DB) il
-      completamento del recupero ritardato. Nessuna prova automatica la
-      sostituisce: e' l'unica verifica end-to-end vera rimasta sul 2FA.
-   3. BLOCCO 9 del piano 2FA = prove complete + docs + vault (in parte
-      gia' fatto in questa sessione: vedi il vault per il dettaglio).
+   1. BLOCCO 9 del piano 2FA = prove complete + docs + vault. La prova al
+      telefono (l'unico pezzo che nessuna prova automatica poteva fare) e'
+      CHIUSA (vedi sopra, 43a) - resta la parte scritta: rivedere
+      `prove/LEGGIMI-PROVE.txt`, i due buchi di test noti dalla 42a
+      (`/2fa/recovery-codes` senza sezione dedicata; ramo `scartoMinuti`
+      di `/2fa/enable` non asserito), e i18n EN solo sul nucleo.
+   2. Il 2FA sull'account vero di Denis e' rimasto SPENTO dalla prova di
+      completamento recupero (per progetto) - da riaccendere quando vuole.
    Piano: C:\Users\lenovo\.claude\plans\camoscio-2fa-totp.md, sez. 11.
 
 >>> APERTI (invariati):

@@ -12459,9 +12459,30 @@ ricorrente di quell'agente sulla sola riga di chiusura - non tocca
 l'affidabilita' dei suoi rilievi tecnici, che restano verificabili uno a
 uno e sono risultati giusti anche stavolta.
 
-RESTA APERTO: la prova al telefono di Denis con Google Authenticator
-(nessuna prova automatica la sostituisce), poi il BLOCCO 9 del piano
-(prove complete + docs + vault).
+PROVA AL TELEFONO CON GOOGLE AUTHENTICATOR: FATTA IL 12/09/2026, TUTTA
+VERDE. Denis: "come faccio la prova per il 2FA?", poi passo passo fino a
+"confermo" sull'ultimo pezzo. Giro completo sull'account vero: accensione
+(QR + 10 codici di recupero salvati) -> login a due passi -> disattiva ->
+riattiva -> reset password con 2FA attivo (link email + campo codice) ->
+recupero ritardato (opzione C) avviato -> banner "recupero in corso"
+visto e annullato con successo -> un secondo recupero avviato e stavolta
+COMPLETATO per davvero. Per non aspettare i 14 giorni veri, `maturaIl` +
+`expiresAt` del solo documento AccountRecovery vivo del suo account
+spostati 5 minuti nel passato con uno script a parte (fuori dal repo,
+usa-e-getta): letto il documento PRIMA di scrivere (atteso esattamente
+UNO vivo, per userId), toccati SOLO quei due campi, mai tokenHash/
+createdAt/annullatoIl/completatoIl. Verificato anche da una lettura sola
+sul DB dopo il completamento: `completatoIl` scritto, `twoFactorEnabledAt`
+tornato assente sull'utente - il 2FA si e' spento da solo come da
+progetto (l'account vero di Denis e' quindi ORA SENZA 2FA finche' non lo
+riaccende lui). Un solo intoppo, non un bug: Denis non aveva notato i due
+link piccoli sotto il campo codice della pagina di reset ("Non ho il
+telefono: usa un codice di recupero" / "Non ho ne' il telefono ne' i
+codici di recupero") - risolto guardando meglio la pagina.
+
+RESTA APERTO: il BLOCCO 9 del piano (prove automatiche complete + docs +
+vault - la parte scritta, non la prova dal vivo che era l'ultimo pezzo
+vero e ora e' chiusa).
 
 
 =====================================================================
