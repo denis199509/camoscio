@@ -20,6 +20,28 @@ var T = (window.CamoscioI18n && window.CamoscioI18n.t) || function () { return n
 
 let chatPollTimer = null;
 
+// Denis (10/09/2026): data/ora sotto ogni messaggio, stile WhatsApp, con separatori di
+// giorno ("Oggi/Ieri/15 settembre"). 'en-CA' formatta come YYYY-MM-DD: comodo per
+// confrontare due date come stringhe, nel fuso di ROMA e non quello del dispositivo -
+// stessa trappola UTC/ora locale gia' presa piu' volte su questo progetto (vedi
+// ../camoscio memoria/07-Trappole-Tecniche.md).
+function chiaveGiornoChat(date) {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit' }).format(date);
+}
+
+function etichettaGiornoChat(iso) {
+    const data = new Date(iso);
+    const chiave = chiaveGiornoChat(data);
+    if (chiave === chiaveGiornoChat(new Date())) return T('chat.oggi') || 'Oggi';
+    if (chiave === chiaveGiornoChat(new Date(Date.now() - 86400000))) return T('chat.ieri') || 'Ieri';
+    const loc = (window.CamoscioI18n && window.CamoscioI18n.getLang() === 'en') ? 'en-GB' : 'it-IT';
+    return data.toLocaleDateString(loc, { day: 'numeric', month: 'long', timeZone: 'Europe/Rome' });
+}
+
+function formattaOraChat(iso) {
+    return new Date(iso).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome', hour12: false });
+}
+
 // { box: elemento dove disegnare, apiBase: es. '/api/squads/ID' o '/api/hikes/ID'
 //   (il modulo aggiunge "/messages"), title: es. "Chat di Squadra" }
 function renderChatPanel({ box, apiBase, title }) {
@@ -84,11 +106,18 @@ function renderChatMessages(messages, log) {
     if (messages.length === 0) {
         log.innerHTML = `<div class="message system">${esc(T('chat.empty') || 'Nessun messaggio, scrivi il primo.')}</div>`;
     } else {
+        let giornoPrecedente = null;
         log.innerHTML = messages.map(m => {
+            let separatore = '';
+            const chiave = chiaveGiornoChat(new Date(m.createdAt));
+            if (chiave !== giornoPrecedente) {
+                separatore = `<div class="chat-day-separator">${etichettaGiornoChat(m.createdAt)}</div>`;
+                giornoPrecedente = chiave;
+            }
             const mittente = db.users.find(u => u.id === m.senderId);
             const nome = mittente ? esc(mittente.username) : esc(T('common.utente') || "Utente");
             const isMine = m.senderId === db.currentUser.id;
-            return `<div class="message ${isMine ? 'sent' : 'received'}">${isMine ? '' : `<b>${nome}:</b> `}${esc(m.text)}</div>`;
+            return `${separatore}<div class="message ${isMine ? 'sent' : 'received'}">${isMine ? '' : `<b>${nome}:</b> `}${esc(m.text)}<span class="message-time">${formattaOraChat(m.createdAt)}</span></div>`;
         }).join("");
     }
 

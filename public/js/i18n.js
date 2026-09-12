@@ -1079,6 +1079,8 @@
             'chat.send': 'Send',
             'chat.empty': 'No messages yet, write the first one.',
             'chat.errSend': 'Could not send the message.',
+            'chat.oggi': 'Today',
+            'chat.ieri': 'Yesterday',
 
             // ==================================================================
             // Rollout punto 102, SESTO lotto (28/08/2026): Carpooling + Zaino -
