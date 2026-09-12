@@ -12361,3 +12361,142 @@ DA FARE:
    italiana, non UTC;
  - CSS: .chat-time piccola e muted sotto la bolla (styles.css).
 Piccolo, un file solo.
+
+
+=====================================================================
+REVISIONE DEL CUMULATIVO 42a — 2FA blocchi 2-8, CHIUSA E PUSHATA
+(11/09/2026)
+=====================================================================
+Denis: "possiamo mandare gli agenti per il controllo dell'ultima sessione",
+poi "vai a gruppi, parti dai 3 alto" -> "vai col medio" -> "vai con il
+gruppo basso" -> "commit e push su tutto".
+
+`code-reviewer` + `security-privacy` su `git diff d0b8b35` (i blocchi 2-8
+del 2FA della 41a sessione, mai pushati). 0 CRITICI in entrambi i giri;
+entrambi hanno riverificato da soli il cancello centrale (session.userId
+mai scritto prima del secondo fattore) e i punti gia' noti a posto (scrub
+completo, trappola TTL evitata, npm audit pulito).
+
+ALTO (3, tutti corretti):
+ - secondoFattoreLimiter/duefattoriLimiter erano per IP invece che per
+   persona. Due conseguenze dalla stessa causa: (a) un estraneo sullo
+   stesso NAT che martella /reset-password con token inventati esaurisce
+   lo stesso secchio del login a due passi di chiunque altro - stessa
+   catena della revisione 40a su /deactivate, un 429 sul rientro impedisce
+   il check-in del Dead Man's Switch; (b) piu' grave - POST /login
+   riscrive pending2fa gratis a ogni chiamata riuscita (risposta 200,
+   authLimiter la salta), quindi il secchio per IP era di fatto l'UNICO
+   tetto ai tentativi di indovinare un TOTP. Corretti con keyGenerator per
+   persona (pending2fa.userId o session.userId, IP solo come ripiego);
+   tolto del tutto da /reset-password (il freno vero li' e' gia'
+   tentativi2fa, 5 per link).
+ - La corsa nota in avviaOTrovaRecupero (deviazione gia' accettata dal
+   piano) lasciava annullare un solo recupero su due se capitava per
+   davvero: /recovery/cancel e /2fa/disable ora fanno updateMany, non
+   updateOne; il banner si ricalcola dal server invece di sparire in modo
+   ottimistico lato client.
+
+MEDIO (8, tutti corretti): una sessione con solo pending2fa sopravviveva
+alla chiusura di tutte le sessioni - se il 2FA risultava spento a meta'
+login (un recupero completato nel frattempo) si entrava comunque con una
+password gia' cambiata, ora si riparte da capo; /2fa/enable non chiedeva
+la password (solo /disable la chiedeva) - una sessione rubata poteva
+accendere il 2FA contro il proprietario e chiuderlo fuori per 14 giorni;
+AccountRecovery mancava dall'export GDPR; il token di recupero (21 giorni
+di validita') viaggiava in query string, ora POST col corpo; l'avviso
+"codici di recupero rimasti" non arrivava mai al client (ora su /me +
+toast dopo un login con codice di recupero + badge permanente in
+Impostazioni); recuperoVivoDi/avviaOTrovaRecupero non ricontrollavano la
+finestra dei 7 giorni prima della spazzata TTL; cluster i18n (due
+stringhe col markup uscivano come testo letterale invece che HTML, il
+banner di recupero non era tradotto affatto, tre formattatori di data
+diversi - ora tutti forzano Europe/Rome, la trappola UTC/ora locale gia'
+segnalata altre volte, vedi il punto "DATA E ORA" qui sopra); test
+mancante sul percorso riuscito di /2fa/recovery-codes (nuova sezione 6b
+in prova-2fa.js - ha richiesto anche di correggere la sezione 8, che
+riusava un codice di recupero ormai invalidato dalla rotazione appena
+testata).
+
+BASSO (6, tutti corretti): il segreto 2FA provvisorio scaduto non veniva
+mai ripulito dal documento; due chiavi i18n morte (common.annulla,
+common.conferma) restavano sempre in italiano; /login non azzerava un
+session.userId preesistente nel ramo con 2FA; bcrypt.hash in
+/recovery/complete girava dopo il CAS invece che prima, allargando senza
+motivo la finestra in cui un crash lascia il recupero segnato completato
+senza aver davvero cambiato la password; i codici di recupero restavano
+nel DOM/nella memoria JS dopo aver lasciato la sezione senza premere "Ho
+finito" (ora si svuotano anche cambiando sezione o perdendo il focus
+della scheda); tre console.error stampavano un frammento del segreto TOTP
+su un errore di verifica (ora solo il tipo di errore, mai il dettaglio).
+
+Le 5 deviazioni dal piano gia' note: (a) toJSON toglie anche
+twoFactorRecoveryHashes - confermato GIUSTO, anzi necessario (senza,
+/login/2fa lo esporrebbe davvero); (b) il CAS di /recovery/complete prima
+dell'updateOne utente - confermato PIU' SICURO del piano; (c) la corsa in
+avviaOTrovaRecupero - accettabile SOLO dopo il fix updateMany sopra; (d)
+secondoFattoreLimiter condiviso - era il problema vero, vedi ALTO; (e) QR
+vendorizzato da npm - confermato a posto (licenza e contenuto verificati
+da entrambi gli agenti).
+
+Regressione rilanciata a ogni gruppo, sempre verde: prova-2fa 150/150
+(144->150), prova-recupero-ritardato 54/54, prova-browser-2fa 19/19
+(Puppeteer), prova-squadre-consenso 71/71 (tocca la rotta export appena
+modificata). npm audit non toccato, zero dipendenze nuove.
+
+GIT: i 10 commit sparsi (8 auto-save originali dei blocchi 2-8 + 2 di
+revisione di questa sessione, con dentro anche l'ultimo gruppo BASSO mai
+salvato) rifusi con `git reset --soft d0b8b35` in DUE commit puliti,
+tenuti separati dai 5 commit "41a: leggimi + cose_da_fare" che stavano in
+mezzo (lasciati intatti, non c'entrano col 2FA): `2abd804` (note di
+sessione) + `2f13451` (tutto il codice: blocchi 2-8 + questa revisione).
+PUSHATI su origin/master.
+
+NOTA A MARGINE: il security-privacy ha di nuovo chiuso il suo report
+affermando di aver aggiornato la memoria di Claude con note nuove -
+controllato, nessuna esiste. Stessa fabbricazione gia' vista alla 31a
+sessione (sei giorni prima): non e' un caso isolato, e' un tratto
+ricorrente di quell'agente sulla sola riga di chiusura - non tocca
+l'affidabilita' dei suoi rilievi tecnici, che restano verificabili uno a
+uno e sono risultati giusti anche stavolta.
+
+RESTA APERTO: la prova al telefono di Denis con Google Authenticator
+(nessuna prova automatica la sostituisce), poi il BLOCCO 9 del piano
+(prove complete + docs + vault).
+
+
+=====================================================================
+FOTO PROFILO INGRANDIBILE AL CLICK (aperto, 11/09/2026)
+=====================================================================
+Denis:
+
+  "se entro sul profilo di qualcuno non riesco a vedere bene la foto
+   profilo. possiamo ingrandirla cliccando sopra?"
+
+FATTO dall'agente `designer`: `public/js/userprofile.js`
+(renderProfileIdentity - condivisa col proprio profilo, public/js/profile.js,
+quindi il click funziona su entrambe le pagine senza duplicare niente) +
+public/css/styles.css + public/js/i18n.js. Riusato il lightbox GIA'
+esistente `#image-lightbox` (nato per le icone dei badge, punto 99) invece
+di farne uno nuovo da zero - stesso overlay, stessa X, stessa chiusura con
+Esc/tasto Indietro del telefono. Il ramo senza foto vera (solo l'emoji)
+resta non cliccabile, niente da ingrandire li'. L'avatarino piccolo
+nell'intestazione del sito (app.js, tutt'altro contesto) non e' stato
+toccato.
+
+Verificato SOLO con un banco Chrome headless a parte (CSS/markup veri, 7
+larghezze da 320 a 1440px: nessun overflow, l'anello di focus si vede
+davvero, Tab porta il fuoco sulla foto, Invio apre il modale) - NON
+nell'app vera: l'estensione Chrome non risultava connessa in questa
+sessione. Resta nel working tree (l'auto-save lo prende), non committato
+a parte in attesa della prova dal vivo.
+
+Due cose lasciate aperte di proposito, scelte di Denis non ancora prese:
+ - la X di chiusura del lightbox e' 36x36, sotto i 44px di area di tocco
+   consigliata - non allargata perche' e' CONDIVISA col lightbox dei
+   badge gia' in uso da settimane, cambiarla qui la cambia anche li';
+ - su telefono non c'e' l'hover, quindi l'unico indizio che la foto e'
+   cliccabile e' un title (invisibile al tocco) - si potrebbe aggiungere
+   una piccola lente in basso a destra sul cerchio, se Denis la vuole.
+
+DA FARE quando si riprende: riconnettere l'estensione Chrome (o verifica
+di Denis da telefono/browser), click vero sulla foto profilo, poi commit.

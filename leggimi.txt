@@ -1,92 +1,80 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-09-10 (QUARANTUNESIMA sessione. Denis: "finiamo il lavoro
-dell'ultima sessione", poi "vai col blocco N" un blocco alla volta (2->8),
-poi "gli agenti li lanceremo in un'altra sessione, segna i punti fatti oggi".
+Aggiornato: 2026-09-11 (QUARANTADUESIMA sessione. Denis: "possiamo mandare gli
+agenti per il controllo dell'ultima sessione", poi "vai a gruppi, parti dai 3
+alto" -> "vai col medio" -> "vai con il gruppo basso" -> "commit e push su
+tutto".
 
-CODICE: 2FA TOTP — BLOCCHI 2-8 DEL PIANO IMPLEMENTATI, MAI PUSHATO.
-Tutto in 6 commit auto-save locali (456c7ab..bbb123f). `origin/master` =
-`d0b8b35` (il commit docs della 40a, quello SI' era pushato — la vecchia
-riga "origin/master = ab06f07" qui sotto era stale). Cumulativo
-`git diff d0b8b35`: ~20 file, ~+5000 righe (codice + prove + vendor QR).
-NIENTE giro `code-reviewer`/`security-privacy` stasera: li lancia Denis in
-una sessione a parte, sul cumulativo.
+2FA TOTP — BLOCCHI 2-8 + REVISIONE DEL CUMULATIVO: FATTO E PUSHATO.
+`code-reviewer` + `security-privacy` su `git diff d0b8b35` (i blocchi 2-8
+della 41a): 0 CRITICI in entrambi i giri. Applicati TUTTI i rilievi in tre
+gruppi, con regressione verde dopo ognuno:
 
-  - BLOCCO 2 (schema + reti, zero cambio comportamento): models/User.js
-    sez. 15 = 6 campi 2FA (tutti default:undefined; 5 select:false);
-    PasswordReset.tentativi2fa; db/mongo.js toJSON toglie secret+pending
-    +RecoveryHashes; ALWAYS_PRIVATE_FIELDS; scrubAccount $unset dei 6.
-  - BLOCCO 3 (login/reset a due passi, solo server, inerte): middleware/
-    rateLimit.js +secondoFattoreLimiter +duefattoriLimiter; routes/auth.js
-    verificaSecondoFattore (helper unico, CAS spendiPasso), POST /login apre
-    req.session.pending2fa SENZA userId + {twoFactorRequired:true}, POST
-    /login/2fa nuova, /reset-password/check +twoFactorRequired, /reset-
-    password col gate 2FA (token intatto, muore a 5 via tentativi2fa).
-  - BLOCCO 4 (/2fa/*): caricaUtentePer2fa (403 demo), /2fa/setup (idempotente
-    15min), /enable (D-4 emailVerified; scartoMinuti; un solo updateOne),
-    /disable (pwd + 2o fattore), /recovery-codes (D-3: solo TOTP).
-    prova-2fa.js sez. 2-10 -> 144/144.
-  - BLOCCO 5 (recupero ritardato backend, commit a se'): models/
-    AccountRecovery.js (maturaIl immutabile, expiresAt default VERO, TTL 7gg
-    dopo maturita', ATTESA 14gg), lib/recuperoAccount.js (avviaOTrovaRecupero
-    upsert, NON creaToken; trovaRecuperoUtilizzabile; recuperoVivoDi),
-    emailRecuperoRitardato (sincrona, fallimento = 503 + rollback), rotte
-    /recovery/start|status|cancel|check|complete, hook in /2fa/disable,
-    scrubAccount +AccountRecovery.deleteMany. prova-recupero-ritardato.js
-    (12 sez) -> 54/54.
-  - BLOCCO 6 (QR + pannello): public/vendor/qrcode/qrcode.js (qrcode-
-    generator@1.4.4, MIT, da npm/jsdelivr — il path GitHub del piano da'
-    404) + LICENSE; public/js/twofactor.js (IIFE, renderTwoFactorCard, 4
-    stati + riquadro "recupero in corso", ripiego se window.qrcode manca);
-    card #settings-2fa-card in Impostazioni; .qr-box fondo bianco;
-    profile.js chiama renderTwoFactorCard. Verificato dal vivo (estensione).
-  - BLOCCO 7 (banner globale, commit a se'): #recovery-banner FUORI da
-    .page-container (rosso, non dismissibile); app.js aggiornaBannerRecupero()
-    — stato in CamoscioState.recuperoInSospeso MAI in currentUser; fail-safe;
-    su checkAuthAndShowGate + visibilitychange + dopo un annullamento.
-    prove/prova-browser-2fa.js (Puppeteer, blocchi 6+7) -> 19/19.
-  - BLOCCO 8 (viste + i18n, ultimo di implementazione): #auth-2fa-view +
-    submit2fa (gestisce ripartiDaCapo) + aggiornaCampo2fa; reimposta-
-    password.html da 4 a 7 stati (?token= / ?recupero=); i18n.js +71 chiavi
-    EN (il nucleo; le toast transitorie restano IT). Verifica Puppeteer 14/14.
+  - ALTO (3): secondoFattoreLimiter/duefattoriLimiter erano per IP invece
+    che per persona - un secchio condiviso permetteva di bloccare il login
+    a due passi di un altro utente sullo stesso NAT, e (piu' grave) lasciava
+    di fatto SENZA TETTO i tentativi di indovinare un TOTP (POST /login
+    riscrive pending2fa gratis a ogni chiamata riuscita). Corretti con
+    keyGenerator per persona; tolto da /reset-password (il freno vero li'
+    e' gia' tentativi2fa). La corsa nota in avviaOTrovaRecupero lasciava
+    annullare un solo recupero su due: /recovery/cancel e /2fa/disable ora
+    fanno updateMany, non updateOne.
+  - MEDIO (8): sessione pending2fa superstite a un cambio password via
+    recupero (ora riparte da capo); password richiesta anche su
+    /2fa/enable (prima solo su /disable); AccountRecovery nell'export
+    GDPR; token di recupero da query string a POST; avviso "codici di
+    recupero rimasti" mai arrivato al client (ora su /me + toast + badge);
+    finestra di recuperoVivoDi ricontrollata anche prima della spazzata
+    TTL; cluster i18n (markup che usciva come testo, banner non tradotto,
+    tre formattatori di data ora tutti Europe/Rome); test mancante su
+    /2fa/recovery-codes (nuova sez. 6b in prova-2fa.js).
+  - BASSO (6): segreto 2FA provvisorio ripulito alla scadenza; due chiavi
+    i18n morte; session.userId azzerato nel ramo 2FA di /login;
+    bcrypt.hash spostato prima del CAS in /recovery/complete; codici di
+    recupero svuotati dal DOM lasciando la sezione o il focus; niente piu'
+    frammenti del segreto TOTP nei log.
 
-REGRESSIONE (a ogni blocco, in serie): prova-2fa 144, prova-recupero-
-ritardato 54, prova-browser-2fa 19, prova-punto7 53, prova-verifica-email 34,
-prova-guasto-invio 6, prova-eliminazione-account 58, prova-contatti-emergenza
-55, prova-lista-utenti-minimizzata 31, prova-foto-profilo-privacy 18, prova-
-validazione-registrazione 10, prova-registrazione-senza-email 7, prova-
-configurazione 9 — tutte verdi. `npm audit --omit=dev` = 0.
+REGRESSIONE a ogni gruppo, sempre verde: prova-2fa 150/150 (144->150, +sez.
+6b), prova-recupero-ritardato 54/54, prova-browser-2fa 19/19,
+prova-squadre-consenso 71/71 (tocca l'export). npm audit non toccato (zero
+dipendenze nuove in questo giro).
 
-DEVIAZIONI DAL PIANO (tutte commentate nel codice, da far vedere agli agenti):
-(a) db/mongo.js toJSON toglie anche twoFactorRecoveryHashes (piano: "due
-righe"); (b) /recovery/complete fa il CAS PRIMA dello updateOne utente (piano:
-dopo); (c) avviaOTrovaRecupero corsa nello stesso ms non chiusa (nessun
-indice unique possibile); (d) secondoFattoreLimiter anche su /reset-password;
-(e) QR da npm non da GitHub. BUCHI DI TEST NOTI: /2fa/recovery-codes senza
-sezione dedicata in prova-2fa; ramo scartoMinuti di /enable non asserito;
-i18n EN solo il nucleo. Dettaglio in ../camoscio memoria/03-Decisioni-
-Architetturali.md e 07-Trappole-Tecniche.md.
+GIT: i 10 commit sparsi (8 auto-save originali dei blocchi 2-8 + 2 di
+revisione di questa sessione) rifusi in DUE commit puliti, tenuti separati
+dai 5 commit "41a: leggimi + cose_da_fare" che stavano in mezzo (lasciati
+intatti): `2abd804` (note di sessione) + `2f13451` (tutto il codice).
+PUSHATI: `d0b8b35..2f13451 master -> master`. `origin/master` = `2f13451`.
 
-  >>> DA DOVE SI RIPARTE (42a sessione):
-   1. Denis da' il via -> LANCIARE `code-reviewer` + `security-privacy` sul
-      cumulativo `git diff d0b8b35` (~20 file).
-   2. Applicare i rilievi.
-   3. `git reset --soft d0b8b35` per rifondere i 6 auto-save in UN commit,
-      poi PUSH col via di Denis (+ vault a parte).
-   4. PROVA AL TELEFONO di Denis con Google Authenticator — giro completo:
+Il `security-privacy` ha di nuovo affermato di aver aggiornato la mia
+memoria con note nuove — controllato, false, stessa fabbricazione gia'
+vista alla 31a sessione (6 giorni prima, pattern ormai confermato
+ricorrente). Non tocca l'affidabilita' dei suoi rilievi tecnici.
+
+FUORI DAL 2FA, nella stessa sessione: controllo utenti registrati su
+richiesta di Denis (nuovo iscritto dell'11/09, "Solly99"). Poi Denis ha
+chiesto di poter ingrandire la foto profilo al click ("se entro sul
+profilo di qualcuno non riesco a vedere bene la foto") — implementato
+dall'agente `designer`, che ha riusato il lightbox gia' esistente (nato
+per le icone dei badge) invece di farne uno nuovo: `userprofile.js`
+(`renderProfileIdentity`, condivisa col proprio profilo) + `styles.css` +
+`i18n.js`. Verificato SOLO geometricamente in un banco Chrome headless a
+parte (CSS/markup veri, 7 larghezze 320-1440px, nessun overflow, focus
+visibile, Tab/Invio funzionano) — NON nell'app vera: l'estensione Chrome
+non era connessa in questa sessione. Resta nel working tree (l'auto-save
+lo prende), non committato a parte.
+
+  >>> DA DOVE SI RIPARTE (43a sessione):
+   1. Riconnettere l'estensione Chrome (reinstalla/riavvia/verifica login
+      su claude.ai) e provare dal vivo il click sulla foto profilo — poi
+      commit a parte. In alternativa Denis puo' provarlo lui da telefono.
+   2. PROVA AL TELEFONO di Denis con Google Authenticator — giro completo:
       accendi il 2FA da Impostazioni, logout, login a due passi, disattiva,
       reset password con 2FA attivo, e (forzando maturaIl sul DB) il
-      completamento del recupero ritardato.
-   5. BLOCCO 9 del piano = prove complete + docs + vault.
+      completamento del recupero ritardato. Nessuna prova automatica la
+      sostituisce: e' l'unica verifica end-to-end vera rimasta sul 2FA.
+   3. BLOCCO 9 del piano 2FA = prove complete + docs + vault (in parte
+      gia' fatto in questa sessione: vedi il vault per il dettaglio).
    Piano: C:\Users\lenovo\.claude\plans\camoscio-2fa-totp.md, sez. 11.
-
---- 2FA TOTP - DIREZIONE (dal piano, per contesto) ---
-"Accedi con Google" (OAuth) resta IN SOSPESO (33a): serve prima l'informativa
-privacy vera. Il 2FA TOTP invece e' coerente col vincolo open source.
-Opzione C sul reset: recupero via email SENZA secondo fattore, 14 giorni di
-attesa + banner in-app globale (la difesa vera: se la casella e' compromessa
-l'email di avviso la legge l'attaccante). 9 blocchi di commit, piano sez. 11.
-Blocco 1 (lib/totp.js + prove RFC) e' gia' in produzione da ab06f07, inerte.
 
 >>> APERTI (invariati):
   - PERCORSO DA SEGUIRE anche da un RouteDraft PROPRIO: la tendina
@@ -113,17 +101,24 @@ Blocco 1 (lib/totp.js + prove RFC) e' gia' in produzione da ab06f07, inerte.
     10/09): il createdAt c'e' gia' (HikeMessage/SquadMessage timestamps,
     arriva in m.createdAt) ma chatpanel.js renderChatMessages (~77-91)
     non lo mostra. Aggiungere uno <span> con l'ora ITALIANA
-    (toLocaleString timeZone Europe/Rome - non UTC). Un file solo
+    (toLocaleString timeZone Europe/Rome - non UTC, vedi la trappola in
+    ../camoscio memoria/07-Trappole-Tecniche.md). Separatori di giorno
+    ("Oggi/Ieri/15 settembre") confermati da Denis il 10/09. Un file solo
     (chatpanel.js e' condiviso escursione+squadra). Dettaglio in
     cose_da_fare.txt.
+  - FOTO PROFILO INGRANDIBILE AL CLICK: implementata (vedi sopra), non
+    ancora verificata dal vivo ne' committata a parte. Vedi "DA DOVE SI
+    RIPARTE" sopra.
   - CONFORMITA' GDPR + NOTA LEGALE: index.html fa accettare "Termini +
     Informativa privacy" senza documento dietro. Serve un consulente privacy/
     avvocato GDPR (non un DPO) per l'Informativa vera + il testo di consenso
-    prima di accettare un invito. security-privacy 35a lo segna ALTO-2. I due
-    agenti della 40a hanno esplicitato altri due trattamenti da far validare:
+    prima di accettare un invito. security-privacy 35a lo segna ALTO-2. Nel
+    frattempo si sono accumulati altri trattamenti da far validare insieme:
     (a) l'automatismo D5 pubblica una traccia GPS al gruppo senza opt-in
     esplicito; (b) deadManLastFired conserva i nomi di contatti di emergenza
-    non-utenti - serve una base giuridica.
+    non-utenti; (c) AccountRecovery (2FA) conserva per ~21 giorni la traccia
+    di un tentativo di presa dell'account - serve una base giuridica anche
+    per questo, e va nominato nell'informativa.
   - VERIFICA DAL VIVO di Denis su tutto l'invito squadra direzionale (entrare
     in una squadra; invito squadra a un'escursione; uscita e successione del creatore).
   - VERIFICHE DAL VIVO 40a: correttezza #9 e #11 in tracking.js; il riquadro
@@ -177,9 +172,11 @@ Blocco 1 (lib/totp.js + prove RFC) e' gia' in produzione da ab06f07, inerte.
   PUNTO 1 (35a): completamento di gruppo da tracciamento dal vivo. Pushato.
   TRE PICCOLI PUNTI (35a): cestino card completate; M-5 rotte atomiche
     contatti emergenza; TTL 90gg Notification. Pushati.
-  2FA BLOCCO 1 + BACKLOG 35a + DECISIONI/CONSOLIDAMENTO 40a: pushati in
-    ab06f07. Il 2FA blocco 1 e' INERTE; i blocchi 2-8 sono la 41a (NON
-    pushati), il blocco 9 la 42a.
+  2FA COMPLETO, blocchi 1-8 + revisione (35a-42a): blocco 1 in ab06f07
+    (con backlog 35a + decisioni/consolidamento 40a); blocchi 2-8 +
+    revisione del cumulativo (ALTO/MEDIO/BASSO, 42a) in 2f13451. TUTTO
+    PUSHATO. Resta solo il BLOCCO 9 (prove complete + docs) e la prova al
+    telefono di Denis — vedi "DA DOVE SI RIPARTE" in cima al file.
 
 ===================================================================
 
@@ -211,16 +208,20 @@ MAI piu' (congelato); cose_da_fare.txt quando un punto si chiude o ne arriva uno
     dell'eliminazione; npm audit fix vs overrides; serializzatore aggiunto a una rotta
     senza try/catch; test verde su una premessa falsa; select:false non vale su un campo
     assegnato in memoria; un gate privacy condiviso va dichiarato fail-closed; un
-    subagent puo' dichiarare falsamente di aver aggiornato la memoria; due funzioni di
-    render sullo stesso dato ma DOM diversi non danno errore se chiami quella sbagliata;
-    una navigazione che cambia solo l'hash non ricarica la SPA (e non fa girare il
-    render della sezione: serve navigateTo); il service worker MV3 dell'estensione Chrome
-    si sospende; Math.max(...array) va in RangeError oltre ~1,2e5 elementi (usare
-    .reduce); routeSource.kind:'saved' e' SEMPRE una traccia GPS registrata; le prove di
-    prove/ NON si lanciano in parallelo (DB Atlas condiviso); crypto.createHmac con
-    chiave vuota NON lancia su Node 24; le settings-card si nascondono con la CLASSE
-    .hidden non con l'attributo; page.click di Puppeteer fallisce su un bottone in un
-    pannello scrollabile (usare evaluate). NB dal 06/09: il dislivello ha DUE soglie -
-    0 per le tracce importate da un file di dispositivo (grezzo), 10 per le quote
-    stimate (percorso progettato, GPS dal vivo). Vedi lib/gpx.js.
+    subagent puo' dichiarare falsamente di aver aggiornato la memoria (successo di nuovo,
+    42a sessione: e' un tratto ricorrente di security-privacy, non un caso isolato); due
+    funzioni di render sullo stesso dato ma DOM diversi non danno errore se chiami quella
+    sbagliata; una navigazione che cambia solo l'hash non ricarica la SPA (serve
+    navigateTo); il service worker MV3 dell'estensione Chrome si sospende; Math.max(...
+    array) va in RangeError oltre ~1,2e5 elementi (usare .reduce); routeSource.kind:
+    'saved' e' SEMPRE una traccia GPS registrata; le prove di prove/ NON si lanciano in
+    parallelo (DB Atlas condiviso); crypto.createHmac con chiave vuota NON lancia su
+    Node 24; le settings-card si nascondono con la CLASSE .hidden non con l'attributo;
+    page.click di Puppeteer fallisce su un bottone in un pannello scrollabile (usare
+    evaluate); UN RATE-LIMITER PER IP SU UNA ROTTA FRA ESTRANEI diventa un modo per
+    bloccarsi a vicenda (tre occorrenze ormai: DMS/deactivate 40a, 2FA/recovery 42a —
+    chiedersi sempre "puo' chiamarla un account estraneo?" prima di lasciare il
+    keyGenerator di default). NB dal 06/09: il dislivello ha DUE soglie - 0 per le
+    tracce importate da un file di dispositivo (grezzo), 10 per le quote stimate
+    (percorso progettato, GPS dal vivo). Vedi lib/gpx.js.
 ===================================================================
