@@ -7,9 +7,11 @@
 // Caricato per PRIMO fra i moduli client - routeplanner.js lo legge gia' in un const a
 // livello di modulo.
 window.CAMOSCIO_COLORI = Object.freeze({
-    arancio:   '#C1662E',   // --accent-orange
-    verde:     '#4C7A44',   // --accent-green
-    rosso:     '#A83B2E',   // --accent-red
-    blu:       '#4C7E90',   // --accent-blue        - percorso "da seguire" / progettato
-    bluChiaro: '#7FB5C7'    // --accent-blue-light  - traccia registrata dal vivo
+    arancio:        '#C1662E',   // --accent-orange
+    verde:          '#4C7A44',   // --accent-green
+    rosso:          '#A83B2E',   // --accent-red
+    blu:            '#4C7E90',   // --accent-blue        - percorso "da seguire" / progettato
+    bluChiaro:      '#7FB5C7',   // --accent-blue-light  - traccia registrata dal vivo
+    testoSecondario: '#A8A090'   // --color-text-secondary - assi/legenda Chart.js (Denis: era
+                                  // rimasto sul grigio freddo #9CA3AF della vecchia palette)
 });

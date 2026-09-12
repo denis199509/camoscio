@@ -2019,7 +2019,7 @@ function renderPaceChart(user, passoMisurato) {
             plugins: {
                 legend: {
                     labels: {
-                        color: '#9CA3AF',
+                        color: window.CAMOSCIO_COLORI.testoSecondario,
                         font: { size: 10 }
                     }
                 }
@@ -2027,11 +2027,11 @@ function renderPaceChart(user, passoMisurato) {
             scales: {
                 y: {
                     grid: { color: 'rgba(255, 255, 255, 0.05)' },
-                    ticks: { color: '#9CA3AF' }
+                    ticks: { color: window.CAMOSCIO_COLORI.testoSecondario }
                 },
                 x: {
                     grid: { display: false },
-                    ticks: { color: '#9CA3AF' }
+                    ticks: { color: window.CAMOSCIO_COLORI.testoSecondario }
                 }
             }
         }

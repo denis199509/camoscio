@@ -1168,9 +1168,12 @@ function drawStampablePoints() {
     punti.forEach(peak => {
         if (!Number.isFinite(peak.lat) || !Number.isFinite(peak.lng)) return;
 
+        // Denis, 10/09/2026: i rifugi disegnati con la stessa emoji di montagna delle
+        // cime si confondevano sulla mappa - un'emoji diversa basta a distinguerli.
+        const emojiPunto = peak.tipo === 'rifugio' ? '🛖' : '🏔️';
         const peakIcon = L.divIcon({
             className: 'peak-leaflet-marker',
-            html: `<div style="font-size: 1.6rem; background: rgba(0,0,0,0.6); padding: 4px; border-radius: 50%; border: 1.5px solid ${window.CAMOSCIO_COLORI.blu}; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">🏔️</div>`,
+            html: `<div style="font-size: 1.6rem; background: rgba(0,0,0,0.6); padding: 4px; border-radius: 50%; border: 1.5px solid ${window.CAMOSCIO_COLORI.blu}; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">${emojiPunto}</div>`,
             iconSize: [32, 32],
             iconAnchor: [16, 16]
         });

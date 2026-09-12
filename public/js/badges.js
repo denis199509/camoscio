@@ -83,10 +83,12 @@
     // STESSA forma delle vette delle escursioni ({name, lat, lng, altitude, stampId})
     // perche' checkGeofencing in map.js la usa gia' cosi': cambiare la forma avrebbe
     // voluto dire toccare anche i popup, senza guadagnarci niente.
+    // + tipo (Denis 10/09/2026): serve al marker della Mappa per disegnare i rifugi
+    // con un'emoji diversa dalle cime - prima veniva tolto qui, quindi non arrivava mai.
     function puntiTimbrabili() {
         return catalogo()
             .filter(b => Number.isFinite(b.lat) && Number.isFinite(b.lng))
-            .map(b => ({ name: b.nome, lat: b.lat, lng: b.lng, altitude: b.quota, stampId: b.stampId }));
+            .map(b => ({ name: b.nome, lat: b.lat, lng: b.lng, altitude: b.quota, stampId: b.stampId, tipo: b.tipo }));
     }
 
     // Catalogo + "questo l'ho preso, e quando", per un elenco di timbri qualunque.
