@@ -1076,7 +1076,12 @@ async function renderRouteToFollowOptions() {
     }
     percorsiDaSeguire = [
         ...salvati.map(p => ({ id: p.id, nome: p.nome, tipo: 'saved', punti: p.punti })),
-        ...bozze.map(b => ({ id: b.id, nome: b.nome, tipo: 'draft', punti: b.punti, agganciaAiSentieri: b.agganciaAiSentieri }))
+        // + anello (revisione 43a, ALTO): una RouteDraft ad anello salva l'INTENZIONE di
+        // tornare al punto 1 (punto 38), non il ritorno come punto in piu' - va richiuso a
+        // mano prima di mandare i punti a /plan, esattamente come fa gia' routeplanner.js
+        // (puntiDaPercorrere). Senza, la linea da seguire si fermava a meta' anello, proprio
+        // nel punto piu' lontano dall'auto.
+        ...bozze.map(b => ({ id: b.id, nome: b.nome, tipo: 'draft', punti: b.punti, anello: b.anello === true, agganciaAiSentieri: b.agganciaAiSentieri }))
     ];
     select.innerHTML = `<option value="">${escapeHtml(T('track.nessunPercorso') || 'Nessuno')}</option>` +
         (salvati.length ? `<optgroup label="${escapeHtml(T('track.percorsiSalvati') || 'Percorsi salvati')}">` +
@@ -1106,31 +1111,51 @@ async function applicaPercorsoDaSeguire() {
         return;
     }
     // tipo 'draft': niente linea gia' pronta, va ricalcolata. Messa in cache su
-    // scelto._lineaCalcolata al primo calcolo - si puo' riaprire/richiudere la tendina piu'
+    // scelto._tappeCalcolate al primo calcolo - si puo' riaprire/richiudere la tendina piu'
     // volte nella stessa sessione di tracciamento senza richiamare il server ogni volta.
-    if (scelto._lineaCalcolata) {
-        window.disegnaPercorsoSalvato(scelto._lineaCalcolata);
+    if (scelto._tappeCalcolate) {
+        window.disegnaPercorsoSalvato(null, { tratti: scelto._tappeCalcolate });
         return;
     }
     if (window.clearPercorsoSalvato) window.clearPercorsoSalvato(); // via la linea vecchia mentre si calcola
+    // Revisione 43a (ALTO): un fallimento qui (tipico al parcheggio, dove la rete e' debole)
+    // non puo' restare muto - la tendina disabilitata durante la registrazione (riga ~994)
+    // toglierebbe anche la possibilita' di riprovare. Si riporta il menu a "Nessuno" e si
+    // avvisa, invece di lasciare scritto il nome di un percorso che sulla mappa non c'e'.
+    const fallito = (messaggio) => {
+        select.value = '';
+        if (window.clearPercorsoSalvato) window.clearPercorsoSalvato();
+        if (window.showToast) window.showToast(messaggio, 'error');
+    };
     try {
+        const puntiDaProgettare = (scelto.anello && scelto.punti.length >= 2)
+            ? [...scelto.punti, scelto.punti[0]]
+            : scelto.punti;
         const res = await fetch('/api/routing/plan', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ punti: scelto.punti, agganciaAiSentieri: scelto.agganciaAiSentieri !== false })
+            body: JSON.stringify({ punti: puntiDaProgettare, agganciaAiSentieri: scelto.agganciaAiSentieri !== false })
         });
-        if (!res.ok) return;
+        if (!res.ok) {
+            const dati = await res.json().catch(() => ({}));
+            fallito(dati.error || T('track.erroreCalcoloPercorso') || 'Non e\' stato possibile calcolare questo percorso ora.');
+            return;
+        }
         const esito = await res.json();
-        const linea = Array.isArray(esito.tappe) ? esito.tappe.flatMap(t => t.coordinate) : [];
-        if (linea.length < 2) return;
-        scelto._lineaCalcolata = linea;
+        const tappe = Array.isArray(esito.tappe) ? esito.tappe : [];
+        if (tappe.flatMap(t => t.coordinate).length < 2) {
+            fallito(T('track.erroreCalcoloPercorso') || 'Non e\' stato possibile calcolare questo percorso ora.');
+            return;
+        }
+        scelto._tappeCalcolate = tappe;
         // La tendina puo' essere cambiata nel frattempo (fetch lenta): disegna solo se e'
         // ancora la scelta corrente, altrimenti si sovrapporrebbe alla linea giusta.
         if (select.value === scelto.id && window.disegnaPercorsoSalvato) {
-            window.disegnaPercorsoSalvato(linea);
+            window.disegnaPercorsoSalvato(null, { tratti: tappe });
         }
     } catch (e) {
         console.error('Errore calcolo percorso da seguire (progetto proprio):', e);
+        fallito(T('track.erroreRete') || 'Impossibile contattare il server.');
     }
 }
 

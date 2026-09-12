@@ -2400,7 +2400,9 @@
             'track.nessunPercorso': 'None',
             'track.percorsoDaSeguireNota': 'Just a reference line on the map. The site does not warn you if you stray from it.',
             'track.percorsiSalvati': 'Saved routes',
-            'track.propriProgetti': 'Your own projects'
+            'track.propriProgetti': 'Your own projects',
+            'track.erroreCalcoloPercorso': 'Could not calculate this route right now.',
+            'track.erroreRete': 'Could not reach the server.'
         }
     };
 
