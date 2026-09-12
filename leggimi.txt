@@ -121,6 +121,51 @@ vivo: entrambi i gruppi, entrambi i rami disegnano la linea giusta,
 cache confermata. TUTTI E QUATTRO I PUNTI DELLA LISTA DI DENIS SONO
 CHIUSI.
 
+REVISIONE code-reviewer + security-privacy SUL CUMULATIVO 43a — FATTA E
+CHIUSA (12/09/2026). Denis: "Manda gli agenti per controllare", poi
+"Procedi a risolvere quelli alti", poi "Vai con i medi", poi "Vai anche
+con i BASSO, poi pusha tutto". Girati sul cumulativo `git diff
+2f13451..HEAD` (le quattro feature di questa sessione). ZERO CRITICI.
+Le feature 1 (foto profilo) e 2 (rifugi+assi) pulite su entrambi i
+fronti. Il grosso sul punto 4 (percorso da seguire da RouteDraft):
+
+  - 3 ALTO (`479af95`): un progetto AD ANELLO perdeva il ritorno (la
+    RouteDraft salva l'INTENZIONE di chiudere l'anello, non il punto
+    in piu' - va richiuso a mano prima di /plan, come gia' fa
+    routeplanner.js); i tratti IN LINEA D'ARIA (nessun sentiero vero)
+    venivano disegnati identici al sentiero vero (map.js
+    disegnaPercorsoSalvato ora accetta { tratti } e usa lo stesso
+    linguaggio visivo del route planner - blu continuo/rosso
+    tratteggiato); un fallimento di /plan restava MUTO (tipico al
+    parcheggio, rete debole) - ora un toast + la tendina torna a
+    "Nessuno" invece di mentire.
+  - 6 MEDIO (`a2f8bde`): cache del calcolo persa a ogni rientro nella
+    Mappa (ora sopravvive al ridisegno della tendina); la mappa poteva
+    "saltare" se il calcolo arrivava DOPO l'avvio della registrazione
+    (niente piu' fitBounds in quel caso); **privacy** - selezionare un
+    progetto mandava sempre la sua geometria a open-meteo per il
+    dislivello che qui non serve, nuovo flag `saltaQuote` su POST
+    /api/routing/plan (il route planner non lo manda e continua a
+    ricevere le quote); nuovo `planLimiter` dedicato (120/ora per
+    PERSONA, non per IP) - la rotta aveva solo l'apiLimiter generico e
+    ora ha un secondo punto di innesco; bug preesistente trovato per lo
+    stesso motivo di `tipo` (42a-bis): `sogliaM` del bivacco Ju Busciu
+    si perdeva nello stesso passaggio dati, il tasto TIMBRA compariva a
+    150m invece dei 10m veri; due `Intl.DateTimeFormat` della chat
+    ricreati a ogni messaggio a ogni polling, ora costanti di modulo.
+  - 5 BASSO (`74e46ad`): guardia mancante nel ramo cache; cambio lingua
+    non ridisegnava le etichette dei gruppi della tendina; corsa su
+    selezioni rapide (A/Nessuno/A) risolta con un "biglietto numerato"
+    (routeplanner.js giroCalcolo); GET /saved-routes e GET /drafts
+    restituivano i documenti INTERI (userId, origineUserId inclusi) -
+    ridotti ai soli campi che qualche pagina legge davvero; chat:
+    l'etichetta del giorno ora e' escapata + le tre funzioni data/ora
+    non lanciano piu' RangeError su un createdAt non valido.
+
+Regressione: prova-punto113 103/103, prova-punto38 25/25 (rilanciate
+dopo ogni gruppo). Tutto verificato dal vivo con l'estensione Chrome ad
+ogni gruppo. TUTTO PUSHATO su origin/master.
+
 TRE PICCOLI PUNTI — CHIUSI (12/09/2026, 43a sessione), commit `08419f5`
 (rifugi+assi) e `1c76be3` (chat), pushati:
  - RIFUGI SULLA MAPPA: map.js disegna l'emoji giusta in base a peak.tipo

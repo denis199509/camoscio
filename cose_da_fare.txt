@@ -12685,3 +12685,108 @@ creatore e successione automatica. Denis ha confermato dal vivo SOLO il
 caso (2) e ha scelto esplicitamente di chiudere il punto senza provare
 (1) e (3). Se un giorno emerge un problema li', tenerlo a mente: non
 sono mai stati verificati dal vivo.
+
+
+=====================================================================
+REVISIONE code-reviewer + security-privacy SUL CUMULATIVO 43a (CHIUSA,
+12/09/2026)
+=====================================================================
+Denis: "Manda gli agenti per controllare", poi via libera a gruppi
+("Procedi a risolvere quelli alti" -> "Vai con i medi" -> "Vai anche con
+i BASSO, poi pusha tutto") - stesso schema delle revisioni precedenti
+(39a, 40a, 42a).
+
+Girati IN PARALLELO su `git diff 2f13451..HEAD` (le quattro feature di
+questa sessione: foto profilo, rifugi+assi, chat, percorso da seguire).
+ZERO CRITICI in entrambi. Le feature 1 e 2 pulite su entrambi i fronti;
+il grosso dei rilievi era concentrato sul punto 4 (percorso da seguire
+da un RouteDraft proprio) - i due agenti hanno trovato INDIPENDENTEMENTE
+lo stesso bug piu' serio (l'anello), buon segno che fosse reale.
+
+ALTO (3, commit `479af95`, tutti su public/js/tracking.js +
+public/js/map.js):
+  1. ANELLO PERSO: una RouteDraft ad anello salva l'INTENZIONE di
+     tornare al punto 1 (punto 38), non il ritorno come punto in piu' -
+     va richiuso a mano prima di /plan, esattamente come gia' fa
+     routeplanner.js (puntiDaPercorrere). Senza, la linea da seguire si
+     fermava a meta' anello, nel punto piu' lontano dall'auto.
+  2. TRATTI IN LINEA D'ARIA disegnati identici al sentiero vero:
+     esito.tappe.flatMap(...) buttava via t.tipo ('sentiero'/'retta').
+     map.js disegnaPercorsoSalvato ora accetta anche { tratti } e
+     disegna ogni tratto con lo stesso linguaggio visivo GIA' in uso nel
+     route planner (blu continuo = sentiero, rosso tratteggiato = linea
+     d'aria) - il ramo SavedRoute (nessun tratto distinto) resta una
+     singola polyline come prima.
+  3. FALLIMENTO MUTO: se /plan falliva (tipico al parcheggio, rete
+     debole), la linea spariva senza avviso, e la tendina si disabilita
+     appena parte la registrazione - niente modo di riprovare per tutta
+     l'escursione. Ora un toast con l'errore del server (o di rete) +
+     la tendina torna a "Nessuno".
+
+MEDIO (6, commit `a2f8bde`):
+  1. Cache (_lineaCalcolata, poi rinominata _tappeCalcolate col punto
+     2) persa a ogni rientro nella sezione Mappa da idle, perche'
+     renderRouteToFollowOptions ricostruiva percorsiDaSeguire con
+     oggetti nuovi - ora la cache vecchia si porta avanti per id.
+  2. La mappa poteva "saltare" (fitBounds) se il calcolo asincrono
+     arrivava DOPO che la registrazione era gia' partita (fetch
+     iniziata a tendina attiva, "Avvia" premuto in fretta) - il fit si
+     decide guardando trackingState.status quando il risultato arriva,
+     non quando e' partita la richiesta.
+  3. PRIVACY (security-privacy): selezionare un progetto proprio
+     mandava sempre la sua geometria a una fonte esterna (open-meteo,
+     lib/elevation.js) per il dislivello - qui serve solo disegnare la
+     linea. Nuovo flag `saltaQuote` sul corpo di POST
+     /api/routing/plan, che usa l'opzione `saltaQuote` gia' esistente
+     in dislivelloDelleTappe (finora solo per le prove) - tracking.js
+     lo manda sempre, il route planner non lo manda mai.
+  4. Nuovo `planLimiter` dedicato su /plan (120/ora PER PERSONA, non
+     per IP - stessa lezione di checkinLimiter: un progetto e' un'
+     azione propria, ma restare per IP esporrebbe chi condivide un wifi
+     di rifugio a un limite altrui). Prima solo l'apiLimiter generico,
+     e da questa sessione la rotta ha un secondo punto di innesco.
+  5. BUG PREESISTENTE trovato per lo stesso motivo di `tipo` (rifugi,
+     08419f5): badges.js puntiTimbrabili() toglieva anche `sogliaM` -
+     il tasto TIMBRA del bivacco Ju Busciu compariva a 150m invece dei
+     10m veri che il server pretende. Non causato da questa sessione.
+  6. I due Intl.DateTimeFormat della chat (giorno/ora) venivano
+     ricreati a ogni messaggio a ogni polling da 5s - costanti di
+     modulo, per la batteria del telefono.
+
+BASSO (5 applicati, commit `74e46ad`; 1 lasciato com'e' - B-4 locale
+fissa 'it-IT' in formattaOraChat, l'agente stesso lo segna "preferenza
+mia, non un difetto" dato che hour12:false rende l'output identico in
+ogni lingua):
+  - guardia mancante su window.disegnaPercorsoSalvato nel ramo cache;
+  - cambio lingua non ridisegnava le etichette dei due gruppi della
+    tendina - CamoscioI18n.onChange ora richiama anche
+    renderRouteToFollowOptions;
+  - corsa su selezioni rapide (A/Nessuno/A prima che /plan rispondesse)
+    - "biglietto numerato" (stesso principio di giroCalcolo in
+    routeplanner.js): solo il giro piu' recente puo' ancora disegnare o
+    avvisare, un giro superato mette comunque in cache il risultato;
+  - MINIMIZZAZIONE (security-privacy): GET /api/routing/saved-routes e
+    GET /api/routing/drafts restituivano i documenti INTERI (userId,
+    origineUserId, ecc.) - dati del richiedente quindi nessuna fuga, ma
+    ora viaggiano anche a ogni apertura della sezione Mappa, non solo
+    aprendo il route planner. .select() ridotto ai soli campi che
+    qualche pagina legge davvero (verificati uno per uno in
+    routeplanner.js/social.js/tracking.js prima di escludere gli altri);
+  - chat: etichettaGiornoChat() ora escapata (unica interpolazione non
+    escapata del lotto) + le tre funzioni data/ora non lanciano piu'
+    RangeError su un createdAt non valido (stessa classe del
+    Math.max->RangeError della 39a - oggi non puo' succedere, lo
+    schema lo garantisce, ma il ripiego costa una riga).
+
+Regressione rilanciata dopo OGNI gruppo: prova-punto113 103/103,
+prova-punto38 25/25 (tocca proprio /api/routing/plan e gli anelli).
+Verificato dal vivo con l'estensione Chrome a ogni gruppo (screenshot +
+console): anello chiuso, gruppo di poligonali disegnato, toast
+d'errore su fallimento simulato, cache sopravvive al ridisegno,
+fit:false con registrazione attiva, saltaQuote azzera
+dislivelloDisponibile, sogliaM del Ju Busciu arriva a 10, cambio lingua
+ridisegna le etichette, sequenza A/Nessuno/A finisce nello stato
+giusto, payload delle due liste senza piu' userId/origineUserId, le
+funzioni data/ora della chat non lanciano su input non validi.
+
+TUTTO PUSHATO su origin/master (`479af95`, `a2f8bde`, `74e46ad`).
