@@ -420,6 +420,33 @@ document.addEventListener("DOMContentLoaded", async () => {
     // solo dentro i gestori, al momento del click, non qui).
     if (window.initProfileModule) window.initProfileModule();
 
+    // PUNTO 15 (verifica generale, blocco 3, 47a sessione): gli 8 moduli qui sotto (piu'
+    // carpool/backpack, D-3) agganciavano i loro ascoltatori in fondo a initApp(), cioe'
+    // DOPO await refreshState(). Stessa trappola gia' pagata tre volte qui sopra (menu
+    // 26/07, fascia email 30/07, profilo 06/08): nessuno di questi agganci dipende dai
+    // dati, quindi si collegano subito. I render che dipendono dai dati restano dentro
+    // initApp() (e, per cinque di loro, anche in triggerSectionRender - vedi il piano
+    // C:\Users\lenovo\.claude\plans\camoscio-initapp-refactor.md).
+    if (window.setupMapEvents) window.setupMapEvents();
+    if (window.setupWeatherEvents) window.setupWeatherEvents();
+    if (window.setupSafetyEvents) window.setupSafetyEvents();
+    if (window.setupSocialEvents) window.setupSocialEvents();
+    if (window.setupPeopleSearchEvents) window.setupPeopleSearchEvents();
+    if (window.setupTrackingEvents) window.setupTrackingEvents();
+    if (window.setupTrailheadPickerEvents) window.setupTrailheadPickerEvents();
+    if (window.setupStoricoEvents) window.setupStoricoEvents();
+    if (window.setupCarpoolEvents) window.setupCarpoolEvents();
+    if (window.setupBackpackEvents) window.setupBackpackEvents();
+
+    // D-1 (punto 15): renderSafetyDati() e initMeshWebSocket() leggono solo currentUser
+    // (gia' completo, vedi checkAuthAndShowGate) e localStorage - nessuna dipendenza da
+    // refreshState(). Chiamate qui, non dentro initApp(): cosi' il conto alla rovescia del
+    // Dead Man's Switch, la fascia rossa e l'allarme RETROATTIVO di un timer gia' scaduto
+    // funzionano anche se refreshState() e' lentissima o non arriva mai (Render freddo,
+    // rete assente a meta').
+    if (window.renderSafetyDati) window.renderSafetyDati();
+    if (window.initMeshWebSocket) window.initMeshWebSocket();
+
     // Inizializza i moduli principali (lento: dati + moduli rimasti)
     await initApp();
 });
@@ -463,17 +490,16 @@ async function initApp() {
         // Aggiorna l'interfaccia utente superiore
         updateHeaderUserWidget();
 
-        // Inizializza i sottomoduli in ordine (initProfileModule si collega prima, vedi sopra)
-        if (window.initMapModule) window.initMapModule();
-        if (window.initWeatherModule) window.initWeatherModule();
-        if (window.initBackpackModule) window.initBackpackModule();
-        if (window.initCarpoolModule) window.initCarpoolModule();
-        if (window.initSafetyModule) window.initSafetyModule();
-        if (window.initSocialModule) window.initSocialModule();
-        if (window.initPeopleSearchModule) window.initPeopleSearchModule();
-        if (window.initTrackingModule) window.initTrackingModule();
-        if (window.initTrailheadPicker) window.initTrailheadPicker();
-        if (window.initStorico) window.initStorico();
+        // PUNTO 15 (verifica generale, blocco 3): i render che dipendono dai dati.
+        // L'aggancio degli ascoltatori (setupXEvents, e per D-1 anche renderSafetyDati/
+        // initMeshWebSocket) e' gia' avvenuto nel DOMContentLoaded, PRIMA di questa
+        // chiamata a initApp() - vedi sopra. Storico/peoplesearch/trailhead-picker/
+        // carpool/backpack non compaiono piu' qui: erano solo listener, zero dati.
+        if (window.renderMapModule) await window.renderMapModule(); // D-2: la mappa si crea subito dentro, non aspetta i confini veri (vedi map.js)
+        if (window.renderWeatherModule) window.renderWeatherModule();
+        if (window.renderSocialModule) window.renderSocialModule();
+        if (window.renderHikesList) window.renderHikesList();
+        if (window.renderTrackingModule) window.renderTrackingModule();
         if (window.initRoutePlanner) window.initRoutePlanner(); // punto 13
 
         // Fascia "conferma il tuo indirizzo email"
@@ -666,23 +692,40 @@ async function refreshState() {
                 window.CamoscioState.currentUser.profilePhoto = fotoAttuale;
             }
 
+            // ALTO (verifica generale, blocco 3, 45a sessione) e corretto qui (46a): le sei
+            // richieste qui sotto erano in fila (un await via l'altro) pur non dipendendo
+            // MAI l'una dal risultato dell'altra - dipendono solo da questo id utente/dalla
+            // sessione, mai da stamps/completions/notifiche ecc. gia' caricate. Misurato:
+            // 0,4-1,5s persi a ogni cambio sezione su rete mobile (refreshState() gira ad
+            // ogni cambio, non solo all'avvio). In parallelo invece che in sequenza, stessa
+            // identica assegnazione di stato e stessi effetti di rendering di prima.
+            const utenteId = window.CamoscioState.currentUser.id;
+            const puoModerare = window.CamoscioState.currentUser.canModerateReports;
+            const [stamps, ascese, completions, notifications, following, moderation] = await Promise.all([
+                fetchApi(`/api/stamps/${utenteId}`),
+                fetchApi(`/api/tracking/peak-ascents/${utenteId}`),
+                fetchApi(`/api/completions/${utenteId}`),
+                fetchApi(`/api/notifications/${utenteId}`),
+                fetchApi('/api/follow/following'),
+                // Punto 45: il conteggio del triangolo, SOLO per chi puo' moderare -
+                // altrimenti sarebbe una fetch-e-403 sprecata per chiunque altro ad ogni
+                // cambio sezione. Punto 111: /moderation ha sostituito /pending.
+                puoModerare ? fetchApi('/api/reports/moderation') : Promise.resolve(null)
+            ]);
+
             // Carica i timbri dell'utente corrente
-            const stamps = await fetchApi(`/api/stamps/${window.CamoscioState.currentUser.id}`);
             window.CamoscioState.stamps = stamps;
 
             // Punto 42b: quante volte una vetta gia' conquistata e' stata raggiunta -
             // trasformato in oggetto {stampId: {...}} qui una volta sola, cosi' badges.js
             // lo legge con una ricerca diretta invece di scorrere un array ad ogni scheda.
-            const ascese = await fetchApi(`/api/tracking/peak-ascents/${window.CamoscioState.currentUser.id}`);
             window.CamoscioState.peakAscents = {};
             ascese.forEach(a => { window.CamoscioState.peakAscents[a.stampId] = a; });
 
             // Carica le escursioni già segnate come completate dall'utente corrente
-            const completions = await fetchApi(`/api/completions/${window.CamoscioState.currentUser.id}`);
             window.CamoscioState.completions = completions;
 
             // Carica le notifiche dell'utente corrente
-            const notifications = await fetchApi(`/api/notifications/${window.CamoscioState.currentUser.id}`);
             window.CamoscioState.notifications = notifications;
             renderNotificationBell();
 
@@ -690,19 +733,9 @@ async function refreshState() {
             // sopra si ricarica ad ogni refreshState() (cioè ad ogni cambio sezione), nessun
             // polling - lo useranno il tasto "Segui" sui profili, le liste follow in Tribù &
             // Squadre e la pagina Feed.
-            const following = await fetchApi('/api/follow/following');
             window.CamoscioState.following = following;
 
-            // Punto 45: il conteggio del triangolo, SOLO per chi puo' moderare - altrimenti
-            // sarebbe una fetch-e-403 sprecata per chiunque altro ad ogni cambio sezione.
-            // Stessa cadenza event-driven gia' in uso per le notifiche sopra (nessun polling
-            // a intervallo in tutto il progetto): si aggiorna ad ogni refreshState(), cioe'
-            // ad ogni cambio pagina.
-            // Punto 111: /moderation ha sostituito /pending - il pallino ora conta tutto
-            // cio' che chiede una decisione (da verificare + risoluzioni + scadute), non
-            // solo le 'pending'. Il totale lo calcola il server.
-            if (window.CamoscioState.currentUser.canModerateReports) {
-                const moderation = await fetchApi('/api/reports/moderation');
+            if (puoModerare) {
                 window.CamoscioState.moderation = moderation;
                 if (window.renderPendingReportsBadge) window.renderPendingReportsBadge(moderation.totale);
             }

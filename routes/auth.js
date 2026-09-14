@@ -194,13 +194,24 @@ router.post('/register', registrazioneLimiter, authLimiter, async (req, res) => 
             console.error('Email di verifica non inviata (la registrazione e\' comunque riuscita):', e.message);
         });
 
-        req.session.userId = user._id.toString();
+        // Calcolato PRIMA di regenerate: dentro al suo callback non puo' esserci un await
+        // (stesso vincolo delle altre chiamate a regenerate in questo file).
+        const scherzoBenvenuto = (normalizedUsername.toLowerCase() === 'damiano' && await consumaScherzoDamianoSeArmato())
+            ? MESSAGGIO_SCHERZO_DAMIANO
+            : null;
 
-        const risposta = user.toJSON();
-        if (normalizedUsername.toLowerCase() === 'damiano' && await consumaScherzoDamianoSeArmato()) {
-            risposta.scherzoBenvenuto = MESSAGGIO_SCHERZO_DAMIANO;
-        }
-        res.json(risposta);
+        // ALTO (verifica generale, blocco 1, 44a sessione) e corretto qui (46a): session
+        // fixation, stesso schema di /login e /reset-password - vedi li' il motivo.
+        req.session.regenerate((err) => {
+            if (err) {
+                console.error('Errore rigenerazione sessione dopo la registrazione:', err);
+                return res.status(500).json({ error: 'Errore interno' });
+            }
+            req.session.userId = user._id.toString();
+            const risposta = user.toJSON();
+            if (scherzoBenvenuto) risposta.scherzoBenvenuto = scherzoBenvenuto;
+            res.json(risposta);
+        });
     } catch (e) {
         if (e.code === 11000) {
             // B-1, giro agente sul fix BASSO: stesso principio del ramo ValidationError qui
@@ -341,12 +352,22 @@ router.post('/login', authLimiter, async (req, res) => {
             await ripristinaAccount(user);
         }
 
-        req.session.userId = user._id.toString();
-        const risposta = user.toJSON();
-        delete risposta.pendingDeletionAt;
-        delete risposta.deletionScrubAt;
-        if (eraInEliminazione) risposta.eliminazioneAnnullata = true;
-        res.json(risposta);
+        // ALTO (verifica generale, blocco 1, 44a sessione) e corretto qui (46a): session
+        // fixation - senza regenerate un session id fissato da un attaccante PRIMA del login
+        // (es. un cookie iniettato su una rete condivisa) resterebbe valido, autenticato,
+        // anche dopo. Stesso schema gia' in uso su /login/2fa e /reset-password qui sotto.
+        req.session.regenerate((err) => {
+            if (err) {
+                console.error('Errore rigenerazione sessione dopo il login:', err);
+                return res.status(500).json({ error: 'Errore interno' });
+            }
+            req.session.userId = user._id.toString();
+            const risposta = user.toJSON();
+            delete risposta.pendingDeletionAt;
+            delete risposta.deletionScrubAt;
+            if (eraInEliminazione) risposta.eliminazioneAnnullata = true;
+            res.json(risposta);
+        });
     } catch (e) {
         console.error('Errore login:', e);
         res.status(500).json({ error: 'Errore interno' });
@@ -930,8 +951,16 @@ router.post('/demo-login', async (req, res) => {
         if (!user) {
             return res.status(404).json({ error: 'Account demo non trovato' });
         }
-        req.session.userId = user._id.toString();
-        res.json(user);
+        // ALTO (verifica generale, blocco 1, 44a sessione) e corretto qui (46a): session
+        // fixation, stesso schema di /login e /reset-password - vedi li' il motivo.
+        req.session.regenerate((err) => {
+            if (err) {
+                console.error('Errore rigenerazione sessione dopo il login demo:', err);
+                return res.status(500).json({ error: 'Errore interno' });
+            }
+            req.session.userId = user._id.toString();
+            res.json(user);
+        });
     } catch (e) {
         res.status(400).json({ error: 'Richiesta non valida' });
     }

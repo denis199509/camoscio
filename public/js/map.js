@@ -166,12 +166,42 @@ async function ensureRegionBoundaries() {
     }
 }
 
-async function initMapModule() {
-    // I confini reali servono gia' per il maxBounds qui sotto: si aspetta il loro
-    // caricamento (una singola richiesta di rete leggera, ~65KB) prima di creare la mappa.
-    await ensureRegionBoundaries();
+// Punto 15 (verifica generale, blocco 3): FAB "segnala pericolo", form Waze, tasto "usa
+// GPS reale" e toggle del pannello registrazione sono listener puri (verificato: nessuno
+// usa window.mapInstance al momento dell'aggancio, solo dentro i gestori) - si agganciano
+// SUBITO. Il resto di quella che era initMapModule() non entra nel pattern: sono risorse
+// Leaflet (mapInstance.on('click'/'dragstart')) che non possono esistere prima della mappa
+// stessa - restano in renderMapModule(), sotto.
+let eventiMapCollegati = false;
+function setupMapEvents() {
+    if (eventiMapCollegati) return;
+    eventiMapCollegati = true;
 
-    // Inizializza la mappa Leaflet, vincolata all'ambito geografico corrente
+    setupMapForms();
+    setupReportFab();
+    setupMapRecordSetupToggle();
+
+    // Cambio di dimensioni della finestra o rotazione del telefono: senza questo Leaflet
+    // continua a usare le misure vecchie e la mappa resta tagliata (rilevante ora che su
+    // schermo stretto il layout si impila, vedi @media in styles.css - punto 9).
+    window.addEventListener('resize', () => {
+        if (window.mapInstance) window.mapInstance.invalidateSize();
+    });
+}
+
+// D-2 (punto 15): la mappa si crea SUBITO col rettangolo di riserva
+// (window.CAMOSCIO_REGION_BOUNDS, gia' pronto a valutazione dello script, riga 74) invece
+// di aspettare come prima il download dei confini regionali veri (~65KB, ensureRegionBoundaries)
+// PRIMA di creare window.mapInstance. Motivo: initApp() chiama anche renderTrackingModule(),
+// la cui ripresa di una registrazione in corso puo' scrivere sulla mappa (setLiveTrackPoints
+// -> resetLiveTrackPolyline) - se la fetch dei confini era ancora la PRIMA cosa fatta,
+// mapInstance restava null e quella scrittura falliva con un TypeError silenzioso (corsa gia'
+// pagata, vedi 07-Trappole-Tecniche.md). Ora mapInstance esiste dalla prima riga sincrona di
+// questa funzione; i confini VERI arrivano poi in background e stringono il limite di
+// trascinamento (setMaxBounds) quando sono pronti - per pochi secondi il limite resta il
+// rettangolo largo invece del riquadro esatto delle 4 regioni (scelta di Denis, D-2).
+async function renderMapModule() {
+    // Inizializza la mappa Leaflet, vincolata (per ora) al rettangolo di riserva
     const b = window.CAMOSCIO_REGION_BOUNDS;
     window.mapInstance = L.map('map', {
         maxBounds: [[b.minLat, b.minLng], [b.maxLat, b.maxLng]],
@@ -210,27 +240,15 @@ async function initMapModule() {
         posFollowEnabled = false;
     });
 
-    // Cambio di dimensioni della finestra o rotazione del telefono: senza questo Leaflet
-    // continua a usare le misure vecchie e la mappa resta tagliata (rilevante ora che su
-    // schermo stretto il layout si impila, vedi @media in styles.css - punto 9).
-    window.addEventListener('resize', () => {
-        if (window.mapInstance) window.mapInstance.invalidateSize();
-    });
-
     // Carica i marker dei report Waze e i sentieri
     renderMapMarkers();
-
-    // Inizializza eventi dei form
-    setupMapForms();
-    setupReportFab();
-    setupMapRecordSetupToggle();
 
     // Punto 26 - il puntino blu si disegna qui ogni volta che arriva una posizione, da
     // qualunque fonte (watch del modulo geolocation o fix del tracciamento in corso).
     if (window.CamoscioGeo) {
         window.CamoscioGeo.onPosizione(aggiornaPuntinoPosizione);
 
-        // Se la sezione Mappa e' GIA' aperta quando initMapModule finisce, il puntino va
+        // Se la sezione Mappa e' GIA' aperta quando renderMapModule finisce, il puntino va
         // acceso adesso: nessuno passera' piu' da navigateTo. E' la stessa finestra temporale
         // del bug gia' documentato in cronologia.txt (interfaccia visibile ma moduli non ancora
         // pronti), che su Render - dove il servizio gratuito si risveglia con calma - dura
@@ -240,10 +258,25 @@ async function initMapModule() {
             window.CamoscioGeo.accendi(true);
         }
     }
+
+    // I confini VERI arrivano in background: non c'e' motivo di far aspettare il resto di
+    // initApp() per un limite di trascinamento piu' preciso (vedi commento sopra la funzione).
+    ensureRegionBoundaries().then(() => {
+        if (window.mapInstance) {
+            const bb = window.CAMOSCIO_REGION_BOUNDS;
+            window.mapInstance.setMaxBounds([[bb.minLat, bb.minLng], [bb.maxLat, bb.maxLng]]);
+        }
+    });
 }
 
 // Crea e gestisce il marker della posizione GPS simulata
 function createUserGpsMarker() {
+    // D-5 (punto 15): chiamata anche da updateLiveGpsPosition() su un fix GPS reale, che
+    // puo' arrivare prima che la mappa esista (stessa classe di corsa di
+    // resetLiveTrackPolyline sotto - vedi 07-Trappole-Tecniche.md). Senza mapInstance non
+    // c'e' niente su cui disegnare il marker: si riprova al fix successivo.
+    if (!window.mapInstance) return;
+
     const userIcon = L.divIcon({
         className: 'user-gps-leaflet-marker',
         html: `<div style="font-size: 2rem; filter: drop-shadow(0 0 5px rgba(193,102,46,0.8));">🥾</div>`,
@@ -265,11 +298,6 @@ function createUserGpsMarker() {
     userGpsMarker.on('dragend', function (event) {
         const position = userGpsMarker.getLatLng();
         window.userSimulatedLocation = { lat: position.lat, lng: position.lng };
-        
-        // Se il modulo mesh simulator radar è attivo, aggiorna la posizione anche lì
-        if (window.updateRadarPosition) {
-            window.updateRadarPosition(userSimulatedLocation);
-        }
 
         checkGeofencing(position.lat, position.lng);
     });
@@ -299,7 +327,7 @@ function updateLiveGpsPosition(lat, lng, recenter = false) {
     // Con l'inseguimento attivo la mappa scorre da sola dietro al segnaposto: e' questo
     // che mancava al punto 11 (vedi commento in cima al file). Resta comunque possibile
     // guardarsi intorno: appena si trascina la mappa a mano l'inseguimento si spegne
-    // (evento 'dragstart', vedi initMapModule) e compare il tasto "Ricentra su di me".
+    // (evento 'dragstart', vedi renderMapModule) e compare il tasto "Ricentra su di me".
     if (window.mapInstance && (recenter || liveFollowEnabled)) {
         if (liveViewNeedsInitialCenter) {
             // Primo fix della registrazione: si arriva qui con la mappa ancora sulla vista
@@ -483,6 +511,14 @@ function centraSuPuntino() {
 // Percorso REALMENTE registrato durante un'escursione dal vivo (Fase F) - stile diverso
 // dal percorso "pianificato" (hikePolyline, verde) per restare distinguibili se visibili insieme.
 function resetLiveTrackPolyline() {
+    // D-5 (punto 15): chiamata da setLiveTrackPoints() nella ripresa di una registrazione
+    // dopo un ricaricamento - una corsa con la fetch dei confini regionali poteva farla
+    // arrivare prima che window.mapInstance esistesse, con un TypeError silenzioso (rejection
+    // in una async non attesa) che interrompeva l'intera ripresa senza nessun errore a
+    // schermo (vedi 07-Trappole-Tecniche.md). L'opzione B di renderMapModule() chiude la
+    // corsa alla radice; questa guardia resta come rete di sicurezza.
+    if (!window.mapInstance) return;
+
     if (liveTrackPolyline) {
         window.mapInstance.removeLayer(liveTrackPolyline);
     }
@@ -505,6 +541,16 @@ function resetLiveTrackPolyline() {
 function addLiveTrackPoint(lat, lng) {
     if (!liveTrackPolyline) resetLiveTrackPolyline();
     liveTrackPolyline.addLatLng([lat, lng]);
+}
+
+// CRITICO (verifica generale, blocco 3, 45a sessione) e corretto qui (46a): riprendere una
+// registrazione dopo un ricaricamento pagina chiamava addLiveTrackPoint una volta per punto
+// gia' registrato - ogni addLatLng ridisegna la polyline, quindi il costo totale era
+// quadratico (misurato 42,3s/16.000 punti col Leaflet vendorizzato del progetto). Un solo
+// setLatLngs ridisegna una volta sola qualunque sia il numero di punti da riprendere.
+function setLiveTrackPoints(points) {
+    resetLiveTrackPolyline();
+    if (points && points.length > 0) liveTrackPolyline.setLatLngs(points);
 }
 
 function clearLiveTrackPolyline() {
@@ -608,6 +654,12 @@ function checkGeofencing(lat, lng) {
 
     if (foundNearPeak) {
         const stampId = foundNearPeak.stampId;
+        // CRITICO (verifica generale, blocco 3, 45a sessione): foundNearPeak.name e' testo
+        // libero scritto dal creatore di un'escursione (peakSchema.name, senza maxlength -
+        // vedi models/Hike.js), non un dato nostro. Escapato qui UNA volta, usato ovunque
+        // sotto entri in HTML come testo. drawStampablePoints piu' sotto in questo stesso
+        // file lo fa gia' - questa era l'unica copia rimasta senza.
+        const nomeSicuro = escapeHtml(foundNearPeak.name);
         const alreadyHasStamp = db.stamps.some(s => s.stampId === stampId);
 
         // Punto 108: il bottone "TIMBRA" compare solo se una registrazione e' in corso. Il
@@ -621,7 +673,7 @@ function checkGeofencing(lat, lng) {
         if (alreadyHasStamp) {
             userGpsMarker.bindPopup(`
                 <div style="color: white; font-family: inherit;">
-                    <h5 style="margin: 0 0 6px 0;">📍 ${foundNearPeak.name}</h5>
+                    <h5 style="margin: 0 0 6px 0;">📍 ${nomeSicuro}</h5>
                     <p style="font-size: 0.8rem; margin: 0;">${T('map.geo.giaCollezionato') || 'Hai già collezionato questo timbro del passaporto!'}</p>
                 </div>
             `).openPopup();
@@ -629,15 +681,27 @@ function checkGeofencing(lat, lng) {
             userGpsMarker.bindPopup(`
                 <div style="color: white; font-family: inherit; text-align: center;">
                     <h4 style="margin: 0 0 4px 0;">🎉 ${T('map.geo.vettaRaggiunta') || 'Vetta Raggiunta!'}</h4>
-                    <h5 style="margin: 0 0 8px 0; color: ${window.CAMOSCIO_COLORI.arancio};">${foundNearPeak.name} (${foundNearPeak.altitude}m)</h5>
+                    <h5 style="margin: 0 0 8px 0; color: ${window.CAMOSCIO_COLORI.arancio};">${nomeSicuro} (${foundNearPeak.altitude}m)</h5>
                     <p style="font-size: 0.8rem; margin: 0 0 10px 0;">${T('map.geo.aSoliMetri', Math.round(distance)) || ('Sei a soli ' + Math.round(distance) + 'm dalla cima.')}</p>
-                    <button class="btn btn-sm btn-primary" onclick="unlockStampDirectly('${stampId}', '${foundNearPeak.name}')">${T('map.geo.timbraBtn') || 'TIMBRA PASSAPORTO'}</button>
+                    <button class="btn btn-sm btn-primary" data-timbra-diretto>${T('map.geo.timbraBtn') || 'TIMBRA PASSAPORTO'}</button>
                 </div>
             `).openPopup();
+            // Niente onclick inline con il nome dentro (come faceva prima): escapeHtml da
+            // solo non basta a difendere un attributo onclick="...('${x}')" - il parser HTML
+            // decodifica le entita' PRIMA che il motore JS legga l'attributo, quindi &#39;
+            // ridiventa ' e si esce comunque dalla stringa (misurato nella verifica generale,
+            // blocco 3 - vedi 07-Trappole-Tecniche.md). Il bottone prende stampId/nome per
+            // closure, come valori JS veri, mai serializzati in HTML.
+            const popup = userGpsMarker.getPopup();
+            const popupEl = popup && popup.getElement();
+            const btnTimbra = popupEl && popupEl.querySelector('[data-timbra-diretto]');
+            if (btnTimbra) {
+                btnTimbra.addEventListener('click', () => window.unlockStampDirectly(stampId, foundNearPeak.name), { once: true });
+            }
         } else {
             userGpsMarker.bindPopup(`
                 <div style="color: white; font-family: inherit; text-align: center;">
-                    <h4 style="margin: 0 0 4px 0;">📍 ${foundNearPeak.name} (${foundNearPeak.altitude}m)</h4>
+                    <h4 style="margin: 0 0 4px 0;">📍 ${nomeSicuro} (${foundNearPeak.altitude}m)</h4>
                     <p style="font-size: 0.8rem; margin: 0;">${T('map.geo.serveRegistrazione') || 'Il timbro si sblocca camminando fin qui con una registrazione attiva (o importando la traccia .gpx della salita).'}</p>
                 </div>
             `).openPopup();
@@ -651,6 +715,13 @@ function checkGeofencing(lat, lng) {
 window.unlockStampDirectly = async function(stampId, peakName) {
     const usr = window.CamoscioState.currentUser;
     if (!usr) return;
+
+    // peakName qui e' il nome VERO (mai passato da un attributo HTML, vedi checkGeofencing):
+    // si escapa una volta sola, qui, e la versione sicura e' l'unica usata sotto per il
+    // popup - sia nel ramo di successo sia in quello di errore. La chiave i18n EN
+    // 'map.geo.timbratoConSuccesso' concatena il nome a mano dentro l'HTML che ritorna
+    // (nessun escaping suo), quindi le va passato gia' sicuro.
+    const nomeSicuro = escapeHtml(peakName);
 
     try {
         const response = await fetch('/api/stamps', {
@@ -670,7 +741,7 @@ window.unlockStampDirectly = async function(stampId, peakName) {
             userGpsMarker.bindPopup(`
                 <div style="color: white; text-align: center;">
                     <h4>${T('map.geo.timbroSbloccato') || 'Timbro Sbloccato! 🏆'}</h4>
-                    <p style="font-size: 0.8rem; margin-top: 6px;">${T('map.geo.timbratoConSuccesso', peakName) || ('Il passaporto delle vette per <b>' + peakName + '</b> è stato timbrato con successo!')}</p>
+                    <p style="font-size: 0.8rem; margin-top: 6px;">${T('map.geo.timbratoConSuccesso', nomeSicuro) || ('Il passaporto delle vette per <b>' + nomeSicuro + '</b> è stato timbrato con successo!')}</p>
                 </div>
             `).openPopup();
 
@@ -694,7 +765,7 @@ window.unlockStampDirectly = async function(stampId, peakName) {
             } catch (_) { /* corpo non JSON: si tiene il messaggio generico */ }
             userGpsMarker.bindPopup(`
                 <div style="color: white; font-family: inherit; text-align: center;">
-                    <h5 style="margin: 0 0 6px 0;">📍 ${peakName}</h5>
+                    <h5 style="margin: 0 0 6px 0;">📍 ${nomeSicuro}</h5>
                     <p style="font-size: 0.8rem; margin: 0;">${messaggio}</p>
                 </div>
             `).openPopup();
@@ -1614,6 +1685,7 @@ window.teleportUserGps = teleportUserGps;
 window.updateLiveGpsPosition = updateLiveGpsPosition;
 window.resetLiveTrackPolyline = resetLiveTrackPolyline;
 window.addLiveTrackPoint = addLiveTrackPoint;
+window.setLiveTrackPoints = setLiveTrackPoints;
 window.clearLiveTrackPolyline = clearLiveTrackPolyline;
 window.beginLiveGpsView = beginLiveGpsView;
 window.endLiveGpsView = endLiveGpsView;

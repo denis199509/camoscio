@@ -1,59 +1,71 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-09-12 (44a sessione, CHIUSA. Denis: "sfoltiamo qualche
-file se troppo grande, diamo un'occhiata al codice, verifica generale
-a blocchi". NESSUN CODICE MODIFICATO in questa sessione, solo lettura +
-documentazione: sfoltito il vault (04-Da-Fare.md) e fatta la verifica
-generale del codice sui primi due blocchi (routes/, lib/). Trovato 1
-CRITICO attivo in produzione, mai applicato il fix - vedi sotto. Dettaglio
-completo con snippet di fix nel vault (06-Cronologia-Sessioni.md, 44a).)
+Aggiornato: 2026-09-14 (47a sessione, CHIUSA. Denis: "Possiamo
+ripartire, manda l'architetto" -> PROGETTATO lo spacchettamento di
+initApp() (piano: C:\Users\lenovo\.claude\plans\camoscio-initapp-refactor.md,
+5 decisioni D-1...D-5) -> riportato in sintesi -> "Procedi con le
+raccomandazioni" -> IMPLEMENTATO su 11 file e VERIFICATO DAL VIVO nel
+browser -> VERIFICA GENERALE DEL CODICE ORA CHIUSA PER INTERO (3/3
+CRITICI, 18/18 ALTO). Dettaglio completo: vault,
+06-Cronologia-Sessioni.md, 47a sessione.)
 
-FATTO in questa sessione (nessun push di codice, solo vault):
- - Vault: 04-Da-Fare.md sfoltito da 216 KB a poche decine di righe. Il
-   campo frontmatter aveva accumulato per intero il racconto di ogni
-   sessione dalla 36a alla 43a, duplicando 06-Cronologia-Sessioni.md.
-   Nel ripulire e' riemerso M-5 (race sul contatto d'emergenza, vedi
-   sotto) che era sparito dalle liste "aperti" senza mai essere chiuso.
- - Verifica generale del codice (non un diff, tutta la cartella cosi'
-   com'e' oggi), a blocchi con code-reviewer + security-privacy:
-   BLOCCO 1 (routes/, 7684 righe) e BLOCCO 2 (lib/, 4246 righe) fatti.
-   BLOCCO 3 (public/js/, ~21000 righe) non ancora iniziato - Denis si e'
-   fermato apposta per chiudere la sessione in sicurezza.
+FATTO in questa sessione:
+ - PROGETTATO (agente architect) e POI IMPLEMENTATO l'ultimo ALTO della
+   verifica generale: gli 8 moduli (safety, tracking, map, social,
+   weather, storico, peoplesearch, trailhead-picker) che si
+   agganciavano tardi dentro initApp() ora si dividono in
+   setupXEvents() (subito) + renderX() (dati, dentro initApp()) -
+   stessa forma dei 3 fix gia' fatti (menu 26/07, fascia email 30/07,
+   profilo 06/08). Sistemati nello stesso giro anche carpool.js/
+   backpack.js (D-3, avevano gia' lo split ma restavano chiamati tardi).
+ - DUE DIFETTI PREESISTENTI trovati progettando e corretti nello
+   stesso giro: (1) corsa fra il caricamento della mappa e la ripresa
+   di una registrazione dopo un ricaricamento pagina (scriveva su una
+   mappa non ancora creata, errore silenzioso - imparentato con gli
+   avvii-fantasma gia' visti al punto 94); (2) il form "Nuova
+   escursione" senza action, che ricaricava la pagina perdendo tutto
+   il modulo compilato se si premeva Invio prima che il submit fosse
+   collegato.
+ - 5 DECISIONI (D-1...D-5) proposte dall'architetto, TUTTE approvate
+   da Denis in blocco: spostare anche il ripristino del Timer di
+   Sicurezza/contatti prima di initApp() (D-1); creare la mappa
+   subito col rettangolo di riserva invece di aspettare i confini
+   veri, opzione B (D-2, chiude anche il difetto 1 sopra); sistemare
+   carpool/backpack nello stesso giro (D-3); guardia anti-doppio-
+   aggancio su tutti gli 8 (D-4); chiudere il difetto (1) in questo
+   giro (D-5).
+ - VERIFICATO DAL VIVO nel browser vero (server locale, account demo
+   Marco Alpinista, estensione Chrome): Dashboard, Mappa (contatti/
+   Timer sicurezza popolati subito, meteo calcolato una volta sola,
+   tasti registrazione abilitati dopo il caricamento), Sicurezza (chat
+   mesh "Attivo, connesso" - prova diretta che D-1 funziona), Social
+   (modale creazione aperto dal menu e richiuso dalla X senza
+   ricaricare), Storico/Completate - console del browser sempre
+   pulita. NON fatta la controprova rigorosa (riprodurre il guasto (1)
+   PRIMA della correzione con rete rallentata ad arte, verificare che
+   sparisca DOPO) - resta aperta, vedi sotto.
+ - VERIFICA GENERALE DEL CODICE (iniziata 44a sessione): ORA CHIUSA
+   PER INTERO. 3/3 CRITICI, 18/18 ALTO, tutti corretti e verificati.
+ - Nessun file server toccato in questa sessione (solo public/js/):
+   non applicabile la regola sul rilancio delle prove accessi/
+   password/email. CONTROLLO FINALE: node --check pulito sugli 11
+   file toccati; server di sviluppo locale fermato (PID specifico);
+   git status pulito (solo gli 11 file attesi).
 
-  >>> DA DOVE SI RIPARTE (45a sessione):
-   1. VERIFICA GENERALE DEL CODICE - PRIORITA' ASSOLUTA, 1 CRITICO ATTIVO
-      IN PRODUZIONE NON ANCORA CORRETTO:
-      - lib/gpx.js: la regex che estrae i punti da un .gpx va in
-        backtracking quadratico (misurato: 80.000 occorrenze/0,53 MB =
-        25,5 secondi; un file di pochi MB puo' bloccare l'event loop per
-        ORE). Render e' un solo processo -> tutto il sito giu', Dead
-        Man's Switch compreso. Sfruttabile da qualunque utente registrato
-        via /import-gpx o /completions/:id/gpx (nessun rate-limiter li').
-        Fix proposto (non applicato): restringere la classe di caratteri
-        della regex + contare i punti prima di costruire l'array dei
-        match. Decidere se correggerlo subito prima di continuare.
-      - Poi 7 ALTO fra i due blocchi: session fixation su login/
-        registrazione/demo-login (routes/auth.js, trovato da entrambi
-        gli agenti indipendentemente); tracking.js mostra uscite mai
-        pubblicate a chiunque; bookmarks.js restituisce i preferiti di
-        tutti; nessun tetto sui punti GPS per sessione (rischio
-        riempimento Atlas); douglasPeucker ricorsiva in lib/geometry.js
-        (RangeError misurato da ~4.000 punti); l'allarme DMS puo'
-        smettere di partire in silenzio se manca APP_BASE_URL (e in quel
-        caso logga posizione GPS + email dei contatti in chiaro);
-        Hike.routePath non e' incluso nello scrub dell'account eliminato.
-      - Poi BLOCCO 3 (public/js/) e il resto dei MEDIO/BASSO.
-      Dettaglio con file:riga e snippet di fix: vault, 06-Cronologia-
-      Sessioni.md sezione "44a sessione".
-   2. BLOCCO 9 del piano 2FA = prove automatiche complete + docs (la
-      parte scritta - la prova dal vivo e' gia' chiusa, 43a sessione).
-      Due buchi di test noti dalla 42a: `/2fa/recovery-codes` senza
-      sezione dedicata; ramo `scartoMinuti` di `/2fa/enable` non
-      asserito. i18n EN solo sul nucleo delle viste 2FA.
+  >>> DA DOVE SI RIPARTE (48a sessione):
+   1. BLOCCO 9 del piano 2FA = prove automatiche complete + docs (la
+      prova dal vivo e' gia' chiusa, 43a sessione). Due buchi di test
+      noti dalla 42a: `/2fa/recovery-codes` senza sezione dedicata;
+      ramo `scartoMinuti` di `/2fa/enable` non asserito. i18n EN solo
+      sul nucleo delle viste 2FA.
       Piano: C:\Users\lenovo\.claude\plans\camoscio-2fa-totp.md, sez. 11.
-   3. Nessun'altra richiesta di Denis in sospeso al momento.
+   2. Poi ~50+ MEDIO/BASSO dei tre blocchi della verifica generale
+      (nessuno deciso ne' applicato) - vedi 04-Da-Fare.md.
+   3. Se si torna a toccare map.js/tracking.js: prima la controprova
+      rigorosa rimasta aperta (vedi sopra).
+   4. Nessun'altra richiesta di Denis in sospeso al momento.
 
->>> APERTI (invariati salvo dove segnato 44a):
+>>> APERTI (invariati salvo dove segnato 45a):
   - CONFORMITA' GDPR + NOTA LEGALE: index.html fa accettare "Termini +
     Informativa privacy" senza documento dietro. Serve un consulente privacy/
     avvocato GDPR (non un DPO) per l'Informativa vera + il testo di consenso
@@ -69,11 +81,28 @@ FATTO in questa sessione (nessun push di codice, solo vault):
     open-meteo (quote); (f) (44a) import-gpx e completions/:id/gpx creano
     una sessione di posizione fuori dal gate di consenso geolocalizzazione;
     (g) (44a) nessun TTL sulle tracce GPS, restano per sempre anche dopo
-    l'eliminazione dell'account.
+    l'eliminazione dell'account; (h) (45a) open-meteo riceve dal BROWSER
+    posizione esatta (backpack.js manda anche ritrovo+data futura) - qui il
+    terzo vede l'utente direttamente, non passa dal server; (i) (45a) il
+    consenso geo resta valido anche se la scrittura che lo registra fallisce,
+    e non ha una data; (j) (45a) il logout non cancella i dati locali sul
+    dispositivo (posizione reale, zona di casa, stato DMS, coda GPS); (k)
+    (45a) la posizione viaggia su ogni messaggio della chat mesh senza
+    informativa ne' interruttore; (l) (45a) GET /api/reports espone a tutti
+    chi ha segnalato, dove e quando; (m) (45a) nessuna scadenza sui dati
+    locali (cache tile mappa, coda GPS orfana); (n) (45a, CHIUSO - verificato
+    conforme) le foto NON portano EXIF/GPS, tutti gli input passano da un
+    ricompressore canvas che li distrugge - da nominare comunque come
+    rassicurazione quando l'informativa esiste.
   - VERIFICHE DAL VIVO: correttezza #9 e #11 in tracking.js; il riquadro
     "ultimo allarme fallito" nel pannello Sicurezza; il comando ⋮ "Togli la
     mia traccia" + la nota nel modale "Completa"; la prova al telefono del
     Punto 1 (+ RICHIESTA 2, un partecipante che dopo carica la sua traccia).
+    NUOVA (47a): la controprova rigorosa della corsa mappa/tracciamento -
+    riprodurre il guasto PRIMA della correzione (rete rallentata ad arte
+    su /api/regions/boundaries durante un ricaricamento a meta'
+    registrazione) e verificare che sparisca DOPO. Fatta solo la verifica
+    "a caldo" nel browser vero, non questa controprova specifica.
   - M-5 (44a, RIEMERSO): race sulla cancellazione di un contatto d'emergenza
     per indice posizionale invece che per id - due schede aperte in corsa
     possono cancellare il contatto sbagliato. Dalla 22a/24a sessione, mai
@@ -106,7 +135,9 @@ FATTO in questa sessione (nessun push di codice, solo vault):
 >>> RESTA VALIDO:
   - Hook "Stop" di auto-save: commit locale (MAI push) a fine di ogni
     risposta se ci sono modifiche non salvate. Va rifuso in un commit vero
-    prima di ogni push.
+    prima di ogni push. Commit di auto-save accumulati dalla 45a e dalla
+    46a ancora da rifondere, MAI pushati (git status per il conteggio
+    esatto: crescono a ogni risposta con modifiche).
   - Traduzione IT/EN (punto 102, CHIUSO): resta ITALIANO di proposito tutto
     il testo scritto dagli utenti, i nomi di luogo, i percorsi salvati,
     titolo/descrizione dei badge, le schede "i", il testo delle notifiche
@@ -130,8 +161,32 @@ FATTO in questa sessione (nessun push di codice, solo vault):
     rifugi/assi/chat/percorso da seguire + revisione cumulativo - vedi
     dettaglio in cose_da_fare.txt.
   44a SESSIONE (12/09): NESSUN CODICE PUSHATO. Sfoltimento vault +
-    verifica generale del codice (routes/, lib/) - vedi riepilogo sopra e
+    verifica generale del codice, blocchi 1-2 (routes/, lib/) - vedi
     dettaglio in 06-Cronologia-Sessioni.md del vault.
+  45a SESSIONE (13/09): NESSUN CODICE PUSHATO (3 commit di auto-save
+    locali, da rifondere). Blocco 3 (public/js/) della verifica generale
+    + CORRETTI 2 CRITICI (lib/gpx.js, public/js/map.js), misurati e
+    verificati dal vivo nel browser - vedi dettaglio in
+    06-Cronologia-Sessioni.md del vault, sezione "45a" (due paragrafi).
+  46a SESSIONE (14/09): NESSUN CODICE PUSHATO (commit di auto-save
+    locali, da rifondere - un commit per lettera A-H sarebbe naturale).
+    TERZO E ULTIMO CRITICO corretto (tracking.js+map.js, replay
+    quadratico) + 17 DEI 18 ALTO corretti in blocco (sessione/dati
+    esposti/lib/privacy client/DMS/mappa offline/refreshState/pannello
+    mesh) - ognuno misurato e/o verificato dal vivo, 4 prove di
+    regressione rilanciate (176/176). Resta solo il punto 15
+    (strutturale, 8 file, rimandato apposta con l'architect) - vedi
+    dettaglio in 06-Cronologia-Sessioni.md del vault, sezione "46a".
+  47a SESSIONE (14/09): NESSUN CODICE PUSHATO (commit di auto-save
+    locali, da rifondere). PROGETTATO con l'agente architect (piano
+    dedicato, 5 decisioni D-1...D-5 tutte approvate) e POI IMPLEMENTATO
+    nella stessa sessione l'ultimo ALTO della verifica generale (punto
+    15, spacchettamento di initApp() su 11 file) - VERIFICA GENERALE
+    ORA CHIUSA PER INTERO (3/3 CRITICI, 18/18 ALTO). Due difetti
+    preesistenti trovati progettando e corretti nello stesso giro.
+    Verificato dal vivo nel browser vero (console sempre pulita); non
+    ancora fatta la controprova rigorosa con rete rallentata ad arte -
+    vedi dettaglio in 06-Cronologia-Sessioni.md del vault, sezione "47a".
 
 ===================================================================
 
@@ -166,26 +221,54 @@ MAI piu' (congelato); cose_da_fare.txt quando un punto si chiude o ne arriva uno
     subagent puo' dichiarare falsamente di aver aggiornato la memoria (tratto ricorrente
     di security-privacy, non un caso isolato); due funzioni di render sullo stesso dato
     ma DOM diversi non danno errore se chiami quella sbagliata; una navigazione che
-    cambia solo l'hash non ricarica la SPA (serve navigateTo); il service worker MV3
-    dell'estensione Chrome si sospende; Math.max(...array) va in RangeError oltre
-    ~1,2e5 elementi (usare .reduce, e ATTENZIONE: douglasPeucker in lib/geometry.js e'
-    la stessa famiglia di bug, ricorsiva, RangeError misurato da ~4.000 punti - trovato
-    44a, non ancora corretto); routeSource.kind:'saved' e' SEMPRE una traccia GPS
-    registrata; le prove di prove/ NON si lanciano in parallelo (DB Atlas condiviso);
-    crypto.createHmac con chiave vuota NON lancia su Node 24; le settings-card si
-    nascondono con la CLASSE .hidden non con l'attributo; page.click di Puppeteer
-    fallisce su un bottone in un pannello scrollabile (usare evaluate); UN RATE-LIMITER
-    PER IP SU UNA ROTTA FRA ESTRANEI diventa un modo per bloccarsi a vicenda (quattro
-    occorrenze ormai: DMS/deactivate 40a, 2FA/recovery 42a, route-planning 43a);
-    un RouteDraft salva solo i punti scelti, MAI la linea calcolata (si ricalcola con
-    /api/routing/plan); i tratti 'retta' di un percorso calcolato vanno SEMPRE
-    distinti visivamente dai tratti 'sentiero' (vincolo 7); uno script Node con
-    backtick dentro va scritto su file ed eseguito, MAI passato inline a bash -c/
-    node -e dentro doppi apici (la shell li mangia come command substitution). NB dal
-    06/09: il dislivello ha DUE soglie - 0 per le tracce importate da un file di
-    dispositivo (grezzo), 10 per le quote stimate (percorso progettato, GPS dal vivo).
-    Vedi lib/gpx.js. NB dal 12/09 (44a): una regex "greedy" con una classe di
-    caratteri troppo larga (es. [^>] invece di [^<>]) puo' andare in backtracking
-    quadratico su input malformati - trovato in lib/gpx.js, CRITICO non ancora
-    corretto, misurare sempre eseguendo prima di giudicare una regex "sicura".
+    cambia solo l'hash non ricarica la SPA (serve navigateTo, e ATTENZIONE dal 13/09:
+    nemmeno chiamare navigateTo dalla console basta se non si passa dal punto giusto -
+    verificare che la sezione prenda davvero la classe .active, non solo l'hash); il
+    service worker MV3 dell'estensione Chrome si sospende; Math.max(...array) va in
+    RangeError oltre ~1,2e5 elementi (usare .reduce, e ATTENZIONE: douglasPeucker in
+    lib/geometry.js e' la stessa famiglia di bug, ricorsiva, RangeError misurato da
+    ~4.000 punti - trovato 44a, CORRETTO IL 14/09 (46a): stack esplicito PIU' un tetto
+    sul lavoro totale, perche' la sola conversione a iterativo toglie il RangeError ma
+    NON il costo quadratico sull'input avversario, misurato apposta dopo - vedi sotto);
+    routeSource.kind:'saved' e'
+    SEMPRE una traccia GPS registrata; le prove di prove/ NON si lanciano in parallelo
+    (DB Atlas condiviso); crypto.createHmac con chiave vuota NON lancia su Node 24; le
+    settings-card si nascondono con la CLASSE .hidden non con l'attributo; page.click
+    di Puppeteer fallisce su un bottone in un pannello scrollabile (usare evaluate); UN
+    RATE-LIMITER PER IP SU UNA ROTTA FRA ESTRANEI diventa un modo per bloccarsi a
+    vicenda (quattro occorrenze ormai: DMS/deactivate 40a, 2FA/recovery 42a,
+    route-planning 43a); un RouteDraft salva solo i punti scelti, MAI la linea
+    calcolata (si ricalcola con /api/routing/plan); i tratti 'retta' di un percorso
+    calcolato vanno SEMPRE distinti visivamente dai tratti 'sentiero' (vincolo 7); uno
+    script Node con backtick dentro va scritto su file ed eseguito, MAI passato inline
+    a bash -c/node -e dentro doppi apici (la shell li mangia come command
+    substitution). NB dal 06/09: il dislivello ha DUE soglie - 0 per le tracce
+    importate da un file di dispositivo (grezzo), 10 per le quote stimate (percorso
+    progettato, GPS dal vivo). Vedi lib/gpx.js. NB dal 12/09 (44a): una regex "greedy"
+    con una classe di caratteri troppo larga (es. [^>] invece di [^<>]) puo' andare in
+    backtracking quadratico su input malformati - trovato in lib/gpx.js, CORRETTO IL
+    13/09 (45a): misurato prima/dopo sullo stesso identico file patologico, da
+    quadratico (40.000 occ. = 5s) a piatto (200.000 = 9ms). NB dal 13/09 (45a): stesso
+    principio per un ciclo che ridisegna una struttura a ogni iterazione - addLatLng
+    uno per uno su una polyline Leaflet e' quadratico, misurato 42s/16.000 punti in
+    tracking.js, CORRETTO IL 14/09 (46a): un solo setLatLngs, 8,9ms/16.000 punti. E: quando la stessa
+    formula/convenzione e' reimplementata a mano in piu' file invece di stare in un
+    unico posto, prima o poi le copie divergono in silenzio - confermato una TERZA
+    volta (escapeHtml mancante in una sola delle due copie del popup vetta in map.js,
+    XSS reale, CORRETTO IL 13/09) e allargato alle formule: quella ore-CAI esiste in 3
+    copie di cui 2 gia' NaN, ancora aperta. NB dal 13/09 (45a): escapeHtml() dentro un
+    onclick="f('...')" inline NON basta - il browser decodifica le entita' PRIMA che
+    il motore JS legga l'attributo, quindi &#39; ridiventa ' e si esce comunque dalla
+    stringa. Corretto in map.js (tolto l'onclick inline, sostituito con data-* +
+    addEventListener); la stessa forma resta latente in ~20 altri punti del progetto,
+    oggi innocua solo perche' interpolano sempre un ObjectId. Prima di correggere un
+    punto trovato in revisione, grep il resto del file/blocco per lo stesso dato o la
+    stessa formula. NB dal 14/09 (46a): un cancello unico che unisce piu' requisiti
+    indipendenti blocca anche chi non ha bisogno di tutti - configurato() di
+    lib/mailer.js univa "credenziali presenti" (serve sempre) e "APP_BASE_URL
+    utilizzabile" (serve solo alle email coi link), e l'allarme DMS - che non ha
+    nessun link - passava dallo stesso cancello: un APP_BASE_URL rotto in produzione
+    faceva tacere l'unico avviso di sicurezza del sito. Corretto scomponendo il
+    cancello (credenzialiPresenti() separata) con un parametro a default invariato
+    (richiedeLinkFunzionante) sui chiamanti esistenti.
 ===================================================================

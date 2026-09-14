@@ -226,6 +226,7 @@ function pulisciDatiLocaliDelDispositivo() {
         daTogliere.forEach(k => localStorage.removeItem(k));
     } catch (e) {}
 }
+window.pulisciDatiLocaliDelDispositivo = pulisciDatiLocaliDelDispositivo;
 
 // Schermata a tutto schermo dopo l'eliminazione: la sessione e' gia' chiusa dal server,
 // il tasto "OK" ricarica la pagina -> checkAuthAndShowGate non trova sessione -> porta

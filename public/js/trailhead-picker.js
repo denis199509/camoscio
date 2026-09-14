@@ -325,7 +325,22 @@ function resetTrailhead() {
     if (ricerca) ricerca.value = '';
 }
 
-function initTrailheadPicker() {
+// Punto 15 (verifica generale, blocco 3): questa funzione non aggancia solo il ritrovo
+// dell'escursione - aggancia anche la X e "Conferma" del modale CONDIVISO
+// #map-picker-modal (btnChiudi/btnConferma sotto), che e' lo stesso modale usato da
+// weather.js per "scegli il punto del meteo" (CamoscioPlaceSearch.openMapPicker). Se
+// questa setup non gira, il selettore di punto del meteo si apre e non si puo' ne'
+// confermare ne' chiudere - regge solo perche' entrambe le init stanno nello stesso
+// blocco di app.js. In prospettiva questi due agganci appartengono al componente
+// CamoscioPlaceSearch, non al suo primo utente (rifattorizzazione facoltativa, non fatta
+// qui per non allargare il diff mentre si toccano gia' 8 file - vedi il piano).
+// Doppio aggancio: un secondo giro farebbe scattare confermaPuntoMappa() due volte, cioe'
+// due setTrailhead()/fetchWeatherForCoords() per un solo click - guardia obbligatoria.
+let eventiTrailheadPickerCollegati = false;
+function setupTrailheadPickerEvents() {
+    if (eventiTrailheadPickerCollegati) return;
+    eventiTrailheadPickerCollegati = true;
+
     attachSearch({
         input: document.getElementById('hike-trailhead-search'),
         results: document.getElementById('trailhead-search-results'),
@@ -362,7 +377,7 @@ function initTrailheadPicker() {
     if (window.lucide) window.lucide.createIcons();
 }
 
-window.initTrailheadPicker = initTrailheadPicker;
+window.setupTrailheadPickerEvents = setupTrailheadPickerEvents;
 window.resetTrailheadPicker = resetTrailhead;
 window.getChosenTrailhead = () => pickerPoint;
 // Punto 54: serve per precompilare il ritrovo quando si apre il modulo in modifica.

@@ -22,12 +22,6 @@ function formattaEuro(n) {
 // ha piu' il selettore "per quale escursione".
 var carpoolHikeId = null;
 
-function initCarpoolModule() {
-    // Solo l'aggancio dei listener: il primo render e' pigro, lo fa hikepage.js
-    // all'apertura del tab Carpooling con l'hikeId corrente.
-    setupCarpoolEvents();
-}
-
 function setupCarpoolEvents() {
     // Bottone ricalcolo spese generico
     const btnCalc = document.getElementById("btn-calculate-expenses");
@@ -478,5 +472,5 @@ if (window.CamoscioI18n && window.CamoscioI18n.onChange) {
     });
 }
 
-window.initCarpoolModule = initCarpoolModule;
+window.setupCarpoolEvents = setupCarpoolEvents;
 window.renderCarpoolModule = renderCarpoolModule;

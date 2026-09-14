@@ -4,9 +4,21 @@ const RouteBookmark = require('../models/RouteBookmark');
 const { requireAuth } = require('../middleware/auth');
 
 // Ottieni preferiti / rotte desiderate
+// ALTO (verifica generale, blocco 1, 44a sessione) e corretto qui (46a): restituiva TUTTI i
+// preferiti di TUTTI gli utenti a chiunque fosse loggato, sempre - bastava mostrare chi
+// altro ha lo stesso sentiero nei preferiti ("compagno di sentiero", social.js) SOLO sulle
+// escursioni che il chiamante ha gia' salvato lui stesso (l'unico caso in cui la scheda lo
+// mostra davvero, vedi social.js `if (isBookmarked)`), non su ogni escursione di chiunque -
+// la conseguenza pratica era che chiunque poteva scoprire chi si presenterebbe a quale
+// escursione futura, per qualunque escursione, anche senza averla mai salvata lui stesso.
 router.get('/', requireAuth, async (req, res) => {
-    const bookmarks = await RouteBookmark.find();
-    res.json(bookmarks);
+    const userId = req.session.userId;
+    const propri = await RouteBookmark.find({ userId });
+    const hikeIds = propri.map(b => b.hikeId);
+    const altrui = hikeIds.length
+        ? await RouteBookmark.find({ hikeId: { $in: hikeIds }, userId: { $ne: userId } }).select('userId hikeId')
+        : [];
+    res.json([...propri, ...altrui]);
 });
 
 // Aggiungi preferito sentiero - sempre per l'utente che ha fatto login

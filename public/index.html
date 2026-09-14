@@ -1490,32 +1490,31 @@
                         <!-- Mesh Network Simulator -->
                         <div class="safety-column">
                             <div class="glass-card mesh-card">
-                                <h4><i data-lucide="radio"></i> <span data-i18n="safety.sez.meshTitolo">Simulatore Mesh Networking (Offline Link)</span></h4>
-                                <p class="small text-muted" data-i18n="safety.sez.meshDesc">In mancanza di campo, l'app crea una rete Wi-Fi Direct/Bluetooth tra dispositivi vicini (50-100m) per scambiarsi messaggi e posizioni in tempo reale.</p>
-                                
+                                <h4><i data-lucide="radio"></i> <span data-i18n="safety.sez.meshTitolo">Chat di Sicurezza del Gruppo</span></h4>
+                                <!-- ALTO (verifica generale, blocco 3, 45a sessione) e corretto qui (46a):
+                                     questa scheda dichiarava una rete Wi-Fi Direct/Bluetooth locale che non
+                                     e' mai esistita (e' sempre stato un WebSocket verso il server, quindi
+                                     serve INTERNET, l'opposto di "in mancanza di campo") - stessa regola
+                                     CLAUDE.md violata dal Dead Man's Switch appena corretto. -->
+                                <p class="small text-muted" data-i18n="safety.sez.meshDesc">Chat in tempo reale con chi partecipa alla stessa escursione, via internet (non serve campo dati per forza, ma serve una connessione: non è una rete locale offline).</p>
+
                                 <div class="mesh-simulator-status">
                                     <span class="status-indicator online" id="mesh-connection-status" data-i18n="safety.mesh.statoAttivo">Attivo (Connesso al Server Mesh)</span>
                                 </div>
 
-                                <div class="mesh-radar-container">
-                                    <div class="radar-circle">
-                                        <div class="radar-sweep"></div>
-                                        <!-- Punti di compagni visualizzati dinamicamente -->
-                                        <div class="radar-dot center"></div>
-                                        <div id="radar-peers"></div>
-                                    </div>
-                                    <div class="radar-legend">
-                                        <span class="legend-item"><span class="dot-sample me"></span> <span data-i18n="safety.mesh.legendaTu">Tu</span></span>
-                                        <span class="legend-item"><span class="dot-sample peer"></span> <span data-i18n="safety.mesh.legendaCompagno">Compagno in Rete</span></span>
-                                    </div>
-                                </div>
-
                                 <div class="mesh-chat-box">
-                                    <h5><i data-lucide="message-square"></i> <span data-i18n="safety.mesh.canaleTitolo">Canale SOS Locale Mesh (Raggio 100m)</span></h5>
+                                    <h5><i data-lucide="message-square"></i> <span data-i18n="safety.mesh.canaleTitolo">Chat e SOS del gruppo</span></h5>
                                     <div class="mesh-messages" id="mesh-messages-log">
                                         <!-- Messaggi inviati/ricevuti -->
-                                        <div class="message system" data-i18n="safety.mesh.inAttesa">In attesa di traffico di rete... Apri l'app in più schede del browser come utenti diversi per testare il mesh in tempo reale!</div>
+                                        <div class="message system" data-i18n="safety.mesh.inAttesa">Nessun messaggio per ora.</div>
                                     </div>
+                                    <!-- ALTO (blocco 3, 45a) e corretto qui (46a): prima la posizione partiva
+                                         sempre, senza consenso ne' modo di disattivarlo. L'SOS la manda comunque
+                                         sempre (l'emergenza vince), un messaggio normale solo se la spunta resta. -->
+                                    <label class="small text-muted mesh-condividi-posizione-label">
+                                        <input type="checkbox" id="mesh-condividi-posizione" checked>
+                                        <span data-i18n="safety.mesh.condividiPosizione">Condividi la mia posizione con i messaggi in chat (l'SOS la manda comunque sempre)</span>
+                                    </label>
                                     <form id="mesh-send-form" class="mesh-send-form">
                                         <input type="text" id="mesh-input-msg" placeholder="Scrivi un messaggio o SOS..." required data-i18n-placeholder="safety.mesh.inputPlaceholder">
                                         <button type="submit" class="btn btn-sm btn-primary" data-i18n="safety.mesh.invia">Invia</button>

@@ -844,15 +844,17 @@
             'safety.sez.registroTitolo': 'Emergency alerts log (simulated)',
             'safety.sez.registroVuoto': 'No messages sent. The system is in a safe state.',
 
-            // --- Sezione #safety: Simulatore Mesh Networking ---
-            'safety.sez.meshTitolo': 'Mesh Networking Simulator (Offline Link)',
-            'safety.sez.meshDesc': 'When there\'s no signal, the app builds a Wi-Fi Direct/Bluetooth network between nearby devices (50-100m) to exchange messages and positions in real time.',
+            // --- Sezione #safety: Chat di sicurezza del gruppo ---
+            // ALTO (verifica generale, blocco 3, 45a sessione) e corretto qui (46a): niente
+            // piu' rete Wi-Fi Direct/Bluetooth locale dichiarata (non e' mai esistita - e'
+            // sempre stato un WebSocket verso il server, quindi serve internet).
+            'safety.sez.meshTitolo': 'Group Safety Chat',
+            'safety.sez.meshDesc': 'Real-time chat with the other participants of this hike, over the internet (it needs a connection, not a local offline network).',
             'safety.mesh.statoAttivo': 'Active (Connected to Mesh Server)',
             'safety.mesh.statoOffline': 'Offline (Trying to reconnect...)',
-            'safety.mesh.legendaTu': 'You',
-            'safety.mesh.legendaCompagno': 'Peer on the Network',
-            'safety.mesh.canaleTitolo': 'Local Mesh SOS Channel (100m Range)',
-            'safety.mesh.inAttesa': 'Waiting for network traffic... Open the app in several browser tabs as different users to test the mesh in real time!',
+            'safety.mesh.canaleTitolo': 'Group chat and SOS',
+            'safety.mesh.inAttesa': 'No messages yet.',
+            'safety.mesh.condividiPosizione': 'Share my position with chat messages (SOS always sends it anyway)',
             'safety.mesh.inputPlaceholder': 'Write a message or SOS...',
             'safety.mesh.invia': 'Send',
             'safety.mesh.sosText': 'SOS! IMMEDIATE ASSISTANCE NEEDED / ACCIDENT ON THE TRAIL!',
@@ -904,6 +906,7 @@
             'safety.dms.avvisoNessunContatto': 'You have no emergency contact: without one, the timer would have nobody to alert. Add one below.',
             'safety.dms.avvisoNessunaEmail': 'None of your contacts has an email, which is needed to send the alert: add one below.',
             'safety.dms.serveContattoEmail': 'Add an emergency contact with an email before starting the timer.',
+            'safety.dms.serveOrarioODurata': 'Set a return time or a duration before starting the timer.',
             'safety.dms.campiObbligatori': 'All three fields are needed: name, relationship and email.',
             'safety.dms.emailNonValida': 'That email doesn\'t look valid.',
             'safety.dms.contattoSalvato': 'Emergency contact saved.',
@@ -932,6 +935,17 @@
                     'The real sending is done by the server, within a few minutes and regardless of this page. ' +
                     'If you’re the one reading this and you’re okay, check in right away to stop it. If you’re ' +
                     'reading this on someone else’s behalf, alert the contact above yourself.';
+            },
+            // ALTO (verifica generale, blocco 3, 45a sessione), corretto 46a: variante onesta
+            // per quando il server NON ha questo timer (rifiutato, o mai raggiunto) - vedi
+            // triggerEmergencyAlarm in public/js/safety.js.
+            'safety.alarm.modalSenzaServer': function (msg, aChi) {
+                return '⏰ TIME IS UP\n\n' + msg + '\n\n' +
+                    'You should have alerted: ' + aChi + '\n\n' +
+                    'This timer was only ever active on this phone: the server never confirmed it, so ' +
+                    'no automatic email will go out. If you’re the one reading this and you’re okay, no ' +
+                    'action is needed. If you’re reading this on someone else’s behalf, please alert the ' +
+                    'contact above yourself - nobody else will be notified.';
             },
 
             // ==================================================================
@@ -1916,6 +1930,7 @@
             'track.mappaOfflineNonDisp': 'Offline map feature not available right now.',
             'track.apriPrimaMappa': 'Open the Map section first, so I can tell which area to download.',
             'track.confermaDownload': function (tileCount, mb) { return 'About ' + tileCount + ' map tiles (~' + mb + ' MB) will be downloaded. Continue? (recommended on Wi-Fi or a good connection)'; },
+            'track.areaOfflineTroppoGrande': function (tileCount) { return 'The visible map area is too large for an offline download (about ' + tileCount + ' map tiles). Pick a specific hike instead, or zoom in on a smaller area.'; },
             'track.progressoTile': function (done, total) { return done + '/' + total + ' tiles'; },
             'track.tileNonRiuscite': function (n) { return ' (' + n + ' failed)'; },
             'track.mappaProntaToast': function (salvate, total) { return 'Offline map ready: ' + salvate + '/' + total + ' tiles saved on the device.'; },

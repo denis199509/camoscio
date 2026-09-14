@@ -12,7 +12,14 @@ const SOGLIA_RICERCA_PERSONE = 4; // "DaniWoll" - la ricerca parte gia' da "Dani
 // stesso scope globale, "const T" ripetuto in due file darebbe SyntaxError).
 var T = (window.CamoscioI18n && window.CamoscioI18n.t) || function () { return null; };
 
-function initPeopleSearchModule() {
+// Punto 15 (verifica generale, blocco 3): un doppio aggancio raddoppierebbe il filtro
+// eseguito ad ogni tastierata (vedi 07-Trappole-Tecniche.md del vault) - innocuo perche'
+// renderPeopleSearchModule e' idempotente, ma inutile e va evitato per uniformita'.
+let eventiPeopleSearchCollegati = false;
+function setupPeopleSearchEvents() {
+    if (eventiPeopleSearchCollegati) return;
+    eventiPeopleSearchCollegati = true;
+
     const input = document.getElementById("people-search-input");
     if (input) input.addEventListener("input", renderPeopleSearchModule);
 }
@@ -58,7 +65,7 @@ function renderPeopleSearchModule() {
     });
 }
 
-window.initPeopleSearchModule = initPeopleSearchModule;
+window.setupPeopleSearchEvents = setupPeopleSearchEvents;
 window.renderPeopleSearchModule = renderPeopleSearchModule;
 
 // Cambio lingua: nessun fetch qui dentro (db.users e' gia' in cache), quindi

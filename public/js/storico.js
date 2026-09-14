@@ -629,7 +629,14 @@
         }
     }
 
-    function initStorico() {
+    // Punto 15 (verifica generale, blocco 3): un doppio aggancio farebbe scattare due
+    // volte lo stesso 'change', caricando due volte lo stesso .gpx e consumando due volte
+    // la quota mensile (vedi 07-Trappole-Tecniche.md del vault).
+    let eventiStoricoCollegati = false;
+    function setupStoricoEvents() {
+        if (eventiStoricoCollegati) return;
+        eventiStoricoCollegati = true;
+
         const bottone = document.getElementById('btn-gpx-choose');
         const input = document.getElementById('gpx-file-input');
         if (!bottone || !input) return;
@@ -650,7 +657,7 @@
     // chiamante, renderMyHikes: nessun altro deve richiamarla direttamente, altrimenti i
     // contatori in cima a "Le mie escursioni" restano vecchi.
     window.renderCompletate = renderCompletate;
-    window.initStorico = initStorico;
+    window.setupStoricoEvents = setupStoricoEvents;
     // Punto 113: usati dagli onclick dei tasti "Pubblica nel feed" sulle card.
     window.togglePubblicaUscita = togglePubblicaUscita;
     window.avvisoPubblicaSenzaTraccia = avvisoPubblicaSenzaTraccia;

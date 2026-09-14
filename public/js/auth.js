@@ -558,6 +558,12 @@ async function performLogout() {
     } catch (e) {
         console.error('Errore logout:', e);
     }
+    // ALTO (verifica generale, blocco 3, 45a sessione) e corretto qui (46a): il logout non
+    // chiamava questa pulizia gia' scritta e usata dall'eliminazione account
+    // (profile.js) - su un dispositivo condiviso restavano posizione reale, zona di
+    // partenza da casa, stato del timer di sicurezza e coda punti GPS. Sempre, anche se il
+    // fetch sopra fallisce: la pagina si ricarica comunque.
+    if (window.pulisciDatiLocaliDelDispositivo) window.pulisciDatiLocaliDelDispositivo();
     window.location.reload();
 }
 

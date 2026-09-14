@@ -401,10 +401,31 @@ const planLimiter = rateLimit({
     message: messaggioTroppiTentativi
 });
 
+// POST /api/tracking/:id/points: ALTO (verifica generale, blocco 1, 44a sessione). Nessun
+// secchio dedicato copriva questa rotta - solo l'apiLimiter largo (3000/5min). Un client
+// onesto manda ~60-180 punti ogni 20-30s (2-3 richieste/minuto, ~150/ora): un secchio per
+// PERSONA (un'escursione e' un gesto proprio, non "fra estranei" - restare per IP
+// esporrebbe chi condivide il wifi di un rifugio o un CGNAT mobile alla quota di un altro
+// escursionista, stessa trappola di planLimiter/checkinLimiter qui sopra) a 600/ora resta
+// ~4x oltre l'uso reale, tagliando comunque di netto il ritmo di un martellamento a
+// script - che senza questo secchio (insieme al tetto MAX_PUNTI_SESSIONE qui sotto) restava
+// il modo piu' diretto per riempire i 512 MB di Atlas.
+const puntiTrackingLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    limit: 600,
+    keyGenerator: (req) => (req.session && req.session.userId)
+        ? `u:${req.session.userId}`
+        : ipKeyGenerator(req.ip),
+    skip: soloInProduzione,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: messaggioTroppiTentativi
+});
+
 module.exports = {
     authLimiter, emailLimiter, apiLimiter, matchLimiter, exportLimiter, scritturaLimiter,
     sicurezzaLimiter, checkinLimiter, presaVisioneLimiter, cancellazioneLimiter, invitoLimiter,
     fotoLimiter, fotoLetturaLimiter, fotoProfiloLimiter, registrazioneLimiter,
     fotoProfiloLetturaLimiter, contattiLimiter,
-    secondoFattoreLimiter, duefattoriLimiter, recuperoLimiter, planLimiter
+    secondoFattoreLimiter, duefattoriLimiter, recuperoLimiter, planLimiter, puntiTrackingLimiter
 };

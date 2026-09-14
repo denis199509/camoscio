@@ -33,7 +33,10 @@ async function requireReportModerator(req, res, next) {
 // E' la trappola 07 al contrario: una GET pubblica non deve esportare da sola i campi nuovi
 // aggiunti a un modello, non basta che il frontend non li mostri.
 router.get('/', requireAuth, async (req, res) => {
-    const reports = await Report.find({ status: 'active' }).select('-resolutionRequestedBy -expiryNotifiedAt');
+    // ALTO (verifica generale, blocco 3, 45a sessione) e corretto qui (46a): mancava
+    // -reporterId qui accanto agli altri due campi sensibili gia' esclusi - chiunque
+    // loggato poteva ricostruire chi aveva segnalato cosa, dove e quando.
+    const reports = await Report.find({ status: 'active' }).select('-reporterId -resolutionRequestedBy -expiryNotifiedAt');
     res.json(reports);
 });
 

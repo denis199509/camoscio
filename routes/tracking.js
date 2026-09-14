@@ -7,10 +7,12 @@ const Stamp = require('../models/Stamp'); // timbri assegnati dalle tracce .gpx 
 const User = require('../models/User'); // punto 42b: recognizedAscents
 const Like = require('../models/Like'); // punto 113: "mi piace" su un'uscita pubblicata
 const Notification = require('../models/Notification'); // punto 113: notifica all'autore per il "mi piace"
+const Follow = require('../models/Follow'); // ALTO blocco 1 (46a): guardia GET /sessions/:userId
 const { requireAuth } = require('../middleware/auth');
 // A-3.1 (ri-review sicurezza, 2° giro): dopo la revoca del consenso GPS il server smette di
 // raccogliere posizioni - applicato a /start, /:id/points, /:id/resume qui sotto.
 const richiedeConsensoGeo = require('../middleware/consensoGeo');
+const { puntiTrackingLimiter } = require('../middleware/rateLimit'); // ALTO blocco 1 (46a): POST /:id/points senza secchio dedicato
 const { isFiniteNum, haversineKm, simplifyTrack } = require('../lib/geometry');
 const { regionForPoint } = require('../lib/regions');
 const { parseGpx, statisticheTraccia, ErroreGpx, SOGLIA_DISLIVELLO_M, SOGLIA_DISLIVELLO_IMPORT_M, movimentoSecAttendibile } = require('../lib/gpx');
@@ -26,6 +28,14 @@ const { guardiaUscitaVisibile } = require('../lib/uscitaVisibile'); // punto 113
 const { nomeVisibile } = require('../lib/accountDeletion'); // A-3.4: nome pseudonimizzato per gli account eliminati
 
 const MAX_POINTS_PER_BATCH = 500; // un client onesto ne manda ~60-180 ogni 20-30s, mai a uno a uno
+// ALTO (verifica generale, blocco 1, 44a sessione) e corretto qui (46a): MAX_POINTS_PER_BATCH
+// limita solo QUANTI punti arrivano per chiamata, mai QUANTI se ne accumulano in totale su
+// una sessione - senza un tetto complessivo bastava richiamare /points all'infinito. 200.000
+// resta comodamente sopra la traccia multi-day piu' lunga dichiarata (~126.000 punti, 35h a
+// 1Hz - vedi prove/prova-quote-traccia-lunga.js) e sotto il limite Mongo di 16MB/documento
+// (misurato: ~58-59 byte/punto BSON, 200.000 punti = ~11,2MB, contro i 16MB del limite e i
+// ~7MB gia' usati dalla traccia multi-day legittima).
+const MAX_PUNTI_SESSIONE = 200000;
 // LA SOGLIA DEL DISLIVELLO DAL VIVO NON ESISTE PIU' COME NUMERO A PARTE. Fino al 2026-07-28
 // c'era MIN_ELEVATION_DELTA_M = 3, applicata al salto fra due punti consecutivi, ed e' stata
 // tolta: dal vivo si usa SOGLIA_DISLIVELLO_M (10) di lib/gpx.js - il GPS di un telefono
@@ -277,8 +287,22 @@ router.get('/sessions', requireAuth, async (req, res) => {
 // deciso apposta - oggi non esiste ancora una convenzione per questo tipo di dato.
 router.get('/sessions/:userId', requireAuth, async (req, res) => {
     try {
+        // ALTO (verifica generale, blocco 1, 44a sessione) e corretto qui (46a): questa
+        // rotta rispondeva con TUTTE le uscite concluse di :userId a chiunque fosse loggato,
+        // comprese quelle mai pubblicate - scavalcando la stessa regola (decisione 6 di
+        // Denis, 29/08/2026) gia' imposta da guardiaUscitaVisibile per la singola uscita
+        // (autore sempre, altrimenti solo pubblicate e solo se la si segue). Qui la lista e'
+        // di un altro utente, non una singola uscita: niente 403/404 per elemento, chi non
+        // segue vede semplicemente una lista vuota - lo stesso risultato che avrebbe aprendo
+        // ogni uscita una per una.
+        const filtro = { userId: req.params.userId, status: 'ended' };
+        if (req.session.userId !== req.params.userId) {
+            const segue = await Follow.exists({ followerId: req.session.userId, followingId: req.params.userId });
+            if (!segue) return res.json([]);
+            filtro.publishedAt = { $exists: true };
+        }
         const sessioni = await ActiveHikeSession
-            .find({ userId: req.params.userId, status: 'ended' })
+            .find(filtro)
             .select('-points -offTrailBuffer')
             .sort({ startedAt: -1 })
             .limit(200);
@@ -941,7 +965,7 @@ router.post('/start', requireAuth, richiedeConsensoGeo, async (req, res) => {
 // Aggiunge un GRUPPO di punti (mai un punto alla volta: troppo dispendioso in montagna
 // con poco campo). L'identita' di chi possiede la sessione e' sempre quella della sessione
 // di login, mai un valore mandato dal client, stesso criterio gia' usato in tutto il resto dell'app.
-router.post('/:id/points', requireAuth, richiedeConsensoGeo, async (req, res) => {
+router.post('/:id/points', requireAuth, puntiTrackingLimiter, richiedeConsensoGeo, async (req, res) => {
     try {
         // Solo i campi che servono davvero: non serve leggere l'intera traccia
         // (potenzialmente lunga ore) solo per aggiungere un piccolo gruppo di punti nuovi.
@@ -1024,8 +1048,14 @@ router.post('/:id/points', requireAuth, richiedeConsensoGeo, async (req, res) =>
         // Risposta senza l'array "points": il client ha gia' tutti i punti (li ha mandati lui),
         // rispedire indietro l'intera traccia crescente ad ogni gruppo sprecherebbe banda
         // sempre di piu' man mano che l'escursione si allunga.
-        const updated = await ActiveHikeSession.findByIdAndUpdate(
-            session._id,
+        //
+        // ALTO (verifica generale, blocco 1, 44a sessione) e corretto qui (46a): $expr con
+        // $size nel FILTRO (non nell'update) fa contare i punti gia' presenti direttamente a
+        // Mongo, senza mai portare l'array in Node solo per controllarne la lunghezza (lo
+        // stesso vincolo RAM per cui la query in cima alla rotta proietta solo l'ultimo
+        // punto). Atomico: nessuna corsa fra un controllo separato e la scrittura.
+        const updated = await ActiveHikeSession.findOneAndUpdate(
+            { _id: session._id, $expr: { $lt: [{ $size: '$points' }, MAX_PUNTI_SESSIONE] } },
             {
                 $push: { points: { $each: newPoints } },
                 $inc: {
@@ -1042,6 +1072,14 @@ router.post('/:id/points', requireAuth, richiedeConsensoGeo, async (req, res) =>
             },
             { new: true, select: '-points' }
         );
+
+        if (!updated) {
+            // A questo punto la sessione esiste ed e' dell'utente (gia' controllato sopra):
+            // il filtro puo' fallire solo per il tetto $expr appena raggiunto (o, in una
+            // corsa rarissima, per una cancellazione concorrente - stesso messaggio, non
+            // vale una distinzione apposta).
+            return res.status(409).json({ error: `Questa registrazione ha raggiunto il tetto massimo di ${MAX_PUNTI_SESSIONE} punti GPS: termina e avvia una nuova sessione per continuare.` });
+        }
 
         res.json(updated);
     } catch (e) {

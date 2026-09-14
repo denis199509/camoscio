@@ -35,10 +35,6 @@ var backpackHikeId = null;
 
 // Inizializzatore del modulo zaino - solo l'aggancio dei listener: il primo render
 // e' pigro, lo fa hikepage.js all'apertura del tab con l'hikeId corrente.
-function initBackpackModule() {
-    setupBackpackEvents();
-}
-
 function setupBackpackEvents() {
     const btnGenerate = document.getElementById("btn-generate-backpack");
     if (btnGenerate) {
@@ -269,7 +265,14 @@ async function pioggiaPrevista(hike) {
     if (giorniMancanti > 14) return null; // oltre l'orizzonte delle previsioni
 
     try {
-        const url = `https://api.open-meteo.com/v1/forecast?latitude=${hike.trailhead.lat}&longitude=${hike.trailhead.lng}` +
+        // ALTO (verifica generale, blocco 3, 45a sessione) e corretto qui (46a): stessa
+        // correzione di weather.js - 3 decimali (~110m) misurati byte-identici alla piena
+        // precisione contro la griglia di Open-Meteo (1-11km). Non risolve da solo il
+        // rilievo GDPR di questo stesso blocco (ritrovo + data futura mandati dal browser,
+        // non dal server - vedi 04-Da-Fare.md), ma resta corretto farlo qui.
+        const latMeteo = Math.round(hike.trailhead.lat * 1000) / 1000;
+        const lngMeteo = Math.round(hike.trailhead.lng * 1000) / 1000;
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${latMeteo}&longitude=${lngMeteo}` +
             `&daily=precipitation_probability_max&start_date=${hike.date}&end_date=${hike.date}&timezone=auto`;
         const res = await fetch(url);
         if (!res.ok) return null;
@@ -1009,5 +1012,5 @@ if (window.CamoscioI18n && window.CamoscioI18n.onChange) {
     });
 }
 
-window.initBackpackModule = initBackpackModule;
+window.setupBackpackEvents = setupBackpackEvents;
 window.renderBackpackModule = renderBackpackModule;

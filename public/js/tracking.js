@@ -1041,6 +1041,17 @@ function renderHikeSelectOptions() {
     } else if (db.activeHikeId && hikes.some(h => h.id === db.activeHikeId)) {
         select.value = db.activeHikeId;
     }
+
+    // Punto 15 (verifica generale, blocco 3): i due tasti di avvio partono disabilitati da
+    // setupTrackingEvents() finche' questa funzione non ha popolato il <select> qui sopra -
+    // si riabilitano qui, a meno che una registrazione sia gia' in corso (stesso caso che
+    // updateMapRecordButton gestisce per hikeSelect/routeSelect/btnDownload).
+    if (!window.CamoscioTrackingIsRecording || !window.CamoscioTrackingIsRecording()) {
+        const btnStart = document.getElementById('btn-tracking-start');
+        const btnMapRecord = document.getElementById('btn-map-quick-record');
+        if (btnStart) btnStart.disabled = false;
+        if (btnMapRecord) btnMapRecord.disabled = false;
+    }
 }
 
 // Punto 113 passo 9: il menu "percorso da seguire". Due provenienze (Denis, 10/09/2026:
@@ -1331,6 +1342,21 @@ async function handleDownloadOfflineMap() {
     }
 
     const estimate = window.estimateOfflineDownloadSize(bounds);
+
+    // ALTO (verifica generale, blocco 3, 45a sessione) e corretto qui (46a): senza
+    // un'escursione selezionata l'area scaricabile era l'intero riquadro visibile della
+    // mappa - misurato 145.650 tile/~4,5GB a zoom 9 da telefono, 837.854/~26GB a zoom 7 da
+    // desktop. Sotto il tetto (offline-map.js) si propone di restringere l'area invece del
+    // solito dialogo di conferma.
+    if (estimate.troppoGrande) {
+        window.showToast(
+            T('track.areaOfflineTroppoGrande', estimate.tileCount) ||
+            `L'area visibile sulla mappa è troppo grande per un download offline (circa ${estimate.tileCount} porzioni di mappa). Scegli un'escursione specifica, oppure avvicina lo zoom su un'area più piccola.`,
+            "error"
+        );
+        return;
+    }
+
     const confirmed = await window.showConfirmModal(
         T('track.confermaDownload', estimate.tileCount, estimate.estimatedMb) ||
         `Verranno scaricate circa ${estimate.tileCount} porzioni di mappa (~${estimate.estimatedMb} MB). Continuare? (consigliato con Wi-Fi o comunque buona connessione)`
@@ -1406,10 +1432,14 @@ async function checkForResumableSession() {
 
     applySessionState(session);
 
-    if (window.resetLiveTrackPolyline) window.resetLiveTrackPolyline();
-    (session.points || []).forEach(p => {
-        if (window.addLiveTrackPoint) window.addLiveTrackPoint(p[1], p[0]);
-    });
+    // CRITICO (verifica generale, blocco 3, 45a sessione) e corretto qui (46a): questo era
+    // un ciclo addLiveTrackPoint per punto, quadratico (misurato 42,3s/16.000 punti), PRIMA
+    // che beginWatchingPosition() qui sotto riaccenda il GPS - proprio nello scenario di
+    // ricaricamento a schermo spento per cui questa funzione di ripresa esiste. Vedi
+    // setLiveTrackPoints in map.js.
+    if (window.setLiveTrackPoints) {
+        window.setLiveTrackPoints((session.points || []).map(p => [p[1], p[0]]));
+    }
     if (session.points && session.points.length > 0 && window.updateLiveGpsPosition) {
         const last = session.points[session.points.length - 1];
         window.updateLiveGpsPosition(last[1], last[0], true);
@@ -1517,7 +1547,7 @@ async function ripristinoAllaCieca() {
 
 // Punto 94/passo 6 - stesso riaggancio usato dopo un ricaricamento, richiamabile a mano
 // toccando il badge "registrazione interrotta" (vedi renderGpsQuality) o da soli al
-// ritorno della rete (vedi l'evento 'online' in initTrackingModule).
+// ritorno della rete (vedi l'evento 'online' in setupTrackingEvents).
 async function riprovaRiaggancioGps() {
     if (!window.CamoscioTrackingIsRecording() || trackingState.watchId !== null) return;
     const ripreso = await beginWatchingPosition();
@@ -1532,7 +1562,14 @@ async function riprovaRiaggancioGps() {
 
 // --- Inizializzazione modulo ---
 
-function initTrackingModule() {
+// Punto 15 (verifica generale, blocco 3): agganciata subito (non dipende dai dati), ma
+// window.addEventListener('online', ...) non ha un elemento su cui mettere un dataset ->
+// guardia di modulo obbligatoria (vedi 07-Trappole-Tecniche.md del vault).
+let eventiTrackingCollegati = false;
+function setupTrackingEvents() {
+    if (eventiTrackingCollegati) return;
+    eventiTrackingCollegati = true;
+
     const miniBar = document.getElementById('tracking-mini-bar');
     const panelClose = document.getElementById('tracking-panel-close');
     const btnStart = document.getElementById('btn-tracking-start');
@@ -1547,7 +1584,15 @@ function initTrackingModule() {
     // (tocco sulla mini-bar) o a fine escursione (riepilogo, vedi renderSummary/showPanel).
     if (miniBar) miniBar.addEventListener('click', () => { renderTrackingUi(); showPanel(); });
     if (panelClose) panelClose.addEventListener('click', hidePanel);
-    if (btnStart) btnStart.addEventListener('click', startTracking);
+    // Punto 15: agganciato SUBITO, prima che renderHikeSelectOptions() (chiamata solo alla
+    // prima apertura della pagina Mappa, triggerSectionRender) popoli #tracking-hike-select -
+    // disabilitato finche' quella non gira, altrimenti si potrebbe avviare una registrazione
+    // "senza escursione collegata" per un menu ancora vuoto, in silenzio (caso non deciso da
+    // solo: e' una scelta presa al posto dell'utente). Si riabilita in renderHikeSelectOptions.
+    if (btnStart) {
+        btnStart.addEventListener('click', startTracking);
+        btnStart.disabled = true;
+    }
     if (btnPause) btnPause.addEventListener('click', pauseTracking);
     if (btnResume) btnResume.addEventListener('click', resumeTracking);
     if (btnEnd) btnEnd.addEventListener('click', endTracking);
@@ -1559,10 +1604,14 @@ function initTrackingModule() {
     const routeSelect = document.getElementById('tracking-route-select');
     if (routeSelect) routeSelect.addEventListener('change', applicaPercorsoDaSeguire);
 
-    // Punto 14: tasto unico sulla mappa + tasto per tornare a farsi seguire (punto 11)
+    // Punto 14: tasto unico sulla mappa + tasto per tornare a farsi seguire (punto 11).
+    // Stessa disabilitazione provvisoria di btnStart qui sopra, stesso motivo.
     const btnMapRecord = document.getElementById('btn-map-quick-record');
     const btnMapRecenter = document.getElementById('btn-map-recenter');
-    if (btnMapRecord) btnMapRecord.addEventListener('click', onMapRecordButtonClick);
+    if (btnMapRecord) {
+        btnMapRecord.addEventListener('click', onMapRecordButtonClick);
+        btnMapRecord.disabled = true;
+    }
     if (btnMapRecenter) btnMapRecenter.addEventListener('click', () => {
         if (window.recenterOnLiveGps) window.recenterOnLiveGps();
     });
@@ -1579,11 +1628,16 @@ function initTrackingModule() {
         flushPendingPoints();
         if (trackingState.watchId === null) riprovaRiaggancioGps();
     });
+}
 
+// Punto 15: dati (GET /api/tracking/active) - resta dentro initApp(), dopo renderMapModule()
+// (vedi il piano: la ripresa di una registrazione scrive sulla mappa, che deve gia' esistere).
+function renderTrackingModule() {
     checkForResumableSession();
 }
 
-window.initTrackingModule = initTrackingModule;
+window.setupTrackingEvents = setupTrackingEvents;
+window.renderTrackingModule = renderTrackingModule;
 // Punto 45: hike-select e alert di consenso, spostati sulla pagina Mappa vicino al tasto di
 // registrazione - prima erano raggiungibili SOLO aprendo il pannello da fermo (il ramo idle
 // di renderTrackingUi), che con il vecchio pulsante a scarpone rimosso non si apre piu' da

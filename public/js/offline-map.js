@@ -10,6 +10,14 @@
 const OFFLINE_MIN_ZOOM = 12;
 const OFFLINE_MAX_ZOOM = 16;
 const TILE_DOWNLOAD_CONCURRENCY = 6;
+// ALTO (verifica generale, blocco 3, 45a sessione) e corretto qui (46a): il ramo di
+// ripiego (nessuna escursione selezionata, public/js/tracking.js) usava l'intero
+// riquadro visibile della mappa come area da scaricare - misurato 145.650 tile/~4,5GB a
+// zoom 9 da telefono, 837.854/~26GB a zoom 7 da desktop, verso un servizio gratuito la
+// cui policy vieta il bulk download. Un'area di escursione vera (getHikeBounds), anche
+// generosa (un traverso di piu' giorni su ~20km), resta sotto i 3.000 tile: 6.000 (~190MB)
+// lascia ampio margine per un uso vero e blocca comunque di netto il caso di abuso.
+const MAX_TILE_OFFLINE = 6000;
 
 function lon2tileX(lon, zoom) {
     return Math.floor((lon + 180) / 360 * Math.pow(2, zoom));
@@ -92,15 +100,38 @@ function getHikeBounds(hike) {
     );
 }
 
+// Il rettangolo di tile (x/y min/max) coperto da bounds a UN livello di zoom - unica fonte
+// per la lista vera (listTilesForBounds) e per il conteggio veloce (countTilesForBounds):
+// due formule separate per la stessa cosa divergerebbero prima o poi in silenzio (lezione
+// gia' pagata piu' volte in questo progetto, vedi 07-Trappole-Tecniche).
+function tileRangeAtZoom(bounds, z) {
+    return {
+        xMin: lon2tileX(bounds.getWest(), z),
+        xMax: lon2tileX(bounds.getEast(), z),
+        // Y cresce verso Sud nello schema delle tile: la latitudine massima da' la Y minima
+        yMin: lat2tileY(bounds.getNorth(), z),
+        yMax: lat2tileY(bounds.getSouth(), z)
+    };
+}
+
+// ALTO (verifica generale, blocco 3, 45a sessione) e corretto qui (46a): la sola
+// aritmetica del rettangolo (nessun array), cosi' stimare la dimensione di un download
+// enorme non costringe a materializzarne prima la lista intera solo per contarla (misurato
+// 10-54MB di heap sul caso peggiore - la settima occorrenza di questo stesso pattern nel
+// progetto).
+function countTilesForBounds(bounds, minZoom = OFFLINE_MIN_ZOOM, maxZoom = OFFLINE_MAX_ZOOM) {
+    let totale = 0;
+    for (let z = minZoom; z <= maxZoom; z++) {
+        const { xMin, xMax, yMin, yMax } = tileRangeAtZoom(bounds, z);
+        totale += (xMax - xMin + 1) * (yMax - yMin + 1);
+    }
+    return totale;
+}
+
 function listTilesForBounds(bounds, minZoom = OFFLINE_MIN_ZOOM, maxZoom = OFFLINE_MAX_ZOOM) {
     const tiles = [];
     for (let z = minZoom; z <= maxZoom; z++) {
-        const xMin = lon2tileX(bounds.getWest(), z);
-        const xMax = lon2tileX(bounds.getEast(), z);
-        // Y cresce verso Sud nello schema delle tile: la latitudine massima da' la Y minima
-        const yMin = lat2tileY(bounds.getNorth(), z);
-        const yMax = lat2tileY(bounds.getSouth(), z);
-
+        const { xMin, xMax, yMin, yMax } = tileRangeAtZoom(bounds, z);
         for (let x = xMin; x <= xMax; x++) {
             for (let y = yMin; y <= yMax; y++) {
                 tiles.push({ z, x, y });
@@ -111,13 +142,17 @@ function listTilesForBounds(bounds, minZoom = OFFLINE_MIN_ZOOM, maxZoom = OFFLIN
 }
 
 function estimateOfflineDownloadSize(bounds) {
-    const count = listTilesForBounds(bounds).length;
+    const count = countTilesForBounds(bounds);
     // Punto 39: 32 KB/tile, misurato il 2026-07-29 su OpenTopoMap (Campo Imperatore,
     // 15/17618/12109) - era 20 (stima per OSM standard, piu' leggero ma quasi vuoto
     // in montagna). Il numero che conta e' quello vero della mappa che si scarica
     // davvero, non una stima prudente scollegata dallo stile attivo.
     const estimatedKb = count * 32;
-    return { tileCount: count, estimatedMb: Math.round((estimatedKb / 1024) * 10) / 10 };
+    return {
+        tileCount: count,
+        estimatedMb: Math.round((estimatedKb / 1024) * 10) / 10,
+        troppoGrande: count > MAX_TILE_OFFLINE
+    };
 }
 
 // Scarica in anticipo (mentre c'e' ancora connessione) tutte le tile di un'area, con un
@@ -126,6 +161,15 @@ function estimateOfflineDownloadSize(bounds) {
 async function downloadOfflineMapForBounds(bounds, onProgress) {
     const tileLayer = window.CamoscioTileLayer;
     if (!tileLayer) throw new Error('Layer della mappa non ancora inizializzato');
+
+    // ALTO (verifica generale, blocco 3, 45a sessione) e corretto qui (46a): ricontrollato
+    // qui, non solo dove si mostra la stima al chiamante - questa funzione e' l'unica che
+    // scarica per davvero, e non deve fidarsi che chi la chiama abbia gia' controllato.
+    // Il conteggio veloce (nessun array) evita di materializzare la lista intera prima di
+    // scoprire che va comunque rifiutata.
+    if (countTilesForBounds(bounds) > MAX_TILE_OFFLINE) {
+        throw new Error(`Area troppo grande per il download offline (oltre ${MAX_TILE_OFFLINE} porzioni di mappa): scegli un'escursione specifica o un'area piu' piccola.`);
+    }
 
     const tiles = listTilesForBounds(bounds);
     let completed = 0;

@@ -12896,3 +12896,343 @@ decidere/applicare nella 45a, con priorita' al CRITICO perche' attivo
 in produzione oggi. Dettaglio completo con file:riga e snippet di fix
 proposti: vault, 06-Cronologia-Sessioni.md sezione "44a sessione", e
 riassunto operativo in leggimi.txt / 04-Da-Fare.md.
+
+
+QUARANTACINQUESIMA SESSIONE (13/09/2026) - blocco 3 della verifica
+generale + 2 dei 3 CRITICI corretti.
+
+Denis, parole sue: "quanti blocchi abbiamo gia' controllato e quanti
+mancano ancora?", poi "si, andiamo con il terzo blocco". Dopo il
+riepilogo del blocco 3: "ci fermiamo qui, metti in ordine il vault e
+aggiorna i file necessari". Poi, ripreso il lavoro: "partiamo adesso
+con i punti critici, uno alla volta, dopo il mio ok" - fra i tre
+proposti, sceglie "vai con [lib/gpx.js]" (offerto per primo, in cima
+alle opzioni), poi "vai con map.js". Infine: "ci fermiamo qui, salva
+tutto, aggiorna i file necessari, prepara tutto per riprendere il
+lavoro nella prossima sessione, poi controllo finale e conferma
+chiusura sessione in sicurezza".
+
+BLOCCO 3 (public/js/, 33 file, 21.250 righe - il piu' grosso dei tre,
+come gia' previsto nella 44a): stesso schema, code-reviewer +
+security-privacy in parallelo, sola lettura. Trovati 2 CRITICI nuovi
+(oltre a quello del blocco 2 mai corretto fino a questa sessione), 10
+ALTO distinti (1 confermato da entrambi gli agenti: il profilo di
+chiunque mostra anche le uscite mai pubblicate), ~33 MEDIO/BASSO.
+Dettaglio completo: vault, 06-Cronologia-Sessioni.md e 04-Da-Fare.md.
+
+FIX 1 - lib/gpx.js (il CRITICO del blocco 2, misurato la 44a, corretto
+ora): la regex che legge i punti di un .gpx andava in backtracking
+quadratico su un file malformato. RAGIONAMENTO: la classe di
+caratteri degli attributi [^>]*? poteva attraversare un '<' non
+richiuso invece di fermarsi li' - cambiata in [^<>]*?, che sull'XML
+valido non cambia nulla (un '<' crudo dentro un attributo non e' mai
+legale) ma fa fallire SUBITO un tentativo su un file rotto invece di
+scorrere fino al prossimo '>' vero, a volte a decine di migliaia di
+caratteri di distanza. Aggiunto anche il conteggio del tetto MAX_PUNTI
+DURANTE la lettura (non dopo): prima il tetto non serviva a niente
+contro l'attacco, perche' il conteggio arrivava quando il lavoro
+costoso era gia' stato fatto. VERIFICATO MISURANDO: ricostruito lo
+stesso identico scenario patologico e cronometrato prima/dopo - la
+versione vecchia resta quadratica (40.000 occorrenze = 5 secondi), la
+nuova sullo stesso file resta piatta fino a 200.000 (9 millisecondi).
+Un file .gpx vero da' identici risultati di prima. Rilanciata
+prova-punto113-gpx.js (attraverso la vera rotta di caricamento): 58/58.
+
+FIX 2 - public/js/map.js (XSS nel popup "vetta raggiunta"): il nome
+di una vetta, scritto liberamente da chi crea un'escursione e mai
+validato, finiva senza protezione nel popup della mappa - compreso
+dentro l'attributo onclick del bottone "TIMBRA PASSAPORTO". RAGIONA-
+MENTO: non bastava avvolgere il nome in escapeHtml() dentro
+quell'onclick, perche' il browser interpreta le entita' HTML (tipo
+l'apostrofo codificato) PRIMA che il motore JavaScript legga
+l'attributo come codice - si poteva comunque uscire dalla stringa.
+Tolto l'onclick scritto dentro l'HTML: il bottone ora prende il nome
+e l'id del timbro come veri valori del programma (non piu' passati
+attraverso una stringa HTML), con un ascoltatore aggiunto in
+JavaScript dopo che il popup e' comparso. Il nome resta comunque
+escapato ovunque venga solo MOSTRATO come testo. VERIFICATO DAL VIVO
+nel browser vero (non un test automatico: non ne esisteva nessuno per
+questa parte, server acceso, account dimostrativo, pagina Mappa
+vera): iniettato un payload vero al posto del nome di una vetta finta,
+forzato il caso piu' pericoloso (quello col bottone) - il payload e'
+comparso come testo innocuo sullo schermo, niente e' stato eseguito,
+e il bottone cliccato per davvero ha continuato a funzionare
+correttamente. Provato anche che una vetta con un nome vero (Corno
+Grande) si vede esattamente come prima.
+
+NON TOCCATO IN QUESTA SESSIONE, notato per la prossima volta che si
+tocca quel file: dentro la stessa funzione di map.js, il messaggio
+d'errore che arriverebbe dal server in caso di rifiuto non e'
+escapato - oggi non e' un problema perche' quel messaggio e' sempre
+una frase fissa scritta da chi sviluppa, mai un dato dell'utente.
+
+TERZO CRITICO, ANCORA APERTO (prossima sessione): public/js/
+tracking.js - il riaggancio di una traccia dopo che il telefono
+ricarica la pagina (cosa che succede da sola, a schermo spento,
+durante un'escursione) reinserisce i punti della traccia uno alla
+volta invece che tutti insieme, ed e' MISURATO A 42 SECONDI su una
+traccia di 16.000 punti (poco piu' di 4 ore di cammino) - proprio nel
+momento in cui il GPS dovrebbe gia' essere ripartito.
+
+CONTROLLO FINALE DI CHIUSURA: verificato che entrambi i file corretti
+non abbiano errori di sintassi; verificato che non restino modifiche
+non salvate ne' sul codice ne' sul vault; fermato il server locale di
+prova (per il numero del processo specifico, mai "ammazza tutti i
+processi Node" che avrebbe fermato anche altro). Le due correzioni
+sono salvate in locale (il salvataggio automatico di sicurezza a fine
+risposta) ma NON ANCORA INVIATE al repository remoto - restano da
+raggruppare in commit puliti prima, come gia' fatto per il 2FA e per
+la revisione della 35a, e comunque mai senza il tuo via libera.
+
+QUARANTASEIESIMA SESSIONE (14/09/2026) - terzo e ultimo CRITICO
+corretto, poi 17 dei 18 ALTO della verifica generale chiusi in blocco.
+
+Denis, parole sue: "abbiamo un altro punto critico?" - confermato
+(tracking.js, invariato dalla sessione scorsa), poi "Vai con
+tracking.js". Dopo il fix: "Continua con gli 18 alto". Per il pannello
+mesh (via AskUserQuestion, fra tre opzioni): "Sistemo tutto ora". Per
+se continuare subito col punto strutturale (via AskUserQuestion, fra
+due opzioni): "Fermiamoci qui per oggi".
+
+FIX 3 (il CRITICO) - public/js/tracking.js + map.js: il riaggancio di
+una registrazione dopo un ricaricamento pagina (che su Android succede
+da solo a schermo spento durante un'escursione) rimetteva i punti uno
+per uno in una polyline della mappa, misurato 42 secondi su 16.000
+punti (poco piu' di 4 ore di cammino). RAGIONAMENTO: aggiungere un
+punto alla volta a una linea disegnata fa ricalcolare a Leaflet TUTTI i
+punti gia' presenti ogni volta; costruire l'elenco intero e disegnarlo
+in un colpo solo lo fa una volta sola. Aggiunta setLiveTrackPoints() in
+map.js, richiamata da tracking.js al posto del ciclo; la funzione che
+aggiunge un punto alla volta (per il GPS che arriva davvero dal vivo,
+un punto ogni tanti secondi) non e' stata toccata, li' va gia' bene
+cosi'. VERIFICATO MISURANDO nel browser vero (server acceso, account
+dimostrativo, vera pagina Mappa): il vecchio modo, 194ms/1.000 punti
+fino a 10,4s/8.000 (crescita di ~4 volte a ogni raddoppio, conferma che
+il problema era proprio quello); il nuovo modo, 9ms/16.000 punti,
+35ms/32.000 - piatto, quasi 5.000 volte piu' veloce al caso misurato la
+volta scorsa. Stesso risultato identico sui due modi con lo stesso
+elenco di punti (controllato punto per punto). Chiamata la vera
+funzione di ripresa con una sessione finta da 3.000 punti (mai toccato
+il database vero): tutto ricostruito giusto, l'interfaccia e' passata
+correttamente allo stato "registrazione in corso".
+
+I 18 ALTO: elenco preciso ricavato dalla cronologia dettagliata delle
+sessioni 44a-45a (4 nel primo blocco di cartelle + 4 nel secondo + 10
+nel terzo = 18 esatti), non dal riassunto compresso che serve solo per
+orientarsi. Corretti raggruppati per argomento, ognuno misurato o
+verificato dal vivo invece che dato per corretto a occhio:
+
+- SESSIONE: login, registrazione e accesso demo non rinnovavano
+  l'identificativo di sessione prima di autenticare (mentre altre tre
+  rotte nello stesso file gia' lo fanno) - un identificativo fissato in
+  anticipo da chi attacca (es. su una rete condivisa) sarebbe rimasto
+  valido anche dopo l'accesso vero. Corretto su tutti e tre allo stesso
+  modo delle altre tre rotte.
+
+- DATI ESPOSTI: lo storico delle uscite di un altro utente (usato
+  anche dal profilo) mostrava TUTTE le sue uscite concluse, comprese
+  quelle mai rese pubbliche, a chiunque fosse loggato - corretto
+  filtrando per proprietario, oppure per chi segue quella persona E
+  solo le pubblicate (stessa regola gia' in vigore per aprire una
+  singola uscita, presa dalla decisione di Denis del 29/08). Verificato
+  dal vivo: il profilo di un utente non seguito ora mostra zero uscite
+  invece di schede inutilizzabili. I preferiti (bookmarks) restituivano
+  quelli di TUTTI gli utenti sempre, non solo i propri - la funzione
+  "chi altro ha salvato questo sentiero" ne aveva bisogno solo per i
+  sentieri gia' salvati da chi guarda, non per ogni sentiero di
+  chiunque - corretto di conseguenza. Nessun tetto sui punti GPS totali
+  di una registrazione ne' un limite di velocita' dedicato sull'invio -
+  aggiunto un tetto (200.000 punti, calcolato per stare comodamente
+  sopra il bisogno vero di una traccia lunghissima e sotto il limite
+  tecnico di un singolo documento del database) controllato dal
+  database stesso senza mai dover leggere l'intera traccia in memoria,
+  piu' un limite di velocita' per persona (mai per indirizzo di rete
+  condiviso, altrimenta un compagno di escursione bloccherebbe l'altro
+  per sbaglio). L'elenco delle segnalazioni sentiero non escludeva chi
+  ha segnalato come faceva gia' per gli altri due dati sensibili -
+  aggiunto.
+
+- LIB: la funzione che semplifica una traccia GPS (douglasPeucker)
+  andava in errore di troppa ricorsione su una traccia costruita
+  apposta (trovato la sessione scorsa) - corretta con un ciclo esplicito
+  invece della ricorsione, MA misurando di nuovo dopo il primo fix (per
+  abitudine di controllare, non per caso) e' emerso che restava comunque
+  lentissima sulla stessa traccia avversaria (quasi un minuto su 50.000
+  punti) perche' il problema vero non era la ricorsione in se' ma il
+  fatto che l'algoritmo puo' degenerare a lavorare quasi punto per
+  punto - aggiunto anche un tetto al lavoro totale, calibrato misurando
+  che una traccia VERA (non costruita ad arte) resta ampiamente sotto
+  quel tetto. L'allarme del Dead Man's Switch smetteva di partire (e
+  finiva a stampare posizione ed email dei contatti nel registro del
+  server) se mancava una variabile d'ambiente che in realta' serve solo
+  a costruire un link - quell'allarme non ha nessun link, quindi non
+  doveva dipendere da quella variabile: separata la verifica in due
+  pezzi, uno per chi ha bisogno del link e uno per chi no. Un eventuale
+  messaggio d'errore del servizio email poteva ripetere l'indirizzo del
+  destinatario nel registro del server - ora quell'indirizzo viene
+  tolto dal testo prima di scriverlo nel registro. La traccia GPS di
+  un'escursione creata da un file caricato o da un percorso salvato
+  sopravviveva alla cancellazione dell'account (lo svuotamento gia'
+  faceva questo per le registrazioni dal vivo, mancava per questo altro
+  tipo) - aggiunto.
+
+- PRIVACY LATO TELEFONO/COMPUTER: la posizione mandata al servizio
+  meteo (Open-Meteo) aveva molta piu' precisione del necessario -
+  arrotondata a un livello che da' la stessa identica risposta (gia'
+  misurato la sessione scorsa). Uscire dal sito (logout) non cancellava
+  niente dal dispositivo (posizione vera ricordata, zona di partenza da
+  casa, timer di sicurezza, punti GPS in attesa di invio) nonostante la
+  funzione che lo fa gia' esistesse per l'eliminazione account - ora
+  viene chiamata anche qui, sempre, anche se il logout verso il server
+  fallisce. Verificato dal vivo mettendo dati finti in memoria del
+  browser e controllando che spariscano dopo "Esci" (e che una
+  preferenza pura come la lingua NON sparisca, giustamente).
+
+- TIMER DI SICUREZZA (Dead Man's Switch): si attivava sul telefono
+  ANCHE quando il server rifiutava esplicitamente la richiesta (per
+  esempio con i campi vuoti, che facevano chiedere un rientro "adesso
+  stesso"), e quando il tempo scadeva dichiarava comunque "l'invio vero
+  lo fa il server" - falso in quel caso, e il sito non deve promettere
+  cose che non puo' mantenere. Corretto in due modi: prima si controlla
+  che sia stato scritto un vero orario o una vera durata (altrimenti
+  errore subito, niente si attiva ne' sul telefono ne' sul server); poi
+  si tiene traccia di se il server ha davvero confermato, e solo in
+  quel caso l'avviso finale dice che il server manda l'email - altrimenti
+  dice la verita', che non partira' nulla in automatico. Verificato dal
+  vivo chiamando le funzioni vere con i due stati e leggendo il testo
+  del messaggio che compare per davvero.
+
+- MAPPA OFFLINE: scaricare la mappa senza aver scelto un'escursione
+  usava l'intera area visibile sullo schermo come zona da salvare,
+  senza nessun limite - misurato la sessione scorsa fino a 26 GB nel
+  caso peggiore, verso un servizio gratuito la cui regola vieta scarichi
+  di massa. Aggiunto un tetto (6.000 porzioni di mappa, circa 190 MB -
+  calibrato perche' anche un'area di escursione grande e vera resti ben
+  sotto). In piu' il calcolo della stima costruiva l'elenco intero delle
+  porzioni solo per contarle (spreco di memoria) - sostituito con un
+  conto matematico diretto, verificato identico al conteggio vecchio su
+  piu' aree di prova.
+
+- refreshState() (l'aggiornamento dei dati a ogni cambio di sezione
+  dell'app): sei richieste al server che non dipendono l'una dall'altra
+  partivano una dopo l'altra invece che tutte insieme - misurato la
+  sessione scorsa fino a un secondo e mezzo perso a ogni cambio pagina
+  su rete lenta. Messe tutte insieme (stesso risultato finale,
+  verificato dal vivo che i dati arrivano tutti giusti).
+
+- PANNELLO CHAT DI SICUREZZA (nella pagina "Sicurezza", raggiungibile
+  da Area Personale - diversa dal Timer di Sicurezza, che si imposta
+  invece dalla pagina Mappa: scoperto cercando il pannello nel posto
+  sbagliato prima di trovarlo). Dichiarava una rete Bluetooth/Wi-Fi
+  Direct che non e' mai esistita davvero (e' sempre stata una chat
+  internet col server) e mostrava sul radar 3 "compagni vicini" finti,
+  sempre uguali - stessa regola violata dal Timer di Sicurezza appena
+  corretto, non promettere cio' che il sito non fa. In piu' la posizione
+  mandata nei messaggi prendeva il segnaposto trascinabile della mappa
+  invece della posizione vera (che l'SOS usa gia' correttamente), senza
+  nessun modo di disattivarla. Sistemato tutto: tolta la frase sulla
+  rete Bluetooth (sostituita con la verita', e' una chat via internet);
+  tolto il radar e i 3 compagni finti (nessun modo vero di sapere chi e'
+  vicino senza Bluetooth vero, un radar sempre vuoto sarebbe stato
+  confuso); la posizione ora e' quella vera del GPS, con un interruttore
+  per non condividerla nei messaggi normali (un SOS la manda comunque
+  sempre, l'emergenza vince). Conseguenza necessaria non esplicitamente
+  richiesta ma diretta dagli altri due punti: tolto anche il filtro "solo
+  se a meno di 100 metri" sui messaggi ricevuti, che era decorativo (il
+  controllo vero lo fa gia' il server) e con la posizione vera avrebbe
+  nascosto messaggi di compagni reali semplicemente non vicinissimi in
+  quel momento. Verificato dal vivo sulla pagina vera: screenshot del
+  pannello nuovo, intercettati i messaggi mandati per davvero col
+  telefono finto - con l'interruttore acceso la posizione parte, spento
+  no, un SOS la manda comunque sempre; un messaggio finto "da 5 km di
+  distanza" ora compare in chat (prima sarebbe sparito).
+
+RESTA UN SOLO ALTO, il piu' grande: 8 moduli su 11 dell'app si
+agganciano agli elementi della pagina troppo tardi invece che subito
+all'avvio (gia' notato in sessioni precedenti, ora verificato uno per
+uno). Tocca 8 file diversi. Denis ha chiesto di usare l'agente
+specializzato in architettura per progettare la correzione prima di
+scrivere qualunque codice - rimandato apposta alla prossima sessione.
+
+CONTROLLO FINALE DI CHIUSURA: nessun errore di sintassi su tutti i 20
+file di codice toccati; rilanciate 4 prove automatiche gia' esistenti
+(176 controlli in tutto) per controllare di non aver rotto niente
+d'altro - tutte passate, nessun dato di prova rimasto sul database;
+server locale di prova fermato per il numero del processo specifico.
+Le correzioni sono salvate in locale (salvataggio automatico) ma NON
+ANCORA INVIATE al repository remoto - da raggruppare in commit puliti
+prima, come sempre, e comunque mai senza il tuo via libera.
+
+=====================================================================
+
+QUARANTASETTESIMA SESSIONE (14/09/2026) - progettato CON l'architetto
+e poi implementato l'ultimo ALTO della verifica generale: gli 8 moduli
+che si agganciavano tardi dentro initApp().
+
+Denis, parole sue: "Possiamo ripartire, manda l'architetto" - poi,
+dopo aver letto il riassunto del progetto con le 5 decisioni aperte
+(D-1...D-5): "Procedi con le raccomandazioni".
+
+PROGETTO (agente architect, nessun codice toccato in questa fase):
+piano scritto in C:\Users\lenovo\.claude\plans\camoscio-initapp-refactor.md.
+Confermato lo studio del precedente carpool.js/backpack.js (render
+pigro per-tab) e SCARTATO di ricalcarlo: quei due moduli vivono dentro
+il tab di UNA escursione e hanno bisogno di un hikeId che prima
+dell'apertura non esiste, gli 8 di qui no - si e' seguita invece la
+stessa forma dei 3 fix gia' fatti (menu 26/07, fascia email 30/07,
+profilo 06/08): ogni init*Module() si divide in setupXEvents() (solo
+listener, subito) e renderX() (dati, dentro initApp()).
+Progettando sono emersi DUE difetti gia' presenti, non introdotti dal
+refactor: (1) initApp() chiamava la mappa senza aspettarla - se durante
+un ricaricamento pagina la ripresa di una registrazione GPS finiva
+prima del download dei confini regionali, scriveva su una mappa ancora
+inesistente e si fermava con un errore silenzioso (imparentato con gli
+avvii-fantasma da ~0km gia' visti testando il punto 94); (2) il form
+"Nuova escursione" non ha un action: aperto dal menu (gia' agganciato
+presto) e con Invio premuto prima che il submit fosse collegato,
+ricaricava la pagina perdendo tutto il modulo compilato.
+Le 5 decisioni proposte (tutte accettate): D-1 spostare anche il
+ripristino del Timer di Sicurezza/contatti prima di initApp() (non
+dipende dai dati, solo da currentUser gia' completo); D-2 creare la
+mappa SUBITO col rettangolo di riserva invece di aspettare i confini
+veri (chiude anche il difetto 1 come effetto collaterale; per ~200ms
+il limite di trascinamento e' piu' largo del solito); D-3 sistemare
+nello stesso giro anche carpool.js/backpack.js (avevano gia' lo split
+ma restavano chiamati tardi); D-4 la guardia anti-doppio-aggancio su
+tutti e 8 i moduli; D-5 chiudere anche il difetto 1 in questo giro.
+
+IMPLEMENTAZIONE (11 file: gli 8 moduli + carpool.js + backpack.js +
+app.js): ogni modulo rinominato ed diviso secondo il contratto del
+piano, con una guardia "let eventiXCollegati" contro il doppio
+aggancio. Storico/ricerca persone/scelta ritrovo non avevano nessun
+dato da caricare: spariti del tutto da initApp(), restano solo
+listener. Per la mappa, applicata l'opzione D-2: la mappa nasce subito
+col rettangolo di riserva, i confini veri arrivano dopo in
+background e stringono il limite (setMaxBounds) quando sono pronti;
+aggiunta la guardia mancante (if non mapInstance, esci) alle due
+funzioni che disegnavano la traccia dal vivo senza controllare che la
+mappa esistesse gia'. Per il tracciamento, i due tasti di avvio
+partono disabilitati finche' l'elenco delle escursioni non e'
+popolato (altrimenti si potrebbe partire "senza escursione collegata"
+in silenzio), poi si riabilitano da soli. app.js aggiornato con un
+blocco nuovo di 10 setupXEvents() subito dopo il gate di login, prima
+di initApp(); dentro initApp() restano solo i 6 render che dipendono
+dai dati.
+
+VERIFICA: nessun file server toccato (solo public/js/), quindi non
+serviva rilanciare le prove automatiche di accessi/password/email (non
+coprono comunque il client). Fatta invece la verifica che conta per un
+cambio cosi': sintassi pulita su tutti gli 11 file, poi server locale
+acceso e app aperta dal vivo nel browser con un account dimostrativo
+gia' loggato (Marco Alpinista) - Home, Mappa (contatti/timer di
+sicurezza popolati, meteo gia' calcolato una volta sola, tasti di
+registrazione abilitati dopo il caricamento, confini regionali
+confermati arrivati), Sicurezza (chat mesh "Attivo, connesso al
+server"), Social (modale "Nuova escursione" aperto e richiuso dalla X
+senza ricaricare la pagina), Le mie escursioni/Completate - console
+del browser sempre pulita, zero errori. Server locale fermato per il
+numero del processo specifico, non con un comando che li chiude tutti.
+
+Le correzioni sono salvate in locale (salvataggio automatico) ma NON
+ANCORA INVIATE al repository remoto - da raggruppare in commit puliti
+prima, come sempre, e comunque mai senza il tuo via libera.

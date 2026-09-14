@@ -376,19 +376,20 @@ async function renderProfileHikes(userId, container) {
     const proprioProfilo = !!(io && io.id === userId);
     const seguoQuesto = !!(io && (db.following || []).some(f => f.followingId === userId));
 
+    // ALTO (verifica generale, blocco 3, 45a sessione) e corretto qui (46a): questo filtro
+    // decideva SOLO se la scheda fosse cliccabile, mai se andasse disegnata - chi non segue
+    // questa persona vedeva comunque le sue uscite non pubblicate come schede inerti. Ora
+    // GET /api/tracking/sessions/:userId (routes/tracking.js) applica gia' la stessa regola
+    // lato server, ma il filtro resta anche qui: niente schede per dati che non dovrebbero
+    // nemmeno arrivare, invece di fidarsi solo di quello che manda il server.
     const hikeIdGiaRappresentati = new Set(vociHike.map(v => v.hikeIdCollegato));
     const vociUscita = usciteVisibili(sessioni, hikeIdGiaRappresentati)
-        .map(s => {
-            const card = schedaUscitaProfilo(s);
-            const apribile = proprioProfilo || (seguoQuesto && s.publishedAt);
-            return {
-                tipo: 'uscita',
-                data: s.startedAt,
-                html: apribile
-                    ? `<div class="outing-open-wrap" onclick="showOutingPage('${window.escapeHtml(s.id)}')">${card}</div>`
-                    : card
-            };
-        });
+        .filter(s => proprioProfilo || (seguoQuesto && s.publishedAt))
+        .map(s => ({
+            tipo: 'uscita',
+            data: s.startedAt,
+            html: `<div class="outing-open-wrap" onclick="showOutingPage('${window.escapeHtml(s.id)}')">${schedaUscitaProfilo(s)}</div>`
+        }));
 
     const tutte = [...vociHike, ...vociUscita].sort((a, b) => String(b.data || '').localeCompare(String(a.data || '')));
 

@@ -190,13 +190,16 @@ window.apriModaleNuovaEscursione = function() {
     if (window.lucide) window.lucide.createIcons();
 };
 
-function initSocialModule() {
-    setupSocialEvents();
-    renderSocialModule();
-    renderHikesList();
-}
-
+// Punto 15 (verifica generale, blocco 3): qui il doppio aggancio e' il rischio piu'
+// concreto degli 8 moduli. Il listener delegato su document (righe piu' sotto, menu "tre
+// puntini" delle card) agganciato due volte aprirebbe e richiuderebbe il menu nello
+// stesso clic - sintomo "il tasto non funziona", senza nessun errore in console (vedi
+// 07-Trappole-Tecniche.md del vault).
+let eventiSocialCollegati = false;
 function setupSocialEvents() {
+    if (eventiSocialCollegati) return;
+    eventiSocialCollegati = true;
+
     // Punto 113: apri/chiudi le due liste follow (Denis: "cliccando sopra devo vedere").
     // I due bottoni sono statici nell'HTML, un ascoltatore diretto qui basta (setupSocialEvents
     // gira una volta all'avvio); il contenuto delle liste si ridisegna ma i contenitori no.
@@ -2692,7 +2695,7 @@ async function submitAnonymousReview() {
     }
 }
 
-window.initSocialModule = initSocialModule;
+window.setupSocialEvents = setupSocialEvents;
 window.renderSocialModule = renderSocialModule;
 window.renderHikesList = renderHikesList;
 window.renderSquadsList = renderSquadsList;

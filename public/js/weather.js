@@ -65,7 +65,11 @@ function ricordaPunto(p) {
     }
 }
 
-function initWeatherModule() {
+// Punto 15 (verifica generale, blocco 3): il fetch a open-meteo resta dentro initApp(),
+// una volta sola per caricamento pagina - NON va aggiunto a triggerSectionRender per
+// 'map-section', altrimenti si moltiplicherebbe ad ogni ingresso nella Mappa, e
+// open-meteo ha un tetto sui PUNTI, non sulle chiamate (vault, punto 33).
+function renderWeatherModule() {
     const ricordato = leggiPuntoRicordato();
     const p = ricordato || PUNTO_PREDEFINITO;
     fetchWeatherForCoords(p.lat, p.lng, p.nome);
@@ -74,6 +78,23 @@ function initWeatherModule() {
     // Se si riparte da un punto gia' scelto, la barra lo mostra: altrimenti resterebbe vuota
     // mentre sotto compare il meteo di un posto, e non si capirebbe di dove sono quei numeri.
     if (campo && ricordato && ricordato.nome) campo.value = ricordato.nome;
+}
+
+// Punto 15: un doppio aggancio farebbe partire due ricerche per tastierata verso
+// /api/geocoding/search (Nominatim a valle, 1 richiesta al secondo) - guardia obbligatoria
+// (vedi 07-Trappole-Tecniche.md del vault).
+let eventiWeatherCollegati = false;
+function setupWeatherEvents() {
+    if (eventiWeatherCollegati) return;
+    eventiWeatherCollegati = true;
+
+    const campo = document.getElementById('weather-point-search');
+
+    // "Meteo dove mi trovo" usa CamoscioGeo, non CamoscioPlaceSearch: va agganciato PRIMA
+    // del cancello sotto. Un cancello unico non deve spegnere un tasto che non dipende dal
+    // requisito che verifica (stessa lezione del 14/09 su configurato() in lib/mailer.js).
+    const btnQui = document.getElementById('btn-weather-here');
+    if (btnQui) btnQui.addEventListener('click', meteoDoveMiTrovo);
 
     // Il componente di ricerca puo' non esserci (pagine diverse da index.html): il meteo
     // deve continuare a funzionare lo stesso, solo senza poter cambiare punto.
@@ -97,9 +118,6 @@ function initWeatherModule() {
             }
         }));
     }
-
-    const btnQui = document.getElementById('btn-weather-here');
-    if (btnQui) btnQui.addEventListener('click', meteoDoveMiTrovo);
 }
 
 // "Meteo dove mi trovo": si appoggia al puntino blu del punto 26, cosi' il permesso di
@@ -198,7 +216,16 @@ async function fetchWeatherForCoords(lat, lng, placeName) {
     // veniva letta dall'orario locale su una serie in GMT. D'estate in Italia sono due ore di
     // scarto, cioe' si mostrava il meteo di due ore prima proprio nelle ore in cui i temporali
     // si formano.
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&hourly=temperature_2m,wind_speed_10m,precipitation_probability,cape&forecast_days=1&timezone=auto`;
+    //
+    // ALTO (verifica generale, blocco 3, 45a sessione) e corretto qui (46a): lat/lng
+    // arrivavano a piena precisione (14-15 decimali quando la fonte e' il GPS del
+    // dispositivo, vedi usaPosizionePerMeteo) - misurato che 3 decimali (~110m) danno una
+    // risposta BYTE-IDENTICA alla piena precisione (la griglia di Open-Meteo e' 1-11km).
+    // Arrotondato solo nell'URL: puntoMeteo/ricordaPunto qui sopra restano a piena
+    // precisione, e' un dato solo locale, mai mandato al terzo.
+    const latMeteo = Math.round(lat * 1000) / 1000;
+    const lngMeteo = Math.round(lng * 1000) / 1000;
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${latMeteo}&longitude=${lngMeteo}&hourly=temperature_2m,wind_speed_10m,precipitation_probability,cape&forecast_days=1&timezone=auto`;
 
     try {
         const response = await fetch(url);
@@ -366,7 +393,8 @@ function triggerLightningPushNotification(message) {
 }
 
 window.fetchWeatherForCoords = fetchWeatherForCoords;
-window.initWeatherModule = initWeatherModule;
+window.setupWeatherEvents = setupWeatherEvents;
+window.renderWeatherModule = renderWeatherModule;
 window.renderWeatherData = renderWeatherData;
 
 // Rollout traduzione punto 102, lotto Mappa area 3: il contenuto di

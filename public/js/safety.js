@@ -9,23 +9,34 @@ let safetyTimerInterval = null;
 let deadManActive = false;
 let returnTimestamp = 0;
 let socket = null;
+// ALTO (verifica generale, blocco 3, 45a sessione) e corretto qui (46a): true SOLO quando
+// c'e' conferma che il server ha armato QUESTO timer (risposta ok di attivaSulServer, o la
+// riletta di conferma di restoreDeadManState da currentUser.deadManActive). triggerEmergencyAlarm
+// la legge per non dichiarare mai "l'invio vero lo fa il server" quando il server non ha
+// nessun timer per davvero - la falsa promessa che la regola CLAUDE.md vieta.
+let deadManArmatoSulServer = false;
 
-function initSafetyModule() {
-    // Inizializza WebSocket per il Mesh Network Simulator
-    initMeshWebSocket();
-
+// Punto 15 (verifica generale, blocco 3, D-1): renderSafetyDati() legge solo
+// currentUser.emergencyContacts/deadMan* (gia' completo dopo checkAuthAndShowGate) piu'
+// localStorage - nessuna dipendenza da refreshState(). Chiamata SUBITO insieme a
+// setupSafetyEvents(), non dentro initApp(): altrimenti su Render freddo (o rete che
+// cade a meta') il conto alla rovescia, la fascia rossa e l'allarme RETROATTIVO di un
+// timer gia' scaduto potrebbero non partire affatto per tutta la durata di refreshState().
+function renderSafetyDati() {
     // Disegna la lista dei contatti di emergenza (con i tasti "Rimuovi", A-3.2) e il
     // riepilogo di chi verra' avvisato alla scadenza.
     renderContattiEmergenza();
 
     // Ripristina lo stato del Dead Man's Switch da LocalStorage se attivo
     restoreDeadManState();
-
-    // Event listeners
-    setupSafetyEvents();
 }
 
+// Guardia di modulo per uniformita' con gli altri 7 (qui non ci sono listener su
+// document/window, ma un domani qualcuno potrebbe rimettere la chiamata anche in initApp).
+let eventiSafetyCollegati = false;
 function setupSafetyEvents() {
+    if (eventiSafetyCollegati) return;
+    eventiSafetyCollegati = true;
     const btnActivate = document.getElementById("btn-activate-switch");
     const btnDeactivate = document.getElementById("btn-deactivate-switch");
     const btnBannerCheckin = document.getElementById("btn-banner-checkin");
@@ -98,6 +109,19 @@ function setupSafetyEvents() {
     if (btnMeshSos) {
         btnMeshSos.addEventListener("click", () => {
             sendMeshChatMessage(true);
+        });
+    }
+
+    // ALTO (verifica generale, blocco 3, 45a sessione) e corretto qui (46a): preferenza di
+    // interfaccia (non un dato personale, come lingua/gruppi di menu), persistita cosi'
+    // resta anche dopo un ricaricamento. Default true (spuntata) per non cambiare il
+    // comportamento di prima per chi non tocca niente - qui si da' solo la possibilita' di
+    // disattivarla, che prima non esisteva.
+    const cbCondividiPosizione = document.getElementById("mesh-condividi-posizione");
+    if (cbCondividiPosizione) {
+        cbCondividiPosizione.checked = localStorage.getItem("mesh_condividi_posizione") !== "false";
+        cbCondividiPosizione.addEventListener("change", () => {
+            localStorage.setItem("mesh_condividi_posizione", cbCondividiPosizione.checked ? "true" : "false");
         });
     }
 }
@@ -427,6 +451,17 @@ async function activateDeadManSwitch() {
     const durationHours = parseFloat(document.getElementById("safety-duration").value) || 0;
     const exactTime = document.getElementById("safety-time").value;
 
+    // ALTO (verifica generale, blocco 3, 45a sessione) e corretto qui (46a): campi vuoti
+    // producevano durationHours 0 e nessun exactTime, quindi targetTimeMs = Date.now() -
+    // un timer che scade nello stesso istante in cui si arma. Il server rifiuta questo
+    // caso (400, tempo non nel futuro) ma senza questo controllo il client si armava lo
+    // stesso in locale, mostrando un allarme vero un secondo dopo per un timer che sul
+    // server non e' mai esistito.
+    if (!exactTime && durationHours <= 0) {
+        window.showToast(T('safety.dms.serveOrarioODurata') || "Imposta un orario di rientro o una durata prima di attivare il timer.", "error");
+        return;
+    }
+
     let targetTimeMs = 0;
 
     if (exactTime) {
@@ -444,6 +479,7 @@ async function activateDeadManSwitch() {
     }
 
     const armatoSulServer = await attivaSulServer(targetTimeMs);
+    deadManArmatoSulServer = armatoSulServer;
 
     deadManActive = true;
     returnTimestamp = targetTimeMs;
@@ -507,6 +543,7 @@ async function deactivateDeadManSwitch(isSafeCheckin) {
 
     deadManActive = false;
     returnTimestamp = 0;
+    deadManArmatoSulServer = false;
 
     clearInterval(safetyTimerInterval);
 
@@ -553,6 +590,15 @@ function restoreDeadManState() {
 
     const isActive = localStorage.getItem("deadman_active") === "true";
     const ts = parseInt(localStorage.getItem("deadman_timestamp")) || 0;
+
+    // ALTO (verifica generale, blocco 3, 45a sessione) e corretto qui (46a): se siamo
+    // arrivati qui passando dal ramo "if (utente)" qui sopra con deadManActive/deadManExpiresAt
+    // veri, e' il SERVER a confermarlo - non la sola copia locale. Se invece utente non
+    // c'era ancora (richiesta in corso) si sta solo rileggendo cio' che localStorage aveva
+    // gia' da prima: si lascia il flag com'era, mai impostato a true senza conferma fresca.
+    if (utente && utente.deadManActive && utente.deadManExpiresAt) {
+        deadManArmatoSulServer = true;
+    }
 
     if (isActive && ts > Date.now()) {
         deadManActive = true;
@@ -623,14 +669,27 @@ function triggerEmergencyAlarm() {
     // Prima di allora questa finestra diceva "SMS Satellitare inviato a...", che era falso: nessun
     // messaggio partiva mai. Ora e' vero, ma non e' QUESTA funzione a farlo partire - dirlo bene
     // evita di far credere che chiudere questa finestra fermi (o non fermi) l'allarme reale.
+    //
+    // ALTO (verifica generale, blocco 3, 45a sessione) e corretto qui (46a): la dichiarazione
+    // "l'invio vero lo fa il server" e' vera SOLO se il server ha davvero armato questo
+    // timer (deadManArmatoSulServer) - altrimenti nessun invio partira' mai, e dirlo
+    // comunque sarebbe la stessa bugia "SMS Satellitare inviato" gia' corretta una volta.
     window.showAlertModal(
-        T('safety.alarm.modal', msg, aChi) ||
-        (`⏰ IL TEMPO È SCADUTO\n\n${msg}\n\n` +
-        `Avresti dovuto avvisare: ${aChi}\n\n` +
-        `Questo avviso su schermo non manda niente da solo: è solo qui, su questo telefono. ` +
-        `L'invio vero lo fa il server, entro pochi minuti e indipendentemente da questa pagina. ` +
-        `Se sei tu a leggerlo e stai bene, fai il check-in subito per fermarlo. Se stai leggendo ` +
-        `questo per conto di qualcun altro, avvisa tu il contatto qui sopra.`)
+        deadManArmatoSulServer
+            ? (T('safety.alarm.modal', msg, aChi) ||
+                (`⏰ IL TEMPO È SCADUTO\n\n${msg}\n\n` +
+                `Avresti dovuto avvisare: ${aChi}\n\n` +
+                `Questo avviso su schermo non manda niente da solo: è solo qui, su questo telefono. ` +
+                `L'invio vero lo fa il server, entro pochi minuti e indipendentemente da questa pagina. ` +
+                `Se sei tu a leggerlo e stai bene, fai il check-in subito per fermarlo. Se stai leggendo ` +
+                `questo per conto di qualcun altro, avvisa tu il contatto qui sopra.`))
+            : (T('safety.alarm.modalSenzaServer', msg, aChi) ||
+                (`⏰ IL TEMPO È SCADUTO\n\n${msg}\n\n` +
+                `Avresti dovuto avvisare: ${aChi}\n\n` +
+                `Questo timer è stato attivo solo su questo telefono: il server non l'ha mai ` +
+                `confermato, quindi nessuna email automatica partirà. Se sei tu a leggerlo e stai ` +
+                `bene, non serve fare niente. Se stai leggendo questo per conto di qualcun altro, ` +
+                `avvisa tu il contatto qui sopra: nessun altro verrà avvisato.`))
     );
 
     deactivateDeadManSwitch(false);
@@ -727,68 +786,21 @@ function aggiornaAvvisoUltimoAllarme() {
     if (window.lucide && window.lucide.createIcons) window.lucide.createIcons();
 }
 
-// --- MESH NETWORKING SIMULATOR ---
+// --- CHAT DI SICUREZZA DEL GRUPPO (via WebSocket/server, mai stata una rete locale) ---
 
-// Sposta il marker GPS e ricalcola il radar dei compagni
-function updateRadarPosition(coords) {
-    renderRadarScreen(coords);
+// ALTO (verifica generale, blocco 3, 45a sessione) e corretto qui (46a): true di default
+// (preserva il comportamento di prima), false se l'utente toglie la spunta "Condividi la
+// mia posizione" nel pannello. Riletta ad ogni invio, non solo all'avvio: puo' cambiare
+// idea a meta' escursione. Persistita cosi' la scelta resta anche dopo un ricaricamento -
+// NON e' un dato personale, e' una preferenza di interfaccia (come lingua/gruppi di menu).
+function condividePosizioneInChat() {
+    const cb = document.getElementById("mesh-condividi-posizione");
+    if (cb) return cb.checked;
+    return localStorage.getItem("mesh_condividi_posizione") !== "false";
 }
 
-// Disegna lo schermo radar calcolando le distanze in coordinate polari
-function renderRadarScreen(userCoords) {
-    const radarPeersContainer = document.getElementById("radar-peers");
-    if (!radarPeersContainer) return;
-
-    radarPeersContainer.innerHTML = "";
-
-    // Compagni simulati sul sentiero Campo Imperatore (Gran Sasso) con coordinate fisse
-    const mockPeers = [
-        { id: "user_sofia", name: "Sofia Foto", lat: 42.4433, lng: 13.5575, avatar: "📸" },  // a circa 110m
-        { id: "user_luca", name: "Luca Trail", lat: 42.4425, lng: 13.5585, avatar: "🏃" },    // a circa 35m
-        { id: "user_giulia", name: "Giulia Esc", lat: 42.4421, lng: 13.5580, avatar: "🥾" }    // a circa 20m
-    ];
-
-    mockPeers.forEach(peer => {
-        // Calcola distanza in metri
-        const distance = calculateDistance(userCoords.lat, userCoords.lng, peer.lat, peer.lng);
-        
-        // Il radar copre un raggio di 100 metri
-        if (distance <= 100) {
-            // Calcola l'angolo in radianti (direzione rispetto all'utente)
-            const dLat = peer.lat - userCoords.lat;
-            const dLng = peer.lng - userCoords.lng;
-            const angle = Math.atan2(dLng, dLat); // Angolo polare
-
-            // Calcola posizione x, y nel cerchio radar (diametro 200px, raggio 100px)
-            // x = center_x + (distanza_normalizzata * raggio_pixel) * sin(angolo)
-            // y = center_y - (distanza_normalizzata * raggio_pixel) * cos(angolo) (y va in giù in CSS)
-            const normalizedDist = distance / 100; // da 0 a 1
-            const radarRadiusPx = 100;
-            
-            const x = 100 + (normalizedDist * radarRadiusPx * Math.sin(angle));
-            const y = 100 - (normalizedDist * radarRadiusPx * Math.cos(angle));
-
-            const dot = document.createElement("div");
-            dot.className = "radar-dot peer-node";
-            dot.style.left = `${x}px`;
-            dot.style.top = `${y}px`;
-            
-            dot.setAttribute("title", `${peer.name} (${Math.round(distance)}m)`);
-            
-            // Aggiunge un tooltip sul radar
-            dot.addEventListener("mouseover", () => {
-                dot.style.transform = "translate(-50%, -50%) scale(1.5)";
-            });
-            dot.addEventListener("mouseout", () => {
-                dot.style.transform = "translate(-50%, -50%) scale(1)";
-            });
-
-            radarPeersContainer.appendChild(dot);
-        }
-    });
-}
-
-// Invia un pacchetto chat/SOS sulla rete mesh locale
+// Invia un pacchetto chat/SOS ai co-partecipanti dell'escursione (via server, sempre -
+// mai stata una rete locale: vedi index.html per il testo corretto il 46a).
 function sendMeshChatMessage(isSos) {
     const input = document.getElementById("mesh-input-msg");
     // Testo auto SOS: trasmesso via WebSocket agli altri client e mostrato come
@@ -796,9 +808,18 @@ function sendMeshChatMessage(isSos) {
     // lingua di chi l'ha inviato (stesso principio delle notifiche scritte una
     // volta sola dal server, es. l'esito di una richiesta di partecipazione).
     let text = isSos ? (T('safety.mesh.sosText') || "SOS! RICHIESTA ASSISTENZA IMMEDIATA / INCIDENTE SUL SENTIERO!") : input.value;
-    
+
     if (!text && !isSos) return;
     if (input) input.value = "";
+
+    // ALTO (verifica generale, blocco 3, 45a sessione) e corretto qui (46a): la posizione
+    // mandata era SEMPRE window.userSimulatedLocation - il segnaposto trascinabile della
+    // Mappa (default Campo Imperatore quando non lo si e' mai toccato), non la posizione
+    // vera. Stessa fonte gia' corretta per l'SOS (chiamaSos): CamoscioGeo.ultimaPosizione().
+    // Un SOS manda SEMPRE la posizione se c'e' (l'emergenza vince su qualunque preferenza);
+    // un messaggio normale solo se l'utente non ha tolto la spunta di condivisione.
+    const p = window.CamoscioGeo && window.CamoscioGeo.ultimaPosizione();
+    const includiPosizione = isSos || condividePosizioneInChat();
 
     const db = window.CamoscioState;
     const packet = {
@@ -806,8 +827,8 @@ function sendMeshChatMessage(isSos) {
         senderId: db.currentUser.id,
         senderName: db.currentUser.username,
         text: text,
-        lat: window.userSimulatedLocation.lat,
-        lng: window.userSimulatedLocation.lng,
+        lat: (includiPosizione && p) ? p.lat : null,
+        lng: (includiPosizione && p) ? p.lng : null,
         isSos: isSos,
         timestamp: new Date().toLocaleTimeString()
     };
@@ -825,28 +846,16 @@ function sendMeshChatMessage(isSos) {
 function handleMeshMessageReceived(packet) {
     if (!packet || packet.type !== "mesh_packet") return;
 
-    // R-4 (ri-review sicurezza, 3° giro): un SOS senza coordinate valide NON deve sparire.
-    // packet.lat/lng possono essere null (il server li azzera se il mittente non ha mandato
-    // numeri validi, vedi server.js): calculateDistance(null, ...) calcola la distanza da
-    // (0°,0°), sempre > 100, e il pacchetto non veniva mai mostrato. Il filtro dei 100 m e'
-    // un aiuto di visualizzazione ("la mesh ha raggio ~100 m"), NON un controllo di sicurezza:
-    // quello lo fa il server, che instrada solo ai co-partecipanti. Quindi: un SOS si mostra
-    // sempre; un messaggio senza posizione (mia o sua) non e' filtrabile e si mostra; il
-    // raggio si applica solo ai messaggi normali con coordinate vere da entrambe le parti.
-    const mia = window.userSimulatedLocation;
-    const haPosPacchetto = typeof packet.lat === 'number' && typeof packet.lng === 'number';
-    const haPosMia = mia && typeof mia.lat === 'number' && typeof mia.lng === 'number';
-
-    if (packet.isSos || !haPosPacchetto || !haPosMia) {
-        displayMeshMessage(packet, false);
-        return;
-    }
-
-    // La rete mesh offline locale ha raggio massimo di 100m
-    const distance = calculateDistance(mia.lat, mia.lng, packet.lat, packet.lng);
-    if (distance <= 100) {
-        displayMeshMessage(packet, false);
-    }
+    // ALTO (verifica generale, blocco 3, 45a sessione) e corretto qui (46a): c'era un
+    // filtro "raggio 100m" che nascondeva un messaggio se la distanza (calcolata contro
+    // window.userSimulatedLocation, il segnaposto trascinabile) superava quella soglia -
+    // un residuo della finta rete locale, mai un controllo di sicurezza vero (quello lo fa
+    // gia' il server, che instrada solo ai co-partecipanti dell'escursione, vedi
+    // server.js). Con la posizione ora vera (CamoscioGeo, sopra) due compagni sulla stessa
+    // escursione sono spesso a piu' di 100m l'uno dall'altro anche solo perche' non stanno
+    // guardando il telefono nello stesso istante: quel filtro avrebbe reso la chat quasi
+    // inutile invece di onesta. Ogni messaggio da un co-partecipante si mostra sempre.
+    displayMeshMessage(packet, false);
 }
 
 // Stampa i messaggi mesh a schermo
@@ -887,23 +896,6 @@ function displayMeshMessage(packet, isSentByMe) {
 // Helper di renderizzazione generale
 function renderSafetyModule() {
     aggiornaStatoTimer();
-    renderRadarScreen(window.userSimulatedLocation);
-}
-
-// Calcolo distanza (Haversine) locale
-function calculateDistance(lat1, lon1, lat2, lon2) {
-    const R = 6371e3;
-    const φ1 = lat1 * Math.PI/180;
-    const φ2 = lat2 * Math.PI/180;
-    const Δφ = (lat2-lat1) * Math.PI/180;
-    const Δλ = (lon2-lon1) * Math.PI/180;
-
-    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-              Math.cos(φ1) * Math.cos(φ2) *
-              Math.sin(Δλ/2) * Math.sin(Δλ/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-
-    return R * c;
 }
 
 // Cambio lingua (punto 102, quarto lotto): due pezzi di interfaccia di questo
@@ -934,7 +926,8 @@ if (window.CamoscioI18n && window.CamoscioI18n.onChange) {
     });
 }
 
-window.initSafetyModule = initSafetyModule;
+window.setupSafetyEvents = setupSafetyEvents;
+window.renderSafetyDati = renderSafetyDati;
+window.initMeshWebSocket = initMeshWebSocket;
 window.renderSafetyModule = renderSafetyModule;
-window.updateRadarPosition = updateRadarPosition;
 window.aggiornaStatoTimer = aggiornaStatoTimer;

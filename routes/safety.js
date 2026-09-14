@@ -164,7 +164,12 @@ async function gestisciScadenza(user) {
                 posizioneTesto,
                 altriContatti
             });
-            const ok = await inviaEmail({ a: contatto.email, oggetto, testo, html });
+            // ALTO (verifica generale, blocco 2, 44a sessione) e corretto qui (46a):
+            // richiedeLinkFunzionante:false - questa email non contiene nessun link, quindi
+            // non deve dipendere da APP_BASE_URL (che serve solo a costruirne uno). Prima un
+            // APP_BASE_URL rotto in produzione faceva tacere silenziosamente l'unico avviso
+            // di sicurezza del sito. Vedi lib/mailer.js.
+            const ok = await inviaEmail({ a: contatto.email, oggetto, testo, html, richiedeLinkFunzionante: false });
             (ok ? inviati : falliti).push(contatto.name);
         }
 
