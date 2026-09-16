@@ -62,8 +62,10 @@ async function loginDemo(userId) {
 
 // GPX vero: ~60 punti sul Gran Sasso, 1 punto/min, con 15 min di sosta in mezzo. Il
 // tracciato zigzaga (Math.sin/cos) cosi' abbastanza punti sopravvivono a simplifyTrack.
-function gpx(nome, giornoIso) {
-    const t0 = new Date(giornoIso + 'T06:00:00Z').getTime();
+// oraIso (default 06:00:00, lontana da mezzanotte): il fix UTC-vs-Europe/Rome (48a
+// sessione) lo verifica passando un orario fra le 22:00 e le 24:00, vedi sez. 7c.
+function gpx(nome, giornoIso, oraIso = '06:00:00') {
+    const t0 = new Date(giornoIso + 'T' + oraIso + 'Z').getTime();
     let lat = 42.4686, lng = 13.5644, alt = 1800;
     const pts = [];
     for (let i = 0; i < 60; i++) {
@@ -301,6 +303,32 @@ function gpxSenzaNome(giornoIso) {
             JSON.stringify(u7b.corpo && u7b.corpo.badge));
         ok('7b  sempre 1 solo timbro (nessun doppione)',
             await stamps.countDocuments({ userId: oid(idA), stampId: stampProva }) === 1);
+
+        // 7c - Fix UTC-vs-Europe/Rome (48a sessione): il PRIMO punto della traccia (quello
+        // che diventa "inizio", lib/gpx.js) e' alle 23:30 UTC del 2 agosto = 01:30 del 3
+        // agosto a Roma (CEST, +2h). Il vecchio dataUscita.toISOString().split('T')[0]
+        // avrebbe datato il timbro 2026-08-02 (il giorno UTC, sbagliato); dataRomaISO()
+        // deve dare 2026-08-03 (il giorno vero a Roma). Vetta di prova diversa da quella
+        // della 7, stesso motivo: non deve gia' averla nessun account reale.
+        const stampProva7c = MARCA + '-cima-mezzanotte';
+        const h7c = await hikes.insertOne({
+            title: MARCA + ' cima notturna', description: 'x', difficulty: 'Esperto', date: '2026-08-02',
+            creatorId: oid(idA), participants: [oid(idA)], pendingApproval: [],
+            distanceKm: 10, elevationGain: 900, maxAltitude: 2912,
+            location: { type: 'Point', coordinates: [13.5644, 42.4686] },
+            trailhead: { lat: 42.4686, lng: 13.5644, name: MARCA },
+            peaks: [{ stampId: stampProva7c, name: MARCA + ' Cima notturna', lat: 42.4686, lng: 13.5644 }]
+        });
+        hikeIdsCreati.push(h7c.insertedId);
+        const c7c = await comps.insertOne({ userId: oid(idA), hikeId: h7c.insertedId, dateCompleted: new Date('2026-08-03') });
+        const CID7c = c7c.insertedId.toString();
+
+        const u7c = await chiama('POST', `/api/completions/${CID7c}/gpx`, { gpxText: gpx(MARCA + '-cima-notte', '2026-08-02', '23:30:00') }, cookieA);
+        ok('7c  POST /:id/gpx (traccia iniziata a ridosso di mezzanotte) -> 200',
+            u7c.status === 200, JSON.stringify(u7c.corpo && u7c.corpo.error));
+        ok('7c  il timbro e\' datato 2026-08-03 (giorno a ROMA), non 2026-08-02 (giorno UTC)',
+            await stamps.countDocuments({ userId: oid(idA), stampId: stampProva7c, dateUnlocked: '2026-08-03' }) === 1,
+            JSON.stringify(await stamps.findOne({ userId: oid(idA), stampId: stampProva7c })));
 
         // === 8. Il ⬆ del CREATORE aggiorna i numeri condivisi della Hike; quello di un
         //        partecipante NON creatore no (2026-09-06) ===

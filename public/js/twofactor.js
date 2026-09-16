@@ -27,6 +27,13 @@
     let segretoInAttesa = null;
     // Gli ultimi 10 codici di recupero mostrati (per Copia / Scarica). Mai riletti dal server.
     let codiciCorrenti = [];
+    // La finestra dell'ultima stampa aperta, per poterla chiudere subito se si stampa di
+    // nuovo o si preme "Ho finito" prima che si chiuda da sola (vedi stampa()/mostraCodici()).
+    let finestraStampa = null;
+    // Tetto unico per la chiusura automatica della finestra di stampa - usato in DUE realm
+    // diversi (dentro la finestra stessa e lato opener, vedi stampa()): un solo posto dove
+    // cambiarlo, cosi' le due reti non possono divergere in silenzio.
+    const MS_CHIUSURA_STAMPA = 3 * 60 * 1000;
 
     function mostraSolo(idVisibile) {
         // Se i codici di recupero erano visibili e si passa a un altro stato, si svuotano
@@ -269,6 +276,13 @@
     }
 
     function mostraCodici(codici) {
+        // Chiude un'eventuale finestra di stampa aperta in precedenza: i codici mostrati
+        // stanno per cambiare (nuovi codici da "Genera nuovi codici", o svuotati da "Ho
+        // finito"), quindi quella finestra mostrerebbe dati non più validi. Sicuro qui: i
+        // tre chiamanti sono tutti click espliciti, mai visibilitychange (che rischierebbe
+        // di chiuderla a metà del dialogo di stampa nativo - vedi il commento in stampa()).
+        if (finestraStampa && !finestraStampa.closed) finestraStampa.close();
+        finestraStampa = null;
         codiciCorrenti = Array.isArray(codici) ? codici : [];
         const ol = $('tfa-codici-lista');
         if (ol) ol.innerHTML = codiciCorrenti.map(c => `<li>${window.escapeHtml ? window.escapeHtml(c) : c}</li>`).join('');
@@ -280,7 +294,7 @@
     }
 
     async function chiudiCodici() {
-        mostraCodici([]);           // svuota (non li rileggeremo mai)
+        mostraCodici([]);           // svuota (non li rileggeremo mai) - chiude anche una finestra di stampa aperta
         if (window.refreshState) await window.refreshState();
         renderTwoFactorCard(window.CamoscioState && window.CamoscioState.currentUser);
     }
@@ -407,16 +421,35 @@
         }
     }
     function stampa() {
+        if (finestraStampa && !finestraStampa.closed) finestraStampa.close(); // un click ripetuto non lascia finestre orfane
         const w = window.open('', '_blank');
         if (!w) { window.showToast(T('settings.2faStampaBloccata') || 'La stampa è stata bloccata dal browser.', 'error'); return; }
+        finestraStampa = w;
         const righe = codiciCorrenti.map(c => `<li>${c}</li>`).join('');
         w.document.write(`<!doctype html><meta charset="utf-8"><title>Codici di recupero Camoscio</title>`
             + `<style>body{font-family:monospace;font-size:16px;padding:24px}li{line-height:2.2;letter-spacing:.08em}</style>`
             + `<h3>Codici di recupero Camoscio</h3>`
-            + `<p>Ognuno funziona una volta sola, al posto del codice dell'app.</p><ol>${righe}</ol>`);
+            + `<p>Ognuno funziona una volta sola, al posto del codice dell'app.</p><ol>${righe}</ol>`
+            // Chiusura ancorata a QUESTO documento (script inline), non alla pagina
+            // principale: un setTimeout dell'opener muore se il tab Camoscio viene chiuso,
+            // ricaricato o scaricato dal sistema (comune su mobile) - i codici resterebbero
+            // a schermo per sempre, il bug esatto che questo fix chiude (revisione blocco 3,
+            // MEDIO). Il visibilitychange su #tfa-codici (42a) non basta: e' sulla pagina
+            // principale, non su questa finestra separata.
+            + `<script>addEventListener('afterprint',function(){window.close()});`
+            + `setTimeout(function(){window.close()},${MS_CHIUSURA_STAMPA});<\/script>`);
         w.document.close();
-        w.focus();
-        w.print();
+        // Seconda rete lato opener (costa una riga): copre il caso opposto, la finestra di
+        // stampa mandata in background e rallentata dal browser mentre l'opener resta vivo.
+        setTimeout(() => { if (!w.closed) w.close(); }, MS_CHIUSURA_STAMPA);
+        try { w.focus(); } catch { /* fuoco negato: la finestra resta comunque stampabile */ }
+        try {
+            w.print();
+        } catch {
+            w.close();
+            finestraStampa = null;
+            window.showToast(T('settings.2faStampaBloccata') || 'La stampa è stata bloccata dal browser.', 'error');
+        }
     }
 
     // ---- Aggancio eventi (una volta sola) -----------------------------------

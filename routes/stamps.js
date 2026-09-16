@@ -5,6 +5,7 @@ const ActiveHikeSession = require('../models/ActiveHikeSession');
 const { requireAuth } = require('../middleware/auth');
 // Stessa soglia e stesso catalogo dell'import .gpx e del conteggio salite (punto 108).
 const { puntiTimbrabili, tracciaToccaPunto } = require('../lib/geofenceTimbri');
+const { oggiRomaISO } = require('../lib/accountDeletion'); // "YYYY-MM-DD" in Europe/Rome, non UTC
 
 // Ottieni timbri di un utente (achievement pubblici tra utenti loggati)
 router.get('/:userId', requireAuth, async (req, res) => {
@@ -55,7 +56,7 @@ router.post('/', requireAuth, async (req, res) => {
             });
         }
 
-        await Stamp.create({ userId, stampId, dateUnlocked: new Date().toISOString().split('T')[0] });
+        await Stamp.create({ userId, stampId, dateUnlocked: oggiRomaISO() });
         res.json({ success: true });
     } catch (e) {
         if (e.code === 11000) {

@@ -994,6 +994,11 @@ function updateMapRecordButton() {
     if (routeSelect) routeSelect.disabled = recording;
     const btnDownload = document.getElementById('btn-tracking-download-map');
     if (btnDownload) btnDownload.disabled = recording;
+    // Revisione 51a (ALTO-1): mancava qui - un tocco durante la registrazione poteva
+    // cancellare proprio la mappa offline su cui si sta camminando in quel momento, senza
+    // rete per riscaricarla.
+    const btnLiberaSpazio = document.getElementById('btn-tracking-libera-spazio');
+    if (btnLiberaSpazio && !downloadOfflineInCorso) btnLiberaSpazio.disabled = recording;
 
     if (window.updateRecenterButton) window.updateRecenterButton();
 }
@@ -1320,6 +1325,14 @@ function resetToIdleUi() {
 
 // --- Mappa offline ---
 
+// Revisione 51a (ALTO-2): guardia contro un download e una cancellazione "Libera spazio"
+// in corso insieme - IndexedDB non si corrompe (transazioni separate), ma senza questa
+// guardia una cancellazione a meta' download lascerebbe una mappa bucata mentre il toast
+// finale continua a dire "N/N tile salvate" (conta le tile scaricate, non quelle rimaste
+// nel DB), e potrebbe cancellare proprio le tile che il download aveva appena trovato
+// gia' in cache e protetto (idbEnsureTileExplicit) senza un secondo giro per riscaricarle.
+let downloadOfflineInCorso = false;
+
 async function handleDownloadOfflineMap() {
     if (!window.getHikeBounds || !window.estimateOfflineDownloadSize || !window.downloadOfflineMapForBounds) {
         window.showToast(T('track.mappaOfflineNonDisp') || "Funzione mappa offline non disponibile in questo momento.", "error");
@@ -1367,9 +1380,12 @@ async function handleDownloadOfflineMap() {
     const progressFill = document.getElementById('tracking-download-progress-fill');
     const progressLabel = document.getElementById('tracking-download-progress-label');
     const btn = document.getElementById('btn-tracking-download-map');
+    const btnLiberaSpazio = document.getElementById('btn-tracking-libera-spazio');
 
     if (progressBox) progressBox.classList.remove('hidden');
     if (btn) btn.disabled = true;
+    downloadOfflineInCorso = true;
+    if (btnLiberaSpazio) btnLiberaSpazio.disabled = true;
 
     try {
         const result = await window.downloadOfflineMapForBounds(bounds, (done, total, failed) => {
@@ -1387,7 +1403,83 @@ async function handleDownloadOfflineMap() {
         window.showToast(T('track.erroreDownloadMappa') || "Errore durante il download della mappa offline.", "error");
     } finally {
         if (btn) btn.disabled = false;
+        downloadOfflineInCorso = false;
+        // MEDIO-2 (revisione 51a): spostato dal solo ramo di successo - un download caduto a
+        // meta' (rete che salta) puo' aver gia' salvato centinaia di tile esplicite, proprio
+        // il caso in cui il riquadro "Libera spazio" serve di piu'.
+        refreshLiberaSpazioOfflineUi();
+        updateMapRecordButton(); // riallinea btnLiberaSpazio: resta bloccato se nel frattempo e' partita una registrazione
         if (progressBox) setTimeout(() => progressBox.classList.add('hidden'), 3000);
+    }
+}
+
+// Comando manuale "Libera spazio" (51a sessione, decisione di Denis dopo la chiusura del
+// punto cache-tile della 50a): il tetto per singolo download (MAX_TILE_OFFLINE,
+// offline-map.js) non impedisce che PIU' download nel tempo si sommino senza limite - le
+// mappe scaricate apposta sono immuni PER SCELTA dalla pulizia automatica
+// (idbEnforceAmbientTileCap, idb.js), quindi senza un modo per liberarle a mano l'unica
+// via era svuotare tutti i dati del sito. Scartata una scadenza automatica legata alla
+// data dell'escursione: il download e' possibile anche senza un'escursione collegata
+// (area mappa visibile, vedi sopra), quindi una parte dei casi resterebbe comunque
+// scoperta - un comando manuale copre invece ogni caso allo stesso modo.
+async function refreshLiberaSpazioOfflineUi() {
+    const box = document.getElementById('tracking-libera-spazio-box');
+    const label = document.getElementById('tracking-libera-spazio-label');
+    if (!box || !label || !window.idbInspectExplicitTiles) return;
+    try {
+        const { count, bytes } = await window.idbInspectExplicitTiles();
+        if (count === 0) {
+            box.classList.add('hidden');
+            return;
+        }
+        // BASSO-1 (revisione 51a): con poche tile l'arrotondamento a un decimale dava
+        // "circa 0 MB" - sotto mezzo MB si mostrano i KB invece dei MB.
+        const mb = Math.round((bytes / 1024 / 1024) * 10) / 10;
+        const dimensione = mb >= 0.5 ? `${mb} MB` : `${Math.round(bytes / 1024)} KB`;
+        label.textContent = T('track.spazioMappeOfflineOccupato', count, dimensione) || `Mappe offline scaricate: circa ${dimensione} (${count} tile) su questo dispositivo.`;
+        box.classList.remove('hidden');
+    } catch (e) {
+        console.error("Errore lettura spazio mappe offline:", e);
+    }
+}
+
+async function handleLiberaSpazioOffline() {
+    if (!window.idbClearExplicitTiles) return;
+    // ALTO-2 (revisione 51a): un download esplicito in corso non deve correre contro la
+    // cancellazione - lascerebbe una mappa bucata (il toast del download conta le tile
+    // scaricate, non quelle rimaste nel DB) e potrebbe far sparire proprio le tile che il
+    // download aveva trovato gia' in cache e protetto, senza un secondo giro per riscaricarle.
+    if (downloadOfflineInCorso) {
+        window.showToast(T('track.attendiFineDownload') || "Aspetta la fine del download della mappa offline prima di liberare spazio.", "error");
+        return;
+    }
+    const confirmed = await window.showConfirmModal(
+        T('track.confermaLiberaSpazio') ||
+        "Verranno cancellate TUTTE le mappe offline scaricate finora su questo dispositivo, per ogni escursione (non solo le più vecchie). Se ti servono ancora per un'escursione futura dovrai riscaricarle. Continuare?",
+        T('track.liberaSpazioConferma') || 'Libera spazio',
+        { cancelLabel: T('common.cancella') || 'Annulla', danger: true }
+    );
+    if (!confirmed) return;
+    // Ricontrollo dopo la conferma: la finestra modale resta aperta un tempo indefinito
+    // (l'utente decide quando rispondere) e un download puo' essere partito nel frattempo.
+    if (downloadOfflineInCorso) {
+        window.showToast(T('track.attendiFineDownload') || "Aspetta la fine del download della mappa offline prima di liberare spazio.", "error");
+        return;
+    }
+
+    const btn = document.getElementById('btn-tracking-libera-spazio');
+    if (btn) btn.disabled = true;
+    try {
+        const deleted = await window.idbClearExplicitTiles();
+        window.showToast(T('track.spazioLiberato', deleted) || `Spazio liberato: ${deleted} tile cancellate.`, "success");
+    } catch (e) {
+        console.error("Errore liberazione spazio mappe offline:", e);
+        window.showToast(T('track.erroreLiberaSpazio') || "Errore durante la liberazione dello spazio.", "error");
+    } finally {
+        // ALTO-1 (revisione 51a): non riabilitare a mano - se una registrazione e' partita
+        // nel frattempo il bottone deve restare bloccato, non tornare cliccabile per forza.
+        updateMapRecordButton();
+        refreshLiberaSpazioOfflineUi();
     }
 }
 
@@ -1599,6 +1691,14 @@ function setupTrackingEvents() {
     if (btnDownload) btnDownload.addEventListener('click', handleDownloadOfflineMap);
     if (btnSummaryClose) btnSummaryClose.addEventListener('click', resetToIdleUi);
 
+    const btnLiberaSpazio = document.getElementById('btn-tracking-libera-spazio');
+    if (btnLiberaSpazio) btnLiberaSpazio.addEventListener('click', handleLiberaSpazioOffline);
+    // MEDIO-5 (revisione 51a): il primo render sta in app.js insieme agli altri render di
+    // questo pannello (renderHikeSelectOptions/renderRouteToFollowOptions/
+    // toggleGeoConsentAlert, tutti dentro case "map-section") - qui girerebbe una sola
+    // volta per TUTTI i caricamenti di pagina, anche per chi non apre mai la sezione Mappa,
+    // e pagherebbe comunque la scansione dello store 'tiles' (vedi MEDIO-4, idb.js).
+
     // Punto 113 passo 9: cambiare "percorso da seguire" disegna/toglie la linea di
     // riferimento sulla mappa (nessun avviso di fuori-percorso - vincolo 7).
     const routeSelect = document.getElementById('tracking-route-select');
@@ -1672,6 +1772,10 @@ if (window.CamoscioI18n && window.CamoscioI18n.onChange) {
             // lingua vecchia insieme a "Nessuno". Il ri-fetch e' innocuo: e' un'azione rara
             // e voluta dall'utente, non il polling della chat.
             renderRouteToFollowOptions();
+            // MEDIO-3 (revisione 51a): mancava qui - dopo un cambio lingua l'etichetta del
+            // riquadro "Libera spazio" (scritta via T(), non data-i18n) restava nella lingua
+            // vecchia mentre il bottone sotto (data-i18n) cambiava, mix delle due lingue.
+            refreshLiberaSpazioOfflineUi();
         }
 
         if (trackingState.status === 'active' || trackingState.status === 'paused') {

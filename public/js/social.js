@@ -177,7 +177,7 @@ window.apriModaleNuovaEscursione = function() {
     modal.classList.remove('hidden');
     window.apriModaleStorico('create-hike-modal', chiudiCreateHikeModal);
     // Data minima a oggi.
-    document.getElementById('hike-date').min = new Date().toISOString().split('T')[0];
+    document.getElementById('hike-date').min = dataISORoma();
     // Punto 8: form.reset() non basta a ripulire il punto di ritrovo scelto,
     // perche' nome/coordinate/avvisi stanno anche fuori dai campi del modulo.
     if (window.resetTrailheadPicker) window.resetTrailheadPicker();
@@ -586,24 +586,17 @@ function classificaMieEscursioni(lista) {
     return { create, partecipo, fatte, invitato };
 }
 
-// "YYYY-MM-DD" di oggi in ora locale (il browser sta in Italia). Componenti locali, MAI
-// toISOString() che passa a UTC e vicino a mezzanotte sposta il giorno - stessa cautela
-// gia' presa nel tasto "Completa escursione" (buildHikeCard) e nel promemoria server-side.
-function oggiLocaleISO() {
-    const o = new Date();
-    return `${o.getFullYear()}-${String(o.getMonth() + 1).padStart(2, '0')}-${String(o.getDate()).padStart(2, '0')}`;
-}
-
 // L'escursione ha una data prevista e quel giorno E' GIA' FINITO (confronto STRETTO: il
 // giorno stesso e' ancora buono, si chiude da quello dopo). Decisione di Denis
 // (02/09/2026): "oltre quel giorno non si possono piu' accettare partecipazioni" - niente
 // auto-iscrizioni, richieste, inviti squadra ne' aggiunte a mano. Confronto fra stringhe
 // di calendario "YYYY-MM-DD", MAI new Date(a) < new Date(b): la trappola del punto 58 e'
 // una data senza ora confrontata con un istante, che mente a favore del passato dalla
-// mezzanotte. Il server ripete lo stesso controllo (routes/hikes.js, oggiRomaISO) - qui e'
-// solo per non offrire un'azione che verrebbe respinta.
+// mezzanotte. dataISORoma() (app.js) forza Europe/Rome invece delle sole componenti
+// locali del dispositivo: su un telefono con fuso diverso il vecchio confronto poteva
+// disaccordarsi col server, che usa lo stesso fuso fisso (routes/hikes.js, oggiRomaISO).
 function escursioneNonPiuAperta(hike) {
-    return !!(hike && hike.date && hike.date < oggiLocaleISO());
+    return !!(hike && hike.date && hike.date < dataISORoma());
 }
 window.escursioneNonPiuAperta = escursioneNonPiuAperta;
 
@@ -791,6 +784,13 @@ function buildHikeCard(hike) {
     const tempoHtml = hike.routeSource
         ? (() => {
             const tempi = calculateHikeTimes(hike, currentUser);
+            // dislivello/distanza possono mancare su una Hike vecchia anche quando un
+            // percorso reale e' collegato (models/Hike.js, campi opzionali): calculateHikeTimes
+            // torna null invece di "NaNh NaNm" in quel caso (MEDIO formula CAI) - qui si mostra
+            // un messaggio, non il buco silenzioso che c'era prima.
+            if (tempi.standardText === null) {
+                return `<p class="small text-muted rp-nota-dislivello"><i data-lucide="info"></i><span>${escapeHtml(T('hikeCard.tempoDatiMancanti') || 'Tempo previsto non disponibile: mancano dislivello o distanza per questo percorso.')}</span></p>`;
+            }
             // "sul tuo passo" si scrive SOLO se un passo misurato esiste davvero. Senza
             // misure il calcolo usa un'ipotesi di partenza (350 m/h, vedi calculateHikeTimes):
             // stamparla accanto alla parola "tuo" e' lo stesso difetto trovato da Denis sulla
@@ -827,16 +827,23 @@ function buildHikeCard(hike) {
     const miaCompletion = db.completions.find(c => c.hikeId === hike.id);
     let tempoRealeHtml = "";
     if (miaCompletion && miaCompletion.movingTimeHours) {
-        const tVertStandard = hike.elevationGain / 400;
-        const tFlatStandard = hike.distanceKm / 4;
-        const caiOre = Math.max(tVertStandard, tFlatStandard) + Math.min(tVertStandard, tFlatStandard) / 2;
+        // dislivello/distanza possono mancare su una Hike vecchia (models/Hike.js, campi
+        // opzionali): window.oreCai() (l'UNICA formula, mai una copia a mano - MEDIO della
+        // verifica generale, era triplicata e gia' divergente) darebbe NaN propagato fino a
+        // schermo ("NaNh NaNm"). Si omette la clausola CAI invece di mostrare un numero che
+        // sembra una misura e non lo e' - stesso principio di passoDaOre in cai-tempi.js.
+        const datiCaiValidi = Number.isFinite(hike.elevationGain) && Number.isFinite(hike.distanceKm);
+        const caiOre = datiCaiValidi ? window.oreCai(hike.elevationGain, hike.distanceKm) : null;
         const pauseOre = miaCompletion.actualTimeHours
             ? Math.max(0, miaCompletion.actualTimeHours - miaCompletion.movingTimeHours)
             : 0;
         const pausaText = pauseOre > (1 / 60) // sotto il minuto non si scrive, formatHoursToMin arrotonderebbe a "0h 0m"
             ? (T('profile.diPause', window.formatHoursToMin(pauseOre)) || ` (+ ${window.formatHoursToMin(pauseOre)} di pause)`)
             : "";
-        tempoRealeHtml = `<p class="small text-muted rp-nota-dislivello"><i data-lucide="footprints"></i><span>${escapeHtml(T('hikeCard.tempoMisuratoLabel') || 'Il tuo tempo di cammino misurato:')} <b>${window.formatHoursToMin(miaCompletion.movingTimeHours)}</b>${pausaText} · ${escapeHtml(T('hikeCard.caiPercorsoLabel') || 'CAI per questo percorso:')} <b>${window.formatHoursToMin(caiOre)}</b>.</span></p>`;
+        const caiText = caiOre !== null
+            ? ` · ${escapeHtml(T('hikeCard.caiPercorsoLabel') || 'CAI per questo percorso:')} <b>${window.formatHoursToMin(caiOre)}</b>`
+            : "";
+        tempoRealeHtml = `<p class="small text-muted rp-nota-dislivello"><i data-lucide="footprints"></i><span>${escapeHtml(T('hikeCard.tempoMisuratoLabel') || 'Il tuo tempo di cammino misurato:')} <b>${window.formatHoursToMin(miaCompletion.movingTimeHours)}</b>${pausaText}${caiText}.</span></p>`;
     }
 
     // Punto 80/A: aggiungere un .gpx a un'escursione gia' completata, o cancellarla dallo
@@ -983,7 +990,7 @@ function buildHikeCard(hike) {
     // promemoria, per lasciare un margine prima di ricordarlo).
     let completeGroupBtnHtml = "";
     if (isCreatorMe) {
-        const oggiStr = oggiLocaleISO();
+        const oggiStr = dataISORoma();
         if (hike.groupCompletedAt) {
             completeGroupBtnHtml = `<span class="badge badge-green">${escapeHtml(T('hikeCard.completataGruppo') || 'Completata in gruppo ✓')}</span>`;
         } else if (hike.date <= oggiStr) {
@@ -1054,15 +1061,15 @@ function buildHikeCard(hike) {
             <div class="hike-meta-row">
                 <div class="hike-meta-item">
                     <span>${escapeHtml(T('hikeCard.dislivelloDLabel') || 'Dislivello D+')}</span>
-                    <strong>${hike.elevationGain}m</strong>
+                    <strong>${Number.isFinite(hike.elevationGain) ? hike.elevationGain + 'm' : '—'}</strong>
                 </div>
                 <div class="hike-meta-item">
                     <span>${escapeHtml(T('hikeCard.quotaMaxLabel') || 'Quota Max')}</span>
-                    <strong>${hike.maxAltitude}m</strong>
+                    <strong>${Number.isFinite(hike.maxAltitude) ? hike.maxAltitude + 'm' : '—'}</strong>
                 </div>
                 <div class="hike-meta-item">
                     <span>${escapeHtml(T('hikeCard.distanzaLabel') || 'Distanza')}</span>
-                    <strong>${hike.distanceKm} km</strong>
+                    <strong>${Number.isFinite(hike.distanceKm) ? hike.distanceKm + ' km' : '—'}</strong>
                 </div>
             </div>
 

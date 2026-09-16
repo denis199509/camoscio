@@ -242,7 +242,10 @@ function stagioneDaData(dataISO, altitudine) {
     if (Number.isNaN(d.getTime())) return "estate";
     const mese = d.getMonth() + 1;
 
-    const altaQuota = (altitudine || 0) >= 2000;
+    // Quota mancante: MAI trattata come "bassa" (era il difetto - il dato assente diventava
+    // silenziosamente una rassicurazione). Fra le due soglie possibili quando non si sa, si
+    // sceglie quella che protegge di piu': la finestra invernale piu' larga, mai quella stretta.
+    const altaQuota = !Number.isFinite(altitudine) || altitudine >= 2000;
     const mesiInvernali = altaQuota ? [11, 12, 1, 2, 3, 4] : [12, 1, 2];
 
     if (mesiInvernali.includes(mese)) return "inverno";
@@ -258,7 +261,7 @@ function stagioneDaData(dataISO, altitudine) {
 async function pioggiaPrevista(hike) {
     if (!hike || !hike.date || !hike.trailhead) return null;
 
-    const oggi = new Date().toISOString().slice(0, 10);
+    const oggi = dataISORoma();
     if (hike.date < oggi) return null; // gia' passata: la previsione non ha senso
 
     const giorniMancanti = (new Date(hike.date + 'T12:00:00') - new Date(oggi + 'T12:00:00')) / 86400000;
@@ -320,7 +323,12 @@ function aggiornaFormDaEscursione(stagione, altitudine, pioggia) {
     const campoQuota = document.getElementById("backpack-altitude");
     const campoPioggia = document.getElementById("backpack-rain-expected");
     if (campoStagione) campoStagione.value = stagione;
-    if (campoQuota && typeof altitudine === 'number') campoQuota.value = altitudine;
+    // Il campo dice "non lo so" come lo dice il badge: VUOTO, mai l'ultimo numero visto
+    // sull'escursione precedente (era il buco: passando a un'escursione senza quota il campo
+    // restava sul valore di prima, e "Genera Checklist Dinamica" lo rimandava dentro
+    // riportando la rassicurazione appena tolta). Campo vuoto -> parseInt('') -> NaN in
+    // generateChecklistFromInputs, che rientra correttamente nel ramo "quota ignota".
+    if (campoQuota) campoQuota.value = Number.isFinite(altitudine) ? altitudine : '';
     if (campoPioggia) campoPioggia.checked = !!pioggia;
 }
 
@@ -462,7 +470,14 @@ function mostraZainoConfermato(hikeId) {
 // hike puo' essere null: e' il caso dello zaino personale e delle scelte fatte a mano.
 function applyBackpackRules(season, altitude, duration, rainExpected, hike) {
     const db = window.CamoscioState;
-    const isHighAltitude = altitude >= 2500;
+    // La quota puo' mancare sull'escursione (models/Hike.js: campo opzionale, nessuna
+    // validazione lato server oltre l'input HTML) - "non so" non e' lo stesso di "bassa
+    // quota": un altitude undefined dava isHighAltitude=false, cioe' una rassicurazione
+    // silenziosa che toglieva ramponcini/guscio/guanti dallo zaino. Ora si distingue il caso
+    // "non lo so" (nessuna regola forzata, ma lo si dice - stesso principio gia' applicato
+    // alla pioggia ignota, vedi pioggiaPrevista) da quello, vero, di quota bassa.
+    const quotaNota = Number.isFinite(altitude);
+    const isHighAltitude = quotaNota && altitude >= 2500;
     const hikeId = (hike && hike.id) || 'generic';
 
     // Ultimi input di una render vera: l'onChange del cambio lingua li rigioca
@@ -486,7 +501,26 @@ function applyBackpackRules(season, altitude, duration, rainExpected, hike) {
     
     let alertMsg = [];
     
-    if (isHighAltitude) {
+    if (!quotaNota) {
+        rulesBadge.textContent = T('backpack.js.badgeQuotaIgnota') || "Quota non indicata";
+        rulesBadge.className = "badge badge-accent";
+
+        // Nessuna regola forzata in nessuna delle due direzioni: aggiungere gli obbligatori
+        // da alta quota su un dato assente sarebbe rumoroso su una gita in collina; aggiungere
+        // quelli da quota standard sarebbe di nuovo la stessa rassicurazione falsa che questo
+        // fix toglie. Si dice il "non lo so" e si dice DOVE correggerlo (il campo qui accanto,
+        // aggiornaFormDaEscursione lo tiene vuoto apposta) - non basta dire "controlla a mano"
+        // senza dire dove, il posto esiste ed e' a dieci centimetri.
+        alertMsg.push(T('backpack.js.alertQuotaIgnota') || "Quota massima non indicata: la lista non applica le regole sopra i 2500 m. Scrivi la quota qui accanto e rigenera la checklist.");
+        // I due fail-safe (qui neutro, stagioneDaData pessimista) vanno in direzioni diverse
+        // di proposito - ma da novembre ad aprile la stagione risulta comunque "inverno" con
+        // i suoi obbligatori (cramponi da ghiaccio, ghette, thermos, piumino): senza questa
+        // riga l'utente li vede spuntare senza sapere da dove escono, mentre l'alert qui sopra
+        // gli dice il contrario ("nessuna regola applicata").
+        if (season === 'inverno') {
+            alertMsg.push(T('backpack.js.alertQuotaIgnotaInverno') || "Senza la quota la stagione è trattata come invernale in via precauzionale: gli obbligatori da inverno restano.");
+        }
+    } else if (isHighAltitude) {
         rulesBadge.textContent = T('backpack.js.badgeAltaQuota') || "Quota > 2500m";
         rulesBadge.className = "badge badge-red";
 
@@ -735,7 +769,7 @@ function mostraEscursioneDiRiferimento(hike) {
     box.className = "backpack-context-box";
     box.innerHTML = `<strong>${T('backpack.js.zainoPerLabel') || 'Zaino per:'} ${escapeHtml(hike.title)}</strong>
         <span class="small">${hike.date ? new Date(hike.date + 'T12:00:00').toLocaleDateString(loc, { day: 'numeric', month: 'long', year: 'numeric' }) : (T('backpack.js.dataNonIndicata') || 'data non indicata')}
-        · ${T('backpack.js.quotaMassimaLabel') || 'quota massima'} ${hike.maxAltitude || '?'} m · ${mia ? (T('backpack.js.organizzataDaTe') || 'organizzata da te') : (T('backpack.js.aCuiPartecipi') || 'a cui partecipi')}${notaPiuGiorni}</span>
+        · ${T('backpack.js.quotaMassimaLabel') || 'quota massima'} ${Number.isFinite(hike.maxAltitude) ? hike.maxAltitude + ' m' : '—'} · ${mia ? (T('backpack.js.organizzataDaTe') || 'organizzata da te') : (T('backpack.js.aCuiPartecipi') || 'a cui partecipi')}${notaPiuGiorni}</span>
         <span class="small text-muted">${T('backpack.js.listaPrivata') || 'La tua lista è privata: gli altri partecipanti non vedono cosa porti.'}</span>`;
 }
 
@@ -748,7 +782,7 @@ function mostraNotaPioggia(pioggia, hike) {
     ultimaNotaPioggia = { visibile: true, pioggia: pioggia, hike: hike };
     box.classList.remove("hidden");
     if (pioggia === null) {
-        const troppoLontana = hike && hike.date && hike.date > new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10);
+        const troppoLontana = hike && hike.date && hike.date > dataISORoma(new Date(Date.now() + 14 * 86400000));
         box.textContent = troppoLontana
             ? (T('backpack.js.meteoTroppoLontano') || "Previsioni non ancora disponibili: mancano più di due settimane. Ricontrolla lo zaino nei giorni prima di partire.")
             : (T('backpack.js.meteoNonDisp') || "Previsioni meteo non disponibili per questa data: la lista non tiene conto della pioggia.");

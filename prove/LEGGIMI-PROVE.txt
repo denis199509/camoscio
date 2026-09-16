@@ -106,7 +106,10 @@ avviano un server loro (rispettivamente 3136 e 3137), punto77 pure (3104):
     reali temporanei creati dritti sul DB: contratto (/2fa/* e /login/2fa senza sessione ->
     401; demo -> 403; /setup idempotente), attivazione (/setup -> /enable -> 200 + 10
     codici; stato sul DB; /me senza segreto; D-4 email non confermata; /setup su attivo ->
-    409), login a due passi (GET /me -> 401 FRA i due passi = il controllo centrale del
+    409; BUCO DI TEST CHIUSO 47a: il ramo scartoMinuti di /2fa/enable - un codice non
+    derivabile da un passo vicino NON lo porta nel corpo della risposta, un codice di
+    qualche passo avanti si', positivo - prima veniva solo controllato lo status),
+    login a due passi (GET /me -> 401 FRA i due passi = il controllo centrale del
     piano), anti-riuso TOTP (CAS), codice di recupero monouso + normalizzazione, SEZ. 6b
     (revisione del cumulativo 42a, buco di test chiuso): rigenerazione dei codici di
     recupero (/2fa/recovery-codes) - password+codice giusti -> 200 con 10 codici nuovi e
@@ -444,7 +447,7 @@ La prova del FIX 30/08/2026 (punto 113): il .gpx aggiunto a un'escursione GIA' c
 pubblicabile nel feed. Segnalato da Denis: "Alba Corno Grande" chiedeva un .gpx gia'
 caricato.
 
-    node prove/prova-punto113-gpx.js                43 controlli  (ne avvia uno suo, sulla 3115)
+    node prove/prova-punto113-gpx.js                60 controlli  (ne avvia uno suo, sulla 3115)
 
     SETTE SEZIONI, un account demo. Un hike completato SENZA sessione collegata (come "Alba
     Corno Grande"), poi POST /api/completions/:id/gpx: 1) crea 1 ActiveHikeSession con
@@ -474,6 +477,12 @@ caricato.
     del 2026-08-31): il ⬆ non mette `badge` nella risposta. prova-punto108 (25/25 dopo
     l'hotfix Ju Busciu del 31/08 - vedi sotto) copre l'equivalenza matematica del
     refactor: la scansione non e' cambiata, e' solo cambiata di casa.
+    SEZ. 7c (48a sessione, fix UTC-vs-Europe/Rome): stessa vetta di prova ma la traccia
+    inizia alle 23:30 UTC - 01:30 a Roma il giorno DOPO (CEST, +2h). Verifica che il
+    timbro sia datato col giorno vero a Roma (dataRomaISO, lib/accountDeletion.js), non
+    col vecchio giorno UTC che il vecchio dataUscita.toISOString().split('T')[0] avrebbe
+    dato. gpx() accetta ora un terzo argomento oraIso (default '06:00:00', invariato per
+    tutte le altre sezioni).
 
     prova-punto108.js - AGGIORNATA il 31/08/2026 (hotfix `efd1290` su master, campo
     `sogliaM` per-punto, Ju Busciu a 10 m): sez. 1 ha un controllo in piu' (25 totali) -

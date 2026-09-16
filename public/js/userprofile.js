@@ -234,9 +234,13 @@ function schedaEscursioneCompletata(hike, completion, { azioniHtml = '', nomeUsc
     // scheda resta consultabile nel tempo anche dopo che l'escursione e' sparita dalle liste.
     let tempoRealeHtml = '';
     if (completion && completion.movingTimeHours) {
-        const tVertStandard = (hike.elevationGain || 0) / 400;
-        const tFlatStandard = (hike.distanceKm || 0) / 4;
-        const caiOre = Math.max(tVertStandard, tFlatStandard) + Math.min(tVertStandard, tFlatStandard) / 2;
+        // Stessa correzione di social.js/buildHikeCard: window.oreCai() (l'UNICA formula,
+        // non una copia a mano - era triplicata e gia' divergente) invece del "|| 0" che
+        // mostrava silenziosamente "0h 0m" quando dislivello/distanza mancano su una Hike
+        // vecchia (models/Hike.js, campi opzionali) - un valore che sembra una misura e non
+        // lo e', la stessa bugia che passoDaOre in cai-tempi.js evita apposta.
+        const datiCaiValidi = Number.isFinite(hike.elevationGain) && Number.isFinite(hike.distanceKm);
+        const caiOre = datiCaiValidi ? window.oreCai(hike.elevationGain, hike.distanceKm) : null;
         const pauseOre = completion.actualTimeHours
             ? Math.max(0, completion.actualTimeHours - completion.movingTimeHours)
             : 0;
@@ -244,7 +248,8 @@ function schedaEscursioneCompletata(hike, completion, { azioniHtml = '', nomeUsc
             ? (T('profile.diPause', window.formatHoursToMin(pauseOre)) || ` (+ ${window.formatHoursToMin(pauseOre)} di pause)`)
             : '';
         const camminoLabel = esc(T('profile.cammino') || 'Cammino');
-        tempoRealeHtml = `<p class="small text-muted rp-nota-dislivello"><i data-lucide="footprints"></i><span>${camminoLabel}: <b>${window.formatHoursToMin(completion.movingTimeHours)}</b>${pausaText} · CAI: <b>${window.formatHoursToMin(caiOre)}</b></span></p>`;
+        const caiText = caiOre !== null ? ` · CAI: <b>${window.formatHoursToMin(caiOre)}</b>` : '';
+        tempoRealeHtml = `<p class="small text-muted rp-nota-dislivello"><i data-lucide="footprints"></i><span>${camminoLabel}: <b>${window.formatHoursToMin(completion.movingTimeHours)}</b>${pausaText}${caiText}</span></p>`;
     }
 
     // Titolo su una riga TUTTA sua, fuori da .outing-card-head: quella e' una riga flex
@@ -263,9 +268,9 @@ function schedaEscursioneCompletata(hike, completion, { azioniHtml = '', nomeUsc
             </div>
             <span class="outing-card-sub">${rigaData}</span>
             <div class="outing-card-stats">
-                <div><strong>${formattaDecimale(hike.distanceKm)}</strong><span>km</span></div>
-                <div><strong>${Math.round(hike.elevationGain || 0)}</strong><span>${esc(T('profile.mDisliv') || 'm disliv.')}</span></div>
-                <div><strong>${Math.round(hike.maxAltitude || 0)}</strong><span>${esc(T('profile.quotaMax') || 'quota max')}</span></div>
+                <div><strong>${Number.isFinite(hike.distanceKm) ? formattaDecimale(hike.distanceKm) : '—'}</strong><span>km</span></div>
+                <div><strong>${Number.isFinite(hike.elevationGain) ? Math.round(hike.elevationGain) : '—'}</strong><span>${esc(T('profile.mDisliv') || 'm disliv.')}</span></div>
+                <div><strong>${Number.isFinite(hike.maxAltitude) ? Math.round(hike.maxAltitude) : '—'}</strong><span>${esc(T('profile.quotaMax') || 'quota max')}</span></div>
             </div>
             ${tempoRealeHtml}
             ${azioniHtml ? `<div class="outing-card-actions">${azioniHtml}</div>` : ''}
@@ -425,9 +430,9 @@ function schedaSentieroPreferito(hike, isOwnProfile, containerId) {
             </div>
             <span class="outing-card-sub">${formattaDataItaliana(hike.date)}</span>
             <div class="outing-card-stats">
-                <div><strong>${formattaDecimale(hike.distanceKm)}</strong><span>km</span></div>
-                <div><strong>${Math.round(hike.elevationGain || 0)}</strong><span>${esc(T('profile.mDisliv') || 'm disliv.')}</span></div>
-                <div><strong>${Math.round(hike.maxAltitude || 0)}</strong><span>${esc(T('profile.quotaMax') || 'quota max')}</span></div>
+                <div><strong>${Number.isFinite(hike.distanceKm) ? formattaDecimale(hike.distanceKm) : '—'}</strong><span>km</span></div>
+                <div><strong>${Number.isFinite(hike.elevationGain) ? Math.round(hike.elevationGain) : '—'}</strong><span>${esc(T('profile.mDisliv') || 'm disliv.')}</span></div>
+                <div><strong>${Number.isFinite(hike.maxAltitude) ? Math.round(hike.maxAltitude) : '—'}</strong><span>${esc(T('profile.quotaMax') || 'quota max')}</span></div>
             </div>
         </div>`;
 }

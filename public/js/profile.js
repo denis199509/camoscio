@@ -547,8 +547,14 @@ function calculateHikeTimes(hike, user) {
     const dPlus = hike.elevationGain;
     const distance = hike.distanceKm;
 
+    // dislivello/distanza possono mancare su una Hike vecchia (models/Hike.js, campi
+    // opzionali - MEDIO della verifica generale, formula CAI: senza questa guardia
+    // standardText/customText diventano "NaNh NaNm" propagati fino a schermo, o peggio
+    // (elevationGain:null) un tempo calcolato sulla sola distanza, plausibile e falso.
+    const datiVeri = Number.isFinite(dPlus) && Number.isFinite(distance);
+
     // 1. CALCOLO CAI STANDARD
-    const standardTotalHours = window.oreCai(dPlus, distance);
+    const standardTotalHours = datiVeri ? window.oreCai(dPlus, distance) : null;
 
     // 2. CALCOLO PERSONALIZZATO UTENTE
     // Il campo esiste solo se c'è almeno un'osservazione vera dietro (models/User.js): il
@@ -558,17 +564,20 @@ function calculateHikeTimes(hike, user) {
     const passoMisurato = Number.isFinite(paceUp) && paceUp > 0;
 
     // Salita calibrata sulla velocità dell'utente, in discesa usiamo il suo passo di discesa
-    const customTotalHours = window.oreCai(dPlus, distance, passoMisurato ? paceUp : PASSO_SALITA_IPOTESI);
+    const customTotalHours = datiVeri ? window.oreCai(dPlus, distance, passoMisurato ? paceUp : PASSO_SALITA_IPOTESI) : null;
 
     return {
-        standardText: formatHoursToMin(standardTotalHours),
-        // customText c'è sempre (il calcolo non si rompe mai), ma chi lo mostra deve prima
-        // guardare passoMisurato: chiamarlo "il tuo passo" senza una misura dietro è la
-        // stessa bugia della card "Passo & Fatica" in Dashboard.
-        customText: formatHoursToMin(customTotalHours),
+        // null quando i dati sorgente mancano: chi legge deve mostrare un messaggio, non un
+        // numero che sembra una misura e non lo è (stesso principio di passoDaOre in
+        // cai-tempi.js).
+        standardText: datiVeri ? formatHoursToMin(standardTotalHours) : null,
+        // customText è null quando mancano i dati sorgente (vedi standardText sopra); quando
+        // c'è, chi lo mostra deve prima guardare passoMisurato: chiamarlo "il tuo passo" senza
+        // una misura dietro è la stessa bugia della card "Passo & Fatica" in Dashboard.
+        customText: datiVeri ? formatHoursToMin(customTotalHours) : null,
         passoMisurato,
         fatigueIndex: (passoMisurato ? (window.PASSO_SALITA_CAI / paceUp).toFixed(2) : null),
-        hoursDifference: (customTotalHours - standardTotalHours)
+        hoursDifference: datiVeri ? (customTotalHours - standardTotalHours) : null
     };
 }
 

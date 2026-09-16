@@ -473,6 +473,28 @@ const SEED_RFC = totp.codificaBase32(Buffer.from('12345678901234567890', 'ascii'
 
         const enBad = await chiama('POST', '/api/auth/2fa/enable', { password: pwd1, code: '000000' }, cookie1);
         ok('/2fa/enable con codice sbagliato -> 401', enBad.status === 401, `status ${enBad.status}`);
+        // Buco di test noto dalla 42a (revisione del cumulativo): il ramo scartoMinuti di
+        // /2fa/enable (routes/auth.js) veniva gia' ESEGUITO da enBad qui sopra ('000000' non
+        // e' derivabile da nessun passo entro +/-10, quindi scartoDiPasso torna null) ma
+        // nessuno controllava il CORPO della risposta, solo lo status. scartoDiPasso() e'
+        // gia' testato a fondo a livello di libreria (sezione 1e) - qui si verifica che la
+        // ROTTA lo colleghi per davvero.
+        ok('...un codice non derivabile da un passo vicino NON porta scartoMinuti nel corpo',
+            enBad.corpo && !('scartoMinuti' in enBad.corpo), JSON.stringify(enBad.corpo));
+
+        // Codice valido ma di 4 passi avanti (orologio del telefono avanti di ~2 minuti):
+        // stesso principio dell'1e ma passando dalla ROTTA vera, non dalla funzione nuda.
+        // Assertion sul segno/presenza invece che sul minuto esatto: il server calcola
+        // scartoMinuti sul SUO Date.now(), non su quello letto qui - un confine di passo
+        // (30s) attraversato fra la generazione del codice e la richiesta sposterebbe la
+        // lettura di +/-1 passo, un valore esatto sarebbe raramente instabile per un motivo
+        // di tempo e non di codice (stessa lezione: si aspetta una condizione vera, non un
+        // numero che dipende da un istante preciso).
+        const codiceSfasato = totp.codiceDaPasso(seg1, totp.passoCorrente() + 4);
+        const enSkew = await chiama('POST', '/api/auth/2fa/enable', { password: pwd1, code: codiceSfasato }, cookie1);
+        ok('...un codice di qualche passo avanti (orologio sfasato) -> 401 CON scartoMinuti positivo',
+            enSkew.status === 401 && typeof enSkew.corpo.scartoMinuti === 'number' && enSkew.corpo.scartoMinuti > 0,
+            JSON.stringify(enSkew.corpo));
 
         const en1 = await chiama('POST', '/api/auth/2fa/enable', { password: pwd1, code: codiceOra(seg1) }, cookie1);
         ok('/2fa/enable con codice giusto -> 200 { success }',

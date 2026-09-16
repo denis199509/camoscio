@@ -1240,6 +1240,19 @@
                                         <div class="tracking-download-progress-fill" id="tracking-download-progress-fill"></div>
                                         <span id="tracking-download-progress-label" class="small text-muted"></span>
                                     </div>
+
+                                    <!-- Comando manuale "Libera spazio" (51a sessione): il tetto per singolo
+                                         download non impedisce che PIU' download nel tempo si sommino senza
+                                         limite - le mappe scaricate apposta sono immuni dalla pulizia
+                                         automatica (tracking.js/idb.js, idbEnforceAmbientTileCap). Nascosto di
+                                         default, mostrato solo se ci sono davvero tile esplicite da liberare
+                                         (vedi refreshLiberaSpazioOfflineUi). -->
+                                    <div id="tracking-libera-spazio-box" class="tracking-libera-spazio-box hidden">
+                                        <span id="tracking-libera-spazio-label" class="small text-muted"></span>
+                                        <button type="button" id="btn-tracking-libera-spazio" class="btn btn-secondary btn-sm btn-block">
+                                            <i data-lucide="trash-2"></i> <span data-i18n="track.liberaSpazioOffline">Libera spazio (mappe offline scaricate)</span>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
 
@@ -2298,7 +2311,7 @@
                             <div class="glass-card backpack-list-card">
                                 <div class="card-header-row">
                                     <h4><i data-lucide="check-square"></i> <span data-i18n="backpack.list.titolo">La tua Checklist</span></h4>
-                                    <span class="badge badge-accent" id="backpack-badge-rules">Altitudine > 2500m</span>
+                                    <span class="badge badge-accent" id="backpack-badge-rules">Quota non indicata</span>
                                 </div>
                                 <div class="backpack-rules-notice warning" id="backpack-rules-alert">
                                     <i data-lucide="alert-triangle"></i>

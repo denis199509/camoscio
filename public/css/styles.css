@@ -4378,6 +4378,15 @@ option {
     color: var(--color-text-secondary);
 }
 
+.tracking-libera-spazio-box {
+    margin-top: 10px;
+}
+
+.tracking-libera-spazio-box .small {
+    display: block;
+    margin-bottom: 6px;
+}
+
 /* ==========================================================================
    LE MIE ESCURSIONI — punto 10 di cose_da_fare.txt
    ========================================================================== */

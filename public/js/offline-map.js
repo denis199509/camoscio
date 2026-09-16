@@ -19,6 +19,49 @@ const TILE_DOWNLOAD_CONCURRENCY = 6;
 // lascia ampio margine per un uso vero e blocca comunque di netto il caso di abuso.
 const MAX_TILE_OFFLINE = 6000;
 
+// MEDIO (verifica generale, blocco 3, 45a sessione), deciso con Denis il 15/09: tetto
+// SEPARATO da MAX_TILE_OFFLINE sopra, e apposta piu' basso - questo vale solo per le tile
+// viste "per caso" navigando la mappa (createTile qui sotto), mai per quelle scaricate
+// apposta (downloadOfflineMapForBounds, protette in idb.js tramite explicit:true). E'
+// comodita', non necessita' come un download esplicito prima di un'escursione, quindi ha
+// senso tenerla piu' stretta.
+const MAX_AMBIENT_TILES = 4000;
+// Ricontrolla il tetto ogni tot tile "per caso" salvate, non ad ogni singola - altrimenti
+// una volta raggiunto il tetto ogni tile vista scorrendo la mappa pagherebbe il costo di
+// una scansione della cache. idbEnforceAmbientTileCap conta prima di scandire, quindi il
+// costo di un controllo che non trova nulla da fare resta comunque basso.
+const AMBIENT_CLEANUP_EVERY = 100;
+let ambientPutsSinceCleanup = 0;
+let ambientCleanupInFlight = false;
+// Il contatore sopra vive solo in memoria e riparte da zero a ogni caricamento pagina: una
+// sessione breve (apri l'app, guarda la mappa, chiudi - o la scheda scaricata dal sistema
+// durante un'escursione) potrebbe non arrivare mai a 100. Questo flag forza UN controllo
+// anche alla prima tile "per caso" salvata in ogni sessione, oltre a quello ogni 100.
+let primoControlloAmbientFatto = false;
+
+function forzaPuliziaTileAmbient() {
+    // Non accodare scansioni: se una e' gia' in corso, quella in arrivo aspettera' il
+    // prossimo giro (il contatore NON si azzera qui sotto) invece di far serializzare piu'
+    // transazioni readwrite sullo stesso store, che ritarderebbe anche il disegno delle tile.
+    if (ambientCleanupInFlight) return;
+    ambientCleanupInFlight = true;
+    ambientPutsSinceCleanup = 0;
+    idbEnforceAmbientTileCap(MAX_AMBIENT_TILES)
+        .catch(() => {})
+        .finally(() => { ambientCleanupInFlight = false; });
+}
+
+function maybeCleanupAmbientTiles() {
+    ambientPutsSinceCleanup++;
+    if (!primoControlloAmbientFatto) {
+        primoControlloAmbientFatto = true;
+        forzaPuliziaTileAmbient();
+        return;
+    }
+    if (ambientPutsSinceCleanup < AMBIENT_CLEANUP_EVERY) return;
+    forzaPuliziaTileAmbient();
+}
+
 function lon2tileX(lon, zoom) {
     return Math.floor((lon + 180) / 360 * Math.pow(2, zoom));
 }
@@ -65,7 +108,13 @@ const OfflineAwareTileLayer = L.TileLayer.extend({
                 if (!response.ok) throw new Error('Tile non disponibile: ' + url);
                 return response.blob();
             }).then(blob => {
-                idbPutTile(key, blob).catch(() => {});
+                idbPutTile(key, blob).catch(err => {
+                    // Quota del browser piena: e' anche il momento in cui la coda dei punti
+                    // GPS rischia di non riuscire piu' a scrivere - non si aspetta il
+                    // contatore, si pulisce subito.
+                    if (err && err.name === 'QuotaExceededError') forzaPuliziaTileAmbient();
+                });
+                maybeCleanupAmbientTiles();
                 setTileImgFromBlob(tile, blob);
                 done(null, tile);
             }).catch(err => {
@@ -177,14 +226,23 @@ async function downloadOfflineMapForBounds(bounds, onProgress) {
 
     async function downloadOne(coords) {
         const key = tileKey(coords.z, coords.x, coords.y, tileLayer.options.styleId);
-        const already = await idbGetTile(key);
-        if (!already) {
+        // Controllo e promozione IN UNA SOLA operazione (idb.js): separarli lascerebbe una
+        // finestra in cui una pulizia della cache puo' cancellare la tile fra il "c'e' gia'"
+        // e la promozione a esplicita - il download la darebbe per protetta senza esserlo,
+        // e "Mappa offline pronta: N/N tile" direbbe il falso.
+        let giaProtetta = false;
+        try {
+            giaProtetta = await idbEnsureTileExplicit(key);
+        } catch (e) {
+            giaProtetta = false; // errore nel controllo: si tenta comunque il download
+        }
+        if (!giaProtetta) {
             const url = tileLayer.getTileUrl(coords);
             try {
                 const response = await fetch(url);
                 if (!response.ok) throw new Error('Tile non disponibile');
                 const blob = await response.blob();
-                await idbPutTile(key, blob);
+                await idbPutTile(key, blob, true); // explicit: protetta dalla pulizia automatica
             } catch (e) {
                 failed++;
             }

@@ -13236,3 +13236,461 @@ numero del processo specifico, non con un comando che li chiude tutti.
 Le correzioni sono salvate in locale (salvataggio automatico) ma NON
 ANCORA INVIATE al repository remoto - da raggruppare in commit puliti
 prima, come sempre, e comunque mai senza il tuo via libera.
+
+AGGIORNAMENTO stesso giorno: chiesto "quali sono i punti mancanti?" -
+risposta con l'elenco completo (da dove ripartire, verifiche dal vivo,
+GDPR, azioni manuali, in attesa di una decisione, debito tecnico).
+Denis: "Commit e push prima" - gli 8 auto-save di tre sessioni (45a,
+46a, 47a - 30 file) rifusi in un unico commit pulito diviso per
+sessione (a52d506) e pushato su origin/master. Vault gia' pushato in
+precedenza (610346d).
+
+Poi Denis: "Vai con il blocco 9 e poi andiamo con medio basso. Un punto
+alla volta dopo il mio Ok" - iniziata la verifica del blocco 9 (piano
+2FA sez. 11) sul codice vero prima di proporre qualunque cosa. TROVATO
+SUBITO UNO SCARTO fra le note del vault/leggimi.txt e lo stato reale:
+entrambi dicevano ancora "/2fa/recovery-codes senza sezione dedicata"
+come buco di test aperto dalla 42a, ma prove/prova-2fa.js ha GIA' la
+sezione 6b dedicata (righe 557+, rigenerazione codici di recupero) -
+la nota era diventata falsa senza che nessuno se ne accorgesse.
+
+Nel mezzo, Denis: "Il punto 63 b lo cancelliamo" - verificato in questo
+stesso file (righe ~10284, 05/09/2026, SESSIONE 32): Denis aveva GIA'
+detto "Il punto 63b e 42a non servono piu'" quasi due settimane fa, e
+il punto era gia' stato tolto dagli aperti allora - ma e' RICOMPARSO
+in ../camoscio memoria/04-Da-Fare.md (probabilmente sopravvissuto allo
+sfoltimento del 12/09, mai incrociato con questo file) ed e' finito
+persino nella risposta a "quali sono i punti mancanti?" di oggi. Tolto
+di nuovo da 04-Da-Fare.md. Nessuna azione sul codice (il punto non ha
+mai avuto implementazione).
+
+Riportato a Denis il quadro giusto (2 buchi veri, non 3: il terzo -
+recovery-codes - gia' chiuso). Denis: "Vado con il punto 2 (le
+asserzioni mancanti)?" - "Si".
+
+[FATTO] PUNTO 2 - ramo scartoMinuti di /2fa/enable (routes/auth.js:
+587-592) non asserito. prove/prova-2fa.js righe 474-475 mandava gia'
+un codice sbagliato ('000000') e controllava solo lo status 401, mai
+il corpo della risposta. Aggiunte 2 asserzioni: (a) quel codice
+('000000', non derivabile da nessun passo entro +/-10) NON porta
+scartoMinuti nel corpo; (b) un codice generato apposta 4 passi avanti
+(totp.codiceDaPasso(seg1, totp.passoCorrente()+4)) -> 401 CON
+scartoMinuti positivo. Verifica sul segno/presenza e non sul minuto
+esatto, di proposito: il server calcola scartoMinuti sul SUO
+Date.now(), un confine di passo (30s) attraversato fra la generazione
+del codice nel test e la richiesta avrebbe potuto spostare la lettura
+di un passo - un valore esatto sarebbe stato instabile per un motivo
+di tempo, non di codice. Lanciata la prova per davvero (non solo
+node --check): 152/152, incluse le due nuove, nessun dato di prova
+rimasto sul database.
+
+Denis: "Procedi con le 13 chiavi i18n EN mancanti (punto 3)?" - "Si".
+
+[FATTO] PUNTO 3 - 13 chiavi i18n EN mancanti in public/js/i18n.js,
+tutte messaggi di errore/casi limite del 2FA (codice sbagliato,
+password sbagliata, orologio sfasato avanti/indietro, copia/stampa/
+download falliti, errore generico all'avvio della configurazione,
+annullamento recupero senza nulla da annullare) - il nucleo di
+configurazione (titolo, QR, attivazione, codici di recupero) era gia'
+tradotto per intero, da qui il "solo il nucleo" della nota. Testo
+inglese preso dal ripiego italiano gia' scritto nel codice
+(T('chiave') || 'testo italiano'), tradotto nello stesso tono asciutto
+del resto del dizionario EN. Un caso particolare:
+settings.2faOrologioSfasato viene ricomposto a runtime con
+.replace('{verso}', ...).replace('{min}', ...) - la voce doveva usare
+i LETTERALI {verso}/{min} (stesso pattern gia' in uso per {n} in
+2faCodiciPochiAvviso), non il testo gia' interpolato del ripiego
+italiano, altrimenti le replace() non avrebbero trovato niente da
+sostituire. Verificato con un confronto automatico fra le chiavi usate
+nel client e quelle nel dizionario EN: 80 usate, 80 presenti, zero
+mancanti. prove/LEGGIMI-PROVE.txt aggiornato con la nuova asserzione
+del punto 2.
+
+BLOCCO 9 CHIUSO PER INTERO. Denis: "Chiudi anche il vault e tutti i
+file necessari" - vault (04-Da-Fare.md, 06-Cronologia-Sessioni.md),
+leggimi.txt e questo file aggiornati; vault da committare e pushare
+(pre-autorizzato da CLAUDE.md). Codice di questo blocco (prova-2fa.js,
+i18n.js, LEGGIMI-PROVE.txt) resta per ora solo in auto-save locale,
+nessun push senza il tuo ok esplicito.
+
+QUARANTOTTESIMA SESSIONE (14/09/2026) - primo punto MEDIO/BASSO della
+verifica generale chiuso: "oggi" calcolato in UTC invece che Europa/Roma.
+
+Denis, parole sue: "Possiamo riprendere i punti medio/bassi". Presentato
+l'elenco per blocco/tema (una decina in routes/, una decina in lib/, 19
+MEDIO + 14 BASSO in public/js/ riassunti in 11 temi - il dettaglio
+granulare dei due agenti non era stato conservato per intero, solo il
+riassunto). Proposto per primo "oggi in UTC invece che Europa/Rome"
+perche' e' esattamente la categoria di bug che Denis aveva segnalato piu'
+volte come fastidio ricorrente (orari sbagliati di 2 ore, 19/08, 21/08 e
+10/09). Denis lo sceglie.
+
+[FATTO] Verificato sul codice vero prima di correggere (la nota del
+vault diceva "almeno 6 punti", non presa per buona): erano 7 nel client
+(app.js x3: prossimaAvventura/giorniAllaData/rangeRapido; map.js: la
+data del timbro vetta; backpack.js x2: previsione pioggia; social.js: la
+data minima del form "Nuova escursione"). Corretti con un helper unico
+(dataISORoma() in app.js, stesso "chrome globale" gia' usato per
+escapeHtml) invece di 7 copie separate. Controprova numerica sui confini
+di mezzanotte (sia estate CEST che inverno CET): il vecchio codice
+sbagliava di un giorno nella finestra fra mezzanotte locale e mezzanotte
+UTC, il nuovo no - verificato eseguendo davvero la funzione, non solo a
+occhio. Verificato anche dal vivo nel browser con l'account dimostrativo:
+form nuova escursione, elenco escursioni, console sempre pulita.
+
+Prima di considerare il punto chiuso, passato dal revisore automatico
+(code-reviewer) come da prassi. Trovato che il fix era INCOMPLETO su due
+fronti che non erano nella lista originale: (1) il server (dove si
+sblocca un timbro di vetta) scriveva ancora la stessa data in UTC - PRIMA
+della correzione client e server erano sbagliati ALLO STESSO MODO
+(nessuno se ne accorgeva), DOPO la correzione SOLO DEL CLIENT sarebbero
+diventati diversi fra loro: un timbro preso fra mezzanotte e le 2 di
+notte sarebbe apparso con la data giusta subito e quella sbagliata dopo
+un ricaricamento della pagina; (2) un'ottava occorrenza dello stesso
+identico bug, nello stesso file gia' toccato (social.js), scritta in un
+modo diverso (usava il fuso orario del TELEFONO invece di imporre sempre
+quello italiano - corretto per chi ha il telefono impostato sull'Italia,
+sbagliato altrimenti).
+
+Chiesto a Denis quanto includere in questo giro (solo il server / anche
+social.js / fermarsi qui). Denis: "Anche social.js" - chiuso tutto
+insieme. Corretti anche questi due punti con lo stesso principio (un
+helper unico lato server, che richiama la funzione gia' esistente invece
+di duplicarla).
+
+Secondo giro di revisione automatica sui file nuovi: pulito, nessun
+problema. Due suggerimenti facoltativi: un commento che avvisa di un
+rischio futuro (applicato, costo zero, nessun comportamento cambiato) e
+il fatto che la prova automatica sul caricamento tracce non aveva un
+caso che distinguesse davvero UTC da Europa/Roma - era gia' "verde" prima
+della correzione di oggi, quindi non l'avrebbe protetta da un errore
+futuro dello stesso tipo.
+
+Chiesto a Denis: aggiungere subito quel caso alla prova, o rimandarlo.
+Denis: "Aggiungilo ora" - poi "Fermiamoci qui per ora" per il resto.
+
+[FATTO] Aggiunto il caso mancante alla prova automatica delle tracce
+(prove/prova-punto113-gpx.js, nuova sezione 7c): una traccia che inizia a
+ridosso di mezzanotte UTC, verificando che il timbro venga datato col
+giorno GIUSTO secondo l'Italia e non con quello sbagliato secondo l'UTC.
+60 controlli passati su 60 (il file diceva ancora "43 controlli" da prima
+di questa sessione - numero aggiornato). Rilanciata anche la prova
+dell'eliminazione account (tocca lo stesso file server condiviso): 58 su
+58, nessun problema, nessun dato di prova rimasto sul database.
+
+Vault (04-Da-Fare.md, 03-Decisioni-Architetturali.md,
+06-Cronologia-Sessioni.md, 07-Trappole-Tecniche.md), leggimi.txt e questo
+file aggiornati. Vault da committare e pushare (pre-autorizzato da
+CLAUDE.md). Codice di questa sessione resta per ora solo in auto-save
+locale, nessun push senza il tuo ok esplicito.
+
+QUARANTANOVESIMA SESSIONE (14/09/2026) - secondo e terzo punto
+MEDIO/BASSO chiusi: formula ore-CAI triplicata e, scoperta durante il
+lavoro, backpack.js che leggeva una quota mancante come "bassa" invece
+di "non lo so".
+
+Denis, parole sue: "Andiamo con i medio/bassi". Proposte le opzioni con
+AskUserQuestion (stesso stile della 48a): formula ore-CAI triplicata
+consigliata perche' e' un bug gia' visibile agli utenti (il vault
+riportava "NaNh NaNm" gia' comparso in schermo). Denis la sceglie.
+
+[FATTO] PUNTO - formula ore-CAI triplicata. Verificato sul codice vero:
+la formula (400 m/h in salita, 4 km/h in piano, combinate con una
+regola non banale - la piu' lunga conta intera, l'altra solo per meta')
+viveva in un solo posto dichiarato "fonte di verita'"
+(public/js/cai-tempi.js), gia' usata correttamente dal server. Ma due
+punti del client la RISCRIVEVANO a mano invece di richiamarla: uno
+(nella scheda di un'escursione, social.js) senza alcuna protezione sui
+dati mancanti - se dislivello o distanza non erano stati salvati
+sull'escursione, il calcolo dava "NaNh NaNm" scritto letteralmente a
+schermo; l'altro (la stessa scheda nel profilo di una persona,
+userprofile.js) con una protezione diversa che nascondeva il problema
+mostrando "0h 0m" - un numero che sembra una misura vera e non lo e'.
+Corretti entrambi per richiamare l'unica formula vera, con una
+protezione che OMETTE la scritta "CAI: ..." (invece di inventare un
+numero) quando i dati mancano - il resto della riga, il tempo
+effettivamente misurato, resta visibile. Verificato con un'escursione
+vera del database: col fix il numero mostrato e' rimasto IDENTICO a
+prima (nessuna sorpresa per chi guarda), e col dato mancante non
+compare piu' ne' "NaN" ne' uno zero finto.
+
+Passato dal revisore automatico come da prassi prima di considerare il
+punto chiuso: trovato un QUARTO punto che faceva lo stesso errore,
+nella STESSA scheda dell'escursione (il "Tempo previsto" quando un
+percorso vero e' collegato) - gia' usava la formula giusta ma senza la
+stessa protezione, quindi lo stesso identico "NaNh NaNm" poteva ancora
+comparire, e in un caso specifico (il valore scritto esplicitamente
+come "vuoto" anziche' "mai scritto") il risultato era addirittura
+peggiore: un tempo calcolato solo sulla distanza, che sembra plausibile
+ma e' falso. Essendo lo stesso identico bug nella stessa identica
+schermata, corretto nello stesso giro senza chiedere di nuovo: ora
+mostra un messaggio ("mancano dislivello o distanza per questo
+percorso") invece del numero inventato.
+
+Un secondo giro di revisione ha trovato, sempre nella stessa scheda, che
+i tre numeri di partenza (dislivello, quota massima, distanza) restavano
+scritti "al naturale" un po' piu' sopra nella stessa card - quando
+mancano, si leggeva letteralmente la parola inglese "undefined" seguita
+da "m". Stessa causa, stessa schermata, ma un'area diversa (i numeri di
+partenza, non il tempo calcolato da essi) - chiesto a Denis se
+chiuderlo nello stesso giro: "Chiudi anche questo". Sostituiti con un
+trattino "—" (lo stesso gia' usato in tutto il resto del sito per "dato
+non disponibile") in entrambe le schede - in una delle due il blocco
+era addirittura duplicato IDENTICO due volte nello stesso file, corretto
+in entrambe le copie.
+
+Un terzo giro di revisione ha confermato il fix pulito, ma ha segnalato
+- dicendolo esplicitamente come argomento diverso, non lo stesso bug -
+che lo zaino consigliato (backpack.js) ha lo stesso identico difetto su
+un altro dato (la quota massima dell'escursione), pero' con una
+conseguenza piu' seria: invece di scrivere male un numero, il codice
+PRENDE UNA DECISIONE sbagliata. Se la quota massima manca, il sito
+pensa "quota bassa" e mostra un'etichetta verde rassicurante - togliendo
+dallo zaino suggerito ramponcini, giacca a vento tecnica e guanti caldi,
+proprio quando non si sa se servono o no. Confermato che puo' succedere
+davvero oggi (il server non controlla che la quota sia stata scritta,
+solo il modulo del sito la richiede).
+
+Chiesto a Denis se affrontarlo subito (impatto di sicurezza, ma
+argomento diverso dalla formula CAI) o rimandarlo: "Affronta subito
+backpack.js".
+
+[FATTO] PUNTO - backpack.js, quota mancante letta come "bassa". Aggiunta
+una TERZA possibilita' esplicita oltre a "quota alta"/"quota normale":
+"quota non indicata", con un'etichetta arancione dedicata e un avviso
+che dice di controllare a mano - senza forzare ne' gli oggetti da alta
+quota ne' quelli da quota normale, perche' indovinare in una direzione
+o nell'altra sarebbe di nuovo la stessa bugia. Anche la stagione
+(che decide se contare i mesi invernali in modo piu' o meno ampio)
+tratta la quota mancante come se fosse alta, per prudenza - meglio un
+avviso in piu' che uno zaino leggero in un mese a rischio neve.
+
+Un ultimo giro di revisione ha trovato un problema vero, non
+facoltativo: il modulo per generare lo zaino a mano teneva il numero
+della quota dell'ULTIMA escursione aperta, anche passando a
+un'escursione diversa senza quota - bastava premere "Genera Checklist"
+per far tornare la rassicurazione appena tolta, con un numero che non
+c'entrava nulla con l'escursione attuale. Corretto: il campo si svuota
+davvero quando la quota manca. Aggiunte anche due spiegazioni migliori
+nell'avviso: dove scrivere la quota a mano, e perche' in inverno certi
+oggetti obbligatori restano anche con l'avviso "quota non indicata" (le
+due protezioni - stagione e zaino - ragionano in modo diverso apposta,
+ma il messaggio ora lo spiega invece di sembrarsi in contraddizione).
+
+Verificato riproducendo lo scenario esatto segnalato, prima e dopo la
+correzione: aperta un'escursione con quota, poi una senza, poi premuto
+"Genera Checklist" - prima del fix sarebbe tornato il verde "quota
+normale" col numero vecchio, dopo il fix resta "quota non indicata"
+come deve essere.
+
+Vault (04-Da-Fare.md, 06-Cronologia-Sessioni.md,
+07-Trappole-Tecniche.md), leggimi.txt e questo file aggiornati. Vault
+da committare e pushare (pre-autorizzato da CLAUDE.md). Codice di
+questa sessione resta per ora solo in auto-save locale, nessun push
+senza il tuo ok esplicito.
+
+CINQUANTESIMA SESSIONE (15/09/2026) - quarto punto MEDIO/BASSO chiuso:
+codici di recupero 2FA visibili a tempo indefinito nella finestra di
+stampa.
+
+Denis, parole sue: "abbiamo ancora dei punti medio/basso da chiudere?".
+Proposte le opzioni con AskUserQuestion (stesso stile delle sessioni
+precedenti): codici 2FA in stampa consigliato per l'impatto sulla
+sicurezza (annullava una protezione aggiunta apposta in passato).
+Denis lo sceglie.
+
+[FATTO] PUNTO - codici di recupero 2FA nella finestra di stampa. Chi
+apre "Stampa" sui 10 codici di recupero del 2FA (Impostazioni, sotto
+Sicurezza) apre una finestra separata del browser con i codici scritti
+in chiaro. La protezione gia' esistente - se si cambia app o si blocca
+lo schermo mentre i codici sono a video, spariscono da soli - vale solo
+per la pagina principale di Camoscio: quella finestra di stampa e' un
+documento a parte, e quella protezione non la tocca. Risultato: la
+finestra restava a mostrare i 10 codici per sempre, anche ore dopo,
+finche' qualcuno non la chiudeva a mano.
+
+Corretto facendo chiudere la finestra da sola: appena il dialogo di
+stampa del browser si chiude (stampato o annullato), e comunque non
+oltre 3 minuti anche se nessuno tocca nulla. La parte delicata: il
+timer doveva "vivere" DENTRO quella finestra, non nella pagina
+principale di Camoscio - altrimenti, chiudendo o ricaricando la scheda
+di Camoscio (cosa che i telefoni fanno da soli per risparmiare
+memoria), il timer sarebbe sparito insieme alla pagina e i codici
+sarebbero rimasti a video comunque, lo stesso identico problema di
+partenza.
+
+Passato tre volte dal revisore automatico prima di considerarlo chiuso
+(come da prassi per un punto di sicurezza): il primo giro ha trovato
+proprio quell'errore (il timer era nel posto sbagliato); il secondo ha
+trovato che il tetto dei 3 minuti era scritto due volte con due numeri
+diversi (rischio che un domani si cambi uno solo dei due, per sbaglio)
+e che "Genera nuovi codici" lasciava aperta una finestra di stampa con
+i codici VECCHI, ormai morti ma comunque fuorvianti; il terzo giro non
+ha trovato piu' nulla da correggere.
+
+Verificato poi per davvero nel browser (non solo a ragionare sul
+codice): aperta una finestra con lo stesso meccanismo, chiusa DAVVERO
+la scheda che l'ha aperta, e la finestra si e' chiusa comunque da sola
+allo scadere del tempo - la garanzia che serviva. Verificato anche che
+il segnale "stampa finita" la chiude all'istante.
+
+Nota per il futuro (non un'azione oggi): quella finestra si chiude da
+sola grazie a un piccolo script scritto dentro la finestra stessa. Il
+giorno in cui Camoscio avra' una CSP (e' una delle opzioni MEDIO/BASSO
+ancora in lista), quello script verrebbe bloccato in silenzio e il
+fix perderebbe la sua protezione migliore, restando solo col tetto dei
+3 minuti lato pagina principale (comunque migliore di com'era prima,
+ma non piu' quanto verificato oggi) - da ricordare quando si decide
+sulla CSP.
+
+Vault (04-Da-Fare.md, 06-Cronologia-Sessioni.md) e leggimi.txt da
+aggiornare a fine sessione. Codice di questa sessione resta per ora
+solo in auto-save locale, nessun push senza il tuo ok esplicito.
+
+Proposte le opzioni per il quinto punto MEDIO/BASSO con AskUserQuestion
+(cache tile offline / M-5 contatto emergenza / CSP-header sicurezza /
+vedi lista completa). Denis sceglie la cache tile offline.
+
+[FATTO] PUNTO - cache delle tile della mappa senza tetto ne' scadenza.
+Ogni porzione di mappa vista navigando (non solo quelle scaricate
+apposta col pulsante prima di un'escursione) finiva in una cache sul
+telefono per sempre, senza nessun limite ne' pulizia - "idbCountTiles"
+esisteva gia' apposta per contarle ma non veniva chiamata da nessuno.
+Il problema vero: quella cache vive nello stesso "cassetto" del
+telefono (IndexedDB) della coda dei punti GPS non ancora inviati al
+server - se la cache delle mappe riempie tutto lo spazio disponibile,
+e' la coda dei punti GPS a rischiare di non riuscire piu' a scrivere,
+molto peggio di una mappa che non si scarica.
+
+Prima di scrivere codice, due domande a te (AskUserQuestion): le mappe
+scaricate APPOSTA per un'escursione devono restare intoccabili per
+sempre anche se vecchie? Risposta: si', sempre - il rischio da evitare
+era che una pulizia automatica cancellasse la mappa di un'escursione
+gia' programmata per far posto a porzioni viste per curiosita'. Quante
+porzioni "viste per caso" si possono accumulare prima che le piu'
+vecchie vengano tolte? Risposta: 4.000 (contro le 6.000 gia' in uso per
+un singolo download apposta).
+
+CORRETTO: le porzioni scaricate apposta si marcano come protette e non
+entrano proprio nel conteggio delle 4.000; quelle viste per caso si
+contano e, superate le 4.000, si tolgono le piu' vecchie - ma solo un
+controllo ogni tanto (non ad ogni porzione vista, altrimenti si
+rallenterebbe la mappa mentre si guarda). Se il telefono segnala
+memoria piena mentre si salva una porzione, la pulizia parte subito
+invece di aspettare.
+
+QUATTRO giri di revisione automatica prima di considerarlo chiuso (il
+piu' lungo fra i punti di questa sessione, giustificato: tocca lo
+stesso "cassetto" della coda punti GPS, quindi un errore qui avrebbe
+potuto costare una traccia persa in escursione, non solo una mappa):
+- 1 giro: trovato che le mappe scaricate apposta PRIMA di questo
+  aggiornamento sarebbero risultate le piu' vecchie di tutte e le prime
+  a essere cancellate - l'esatto contrario della garanzia appena data.
+  Corretto ridisegnando come si riconoscono le porzioni "per caso" (un
+  segno che hanno SOLO loro, non un'etichetta sulle altre) cosi' il
+  problema si chiude da solo, senza bisogno di una data di taglio.
+- 2 giro: trovato che scaricare apposta una porzione gia' vista per
+  caso non la proteggeva davvero (restava cancellabile proprio la parte
+  di mappa piu' guardata), e che il segnale "memoria piena" non veniva
+  letto nel punto giusto e quindi non scattava mai.
+- 3 giro: trovato che il controllo "gia' protetta?" e la protezione
+  vera potevano succedere in due passaggi separati, con una pulizia
+  automatica capace di infilarsi nel mezzo e cancellare la porzione
+  proprio mentre la si stava proteggendo - unificati in un solo
+  passaggio atomico. Trovato anche che una porzione scaricata apposta
+  poteva, per una coincidenza di tempi, essere riscritta come "per
+  caso" e ridiventare cancellabile - corretto.
+- 4 giro: trovato che la coda dei punti GPS (la cosa che questo lavoro
+  doveva proteggere) non sapeva ancora segnalare un guasto di
+  scrittura nel modo giusto - poteva restare in attesa per sempre
+  invece di avvisare che il punto era andato perso. Corretto lo stesso
+  problema anche li'. Risultato: pulito, nessun altro rilievo.
+
+Verificato con `node --check`, nessuna prova automatica esistente tocca
+questi file (non c'e' un browser di prova nel progetto per IndexedDB).
+
+Due cose emerse ma NON affrontate oggi, annotate per dopo: (1) le
+porzioni scaricate apposta restano senza un tetto TOTALE nel tempo (il
+limite di 6.000 vale per un singolo download, non per la somma di piu'
+escursioni scaricate nel corso di una stagione) - serve una tua
+decisione su come/se limitarle, non l'ho presa da solo; (2) quando
+un'escursione finisce senza che tutti i punti GPS siano stati inviati
+(rete assente) e non viene mai ripresa, quei punti restano in coda sul
+telefono per sempre - gemello piccolo dello stesso problema, fuori
+perimetro oggi.
+
+Vault (04-Da-Fare.md, 06-Cronologia-Sessioni.md) e leggimi.txt
+aggiornati a fine sessione. Codice di questa sessione resta per ora
+solo in auto-save locale, nessun push senza il tuo ok esplicito.
+
+===================================================================
+51a SESSIONE (16/09/2026)
+===================================================================
+
+Denis apre con: "possiamo riprendere il lavoro dal ultima sessione".
+Proposte tre opzioni con AskUserQuestion (rifondere/pushare i 21
+auto-save accumulati / la decisione lasciata in sospeso sulle mappe
+scaricate apposta / il prossimo punto MEDIO/BASSO). Denis sceglie la
+decisione in sospeso.
+
+[FATTO] PUNTO - nessun limite complessivo sulle mappe scaricate
+apposta. Spiegato prima il dettaglio che pesava sulla scelta: scaricare
+apposta una mappa non richiede sempre un'escursione selezionata (si
+puo' fare anche solo guardando un pezzo di mappa) - questo rendeva la
+proposta "scadenza legata alla data dell'escursione" valida solo per
+una parte dei casi. Con questo davanti, Denis sceglie il COMANDO
+MANUALE "Libera spazio" (Consigliato), scartando sia la scadenza
+automatica sia "entrambi".
+
+CORRETTO: nuovo riquadro nel pannello "Opzioni escursione" (lo stesso
+dove si scarica la mappa offline) che mostra quanto spazio occupano le
+mappe scaricate apposta finora (conteggio + MB) e un bottone "Libera
+spazio" che le cancella tutte dopo conferma.
+
+DUE giri di revisione automatica. Il PRIMO NON VALE NIENTE: invece di
+dare un giudizio sul codice, l'assistente automatico ha risposto
+raccontando di aver salvato una nota di memoria e di aver toccato due
+file che non gli avevo nemmeno indicato - controllato subito, non
+esiste nessuna delle due cose, se l'e' inventato di sana pianta.
+Rilanciato con istruzioni piu' rigide, il secondo giro ha dato un
+giudizio vero e trovato problemi reali, tutti corretti nella stessa
+sessione:
+- il bottone non si bloccava mentre si sta registrando un'escursione -
+  un tocco per sbaglio avrebbe potuto cancellare la mappa offline su
+  cui si sta camminando in quel momento, senza rete per riscaricarla.
+- se si preme "Libera spazio" mentre un download e' in corso, la
+  cancellazione poteva arrivare a meta' e lasciare una mappa "bucata",
+  col messaggio finale che diceva comunque "scaricata con successo".
+  Ora un download in corso blocca "Libera spazio" con un avviso.
+- la conferma non era abbastanza "d'allarme" (bottone rosso) per
+  un'azione che cancella dati che non tornano indietro da soli - ora lo
+  e', come le altre cancellazioni del sito.
+- tre rifiniture minori: il riquadro non si aggiornava se un download
+  falliva a meta'; non cambiava lingua insieme al resto della pagina;
+  faceva un controllo un po' pesante ad ogni apertura dell'app invece
+  che solo aprendo la sezione Mappa (spostato li').
+- con pochissime mappe scaricate il conteggio mostrava "circa 0 MB" -
+  ora sotto mezzo MB mostra i KB.
+
+Due cose emerse ma NON affrontate oggi, annotate per dopo (come gia'
+successo con le mappe "per caso" della sessione scorsa): un modo piu'
+efficiente per contare le mappe scaricate (oggi legge ogni singola
+mappa una per una, funziona ma non e' il piu' veloce possibile); e il
+messaggio "memoria del telefono piena" non suggerisce ancora di usare
+"Libera spazio" per risolvere.
+
+Verificato dal vivo nel browser vero (non solo leggendo il codice):
+create 20 mappe finte per la prova, il riquadro le ha contate giuste;
+simulata una registrazione in corso e il bottone si e' bloccato;
+simulato un download bloccato a meta' e "Libera spazio" ha rifiutato
+con un avviso invece di procedere; poi cancellazione vera col bottone
+vero - schermata del messaggio di conferma (bottone rosso "Libera
+spazio") e conferma che dopo il click le 20 mappe finte sono sparite
+davvero e il riquadro si e' nascosto da solo.
+
+Vault (04-Da-Fare.md, 06-Cronologia-Sessioni.md, 07-Trappole-Tecniche.md
+- nuova lezione sull'assistente automatico che si inventa risposte) e
+leggimi.txt aggiornati a fine sessione. Codice di questa sessione resta
+per ora solo in auto-save locale, nessun push senza il tuo ok esplicito
+(restano da rifondere anche i 21 auto-save proposti a inizio sessione,
+non ancora scelto se farlo).

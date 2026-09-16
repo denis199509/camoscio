@@ -1,71 +1,58 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-09-14 (47a sessione, CHIUSA. Denis: "Possiamo
-ripartire, manda l'architetto" -> PROGETTATO lo spacchettamento di
-initApp() (piano: C:\Users\lenovo\.claude\plans\camoscio-initapp-refactor.md,
-5 decisioni D-1...D-5) -> riportato in sintesi -> "Procedi con le
-raccomandazioni" -> IMPLEMENTATO su 11 file e VERIFICATO DAL VIVO nel
-browser -> VERIFICA GENERALE DEL CODICE ORA CHIUSA PER INTERO (3/3
-CRITICI, 18/18 ALTO). Dettaglio completo: vault,
-06-Cronologia-Sessioni.md, 47a sessione.)
+Aggiornato: 2026-09-16 (51a sessione, CHIUSA. Ripresa dalla decisione
+in sospeso della 50a: il tetto complessivo mancante sulle tile mappa
+scaricate APPOSTA. Denis ha scelto un comando manuale "Libera spazio"
+(non una scadenza automatica, perche' il download e' possibile anche
+senza un'escursione collegata). NOTEVOLE: il primo giro di
+code-reviewer ha risposto raccontando side-action fabbricate (memoria
+aggiornata con un file mai esistito, due file di codice mai toccati)
+invece di dare un verdetto vero - stesso difetto gia' visto due volte
+su security-privacy, ora confermato anche su questo agente (vedi
+../camoscio memoria/07-Trappole-Tecniche.md). Rilanciato con vincoli
+espliciti in cima al prompt, il secondo giro ha dato una revisione
+vera: 2 ALTO + 3 MEDIO + 1 BASSO reali, tutti corretti. Verificato dal
+vivo nel browser vero, non solo a occhio sul codice.)
 
-FATTO in questa sessione:
- - PROGETTATO (agente architect) e POI IMPLEMENTATO l'ultimo ALTO della
-   verifica generale: gli 8 moduli (safety, tracking, map, social,
-   weather, storico, peoplesearch, trailhead-picker) che si
-   agganciavano tardi dentro initApp() ora si dividono in
-   setupXEvents() (subito) + renderX() (dati, dentro initApp()) -
-   stessa forma dei 3 fix gia' fatti (menu 26/07, fascia email 30/07,
-   profilo 06/08). Sistemati nello stesso giro anche carpool.js/
-   backpack.js (D-3, avevano gia' lo split ma restavano chiamati tardi).
- - DUE DIFETTI PREESISTENTI trovati progettando e corretti nello
-   stesso giro: (1) corsa fra il caricamento della mappa e la ripresa
-   di una registrazione dopo un ricaricamento pagina (scriveva su una
-   mappa non ancora creata, errore silenzioso - imparentato con gli
-   avvii-fantasma gia' visti al punto 94); (2) il form "Nuova
-   escursione" senza action, che ricaricava la pagina perdendo tutto
-   il modulo compilato se si premeva Invio prima che il submit fosse
-   collegato.
- - 5 DECISIONI (D-1...D-5) proposte dall'architetto, TUTTE approvate
-   da Denis in blocco: spostare anche il ripristino del Timer di
-   Sicurezza/contatti prima di initApp() (D-1); creare la mappa
-   subito col rettangolo di riserva invece di aspettare i confini
-   veri, opzione B (D-2, chiude anche il difetto 1 sopra); sistemare
-   carpool/backpack nello stesso giro (D-3); guardia anti-doppio-
-   aggancio su tutti gli 8 (D-4); chiudere il difetto (1) in questo
-   giro (D-5).
- - VERIFICATO DAL VIVO nel browser vero (server locale, account demo
-   Marco Alpinista, estensione Chrome): Dashboard, Mappa (contatti/
-   Timer sicurezza popolati subito, meteo calcolato una volta sola,
-   tasti registrazione abilitati dopo il caricamento), Sicurezza (chat
-   mesh "Attivo, connesso" - prova diretta che D-1 funziona), Social
-   (modale creazione aperto dal menu e richiuso dalla X senza
-   ricaricare), Storico/Completate - console del browser sempre
-   pulita. NON fatta la controprova rigorosa (riprodurre il guasto (1)
-   PRIMA della correzione con rete rallentata ad arte, verificare che
-   sparisca DOPO) - resta aperta, vedi sotto.
- - VERIFICA GENERALE DEL CODICE (iniziata 44a sessione): ORA CHIUSA
-   PER INTERO. 3/3 CRITICI, 18/18 ALTO, tutti corretti e verificati.
- - Nessun file server toccato in questa sessione (solo public/js/):
-   non applicabile la regola sul rilancio delle prove accessi/
-   password/email. CONTROLLO FINALE: node --check pulito sugli 11
-   file toccati; server di sviluppo locale fermato (PID specifico);
-   git status pulito (solo gli 11 file attesi).
+FATTO in questa sessione (dettaglio completo in
+../camoscio memoria/06-Cronologia-Sessioni.md, sezione "51a"):
+ - Comando "Libera spazio": nuove funzioni idb.js
+   (idbInspectExplicitTiles/idbClearExplicitTiles, cursore su
+   explicit===true - non un indice, per non confondere le esplicite
+   vere con gli orfani v1) + riquadro nel pannello "Opzioni escursione"
+   con conteggio+MB e bottone di conferma.
+ - Revisione (2 giri, il primo invalido - vedi sopra): ALTO-1 il
+   bottone non si bloccava durante una registrazione (poteva cancellare
+   la mappa su cui si sta camminando); ALTO-2 nessuna guardia contro un
+   download in corso in parallelo (mappa bucata + toast che avrebbe
+   mentito); MEDIO-1 conferma senza lo stile "danger" della convenzione
+   del progetto; MEDIO-2 il riquadro non si aggiornava se il download
+   falliva a meta'; MEDIO-3 l'etichetta non seguiva il cambio lingua;
+   MEDIO-5 la scansione IndexedDB girava ad ogni avvio pagina invece
+   che solo aprendo la sezione Mappa; BASSO-1 arrotondamento "0 MB" con
+   poche tile. Tutti corretti nella stessa sessione.
+ - Verifica dal vivo nel browser vero: 20 tile finte create via
+   console, riquadro comparso col conteggio giusto, bottone bloccato
+   durante una registrazione simulata, guardia anti-corsa testata
+   bloccando un download finto (rifiuta con un toast invece di
+   procedere), poi cancellazione vera col modale reale (bottone rosso
+   "Libera spazio") - conteggio tornato a 0, riquadro sparito da solo.
+ - Lasciato aperto, non deciso: MEDIO-4 (la scansione fa openCursor sul
+   valore intero invece di un indice dedicato - mitigato da MEDIO-5, un
+   indice v3 resterebbe piu' corretto se le tile esplicite crescessero
+   molto) e BASSO-2 (QuotaExceededError non suggerisce ancora "Libera
+   spazio"). Vedi 04-Da-Fare.md per il dettaglio.
 
-  >>> DA DOVE SI RIPARTE (48a sessione):
-   1. BLOCCO 9 del piano 2FA = prove automatiche complete + docs (la
-      prova dal vivo e' gia' chiusa, 43a sessione). Due buchi di test
-      noti dalla 42a: `/2fa/recovery-codes` senza sezione dedicata;
-      ramo `scartoMinuti` di `/2fa/enable` non asserito. i18n EN solo
-      sul nucleo delle viste 2FA.
-      Piano: C:\Users\lenovo\.claude\plans\camoscio-2fa-totp.md, sez. 11.
-   2. Poi ~50+ MEDIO/BASSO dei tre blocchi della verifica generale
-      (nessuno deciso ne' applicato) - vedi 04-Da-Fare.md.
-   3. Se si torna a toccare map.js/tracking.js: prima la controprova
-      rigorosa rimasta aperta (vedi sopra).
-   4. Nessun'altra richiesta di Denis in sospeso al momento.
+  >>> DA DOVE SI RIPARTE (52a sessione):
+   1. Prossimo MEDIO/BASSO da scegliere fra quelli rimasti (~20
+      abbondanti) - vedi 04-Da-Fare.md per l'elenco completo. DENIS
+      VUOLE UN PUNTO ALLA VOLTA, CON IL SUO OK ESPLICITO PRIMA DI
+      OGNUNO - stesso ritmo di sempre.
+   2. Se si torna a toccare map.js/tracking.js: prima la controprova
+      rigorosa rimasta aperta dalla 47a (vedi sotto, invariata).
+   3. Nessun'altra richiesta di Denis in sospeso al momento.
 
->>> APERTI (invariati salvo dove segnato 45a):
+>>> APERTI (invariati salvo dove segnato):
   - CONFORMITA' GDPR + NOTA LEGALE: index.html fa accettare "Termini +
     Informativa privacy" senza documento dietro. Serve un consulente privacy/
     avvocato GDPR (non un DPO) per l'Informativa vera + il testo di consenso
@@ -89,24 +76,29 @@ FATTO in questa sessione:
     dispositivo (posizione reale, zona di casa, stato DMS, coda GPS); (k)
     (45a) la posizione viaggia su ogni messaggio della chat mesh senza
     informativa ne' interruttore; (l) (45a) GET /api/reports espone a tutti
-    chi ha segnalato, dove e quando; (m) (45a) nessuna scadenza sui dati
-    locali (cache tile mappa, coda GPS orfana); (n) (45a, CHIUSO - verificato
-    conforme) le foto NON portano EXIF/GPS, tutti gli input passano da un
-    ricompressore canvas che li distrugge - da nominare comunque come
+    chi ha segnalato, dove e quando; (m) (45a, PARZIALMENTE CHIUSO 50a) nessuna
+    scadenza sui dati locali - la cache tile ora ha un tetto/pulizia, la coda
+    GPS orfana ancora no (vedi debito tecnico sotto); (n) (45a, CHIUSO -
+    verificato conforme) le foto NON portano EXIF/GPS, tutti gli input passano
+    da un ricompressore canvas che li distrugge - da nominare comunque come
     rassicurazione quando l'informativa esiste.
   - VERIFICHE DAL VIVO: correttezza #9 e #11 in tracking.js; il riquadro
     "ultimo allarme fallito" nel pannello Sicurezza; il comando ⋮ "Togli la
     mia traccia" + la nota nel modale "Completa"; la prova al telefono del
     Punto 1 (+ RICHIESTA 2, un partecipante che dopo carica la sua traccia).
-    NUOVA (47a): la controprova rigorosa della corsa mappa/tracciamento -
+    La controprova rigorosa della corsa mappa/tracciamento (dalla 47a) -
     riprodurre il guasto PRIMA della correzione (rete rallentata ad arte
     su /api/regions/boundaries durante un ricaricamento a meta'
     registrazione) e verificare che sparisca DOPO. Fatta solo la verifica
     "a caldo" nel browser vero, non questa controprova specifica.
-  - M-5 (44a, RIEMERSO): race sulla cancellazione di un contatto d'emergenza
-    per indice posizionale invece che per id - due schede aperte in corsa
-    possono cancellare il contatto sbagliato. Dalla 22a/24a sessione, mai
-    piu' comparso nelle liste "aperti" successive per dimenticanza.
+  - M-5 + PUNTI GPS ORFANI (coppia per una sessione tranquilla): M-5 (44a,
+    RIEMERSO dalla 22a/24a) - race sulla cancellazione di un contatto
+    d'emergenza per indice posizionale invece che per id, due schede aperte
+    in corsa possono cancellare il contatto sbagliato. PUNTI GPS ORFANI
+    (nuovo, 50a) - quando un'escursione finisce con punti non inviati e la
+    sessione non viene mai ripresa, restano in IndexedDB per sempre (~100
+    byte/punto) - gemello piccolo dello stesso problema appena chiuso per
+    le tile.
   - MEDIO-5 (security-privacy 35a): i tempi misurati dal creatore si applicano
     identici a ogni confermato e finiscono in "Velocita' Ascesa X m/h" sulla
     Dashboard. GDPR art. 5(1)(d). MA E' LA DECISIONE CHE DENIS HA GIA' PRESO
@@ -130,14 +122,16 @@ FATTO in questa sessione:
 
 >>> ALTRE APERTE, non urgenti:
     dominio email proprio (rimandato) - causa vera delle email in spam.
-    Punto 63b - livelli intermedi zona dichiarata a mano (Denis deve pensarci).
 
 >>> RESTA VALIDO:
   - Hook "Stop" di auto-save: commit locale (MAI push) a fine di ogni
     risposta se ci sono modifiche non salvate. Va rifuso in un commit vero
-    prima di ogni push. Commit di auto-save accumulati dalla 45a e dalla
-    46a ancora da rifondere, MAI pushati (git status per il conteggio
-    esatto: crescono a ogni risposta con modifiche).
+    prima di ogni push (git status/git log origin/master..HEAD per il
+    conteggio esatto: crescono a ogni risposta con modifiche). Il backlog
+    di 45a-49a e' stato rifuso e pushato il 14/09 (a52d506); da li' sono
+    ripartiti nuovi auto-save locali (blocco 9 2FA + 48a/49a/50a), non
+    ancora rifusi ne' pushati - primo compito naturale a inizio 51a, se
+    Denis lo chiede.
   - Traduzione IT/EN (punto 102, CHIUSO): resta ITALIANO di proposito tutto
     il testo scritto dagli utenti, i nomi di luogo, i percorsi salvati,
     titolo/descrizione dei badge, le schede "i", il testo delle notifiche
@@ -155,38 +149,41 @@ FATTO in questa sessione:
   PUNTO 1 (35a): completamento di gruppo da tracciamento dal vivo. Pushato.
   TRE PICCOLI PUNTI (35a): cestino card completate; M-5 rotte atomiche
     contatti emergenza; TTL 90gg Notification. Pushati.
-  2FA COMPLETO, blocchi 1-8 + revisione (35a-42a): TUTTO PUSHATO
-    (ab06f07, 2f13451). Resta solo il BLOCCO 9 - vedi sopra.
+  2FA COMPLETO, blocchi 1-9 + revisione (35a-47a): TUTTO CHIUSO, inclusi i
+    due buchi di test e l'i18n EN (vedi 06-Cronologia-Sessioni.md 47a).
   43a SESSIONE (12/09): foto profilo, prova 2FA telefono, invito squadra,
     rifugi/assi/chat/percorso da seguire + revisione cumulativo - vedi
     dettaglio in cose_da_fare.txt.
-  44a SESSIONE (12/09): NESSUN CODICE PUSHATO. Sfoltimento vault +
-    verifica generale del codice, blocchi 1-2 (routes/, lib/) - vedi
-    dettaglio in 06-Cronologia-Sessioni.md del vault.
-  45a SESSIONE (13/09): NESSUN CODICE PUSHATO (3 commit di auto-save
-    locali, da rifondere). Blocco 3 (public/js/) della verifica generale
-    + CORRETTI 2 CRITICI (lib/gpx.js, public/js/map.js), misurati e
-    verificati dal vivo nel browser - vedi dettaglio in
-    06-Cronologia-Sessioni.md del vault, sezione "45a" (due paragrafi).
-  46a SESSIONE (14/09): NESSUN CODICE PUSHATO (commit di auto-save
-    locali, da rifondere - un commit per lettera A-H sarebbe naturale).
-    TERZO E ULTIMO CRITICO corretto (tracking.js+map.js, replay
-    quadratico) + 17 DEI 18 ALTO corretti in blocco (sessione/dati
-    esposti/lib/privacy client/DMS/mappa offline/refreshState/pannello
-    mesh) - ognuno misurato e/o verificato dal vivo, 4 prove di
-    regressione rilanciate (176/176). Resta solo il punto 15
-    (strutturale, 8 file, rimandato apposta con l'architect) - vedi
-    dettaglio in 06-Cronologia-Sessioni.md del vault, sezione "46a".
-  47a SESSIONE (14/09): NESSUN CODICE PUSHATO (commit di auto-save
-    locali, da rifondere). PROGETTATO con l'agente architect (piano
-    dedicato, 5 decisioni D-1...D-5 tutte approvate) e POI IMPLEMENTATO
-    nella stessa sessione l'ultimo ALTO della verifica generale (punto
-    15, spacchettamento di initApp() su 11 file) - VERIFICA GENERALE
-    ORA CHIUSA PER INTERO (3/3 CRITICI, 18/18 ALTO). Due difetti
-    preesistenti trovati progettando e corretti nello stesso giro.
-    Verificato dal vivo nel browser vero (console sempre pulita); non
-    ancora fatta la controprova rigorosa con rete rallentata ad arte -
-    vedi dettaglio in 06-Cronologia-Sessioni.md del vault, sezione "47a".
+  44a-45a-46a SESSIONI (12-14/09): verifica generale del codice a blocchi
+    (routes/, lib/, public/js/) - 3/3 CRITICI + 17/18 ALTO corretti e
+    verificati - vedi 06-Cronologia-Sessioni.md.
+  47a SESSIONE (14/09): ultimo ALTO chiuso (spacchettamento di initApp() su
+    11 file, progettato con l'agente architect) - VERIFICA GENERALE CHIUSA
+    PER INTERO (3/3 CRITICI, 18/18 ALTO). Poi BLOCCO 9 del piano 2FA
+    CHIUSO. Auto-save di 45a/46a/47a (30 file) rifusi in un commit e
+    PUSHATI (a52d506). Vault pushato (610346d).
+  48a SESSIONE (14/09): primo MEDIO/BASSO della verifica generale chiuso -
+    "oggi" in UTC invece che Europa/Rome, da 7 punti client iniziali a 9
+    totali (client + server + un'ottava occorrenza), dopo doppia revisione
+    code-reviewer. Helper canonico dataISORoma()/dataRomaISO()/
+    oggiRomaISO() - vedi 03-Decisioni-Architetturali.md. Vault pushato.
+  49a SESSIONE (14/09): secondo e terzo MEDIO/BASSO chiusi - formula
+    ore-CAI triplicata e backpack.js/quota mancante (zaino senza
+    attrezzatura alta quota + un bug reale nel form). Quattro giri di
+    code-reviewer. Vedi 06-Cronologia-Sessioni.md, sezione "49a". Vault
+    pushato.
+  50a SESSIONE (15/09): quarto e quinto MEDIO/BASSO chiusi - codici 2FA
+    nella finestra di stampa (3 giri + verifica dal vivo nel browser) e
+    cache tile offline senza tetto ne' scadenza (4 giri, il piu' lungo -
+    condivide l'IndexedDB con la coda punti GPS). Vedi
+    06-Cronologia-Sessioni.md, sezione "50a". Vault pushato.
+  51a SESSIONE (16/09): sesto MEDIO/BASSO chiuso - tetto complessivo
+    mancante sulle tile mappa esplicite, comando manuale "Libera
+    spazio" scelto da Denis. Il primo giro di code-reviewer ha risposto
+    con side-action fabbricate invece di un verdetto (vedi
+    07-Trappole-Tecniche.md) - rilanciato con vincoli espliciti, 2 ALTO
+    + 3 MEDIO + 1 BASSO reali trovati e corretti, verificati dal vivo
+    nel browser vero. Vedi 06-Cronologia-Sessioni.md, sezione "51a".
 
 ===================================================================
 
@@ -211,64 +208,14 @@ REGOLA DI FINE SESSIONE: si aggiornano il vault e questo file SEMPRE; cronologia
 MAI piu' (congelato); cose_da_fare.txt quando un punto si chiude o ne arriva uno nuovo.
 
 >>> LEZIONI OPERATIVE: tutte in ../camoscio memoria/07-Trappole-Tecniche.md — quella
-    e' la sede dove si guarda prima di toccare codice a rischio. In breve, le piu'
-    ricorrenti: git dopo un'interruzione; moduli che si collegano tardi; componenti
-    condivisi fra piu' pagine; .toObject vs .toJSON; $unset di campi required;
-    select('username') che scavalca la pseudonimizzazione; recupero password vs grazia
-    dell'eliminazione; npm audit fix vs overrides; serializzatore aggiunto a una rotta
-    senza try/catch; test verde su una premessa falsa; select:false non vale su un campo
-    assegnato in memoria; un gate privacy condiviso va dichiarato fail-closed; un
-    subagent puo' dichiarare falsamente di aver aggiornato la memoria (tratto ricorrente
-    di security-privacy, non un caso isolato); due funzioni di render sullo stesso dato
-    ma DOM diversi non danno errore se chiami quella sbagliata; una navigazione che
-    cambia solo l'hash non ricarica la SPA (serve navigateTo, e ATTENZIONE dal 13/09:
-    nemmeno chiamare navigateTo dalla console basta se non si passa dal punto giusto -
-    verificare che la sezione prenda davvero la classe .active, non solo l'hash); il
-    service worker MV3 dell'estensione Chrome si sospende; Math.max(...array) va in
-    RangeError oltre ~1,2e5 elementi (usare .reduce, e ATTENZIONE: douglasPeucker in
-    lib/geometry.js e' la stessa famiglia di bug, ricorsiva, RangeError misurato da
-    ~4.000 punti - trovato 44a, CORRETTO IL 14/09 (46a): stack esplicito PIU' un tetto
-    sul lavoro totale, perche' la sola conversione a iterativo toglie il RangeError ma
-    NON il costo quadratico sull'input avversario, misurato apposta dopo - vedi sotto);
-    routeSource.kind:'saved' e'
-    SEMPRE una traccia GPS registrata; le prove di prove/ NON si lanciano in parallelo
-    (DB Atlas condiviso); crypto.createHmac con chiave vuota NON lancia su Node 24; le
-    settings-card si nascondono con la CLASSE .hidden non con l'attributo; page.click
-    di Puppeteer fallisce su un bottone in un pannello scrollabile (usare evaluate); UN
-    RATE-LIMITER PER IP SU UNA ROTTA FRA ESTRANEI diventa un modo per bloccarsi a
-    vicenda (quattro occorrenze ormai: DMS/deactivate 40a, 2FA/recovery 42a,
-    route-planning 43a); un RouteDraft salva solo i punti scelti, MAI la linea
-    calcolata (si ricalcola con /api/routing/plan); i tratti 'retta' di un percorso
-    calcolato vanno SEMPRE distinti visivamente dai tratti 'sentiero' (vincolo 7); uno
-    script Node con backtick dentro va scritto su file ed eseguito, MAI passato inline
-    a bash -c/node -e dentro doppi apici (la shell li mangia come command
-    substitution). NB dal 06/09: il dislivello ha DUE soglie - 0 per le tracce
-    importate da un file di dispositivo (grezzo), 10 per le quote stimate (percorso
-    progettato, GPS dal vivo). Vedi lib/gpx.js. NB dal 12/09 (44a): una regex "greedy"
-    con una classe di caratteri troppo larga (es. [^>] invece di [^<>]) puo' andare in
-    backtracking quadratico su input malformati - trovato in lib/gpx.js, CORRETTO IL
-    13/09 (45a): misurato prima/dopo sullo stesso identico file patologico, da
-    quadratico (40.000 occ. = 5s) a piatto (200.000 = 9ms). NB dal 13/09 (45a): stesso
-    principio per un ciclo che ridisegna una struttura a ogni iterazione - addLatLng
-    uno per uno su una polyline Leaflet e' quadratico, misurato 42s/16.000 punti in
-    tracking.js, CORRETTO IL 14/09 (46a): un solo setLatLngs, 8,9ms/16.000 punti. E: quando la stessa
-    formula/convenzione e' reimplementata a mano in piu' file invece di stare in un
-    unico posto, prima o poi le copie divergono in silenzio - confermato una TERZA
-    volta (escapeHtml mancante in una sola delle due copie del popup vetta in map.js,
-    XSS reale, CORRETTO IL 13/09) e allargato alle formule: quella ore-CAI esiste in 3
-    copie di cui 2 gia' NaN, ancora aperta. NB dal 13/09 (45a): escapeHtml() dentro un
-    onclick="f('...')" inline NON basta - il browser decodifica le entita' PRIMA che
-    il motore JS legga l'attributo, quindi &#39; ridiventa ' e si esce comunque dalla
-    stringa. Corretto in map.js (tolto l'onclick inline, sostituito con data-* +
-    addEventListener); la stessa forma resta latente in ~20 altri punti del progetto,
-    oggi innocua solo perche' interpolano sempre un ObjectId. Prima di correggere un
-    punto trovato in revisione, grep il resto del file/blocco per lo stesso dato o la
-    stessa formula. NB dal 14/09 (46a): un cancello unico che unisce piu' requisiti
-    indipendenti blocca anche chi non ha bisogno di tutti - configurato() di
-    lib/mailer.js univa "credenziali presenti" (serve sempre) e "APP_BASE_URL
-    utilizzabile" (serve solo alle email coi link), e l'allarme DMS - che non ha
-    nessun link - passava dallo stesso cancello: un APP_BASE_URL rotto in produzione
-    faceva tacere l'unico avviso di sicurezza del sito. Corretto scomponendo il
-    cancello (credenzialiPresenti() separata) con un parametro a default invariato
-    (richiedeLinkFunzionante) sui chiamanti esistenti.
+    e' la sede dove si guarda prima di toccare codice a rischio. Nella 50a le lezioni
+    erano specifiche di IndexedDB (leggere l'errore da REQUEST non da TRANSACTION;
+    un campo indicizzato presente solo su un tipo di record invece di un booleano
+    controllato a runtime; controllo+promozione in una sola transazione atomica) -
+    non ancora generalizzate nel file del vault, da valutare se vale la pena la
+    prossima volta che IndexedDB torna in gioco. Il resto (dalla 49a a ritroso: dato
+    mancante che alimenta un giudizio binario; correggere un valore condiviso solo su
+    un lato; RangeError su array grandi; formule duplicate che divergono;
+    rate-limiter per IP fra estranei; ecc.) e' tutto nel file del vault, non
+    ripetuto qui per tenerlo corto.
 ===================================================================

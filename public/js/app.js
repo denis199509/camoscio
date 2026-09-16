@@ -36,6 +36,17 @@ window.escapeHtml = function(str) {
         .replace(/'/g, '&#39;');
 };
 
+// "Oggi" (o una Date qualsiasi) come stringa "YYYY-MM-DD" nel fuso Europe/Rome, MAI
+// toISOString() (sempre UTC): le date salvate dal server (models/Hike.js e affini)
+// sono gia' "YYYY-MM-DD" in Europe/Rome, e un confronto fatto in UTC sposta il confine
+// di un giorno nella finestra fra mezzanotte locale e mezzanotte UTC (fino a 2h,
+// ora legale) - stesso bug gia' corretto in lib/geofenceTimbri.js/accountDeletion.js
+// lato server, qui generalizzato lato client (verifica generale, blocco 3, 45a
+// sessione: 7 punti divergenti). "Chrome globale" come escapeHtml sopra.
+window.dataISORoma = function(date) {
+    return (date instanceof Date ? date : new Date()).toLocaleDateString('sv-SE', { timeZone: 'Europe/Rome' });
+};
+
 // Stato vuoto unificato (Audit visivo B1, 36a sessione). Prima ~12 riquadri "non c'e'
 // ancora niente" erano <div class="glass-card text-center py-4 text-muted">${msg}</div> -
 // quattro classi di utility e nessuna struttura. Qui un solo componente, con l'impronta
@@ -1318,6 +1329,10 @@ function triggerSectionRender(sectionId) {
                 if (window.renderHikeSelectOptions) window.renderHikeSelectOptions();
                 if (window.renderRouteToFollowOptions) window.renderRouteToFollowOptions();
                 if (window.toggleGeoConsentAlert) window.toggleGeoConsentAlert();
+                // Punto "Libera spazio" (51a sessione): come sopra, il render sta qui e non
+                // all'avvio - una scansione di IndexedDB non deve pagarla chi non apre mai
+                // la sezione Mappa.
+                if (window.refreshLiberaSpazioOfflineUi) window.refreshLiberaSpazioOfflineUi();
                 break;
             case "safety":
                 if (window.renderSafetyModule) window.renderSafetyModule();
@@ -1594,7 +1609,7 @@ function prossimaAvventura(usr) {
     if (!window.classificaMieEscursioni) return null;
     const { create, partecipo } = window.classificaMieEscursioni();
     const confermate = create.concat(partecipo.filter(h => (h.participants || []).includes(usr.id)));
-    const oggi = new Date().toISOString().slice(0, 10);
+    const oggi = dataISORoma();
     const future = confermate
         .filter(h => h.date && h.date >= oggi)
         .sort((a, b) => a.date.localeCompare(b.date));
@@ -1605,7 +1620,7 @@ function prossimaAvventura(usr) {
 // Giorni interi da oggi alla data "YYYY-MM-DD". Ancorate a mezzogiorno cosi' il passaggio
 // all'ora legale non sposta il conteggio di un giorno (stesso accorgimento di backpack.js).
 function giorniAllaData(dateStr) {
-    const oggi = new Date().toISOString().slice(0, 10);
+    const oggi = dataISORoma();
     return Math.round((new Date(dateStr + "T12:00:00") - new Date(oggi + "T12:00:00")) / 86400000);
 }
 
@@ -1635,8 +1650,10 @@ function renderDashboard() {
 
     document.getElementById("pace-up-val").textContent = passoMisurato ? paceUp : "—";
     document.getElementById("pace-down-val").textContent = passoMisurato ? paceDown : "—";
-    // Indice di fatica: CAI standard stima 400m/h in salita.
-    document.getElementById("pace-index-val").textContent = passoMisurato ? (400 / paceUp).toFixed(2) : "—";
+    // Indice di fatica: CAI standard stima 400m/h in salita (window.PASSO_SALITA_CAI,
+    // cai-tempi.js - MAI il numero letterale, stessa costante usata dentro
+    // calculateHikeTimes in profile.js per lo stesso indice).
+    document.getElementById("pace-index-val").textContent = passoMisurato ? (window.PASSO_SALITA_CAI / paceUp).toFixed(2) : "—";
 
     // Le unita' di misura seguono il numero: "— m/h" e "—x rispetto a CAI" sarebbero due
     // frasi che promettono un dato che non c'e' (vedi index.html, .pace-unit).
@@ -1742,7 +1759,7 @@ let _statsReqId = 0;
 
 function _rangeRapido(tipo) {
     const oggi = new Date();
-    const iso = (d) => d.toISOString().slice(0, 10);
+    const iso = (d) => dataISORoma(d);
     if (tipo === 'anno') return { from: oggi.getFullYear() + '-01-01', to: iso(oggi) };
     if (tipo === '12mesi') {
         const p = new Date(oggi);

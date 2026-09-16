@@ -735,7 +735,7 @@ window.unlockStampDirectly = async function(stampId, peakName) {
             await window.CamoscioState.stamps.push({
                 userId: usr.id,
                 stampId,
-                dateUnlocked: new Date().toISOString().split('T')[0]
+                dateUnlocked: dataISORoma()
             });
             
             userGpsMarker.bindPopup(`
