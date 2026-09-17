@@ -2670,11 +2670,11 @@
     <!-- Punto 113: elenco "seguaci"/"seguiti" di un utente, aperto dai due contatori sul
          suo profilo (window.showFollowList in userprofile.js). Sola navigazione: ogni riga
          porta al profilo di quella persona. Fuori da .page-container come gli altri modali. -->
-    <div id="follow-list-modal" class="modal hidden" onclick="if (event.target === this) chiudiModaleStoricoFollowList()">
+    <div id="follow-list-modal" class="modal hidden">
         <div class="modal-content glass-card">
             <div class="modal-header">
                 <h4 id="follow-list-modal-title"></h4>
-                <button class="close-modal-btn" onclick="chiudiModaleStoricoFollowList()">&times;</button>
+                <button class="close-modal-btn" id="btn-close-follow-list-modal">&times;</button>
             </div>
             <div id="follow-list-modal-body" class="squads-list"></div>
         </div>
@@ -2697,13 +2697,13 @@
     <!-- Ingrandimento immagine badge: vive vicino a generic-modal perche' e' raggiungibile
          da piu' pagine (Badge, profilo di un altro utente, Dashboard) - vedi la regola sui
          modali condivisi in 07-Trappole-Tecniche.md del vault. -->
-    <div id="image-lightbox" class="modal hidden" onclick="if (event.target === this) closeImageLightbox()">
+    <div id="image-lightbox" class="modal hidden">
         <div class="image-lightbox-content">
-            <button type="button" class="image-lightbox-close" onclick="closeImageLightbox()" aria-label="Chiudi">&times;</button>
+            <button type="button" class="image-lightbox-close" id="image-lightbox-close-btn" aria-label="Chiudi">&times;</button>
             <!-- "i" in alto a destra: compare solo per i badge che hanno una scheda in
                  badge-info.js (openImageLightbox in app.js la mostra/nasconde). -->
             <button type="button" id="image-lightbox-info-btn" class="image-lightbox-info-btn hidden"
-                    onclick="toggleImageLightboxInfo()" aria-label="Informazioni sul badge" aria-expanded="false">
+                    aria-label="Informazioni sul badge" aria-expanded="false">
                 <span aria-hidden="true">i</span>
             </button>
             <img id="image-lightbox-img" src="" alt="">
@@ -2972,10 +2972,5 @@
     <script src="js/tracking.js"></script>
     <script src="js/trailhead-picker.js"></script>
     <script src="js/app.js"></script>
-    
-    <script>
-        // Inizializza le icone Lucide all'avvio
-        lucide.createIcons();
-    </script>
 </body>
 </html>

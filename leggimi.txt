@@ -1,56 +1,56 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-09-16 (51a sessione, CHIUSA. Ripresa dalla decisione
-in sospeso della 50a: il tetto complessivo mancante sulle tile mappa
-scaricate APPOSTA. Denis ha scelto un comando manuale "Libera spazio"
-(non una scadenza automatica, perche' il download e' possibile anche
-senza un'escursione collegata). NOTEVOLE: il primo giro di
-code-reviewer ha risposto raccontando side-action fabbricate (memoria
-aggiornata con un file mai esistito, due file di codice mai toccati)
-invece di dare un verdetto vero - stesso difetto gia' visto due volte
-su security-privacy, ora confermato anche su questo agente (vedi
-../camoscio memoria/07-Trappole-Tecniche.md). Rilanciato con vincoli
-espliciti in cima al prompt, il secondo giro ha dato una revisione
-vera: 2 ALTO + 3 MEDIO + 1 BASSO reali, tutti corretti. Verificato dal
-vivo nel browser vero, non solo a occhio sul codice.)
+Aggiornato: 2026-09-17 (53a sessione, CHIUSA — Tappa 2 di 5 del piano CSP
+chiusa). Piano completo, con tutte le decisioni gia' prese da Denis (D-1...D-7):
+C:\Users\lenovo\.claude\plans\camoscio-csp-header-sicurezza.md - non
+richiede altre domande, solo eseguire le tappe rimaste nell'ordine dato.
 
-FATTO in questa sessione (dettaglio completo in
-../camoscio memoria/06-Cronologia-Sessioni.md, sezione "51a"):
- - Comando "Libera spazio": nuove funzioni idb.js
-   (idbInspectExplicitTiles/idbClearExplicitTiles, cursore su
-   explicit===true - non un indice, per non confondere le esplicite
-   vere con gli orfani v1) + riquadro nel pannello "Opzioni escursione"
-   con conteggio+MB e bottone di conferma.
- - Revisione (2 giri, il primo invalido - vedi sopra): ALTO-1 il
-   bottone non si bloccava durante una registrazione (poteva cancellare
-   la mappa su cui si sta camminando); ALTO-2 nessuna guardia contro un
-   download in corso in parallelo (mappa bucata + toast che avrebbe
-   mentito); MEDIO-1 conferma senza lo stile "danger" della convenzione
-   del progetto; MEDIO-2 il riquadro non si aggiornava se il download
-   falliva a meta'; MEDIO-3 l'etichetta non seguiva il cambio lingua;
-   MEDIO-5 la scansione IndexedDB girava ad ogni avvio pagina invece
-   che solo aprendo la sezione Mappa; BASSO-1 arrotondamento "0 MB" con
-   poche tile. Tutti corretti nella stessa sessione.
- - Verifica dal vivo nel browser vero: 20 tile finte create via
-   console, riquadro comparso col conteggio giusto, bottone bloccato
-   durante una registrazione simulata, guardia anti-corsa testata
-   bloccando un download finto (rifiuta con un toast invece di
-   procedere), poi cancellazione vera col modale reale (bottone rosso
-   "Libera spazio") - conteggio tornato a 0, riquadro sparito da solo.
- - Lasciato aperto, non deciso: MEDIO-4 (la scansione fa openCursor sul
-   valore intero invece di un indice dedicato - mitigato da MEDIO-5, un
-   indice v3 resterebbe piu' corretto se le tile esplicite crescessero
-   molto) e BASSO-2 (QuotaExceededError non suggerisce ancora "Libera
-   spazio"). Vedi 04-Da-Fare.md per il dettaglio.
+  >>> DA DOVE SI RIPARTE (54a sessione):
+   1. TAPPE 1 e 2 del piano CSP chiuse per davvero. Tappa 2 (la piu'
+      grossa: 65 handler onclick/onchange generati da JS in 13 file,
+      diventati data-*+listener) verificata dal vivo nel browser vero
+      con un account di prova reale, e da una revisione code-reviewer
+      indipendente pulita al primo giro (1 MEDIO reale corretto - un
+      dispatch by-name su window in pendingreports.js, ora una mappa
+      fissa di sei nomi - + 4 BASSO, 3 corretti, il quarto lasciato
+      apposta). Non c'e' niente da ricontrollare qui.
+   2. PROSSIMO PASSO: TAPPA 3 del piano CSP - la finestra di stampa dei
+      codici 2FA (D-6/A, w.close nativo invece di uno script inline,
+      ~15 righe in twofactor.js). La controprova e' identica a quella
+      gia' fatta alla 50a sessione: aprire la finestra, chiudere per
+      davvero la scheda che l'ha aperta, verificare che si chiuda
+      comunque da sola allo scadere del timer.
+   3. Poi tappe 4-5 (Report-Only, enforcement) - le ultime due
+      richiedono un giro sul telefono Android vero (rischio noto: il
+      bridge Capacitor potrebbe non reggere la CSP).
+   4. Nessun'altra richiesta di Denis in sospeso al momento.
 
-  >>> DA DOVE SI RIPARTE (52a sessione):
-   1. Prossimo MEDIO/BASSO da scegliere fra quelli rimasti (~20
-      abbondanti) - vedi 04-Da-Fare.md per l'elenco completo. DENIS
-      VUOLE UN PUNTO ALLA VOLTA, CON IL SUO OK ESPLICITO PRIMA DI
-      OGNUNO - stesso ritmo di sempre.
-   2. Se si torna a toccare map.js/tracking.js: prima la controprova
-      rigorosa rimasta aperta dalla 47a (vedi sotto, invariata).
-   3. Nessun'altra richiesta di Denis in sospeso al momento.
+FATTO nella TAPPA 2 (dettaglio completo in
+../camoscio memoria/06-Cronologia-Sessioni.md, sezione "53a"):
+ - I 65 handler onclick/onchange nei 13 file (peoplesearch, pendingreports,
+   hikepage, outingpage, backpack, map, storico, feed, carpool, userprofile,
+   squadpage, app, social) diventano attributo data-* + addEventListener
+   vero, nell'ordine dal piu' isolato al piu' delicato dato dal piano. Il
+   pezzo piu' grosso: buildHikeCard in social.js (19 handler in una sola
+   funzione, la scheda escursione che compare ovunque nel sito).
+ - Verificato dal vivo nel browser vero (non solo node --check): login demo
+   reale, giro completo su card escursione, pagina squadra, profilo,
+   storico, ricerca persone, notifiche, carpool, mappa (incluso il
+   teletrasporto GPS su un picco vero) - dove l'azione sarebbe stata
+   distruttiva (elimina, moderazione) usato uno spy sulla funzione reale
+   invece di eseguirla. Console sempre pulita.
+ - Revisione code-reviewer con vincoli anti-fabbricazione (regola fissata
+   alla 51a): pulita al primo giro, 65/65 handler fedeli all'originale.
+   Ha notato che la conversione ha chiuso di striscio due XSS latenti mai
+   notati nell'inline (partecipante e organizzatore non escapati in
+   social.js). Corretto un MEDIO reale (dispatch by-name su window in
+   pendingreports.js -> mappa fissa) e 3 dei 4 BASSO segnalati.
+
+>>> RIMANE VALIDO (nessuna nuova richiesta, non ridiscutere):
+   Prossimo MEDIO/BASSO fra quelli rimasti (~20 abbondanti, CSP a parte,
+   gia' in lavorazione sopra) - vedi 04-Da-Fare.md. Se si torna a toccare
+   map.js/tracking.js: prima la controprova rigorosa rimasta aperta dalla
+   47a (vedi sotto, invariata).
 
 >>> APERTI (invariati salvo dove segnato):
   - CONFORMITA' GDPR + NOTA LEGALE: index.html fa accettare "Termini +
@@ -127,11 +127,11 @@ FATTO in questa sessione (dettaglio completo in
   - Hook "Stop" di auto-save: commit locale (MAI push) a fine di ogni
     risposta se ci sono modifiche non salvate. Va rifuso in un commit vero
     prima di ogni push (git status/git log origin/master..HEAD per il
-    conteggio esatto: crescono a ogni risposta con modifiche). Il backlog
-    di 45a-49a e' stato rifuso e pushato il 14/09 (a52d506); da li' sono
-    ripartiti nuovi auto-save locali (blocco 9 2FA + 48a/49a/50a), non
-    ancora rifusi ne' pushati - primo compito naturale a inizio 51a, se
-    Denis lo chiede.
+    conteggio esatto: crescono a ogni risposta con modifiche). Il codice
+    della 52a (Tappa 1 CSP) e della 53a (Tappa 2 CSP + fix revisione) resta
+    per ora solo in auto-save locale - nessun push senza l'ok esplicito di
+    Denis. L'ultimo backlog rifuso e pushato (blocco 9 2FA + 48a-51a) e'
+    stato il 16/09 (05e2c3c).
   - Traduzione IT/EN (punto 102, CHIUSO): resta ITALIANO di proposito tutto
     il testo scritto dagli utenti, i nomi di luogo, i percorsi salvati,
     titolo/descrizione dei badge, le schede "i", il testo delle notifiche
@@ -141,7 +141,7 @@ FATTO in questa sessione (dettaglio completo in
   - "Account eliminato" (punto A-3.4) SI traduce: common.accountEliminato ->
     "Deleted account".
 
---- LAVORI PRECEDENTI FATTI E PUSHATI (per contesto, dal piu' vecchio) ---
+--- LAVORI PRECEDENTI FATTI (per contesto, dal piu' vecchio) ---
   TASTO INDIETRO / History API (33a): riscritto il nucleo di navigazione in
     public/js/app.js. Pushato (7793426).
   RITOCCHI VISIVI FASCIA A/B/C (33a-37a): audit dell'agente designer.
@@ -158,32 +158,23 @@ FATTO in questa sessione (dettaglio completo in
     (routes/, lib/, public/js/) - 3/3 CRITICI + 17/18 ALTO corretti e
     verificati - vedi 06-Cronologia-Sessioni.md.
   47a SESSIONE (14/09): ultimo ALTO chiuso (spacchettamento di initApp() su
-    11 file, progettato con l'agente architect) - VERIFICA GENERALE CHIUSA
-    PER INTERO (3/3 CRITICI, 18/18 ALTO). Poi BLOCCO 9 del piano 2FA
-    CHIUSO. Auto-save di 45a/46a/47a (30 file) rifusi in un commit e
+    11 file) - VERIFICA GENERALE CHIUSA PER INTERO (3/3 CRITICI, 18/18 ALTO).
+    Poi BLOCCO 9 del piano 2FA CHIUSO. Auto-save di 45a/46a/47a rifusi e
     PUSHATI (a52d506). Vault pushato (610346d).
-  48a SESSIONE (14/09): primo MEDIO/BASSO della verifica generale chiuso -
-    "oggi" in UTC invece che Europa/Rome, da 7 punti client iniziali a 9
-    totali (client + server + un'ottava occorrenza), dopo doppia revisione
-    code-reviewer. Helper canonico dataISORoma()/dataRomaISO()/
-    oggiRomaISO() - vedi 03-Decisioni-Architetturali.md. Vault pushato.
-  49a SESSIONE (14/09): secondo e terzo MEDIO/BASSO chiusi - formula
-    ore-CAI triplicata e backpack.js/quota mancante (zaino senza
-    attrezzatura alta quota + un bug reale nel form). Quattro giri di
-    code-reviewer. Vedi 06-Cronologia-Sessioni.md, sezione "49a". Vault
-    pushato.
-  50a SESSIONE (15/09): quarto e quinto MEDIO/BASSO chiusi - codici 2FA
-    nella finestra di stampa (3 giri + verifica dal vivo nel browser) e
-    cache tile offline senza tetto ne' scadenza (4 giri, il piu' lungo -
-    condivide l'IndexedDB con la coda punti GPS). Vedi
-    06-Cronologia-Sessioni.md, sezione "50a". Vault pushato.
-  51a SESSIONE (16/09): sesto MEDIO/BASSO chiuso - tetto complessivo
-    mancante sulle tile mappa esplicite, comando manuale "Libera
-    spazio" scelto da Denis. Il primo giro di code-reviewer ha risposto
-    con side-action fabbricate invece di un verdetto (vedi
-    07-Trappole-Tecniche.md) - rilanciato con vincoli espliciti, 2 ALTO
-    + 3 MEDIO + 1 BASSO reali trovati e corretti, verificati dal vivo
-    nel browser vero. Vedi 06-Cronologia-Sessioni.md, sezione "51a".
+  48a-51a SESSIONI (14-16/09): sei MEDIO/BASSO della verifica generale
+    chiusi uno alla volta ("oggi" UTC/locale, formula ore-CAI triplicata,
+    backpack.js/quota mancante, codici 2FA nella finestra di stampa, cache
+    tile offline senza tetto, tetto complessivo tile esplicite) - vedi
+    06-Cronologia-Sessioni.md, sezioni "48a"-"51a". Auto-save (blocco 9 2FA
+    + 48a-51a, 23 commit) rifusi e PUSHATI il 16/09 (05e2c3c).
+  52a SESSIONE (16/09): CSP/header di sicurezza, piano progettato con
+    l'agente architect (70 handler on* trovati, non 5). TAPPA 1 DI 5 CHIUSA
+    (script inline delle 5 pagine statiche estratti, 5 onclick di
+    index.html agganciati con addEventListener) - vedi
+    06-Cronologia-Sessioni.md, sezione "52a". Resta in auto-save locale.
+  53a SESSIONE (17/09): TAPPA 2 DI 5 CHIUSA (i 65 handler onclick/onchange
+    generati da JS in 13 file, data-*+listener) - vedi
+    06-Cronologia-Sessioni.md, sezione "53a". Resta in auto-save locale.
 
 ===================================================================
 
@@ -208,14 +199,12 @@ REGOLA DI FINE SESSIONE: si aggiornano il vault e questo file SEMPRE; cronologia
 MAI piu' (congelato); cose_da_fare.txt quando un punto si chiude o ne arriva uno nuovo.
 
 >>> LEZIONI OPERATIVE: tutte in ../camoscio memoria/07-Trappole-Tecniche.md — quella
-    e' la sede dove si guarda prima di toccare codice a rischio. Nella 50a le lezioni
-    erano specifiche di IndexedDB (leggere l'errore da REQUEST non da TRANSACTION;
-    un campo indicizzato presente solo su un tipo di record invece di un booleano
-    controllato a runtime; controllo+promozione in una sola transazione atomica) -
-    non ancora generalizzate nel file del vault, da valutare se vale la pena la
-    prossima volta che IndexedDB torna in gioco. Il resto (dalla 49a a ritroso: dato
-    mancante che alimenta un giudizio binario; correggere un valore condiviso solo su
-    un lato; RangeError su array grandi; formule duplicate che divergono;
-    rate-limiter per IP fra estranei; ecc.) e' tutto nel file del vault, non
-    ripetuto qui per tenerlo corto.
+    e' la sede dove si guarda prima di toccare codice a rischio. Nella 53a: un test
+    con spy su window.X smette di intercettare se il codice smette di leggere da
+    window (dispatch dinamico -> mappa locale costruita una volta) - non e' un
+    difetto del codice, e' il metodo di prova che deve cambiare. Il resto (dalla
+    52a a ritroso: la 50a era specifica di IndexedDB; dato mancante che alimenta un
+    giudizio binario; correggere un valore condiviso solo su un lato; RangeError su
+    array grandi; formule duplicate che divergono; rate-limiter per IP fra estranei;
+    ecc.) e' tutto nel file del vault, non ripetuto qui per tenerlo corto.
 ===================================================================

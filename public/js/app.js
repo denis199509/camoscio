@@ -366,6 +366,32 @@ document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") window.closeImageLightbox();
 });
 
+// CSP/header di sicurezza (tappa 1, 52a sessione): questi 5 tasti/backdrop erano gli
+// unici onclick="..." inline rimasti in index.html - script-src senza 'unsafe-inline'
+// li avrebbe bloccati in silenzio. Agganciati SUBITO (non dentro initApp()), stessa
+// regola di "tutto cio' che si puo' premere va collegato prima di initApp()"
+// (07-Trappole-Tecniche.md): i due modali sono raggiungibili anche prima che initApp()
+// finisca di girare.
+const imageLightboxModal = document.getElementById("image-lightbox");
+if (imageLightboxModal) {
+    imageLightboxModal.addEventListener("click", (e) => {
+        if (e.target === imageLightboxModal) window.closeImageLightbox();
+    });
+}
+const imageLightboxCloseBtn = document.getElementById("image-lightbox-close-btn");
+if (imageLightboxCloseBtn) imageLightboxCloseBtn.addEventListener("click", () => window.closeImageLightbox());
+const imageLightboxInfoBtn = document.getElementById("image-lightbox-info-btn");
+if (imageLightboxInfoBtn) imageLightboxInfoBtn.addEventListener("click", () => window.toggleImageLightboxInfo());
+
+const followListModal = document.getElementById("follow-list-modal");
+if (followListModal) {
+    followListModal.addEventListener("click", (e) => {
+        if (e.target === followListModal) window.chiudiModaleStoricoFollowList();
+    });
+}
+const btnCloseFollowListModal = document.getElementById("btn-close-follow-list-modal");
+if (btnCloseFollowListModal) btnCloseFollowListModal.addEventListener("click", () => window.chiudiModaleStoricoFollowList());
+
 // Main routing and initialization
 document.addEventListener("DOMContentLoaded", async () => {
     // Verifica se c'e' gia' una sessione valida (login o demo-login): se no, mostra
@@ -1420,11 +1446,29 @@ function renderNotificationBell() {
     // Punto 113: stesso schema per un "mi piace" ricevuto (relatedSessionId): il click apre
     // la pagina dell'uscita (goToOutingFromNotification in outingpage.js).
     list.innerHTML = notifications.map(n => `
-        <div class="notification-item ${n.read ? '' : 'unread'}" onclick="${n.relatedReportId ? `goToReportModeration()` : n.relatedHikeId ? `goToHikeToComplete('${n.relatedHikeId}')` : n.relatedSessionId ? `goToOutingFromNotification('${n.relatedSessionId}')` : `markNotificationRead('${n.id}')`}">
+        <div class="notification-item ${n.read ? '' : 'unread'}" data-notif-id="${escapeHtml(n.id)}">
             ${escapeHtml(n.text)}
             <span class="notification-time">${new Date(n.createdAt).toLocaleString([], { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
         </div>
     `).join("");
+
+    // Niente onclick inline con 4 rami ternari annidati (caso a se', tappa 2 CSP): la
+    // scelta del ramo si rifa' qui come if/else vero invece che come stringa
+    // costruita - si ritrova la notifica per id invece di portarsi dietro tutti e
+    // tre gli id collegati come attributi separati. Chiusura sull'array locale
+    // "notifications" gia' in scope (revisione code-reviewer, BASSO-1): e' lo stesso
+    // che ha prodotto questo identico giro di render, non window.CamoscioState.notifications
+    // che in teoria potrebbe essere gia' cambiato altrove fra un render e il clic.
+    list.querySelectorAll('[data-notif-id]').forEach(el => {
+        el.addEventListener('click', () => {
+            const notif = notifications.find(x => x.id === el.dataset.notifId);
+            if (!notif) return;
+            if (notif.relatedReportId) window.goToReportModeration();
+            else if (notif.relatedHikeId) window.goToHikeToComplete(notif.relatedHikeId);
+            else if (notif.relatedSessionId) window.goToOutingFromNotification(notif.relatedSessionId);
+            else window.markNotificationRead(notif.id);
+        });
+    });
 }
 
 // Segna una notifica come letta al click - solo quelle senza un posto dove portare
@@ -2225,3 +2269,8 @@ if (window.CamoscioI18n) {
         if (prog && prog.classList.contains("active") && window.renderProgressStats) window.renderProgressStats();
     });
 }
+
+// CSP/header di sicurezza (tappa 1, 52a sessione): era l'unico <script> inline di
+// index.html, spostato qui - stessa posizione relativa nell'ordine di caricamento
+// (era l'ultimo tag dopo app.js, ora e' l'ultima istruzione di app.js stesso).
+if (window.lucide) lucide.createIcons();

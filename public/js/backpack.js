@@ -903,13 +903,17 @@ function renderWeightDistribution(hike) {
         riga.innerHTML = `
             <span>${user.avatar} ${escapeHtml(user.username)}</span>
             <div style="display:flex; align-items:center; gap: 10px;">
-                <select onchange="reassignSharedGear('${hike.id}', '${pId}', this.value)" class="user-select-dropdown" style="padding: 2px 4px; font-size: 0.75rem;">
+                <select class="user-select-dropdown" data-azione="assegna-oggetto" style="padding: 2px 4px; font-size: 0.75rem;">
                     <option value="">${T('backpack.js.assegnaOggetto') || 'Assegna oggetto...'}</option>
                     ${opzioni}
                 </select>
                 <strong>${kg} kg</strong>
             </div>
         `;
+        // Niente onchange inline: closure su hike.id/pId (gia' in scope), this.value
+        // diventa e.target.value nel listener.
+        riga.querySelector('[data-azione="assegna-oggetto"]').addEventListener("change", (e) =>
+            window.reassignSharedGear(hike.id, pId, e.target.value));
         container.appendChild(riga);
     });
 }

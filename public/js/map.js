@@ -1287,9 +1287,19 @@ function drawStampablePoints() {
                     ${isUnlocked ? (T('map.punto.timbroCollezionato') || 'Timbro Collezionato ✓') : (T('map.punto.timbroNonSbloccato') || 'Timbro non Sbloccato')}
                 </span>
                 <br><br>
-                <button class="btn btn-sm btn-secondary" onclick="teleportUserGps(${peak.lat}, ${peak.lng})">${T('map.punto.teletrasporta') || 'Teletrasporta GPS qui'}</button>
+                <button class="btn btn-sm btn-secondary" data-teleport-qui>${T('map.punto.teletrasporta') || 'Teletrasporta GPS qui'}</button>
             </div>
         `);
+        // Niente onclick inline: il popup non si apre subito (a differenza del modello
+        // in updateUserGpsPopup, righe 675-700) - il bottone esiste nel DOM solo dopo
+        // popupopen, che puo' scattare piu' volte per lo stesso marker (riapertura).
+        // { once: true } come nel modello: si autodistrugge dopo il primo clic, non
+        // serve nessuna guardia in piu' anche su una riapertura successiva.
+        marker.on('popupopen', () => {
+            const popupEl = marker.getPopup().getElement();
+            const btn = popupEl && popupEl.querySelector('[data-teleport-qui]');
+            if (btn) btn.addEventListener('click', () => window.teleportUserGps(peak.lat, peak.lng), { once: true });
+        });
 
         peakMarkersGroup.addLayer(marker);
     });
@@ -1430,7 +1440,7 @@ function renderWazeReportsList() {
         // resta sulla mappa finche' un moderatore non decide.
         const bottone = rep.resolutionRequestedAt
             ? `<button class="waze-item-resolve" disabled title="${T('map.waze.inAttesaTitle') || 'Già segnalata come risolta, in attesa di verifica'}">⏳</button>`
-            : `<button class="waze-item-resolve" onclick="requestReportResolution('${rep.id}')" title="${T('map.waze.risolviTitle') || 'Segnala come risolta'}">✓</button>`;
+            : `<button class="waze-item-resolve" title="${T('map.waze.risolviTitle') || 'Segnala come risolta'}">✓</button>`;
 
         item.innerHTML = `
             <span>${emoji}</span>
@@ -1440,6 +1450,12 @@ function renderWazeReportsList() {
             </div>
             ${bottone}
         `;
+        // Niente onclick inline: closure su rep.id (gia' in scope). Il bottone
+        // disabled (richiesta gia' inviata) non ha niente da agganciare.
+        if (!rep.resolutionRequestedAt) {
+            const btn = item.querySelector(".waze-item-resolve");
+            if (btn) btn.addEventListener("click", () => window.requestReportResolution(rep.id));
+        }
         container.appendChild(item);
     });
 }

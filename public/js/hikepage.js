@@ -138,7 +138,7 @@ function renderHikePageParticipants(hike, box) {
         const nome = p ? esc(p.username) : esc(T('common.utente') || 'Utente');
         const avatar = p ? esc(p.avatar) : "👤";
         return `
-            <div class="squad-item" style="cursor:pointer;" onclick="showUserProfile('${pId}')">
+            <div class="squad-item" style="cursor:pointer;" data-user-id="${esc(pId)}">
                 <div><h5>${avatar} ${nome}</h5></div>
             </div>
         `;
@@ -148,6 +148,10 @@ function renderHikePageParticipants(hike, box) {
         <h4><i data-lucide="users"></i> ${esc(T('hikePage.partecipanti') || 'Partecipanti')}</h4>
         <div class="squads-list">${rows}</div>
     `;
+    // Niente onclick inline: si riattacca ad ogni ridisegno, sullo stesso box gia'
+    // appena ricreato - nessun listener puo' restare orfano o duplicarsi.
+    box.querySelectorAll("[data-user-id]").forEach(el =>
+        el.addEventListener("click", () => window.showUserProfile(el.dataset.userId)));
 }
 
 // Punto 116: disegna (o nasconde) la mini-mappa col percorso della traccia importata.

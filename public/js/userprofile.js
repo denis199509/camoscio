@@ -393,7 +393,7 @@ async function renderProfileHikes(userId, container) {
         .map(s => ({
             tipo: 'uscita',
             data: s.startedAt,
-            html: `<div class="outing-open-wrap" onclick="showOutingPage('${window.escapeHtml(s.id)}')">${schedaUscitaProfilo(s)}</div>`
+            html: `<div class="outing-open-wrap" data-open-outing="${window.escapeHtml(s.id)}">${schedaUscitaProfilo(s)}</div>`
         }));
 
     const tutte = [...vociHike, ...vociUscita].sort((a, b) => String(b.data || '').localeCompare(String(a.data || '')));
@@ -401,6 +401,10 @@ async function renderProfileHikes(userId, container) {
     container.innerHTML = tutte.length
         ? `<div class="outings-grid">${tutte.map(v => v.html).join('')}</div>`
         : window.statoVuoto(window.escapeHtml(T('profile.nessunaEscursione') || 'Nessuna escursione da mostrare per ora.'), '🥾');
+
+    // Niente onclick inline: ridisegnato ad ogni chiamata, si riaggancia qui.
+    container.querySelectorAll('[data-open-outing]').forEach(el =>
+        el.addEventListener('click', () => window.showOutingPage(el.getAttribute('data-open-outing'))));
 
     if (window.lucide) window.lucide.createIcons();
 }
@@ -419,7 +423,7 @@ function schedaSentieroPreferito(hike, isOwnProfile, containerId) {
     const esc = window.escapeHtml;
     const togliLabel = esc(T('profile.togliPreferiti') || 'Togli dai preferiti');
     const rimuoviBtn = isOwnProfile ? `
-        <button class="outing-card-del" onclick="removeProfileBookmark('${esc(hike.id)}', '${esc(containerId)}')"
+        <button class="outing-card-del" data-rimuovi-preferito="${esc(hike.id)}" data-rimuovi-preferito-container="${esc(containerId)}"
                 title="${togliLabel}" aria-label="${togliLabel}">🐐</button>
     ` : '';
     return `
@@ -451,6 +455,13 @@ function renderProfileBookmarks(userId, container) {
     container.innerHTML = hikes.length
         ? `<div class="outings-grid">${hikes.map(h => schedaSentieroPreferito(h, isOwnProfile, container.id)).join('')}</div>`
         : window.statoVuoto(window.escapeHtml(T('profile.nessunSentieroPreferito') || 'Nessun sentiero nei preferiti per ora.'), '🐐');
+
+    // Niente onclick inline: ridisegnato ad ogni chiamata, si riaggancia qui.
+    container.querySelectorAll('[data-rimuovi-preferito]').forEach(el =>
+        el.addEventListener('click', () => window.removeProfileBookmark(
+            el.getAttribute('data-rimuovi-preferito'),
+            el.getAttribute('data-rimuovi-preferito-container')
+        )));
 
     if (window.lucide) window.lucide.createIcons();
 }
@@ -539,11 +550,17 @@ async function renderUserProfile(userId) {
             .then(c => {
                 if (!c) return;
                 countsEl.innerHTML =
-                    `<button type="button" class="user-link follow-count-btn" onclick="showFollowList('${esc(userId)}','followers')">`
+                    `<button type="button" class="user-link follow-count-btn" data-follow-list="${esc(userId)}" data-follow-kind="followers">`
                     + `<b>${Number(c.followers) || 0}</b> ${esc(T('follow.seguaci') || 'seguaci')}</button>`
                     + `<span class="follow-count-sep"> · </span>`
-                    + `<button type="button" class="user-link follow-count-btn" onclick="showFollowList('${esc(userId)}','following')">`
+                    + `<button type="button" class="user-link follow-count-btn" data-follow-list="${esc(userId)}" data-follow-kind="following">`
                     + `<b>${Number(c.following) || 0}</b> ${esc(T('follow.seguiti') || 'seguiti')}</button>`;
+                // Niente onclick inline: ridisegnato solo qui, si riaggancia subito dopo.
+                countsEl.querySelectorAll('[data-follow-list]').forEach(btn =>
+                    btn.addEventListener('click', () => window.showFollowList(
+                        btn.getAttribute('data-follow-list'),
+                        btn.getAttribute('data-follow-kind')
+                    )));
             })
             .catch(() => {});
     }
@@ -632,12 +649,19 @@ window.showFollowList = async function (userId, tipo) {
 
     bodyEl.innerHTML = persone.length
         ? persone.map(u => `
-            <div class="squad-item" style="cursor:pointer;" onclick="scollegaModaleStorico('follow-list-modal'); closeFollowListModal(); showUserProfile('${esc(u.id)}')">
+            <div class="squad-item" style="cursor:pointer;" data-user-id="${esc(u.id)}">
                 <div><h5>${esc(u.avatar)} ${esc(u.username)}</h5></div>
             </div>`).join('')
         : `<div class="text-muted small italic text-center py-2">${esc(tipo === 'followers'
             ? (T('follow.nessunSeguaceAltri') || 'Nessuno segue questa persona.')
             : (T('follow.nessunSeguitoAltri') || 'Questa persona non segue nessuno.'))}</div>`;
+
+    // Niente onclick inline: ridisegnato ad ogni apertura del modale, si riaggancia qui.
+    bodyEl.querySelectorAll('[data-user-id]').forEach(el => el.addEventListener('click', () => {
+        window.scollegaModaleStorico('follow-list-modal');
+        window.closeFollowListModal();
+        window.showUserProfile(el.getAttribute('data-user-id'));
+    }));
 
     if (window.lucide) window.lucide.createIcons();
 };

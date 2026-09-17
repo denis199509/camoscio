@@ -36,6 +36,26 @@ function setupPendingReportsTriangle() {
 
     wrapper.classList.remove("hidden");
     btn.addEventListener("click", () => showPendingReportsPage());
+
+    // Tappa 2 CSP (65 onclick inline -> data-*): le tre code si ridisegnano ad ogni
+    // azione (showPendingReportsPage le ricarica da capo) - delega su document, una
+    // volta sola, stesso schema del menu "tre puntini" in social.js:276.
+    // Revisione code-reviewer (MEDIO-1): niente window[nome] - quello risolverebbe
+    // QUALUNQUE globale per nome, e la delega e' su document (non scoped alle sole
+    // code di moderazione). Con la CSP attiva questo resterebbe l'unico modo di far
+    // eseguire codice arbitrario via markup iniettato altrove nella pagina, senza
+    // passare da uno <script>. La mappa locale limita la scelta ai soli sei nomi
+    // letterali di bottoniModerazione qui sotto.
+    const AZIONI_MOD = {
+        keepReportActive, confirmReportResolution, renewReport,
+        removeExpiredReport, rejectPendingReport, confirmPendingReport
+    };
+    document.addEventListener("click", (e) => {
+        const el = e.target.closest("[data-azione-mod]");
+        if (!el) return;
+        const fn = AZIONI_MOD[el.dataset.azioneMod];
+        if (fn) fn(el.dataset.id);
+    });
 }
 
 // Aggiorna solo il contatore del triangolo - mirror della meta' "badge" di
@@ -198,8 +218,12 @@ function renderModerationListBody(reports, kind, box, chiaveVuota) {
 // nel loro handler; quelle reversibili (renewReport / keepReportActive / confirmPendingReport)
 // no - decisione di Denis.
 function bottoniModerazione(rep, kind) {
+    // Niente onclick inline: data-azione-mod porta il nome di UNA delle sei funzioni
+    // gia' esposte su window (elenco in fondo al file) - mai influenzato da dati
+    // esterni, solo dalle stringhe letterali scritte qui sotto. Il listener delegato
+    // e' in setupPendingReportsTriangle().
     const b = (cls, fn, chiave, testoIt) =>
-        `<button class="btn btn-sm ${cls}" onclick="${fn}('${rep.id}')">${T(chiave) || testoIt}</button>`;
+        `<button class="btn btn-sm ${cls}" data-azione-mod="${fn}" data-id="${window.escapeHtml(rep.id)}">${T(chiave) || testoIt}</button>`;
 
     if (kind === 'risoluzioniRichieste') {
         return b('btn-secondary', 'keepReportActive', 'pendingReports.tieniAncora', 'Tieni ancora')

@@ -92,6 +92,17 @@ function disegnaFeed() {
             toggleMiPiaceFeed(btn.getAttribute('data-outing-like'), btn);
         });
     });
+    // Niente onclick inline: stesso schema di data-outing-like qui sopra. L'autore
+    // porta lo stopPropagation() che aveva prima (stessa cautela, "per sicurezza").
+    box.querySelectorAll('[data-open-profile]').forEach(el => {
+        el.addEventListener('click', (e) => {
+            e.stopPropagation();
+            window.showUserProfile(el.getAttribute('data-open-profile'));
+        });
+    });
+    box.querySelectorAll('[data-open-uscita]').forEach(el => {
+        el.addEventListener('click', () => apriUscita(el.getAttribute('data-open-uscita')));
+    });
 
     if (window.lucide) window.lucide.createIcons();
 }
@@ -134,12 +145,12 @@ function schedaFeed(item) {
     </div>`;
 
     return `<article class="feed-item">
-        <div class="feed-item-author" onclick="event.stopPropagation(); showUserProfile('${esc(item.userId)}')">
+        <div class="feed-item-author" data-open-profile="${esc(item.userId)}">
             <span class="feed-item-avatar">${avatar}</span>
             <span class="feed-item-author-name"><b>${nome}</b><span class="feed-item-when"> · ${quando}</span></span>
         </div>
         ${captionHtml}
-        <div class="feed-item-body" onclick="apriUscita('${esc(item.id)}')">${cardStats}</div>
+        <div class="feed-item-body" data-open-uscita="${esc(item.id)}">${cardStats}</div>
         ${miPiaceHtml}
     </article>`;
 }

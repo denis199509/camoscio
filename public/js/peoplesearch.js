@@ -57,10 +57,15 @@ function renderPeopleSearchModule() {
         row.className = "carpool-group-item";
         row.innerHTML = `
             <div style="display:flex; align-items:center; gap:12px;">
-                <div class="p-avatar" onclick="showUserProfile('${u.id}')">${u.avatar}</div>
-                <b class="user-link" onclick="showUserProfile('${u.id}')">${escapeHtml(u.username)}</b>
+                <div class="p-avatar">${u.avatar}</div>
+                <b class="user-link">${escapeHtml(u.username)}</b>
             </div>
         `;
+        // Niente onclick inline: closure sull'id vero, mai serializzato in HTML
+        // (vedi la nota in map.js:689-694 sul perche' escapeHtml da solo non basta
+        // dentro un attributo onclick).
+        row.querySelectorAll(".p-avatar, .user-link").forEach(el =>
+            el.addEventListener("click", () => window.showUserProfile(u.id)));
         results.appendChild(row);
     });
 }

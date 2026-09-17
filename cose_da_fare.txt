@@ -13694,3 +13694,113 @@ leggimi.txt aggiornati a fine sessione. Codice di questa sessione resta
 per ora solo in auto-save locale, nessun push senza il tuo ok esplicito
 (restano da rifondere anche i 21 auto-save proposti a inizio sessione,
 non ancora scelto se farlo).
+
+Dopo la chiusura del punto sopra, chiesto "rifondi e pusha i 21
+auto-save" - fatto (diventati 23 nel frattempo), un solo commit
+descrittivo, pushato.
+
+Poi "prossimo punto medio/basso" - proposte quattro opzioni, sceglie
+**CSP/header di sicurezza** (nessuna protezione del tipo che i
+browser sanno dare da soli, mancante da sempre).
+
+[IN CORSO - TAPPA 1 DI 5 FATTA] PUNTO - CSP e altri header di
+sicurezza. Prima di scrivere codice, consultato l'agente "architect"
+(la modifica tocca il modo in cui OGNI pagina viene consegnata, non
+un punto isolato). La ricognizione fatta da solo prima di chiedere
+diceva "5 punti da sistemare nell'HTML" - l'agente ne ha trovati 70
+(65 nascosti dentro il codice JS, non visibili leggendo l'HTML) e una
+quinta pagina mai considerata (la diagnosi GPS). Ha trovato anche tre
+rischi che nessuno dei due aveva visto: l'app del telefono (Android)
+carica il sito vero e quindi riceverebbe questa protezione nuova - se
+interferisse col modo in cui il telefono legge il GPS in background,
+la sicurezza in montagna ne risentirebbe; le mappe scaricate offline
+usano un meccanismo che va nominato esplicitamente o restano bianche
+senza nessun errore; la finestra di stampa dei codici di recupero 2FA
+(sistemata la sessione scorsa) userebbe un pezzo di codice che questa
+protezione bloccherebbe in silenzio, vanificando il lavoro appena
+fatto.
+
+Sette scelte chieste a te uno alla volta (AskUserQuestion): procedere
+a piccoli passi verificabili invece che tutto insieme (scelto: a
+passi); tenere permessi certi stili scritti direttamente nel codice
+invece di riscrivere ~125 punti a rischio di rompere l'aspetto del
+sito appena sistemato (scelto: tenerli); il modo di chiudere la
+finestra di stampa 2FA senza il pezzo di codice bloccato (scelto: un
+metodo nativo del browser, senza rete); dove leggere eventuali
+problemi durante la fase di prova (scelto: solo la console del
+browser, niente endpoint nuovo che raccoglierebbe indirizzi visitati).
+Le altre tre (una libreria pronta o scritto a mano; l'indirizzo della
+chat in tempo reale scritto esplicito o dedotto; quanto durare la
+prima protezione sui certificati) prese con la raccomandazione
+dell'agente, senza obiezioni.
+
+Piano scritto per intero (dove sta, come si riprende, tutte le
+decisioni): C:\Users\lenovo\.claude\plans\camoscio-csp-header-sicurezza.md
+
+FATTO (Tappa 1 di 5): tolti i pezzi di codice scritti DENTRO le
+pagine invece che in file a parte, spostati in file nuovi - stessa
+identica funzione, solo spostata (verificato col confronto riga per
+riga, non a occhio). Tolti anche i 5 collegamenti scritti nello
+stesso modo vecchio in due finestre popup del sito principale,
+ricollegati nel modo nuovo. Verificato dal vivo nel browser vero: le
+5 pagine, le due finestre popup (si aprono, si chiudono cliccando
+fuori, si chiudono col tasto X, senza chiudersi per sbaglio cliccando
+dentro), e le due prove automatiche che toccano accessi/password (152
+e 58 controlli, tutti verdi). Una revisione automatica indipendente
+non ha trovato problemi veri, solo tre rifiniture piccolissime -
+applicate.
+
+Restano da fare: Tappa 2 (la più grossa - i 65 punti nascosti nel
+codice JS), Tappa 3 (la finestra di stampa 2FA), Tappa 4 e 5 (accendere
+la protezione, prima in modalità "segnala soltanto" poi vera - le
+ultime due richiedono una prova col telefono Android vero, per il
+rischio del GPS in background).
+
+Vault e leggimi.txt aggiornati a fine sessione (due giri: uno prima
+della revisione automatica, uno dopo che è tornata pulita). Codice
+resta in auto-save locale, nessun push senza il tuo ok esplicito.
+
+FATTO (Tappa 2 di 5, sessione successiva - 53esima): i 65 punti nascosti
+nel codice JS (13 file) diventano attributo + ascoltatore vero, andando
+dal più isolato al più delicato come deciso nel piano. Il pezzo più
+grosso e delicato era dentro social.js (la scheda escursione che
+compare ovunque nel sito - 19 punti in una sola funzione): un solo
+aggancio dopo aver costruito la scheda, non uno per bottone.
+
+Verificato dal vivo nel browser vero (non solo la sintassi), con un
+account di prova reale: apri/chiudi scheda, apri il profilo di un
+partecipante e dell'organizzatore, preferiti, mappa, chat, il menu
+Modifica/Elimina, promuovi e rimuovi admin di una squadra vera (disfatto
+subito per non lasciare lo stato cambiato), sali e scendi da un
+passaggio auto vero (disfatto), teletrasporto GPS su un picco vero sulla
+mappa, una richiesta di risoluzione segnalazione vera (annullata prima
+di confermarla), la ricerca persone, l'elenco chi segui/chi ti segue, e
+la moderazione delle segnalazioni con dati finti (l'account di prova
+non ha davvero quel permesso - forzandolo solo lato browser il server
+l'ha respinto giustamente, prova che il controllo vero è ancora al
+posto suo). Console del sito sempre pulita, a parte due errori previsti
+generati dal mio stesso test sulla moderazione.
+
+Una revisione automatica indipendente (con i vincoli espliciti per
+evitare la fabbricazione già vista due sessioni fa - stavolta pulita al
+primo giro) ha confrontato tutti e 65 i punti uno per uno col codice di
+prima: nessun pezzo di comportamento perso. Ha notato anche che la
+conversione ha chiuso, di striscio, due buchi di sicurezza che il
+vecchio codice inline aveva senza che nessuno se ne accorgesse (un
+partecipante e un organizzatore il cui nome non passava dal filtro di
+sicurezza prima di finire scritto sullo schermo). Un problema vero
+segnalato e corretto: un bottone della moderazione risolveva il nome
+della funzione da chiamare leggendolo da tutto il sito (qualunque nome
+esistesse), invece che da una lista fissa di sei nomi ammessi - piccola
+porta lasciata aperta per il futuro, ora chiusa. Più quattro piccolezze,
+tutte corrette (tre bottoni trovati per tipo invece che per nome,
+un'esportazione mancante ma condivisa con altre due funzioni gemelle
+- lasciata così per non fare una toppa a metà, una guardia inutile
+semplificata).
+
+Restano da fare: Tappa 3 (la finestra di stampa 2FA), Tappa 4 e 5
+(accendere la protezione, prima in modalità "segnala soltanto" poi
+vera - le ultime due richiedono una prova col telefono Android vero).
+
+Vault e leggimi.txt aggiornati a fine sessione. Codice resta in
+auto-save locale, nessun push senza il tuo ok esplicito.

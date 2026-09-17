@@ -233,7 +233,7 @@
             // Il ⬆ per allegare un .gpx a posteriori vale finché c'è un mio Completion a cui
             // agganciarlo.
             const bottoneCaricaGpx = completion ? `
-                <button class="btn btn-xs btn-secondary" onclick="uploadCompletionGpx('${completion.id}')" title="${esc(T('hikeCard.caricaGpxTitle') || 'Carica un file .gpx per avere il tempo reale di questa escursione')}">
+                <button class="btn btn-xs btn-secondary" data-upload-gpx="${esc(completion.id)}" title="${esc(T('hikeCard.caricaGpxTitle') || 'Carica un file .gpx per avere il tempo reale di questa escursione')}">
                     <i data-lucide="upload"></i>
                 </button>` : '';
             // Il cestino cambia significato secondo chi guarda (02/09/2026):
@@ -249,9 +249,9 @@
             const sonoCreatore = !!(db.currentUser && h.creatorId === db.currentUser.id);
             let bottoneCestino = '';
             if (sonoCreatore) {
-                bottoneCestino = `<button class="outing-card-del" onclick="deleteHike('${h.id}')" title="${esc(T('hikeCard.eliminaEscursioneTitle') || 'Elimina questa escursione per tutti i partecipanti')}" aria-label="${esc(T('hikeCard.eliminaEscursione') || 'Elimina escursione')}"><i data-lucide="trash-2"></i></button>`;
+                bottoneCestino = `<button class="outing-card-del" data-elimina-hike="${esc(h.id)}" title="${esc(T('hikeCard.eliminaEscursioneTitle') || 'Elimina questa escursione per tutti i partecipanti')}" aria-label="${esc(T('hikeCard.eliminaEscursione') || 'Elimina escursione')}"><i data-lucide="trash-2"></i></button>`;
             } else if (completion && !h.groupCompletedAt) {
-                bottoneCestino = `<button class="outing-card-del" onclick="deleteCompletion('${completion.id}', '${h.id}')" title="${esc(T('hikeCard.cancellaGiaFattaTitle') || "Cancella questa escursione dalle tue 'già fatte'")}" aria-label="${esc(T('hikeCard.cancellaGiaFattaTitle') || "Cancella questa escursione dalle tue 'già fatte'")}"><i data-lucide="trash-2"></i></button>`;
+                bottoneCestino = `<button class="outing-card-del" data-elimina-completion="${esc(completion.id)}" data-hike-id="${esc(h.id)}" title="${esc(T('hikeCard.cancellaGiaFattaTitle') || "Cancella questa escursione dalle tue 'già fatte'")}" aria-label="${esc(T('hikeCard.cancellaGiaFattaTitle') || "Cancella questa escursione dalle tue 'già fatte'")}"><i data-lucide="trash-2"></i></button>`;
             }
             const azioniCompletion = bottoneCaricaGpx + bottoneCestino;
             const azioni = `
@@ -325,6 +325,20 @@
             b.addEventListener('click', () => rinominaUscita(
                 b.getAttribute('data-rename-outing'),
                 b.getAttribute('data-outing-name') || ''
+            ));
+        });
+        // Tappa 2 CSP: le tre azioni delle card-escursione (upload gpx, elimina hike,
+        // elimina completion), stesso schema di delega-dopo-render di data-del-outing.
+        box.querySelectorAll('[data-upload-gpx]').forEach(b => {
+            b.addEventListener('click', () => uploadCompletionGpx(b.getAttribute('data-upload-gpx')));
+        });
+        box.querySelectorAll('[data-elimina-hike]').forEach(b => {
+            b.addEventListener('click', () => deleteHike(b.getAttribute('data-elimina-hike')));
+        });
+        box.querySelectorAll('[data-elimina-completion]').forEach(b => {
+            b.addEventListener('click', () => deleteCompletion(
+                b.getAttribute('data-elimina-completion'),
+                b.getAttribute('data-hike-id')
             ));
         });
 

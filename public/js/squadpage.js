@@ -147,8 +147,8 @@ function renderSquadJoinBox(squad, isMember, canManage, box) {
                 <div class="veto-request-item">
                     <span>${avatar} <b>${nome}</b></span>
                     <div class="veto-actions">
-                        <button class="btn btn-xs btn-success" onclick="approveSquadRequest('${squad.id}','${id}')">${esc(T('squadPage.accetta') || 'Accetta')}</button>
-                        <button class="btn btn-xs btn-danger" onclick="declineSquadRequest('${squad.id}','${id}')">${esc(T('squadPage.rifiuta') || 'Rifiuta')}</button>
+                        <button class="btn btn-xs btn-success" data-azione="approva-richiesta" data-user-id="${esc(id)}">${esc(T('squadPage.accetta') || 'Accetta')}</button>
+                        <button class="btn btn-xs btn-danger" data-azione="rifiuta-richiesta" data-user-id="${esc(id)}">${esc(T('squadPage.rifiuta') || 'Rifiuta')}</button>
                     </div>
                 </div>
             `;
@@ -162,7 +162,7 @@ function renderSquadJoinBox(squad, isMember, canManage, box) {
                 <div class="veto-request-item">
                     <span>${avatar} <b>${nome}</b> <span class="small text-muted">${esc(T('squadPage.invitatoInAttesa') || 'invitato, in attesa')}</span></span>
                     <div class="veto-actions">
-                        <button class="btn btn-xs btn-secondary" onclick="annullaInvitoSquadra('${squad.id}','${id}')">${esc(T('squadPage.annullaInvito') || 'Annulla')}</button>
+                        <button class="btn btn-xs btn-secondary" data-azione="annulla-invito" data-user-id="${esc(id)}">${esc(T('squadPage.annullaInvito') || 'Annulla')}</button>
                     </div>
                 </div>
             `;
@@ -173,6 +173,13 @@ function renderSquadJoinBox(squad, isMember, canManage, box) {
                 ${inviti.length ? `<span class="small font-bold text-muted" style="display:block; margin:${pending.length ? '10px' : '0'} 0 6px;"><i data-lucide="mail"></i> ${esc(T('squadPage.invitiInAttesa') || 'Inviti in attesa:')}</span>${righeInviti}` : ''}
             </div>
         `;
+        // Niente onclick inline: ridisegnato ad ogni chiamata, si riaggancia qui.
+        box.querySelectorAll('[data-azione="approva-richiesta"]').forEach(b =>
+            b.addEventListener('click', () => window.approveSquadRequest(squad.id, b.dataset.userId)));
+        box.querySelectorAll('[data-azione="rifiuta-richiesta"]').forEach(b =>
+            b.addEventListener('click', () => window.declineSquadRequest(squad.id, b.dataset.userId)));
+        box.querySelectorAll('[data-azione="annulla-invito"]').forEach(b =>
+            b.addEventListener('click', () => window.annullaInvitoSquadra(squad.id, b.dataset.userId)));
         return;
     }
 
@@ -183,10 +190,13 @@ function renderSquadJoinBox(squad, isMember, canManage, box) {
             <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
                 <p class="small text-muted" style="margin:0;">${esc(T('squadPage.seiInvitato') || 'Sei stato invitato in questa squadra.')}</p>
                 <div style="display:flex; gap:6px;">
-                    <button class="btn btn-sm btn-success" onclick="rispondiInvitoSquadra('${squad.id}', true)">${esc(T('social.acceptSquadInvite') || 'Accetta')}</button>
-                    <button class="btn btn-sm btn-danger" onclick="rispondiInvitoSquadra('${squad.id}', false)">${esc(T('social.declineSquadInvite') || 'Rifiuta')}</button>
+                    <button class="btn btn-sm btn-success" data-azione="rispondi-invito" data-accetta="1">${esc(T('social.acceptSquadInvite') || 'Accetta')}</button>
+                    <button class="btn btn-sm btn-danger" data-azione="rispondi-invito" data-accetta="0">${esc(T('social.declineSquadInvite') || 'Rifiuta')}</button>
                 </div>
             </div>`;
+        // Niente onclick inline: ridisegnato ad ogni chiamata, si riaggancia qui.
+        box.querySelectorAll('[data-azione="rispondi-invito"]').forEach(b =>
+            b.addEventListener('click', () => window.rispondiInvitoSquadra(squad.id, b.dataset.accetta === '1')));
         return;
     }
 
@@ -202,8 +212,11 @@ function renderSquadJoinBox(squad, isMember, canManage, box) {
         ? `<p class="small text-muted"><i data-lucide="clock"></i> ${esc(T('squadPage.richiestaInviata') || 'Richiesta di partecipazione inviata: aspetta la conferma di un amministratore.')}</p>`
         : `<div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
                <p class="small text-muted" style="margin:0;">${esc(T('squadPage.nonMembro') || 'Non fai ancora parte di questa squadra.')}</p>
-               <button class="btn btn-sm btn-primary" onclick="requestJoinSquad('${squad.id}')">${esc(T('squadPage.richiediPartecipazione') || 'Richiesta Partecipazione')}</button>
+               <button class="btn btn-sm btn-primary" data-azione="richiedi-partecipazione">${esc(T('squadPage.richiediPartecipazione') || 'Richiesta Partecipazione')}</button>
            </div>`;
+    // Niente onclick inline: ridisegnato ad ogni chiamata, si riaggancia qui.
+    const btnRichiedi = box.querySelector('[data-azione="richiedi-partecipazione"]');
+    if (btnRichiedi) btnRichiedi.addEventListener('click', () => window.requestJoinSquad(squad.id));
 }
 
 async function approveSquadRequest(squadId, userId) {
@@ -328,9 +341,9 @@ function renderSquadMembers(squad, canManage, box) {
         let actionHtml = isAdmin ? `<span class="badge badge-accent">Admin</span>` : "";
         if (canManage && !isCreator) {
             actionHtml += isAdmin
-                ? ` <button class="btn btn-sm btn-secondary" onclick="demoteSquadMember('${squad.id}','${memberId}')">${esc(T('squadPage.rimuoviAdmin') || 'Rimuovi admin')}</button>`
-                : ` <button class="btn btn-sm btn-secondary" onclick="promoteSquadMember('${squad.id}','${memberId}')">${esc(T('squadPage.rendiAdmin') || 'Rendi admin')}</button>`;
-            actionHtml += ` <button class="btn btn-xs btn-danger" title="${esc(T('squadPage.rimuoviMembro') || 'Rimuovi dalla squadra')}" onclick="rimuoviMembroSquadra('${squad.id}','${memberId}')">✕</button>`;
+                ? ` <button class="btn btn-sm btn-secondary" data-azione="demote-admin" data-member-id="${esc(memberId)}">${esc(T('squadPage.rimuoviAdmin') || 'Rimuovi admin')}</button>`
+                : ` <button class="btn btn-sm btn-secondary" data-azione="promote-admin" data-member-id="${esc(memberId)}">${esc(T('squadPage.rendiAdmin') || 'Rendi admin')}</button>`;
+            actionHtml += ` <button class="btn btn-xs btn-danger" title="${esc(T('squadPage.rimuoviMembro') || 'Rimuovi dalla squadra')}" data-azione="rimuovi-membro" data-member-id="${esc(memberId)}">✕</button>`;
         }
 
         return `
@@ -348,8 +361,17 @@ function renderSquadMembers(squad, canManage, box) {
     box.innerHTML = `
         <h4><i data-lucide="users"></i> ${esc(T('squadPage.membri') || 'Membri')}</h4>
         <div class="squads-list">${rows}</div>
-        ${sonoMembro ? `<div style="margin-top:10px;"><button class="btn btn-sm btn-secondary" onclick="lasciaSquadra('${squad.id}')"><i data-lucide="log-out"></i> ${esc(T('squadPage.lasciaSquadra') || 'Lascia la squadra')}</button></div>` : ''}
+        ${sonoMembro ? `<div style="margin-top:10px;"><button class="btn btn-sm btn-secondary" data-azione="lascia-squadra"><i data-lucide="log-out"></i> ${esc(T('squadPage.lasciaSquadra') || 'Lascia la squadra')}</button></div>` : ''}
     `;
+    // Niente onclick inline: ridisegnato ad ogni chiamata, si riaggancia qui.
+    box.querySelectorAll('[data-azione="demote-admin"]').forEach(b =>
+        b.addEventListener('click', () => window.demoteSquadMember(squad.id, b.dataset.memberId)));
+    box.querySelectorAll('[data-azione="promote-admin"]').forEach(b =>
+        b.addEventListener('click', () => window.promoteSquadMember(squad.id, b.dataset.memberId)));
+    box.querySelectorAll('[data-azione="rimuovi-membro"]').forEach(b =>
+        b.addEventListener('click', () => window.rimuoviMembroSquadra(squad.id, b.dataset.memberId)));
+    const btnLascia = box.querySelector('[data-azione="lascia-squadra"]');
+    if (btnLascia) btnLascia.addEventListener('click', () => window.lasciaSquadra(squad.id));
 }
 
 async function promoteSquadMember(squadId, userId) {

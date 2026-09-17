@@ -100,10 +100,13 @@ function renderMyCarpoolOffers(hike) {
         </div>
         <div class="text-muted small">${T('carpool.js.partenzaDaLabel') || 'Partenza da:'} <b>${escapeHtml(driver.departureCity)}</b></div>
         <div style="display:flex; justify-content: flex-end; gap:8px; margin-top:8px;">
-            <button class="btn btn-sm btn-secondary" onclick="editMyCarpoolOffer('${hike.id}')">${T('common.modifica') || 'Modifica'}</button>
-            <button class="btn btn-sm btn-danger" onclick="deleteMyCarpoolOffer('${hike.id}')">${T('carpool.js.cancellaAnnuncio') || 'Cancella annuncio'}</button>
+            <button class="btn btn-sm btn-secondary" data-azione="modifica">${T('common.modifica') || 'Modifica'}</button>
+            <button class="btn btn-sm btn-danger" data-azione="cancella">${T('carpool.js.cancellaAnnuncio') || 'Cancella annuncio'}</button>
         </div>
     `;
+    // Niente onclick inline: closure su hike.id (gia' in scope).
+    item.querySelector('[data-azione="modifica"]').addEventListener('click', () => window.editMyCarpoolOffer(hike.id));
+    item.querySelector('[data-azione="cancella"]').addEventListener('click', () => window.deleteMyCarpoolOffer(hike.id));
     box.appendChild(item);
 }
 
@@ -359,11 +362,11 @@ function renderDriversList(hike) {
         if (isMe) {
             actionBtnHtml = `<span class="badge badge-accent">${T('carpool.js.laTuaAuto') || 'La tua Auto'}</span>`;
         } else if (isPassenger) {
-            actionBtnHtml = `<button class="btn btn-sm btn-danger" onclick="leaveCarpoolGroup('${hike.id}', '${driver.userId}')">${T('carpool.js.abbandonaAuto') || 'Abbandona Auto'}</button>`;
+            actionBtnHtml = `<button class="btn btn-sm btn-danger" data-azione="abbandona">${T('carpool.js.abbandonaAuto') || 'Abbandona Auto'}</button>`;
         } else {
             const seatsLeft = driver.seats - (driver.passengers ? driver.passengers.length : 0);
             if (seatsLeft > 0) {
-                actionBtnHtml = `<button class="btn btn-sm btn-success" onclick="joinCarpoolGroup('${hike.id}', '${driver.userId}')">${T('carpool.js.saliABordo') || 'Sali a Bordo'}</button>`;
+                actionBtnHtml = `<button class="btn btn-sm btn-success" data-azione="sali">${T('carpool.js.saliABordo') || 'Sali a Bordo'}</button>`;
             } else {
                 actionBtnHtml = `<span class="badge badge-red">${T('carpool.js.autoPiena') || 'Auto Piena'}</span>`;
             }
@@ -385,6 +388,12 @@ function renderDriversList(hike) {
                 ${actionBtnHtml}
             </div>
         `;
+        // Niente onclick inline: closure su hike.id/driver.userId (gia' in scope).
+        // Il ramo "badge" (isMe / auto piena) non ha bottone da agganciare.
+        const btnAbbandona = item.querySelector('[data-azione="abbandona"]');
+        if (btnAbbandona) btnAbbandona.addEventListener('click', () => window.leaveCarpoolGroup(hike.id, driver.userId));
+        const btnSali = item.querySelector('[data-azione="sali"]');
+        if (btnSali) btnSali.addEventListener('click', () => window.joinCarpoolGroup(hike.id, driver.userId));
 
         container.appendChild(item);
     });

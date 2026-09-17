@@ -400,11 +400,19 @@ async function renderFollowLists() {
         const btnCls = seguoGia ? 'btn-secondary' : 'btn-primary';
         const btnLbl = seguoGia ? (T('follow.seguiGia') || 'Segui già') : (T('follow.segui') || 'Segui');
         return `<div class="squad-item">
-            <div class="squad-item-open" onclick="showUserProfile('${escapeHtml(u.id)}')">
+            <div class="squad-item-open" data-user-id="${escapeHtml(u.id)}">
                 <h5>${escapeHtml(u.avatar)} ${escapeHtml(u.username)}</h5>
             </div>
-            <div><button class="btn btn-sm ${btnCls}" onclick="toggleFollow('${escapeHtml(u.id)}')">${escapeHtml(btnLbl)}</button></div>
+            <div><button class="btn btn-sm ${btnCls}" data-toggle-follow="${escapeHtml(u.id)}">${escapeHtml(btnLbl)}</button></div>
         </div>`;
+    };
+    // Niente onclick inline: entrambe le liste (seguiti/seguaci) si ridisegnano qui
+    // sotto, si riaggancia con lo stesso schema subito dopo ogni innerHTML.
+    const agganciaRigaPersona = (box) => {
+        box.querySelectorAll('[data-user-id]').forEach(el =>
+            el.addEventListener('click', () => window.showUserProfile(el.dataset.userId)));
+        box.querySelectorAll('[data-toggle-follow]').forEach(el =>
+            el.addEventListener('click', () => window.toggleFollow(el.dataset.toggleFollow)));
     };
 
     // "Chi seguo" - da CamoscioState.following, nessun fetch.
@@ -415,6 +423,7 @@ async function renderFollowLists() {
     followingBox.innerHTML = seguiti.length
         ? seguiti.map(f => rigaPersona(utente(f.followingId), true)).join('')
         : `<div class="text-muted small italic text-center py-2">${escapeHtml(T('follow.nessunSeguito') || 'Non segui ancora nessuno.')}</div>`;
+    agganciaRigaPersona(followingBox);
 
     // "Chi mi segue" - un solo GET, come populateReviewTargets.
     let followers = [];
@@ -429,6 +438,7 @@ async function renderFollowLists() {
     followersBox.innerHTML = followers.length
         ? followers.map(f => rigaPersona(utente(f.followerId), seguitiIds.has(f.followerId))).join('')
         : `<div class="text-muted small italic text-center py-2">${escapeHtml(T('follow.nessunSeguace') || 'Nessuno ti segue ancora.')}</div>`;
+    agganciaRigaPersona(followersBox);
 
     if (window.lucide) window.lucide.createIcons();
 }
@@ -861,11 +871,11 @@ function buildHikeCard(hike) {
     // cancella per tutti. Il tasto "carica gpx" resta sempre: un partecipante confermato puo'
     // allegare la propria traccia (Punto 1 / Richiesta 2).
     const completionToolsHtml = miaCompletion ? `
-        <button class="btn btn-xs btn-secondary" onclick="uploadCompletionGpx('${miaCompletion.id}')" title="${escapeHtml(T('hikeCard.caricaGpxTitle') || 'Carica un file .gpx per avere il tempo reale di questa escursione')}">
+        <button class="btn btn-xs btn-secondary" data-azione="upload-gpx" title="${escapeHtml(T('hikeCard.caricaGpxTitle') || 'Carica un file .gpx per avere il tempo reale di questa escursione')}">
             <i data-lucide="upload"></i>
         </button>
         ${!hike.groupCompletedAt ? `
-        <button class="btn btn-xs btn-secondary" style="color:var(--accent-red);" onclick="deleteCompletion('${miaCompletion.id}', '${hike.id}')" title="${escapeHtml(T('hikeCard.cancellaGiaFattaTitle') || "Cancella questa escursione dalle tue 'gia' fatte'")}">
+        <button class="btn btn-xs btn-secondary" style="color:var(--accent-red);" data-azione="elimina-completion" title="${escapeHtml(T('hikeCard.cancellaGiaFattaTitle') || "Cancella questa escursione dalle tue 'gia' fatte'")}">
             <i data-lucide="trash-2"></i>
         </button>` : ""}
     ` : "";
@@ -906,7 +916,7 @@ function buildHikeCard(hike) {
         const isLocalExpert = pUser.localExpert && pUser.localExpert.active;
         const expertTitlePart = isLocalExpert ? ` — ${T('profile.espertoLocale') || 'Esperto locale'}: ${escapeHtml(pUser.localExpert.area)}` : "";
         return `
-            <div class="p-avatar ${isLocalExpert ? 'local-expert' : ''}" title="${escapeHtml(pUser.username)} (Rep: ${pUser.reputation}%)${expertTitlePart}" onclick="showUserProfile('${pId}')">
+            <div class="p-avatar ${isLocalExpert ? 'local-expert' : ''}" title="${escapeHtml(pUser.username)} (Rep: ${pUser.reputation}%)${expertTitlePart}" data-user-id="${escapeHtml(pId)}">
                 ${pUser.avatar}
             </div>
         `;
@@ -929,18 +939,18 @@ function buildHikeCard(hike) {
         // rispondiInvito): "partecipi" e' vero solo dopo la risposta del server, perche' qui
         // significa "sei nel gruppo mesh/SOS".
         actionBtnHtml =
-            `<button class="btn btn-xs btn-success" onclick="rispondiInvito('${hike.id}', true)">${escapeHtml(T('hikeCard.accettaInvitoBtn') || 'Accetta')}</button>` +
-            `<button class="btn btn-xs btn-danger" style="margin-left:4px;" onclick="rispondiInvito('${hike.id}', false)">${escapeHtml(T('hikeCard.rifiutaInvitoBtn') || 'Rifiuta')}</button>`;
+            `<button class="btn btn-xs btn-success" data-azione="rispondi-invito" data-accetta="1">${escapeHtml(T('hikeCard.accettaInvitoBtn') || 'Accetta')}</button>` +
+            `<button class="btn btn-xs btn-danger" style="margin-left:4px;" data-azione="rispondi-invito" data-accetta="0">${escapeHtml(T('hikeCard.rifiutaInvitoBtn') || 'Rifiuta')}</button>`;
     } else if (escursioneNonPiuAperta(hike)) {
         // Passato il giorno previsto niente piu' "Iscriviti" (decisione di Denis). Dopo
         // isParticipant/isPending: chi era gia' dentro continua a vedere il suo stato. Un
         // invitato puo' ancora RIFIUTARE (per togliersi la card di dosso), non accettare.
         const chiuse = `<span class="badge" title="${escapeHtml(T('hikeCard.iscrizioniChiuseTitle') || 'Il giorno previsto è passato: non si accettano più iscrizioni')}">${escapeHtml(T('hikeCard.iscrizioniChiuse') || 'Iscrizioni chiuse')}</span>`;
         actionBtnHtml = isInvited
-            ? `<button class="btn btn-xs btn-danger" onclick="rispondiInvito('${hike.id}', false)">${escapeHtml(T('hikeCard.rifiutaInvitoBtn') || 'Rifiuta')}</button> ${chiuse}`
+            ? `<button class="btn btn-xs btn-danger" data-azione="rispondi-invito" data-accetta="0">${escapeHtml(T('hikeCard.rifiutaInvitoBtn') || 'Rifiuta')}</button> ${chiuse}`
             : chiuse;
     } else {
-        actionBtnHtml = `<button class="btn btn-sm btn-primary" onclick="joinHikeRequest('${hike.id}', ${eligibility.eligible})">${escapeHtml(T('hikeCard.iscrivitiBtn') || 'Iscriviti')}</button>`;
+        actionBtnHtml = `<button class="btn btn-sm btn-primary" data-azione="iscriviti">${escapeHtml(T('hikeCard.iscrivitiBtn') || 'Iscriviti')}</button>`;
     }
 
     // Pannello Veto del Capogruppo (solo per l'organizzatore). Guardia groupCompletedAt: senza,
@@ -957,8 +967,8 @@ function buildHikeCard(hike) {
                 <div class="veto-request-item">
                     <span>${pendingUser.avatar} <b>${escapeHtml(pendingUser.username)}</b> (Rep: ${pendingUser.reputation}%, ${pendingUser.experienceLevel})</span>
                     <div class="veto-actions">
-                        <button class="btn btn-xs btn-success" onclick="approveParticipant('${hike.id}', '${pendingId}')">${escapeHtml(T('hikeCard.accettaBtn') || 'Accetta')}</button>
-                        <button class="btn btn-xs btn-danger" onclick="declineParticipant('${hike.id}', '${pendingId}')">${escapeHtml(T('hikeCard.rifiutaBtn') || 'Rifiuta')}</button>
+                        <button class="btn btn-xs btn-success" data-azione="approva-partecipante" data-user-id="${escapeHtml(pendingId)}">${escapeHtml(T('hikeCard.accettaBtn') || 'Accetta')}</button>
+                        <button class="btn btn-xs btn-danger" data-azione="rifiuta-partecipante" data-user-id="${escapeHtml(pendingId)}">${escapeHtml(T('hikeCard.rifiutaBtn') || 'Rifiuta')}</button>
                     </div>
                 </div>
             `;
@@ -994,7 +1004,7 @@ function buildHikeCard(hike) {
         if (hike.groupCompletedAt) {
             completeGroupBtnHtml = `<span class="badge badge-green">${escapeHtml(T('hikeCard.completataGruppo') || 'Completata in gruppo ✓')}</span>`;
         } else if (hike.date <= oggiStr) {
-            completeGroupBtnHtml = `<button class="btn btn-sm btn-success" onclick="openCompleteGroupModal('${hike.id}')">${escapeHtml(T('hikeCard.completaBtn') || 'Completa escursione')}</button>`;
+            completeGroupBtnHtml = `<button class="btn btn-sm btn-success" data-azione="completa-gruppo">${escapeHtml(T('hikeCard.completaBtn') || 'Completa escursione')}</button>`;
         }
     }
 
@@ -1005,7 +1015,7 @@ function buildHikeCard(hike) {
     // 02/09/2026 per togliere le escursioni di prova, anche quelle gia' chiuse in gruppo).
     let vociMenu = "";
     if (isCreatorMe && !hike.groupCompletedAt) {
-        vociMenu += `<button type="button" class="hike-card-menu-item" onclick="openEditHikeModal('${hike.id}')">
+        vociMenu += `<button type="button" class="hike-card-menu-item" data-azione="modifica-escursione">
                     <i data-lucide="pencil"></i> ${escapeHtml(T('hikeCard.modificaBtn') || 'Modifica')}
                 </button>`;
     }
@@ -1019,12 +1029,12 @@ function buildHikeCard(hike) {
     const kindRitirabile = hike.routeSource && ['live', 'gpx', 'fit'].includes(hike.routeSource.kind);
     if (isCreatorMe && hike.groupCompletedAt && kindRitirabile &&
         Array.isArray(hike.routePath) && hike.routePath.length) {
-        vociMenu += `<button type="button" class="hike-card-menu-item" onclick="ritiraTracciaEscursione('${hike.id}')">
+        vociMenu += `<button type="button" class="hike-card-menu-item" data-azione="ritira-traccia">
                     <i data-lucide="eye-off"></i> ${escapeHtml(T('hikeCard.ritiraTraccia') || 'Togli la mia traccia')}
                 </button>`;
     }
     if (isCreatorMe) {
-        vociMenu += `<button type="button" class="hike-card-menu-item hike-card-menu-item-danger" onclick="deleteHike('${hike.id}')">
+        vociMenu += `<button type="button" class="hike-card-menu-item hike-card-menu-item-danger" data-azione="elimina-hike">
                     <i data-lucide="trash-2"></i> ${escapeHtml(T('hikeCard.eliminaEscursione') || 'Elimina escursione')}
                 </button>`;
     }
@@ -1045,7 +1055,7 @@ function buildHikeCard(hike) {
     // - mai un id fisso, questa stessa funzione costruisce card identiche su piu' gruppi
     // e pagine diverse (Escursioni in tre categorie, Le mie escursioni in quattro).
     card.innerHTML = `
-        <div class="hike-card-header" onclick="window.toggleHikeCard(this)">
+        <div class="hike-card-header">
             <h4 class="hike-card-title">${escapeHtml(hike.title)}</h4>
             <i data-lucide="chevron-down" class="hike-card-toggle-icon"></i>
         </div>
@@ -1054,7 +1064,7 @@ function buildHikeCard(hike) {
                 <span class="badge badge-primary hike-difficulty-badge">${escapeHtml(T('difficulty.' + hike.difficulty) || hike.difficulty)}</span>
                 ${editMenuHtml}
             </div>
-            <p class="small text-muted" style="margin-bottom: 8px;">${escapeHtml(T('hikeCard.organizzatoDa') || 'Organizzato da:')} <b class="user-link" onclick="showUserProfile('${hike.creatorId}')">${escapeHtml(creatorName)}</b>${creatorBadgeHtml}</p>
+            <p class="small text-muted" style="margin-bottom: 8px;">${escapeHtml(T('hikeCard.organizzatoDa') || 'Organizzato da:')} <b class="user-link" data-user-id="${escapeHtml(hike.creatorId)}">${escapeHtml(creatorName)}</b>${creatorBadgeHtml}</p>
 
             ${hike.description ? `<p class="small hike-card-desc">${escapeHtml(hike.description)}</p>` : ""}
 
@@ -1085,11 +1095,11 @@ function buildHikeCard(hike) {
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <span class="small text-muted">${escapeHtml(T('hikeCard.partecipantiLabel', hike.participants.length) || `Partecipanti (${hike.participants.length}):`)}</span>
                     <div style="display:flex; gap:6px;">
-                        <button class="btn btn-xs btn-secondary" onclick="loadHikeOnMapDirectly('${hike.id}')" title="${escapeHtml(T('hikeCard.vediMappaTitle') || 'Vedi sentiero sulla mappa')}">${escapeHtml(T('hikeCard.mappaBtn') || 'Mappa')}</button>
-                        <button class="btn btn-xs btn-secondary bookmark-toggle-btn ${isBookmarked ? 'is-bookmarked' : ''}" onclick="toggleBookmark('${hike.id}')" title="${isBookmarked ? escapeHtml(T('hikeCard.rimuoviPreferitiTitle') || 'Rimuovi dai preferiti') : escapeHtml(T('hikeCard.aggiungiPreferitiTitle') || 'Aggiungi ai preferiti')}">
+                        <button class="btn btn-xs btn-secondary" data-azione="vedi-mappa" title="${escapeHtml(T('hikeCard.vediMappaTitle') || 'Vedi sentiero sulla mappa')}">${escapeHtml(T('hikeCard.mappaBtn') || 'Mappa')}</button>
+                        <button class="btn btn-xs btn-secondary bookmark-toggle-btn ${isBookmarked ? 'is-bookmarked' : ''}" data-azione="toggle-bookmark" title="${isBookmarked ? escapeHtml(T('hikeCard.rimuoviPreferitiTitle') || 'Rimuovi dai preferiti') : escapeHtml(T('hikeCard.aggiungiPreferitiTitle') || 'Aggiungi ai preferiti')}">
                             🐐
                         </button>
-                        ${isParticipant ? `<button class="btn btn-xs btn-secondary" onclick="showHikePage('${hike.id}')" title="${escapeHtml(T('hikeCard.chatTitle') || 'Chat tra i partecipanti')}">${escapeHtml(T('hikeCard.chatBtn') || 'Chat')}</button>` : ""}
+                        ${isParticipant ? `<button class="btn btn-xs btn-secondary" data-azione="apri-chat" title="${escapeHtml(T('hikeCard.chatTitle') || 'Chat tra i partecipanti')}">${escapeHtml(T('hikeCard.chatBtn') || 'Chat')}</button>` : ""}
                         ${completionToolsHtml}
                     </div>
                 </div>
@@ -1105,6 +1115,47 @@ function buildHikeCard(hike) {
             </div>
         </div>
     `;
+
+    // Niente onclick inline (tappa 2 CSP, lotto 2e - il file piu' delicato): un solo
+    // aggancio qui, dopo l'unica assegnazione di card.innerHTML sopra. card e' ancora
+    // scollegata dal documento (appesa dal chiamante), quindi questa query non tocca
+    // mai le altre copie della stessa card altrove nella pagina.
+    // data-user-id SENZA data-azione = apri profilo (avatar partecipanti + link
+    // organizzatore); approva/rifiuta partecipante portano ENTRAMBI gli attributi,
+    // la query di apertura profilo li esclude apposta con :not([data-azione]).
+    card.querySelectorAll('[data-user-id]:not([data-azione])').forEach(el =>
+        el.addEventListener('click', () => window.showUserProfile(el.dataset.userId)));
+    card.querySelectorAll('[data-azione="approva-partecipante"]').forEach(el =>
+        el.addEventListener('click', () => window.approveParticipant(hike.id, el.dataset.userId)));
+    card.querySelectorAll('[data-azione="rifiuta-partecipante"]').forEach(el =>
+        el.addEventListener('click', () => window.declineParticipant(hike.id, el.dataset.userId)));
+    card.querySelectorAll('[data-azione="rispondi-invito"]').forEach(el =>
+        el.addEventListener('click', () => window.rispondiInvito(hike.id, el.dataset.accetta === '1')));
+
+    const headerEl = card.querySelector('.hike-card-header');
+    if (headerEl) headerEl.addEventListener('click', () => window.toggleHikeCard(headerEl));
+
+    const btnUpload = card.querySelector('[data-azione="upload-gpx"]');
+    if (btnUpload) btnUpload.addEventListener('click', () => window.uploadCompletionGpx(miaCompletion.id));
+    const btnEliminaCompletion = card.querySelector('[data-azione="elimina-completion"]');
+    if (btnEliminaCompletion) btnEliminaCompletion.addEventListener('click', () => window.deleteCompletion(miaCompletion.id, hike.id));
+    const btnIscriviti = card.querySelector('[data-azione="iscriviti"]');
+    if (btnIscriviti) btnIscriviti.addEventListener('click', () => window.joinHikeRequest(hike.id, eligibility.eligible));
+    const btnCompletaGruppo = card.querySelector('[data-azione="completa-gruppo"]');
+    if (btnCompletaGruppo) btnCompletaGruppo.addEventListener('click', () => window.openCompleteGroupModal(hike.id));
+    const btnModifica = card.querySelector('[data-azione="modifica-escursione"]');
+    if (btnModifica) btnModifica.addEventListener('click', () => window.openEditHikeModal(hike.id));
+    const btnRitiraTraccia = card.querySelector('[data-azione="ritira-traccia"]');
+    if (btnRitiraTraccia) btnRitiraTraccia.addEventListener('click', () => window.ritiraTracciaEscursione(hike.id));
+    const btnEliminaHike = card.querySelector('[data-azione="elimina-hike"]');
+    if (btnEliminaHike) btnEliminaHike.addEventListener('click', () => window.deleteHike(hike.id));
+    const btnVediMappa = card.querySelector('[data-azione="vedi-mappa"]');
+    if (btnVediMappa) btnVediMappa.addEventListener('click', () => window.loadHikeOnMapDirectly(hike.id));
+    const btnBookmark = card.querySelector('[data-azione="toggle-bookmark"]');
+    if (btnBookmark) btnBookmark.addEventListener('click', () => window.toggleBookmark(hike.id));
+    const btnChat = card.querySelector('[data-azione="apri-chat"]');
+    if (btnChat) btnChat.addEventListener('click', () => window.showHikePage(hike.id));
+
     return card;
 }
 
@@ -1860,8 +1911,10 @@ function renderCompleteGroupSearch() {
                 <div class="p-avatar">${u.avatar}</div>
                 <b>${escapeHtml(u.username)}</b>
             </div>
-            <button type="button" class="btn btn-sm btn-secondary" onclick="addToCompleteGroup('${u.id}')">${escapeHtml(T('completeGroupModal.aggiungiBtn') || 'Aggiungi')}</button>
+            <button type="button" class="btn btn-sm btn-secondary" data-azione="aggiungi">${escapeHtml(T('completeGroupModal.aggiungiBtn') || 'Aggiungi')}</button>
         `;
+        // Niente onclick inline: closure su u.id (gia' in scope).
+        row.querySelector('[data-azione="aggiungi"]').addEventListener('click', () => window.addToCompleteGroup(u.id));
         results.appendChild(row);
     });
 }
@@ -2048,8 +2101,10 @@ function renderGoalMatches(currentUser) {
         item.className = "goal-match-item";
         item.innerHTML = `
             <span>${m.avatar} <b>${escapeHtml(m.username)}</b> ${escapeHtml(T('social.trainsFor') || 'si allena per:')} <strong style="color:var(--accent-orange)">${escapeHtml(m.trainingGoal)}</strong></span>
-            <button class="btn btn-sm btn-secondary" onclick="inviteToSquadDirectly('${m.id}')">${escapeHtml(T('social.inviteToSquad') || 'Invita in Squadra')}</button>
+            <button class="btn btn-sm btn-secondary" data-azione="invita-squadra">${escapeHtml(T('social.inviteToSquad') || 'Invita in Squadra')}</button>
         `;
+        // Niente onclick inline: closure su m.id (gia' in scope).
+        item.querySelector('[data-azione="invita-squadra"]').addEventListener('click', () => window.inviteToSquadDirectly(m.id));
         container.appendChild(item);
     });
 }
@@ -2097,13 +2152,13 @@ function renderSquadsList() {
         // dell'ESCURSIONE (aggiunta diretta se organizzo io, proposta in pendingApproval se
         // partecipo e basta), non il creatore della squadra. Prima chi era stato solo accettato
         // come membro non vedeva il bottone su nessuna escursione, nemmeno le proprie.
-        let actionBtn = `<button class="btn btn-sm btn-success" onclick="inviteSquadToHike('${squad.id}')">${escapeHtml(T('social.inviteToHike') || 'Invita a Gita')}</button>`;
+        let actionBtn = `<button class="btn btn-sm btn-success" data-azione="invita-a-gita">${escapeHtml(T('social.inviteToHike') || 'Invita a Gita')}</button>`;
         if (squad.creatorId !== currentUser.id) {
             actionBtn += ` <span class="badge badge-primary">${escapeHtml(T('social.memberBadge') || 'Membro')}</span>`;
         }
 
         item.innerHTML = `
-            <div class="squad-item-open" onclick="showSquadPage('${squad.id}')">
+            <div class="squad-item-open" data-azione="apri-squadra">
                 <h5>👥 ${escapeHtml(squad.name)}</h5>
                 <div class="squad-members-row">${membersAvatars}</div>
             </div>
@@ -2111,6 +2166,9 @@ function renderSquadsList() {
                 ${actionBtn}
             </div>
         `;
+        // Niente onclick inline: closure su squad.id (gia' in scope).
+        item.querySelector('[data-azione="apri-squadra"]').addEventListener('click', () => window.showSquadPage(squad.id));
+        item.querySelector('[data-azione="invita-a-gita"]').addEventListener('click', () => window.inviteSquadToHike(squad.id));
         container.appendChild(item);
     });
 
@@ -2153,16 +2211,21 @@ function renderOtherSquadsList() {
                     return mem ? mem.avatar : "👤";
                 }).join(" ");
                 return `<div class="squad-item">
-                    <div class="squad-item-open" onclick="showSquadPage('${squad.id}')">
+                    <div class="squad-item-open" data-open-squadra="${escapeHtml(squad.id)}">
                         <h5>👥 ${escapeHtml(squad.name)}</h5>
                         <div class="squad-members-row">${avatars}</div>
                     </div>
                     <div style="display:flex; gap:4px;">
-                        <button class="btn btn-xs btn-success" onclick="rispondiInvitoSquadra('${squad.id}', true)">${escapeHtml(T('social.acceptSquadInvite') || 'Accetta')}</button>
-                        <button class="btn btn-xs btn-danger" onclick="rispondiInvitoSquadra('${squad.id}', false)">${escapeHtml(T('social.declineSquadInvite') || 'Rifiuta')}</button>
+                        <button class="btn btn-xs btn-success" data-azione="rispondi-invito" data-squad-id="${escapeHtml(squad.id)}" data-accetta="1">${escapeHtml(T('social.acceptSquadInvite') || 'Accetta')}</button>
+                        <button class="btn btn-xs btn-danger" data-azione="rispondi-invito" data-squad-id="${escapeHtml(squad.id)}" data-accetta="0">${escapeHtml(T('social.declineSquadInvite') || 'Rifiuta')}</button>
                     </div>
                 </div>`;
             }).join("");
+        // Niente onclick inline: ridisegnato ad ogni chiamata, si riaggancia qui.
+        box.querySelectorAll('[data-open-squadra]').forEach(el =>
+            el.addEventListener('click', () => window.showSquadPage(el.dataset.openSquadra)));
+        box.querySelectorAll('[data-azione="rispondi-invito"]').forEach(el =>
+            el.addEventListener('click', () => window.rispondiInvitoSquadra(el.dataset.squadId, el.dataset.accetta === '1')));
         container.appendChild(box);
     }
 
@@ -2185,10 +2248,10 @@ function renderOtherSquadsList() {
         const giaRichiesta = (squad.pendingRequests || []).includes(currentUser.id);
         const actionBtn = giaRichiesta
             ? `<span class="badge badge-primary">${escapeHtml(T('social.requestSent') || 'Richiesta inviata')}</span>`
-            : `<button class="btn btn-sm btn-secondary" onclick="requestJoinSquad('${squad.id}')">${escapeHtml(T('squadPage.richiediPartecipazione') || 'Richiesta Partecipazione')}</button>`;
+            : `<button class="btn btn-sm btn-secondary" data-azione="richiedi-partecipazione">${escapeHtml(T('squadPage.richiediPartecipazione') || 'Richiesta Partecipazione')}</button>`;
 
         item.innerHTML = `
-            <div class="squad-item-open" onclick="showSquadPage('${squad.id}')">
+            <div class="squad-item-open" data-azione="apri-squadra">
                 <h5>👥 ${escapeHtml(squad.name)}</h5>
                 <div class="squad-members-row">${membersAvatars}</div>
             </div>
@@ -2196,6 +2259,10 @@ function renderOtherSquadsList() {
                 ${actionBtn}
             </div>
         `;
+        // Niente onclick inline: closure su squad.id (gia' in scope).
+        item.querySelector('[data-azione="apri-squadra"]').addEventListener('click', () => window.showSquadPage(squad.id));
+        const btnRichiedi = item.querySelector('[data-azione="richiedi-partecipazione"]');
+        if (btnRichiedi) btnRichiedi.addEventListener('click', () => window.requestJoinSquad(squad.id));
         container.appendChild(item);
     });
 }
@@ -2272,11 +2339,14 @@ function renderSquadCreateSelectedMembers() {
         return `
             <label>
                 <span>${u.avatar} ${escapeHtml(u.username)}</span>
-                <button type="button" class="btn-inline-remove" onclick="removeFromSquadCreate('${id}')" title="${escapeHtml(T('social.removeFromSquadTitle') || 'Togli dalla squadra')}">&times;</button>
+                <button type="button" class="btn-inline-remove" data-remove-member="${escapeHtml(id)}" title="${escapeHtml(T('social.removeFromSquadTitle') || 'Togli dalla squadra')}">&times;</button>
             </label>
         `;
     }).join("");
     container.innerHTML = righe || `<p class="small text-muted">${escapeHtml(T('social.noMembersYet') || 'Nessun membro aggiunto ancora (oltre a te).')}</p>`;
+    // Niente onclick inline: ridisegnato ad ogni chiamata, si riaggancia qui.
+    container.querySelectorAll('[data-remove-member]').forEach(el =>
+        el.addEventListener('click', () => window.removeFromSquadCreate(el.getAttribute('data-remove-member'))));
 }
 
 window.removeFromSquadCreate = function(userId) {
@@ -2320,8 +2390,10 @@ function renderSquadCreateSearch() {
                 <div class="p-avatar">${u.avatar}</div>
                 <b>${escapeHtml(u.username)}</b>
             </div>
-            <button type="button" class="btn btn-sm btn-secondary" onclick="addToSquadCreate('${u.id}')">${escapeHtml(T('completeGroupModal.aggiungiBtn') || 'Aggiungi')}</button>
+            <button type="button" class="btn btn-sm btn-secondary" data-azione="aggiungi">${escapeHtml(T('completeGroupModal.aggiungiBtn') || 'Aggiungi')}</button>
         `;
+        // Niente onclick inline: closure su u.id (gia' in scope).
+        row.querySelector('[data-azione="aggiungi"]').addEventListener('click', () => window.addToSquadCreate(u.id));
         results.appendChild(row);
     });
 }
@@ -2442,7 +2514,7 @@ function rigaInvitoSquadra(hike, squad, me) {
             : (T('social.toInvite', nDaAggiungere) || `${nDaAggiungere} da invitare`));
 
     return `
-        <div class="carpool-group-item" style="display:flex; justify-content:space-between; align-items:center; gap:12px; ${disabilitata ? 'opacity:0.6;' : 'cursor:pointer;'}" ${disabilitata ? '' : `onclick="confermaInvitoSquadra('${hike.id}')"`}>
+        <div class="carpool-group-item" style="display:flex; justify-content:space-between; align-items:center; gap:12px; ${disabilitata ? 'opacity:0.6;' : 'cursor:pointer;'}" ${disabilitata ? '' : `data-confirm-invito="${escapeHtml(hike.id)}"`}>
             <div>
                 <b>${escapeHtml(hike.title)}</b> · ${dataFmt}<br>
                 <span class="small text-muted">${T('social.organizedBy', organizzatore) || `Organizzata da ${organizzatore}`}</span>
@@ -2492,6 +2564,11 @@ function renderInviteSquadHikeList() {
         html += altrui.map(h => rigaInvitoSquadra(h, squad, me)).join("");
     }
     box.innerHTML = html;
+    // Niente onclick inline: ridisegnato ad ogni chiamata, si riaggancia qui. Le righe
+    // disabilitate non portano data-confirm-invito (vedi rigaInvitoSquadra), quindi non
+    // c'e' niente da agganciare per loro - stesso comportamento di prima.
+    box.querySelectorAll('[data-confirm-invito]').forEach(el =>
+        el.addEventListener('click', () => window.confermaInvitoSquadra(el.getAttribute('data-confirm-invito'))));
     if (window.lucide) window.lucide.createIcons();
     return true;
 }

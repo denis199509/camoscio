@@ -108,12 +108,17 @@
             ? esc(meta.importedName)
             : formattaData(meta.startedAt);
 
-        document.getElementById('outing-page-header').innerHTML = `
+        const headerBox = document.getElementById('outing-page-header');
+        headerBox.innerHTML = `
             <h3 class="outing-page-title">${titoloUscita}</h3>
-            <div class="outing-page-author" onclick="showUserProfile('${esc(meta.userId)}')">
+            <div class="outing-page-author">
                 <span class="feed-item-avatar">${avatar}</span>
                 <span><b>${nome}</b><span class="feed-item-when"> · ${quando}</span></span>
             </div>`;
+        // Niente onclick inline: closure sull'id vero (meta.userId e' gia' in scope),
+        // mai serializzato in HTML.
+        const autoreEl = headerBox.querySelector('.outing-page-author');
+        if (autoreEl) autoreEl.addEventListener('click', () => window.showUserProfile(meta.userId));
 
         const durataHtml = meta.durationUnknown
             ? `<div title="${esc(T('outing.durataIgnotaTitle') || 'Il file .gpx non conteneva gli orari dei punti.')}"><strong>—</strong><span>${esc(T('outing.durataIgnota') || 'durata ignota')}</span></div>`
