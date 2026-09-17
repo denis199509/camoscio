@@ -128,10 +128,10 @@ FATTO nella TAPPA 2 (dettaglio completo in
     risposta se ci sono modifiche non salvate. Va rifuso in un commit vero
     prima di ogni push (git status/git log origin/master..HEAD per il
     conteggio esatto: crescono a ogni risposta con modifiche). Il codice
-    della 52a (Tappa 1 CSP) e della 53a (Tappa 2 CSP + fix revisione) resta
-    per ora solo in auto-save locale - nessun push senza l'ok esplicito di
-    Denis. L'ultimo backlog rifuso e pushato (blocco 9 2FA + 48a-51a) e'
-    stato il 16/09 (05e2c3c).
+    della 52a (Tappa 1 CSP) e della 53a (Tappa 2 CSP + fix revisione) e'
+    stato rifuso e PUSHATO su richiesta esplicita di Denis il 17/09
+    (cc070d7, 24 file). Da qui sono ripartiti nuovi auto-save locali per
+    il lavoro successivo.
   - Traduzione IT/EN (punto 102, CHIUSO): resta ITALIANO di proposito tutto
     il testo scritto dagli utenti, i nomi di luogo, i percorsi salvati,
     titolo/descrizione dei badge, le schede "i", il testo delle notifiche
@@ -171,10 +171,11 @@ FATTO nella TAPPA 2 (dettaglio completo in
     l'agente architect (70 handler on* trovati, non 5). TAPPA 1 DI 5 CHIUSA
     (script inline delle 5 pagine statiche estratti, 5 onclick di
     index.html agganciati con addEventListener) - vedi
-    06-Cronologia-Sessioni.md, sezione "52a". Resta in auto-save locale.
+    06-Cronologia-Sessioni.md, sezione "52a".
   53a SESSIONE (17/09): TAPPA 2 DI 5 CHIUSA (i 65 handler onclick/onchange
     generati da JS in 13 file, data-*+listener) - vedi
-    06-Cronologia-Sessioni.md, sezione "53a". Resta in auto-save locale.
+    06-Cronologia-Sessioni.md, sezione "53a". Tappe 1+2 rifuse in un
+    commit e PUSHATE su richiesta di Denis (cc070d7).
 
 ===================================================================
 
