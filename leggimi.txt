@@ -1,11 +1,11 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-09-18 (55a sessione, ancora in corso). Piano CSP completo,
+Aggiornato: 2026-09-18 (55a sessione, CHIUSA in sicurezza). Piano CSP completo,
 con tutte le decisioni gia' prese da Denis (D-1...D-7):
 C:\Users\lenovo\.claude\plans\camoscio-csp-header-sicurezza.md - non
 richiede altre domande, solo eseguire la tappa rimasta (in pausa, vedi sotto).
 
-  >>> DA DOVE SI RIPARTE:
+  >>> DA DOVE SI RIPARTE (56a sessione):
    1. CSP: TAPPE 1-4 di 5 chiuse per davvero. TAPPA 5 (enforcement, 1 riga)
       PROPOSTA nella 55a e MESSA IN PAUSA su richiesta di Denis (telefono
       non a portata di mano in quel momento - non rifiutata, solo
@@ -21,9 +21,13 @@ richiede altre domande, solo eseguire la tappa rimasta (in pausa, vedi sotto).
       fallito" e la nota nel modale "Completa" nella 55a - vedi
       06-Cronologia-Sessioni.md sezione "55a" per il dettaglio di ognuno),
       il resto resta in coda - vedi 04-Da-Fare.md.
-   3. Nessun'altra richiesta di Denis in sospeso al momento.
+   3. Il debito tecnico minore (Marche/Molise nell'indice sentieri, file
+      LICENSE, sgonfiare il .git) e' stato riproposto a Denis: ognuno ha
+      bisogno di una sua decisione o di un lavoro di misura prima, nessuno
+      scelto per la 55a - vedi 04-Da-Fare.md, sezione "Debito tecnico".
+   4. Nessun'altra richiesta di Denis in sospeso al momento.
 
-FATTO nella 55a sessione finora (dettaglio completo per ognuno in
+FATTO nella 55a sessione (dettaglio completo per ognuno in
 ../camoscio memoria/06-Cronologia-Sessioni.md, sezione "55a" - qui solo
 l'elenco, per restare corto):
  - M-5: verificato gia' risolto dal codice dalla 35a (deadManContactIndex
@@ -40,10 +44,19 @@ l'elenco, per restare corto):
    "Completa": CHIUSI (il riquadro vive su Mappa, non su Sicurezza -
    corretta la nota del vault).
  - Tappa 5 CSP proposta da Denis, messa in pausa su sua richiesta.
+ - Responsive Dashboard <900px: trovata prova statica forte nel CSS (il
+   collasso a una colonna e' gia' misurato/corretto - styles.css:5677-5680)
+   ma il vero test dal vivo su schermo stretto non e' riuscito (resize_window
+   non cambia window.innerWidth in questo ambiente di automazione - vedi
+   07-Trappole-Tecniche.md). Denis ha scelto di tenerlo aperto per un giro
+   vero col telefono, non chiuso sulla sola prova statica.
  - Trovato per strada, non collegato a nessun fix: un tip pubblicitario di
    dotenv (pacchetto vero, non manomesso) che nomina www.vestauth.com e
    spedisce istruzioni per agenti AI in node_modules/dotenv/skills/ -
    indagato, concluso innocuo, non seguito. Vedi 07-Trappole-Tecniche.md.
+ - Fine sessione: commit locali rifusi in uno pulito e PUSHATO (47ac9b4),
+   dopo aver rilanciato 315/315 controlli automatici rilevanti (nessuna
+   regressione). Vedi "RESTA VALIDO" sotto.
 
 >>> APERTI (invariati salvo dove segnato):
   - CONFORMITA' GDPR + NOTA LEGALE: index.html fa accettare "Termini +
@@ -75,9 +88,11 @@ l'elenco, per restare corto):
     verificato conforme) le foto NON portano EXIF/GPS, tutti gli input passano
     da un ricompressore canvas che li distrugge - da nominare comunque come
     rassicurazione quando l'informativa esiste.
-  - VERIFICHE DAL VIVO ancora aperte: la prova al telefono del Punto 1
-    (tracciamento di gruppo) + RICHIESTA 2 (un partecipante che dopo carica
-    la sua traccia) - serve il telefono, come la Tappa 5 CSP.
+  - VERIFICHE DAL VIVO ancora aperte, serve il telefono (come la Tappa 5
+    CSP): la prova al telefono del Punto 1 (tracciamento di gruppo) +
+    RICHIESTA 2 (un partecipante che dopo carica la sua traccia); il
+    Responsive Dashboard <900px (prova statica forte gia' fatta, vedi FATTO
+    sopra - Denis ha scelto di tenerlo aperto per un giro vero).
   - MEDIO-5 (security-privacy 35a): i tempi misurati dal creatore si applicano
     identici a ogni confermato e finiscono in "Velocita' Ascesa X m/h" sulla
     Dashboard. GDPR art. 5(1)(d). MA E' LA DECISIONE CHE DENIS HA GIA' PRESO
@@ -85,8 +100,6 @@ l'elenco, per restare corto):
     col ⬆).
   - INVITO SQUADRA DIREZIONALE: solo un caso su tre confermato dal vivo
     (43a) - Denis ha scelto di chiudere comunque il punto cosi'.
-  - RESPONSIVE DASHBOARD <900px: verificato solo in simulazione (02/09),
-    bassa priorita'.
 
 >>> LAVORO FUTURO PREPARATO, agli atti (NIENTE codice):
     FILONE B: collezione "I 2000 dell'Appennino" - bloccato, LA LISTA
@@ -111,14 +124,19 @@ l'elenco, per restare corto):
     risposta se ci sono modifiche non salvate. Va rifuso in un commit vero
     prima di ogni push (git status/git log origin/master..HEAD per il
     conteggio esatto: crescono a ogni risposta con modifiche). Il codice
-    della 52a (Tappa 1 CSP) e della 53a (Tappa 2 CSP + fix revisione) e'
-    stato rifuso e PUSHATO su richiesta esplicita di Denis il 17/09
-    (cc070d7, 24 file). Da qui sono ripartiti nuovi auto-save locali per
-    il lavoro della 54a e della 55a (punti GPS orfani) - MAI pushati, da
-    rifondere prima di un eventuale push. Il resto del lavoro della 55a
-    (controprova mappa/tracciamento, tracking.js #9/#11, pannello
-    Sicurezza, nota modale) non ha lasciato codice permanente (solo prove
-    contro un server locale, nessun file toccato).
+    della 52a-53a (Tappe 1-2 CSP) e' stato pushato il 17/09 (cc070d7). Il
+    codice della 54a (Tappe 3-4 CSP, canale DMS, Hike.routePath) e della
+    55a (punti GPS orfani) e' stato rifuso in UN commit pulito e PUSHATO
+    il 18/09 (47ac9b4, 20 file) - richiesto esplicitamente da Denis a fine
+    sessione, dopo aver rilanciato 315/315 controlli automatici rilevanti
+    (prova-punto77, prova-punto1-tracciamento-gruppo, prova-invito-squadra,
+    prova-promemoria-completamento, prova-deadman-esito-fallito,
+    prova-partecipanti-forzati, prova-punto111 - tutti verdi, nessuna
+    regressione). Repo camoscio e vault entrambi allineati al loro remoto:
+    nessun commit locale in sospeso a fine 55a. Il resto del lavoro della
+    55a (controprova mappa/tracciamento, tracking.js #9/#11, pannello
+    Sicurezza, nota modale, responsive dashboard) non ha lasciato codice
+    permanente (solo prove contro un server locale, nessun file toccato).
   - Traduzione IT/EN (punto 102, CHIUSO): resta ITALIANO di proposito tutto
     il testo scritto dagli utenti, i nomi di luogo, i percorsi salvati,
     titolo/descrizione dei badge, le schede "i", il testo delle notifiche
@@ -168,7 +186,20 @@ l'elenco, per restare corto):
     attivo). Canale DMS che mentiva su un guasto (GET /api/notifications)
     CHIUSO. Hike.routePath a select:false CHIUSO (progettato con
     l'architect, 8 file) - vedi 06-Cronologia-Sessioni.md, sezione "54a".
-    Codice ancora solo in auto-save locali, nessun push.
+  55a SESSIONE (18/09): M-5 verificato gia' chiuso dalla 35a (nota vault
+    corretta). Punti GPS orfani in IndexedDB CHIUSO (idbPurgeOrphanedPoints).
+    Tappa 5 CSP proposta e messa in pausa (serve il telefono di Denis).
+    Quattro "verifiche dal vivo mai fatte" chiuse per davvero (non solo
+    lette dal codice): controprova rigorosa mappa/tracciamento (dalla
+    47a), tracking.js #9/#11 (dalla 35a), pannello Sicurezza "ultimo
+    allarme fallito" + nota nel modale "Completa" (dalla 39a). Responsive
+    Dashboard <900px: prova statica forte ma non dal vivo (limite dello
+    strumento resize_window in questo ambiente) - lasciato aperto su
+    scelta di Denis. Debito tecnico minore riproposto, nessuno scelto
+    (ognuno serve una decisione di Denis o una misura prima) - vedi
+    06-Cronologia-Sessioni.md, sezione "55a". Auto-save di 54a+55a rifusi
+    in UN commit e PUSHATI il 18/09 (47ac9b4, 20 file), dopo 315/315
+    controlli automatici rilevanti verdi.
 
 ===================================================================
 
