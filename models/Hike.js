@@ -145,7 +145,14 @@ const hikeSchema = new mongoose.Schema({
     // per 'draft' resta undefined (il percorso progettato si ricalcola all'occorrenza).
     // default: undefined e non []: la maggior parte delle escursioni non ne ha una, e c'e'
     // il vincolo hard sullo spazio MongoDB (vedi 02-Vincoli-Hard del vault).
-    routePath: { type: [[Number]], default: undefined },
+    // select:false (MEDIO, verifica generale blocco 1 - piano
+    // camoscio-hike-routepath-select-false.md): GET /api/hikes gira a ogni cambio sezione per
+    // ogni utente connesso, e senza questo la polilinea intera di OGNI escursione entrava in
+    // RAM Node a ogni chiamata - hikeVisibileA la toglieva dalla risposta ma DOPO averla gia'
+    // caricata, stesso difetto di forma dell'incidente RAM dell'indice sentieri. Chi la vuole
+    // davvero: GET /api/hikes/:id/route-path (solo partecipante/creatore) o
+    // .select('+routePath') esplicito nei pochi punti che scrivono il campo.
+    routePath: { type: [[Number]], default: undefined, select: false },
     carpool: {
         fuelPrice: Number,
         fuelConsumption: Number,

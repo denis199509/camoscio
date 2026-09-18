@@ -69,7 +69,7 @@ async function renderHikePage(hikeId) {
     window.CamoscioChatPanel.render({ box: chatBox, apiBase: `/api/hikes/${hike.id}`, title: T('hikePage.chatTitolo') || 'Chat Escursione' });
 
     impostaTabHikePage("dettagli"); // si riparte sempre dal primo tab
-    disegnaTracciaHikePage(hike);   // dopo impostaTabHikePage: il pannello Dettagli e' visibile
+    await disegnaTracciaHikePage(hike); // dopo impostaTabHikePage: il pannello Dettagli e' visibile
 
     if (window.lucide) window.lucide.createIcons();
 }
@@ -155,21 +155,39 @@ function renderHikePageParticipants(hike, box) {
 }
 
 // Punto 116: disegna (o nasconde) la mini-mappa col percorso della traccia importata.
-// hike.routePath ([[lng,lat],...]) e' gia' in CamoscioState - nessun fetch, nessuna corsa.
+// Dalla 54a (piano camoscio-hike-routepath-select-false.md) hike.routePath NON e' piu' in
+// CamoscioState (routePath e' select:false a schema, GET /api/hikes porta solo il segnale
+// hike.hasRoutePath): un'escursione senza traccia si nasconde subito, a costo zero; una CON
+// traccia la chiede a caricaRoutePath (app.js, cache in memoria) solo ora che serve davvero.
 // Stesso schema di disegnaTraccia in outingpage.js: istanza Leaflet riusata, layer
 // ridisegnabile, invalidateSize dopo che il pannello e' diventato visibile.
-function disegnaTracciaHikePage(hike) {
+async function disegnaTracciaHikePage(hike) {
     const card = document.getElementById('hike-page-map-card');
     const box = document.getElementById('hike-page-map');
     if (!card || !box) return;
 
-    const rp = hike && Array.isArray(hike.routePath) ? hike.routePath : null;
+    if (hike.hasRoutePath !== true) {
+        card.classList.add('hidden');
+        if (hpMiniMap && hpMiniLayer) { hpMiniMap.removeLayer(hpMiniLayer); hpMiniLayer = null; }
+        return;
+    }
+
+    const rp = await window.caricaRoutePath(hike.id);
+    // Guardia di corsa (stesso schema di outingpage.js:236): l'utente puo' aver aperto
+    // un'altra escursione mentre la fetch era in volo - non disegnare la linea sbagliata
+    // sulla pagina sbagliata.
+    if (hikeIdAperta !== hike.id) return;
+
     const haPercorso = rp && rp.length >= 2 &&
         rp.every(p => Array.isArray(p) && Number.isFinite(p[0]) && Number.isFinite(p[1]));
 
     if (!haPercorso || typeof L === 'undefined') {
+        // D-5: niente linea invece di un ripiego silenzioso. Qui non c'e' un percorso finto
+        // da disegnare al suo posto (a differenza della mappa grande) - solo un avviso, se il
+        // segnale diceva "c'e'" ma la fetch non ha portato niente di disegnabile (guasto).
         card.classList.add('hidden');
         if (hpMiniMap && hpMiniLayer) { hpMiniMap.removeLayer(hpMiniLayer); hpMiniLayer = null; }
+        if (!rp && window.showToast) window.showToast(T('hikePage.percorsoNonDisponibile') || 'Il percorso non è disponibile al momento.', 'error');
         return;
     }
 

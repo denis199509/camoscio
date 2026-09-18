@@ -64,6 +64,12 @@ const sessionMiddleware = session({
 });
 app.use(sessionMiddleware);
 
+// CSP e header di sicurezza (verifica generale, blocco 3) - piano in
+// C:\Users\lenovo\.claude\plans\camoscio-csp-header-sicurezza.md. PRIMA di express.static:
+// se si mette dopo, l'HTML statico esce senza header - cioe' esattamente dove servono.
+const securityHeaders = require('./middleware/securityHeaders');
+app.use(securityHeaders);
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Pagina dedicata ai 4 account demo storici (Fase C): accesso senza password,

@@ -820,6 +820,12 @@ async function flushPendingPoints() {
             setSyncBadge('offline');
             resetToIdleUi();
             window.showToast(T('track.sessioneChiusaAltrove') || "Il tracciamento risulta chiuso sul server (forse da un altro dispositivo): la registrazione su questo telefono si è fermata qui.", "error");
+            // Punti GPS orfani: questa sessione e' confermata morta, questi punti non
+            // avranno mai piu' un posto dove andare (un nuovo tentativo di invio ridarebbe
+            // lo stesso 404/409 per sempre). stopWatchingPosition() e' gia' passato sopra,
+            // quindi nessun punto nuovo puo' essersi aggiunto a records nel frattempo.
+            idbDeleteQueuedPoints(records.map(r => r.localId)).catch(e =>
+                console.error("Pulizia punti GPS della sessione non piu' valida fallita (si ritenterebbe comunque al prossimo avvio):", e));
         } else {
             setSyncBadge('offline');
         }
@@ -1637,6 +1643,22 @@ async function ripristinoAllaCieca() {
     );
 }
 
+// Punti GPS orfani (debito tecnico, gemello piccolo del tetto tile della 50a-51a): a
+// questo punto checkForResumableSession() (sopra) ha gia' deciso, in tutti i suoi rami
+// (server raggiungibile con/senza sessione attiva, o ripristino alla cieca offline), QUALE
+// sessione trackingState.sessionId seguira' d'ora in poi - null se nessuna. Ogni voce di
+// pendingPoints con una sessionId diversa appartiene a una sessione passata che questo
+// codice non interroghera' mai piu': scarto sicuro da togliere, non solo dati vecchi.
+// Chiamata una volta per avvio (vedi renderTrackingModule) - un fallimento non e' grave,
+// si ritenta da solo al prossimo avvio.
+async function pulisciPuntiOrfani() {
+    try {
+        await idbPurgeOrphanedPoints(trackingState.sessionId);
+    } catch (e) {
+        console.error("Pulizia punti GPS orfani fallita (si ritenta al prossimo avvio):", e);
+    }
+}
+
 // Punto 94/passo 6 - stesso riaggancio usato dopo un ricaricamento, richiamabile a mano
 // toccando il badge "registrazione interrotta" (vedi renderGpsQuality) o da soli al
 // ritorno della rete (vedi l'evento 'online' in setupTrackingEvents).
@@ -1733,7 +1755,7 @@ function setupTrackingEvents() {
 // Punto 15: dati (GET /api/tracking/active) - resta dentro initApp(), dopo renderMapModule()
 // (vedi il piano: la ripresa di una registrazione scrive sulla mappa, che deve gia' esistere).
 function renderTrackingModule() {
-    checkForResumableSession();
+    checkForResumableSession().finally(pulisciPuntiOrfani);
 }
 
 window.setupTrackingEvents = setupTrackingEvents;

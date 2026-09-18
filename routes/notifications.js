@@ -11,37 +11,51 @@ router.get('/:userId', requireAuth, async (req, res) => {
     if (req.params.userId !== req.session.userId) {
         return res.status(403).json({ error: 'Puoi vedere solo le tue notifiche' });
     }
+    // Punto 64: qui e non in GET /api/hikes (molto piu' chiamata) - il confine
+    // "userId === req.session.userId" gia' verificato sopra basta a delimitare la
+    // query senza introdurne uno nuovo, e non scrive sul database per chi non ha mai
+    // creato un'escursione. Non esistendo scheduler ne' push in questo progetto, e'
+    // anche l'unico momento in cui "il promemoria compare" puo' succedere davvero.
+    // Try SUO (MEDIO, verifica generale blocco 1): un guasto qui e' un effetto
+    // collaterale mancato, non deve impedire di leggere le notifiche che esistono gia' -
+    // stesso trattamento del controllo segnalazioni scadute qui sotto, che gia' lo faceva.
     try {
-        // Punto 64: qui e non in GET /api/hikes (molto piu' chiamata) - il confine
-        // "userId === req.session.userId" gia' verificato sopra basta a delimitare la
-        // query senza introdurne uno nuovo, e non scrive sul database per chi non ha mai
-        // creato un'escursione. Non esistendo scheduler ne' push in questo progetto, e'
-        // anche l'unico momento in cui "il promemoria compare" puo' succedere davvero.
         await ensureCompletionReminders(req.params.userId);
+    } catch (e) {
+        console.error('Promemoria completamento non generato:', e.message);
+    }
 
-        // Punto 111: controllo scadenze delle segnalazioni sentiero, PIGRO come il
-        // promemoria del punto 64 qui sopra - non esistendo scheduler, il fetch delle
-        // notifiche e' l'unico momento in cui una segnalazione scaduta puo' diventare un
-        // avviso per Denis. Pre-controllo sull'indice expiresAt_1: nel caso normale
-        // (niente di scaduto) esce 0 e ci si ferma. NON gated sul destinatario: se
-        // qualcosa e' scaduto, il primo fetch di CHIUNQUE lo fa notificare a chi ha
-        // receivesReportAlerts e "timbra" expiryNotifiedAt, cosi' i fetch successivi
-        // ritrovano 0. try suo: un errore qui non deve svuotare la lista notifiche di un
-        // utente che non c'entra (il catch esterno risponde []).
-        try {
-            const daNotificare = await Report.countDocuments({
-                expiresAt: { $lte: new Date() },
-                expiryNotifiedAt: { $exists: false }
-            });
-            if (daNotificare > 0) await controllaScadenze();
-        } catch (e) {
-            console.error('Controllo scadenze segnalazioni fallito:', e.message);
-        }
+    // Punto 111: controllo scadenze delle segnalazioni sentiero, PIGRO come il
+    // promemoria del punto 64 qui sopra - non esistendo scheduler, il fetch delle
+    // notifiche e' l'unico momento in cui una segnalazione scaduta puo' diventare un
+    // avviso per Denis. Pre-controllo sull'indice expiresAt_1: nel caso normale
+    // (niente di scaduto) esce 0 e ci si ferma. NON gated sul destinatario: se
+    // qualcosa e' scaduto, il primo fetch di CHIUNQUE lo fa notificare a chi ha
+    // receivesReportAlerts e "timbra" expiryNotifiedAt, cosi' i fetch successivi
+    // ritrovano 0. Try suo: un errore qui non deve impedire di leggere le notifiche.
+    try {
+        const daNotificare = await Report.countDocuments({
+            expiresAt: { $lte: new Date() },
+            expiryNotifiedAt: { $exists: false }
+        });
+        if (daNotificare > 0) await controllaScadenze();
+    } catch (e) {
+        console.error('Controllo scadenze segnalazioni fallito:', e.message);
+    }
 
+    // La lettura VERA (MEDIO, verifica generale blocco 1): prima un guasto qualsiasi qui
+    // rispondeva SEMPRE 200+[] - indistinguibile da "nessuna notifica", e una notifica e'
+    // l'UNICO canale con cui chi ha armato il Dead Man's Switch scopre l'esito di un
+    // allarme (routes/safety.js, gestisciScadenza -> Notification.create). Il client
+    // (public/js/app.js, fetchApi dentro refreshState) e' gia' pronto per un errore vero:
+    // su un fetchApi che rifiuta NON aggiorna lo stato e riprova al giro successivo,
+    // invece di credere che non sia successo niente - qui bastava non mentirgli.
+    try {
         const userNotifications = await Notification.find({ userId: req.params.userId }).sort({ createdAt: -1 });
         res.json(userNotifications);
     } catch (e) {
-        res.json([]);
+        console.error('Errore nel leggere le notifiche:', e);
+        res.status(500).json({ error: 'Impossibile leggere le notifiche' });
     }
 });
 

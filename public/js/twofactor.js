@@ -429,16 +429,19 @@
         w.document.write(`<!doctype html><meta charset="utf-8"><title>Codici di recupero Camoscio</title>`
             + `<style>body{font-family:monospace;font-size:16px;padding:24px}li{line-height:2.2;letter-spacing:.08em}</style>`
             + `<h3>Codici di recupero Camoscio</h3>`
-            + `<p>Ognuno funziona una volta sola, al posto del codice dell'app.</p><ol>${righe}</ol>`
-            // Chiusura ancorata a QUESTO documento (script inline), non alla pagina
-            // principale: un setTimeout dell'opener muore se il tab Camoscio viene chiuso,
-            // ricaricato o scaricato dal sistema (comune su mobile) - i codici resterebbero
-            // a schermo per sempre, il bug esatto che questo fix chiude (revisione blocco 3,
-            // MEDIO). Il visibilitychange su #tfa-codici (42a) non basta: e' sulla pagina
-            // principale, non su questa finestra separata.
-            + `<script>addEventListener('afterprint',function(){window.close()});`
-            + `setTimeout(function(){window.close()},${MS_CHIUSURA_STAMPA});<\/script>`);
+            + `<p>Ognuno funziona una volta sola, al posto del codice dell'app.</p><ol>${righe}</ol>`);
         w.document.close();
+        // Chiusura ancorata alla finestra FIGLIA, non all'opener - CSP/header di sicurezza,
+        // tappa 3 (D-6/A): un <script> scritto dentro questo documento about:blank verrebbe
+        // bloccato in silenzio (eredita la CSP dell'opener, un nonce non lo raggiunge mai).
+        // w.addEventListener/w.setTimeout sono i metodi nativi DI QUESTA FINESTRA (il timer
+        // vive nella sua coda, non in quella dell'opener) e w.close e' una funzione nativa
+        // senza closure sull'opener: sopravvive alla chiusura, ricarica o scarico di sistema
+        // del tab Camoscio (comune su mobile) esattamente come lo script inline che sostituisce
+        // (fix 50a). Il visibilitychange su #tfa-codici (42a) non basta: e' sulla pagina
+        // principale, non su questa finestra separata.
+        w.addEventListener('afterprint', w.close);
+        w.setTimeout(w.close, MS_CHIUSURA_STAMPA);
         // Seconda rete lato opener (costa una riga): copre il caso opposto, la finestra di
         // stampa mandata in background e rallentata dal browser mentre l'opener resta vivo.
         setTimeout(() => { if (!w.closed) w.close(); }, MS_CHIUSURA_STAMPA);

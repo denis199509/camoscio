@@ -2095,7 +2095,9 @@
                         </div>
                         <!-- Punto 116: mini-mappa col percorso della traccia importata (.gpx/.fit),
                              stesso schema della pagina uscita (#outing-page-map). hikepage.js
-                             nasconde questa card quando l'escursione non ha routePath. -->
+                             nasconde questa card quando hike.hasRoutePath non e' true, altrimenti
+                             chiede la linea vera a caricaRoutePath (54a, routePath e' select:false
+                             a schema - vedi app.js). -->
                         <div class="glass-card hidden" id="hike-page-map-card">
                             <h4><i data-lucide="route"></i> <span data-i18n="hikePage.percorsoPrevisto">Percorso previsto</span></h4>
                             <div id="hike-page-map" class="outing-page-map"><!-- mini-mappa Leaflet --></div>

@@ -285,7 +285,7 @@ async function creaSessione(userId, hikeId, opts = {}) {
 
         // === 7. routePath (linea sulla mappa) ===
         console.log('\n--- 7. routeSource:live + routePath ---');
-        const h7db = await Hike.findById(h2).lean(); // riusa h2 (sez. 2, chiusa con successo)
+        const h7db = await Hike.findById(h2).select('+routePath').lean(); // riusa h2 (sez. 2, chiusa con successo). +routePath: select:false a schema dalla 54a
         ok('routeSource.kind = "live"', h7db.routeSource && h7db.routeSource.kind === 'live', JSON.stringify(h7db.routeSource));
         ok('routeSource.nome = "Traccia registrata"', h7db.routeSource && h7db.routeSource.nome === 'Traccia registrata', h7db.routeSource && h7db.routeSource.nome);
         ok('routePath valido ([[lng,lat]], 2..400)',
@@ -344,7 +344,7 @@ async function creaSessione(userId, hikeId, opts = {}) {
         await creaSessione(idA, hZero, { points: puntiPiani, elevationGainM: 0, distanceKm: 5.5 });
         const rZero = await chiama('POST', `/api/hikes/${hZero}/complete-group`, { confirmedUserIds: [idA, idB] }, ckA);
         ok('sessione senza quota: complete-group -> 200', rZero.status === 200, JSON.stringify(rZero.corpo && rZero.corpo.error));
-        const hZeroDb = await Hike.findById(hZero).lean();
+        const hZeroDb = await Hike.findById(hZero).select('+routePath').lean(); // +routePath: select:false a schema dalla 54a
         ok('quota max a mano NON sovrascritta (1234)', hZeroDb.maxAltitude === 1234, String(hZeroDb.maxAltitude));
         ok('dislivello a mano NON sovrascritto (678)', hZeroDb.elevationGain === 678, String(hZeroDb.elevationGain));
         ok('la distanza della registrazione E\' entrata comunque (5.5)', hZeroDb.distanceKm === 5.5, String(hZeroDb.distanceKm));
@@ -368,7 +368,7 @@ async function creaSessione(userId, hikeId, opts = {}) {
         const hRit = await preparaHike('ritiro', { conB: true });
         await creaSessione(idA, hRit, { maxAltitudeM: 1450 });
         await chiama('POST', `/api/hikes/${hRit}/complete-group`, { confirmedUserIds: [idA, idB] }, ckA);
-        let hRitDb = await Hike.findById(hRit).lean();
+        let hRitDb = await Hike.findById(hRit).select('+routePath').lean(); // +routePath: select:false a schema dalla 54a
         ok('11a: dopo il D5 la hike ha routePath e routeSource:live',
             Array.isArray(hRitDb.routePath) && hRitDb.routeSource && hRitDb.routeSource.kind === 'live');
         const putAltrui = await chiama('PUT', `/api/hikes/${hRit}`, { routePath: null }, ckB);
@@ -377,7 +377,7 @@ async function creaSessione(userId, hikeId, opts = {}) {
         ok('11a: routeSource nel body su una conclusa resta bloccato -> 409', putRoutesource.status === 409, `status ${putRoutesource.status}`);
         const putRitiro = await chiama('PUT', `/api/hikes/${hRit}`, { routePath: null }, ckA);
         ok('11a: il creatore ritira con { routePath: null } -> 200', putRitiro.status === 200, `status ${putRitiro.status} ${JSON.stringify(putRitiro.corpo && putRitiro.corpo.error)}`);
-        hRitDb = await Hike.findById(hRit).lean();
+        hRitDb = await Hike.findById(hRit).select('+routePath').lean(); // +routePath: select:false a schema dalla 54a
         ok('11a: routePath e\' sparito', hRitDb.routePath === undefined, JSON.stringify(hRitDb.routePath));
         ok('11a: routeSource e\' sparito (non descrive piu\' niente senza la linea)', hRitDb.routeSource == null, JSON.stringify(hRitDb.routeSource));
 
@@ -413,7 +413,7 @@ async function creaSessione(userId, hikeId, opts = {}) {
         await creaSessione(idReale, hNoConsenso, { maxAltitudeM: 1600, distanceKm: 9.1 });
         const rNoConsenso = await chiama('POST', `/api/hikes/${hNoConsenso}/complete-group`, { confirmedUserIds: [idReale] }, ckReale);
         ok('11b: complete-group si chiude comunque -> 200', rNoConsenso.status === 200, JSON.stringify(rNoConsenso.corpo && rNoConsenso.corpo.error));
-        const hNoConsensoDb = await Hike.findById(hNoConsenso).lean();
+        const hNoConsensoDb = await Hike.findById(hNoConsenso).select('+routePath').lean(); // +routePath: select:false a schema dalla 54a
         ok('11b: consenso geo revocato -> il ripiego D5 NON ha pubblicato la traccia', hNoConsensoDb.routePath === undefined, JSON.stringify(hNoConsensoDb.routePath));
         ok('11b: ...e i numeri della sessione non sono entrati (niente routeSource:live)', !hNoConsensoDb.routeSource || hNoConsensoDb.routeSource.kind !== 'live', JSON.stringify(hNoConsensoDb.routeSource));
 
@@ -422,7 +422,7 @@ async function creaSessione(userId, hikeId, opts = {}) {
         const rEsplicito = await chiama('POST', `/api/hikes/${hEsplicito}/complete-group`,
             { confirmedUserIds: [idReale], trackingSessionId: String(sessEspl._id) }, ckReale);
         ok('11b: con trackingSessionId ESPLICITO si procede lo stesso -> 200', rEsplicito.status === 200, JSON.stringify(rEsplicito.corpo && rEsplicito.corpo.error));
-        const hEspDb = await Hike.findById(hEsplicito).lean();
+        const hEspDb = await Hike.findById(hEsplicito).select('+routePath').lean(); // +routePath: select:false a schema dalla 54a
         ok('11b: la traccia esplicita E\' entrata (routeSource:live + routePath)',
             hEspDb.routeSource && hEspDb.routeSource.kind === 'live' && Array.isArray(hEspDb.routePath), JSON.stringify(hEspDb.routeSource));
 
@@ -431,7 +431,7 @@ async function creaSessione(userId, hikeId, opts = {}) {
         const hRidato = await mkHikeReale('consensoridato');
         await creaSessione(idReale, hRidato, { maxAltitudeM: 1800, distanceKm: 7.2 });
         await chiama('POST', `/api/hikes/${hRidato}/complete-group`, { confirmedUserIds: [idReale] }, ckReale);
-        const hRidatoDb = await Hike.findById(hRidato).lean();
+        const hRidatoDb = await Hike.findById(hRidato).select('+routePath').lean(); // +routePath: select:false a schema dalla 54a
         ok('11b: consenso ridato -> il ripiego D5 pubblica di nuovo', Array.isArray(hRidatoDb.routePath)
             && hRidatoDb.routeSource && hRidatoDb.routeSource.kind === 'live', JSON.stringify(hRidatoDb.routeSource));
 

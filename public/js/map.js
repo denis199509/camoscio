@@ -1515,7 +1515,7 @@ window.requestReportResolution = async function(reportId) {
 };
 
 // Carica e disegna un percorso specifico sulla mappa
-function loadActiveHikeOnMap(hikeId) {
+async function loadActiveHikeOnMap(hikeId) {
     if (!window.mapInstance) return;
 
     const db = window.CamoscioState;
@@ -1558,25 +1558,22 @@ function loadActiveHikeOnMap(hikeId) {
             .openPopup();
     }
 
-    // Punto 116: se l'escursione ha una traccia importata (.gpx/.fit), si disegna QUELLA -
-    // hike.routePath e' [[lng,lat],...], gia' semplificata dal server. Colore blu "percorso
-    // da seguire" (#4C7E90, lo stesso di disegnaPercorsoSalvato): e' un percorso PREVISTO,
-    // non la traccia registrata dal vivo (#7FB5C7) ne' il verde della demo qui sotto.
-    // Senza routePath resta il percorso fittizio attorno al trailhead, che serve solo a far
-    // vedere l'algoritmo di esposizione solare (segmenti Nord e Sud).
-    const rp = Array.isArray(hike.routePath) ? hike.routePath : null;
-    const haPercorsoVero = rp && rp.length >= 2 &&
-        rp.every(p => Array.isArray(p) && Number.isFinite(p[0]) && Number.isFinite(p[1]));
+    // Rigenera i marker dei punti timbrabili (era la seconda copia dello stesso blocco,
+    // quella dove il nome della vetta non passava da escapeHtml - vedi drawStampablePoints),
+    // l'esposizione solare e il meteo: NON dipendono dalla linea del percorso qui sotto (54a,
+    // piano camoscio-hike-routepath-select-false.md, D-5) - restano sincroni indipendentemente
+    // da come va la fetch della traccia vera.
+    drawStampablePoints();
+    renderSolarExposureAdvice(hike);
+    if (window.fetchWeatherForCoords) {
+        window.fetchWeatherForCoords(hike.trailhead.lat, hike.trailhead.lng, hike.title);
+    }
 
-    if (haPercorsoVero) {
-        activeHikePath = rp.map(p => [p[1], p[0]]); // [lng,lat] -> [lat,lng] per Leaflet
-        hikePolyline = L.polyline(activeHikePath, {
-            color: window.CAMOSCIO_COLORI.blu,
-            weight: 5,
-            opacity: 0.9
-        }).addTo(window.mapInstance);
-        window.mapInstance.fitBounds(hikePolyline.getBounds(), { padding: [40, 40] });
-    } else {
+    // Punto 116, riscritto alla 54a: hike.routePath e' select:false a schema, GET /api/hikes
+    // porta solo il segnale hike.hasRoutePath - MAI l'array. Senza segnale: percorso fittizio
+    // attorno al trailhead come sempre, SINCRONO (nessuna fetch, nessun lampeggio), serve solo
+    // a far vedere l'algoritmo di esposizione solare (segmenti Nord e Sud).
+    if (hike.hasRoutePath !== true) {
         const centerLat = hike.trailhead.lat;
         const centerLng = hike.trailhead.lng;
         activeHikePath = [
@@ -1591,23 +1588,39 @@ function loadActiveHikeOnMap(hikeId) {
             weight: 6,
             opacity: 0.8
         }).addTo(window.mapInstance);
+        teleportUserGps(activeHikePath[0][0], activeHikePath[0][1]);
+        return;
     }
 
-    // Sposta il marker GPS dell'utente alla partenza (primo punto del percorso vero, o
-    // della base del percorso fittizio)
+    // C'e' davvero una traccia importata (.gpx/.fit): si chiede ora (caricaRoutePath, app.js -
+    // cache in memoria), niente percorso finto disegnato nel frattempo (nessun lampeggio
+    // verde->blu: il marker del ritrovo, gia' posato sopra, basta finche' non arriva la linea
+    // vera). Guardia di corsa: l'utente puo' aver aperto un'altra escursione mentre la fetch
+    // era in volo (stesso schema di hikepage.js/hikeIdAperta).
+    const rp = await window.caricaRoutePath(hikeId);
+    if (db.activeHikeId !== hikeId) return;
+
+    const haPercorsoVero = rp && rp.length >= 2 &&
+        rp.every(p => Array.isArray(p) && Number.isFinite(p[0]) && Number.isFinite(p[1]));
+
+    if (!haPercorsoVero) {
+        // D-5: niente linea + avviso, mai un ripiego silenzioso sul percorso finto quando il
+        // segnale diceva che una traccia vera esiste - sarebbe una bugia a schermo.
+        teleportUserGps(hike.trailhead.lat, hike.trailhead.lng);
+        if (window.showToast) window.showToast(T('map.percorsoNonDisponibile') || 'Il percorso non è disponibile al momento.', 'error');
+        return;
+    }
+
+    // Colore blu "percorso da seguire" (#4C7E90, lo stesso di disegnaPercorsoSalvato): e' un
+    // percorso PREVISTO, non la traccia registrata dal vivo (#7FB5C7) ne' il verde della demo.
+    activeHikePath = rp.map(p => [p[1], p[0]]); // [lng,lat] -> [lat,lng] per Leaflet
+    hikePolyline = L.polyline(activeHikePath, {
+        color: window.CAMOSCIO_COLORI.blu,
+        weight: 5,
+        opacity: 0.9
+    }).addTo(window.mapInstance);
+    window.mapInstance.fitBounds(hikePolyline.getBounds(), { padding: [40, 40] });
     teleportUserGps(activeHikePath[0][0], activeHikePath[0][1]);
-
-    // Rigenera i marker dei punti timbrabili (era la seconda copia dello stesso blocco,
-    // quella dove il nome della vetta non passava da escapeHtml - vedi drawStampablePoints)
-    drawStampablePoints();
-
-    // Aggiorna consigli esposizione solare nella sidebar della mappa
-    renderSolarExposureAdvice(hike);
-    
-    // Trigger aggiornamento meteo multi-quota
-    if (window.fetchWeatherForCoords) {
-        window.fetchWeatherForCoords(hike.trailhead.lat, hike.trailhead.lng, hike.title);
-    }
 }
 
 // Calcola l'orientamento iniziale (bearing) in gradi (0-360) da un punto A ad un punto B

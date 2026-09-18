@@ -1027,8 +1027,9 @@ function buildHikeCard(hike) {
     // 'live' lasciava senza ritiro proprio le tracce da file - e la nota del modale lo promette
     // lo stesso. Il server accetta il ritiro per qualunque kind.
     const kindRitirabile = hike.routeSource && ['live', 'gpx', 'fit'].includes(hike.routeSource.kind);
-    if (isCreatorMe && hike.groupCompletedAt && kindRitirabile &&
-        Array.isArray(hike.routePath) && hike.routePath.length) {
+    // hike.hasRoutePath (54a, piano camoscio-hike-routepath-select-false.md): segnale
+    // calcolato SOLO in GET /api/hikes, mai l'array (routePath e' select:false a schema).
+    if (isCreatorMe && hike.groupCompletedAt && kindRitirabile && hike.hasRoutePath === true) {
         vociMenu += `<button type="button" class="hike-card-menu-item" data-azione="ritira-traccia">
                     <i data-lucide="eye-off"></i> ${escapeHtml(T('hikeCard.ritiraTraccia') || 'Togli la mia traccia')}
                 </button>`;
@@ -1620,6 +1621,12 @@ window.ritiraTracciaEscursione = async function(hikeId) {
             return;
         }
         if (window.showToast) window.showToast(T('hikeToast.tracciaRitirata') || 'Traccia rimossa dall\'escursione.', 'success');
+        // Invalida la cache di caricaRoutePath (app.js): e' l'unico gesto che puo' rendere
+        // stantia una voce gia' scaricata in questa sessione (piano
+        // camoscio-hike-routepath-select-false.md, D-6/A - solo cache in memoria, niente
+        // persistenza). Senza questo, riaprendo la pagina/mappa dell'escursione nella STESSA
+        // sessione si rivedrebbe la linea appena tolta.
+        if (window.__routePathCache) window.__routePathCache.delete(hikeId);
         await refreshState();
         renderHikesList();
     } catch (e) {

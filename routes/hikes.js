@@ -235,6 +235,11 @@ function hikeVisibileA(hike, userId) {
     // "nessun percorso reale scelto", che e' falso. Trade-off accettato da Denis: chi non
     // partecipa non vede la LINEA di nessun percorso finche' non entra (vede ritrovo, distanza,
     // dislivello, quota, nome del percorso, tempo CAI).
+    // Da quando routePath e' select:false a schema (piano camoscio-hike-routepath-select-false.md)
+    // questo delete e' difesa in profondità, non il filtro vero: il campo non arriva neppure da
+    // Mongo a un GET /api/hikes normale. Resta qui per il caso in cui un domani un chiamante
+    // passi a hikeVisibileA un documento caricato con .select('+routePath') (es. una futura
+    // rotta interna) - a costo zero, non si toglie.
     if (pubblico.routePath) {
         delete pubblico.routePath;
     }
@@ -258,13 +263,38 @@ function hikeVisibileA(hike, userId) {
 // per tutto il frontend (mappa, Escursioni, Le mie escursioni, profilo...), quindi filtrare
 // qui basta a rendere privati anche i "dettagli" di cui parla Denis: chi non e' partecipante
 // non riceve piu' il documento, non solo non lo vede in lista.
+// MEDIO (verifica generale blocco 1 - piano camoscio-hike-routepath-select-false.md): questa
+// rotta NON aveva try/catch - un errore Mongo lasciava la richiesta appesa per sempre (Express
+// 4 non cattura il rigetto di un handler async). Aggiunto qui perche' da questa stessa tappa la
+// rotta fa una seconda query (hasRoutePath sotto), raddoppiando la superficie del problema.
 router.get('/', requireAuth, async (req, res) => {
-    const hikes = await Hike.find();
-    const userId = req.session.userId;
-    const visibili = hikes.filter(h => !h.groupCompletedAt || isHikeParticipant(h, userId));
-    // C-2 / security review: carpooling e "zaino condivisibile" sono roba di gruppo - chi non
-    // e' partecipante li riceve strippati (hikeVisibileA). Le concluse sono gia' solo-partecipanti.
-    res.json(visibili.map(h => hikeVisibileA(h, userId)));
+    try {
+        const userId = req.session.userId;
+        const [hikes, conTraccia] = await Promise.all([
+            Hike.find(),
+            // hasRoutePath (routePath e' select:false dalla stessa tappa): SOLO l'_id, mai
+            // l'array - il filtro sta nella query, non dopo. 'routePath.1' e non 'routePath'
+            // sul $exists: una linea con un punto solo non si puo' disegnare, e direbbe "c'e'"
+            // dove non c'e' niente da mostrare. Solo creatore/partecipante: coerente con
+            // hikeVisibileA, un estraneo non deve sapere nemmeno che la linea esiste.
+            Hike.find({ 'routePath.1': { $exists: true },
+                        $or: [{ creatorId: userId }, { participants: userId }] })
+                .select('_id').lean()
+        ]);
+        const idsConTraccia = new Set(conTraccia.map(h => String(h._id)));
+        const visibili = hikes.filter(h => !h.groupCompletedAt || isHikeParticipant(h, userId));
+        // C-2 / security review: carpooling e "zaino condivisibile" sono roba di gruppo - chi non
+        // e' partecipante li riceve strippati (hikeVisibileA). Le concluse sono gia' solo-partecipanti.
+        res.json(visibili.map(h => {
+            const v = hikeVisibileA(h, userId);
+            const out = v.toJSON ? v.toJSON() : v; // sempre POJO: hikeVisibileA a volte ritorna il documento Mongoose intatto
+            if (idsConTraccia.has(String(h._id))) out.hasRoutePath = true;
+            return out;
+        }));
+    } catch (e) {
+        console.error('Errore lettura escursioni:', e);
+        res.status(500).json({ error: 'Impossibile leggere le escursioni' });
+    }
 });
 
 // Crea escursione - il creatore e' SEMPRE chi ha fatto login, mai un valore mandato dal client
@@ -1518,6 +1548,32 @@ router.get('/:id/home-match', requireAuth, matchLimiter, async (req, res) => {
     } catch (e) {
         console.error('Errore match zona di partenza:', e);
         res.status(500).json({ error: 'Impossibile calcolare le corrispondenze' });
+    }
+});
+
+// La polilinea di UNA sola escursione (MEDIO, verifica generale blocco 1 - piano
+// camoscio-hike-routepath-select-false.md): routePath e' select:false a schema da questa
+// stessa tappa, quindi GET /api/hikes non lo porta piu' per nessuno - chi vuole disegnare la
+// linea (mini-mappa del tab Dettagli, mappa grande) la chiede qui, un'escursione alla volta.
+// Stesso gate di sempre (isHikeParticipant), niente di nuovo. 404 anche per chi non
+// partecipa (D-3): non si conferma nemmeno l'esistenza dell'escursione a un estraneo, stesso
+// principio di guardiaUscitaVisibile (lib/uscitaVisibile.js) e del punto 77 (un'escursione
+// conclusa non esiste, per chi non c'era). Nessun rate-limiter dedicato (D-4): il gemello che
+// serve geometria identica, GET /api/tracking/sessions/:id/points, non ne ha uno.
+router.get('/:id/route-path', requireAuth, async (req, res) => {
+    try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(400).json({ error: 'Identificativo non valido.' });
+        }
+        const hike = await Hike.findById(req.params.id).select('creatorId participants +routePath');
+        if (!hike || !isHikeParticipant(hike, req.session.userId)) {
+            return res.status(404).json({ error: 'Escursione non trovata' });
+        }
+        res.set('Cache-Control', 'private, no-cache');
+        res.json({ routePath: hike.routePath || null });
+    } catch (e) {
+        console.error('Errore lettura routePath:', e);
+        res.status(500).json({ error: 'Impossibile leggere il percorso' });
     }
 });
 

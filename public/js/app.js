@@ -47,6 +47,29 @@ window.dataISORoma = function(date) {
     return (date instanceof Date ? date : new Date()).toLocaleDateString('sv-SE', { timeZone: 'Europe/Rome' });
 };
 
+// La linea di UNA escursione, su richiesta (piano camoscio-hike-routepath-select-false.md,
+// 54a sessione): da quando Hike.routePath e' select:false a schema, GET /api/hikes non lo
+// porta piu' per nessuno - solo un segnale hasRoutePath (vedi hike.hasRoutePath). Chi deve
+// disegnare la linea per davvero (hikepage.js, map.js) chiama questo helper invece di
+// aspettarsela gia' in CamoscioState. Cache in MEMORIA (non persistita: e' un dato personale,
+// D-6 del piano - solo su richiesta, niente prefetch per ora): evita di riscaricare la stessa
+// escursione ad ogni riapertura nella stessa sessione. Non lancia mai: un guasto ritorna null,
+// e chi chiama decide cosa mostrare (mai un ripiego silenzioso su un percorso finto - D-5).
+window.__routePathCache = new Map();
+window.caricaRoutePath = async function (hikeId) {
+    if (window.__routePathCache.has(hikeId)) return window.__routePathCache.get(hikeId);
+    try {
+        const res = await fetch(`/api/hikes/${hikeId}/route-path`);
+        if (!res.ok) return null;
+        const dati = await res.json();
+        const rp = Array.isArray(dati.routePath) ? dati.routePath : null;
+        window.__routePathCache.set(hikeId, rp);
+        return rp;
+    } catch {
+        return null;
+    }
+};
+
 // Stato vuoto unificato (Audit visivo B1, 36a sessione). Prima ~12 riquadri "non c'e'
 // ancora niente" erano <div class="glass-card text-center py-4 text-muted">${msg}</div> -
 // quattro classi di utility e nessuna struttura. Qui un solo componente, con l'impronta

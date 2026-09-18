@@ -129,12 +129,15 @@ function vedeEscursione(risposta, hikeId) {
         ok('escursione ancora programmata visibile a B (partecipante)', vedeEscursione(primaB, hikeId));
         ok('escursione ancora programmata visibile a C (estraneo)', vedeEscursione(primaC, hikeId));
 
-        // --- 4b. ALTO-1 (revisione del cumulativo 39a; corretto nella 40a). A un NON-partecipante
-        //         la LINEA (routePath) della traccia GPS del creatore non esce mai: 'live'/'fit'/
+        // --- 4b. ALTO-1 (revisione del cumulativo 39a; corretto nella 40a) + select:false della
+        //         54a (piano camoscio-hike-routepath-select-false.md). A un NON-partecipante la
+        //         LINEA (routePath) della traccia GPS del creatore non esce mai: 'live'/'fit'/
         //         'gpx' sono registrazioni e 'saved' e' COPIATO da una registrazione (l'unica via
         //         per un SavedRoute e' da una ActiveHikeSession propria). routeSource RESTA - e'
-        //         l'etichetta, serve al tempo CAI sulla card. Scrittura diretta sul documento: si
-        //         prova il serializzatore, non la rotta. ---
+        //         l'etichetta, serve al tempo CAI sulla card. Dalla 54a l'array non esce PIU' da
+        //         GET /api/hikes nemmeno per il creatore: solo un segnale hasRoutePath, e la
+        //         linea vera si chiede a GET /:id/route-path. Scrittura diretta sul documento:
+        //         si prova il serializzatore, non la rotta. ---
         const oidHike = new mongoose.Types.ObjectId(hikeId);
         const lineaFinta = [[13.55, 42.45], [13.56, 42.46], [13.57, 42.47]];
         async function vistaHike(cookie) {
@@ -150,15 +153,22 @@ function vedeEscursione(risposta, hikeId) {
             );
             const perA = await vistaHike(cookieA);
             const perC = await vistaHike(cookieC);
-            ok(`4b: A (creatore) vede routePath + routeSource (kind ${kind})`,
-                !!perA && Array.isArray(perA.routePath) && !!perA.routeSource && perA.routeSource.kind === kind,
-                JSON.stringify(perA && { rp: Array.isArray(perA.routePath), rs: perA.routeSource }));
-            ok(`4b: C (estraneo) NON vede la LINEA (routePath) per una registrazione (kind ${kind})`,
-                !!perC && perC.routePath === undefined,
-                JSON.stringify(perC && { rp: perC.routePath }));
+            ok(`4b: A (creatore) riceve hasRoutePath:true, MAI l'array, in GET /api/hikes (kind ${kind})`,
+                !!perA && perA.hasRoutePath === true && perA.routePath === undefined && !!perA.routeSource && perA.routeSource.kind === kind,
+                JSON.stringify(perA && { hrp: perA.hasRoutePath, rp: perA.routePath, rs: perA.routeSource }));
+            ok(`4b: C (estraneo) non riceve ne' hasRoutePath ne' routePath (kind ${kind})`,
+                !!perC && perC.hasRoutePath === undefined && perC.routePath === undefined,
+                JSON.stringify(perC && { hrp: perC.hasRoutePath, rp: perC.routePath }));
             ok(`4b: C (estraneo) vede comunque routeSource (etichetta per il tempo CAI) (kind ${kind})`,
                 !!perC && !!perC.routeSource && perC.routeSource.kind === kind,
                 JSON.stringify(perC && { rs: perC.routeSource }));
+            const rottaA = await chiama('GET', `/api/hikes/${hikeId}/route-path`, null, cookieA);
+            ok(`4b: A ottiene l'array vero dalla rotta dedicata (kind ${kind})`,
+                rottaA.status === 200 && Array.isArray(rottaA.corpo.routePath) && rottaA.corpo.routePath.length === lineaFinta.length,
+                JSON.stringify(rottaA.corpo));
+            const rottaC = await chiama('GET', `/api/hikes/${hikeId}/route-path`, null, cookieC);
+            ok(`4b: C (estraneo) sulla rotta dedicata -> 404, non conferma nemmeno l'esistenza (kind ${kind})`,
+                rottaC.status === 404, `status ${rottaC.status} ${JSON.stringify(rottaC.corpo)}`);
         }
         // rimesso com'era, cosi' i passi 5-7 non vengono disturbati
         await mongoose.connection.collection('hikes').updateOne(

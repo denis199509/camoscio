@@ -139,6 +139,37 @@ async function idbDeleteQueuedPoints(localIds) {
     });
 }
 
+// Punti GPS orfani (debito tecnico notato chiudendo il tetto tile della 50a-51a - gemello
+// piccolo dello stesso problema): una volta che l'app ha deciso QUALE sessione sta
+// seguendo adesso (o che non ne segue nessuna), qualunque voce in pendingPoints con una
+// sessionId diversa appartiene a una sessione che nessun altro codice interrogera' mai
+// piu' - ne' flushPendingPoints (chiede sempre e solo trackingState.sessionId), ne' una
+// futura ripresa (checkForResumableSession riparte sempre dal server o dallo specchio
+// locale, mai da IndexedDB). Restava quindi in coda per sempre. Cursore sull'intero store
+// (nessun indice adatto a "diverso da"): stessa scelta gia' fatta per le tile esplicite
+// (idbClearExplicitTiles), a questa scala (punti GPS, ~100 byte l'uno) va bene lo stesso.
+async function idbPurgeOrphanedPoints(keepSessionId) {
+    const db = await openCamoscioDB();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction('pendingPoints', 'readwrite');
+        const store = tx.objectStore('pendingPoints');
+        const request = store.openCursor();
+        let deleted = 0;
+        request.onsuccess = (event) => {
+            const cursor = event.target.result;
+            if (!cursor) return;
+            if (cursor.value.sessionId !== keepSessionId) {
+                store.delete(cursor.primaryKey);
+                deleted++;
+            }
+            cursor.continue();
+        };
+        request.onerror = () => reject(request.error);
+        tx.onabort = () => reject(tx.error || new Error('Pulizia punti GPS orfani interrotta'));
+        tx.oncomplete = () => resolve(deleted);
+    });
+}
+
 // --- Cache tile mappa offline ---
 
 async function idbGetTile(key) {
@@ -322,6 +353,7 @@ window.openCamoscioDB = openCamoscioDB;
 window.idbQueuePoints = idbQueuePoints;
 window.idbGetQueuedPoints = idbGetQueuedPoints;
 window.idbDeleteQueuedPoints = idbDeleteQueuedPoints;
+window.idbPurgeOrphanedPoints = idbPurgeOrphanedPoints;
 window.idbGetTile = idbGetTile;
 window.idbPutTile = idbPutTile;
 window.idbEnsureTileExplicit = idbEnsureTileExplicit;

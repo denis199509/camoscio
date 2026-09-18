@@ -1,56 +1,49 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-09-17 (53a sessione, CHIUSA — Tappa 2 di 5 del piano CSP
-chiusa). Piano completo, con tutte le decisioni gia' prese da Denis (D-1...D-7):
+Aggiornato: 2026-09-18 (55a sessione, ancora in corso). Piano CSP completo,
+con tutte le decisioni gia' prese da Denis (D-1...D-7):
 C:\Users\lenovo\.claude\plans\camoscio-csp-header-sicurezza.md - non
-richiede altre domande, solo eseguire le tappe rimaste nell'ordine dato.
+richiede altre domande, solo eseguire la tappa rimasta (in pausa, vedi sotto).
 
-  >>> DA DOVE SI RIPARTE (54a sessione):
-   1. TAPPE 1 e 2 del piano CSP chiuse per davvero. Tappa 2 (la piu'
-      grossa: 65 handler onclick/onchange generati da JS in 13 file,
-      diventati data-*+listener) verificata dal vivo nel browser vero
-      con un account di prova reale, e da una revisione code-reviewer
-      indipendente pulita al primo giro (1 MEDIO reale corretto - un
-      dispatch by-name su window in pendingreports.js, ora una mappa
-      fissa di sei nomi - + 4 BASSO, 3 corretti, il quarto lasciato
-      apposta). Non c'e' niente da ricontrollare qui.
-   2. PROSSIMO PASSO: TAPPA 3 del piano CSP - la finestra di stampa dei
-      codici 2FA (D-6/A, w.close nativo invece di uno script inline,
-      ~15 righe in twofactor.js). La controprova e' identica a quella
-      gia' fatta alla 50a sessione: aprire la finestra, chiudere per
-      davvero la scheda che l'ha aperta, verificare che si chiuda
-      comunque da sola allo scadere del timer.
-   3. Poi tappe 4-5 (Report-Only, enforcement) - le ultime due
-      richiedono un giro sul telefono Android vero (rischio noto: il
-      bridge Capacitor potrebbe non reggere la CSP).
-   4. Nessun'altra richiesta di Denis in sospeso al momento.
+  >>> DA DOVE SI RIPARTE:
+   1. CSP: TAPPE 1-4 di 5 chiuse per davvero. TAPPA 5 (enforcement, 1 riga)
+      PROPOSTA nella 55a e MESSA IN PAUSA su richiesta di Denis (telefono
+      non a portata di mano in quel momento - non rifiutata, solo
+      rimandata). Condizione per procedere: zero violazioni Report-Only su
+      desktop E telefono Android (debug remoto Chrome - rischio noto: il
+      bridge Capacitor potrebbe non reggere la CSP, vedi §2.1 del piano).
+      Il giro telefono NON e' stato fatto: serve Denis col telefono in
+      mano, non si puo' fare da soli.
+   2. Il resto del backlog MEDIO/BASSO della verifica generale (CSP a
+      parte): otto chiusi finora (canale notifiche/DMS, Hike.routePath
+      a select:false il 18/09 nella 54a; punti GPS orfani, la controprova
+      mappa/tracciamento, tracking.js #9/#11, il riquadro "ultimo allarme
+      fallito" e la nota nel modale "Completa" nella 55a - vedi
+      06-Cronologia-Sessioni.md sezione "55a" per il dettaglio di ognuno),
+      il resto resta in coda - vedi 04-Da-Fare.md.
+   3. Nessun'altra richiesta di Denis in sospeso al momento.
 
-FATTO nella TAPPA 2 (dettaglio completo in
-../camoscio memoria/06-Cronologia-Sessioni.md, sezione "53a"):
- - I 65 handler onclick/onchange nei 13 file (peoplesearch, pendingreports,
-   hikepage, outingpage, backpack, map, storico, feed, carpool, userprofile,
-   squadpage, app, social) diventano attributo data-* + addEventListener
-   vero, nell'ordine dal piu' isolato al piu' delicato dato dal piano. Il
-   pezzo piu' grosso: buildHikeCard in social.js (19 handler in una sola
-   funzione, la scheda escursione che compare ovunque nel sito).
- - Verificato dal vivo nel browser vero (non solo node --check): login demo
-   reale, giro completo su card escursione, pagina squadra, profilo,
-   storico, ricerca persone, notifiche, carpool, mappa (incluso il
-   teletrasporto GPS su un picco vero) - dove l'azione sarebbe stata
-   distruttiva (elimina, moderazione) usato uno spy sulla funzione reale
-   invece di eseguirla. Console sempre pulita.
- - Revisione code-reviewer con vincoli anti-fabbricazione (regola fissata
-   alla 51a): pulita al primo giro, 65/65 handler fedeli all'originale.
-   Ha notato che la conversione ha chiuso di striscio due XSS latenti mai
-   notati nell'inline (partecipante e organizzatore non escapati in
-   social.js). Corretto un MEDIO reale (dispatch by-name su window in
-   pendingreports.js -> mappa fissa) e 3 dei 4 BASSO segnalati.
-
->>> RIMANE VALIDO (nessuna nuova richiesta, non ridiscutere):
-   Prossimo MEDIO/BASSO fra quelli rimasti (~20 abbondanti, CSP a parte,
-   gia' in lavorazione sopra) - vedi 04-Da-Fare.md. Se si torna a toccare
-   map.js/tracking.js: prima la controprova rigorosa rimasta aperta dalla
-   47a (vedi sotto, invariata).
+FATTO nella 55a sessione finora (dettaglio completo per ognuno in
+../camoscio memoria/06-Cronologia-Sessioni.md, sezione "55a" - qui solo
+l'elenco, per restare corto):
+ - M-5: verificato gia' risolto dal codice dalla 35a (deadManContactIndex
+   rimosso, DELETE contatto gia' atomico per contenuto) - nota vault
+   corretta, nessun codice toccato.
+ - Punti GPS orfani in IndexedDB: CHIUSO (nuova idbPurgeOrphanedPoints in
+   idb.js, due agganci in tracking.js).
+ - Controprova rigorosa mappa/tracciamento (dalla 47a): CHIUSA (condizione
+   avversa riprodotta per davvero, boundaries rallentata ad arte -
+   modifica temporanea, mai committata).
+ - Tracking.js #9 e #11 (dalla 35a): CHIUSI (verificati dal vivo con
+   un'escursione e sessione di prova reali).
+ - Pannello Sicurezza "ultimo allarme fallito" + nota nel modale
+   "Completa": CHIUSI (il riquadro vive su Mappa, non su Sicurezza -
+   corretta la nota del vault).
+ - Tappa 5 CSP proposta da Denis, messa in pausa su sua richiesta.
+ - Trovato per strada, non collegato a nessun fix: un tip pubblicitario di
+   dotenv (pacchetto vero, non manomesso) che nomina www.vestauth.com e
+   spedisce istruzioni per agenti AI in node_modules/dotenv/skills/ -
+   indagato, concluso innocuo, non seguito. Vedi 07-Trappole-Tecniche.md.
 
 >>> APERTI (invariati salvo dove segnato):
   - CONFORMITA' GDPR + NOTA LEGALE: index.html fa accettare "Termini +
@@ -82,28 +75,18 @@ FATTO nella TAPPA 2 (dettaglio completo in
     verificato conforme) le foto NON portano EXIF/GPS, tutti gli input passano
     da un ricompressore canvas che li distrugge - da nominare comunque come
     rassicurazione quando l'informativa esiste.
-  - VERIFICHE DAL VIVO: correttezza #9 e #11 in tracking.js; il riquadro
-    "ultimo allarme fallito" nel pannello Sicurezza; il comando ⋮ "Togli la
-    mia traccia" + la nota nel modale "Completa"; la prova al telefono del
-    Punto 1 (+ RICHIESTA 2, un partecipante che dopo carica la sua traccia).
-    La controprova rigorosa della corsa mappa/tracciamento (dalla 47a) -
-    riprodurre il guasto PRIMA della correzione (rete rallentata ad arte
-    su /api/regions/boundaries durante un ricaricamento a meta'
-    registrazione) e verificare che sparisca DOPO. Fatta solo la verifica
-    "a caldo" nel browser vero, non questa controprova specifica.
-  - M-5 + PUNTI GPS ORFANI (coppia per una sessione tranquilla): M-5 (44a,
-    RIEMERSO dalla 22a/24a) - race sulla cancellazione di un contatto
-    d'emergenza per indice posizionale invece che per id, due schede aperte
-    in corsa possono cancellare il contatto sbagliato. PUNTI GPS ORFANI
-    (nuovo, 50a) - quando un'escursione finisce con punti non inviati e la
-    sessione non viene mai ripresa, restano in IndexedDB per sempre (~100
-    byte/punto) - gemello piccolo dello stesso problema appena chiuso per
-    le tile.
+  - VERIFICHE DAL VIVO ancora aperte: la prova al telefono del Punto 1
+    (tracciamento di gruppo) + RICHIESTA 2 (un partecipante che dopo carica
+    la sua traccia) - serve il telefono, come la Tappa 5 CSP.
   - MEDIO-5 (security-privacy 35a): i tempi misurati dal creatore si applicano
     identici a ogni confermato e finiscono in "Velocita' Ascesa X m/h" sulla
     Dashboard. GDPR art. 5(1)(d). MA E' LA DECISIONE CHE DENIS HA GIA' PRESO
     APPOSTA (33a/35a: tempo di cammino uniforme, il singolo lo sostituisce
     col ⬆).
+  - INVITO SQUADRA DIREZIONALE: solo un caso su tre confermato dal vivo
+    (43a) - Denis ha scelto di chiudere comunque il punto cosi'.
+  - RESPONSIVE DASHBOARD <900px: verificato solo in simulazione (02/09),
+    bassa priorita'.
 
 >>> LAVORO FUTURO PREPARATO, agli atti (NIENTE codice):
     FILONE B: collezione "I 2000 dell'Appennino" - bloccato, LA LISTA
@@ -131,7 +114,11 @@ FATTO nella TAPPA 2 (dettaglio completo in
     della 52a (Tappa 1 CSP) e della 53a (Tappa 2 CSP + fix revisione) e'
     stato rifuso e PUSHATO su richiesta esplicita di Denis il 17/09
     (cc070d7, 24 file). Da qui sono ripartiti nuovi auto-save locali per
-    il lavoro successivo.
+    il lavoro della 54a e della 55a (punti GPS orfani) - MAI pushati, da
+    rifondere prima di un eventuale push. Il resto del lavoro della 55a
+    (controprova mappa/tracciamento, tracking.js #9/#11, pannello
+    Sicurezza, nota modale) non ha lasciato codice permanente (solo prove
+    contro un server locale, nessun file toccato).
   - Traduzione IT/EN (punto 102, CHIUSO): resta ITALIANO di proposito tutto
     il testo scritto dagli utenti, i nomi di luogo, i percorsi salvati,
     titolo/descrizione dei badge, le schede "i", il testo delle notifiche
@@ -176,6 +163,12 @@ FATTO nella TAPPA 2 (dettaglio completo in
     generati da JS in 13 file, data-*+listener) - vedi
     06-Cronologia-Sessioni.md, sezione "53a". Tappe 1+2 rifuse in un
     commit e PUSHATE su richiesta di Denis (cc070d7).
+  54a SESSIONE (18/09): TAPPE 3+4 DI 5 CSP CHIUSE (finestra stampa 2FA
+    w.close nativo; middleware/securityHeaders.js nuovo, Report-Only
+    attivo). Canale DMS che mentiva su un guasto (GET /api/notifications)
+    CHIUSO. Hike.routePath a select:false CHIUSO (progettato con
+    l'architect, 8 file) - vedi 06-Cronologia-Sessioni.md, sezione "54a".
+    Codice ancora solo in auto-save locali, nessun push.
 
 ===================================================================
 
@@ -200,12 +193,13 @@ REGOLA DI FINE SESSIONE: si aggiornano il vault e questo file SEMPRE; cronologia
 MAI piu' (congelato); cose_da_fare.txt quando un punto si chiude o ne arriva uno nuovo.
 
 >>> LEZIONI OPERATIVE: tutte in ../camoscio memoria/07-Trappole-Tecniche.md — quella
-    e' la sede dove si guarda prima di toccare codice a rischio. Nella 53a: un test
-    con spy su window.X smette di intercettare se il codice smette di leggere da
-    window (dispatch dinamico -> mappa locale costruita una volta) - non e' un
-    difetto del codice, e' il metodo di prova che deve cambiare. Il resto (dalla
-    52a a ritroso: la 50a era specifica di IndexedDB; dato mancante che alimenta un
-    giudizio binario; correggere un valore condiviso solo su un lato; RangeError su
-    array grandi; formule duplicate che divergono; rate-limiter per IP fra estranei;
-    ecc.) e' tutto nel file del vault, non ripetuto qui per tenerlo corto.
+    e' la sede dove si guarda prima di toccare codice a rischio. Nella 55a: navigate()
+    a un hash diverso sulla STESSA tab gia' caricata non attiva il router dell'app (lo
+    stato JS resta ma la sezione visibile no) - serve una tab nuova o un click vero.
+    Un handler reale azionato su stato globale non controllato prima puo' innescare un
+    effetto collaterale vero (successo un completamento singolo per errore in un primo
+    tentativo di prova). Il resto (dalla 54a a ritroso, IndexedDB, dato mancante che
+    alimenta un giudizio binario, correggere un valore condiviso solo su un lato,
+    RangeError su array grandi, formule duplicate che divergono, rate-limiter per IP fra
+    estranei, ecc.) e' tutto nel file del vault, non ripetuto qui per tenerlo corto.
 ===================================================================

@@ -277,6 +277,9 @@
             'hikePage.tabZaino': 'Backpack',
             // Punto 116: card mini-mappa nel tab Dettagli, col percorso della traccia importata.
             'hikePage.percorsoPrevisto': 'Planned route',
+            // 54a sessione (piano camoscio-hike-routepath-select-false.md, D-5): la linea si
+            // chiede ora su richiesta - se il segnale diceva "c'e'" ma la fetch fallisce.
+            'hikePage.percorsoNonDisponibile': 'The route is not available right now.',
 
             // ==================================================================
             // Rollout punto 102, secondo lotto (22/08/2026): Escursioni + Le mie
@@ -1590,6 +1593,9 @@
             // --- loadActiveHikeOnMap: popup del punto di ritrovo (il nome del
             //     ritrovo lo scrive chi crea l'escursione, non si traduce). ---
             'map.ritrovo.titolo': 'Meeting point',
+            // 54a sessione (piano camoscio-hike-routepath-select-false.md, D-5): la traccia si
+            // chiede ora su richiesta - se il segnale diceva "c'e'" ma la fetch fallisce.
+            'map.percorsoNonDisponibile': 'The route is not available right now.',
 
             // ==================================================================
             // Rollout punto 102, LOTTO MAPPA - area 2 di 4 (28/08/2026):

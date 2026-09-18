@@ -94,7 +94,7 @@ avviano un server loro (rispettivamente 3136 e 3137), punto77 pure (3104):
 
     node prove/prova-contatti-emergenza.js         ~55 controlli  (ne avvia uno suo sulla 3136)
     node prove/prova-2fa.js                        ~150 controlli  (sez. 1 no server; 2-10 avviano il loro sulla 3137)
-    node prove/prova-punto77.js                     ~25 controlli  (ne avvia uno suo sulla 3104)
+    node prove/prova-punto77.js                     37 controlli  (ne avvia uno suo sulla 3104)
 
     prova-contatti-emergenza: POST/DELETE /api/users/:id/emergency-contacts atomici (M-5),
     validazione email server-side, niente doppioni, tetto 5, RACE fra due schede, e (dalla
@@ -121,8 +121,11 @@ avviano un server loro (rispettivamente 3136 e 3137), punto77 pure (3104):
     twoFactorLastStep sul DB (sbloccaPasso) dove sotto prova c'e' il flusso e non
     l'anti-riuso - la sezione 5 NON sblocca. In testa al file le 4 controprove non
     facoltative (git stash).
-    prova-punto77: escursione conclusa visibile ai soli partecipanti; sez. 4b (dalla 40a):
-    hikeVisibileA toglie la LINEA (routePath) a chi non partecipa per ogni traccia GPS.
+    prova-punto77: escursione conclusa visibile ai soli partecipanti; sez. 4b (dalla 40a,
+    riscritta alla 54a - routePath e' select:false a schema): un NON-partecipante non riceve
+    ne' l'array ne' il segnale hasRoutePath da GET /api/hikes, e GET /:id/route-path gli
+    risponde 404 senza confermare nemmeno l'esistenza dell'escursione; il creatore riceve
+    SOLO hasRoutePath:true dalla lista, mai l'array, e lo ottiene dalla rotta dedicata.
 
 Il RECUPERO RITARDATO senza secondo fattore (opzione C, blocco 5 del piano 2FA) ha una
 prova sua - avvia un server sulla 3138, file separato da prova-2fa perche' scrive DATE nel
@@ -554,6 +557,28 @@ avvia un server suo sulla 3116:
     trovano routePath. Costo spazio misurato (scratchpad, tracce .gpx realistiche): ~1,5-2
     KB per un'escursione media, ~5 KB nel caso peggiore realistico, tetto ~12,7 KB (cap
     400 punti) - trascurabile contro i 321 MB liberi (vincolo hard).
+
+    NOTA (54a sessione, piano camoscio-hike-routepath-select-false.md): Hike.routePath e'
+    select:false a schema dalla 54a - questa prova resta verde perche' legge il DB col driver
+    grezzo (mongoose.connection.collection('hikes'), non il modello) e per il resto guarda la
+    risposta di POST /api/hikes, che continua a portare l'array (un documento appena creato lo
+    ha gia' in RAM). GET /api/hikes invece NON porta piu' routePath per nessuno - solo un
+    segnale hasRoutePath - e chi lo vuole davvero lo chiede a GET /:id/route-path (vedi
+    prova-punto77 sopra).
+
+La prova del PUNTO 1 - Tracciamento di Gruppo (35a sessione: chiusura di gruppo che eredita
+distanza/dislivello/quota/linea/tempi da una registrazione dal vivo) avvia un server suo:
+
+    node prove/prova-punto1-tracciamento-gruppo.js  74 controlli  (ne avvia uno suo, sulla 3135)
+
+    Undici sezioni: contratto di trackingSessionId (mutuamente esclusivo con gpxText, 400 sui
+    casi malformati); le misure della registrazione entrano nella Hike; una registrazione
+    partita per sbaglio non sovrascrive numeri gia' presenti; nessun tempo di cammino misurato;
+    movingTimeHours uniforme per ogni confermato; un confermato gia' con un Completion non lo
+    duplica; routeSource:live + routePath (dalla 54a: .select('+routePath'), select:false a
+    schema); complete-group resta creator-only; il ripiego D5 (chiusura dalla card, senza id
+    esplicito); correttezza 35a (coda binaria, sessione senza quota, etichetta gpx); D5 - ritiro
+    della traccia (PUT {routePath:null}) e consenso geo revocato/ridato.
 
 La prova del PUNTO 45 (moderazione segnalazioni + foto) e' stata aggiornata per il 111:
 GET /pending -> GET /moderation (oggetto con tre liste + totale), DELETE /:id/resolve

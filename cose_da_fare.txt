@@ -13804,3 +13804,91 @@ vera - le ultime due richiedono una prova col telefono Android vero).
 
 Vault e leggimi.txt aggiornati a fine sessione. Codice resta in
 auto-save locale, nessun push senza il tuo ok esplicito.
+
+=======================================================================
+54ESIMA SESSIONE (18/09/2026)
+=======================================================================
+
+Denis: "allora andiamo in ordine, vai con tappa 3" - poi, dopo,
+"continua con altro (punti medio/basso)" e via via "un altro punto
+medio/basso" due volte.
+
+FATTO (Tappa 3 di 5 del piano protezione sito): la finestra separata
+che stampa i codici di recupero del secondo fattore ora si chiude da
+sola in un modo più solido - prima il "timer" che la chiudeva viveva
+dentro un pezzo di codice scritto nella finestra stessa, che con la
+protezione del sito accesa sarebbe stato bloccato in silenzio. Ora la
+richiesta di chiusura parte da fuori ma usa una funzione della finestra
+stessa, che non dipende dalla pagina principale - stesso identico
+comportamento di prima (verificato aprendo la finestra, chiudendo per
+davvero la scheda del sito che l'aveva aperta, e controllando che la
+finestra dei codici si chiudesse comunque da sola allo scadere del
+tempo).
+
+FATTO (Tappa 4 di 5): la protezione del sito (contro codice estraneo
+iniettato nelle pagine) è ora ACCESA ma in modalità "segnala soltanto"
+- non blocca ancora niente, si limita a scrivere nella console del
+browser se qualcosa la violerebbe. Verificato con un giro completo su
+8 pagine diverse del sito (Home, Mappa, Community, Sicurezza, Impostazioni,
+Le mie escursioni, Progressi): nessuna violazione da nessuna parte.
+Manca ancora la prova sul telefono Android vero prima di poter accendere
+il blocco vero (Tappa 5) - va fatta con te, un giorno che hai il
+telefono a portata di mano.
+
+FATTO: il canale con cui scopri se il Timer di Sicurezza è scattato
+per davvero (la notifica che arriva quando il tempo scade) aveva un
+difetto silenzioso - se il server aveva un problema temporaneo proprio
+nel momento in cui andavi a controllare le notifiche, il sito ti
+mostrava "nessuna notifica" invece di dirti che non era riuscito a
+controllare. Con un timer di sicurezza armato, vedere "nessuna
+notifica" quando in realtà il controllo è fallito è pericoloso: sembra
+tutto tranquillo quando invece non si sa. Corretto: ora se il controllo
+fallisce per davvero il sito lo dice chiaramente invece di mostrare una
+lista vuota. Verificato con più prove automatiche mirate, tutte verdi,
+nessun dato di prova rimasto sul sito.
+
+FATTO (di striscio, non richiesto ma trovato per strada): una delle
+prove automatiche esistenti (quella sull'invito squadra) era rotta da
+diverse sessioni per un motivo che non c'entrava niente col lavoro di
+oggi - una funzione di supporto non era mai stata aggiornata dopo un
+cambiamento fatto qualche sessione fa. Te l'ho segnalato e hai detto
+"sistemalo ora": sistemato, la prova ora passa tutti i suoi controlli
+invece di fermarsi a metà.
+
+FATTO: il punto sulla RAM di Render nel percorso "aggiorna tutto" -
+la lista delle tue escursioni caricava in memoria del server anche la
+traccia GPS disegnata sulla mappa di OGNI escursione, per OGNI persona
+che apre il sito, anche quando quella persona non ha nessun bisogno di
+vederla in quel momento (succede ad ogni cambio di pagina). Oggi il
+costo è piccolissimo (misurato: pochi KB in tutto, sul sito vero), ma
+è lo stesso tipo di problema che una volta ha fatto cadere il sito con
+l'indice dei sentieri - ho misurato il costo reale prima di proporre
+la strada, e tu hai scelto di sistemarlo bene subito invece di
+rimandarlo. Ho fatto progettare la soluzione all'agente architetto
+prima di scrivere codice (stesso trattamento già dato al riordino di
+initApp()): ora la lista delle escursioni porta solo un segnale "c'è
+una traccia" invece della traccia intera, e chi apre davvero
+un'escursione o la mappa la scarica al momento, un pezzo alla volta,
+tenendola in memoria per non riscaricarla più volte nella stessa
+sessione. Tre piccole decisioni sono state tue: se un guasto nello
+scaricare la traccia deve mostrare comunque un percorso finto o dire
+onestamente che non è disponibile (hai scelto: dire la verità); se
+prepararsi già per quando il telefono è offline (hai scelto: non
+ancora, solo se una prova vera sul campo dice che serve); se tenere il
+segnale "c'è una traccia" con tutto il lavoro che serve o accontentarsi
+di mostrare sempre il bottone "Togli la mia traccia" (hai scelto di
+tenere il segnale vero). Verificato dal vivo nel browser vero, con
+un'escursione di prova creata apposta e poi cancellata: il bottone
+"Togli la mia traccia" compare solo quando c'è davvero una traccia, la
+mappa disegna la linea vera facendo una sola richiesta al server e la
+riusa se riapri la stessa pagina, un guasto finto nello scaricare la
+traccia mostra l'avviso invece di un percorso finto, e togliere la
+traccia la fa sparire subito ovunque senza dover ricaricare la pagina.
+
+Restano da fare: Tappa 5 del piano protezione sito (richiede te col
+telefono Android in mano); il resto dei punti medio/piccoli rimasti
+dalla verifica generale del codice, uno alla volta con il tuo ok prima
+di ognuno.
+
+Vault e leggimi.txt aggiornati a fine sessione. Codice resta in
+auto-save locale, nessun push senza il tuo ok esplicito.

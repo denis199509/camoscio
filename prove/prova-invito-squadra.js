@@ -107,6 +107,11 @@ function caricaSocial(statoIniziale, rispostaFetch) {
     contesto.window = contesto;
     contesto.window.CamoscioState = statoIniziale.stato;
     contesto.window.escapeHtml = s => String(s == null ? '' : s);
+    // definita in app.js (48a sessione, fix UTC/Europe-Rome), copiata identica: social.js la
+    // chiama in escursioneNonPiuAperta per il confronto data "YYYY-MM-DD" - senza questo stub
+    // la Sezione A va in ReferenceError prima di eseguire un solo controllo (drift dalla 48a,
+    // mai notato perche' questa prova non veniva rilanciata).
+    contesto.window.dataISORoma = date => (date instanceof Date ? date : new Date()).toLocaleDateString('sv-SE', { timeZone: 'Europe/Rome' });
     contesto.window.showToast = (m, t) => toast.push({ testo: m, tipo: t });
     contesto.window.showAlertModal = async m => { toast.push({ testo: m, tipo: 'alert' }); };
     contesto.window.getEligibilityBadge = () => ({ eligible: true, badge: '', reason: '' });
