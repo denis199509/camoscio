@@ -39,6 +39,7 @@ async function renderFeed() {
 async function caricaPaginaFeed() {
     if (feedCaricando || feedFinito) return;
     feedCaricando = true;
+    feedErrore = false; // l'avviso sopra "Carica altre" vale solo per l'ultimo tentativo
     try {
         const url = '/api/feed' + (feedNextBefore ? ('?before=' + encodeURIComponent(feedNextBefore)) : '');
         const res = await fetch(url);
@@ -50,7 +51,12 @@ async function caricaPaginaFeed() {
     } catch (e) {
         console.error('Errore caricamento feed:', e);
         feedErrore = true;
-        feedFinito = true; // non ritentare in loop
+        // Solo sulla PRIMA pagina il feed si chiude qui (lo stato vuoto mostra gia'
+        // l'errore, si riprova rientrando nella sezione). Sulle successive il bottone deve
+        // restare: con feedFinito=true spariva senza avviso e il feed sembrava finito -
+        // su una rete di montagna e' il caso normale, non un'eccezione. Nessun rischio di
+        // ritentare in loop: la pagina successiva parte solo da un click.
+        if (feedItems.length === 0) feedFinito = true;
     } finally {
         feedCaricando = false;
     }
@@ -75,6 +81,9 @@ function disegnaFeed() {
     }
 
     box.innerHTML = feedItems.map(schedaFeed).join('')
+        + (feedErrore && !feedFinito
+            ? `<p class="text-muted small">⚠️ ${window.escapeHtml(T('feed.erroreAltre') || 'Non è stato possibile caricare altre uscite. Riprova.')}</p>`
+            : '')
         + (feedFinito ? '' : `<button type="button" class="btn btn-secondary btn-block" id="feed-load-more">${window.escapeHtml(T('feed.caricaAltre') || 'Carica altre')}</button>`);
 
     const more = document.getElementById('feed-load-more');

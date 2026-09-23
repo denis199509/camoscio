@@ -122,6 +122,19 @@ app.use('/api/geocoding', geocodingRouter);
 app.use('/api/routing', routingRouter);
 app.use('/api/safety', safetyRouter);
 
+// Corpo oltre il limite di express.json (10 MB, sopra): senza questo, Express rispondeva
+// 413 con una pagina HTML, che il client non sa leggere - l'utente vedeva solo un generico
+// "Riprova". Succedeva davvero con un .gpx fra ~9,6 e 10 MB: il file passa il controllo
+// del client, ma dentro il JSON (virgolette e a capo raddoppiati) pesa qualche punto
+// percentuale in piu' (verifica generale, blocco 3, 45a - chiuso nella 56a). SOLO questo
+// errore: ogni altro prosegue esattamente come prima.
+app.use((err, req, res, next) => {
+    if (err && err.type === 'entity.too.large') {
+        return res.status(413).json({ error: 'Il file è troppo grande per essere inviato: il limite è 10 MB.' });
+    }
+    next(err);
+});
+
 // --- SERVER HTTP & WEBSOCKET SETUP ---
 
 const server = http.createServer(app);

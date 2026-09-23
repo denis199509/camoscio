@@ -324,16 +324,27 @@ function renderWeatherData(data, placeName, simulato) {
         riskMessage = T('weather.rischioFulmini') || "RISCHIO FULMINI: Alta umidità con instabilità. Possibilità di celle temporalesche in quota.";
     }
 
-    if (lightningRisk) {
+    // Coi dati simulati (nessuna rete) il rischio non e' valutabile: i valori fissi del
+    // simulatore superano sempre la soglia, quindi l'allarme rosso scattava SEMPRE, costruito
+    // su numeri inventati. Ne' allarme ne' rassicurazione: si dice che non si sa (56a).
+    if (simulato) {
+        html += `
+            <div class="lightning-alert is-unknown">
+                <i data-lucide="cloud-off" style="width:16px; height:16px;"></i>
+                <span>${T('weather.rischioNonValutabile') || 'Dati non disponibili offline: rischio fulmini non valutabile.'}</span>
+            </div>
+        `;
+    } else if (lightningRisk) {
+        // Nessuna notifica di sistema (tolta nella 56a su scelta di Denis): partiva solo a
+        // pagina aperta, cioe' quando questo riquadro e' gia' sotto gli occhi, chiedeva il
+        // permesso senza un gesto dell'utente e si ripeteva a ogni ridisegno - e il titolo
+        // "Safety Alert" prometteva un sistema di allerta che non esiste.
         html += `
             <div class="lightning-alert blink">
                 <i data-lucide="zap" style="color:${window.CAMOSCIO_COLORI.rosso}; fill:${window.CAMOSCIO_COLORI.rosso}; width:16px; height:16px;"></i>
                 <span>${riskMessage}</span>
             </div>
         `;
-
-        // Simula la notifica Push del browser (Notifica di Emergenza)
-        triggerLightningPushNotification(riskMessage);
     } else {
         html += `
             <div class="lightning-alert is-ok">
@@ -369,27 +380,6 @@ function renderSimulatedWeatherData(placeName) {
     };
 
     renderWeatherData(mockData, placeName, true);
-}
-
-// Notifica Push di emergenza (simulata nel browser)
-function triggerLightningPushNotification(message) {
-    // Chiede il permesso e invia notifica HTML5 se supportato
-    if ("Notification" in window) {
-        if (Notification.permission === "granted") {
-            new Notification("Camoscio Safety Alert", {
-                body: message
-            });
-        } else if (Notification.permission !== "denied") {
-            Notification.requestPermission().then(permission => {
-                if (permission === "granted") {
-                    new Notification("Camoscio Safety Alert", {
-                        body: message,
-                        icon: "🏔️"
-                    });
-                }
-            });
-        }
-    }
 }
 
 window.fetchWeatherForCoords = fetchWeatherForCoords;

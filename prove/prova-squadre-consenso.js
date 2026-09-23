@@ -386,6 +386,50 @@ const S = a => (a || []).map(String);
         r = await chiama('POST', `/api/squads/${S7}/approve/${L}`, {}, ckA);
         ok('approve di una richiesta -> 200, L in members', r.status === 200 && S(r.corpo.members).includes(String(L)), JSON.stringify(r.corpo));
 
+        // === 10. scritture atomiche (56a sessione): niente leggi-e-riscrivi su array condivisi ===
+        // Le richieste partono IN PARALLELO (Promise.all) per riprodurre la corsa vera: prima
+        // request-join/promozione facevano push+save() dopo un controllo in memoria, e la
+        // rimozione di un admin riscriveva l'intera lista `admins` letta prima.
+        console.log('\n10. scritture atomiche su pendingRequests/admins');
+        const { id: Satom } = await creaSquad('-Satom', {});
+        const doppia = await Promise.all([
+            chiama('POST', `/api/squads/${Satom}/request-join`, {}, ckG),
+            chiama('POST', `/api/squads/${Satom}/request-join`, {}, ckG)
+        ]);
+        const stati = doppia.map(x => x.status).sort().join();
+        ok('doppio tocco su request-join -> un 200 e un 409', stati === '200,409', stati);
+        let satomdb = await squadsCol.findOne({ _id: oid(Satom) });
+        ok('...G compare UNA volta sola in pendingRequests', S(satomdb.pendingRequests).filter(x => x === String(G)).length === 1, JSON.stringify(satomdb.pendingRequests));
+        const nRich = await notifCol.countDocuments({ userId: oid(A), text: new RegExp('chiesto di entrare nella squadra "' + MARCA + '-Satom') });
+        ok('...e l\'admin riceve UNA notifica sola', nRich === 1, `trovate ${nRich}`);
+
+        await chiama('POST', `/api/squads/${Satom}/approve/${G}`, {}, ckA);
+        await chiama('POST', `/api/squads/${Satom}/request-join`, {}, ckL);
+        await chiama('POST', `/api/squads/${Satom}/approve/${L}`, {}, ckA);
+
+        await Promise.all([
+            chiama('POST', `/api/squads/${Satom}/admins/${G}`, {}, ckA),
+            chiama('POST', `/api/squads/${Satom}/admins/${G}`, {}, ckA)
+        ]);
+        satomdb = await squadsCol.findOne({ _id: oid(Satom) });
+        ok('doppia promozione in parallelo -> G UNA volta sola in admins', S(satomdb.admins).filter(x => x === String(G)).length === 1, JSON.stringify(satomdb.admins));
+
+        r = await chiama('POST', `/api/squads/${Satom}/admins/${So}`, {}, ckA);
+        ok('promuovere chi non e\' membro -> 400', r.status === 400, `status ${r.status}`);
+
+        // Promozione di L e rimozione di G nello stesso momento: con la vecchia riscrittura
+        // dell'intera lista, la rimozione poteva cancellare la promozione appena fatta.
+        const [rPromo, rTogli] = await Promise.all([
+            chiama('POST', `/api/squads/${Satom}/admins/${L}`, {}, ckA),
+            chiama('DELETE', `/api/squads/${Satom}/admins/${G}`, undefined, ckA)
+        ]);
+        ok('promozione e rimozione in parallelo -> entrambe 200', rPromo.status === 200 && rTogli.status === 200, `${rPromo.status}/${rTogli.status}`);
+        satomdb = await squadsCol.findOne({ _id: oid(Satom) });
+        ok('...L resta admin (la rimozione non ha cancellato la promozione)', S(satomdb.admins).includes(String(L)), JSON.stringify(satomdb.admins));
+        ok('...G non e\' piu\' admin ma resta membro', !S(satomdb.admins).includes(String(G)) && S(satomdb.members).includes(String(G)), JSON.stringify(satomdb));
+        r = await chiama('DELETE', `/api/squads/${Satom}/admins/${A}`, undefined, ckL);
+        ok('togliere il creatore dagli admin -> 400', r.status === 400, `status ${r.status}`);
+
     } catch (e) {
         console.error('\nERRORE DURANTE LA PROVA:', e);
         falliti++; fallimenti.push('eccezione non gestita: ' + e.message);

@@ -188,6 +188,25 @@ async function login(email, password) {
         await Follow.create({ followerId: A._id, followingId: B._id });
         await Follow.create({ followerId: B._id, followingId: A._id });
 
+        // 56a sessione: dati di A su documenti di B che lo scrub deve raggiungere.
+        // Un'escursione di B con tre auto: quella offerta da A (col suo comune di partenza),
+        // quella di B con A passeggero, e una terza senza campo passengers (default
+        // undefined nello schema) per controllare che il $pull non si inceppi li'. Piu' un
+        // percorso che B ha copiato da una traccia di A, col nome vero di A dentro.
+        const hikeB = await Hike.create({
+            title: `Uscita di B di prova ${MARCA}`, creatorId: B._id, date: domani, location: loc,
+            carpool: { drivers: [
+                { userId: A._id, seats: 3, departureCity: `Comune-di-A-${MARCA}` },
+                { userId: B._id, seats: 3, departureCity: 'Comune di B', passengers: [A._id] },
+                { userId: new mongoose.Types.ObjectId(), seats: 2, departureCity: 'Altro' }
+            ] }
+        });
+        ids.hikeB = String(hikeB._id);
+        await SavedRoute.create({
+            userId: B._id, nome: 'copiato da A', punti: [[12.5, 42.0], [12.6, 42.1]],
+            origineUserId: A._id, origineUsername: A.username
+        });
+
         await User.findByIdAndUpdate(A._id, {
             deadManActive: true, deadManExpiresAt: new Date(Date.now() + 3600 * 1000),
             // BASSO-3 (35a): esito di un allarme fallito, con un nome di terzi. Sopravvive alla
@@ -325,6 +344,16 @@ async function login(email, password) {
             JSON.stringify({ p: sessAscrub && sessAscrub.points.length, pub: sessAscrub && sessAscrub.publishedAt }));
         ok('i follow di A (entrambe le direzioni) sono stati cancellati',
             (await Follow.countDocuments({ $or: [{ followerId: A._id }, { followingId: A._id }] })) === 0);
+        const hikeBscrub = await Hike.findById(ids.hikeB).lean();
+        const autoB = hikeBscrub.carpool.drivers;
+        const idsDi = a => (a || []).map(String);
+        ok('56a: l\'auto offerta da A sull\'escursione di B e\' sparita (col suo comune di partenza)',
+            !autoB.some(d => String(d.userId) === ids.A) && !JSON.stringify(hikeBscrub).includes(`Comune-di-A-${MARCA}`), JSON.stringify(autoB));
+        ok('56a: ...A non e\' piu\' passeggero nell\'auto di B, e le altre due auto restano',
+            autoB.length === 2 && !idsDi(autoB.find(d => String(d.userId) === ids.B).passengers).includes(ids.A), JSON.stringify(autoB));
+        const copiaB = await SavedRoute.findOne({ userId: B._id, origineUserId: A._id }).lean();
+        ok('56a: il percorso copiato da B dice "Account eliminato", non piu\' il nome di A',
+            !!copiaB && copiaB.origineUsername === 'Account eliminato', JSON.stringify(copiaB && copiaB.origineUsername));
         ok('i CONTENUTI restano: l\'escursione creata da A e\' ancora sul database',
             !!(await Hike.findById(hikeP._id)) && String((await Hike.findById(hikeP._id)).creatorId) === ids.A);
         const dettAscrub = await chiama('GET', `/api/users/${ids.A}`, null, cookieB);
@@ -360,7 +389,7 @@ async function login(email, password) {
             await mongoose.connection.collection('follows').deleteMany({ $or: [{ followerId: u }, { followingId: u }] }).catch(() => {});
             await mongoose.connection.collection('passwordresets').deleteMany({ userId: u }).catch(() => {});
         }
-        for (const key of ['hikeFutura', 'hikePassata']) if (ids[key]) await mongoose.connection.collection('hikes').deleteOne({ _id: oid(ids[key]) }).catch(() => {});
+        for (const key of ['hikeFutura', 'hikePassata', 'hikeB']) if (ids[key]) await mongoose.connection.collection('hikes').deleteOne({ _id: oid(ids[key]) }).catch(() => {});
         for (const key of ['squadConMembri', 'squadVuota']) if (ids[key]) {
             await mongoose.connection.collection('squads').deleteOne({ _id: oid(ids[key]) }).catch(() => {});
             await mongoose.connection.collection('squadmessages').deleteMany({ squadId: oid(ids[key]) }).catch(() => {});

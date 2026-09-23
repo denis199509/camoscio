@@ -1433,6 +1433,12 @@ window.uploadCompletionGpx = function(completionId) {
             if (window.showToast) window.showToast(T('hikeToast.fileNonLetto') || 'Non è stato possibile leggere il file.', 'error');
             return;
         }
+        // Stesso controllo di storico.js: il tetto sopra guarda il file, il server il corpo
+        // JSON (qualche punto percentuale in piu') - vedi window.corpoOltreLimite in app.js.
+        if (window.corpoOltreLimite && window.corpoOltreLimite(JSON.stringify(payload))) {
+            if (window.showToast) window.showToast(T('gpx.troppoGrandeInvio') || 'Il file è troppo grande per essere inviato: il limite è 10 MB. Un\'escursione registrata normalmente sta sotto 1 MB.', 'error');
+            return;
+        }
 
         try {
             const res = await fetch(`/api/completions/${completionId}/gpx`, {

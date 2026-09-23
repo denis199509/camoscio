@@ -385,11 +385,25 @@ router.delete('/:id/members/:userId', requireAuth, async (req, res) => {
                     deletedAt: { $exists: false }
                 }).select('_id');
                 const viviSet = new Set(vivi.map(u => String(u._id)));
-                const nuovo = restanti.find(id => viviSet.has(id)) || null;
-                if (nuovo) {
-                    squad.creatorId = nuovo;
-                    if (!squad.admins.some(a => String(a) === nuovo)) squad.admins.push(nuovo);
-                    await squad.save();
+                // Scrittura atomica condizionata a "il successore e' ancora membro": fra la
+                // lettura di `restanti` e qui il candidato puo' essere uscito a sua volta -
+                // senza il filtro diventava referente di una squadra di cui non fa piu' parte.
+                // Se e' uscito si prova il vivo successivo, nello stesso ordine d'iscrizione;
+                // se non resta nessuno si ricade nel ramo "nessun successore", che
+                // promuoviSeSenzaAdmin gestisce gia' dopo il $pull.
+                let nuovo = null;
+                let conSuccessore = null;
+                for (const candidato of restanti.filter(id => viviSet.has(id))) {
+                    conSuccessore = await Squad.findOneAndUpdate(
+                        { _id: squad._id, members: candidato },
+                        { $set: { creatorId: candidato }, $addToSet: { admins: candidato } },
+                        { new: true }
+                    );
+                    if (conSuccessore) { nuovo = candidato; break; }
+                }
+                if (conSuccessore) {
+                    squad.creatorId = conSuccessore.creatorId;
+                    squad.admins = conSuccessore.admins;
                     successoreInstallato = true;
                     // B-4 (revisione sicurezza 28ª): chi eredita la conduzione della squadra
                     // deve saperlo. Best-effort, come tutte le notifiche del modulo.
@@ -526,11 +540,22 @@ router.post('/:id/admins/:userId', requireAuth, async (req, res) => {
         if (!isSquadMember(squad, targetId)) {
             return res.status(400).json({ error: 'Solo un membro della squadra può diventare amministratore' });
         }
-        if (!squad.admins.some(a => a.equals(targetId))) {
-            squad.admins.push(targetId);
-            await squad.save();
+        if (squad.admins.some(a => a.equals(targetId))) {
+            return res.json(squad);
         }
-        res.json(squad);
+        // Atomico e condizionato all'appartenenza: fra il controllo sopra e la scrittura il
+        // membro puo' essere uscito (sarebbe diventato admin senza essere membro), e due admin
+        // che promuovono insieme la stessa persona non devono duplicarla ($addToSet).
+        // Il creatore e' gia' admin e si ferma sopra, quindi `members` basta come filtro.
+        const aggiornata = await Squad.findOneAndUpdate(
+            { _id: squad._id, members: targetId },
+            { $addToSet: { admins: targetId } },
+            { new: true }
+        );
+        if (!aggiornata) {
+            return res.status(400).json({ error: 'Solo un membro della squadra può diventare amministratore' });
+        }
+        res.json(aggiornata);
     } catch (e) {
         console.error('Errore promozione admin squadra:', e);
         res.status(400).json({ error: 'Impossibile promuovere il membro' });
@@ -552,9 +577,16 @@ router.delete('/:id/admins/:userId', requireAuth, async (req, res) => {
         if (squad.creatorId.equals(targetId)) {
             return res.status(400).json({ error: 'Chi ha creato la squadra è sempre amministratore' });
         }
-        squad.admins = squad.admins.filter(a => !a.equals(targetId));
-        await squad.save();
-        res.json(squad);
+        // $pull atomico, non `squad.admins = filter(...)` + save(): quello riscriveva l'intera
+        // lista letta sopra, cancellando una promozione concorrente o rimettendo fra gli admin
+        // chi nel frattempo era uscito dalla squadra.
+        const aggiornata = await Squad.findByIdAndUpdate(
+            squad._id,
+            { $pull: { admins: targetId } },
+            { new: true }
+        );
+        if (!aggiornata) return res.status(404).json({ error: 'Squadra non trovata' });
+        res.json(aggiornata);
     } catch (e) {
         console.error('Errore rimozione admin squadra:', e);
         res.status(400).json({ error: "Impossibile rimuovere l'amministratore" });
@@ -577,8 +609,18 @@ router.post('/:id/request-join', requireAuth, async (req, res) => {
         if (squad.pendingRequests.some(p => p.equals(userId))) {
             return res.status(409).json({ error: 'Hai già una richiesta in attesa per questa squadra' });
         }
-        squad.pendingRequests.push(userId);
-        await squad.save();
+        // Atomico: con un doppio tocco entrambe le richieste passavano il controllo sopra e la
+        // richiesta finiva due volte in lista, con doppia notifica a ogni admin. Il filtro
+        // ripete le due condizioni sopra nel database, dove non possono cambiare a meta'.
+        const aggiornata = await Squad.findOneAndUpdate(
+            { _id: squad._id, pendingRequests: { $ne: userId }, members: { $ne: userId } },
+            { $addToSet: { pendingRequests: userId } },
+            { new: true }
+        );
+        if (!aggiornata) {
+            return res.status(409).json({ error: 'Hai già una richiesta in attesa per questa squadra' });
+        }
+        squad.pendingRequests = aggiornata.pendingRequests;
 
         const richiedente = await User.findById(userId).select('username pendingDeletionAt deletedAt');
         // Tutti gli amministratori, creatore compreso ("richiesta inviata all'admin, a tutti

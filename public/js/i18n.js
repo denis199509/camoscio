@@ -552,6 +552,7 @@
             // --- Le mie escursioni: caricamento .gpx (storico.js) ---
             'gpx.estensioneErrata': function (nome) { return 'The file must have a <b>.gpx</b> or <b>.fit</b> extension. You chose "' + nome + '".'; },
             'gpx.filePesa': function (mb, limite) { return 'The file is ' + mb + ' MB, over the ' + (limite || 10) + ' MB limit. A normally-recorded hike is usually under 1 MB.'; },
+            'gpx.troppoGrandeInvio': 'The file is too large to send: the limit is 10 MB. A normally-recorded hike is usually under 1 MB.',
             'gpx.stoLeggendo': function (nome) { return 'Reading "' + nome + '"…'; },
             'gpx.caricamentoAnnullato': "Upload canceled: without the hike's date, the track won't be added to your history.",
             'gpx.stoImportando': function (nome) { return 'Importing "' + nome + '"…'; },
@@ -1771,10 +1772,9 @@
             // 4) `esposizioneSolare` di routeplanner.js si ridisegna gia' col
             //    suo `onChange` (chiama `aggiornaPannello` dallo stato in
             //    memoria) - basta tradurne il corpo, l'handler non cambia.
-            // 5) Il titolo notifica "Camoscio Safety Alert" (weather.js,
-            //    triggerLightningPushNotification) resta invariato: e' un nome
-            //    di notifica col marchio davanti, come "Admin"/"Carpooling". Il
-            //    corpo (il messaggio di rischio) e' tradotto.
+            // 5) (La notifica di sistema "Camoscio Safety Alert" di weather.js
+            //    e' stata tolta nella 56a sessione: il rischio fulmini si vede
+            //    solo nel riquadro della pagina.)
             // 6) I `console.warn` di weather.js restano in italiano: il
             //    dizionario e' solo per l'interfaccia, mai per la console.
 
@@ -1803,6 +1803,7 @@
             'weather.rischioElevato': 'HIGH DANGER: Very strong convective instability. Risk of violent storms and imminent lightning in the afternoon!',
             'weather.rischioFulmini': 'LIGHTNING RISK: High humidity with instability. Chance of storm cells at altitude.',
             'weather.nessunRischio': 'No lightning risk detected for the next few hours.',
+            'weather.rischioNonValutabile': 'Data unavailable offline: lightning risk cannot be assessed.',
 
             // --- Card Esposizione Solare (#sun-exposure-card): HTML statico ---
             'solar.cardTitolo': 'Sun Exposure',
@@ -2366,6 +2367,7 @@
             'feed.caricamento': 'Loading...',
             'feed.caricaAltre': 'Load more',
             'feed.errore': 'Could not load the feed. Try again later.',
+            'feed.erroreAltre': 'Could not load more outings. Try again.',
             'feed.vuoto': 'No outings published yet by the people you follow.',
             'feed.nessunSeguito': 'You\'re not following anyone yet. Find people in "Search People" or on their profile and follow them: their published outings will show up here.',
             'feed.miPiaceMetti': 'Add a like',
@@ -2564,7 +2566,17 @@
             window.CamoscioUpdateSectionTitle(sezioneAttiva.id);
         }
 
-        ascoltatori.forEach(function (fn) { fn(lang); });
+        // Ognuno nel suo try/catch: un modulo che lancia (dati non ancora
+        // caricati, un elemento che manca) non deve fermare quelli dopo di lui
+        // in lista - la pagina resterebbe tradotta a meta', meta' in una lingua
+        // e meta' nell'altra, senza nessun segno visibile del perche'.
+        ascoltatori.forEach(function (fn) {
+            try {
+                fn(lang);
+            } catch (e) {
+                console.error('Cambio lingua: un modulo non si e\' aggiornato', e);
+            }
+        });
     }
 
     // Le bandiere sono gia' nell'HTML quando questo script viene eseguito (gli

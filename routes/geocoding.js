@@ -12,6 +12,7 @@
 
 const express = require('express');
 const { requireAuth } = require('../middleware/auth');
+const { geocodingLimiter } = require('../middleware/rateLimit');
 const { boundaries, regionForPoint } = require('../lib/regions');
 
 // Nomi delle 4 regioni ammesse, letti dai confini reali gia' caricati (invece di
@@ -38,15 +39,29 @@ function sleep(ms) {
     return new Promise(r => setTimeout(r, ms));
 }
 
+// Tetto alla coda (verifica generale, blocco 1, 44a - chiuso nella 56a): la coda e' UNA
+// per tutti gli utenti e scorre a una chiamata ogni 1,1s, quindi senza un tetto chi manda
+// cento ricerche fa aspettare minuti a tutti gli altri (e ogni attesa e' una richiesta
+// HTTP tenuta aperta in RAM). 15 in attesa = ~16s per l'ultimo: oltre, meglio dire subito
+// "riprova" che far girare la rotella. Il tetto per PERSONA sta in geocodingLimiter.
+const MAX_IN_CODA = 15;
+let inCoda = 0;
+
 // Accoda una chiamata: ogni richiesta aspetta che finisca la precedente E che sia passato
 // abbastanza tempo dall'ultima chiamata vera a Nominatim.
 function enqueue(fn) {
+    if (inCoda >= MAX_IN_CODA) {
+        const e = new Error('coda di ricerca piena');
+        e.code = 'CODA_PIENA';
+        return Promise.reject(e);
+    }
+    inCoda++;
     const run = queueTail.then(async () => {
         const attesa = MIN_INTERVAL_MS - (Date.now() - lastCallAt);
         if (attesa > 0) await sleep(attesa);
         lastCallAt = Date.now();
         return fn();
-    });
+    }).finally(() => { inCoda--; });
     // La coda prosegue anche se una richiesta fallisce, altrimenti si bloccherebbe per sempre.
     queueTail = run.then(() => { }, () => { });
     return run;
@@ -93,7 +108,7 @@ function accorcia(display) {
 // Cerca un luogo per nome. Solo Italia, e i risultati fuori dalle 4 regioni ammesse
 // vengono marcati (non scartati: e' piu' utile dire "questo e' fuori zona" che far
 // sparire il risultato lasciando l'utente a chiedersi perche' non lo trova).
-router.get('/search', requireAuth, async (req, res) => {
+router.get('/search', requireAuth, geocodingLimiter, async (req, res) => {
     const q = (req.query.q || '').trim();
     if (q.length < 3) {
         return res.status(400).json({ error: 'Scrivi almeno 3 lettere per cercare un luogo.' });
@@ -135,6 +150,9 @@ router.get('/search', requireAuth, async (req, res) => {
         cacheSet(chiave, risultati);
         res.json(risultati);
     } catch (e) {
+        if (e.code === 'CODA_PIENA') {
+            return res.status(503).json({ error: 'Troppe ricerche in corso in questo momento. Riprova fra qualche secondo.' });
+        }
         console.error('Ricerca luogo fallita:', e.message);
         res.status(502).json({ error: 'Il servizio di ricerca luoghi non risponde. Riprova tra poco.' });
     }
@@ -216,7 +234,7 @@ async function cercaRiferimentoVicino(lat, lng) {
 // Serve alla richiesta esplicita del punto 8: "se il punto scelto e' molto vicino a un
 // luogo con un nome noto usare quel nome, piu' facile da capire per un principiante;
 // se il punto non ha nessun riferimento vicino, tenere le coordinate come informazione".
-router.get('/reverse', requireAuth, async (req, res) => {
+router.get('/reverse', requireAuth, geocodingLimiter, async (req, res) => {
     const lat = parseFloat(req.query.lat);
     const lng = parseFloat(req.query.lng);
     if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {

@@ -2789,6 +2789,13 @@ option {
     color: var(--accent-green-text);
 }
 
+/* Dati simulati offline (56a): ne' allarme rosso ne' rassicurazione verde - neutro. */
+.lightning-alert.is-unknown {
+    background: var(--bg-card);
+    border-color: var(--border-color);
+    color: var(--color-text-secondary);
+}
+
 /* Sun Exposure Widget */
 .sun-advice-box {
     margin-top: 10px;

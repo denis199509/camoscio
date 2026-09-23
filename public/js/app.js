@@ -278,6 +278,16 @@ window.fileToBase64 = async function(file) {
     return btoa(binario);
 };
 
+// Il corpo JSON che si sta per inviare supera il limite del server (express.json, 10 MB)?
+// Il controllo sul peso del FILE non basta: dentro il JSON un .gpx pesa qualche punto
+// percentuale in piu' (virgolette e a capo diventano \" e \n), quindi un file da 9,8 MB
+// passava il controllo e il server lo rifiutava dopo averlo ricevuto tutto. Misura i byte
+// veri (UTF-8) del corpo gia' serializzato. Usata da storico.js e social.js.
+window.LIMITE_CORPO_JSON = 10 * 1024 * 1024;
+window.corpoOltreLimite = function(corpoJson) {
+    return new Blob([corpoJson]).size > window.LIMITE_CORPO_JSON;
+};
+
 // Come showPromptModal ma con un campo DATA (calendario nativo sul telefono) e un tetto
 // a oggi: un'escursione gia' fatta non puo' essere nel futuro. Serve al caricamento dei
 // file .gpx senza orari, dove la data la deve dire l'utente (punto 32).

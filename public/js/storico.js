@@ -500,6 +500,11 @@
         } catch (e) {
             return mostraEsito(`<i data-lucide="circle-alert"></i> <span>${T('hikeToast.fileNonLetto') || 'Non è stato possibile leggere il file.'}</span>`, 'errore');
         }
+        // Il tetto sopra guarda il FILE; il server guarda il corpo JSON, che pesa qualche
+        // punto percentuale in piu' (vedi window.corpoOltreLimite in app.js).
+        if (window.corpoOltreLimite && window.corpoOltreLimite(JSON.stringify(payload))) {
+            return mostraEsito(`<i data-lucide="circle-alert"></i> <span>${T('gpx.troppoGrandeInvio') || 'Il file è troppo grande per essere inviato: il limite è 10 MB. Un\'escursione registrata normalmente sta sotto 1 MB.'}</span>`, 'errore');
+        }
 
         try {
             let res = await fetch('/api/tracking/import-gpx', {

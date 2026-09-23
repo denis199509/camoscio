@@ -422,10 +422,30 @@ const puntiTrackingLimiter = rateLimit({
     message: messaggioTroppiTentativi
 });
 
+// GET /api/geocoding/search e /reverse (verifica generale, blocco 1, 44a - chiuso nella
+// 56a): tutte le ricerche di tutti passano da UNA coda verso Nominatim (1 chiamata al
+// secondo complessiva, policy del servizio), coperta finora solo dall'apiLimiter largo.
+// Il tetto alla coda (routes/geocoding.js) protegge gli altri utenti; questo secchio per
+// PERSONA (stesso motivo di planLimiter: il wifi di un rifugio non deve contare come una
+// persona sola) impedisce che sia sempre la stessa a riempirla. Il client cerca con un
+// debounce e fa un reverse per ogni tocco sulla mappa: 200/ora resta ben oltre l'uso vero.
+const geocodingLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    limit: 200,
+    keyGenerator: (req) => (req.session && req.session.userId)
+        ? `u:${req.session.userId}`
+        : ipKeyGenerator(req.ip),
+    skip: soloInProduzione,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: messaggioTroppiTentativi
+});
+
 module.exports = {
     authLimiter, emailLimiter, apiLimiter, matchLimiter, exportLimiter, scritturaLimiter,
     sicurezzaLimiter, checkinLimiter, presaVisioneLimiter, cancellazioneLimiter, invitoLimiter,
     fotoLimiter, fotoLetturaLimiter, fotoProfiloLimiter, registrazioneLimiter,
     fotoProfiloLetturaLimiter, contattiLimiter,
-    secondoFattoreLimiter, duefattoriLimiter, recuperoLimiter, planLimiter, puntiTrackingLimiter
+    secondoFattoreLimiter, duefattoriLimiter, recuperoLimiter, planLimiter, puntiTrackingLimiter,
+    geocodingLimiter
 };
