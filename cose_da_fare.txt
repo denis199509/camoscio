@@ -13892,3 +13892,78 @@ di ognuno.
 
 Vault e leggimi.txt aggiornati a fine sessione. Codice resta in
 auto-save locale, nessun push senza il tuo ok esplicito.
+
+=======================================================================
+56ESIMA SESSIONE (23/09/2026)
+=======================================================================
+
+Denis: "abbiamo altri punti aperti che non hanno bisogno della prova
+telefono?", poi "continuamo con i punti medio/basso uno alla volta" e,
+dopo ogni punto chiuso, "ok, vai col prossimo". A fine sessione: "ci
+fermiamo qui, salva tutto, aggiorna i file necessari, prepara tutto
+per riprendere il lavoro nella prossima sessione, poi controllo finale
+e conferma chiusura sessione in sicurezza".
+
+Prima di proporre ogni punto l'ho ricontrollato sul codice di oggi
+(non solo sulle note), e per ognuno c'è una prova che fallisce sul
+codice vecchio e passa sul nuovo.
+
+FATTO 1 - completamento doppio: con un doppio tocco su "Completa" la
+seconda richiesta riceveva un errore invece di "già completata". E
+peggio: nel completamento di gruppo, se un partecipante si completava
+da solo nello stesso istante, il giro si interrompeva a metà e chi
+veniva dopo nella lista restava senza completamento. Ora il secondo
+arrivato è trattato come "già completata".
+
+FATTO 2 - squadre: chiedere di entrare con un doppio tocco metteva la
+richiesta due volte (e gli admin ricevevano due notifiche); promuovere
+qualcuno due volte insieme lo duplicava; togliere un admin poteva
+cancellare una promozione fatta nello stesso momento; chi usciva
+proprio mentre veniva promosso o scelto come nuovo referente restava
+admin/referente senza essere membro. Tutto riscritto come operazioni
+che il database fa in un colpo solo.
+
+FATTO 3 - cambio lingua: se uno dei 19 pezzi di pagina che si
+ritraducono andava in errore, tutti quelli dopo restavano nella lingua
+vecchia. Ora ognuno è protetto per conto suo.
+
+FATTO 4 - meteo (due scelte tue): tolta la notifica di sistema
+"Camoscio Safety Alert" sul rischio fulmini (hai scelto: toglierla);
+senza rete i dati meteo simulati facevano scattare SEMPRE l'avviso
+rosso "RISCHIO FULMINI" su numeri inventati - ora dicono "rischio
+fulmini non valutabile" (hai scelto: niente avviso sui simulati).
+
+FATTO 5 - account eliminati: al giorno 30 restavano due dati personali
+sui documenti di altri utenti. Il comune di partenza delle offerte di
+passaggio: tolta l'intera offerta (altrimenti restava un'auto di
+"Account eliminato" con "Sali a Bordo" attivo, che non sarebbe mai
+arrivata - se preferisci togliere solo il comune si cambia), e tolto
+anche dalle auto altrui dove era passeggero. E il nome vero nel "da
+<nome>" dei percorsi copiati dalle sue tracce: ora "Account eliminato".
+
+FATTO 6 - ricerca luoghi: una sola coda per tutti gli utenti, una
+ricerca al secondo; chi ne mandava cento faceva aspettare minuti a
+tutti. Ora oltre 15 in attesa si risponde subito "riprova fra qualche
+secondo", e ogni persona ha un tetto di 200 all'ora.
+
+FATTO 7 - feed: se "Carica altre" falliva (rete di montagna), il
+bottone spariva senza avviso e il feed sembrava finito. Ora resta, con
+"Non è stato possibile caricare altre uscite. Riprova."
+
+FATTO 8 - file .gpx troppo grandi: un file fino a 10 MB passava il
+controllo del sito ma, impacchettato per l'invio, pesa il 6% in più e
+il server lo rifiutava con una risposta illeggibile - l'utente vedeva
+solo "Riprova". Ora il sito pesa il pacchetto vero prima di inviare e
+il server risponde con un messaggio chiaro ("il limite è 10 MB").
+
+CONTROLLO FINALE: 772 controlli automatici su 16 prove, tutti verdi,
+sul codice finale messo insieme.
+
+Codice salvato in UN commit locale (b2cfc46), NON pushato: nessun push
+senza il tuo ok esplicito. Vault aggiornato e pushato.
+
+Restano da fare: altri punti medio/piccoli della verifica generale
+(elenco dei candidati nel vault, 04-Da-Fare.md), uno alla volta col
+tuo ok; Tappa 5 del piano protezione sito, schermo stretto della
+Dashboard e prova del tracciamento di gruppo (richiedono te col
+telefono in mano); la parte privacy (serve un professionista).
