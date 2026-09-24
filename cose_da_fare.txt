@@ -13967,3 +13967,87 @@ Restano da fare: altri punti medio/piccoli della verifica generale
 tuo ok; Tappa 5 del piano protezione sito, schermo stretto della
 Dashboard e prova del tracciamento di gruppo (richiedono te col
 telefono in mano); la parte privacy (serve un professionista).
+
+=======================================================================
+57ESIMA SESSIONE (24/09/2026)
+=======================================================================
+
+Denis: "quanti punti medio/basso rimangono ancora?", poi "fai una
+verifica per vedere quanti rimangono e poi ci occupiamo a chiuderli uno
+alla volta", "prosegui" / "si" dopo ogni punto, e alla fine "si procedi
+con tutti e tre i punti". A fine sessione: "fai commit e push su tutto
+poi ci fermiamo qui, salva tutto, aggiorna i file necessari, prepara
+tutto per riprendere il lavoro nella prossima sessione, poi controllo
+finale e conferma chiusura sessione in sicurezza".
+
+LA VERIFICA: gli 11 candidati rimasti nell'elenco del vault, ricontrollati
+uno per uno sul codice di oggi: erano TUTTI ancora aperti. Chiusi tutti e
+11, ognuno con una prova che fallisce sul codice vecchio e passa sul
+nuovo (la controprova).
+
+FATTO 1 - uscite visibili: il controllo "chi può vedere un'uscita", se
+non sapeva chi stava guardando, lasciava passare chiunque bastava che
+l'autore avesse un follower qualsiasi (il database toglie dal filtro un
+campo vuoto). Oggi non succedeva perché serve comunque il login, ma ora
+il controllo si chiude da solo.
+
+FATTO 2 - età (scelta tua: toglierla dalle modifiche): la data di
+nascita si poteva cambiare dopo la registrazione senza ricontrollare i
+18 anni (provato: un account di prova si metteva nato nel 2015).
+Nessuna schermata la modificava: ora si dichiara solo all'iscrizione.
+
+FATTO 3 - squadre ed escursioni: se la notifica falliva dopo
+un'operazione già riuscita, si leggeva un errore falso ("Impossibile
+approvare" con il membro già dentro; "Impossibile creare l'escursione"
+con l'escursione già creata, e riprovando ne nasceva un doppione).
+
+FATTO 4 - titolo delle uscite importate: il titolo era il PRIMO nome
+nel file .gpx, spesso quello di un punto segnato ("Casa",
+"Parcheggio") o persino il nome della persona autrice del file. Ora è
+il nome del percorso, oppure la data.
+
+FATTO 5 - email: i link nelle email di recupero password e conferma
+indirizzo ora sono "puliti" come il resto del testo (oggi innocui, ma
+il giorno che cambiassero forma avrebbero potuto iniettare HTML).
+
+FATTO 6 - log dell'allarme: quando il timer di sicurezza scadeva senza
+contatti con email, il log di Render scriveva il nome utente. Ora l'id.
+
+FATTO 7 - memoria del server: il catalogo dei timbri caricava TUTTE le
+escursioni del database a ogni import/timbro. Ora il lavoro lo fa il
+database e al server arriva solo l'elenco delle vette (stesso tipo di
+difetto che aveva già fatto cadere il sito una volta).
+
+FATTO 8 - file .fit (scelta tua: tetto 100.000): un .fit costruito
+apposta da 7 MB portava il server a +221 MB di memoria (su 512) prima di
+essere rifiutato. Ora si contano i messaggi PRIMA di leggerlo: +5 MB e
+rifiuto in 30 millisecondi. Una registrazione vera di 10 ore passa come
+prima.
+
+FATTO 9 - dislivello dei percorsi progettati: con tante persone che
+progettano insieme, un dislivello già calcolato poteva sparire (tornava
+"non disponibile"). Ora ogni calcolo tiene le sue quote per sé.
+
+FATTO 10 - avatar: 14 punti del sito mostravano l'avatar senza
+"pulirlo". Oggi innocuo (non è modificabile), ora chiuso.
+
+FATTO 11 - segreto dei cron (scelta tua: "due tempi"): il segreto
+passava nell'indirizzo (?chiave=...) e finiva nei log. Il codice che lo
+accetta solo nell'intestazione X-Cron-Secret è PRONTO ma NON è andato in
+produzione: sta nel ramo locale "cron-header". Se andasse online prima
+che tu abbia cambiato i due job su cron-job.org, gli allarmi del timer
+di sicurezza smetterebbero di partire. Cosa devi fare tu: su
+cron-job.org, in ENTRAMBI i job, Avanzate -> Headers: X-Cron-Secret =
+<il segreto>, e togliere ?chiave= dall'indirizzo. Il sito di oggi
+accetta già l'intestazione: puoi farlo subito e vedere che rispondono
+200. Poi si unisce il ramo e si pusha.
+
+Push (hai scelto: tutto tranne il punto 11): pushati i fix della 56a e
+della 57a.
+
+Da decidere (non toccati): quando il timer di sicurezza scade e la
+notifica per te fallisce, al giro dopo le email ai contatti ripartono
+(il codice dice che è voluto: "meglio due volte che mai"); le uscite GIÀ
+importate possono avere un titolo preso da un punto segnato (posso
+contarle); un dato ("Report.reporterId") forse non viene cancellato con
+l'account, da verificare.

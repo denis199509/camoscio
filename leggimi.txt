@@ -1,60 +1,60 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-09-23 (56a sessione, CHIUSA in sicurezza). Piano CSP completo,
+Aggiornato: 2026-09-24 (57a sessione, CHIUSA in sicurezza). Piano CSP completo,
 con tutte le decisioni gia' prese da Denis (D-1...D-7):
 C:\Users\lenovo\.claude\plans\camoscio-csp-header-sicurezza.md - non
 richiede altre domande, solo eseguire la tappa rimasta (in pausa, vedi sotto).
 
-  >>> DA DOVE SI RIPARTE (57a sessione):
-   0. CODICE DELLA 56a NON PUSHATO: un commit locale pulito (b2cfc46, 15
-      file) + il commit di chiusura di questo file e di cose_da_fare.txt.
-      Denis ha chiesto "salva tutto", non il push: si pusha SOLO se lo
-      chiede lui (git log origin/master..HEAD per vederli). Gia' verificato
-      772/772 controlli automatici prima del commit.
-   1. CSP: TAPPE 1-4 di 5 chiuse. TAPPA 5 (enforcement, 1 riga) in pausa:
-      serve il giro sul telefono Android di Denis (zero violazioni
-      Report-Only su desktop E telefono - rischio bridge Capacitor, §2.1
-      del piano). Non si puo' fare da soli.
-   2. Il resto del backlog MEDIO/BASSO della verifica generale: la 56a ne
-      ha chiusi altri otto (vedi FATTO sotto). I candidati rimasti, NON
-      ancora ricontrollati sul codice, sono elencati in 04-Da-Fare.md punto
-      2. Metodo che ha funzionato: verificare che il punto sia ANCORA
-      APERTO nel codice prima di proporlo, proporne 4 con AskUserQuestion,
-      uno alla volta con l'ok di Denis, controprova sul codice vecchio.
-   3. Debito tecnico minore (Marche/Molise, LICENSE, .git): aspettare che
+  >>> DA DOVE SI RIPARTE (58a sessione):
+  !!! 0. RAMO LOCALE "cron-header", NON PUSHATO DI PROPOSITO (MEDIO #1
+      della verifica generale, scelta "due tempi" di Denis): lib/cronSecret.js
+      accetta il segreto dei cron SOLO nell'header X-Cron-Secret, non piu'
+      in ?chiave= (+ prova-punto37 con il controllo "segreto giusto in
+      query -> 403", prova-eliminazione-account passata all'header).
+      Master NON lo contiene. Si unisce a master e si pusha SOLO DOPO che
+      Denis ha cambiato ENTRAMBI i job su cron-job.org (Avanzate -> Headers:
+      X-Cron-Secret = <segreto>, ?chiave= tolto dall'URL) e si e' visto
+      che rispondono 200 col codice in produzione (che accetta gia'
+      l'header). Altrimenti controlla-scadenze risponde 403 e gli allarmi
+      del Dead Man's Switch smettono di partire. Prima di unire: rilanciare
+      prova-punto37 (29) e prova-eliminazione-account (61).
+   1. Master = origin/master: 56a + 57a pushate (vedi FATTO sotto).
+   2. Verifica generale MEDIO/BASSO: l'elenco degli 11 candidati e' CHIUSO
+      (10 in master + il #1 sul ramo). Restano tre punti fuori elenco, da
+      proporre uno alla volta (04-Da-Fare.md punto 2): Report.reporterId
+      forse fuori dallo scrub (DA VERIFICARE sul codice); DMS - se
+      Notification.create fallisce dopo le email, il timer resta acceso e
+      le email ripartono al giro dopo (routes/safety.js:189, SCELTA DI
+      DENIS, modulo delicato); uscite GIA' importate col titolo di un
+      waypoint (conteggio in sola lettura, poi decide Denis).
+   3. CSP: TAPPE 1-4 di 5 chiuse. TAPPA 5 (enforcement, 1 riga) in pausa:
+      serve il giro sul telefono Android di Denis. Non si puo' fare da soli.
+   4. prova-punto33 e prova-punto38: 1 controllo SALTATO ciascuna il 24/09 (429
+      di Open-Meteo dopo tante prove): rilanciarle, SALTATO non vuol dire passato.
+   5. Debito tecnico minore (Marche/Molise, LICENSE, .git): aspettare che
       sia Denis a scegliere, non riproporlo come default.
-   4. Nessun'altra richiesta di Denis in sospeso al momento.
 
-FATTO nella 56a sessione (dettaglio completo per ognuno in
-../camoscio memoria/06-Cronologia-Sessioni.md, sezione "56a" - qui solo
-l'elenco, per restare corto). Otto MEDIO/BASSO chiusi, ognuno con una
-prova che fallisce sul codice vecchio:
- - Completamento doppio (lib/hikeStats.js): E11000 = "gia' completata";
-   complete-group non si interrompe piu' a meta'.
- - Squadre (routes/squads.js): request-join, promozione/rimozione admin,
-   successione del creatore -> scritture atomiche. prova-squadre-consenso
-   sez. 10 nuova (80/80).
- - Cambio lingua (i18n.js): ogni ascoltatore nel suo try/catch.
- - Meteo (weather.js), DUE SCELTE DI DENIS: notifica di sistema "Safety
-   Alert" TOLTA; coi dati simulati offline niente allarme fulmini, riquadro
-   neutro "non valutabile". Vedi 03-Decisioni-Architetturali.md.
- - Scrub account (lib/accountDeletion.js): tolte le offerte di passaggio e
-   i posti da passeggero sulle escursioni altrui; origineUsername dei
-   percorsi copiati -> "Account eliminato". prova-eliminazione-account
-   61/61.
- - Ricerca luoghi (routes/geocoding.js + middleware/rateLimit.js): tetto
-   di 15 alla coda Nominatim (poi 503) + geocodingLimiter 200/ora a
-   persona. Nessuna prova in prove/ copre queste rotte (offerto a Denis
-   di crearla, non chiesto).
- - Feed (feed.js): "Carica altre" resta dopo un errore, con avviso.
- - Limite .gpx (server.js + app.js/storico.js/social.js): 413 in JSON
-   leggibile + il client pesa il corpo JSON vero (+6,2% misurato).
- - Estensione Chrome scollegata per tutta la sessione: le prove client
-   sono state fatte col file vero in un vm di Node (metodo in
-   07-Trappole-Tecniche.md). Nessun giro nel browser vero: se Denis lo
-   vuole, meteo e feed sono i due da guardare a schermo.
- - Controllo finale: 772/772 su 16 prove, codice rifuso in b2cfc46 (NON
-   pushato), vault aggiornato e pushato.
+FATTO nella 57a sessione (dettaglio in ../camoscio memoria/06-Cronologia-
+Sessioni.md, sezione "57a"). Gli 11 candidati MEDIO/BASSO ricontrollati sul
+codice: tutti ancora aperti, tutti chiusi, ognuno con controprova:
+ - lib/uscitaVisibile.js: viewerId mancante -> 401 (il driver toglie dal
+   filtro un campo undefined: Follow.exists diventava "ha un follower").
+ - routes/users.js: birthDate/ageRange FUORI da SELF_EDITABLE_FIELDS
+   (scelta di Denis; si dichiarano solo alla registrazione, col 18+).
+ - routes/squads.js (request-join/approve/rifiuto) + routes/hikes.js
+   (creazione): notifiche in try separato, niente errore falso/doppioni.
+ - lib/gpx.js nomeDelPercorso: titolo dal <trk>/<rte> o <metadata> (senza
+   <author>), mai da un <wpt>.
+ - lib/mailer.js: esc() sui link. routes/safety.js: log con l'id.
+ - lib/geofenceTimbri.js: puntiTimbrabili via aggregate (non Hike.find({})).
+   hikeStats/trailGraph: gia' limitati, nessuna modifica.
+ - lib/fit.js: MAX_MESSAGGI_FIT = 100.000 contati PRIMA della libreria
+   (scelta di Denis). prova-fit 35 (+2).
+ - lib/elevation.js: mappa quote per richiesta (la cache condivisa poteva
+   sfrattare quote gia' note durante gli await).
+ - 14 avatar escapati nel client (social/peoplesearch/backpack/carpool).
+ - Controllo finale: vedi 06-Cronologia-Sessioni 57a. Push su scelta di
+   Denis: tutto tranne il ramo cron-header.
 
 >>> APERTI (invariati salvo dove segnato):
   - CONFORMITA' GDPR + NOTA LEGALE: index.html fa accettare "Termini +
@@ -107,7 +107,8 @@ prova che fallisce sul codice vecchio:
 >>> AZIONI MANUALI DI DENIS, aperte:
   1. ACCOUNT_SCRUB_SECRET su Render (stringa a scelta, DIVERSA da
      SAFETY_CRON_SECRET) + un job giornaliero su cron-job.org verso:
-       https://camoscio.onrender.com/api/users/scrub-eliminati?chiave=<segreto>
+       https://camoscio.onrender.com/api/users/scrub-eliminati
+     con l'header X-Cron-Secret = <segreto> (NON ?chiave=, vedi 0-bis sopra).
      Senza, gli account eliminati restano "Account eliminato" PER SEMPRE.
      NB: il job SAFETY_CRON_SECRET (scadenze DMS) ora fa ANCHE la spazzata
      dei deadManLastFired oltre 180 giorni - se non esiste ancora, va creato.
