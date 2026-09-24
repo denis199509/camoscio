@@ -97,11 +97,14 @@ const PRIVACY_GATED_FIELDS = ['bio', 'profilePhoto', 'interests', 'hikingLevel',
 // (l'ultimo a salvare vinceva) e faceva "resuscitare" un contatto tolto altrove, cioe' dati
 // di un terzo che non ha acconsentito (A-3.2). Il wizard di registrazione passa da
 // POST /api/auth/register, non da qui, quindi non e' toccato.
+// "birthDate"/"ageRange" volutamente esclusi (verifica generale, 57a sessione): si dichiarano
+// SOLO alla registrazione, dove c'e' il controllo 18+ (routes/auth.js). Da qui passavano
+// senza alcun controllo, e nessuna schermata li modifica: tenerli nella whitelist serviva
+// solo a chi chiama l'API a mano per scavalcare la regola dei 18 anni.
 const SELF_EDITABLE_FIELDS = [
     'nome', 'cognome', 'username', 'trainingGoal', 'localExpert', 'homeCity',
     'hikingLevel', 'interests', 'preferredDifficulty', 'geoPreferences',
-    'profilePhoto', 'bio', 'geolocationConsent', 'privacySetting',
-    'birthDate', 'ageRange'
+    'profilePhoto', 'bio', 'geolocationConsent', 'privacySetting'
 ];
 
 async function areSquadmates(userIdA, userIdB) {

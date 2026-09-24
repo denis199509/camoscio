@@ -917,7 +917,7 @@ function buildHikeCard(hike) {
         const expertTitlePart = isLocalExpert ? ` — ${T('profile.espertoLocale') || 'Esperto locale'}: ${escapeHtml(pUser.localExpert.area)}` : "";
         return `
             <div class="p-avatar ${isLocalExpert ? 'local-expert' : ''}" title="${escapeHtml(pUser.username)} (Rep: ${pUser.reputation}%)${expertTitlePart}" data-user-id="${escapeHtml(pId)}">
-                ${pUser.avatar}
+                ${escapeHtml(pUser.avatar)}
             </div>
         `;
     }).join("");
@@ -965,7 +965,7 @@ function buildHikeCard(hike) {
             
             return `
                 <div class="veto-request-item">
-                    <span>${pendingUser.avatar} <b>${escapeHtml(pendingUser.username)}</b> (Rep: ${pendingUser.reputation}%, ${pendingUser.experienceLevel})</span>
+                    <span>${escapeHtml(pendingUser.avatar)} <b>${escapeHtml(pendingUser.username)}</b> (Rep: ${pendingUser.reputation}%, ${pendingUser.experienceLevel})</span>
                     <div class="veto-actions">
                         <button class="btn btn-xs btn-success" data-azione="approva-partecipante" data-user-id="${escapeHtml(pendingId)}">${escapeHtml(T('hikeCard.accettaBtn') || 'Accetta')}</button>
                         <button class="btn btn-xs btn-danger" data-azione="rifiuta-partecipante" data-user-id="${escapeHtml(pendingId)}">${escapeHtml(T('hikeCard.rifiutaBtn') || 'Rifiuta')}</button>
@@ -1885,7 +1885,7 @@ function renderCompleteGroupChecklist() {
         return `
             <label>
                 <input type="checkbox" name="complete-group-member" value="${id}" checked>
-                <span>${u.avatar} ${escapeHtml(u.username)}</span>
+                <span>${escapeHtml(u.avatar)} ${escapeHtml(u.username)}</span>
             </label>
         `;
     }).join("");
@@ -1921,7 +1921,7 @@ function renderCompleteGroupSearch() {
         row.className = "carpool-group-item";
         row.innerHTML = `
             <div style="display:flex; align-items:center; gap:12px;">
-                <div class="p-avatar">${u.avatar}</div>
+                <div class="p-avatar">${escapeHtml(u.avatar)}</div>
                 <b>${escapeHtml(u.username)}</b>
             </div>
             <button type="button" class="btn btn-sm btn-secondary" data-azione="aggiungi">${escapeHtml(T('completeGroupModal.aggiungiBtn') || 'Aggiungi')}</button>
@@ -1948,7 +1948,7 @@ window.addToCompleteGroup = function(userId) {
         const label = document.createElement("label");
         label.innerHTML = `
             <input type="checkbox" name="complete-group-member" value="${userId}" checked>
-            <span>${u.avatar} ${escapeHtml(u.username)}</span>
+            <span>${escapeHtml(u.avatar)} ${escapeHtml(u.username)}</span>
         `;
         container.appendChild(label);
     }
@@ -2113,7 +2113,7 @@ function renderGoalMatches(currentUser) {
         const item = document.createElement("div");
         item.className = "goal-match-item";
         item.innerHTML = `
-            <span>${m.avatar} <b>${escapeHtml(m.username)}</b> ${escapeHtml(T('social.trainsFor') || 'si allena per:')} <strong style="color:var(--accent-orange)">${escapeHtml(m.trainingGoal)}</strong></span>
+            <span>${escapeHtml(m.avatar)} <b>${escapeHtml(m.username)}</b> ${escapeHtml(T('social.trainsFor') || 'si allena per:')} <strong style="color:var(--accent-orange)">${escapeHtml(m.trainingGoal)}</strong></span>
             <button class="btn btn-sm btn-secondary" data-azione="invita-squadra">${escapeHtml(T('social.inviteToSquad') || 'Invita in Squadra')}</button>
         `;
         // Niente onclick inline: closure su m.id (gia' in scope).
@@ -2157,7 +2157,7 @@ function renderSquadsList() {
 
         const membersAvatars = squad.members.map(mId => {
             const mem = db.users.find(u => u.id === mId);
-            return mem ? mem.avatar : "👤";
+            return mem ? escapeHtml(mem.avatar) : "👤";
         }).join(" ");
 
         // Punto 98/A: "Invita a Gita" spetta a QUALUNQUE membro della squadra, non solo a chi
@@ -2221,7 +2221,7 @@ function renderOtherSquadsList() {
             + invitato.map(squad => {
                 const avatars = (squad.members || []).map(mId => {
                     const mem = db.users.find(u => u.id === mId);
-                    return mem ? mem.avatar : "👤";
+                    return mem ? escapeHtml(mem.avatar) : "👤";
                 }).join(" ");
                 return `<div class="squad-item">
                     <div class="squad-item-open" data-open-squadra="${escapeHtml(squad.id)}">
@@ -2255,7 +2255,7 @@ function renderOtherSquadsList() {
 
         const membersAvatars = squad.members.map(mId => {
             const mem = db.users.find(u => u.id === mId);
-            return mem ? mem.avatar : "👤";
+            return mem ? escapeHtml(mem.avatar) : "👤";
         }).join(" ");
 
         const giaRichiesta = (squad.pendingRequests || []).includes(currentUser.id);
@@ -2351,7 +2351,7 @@ function renderSquadCreateSelectedMembers() {
         if (!u) return "";
         return `
             <label>
-                <span>${u.avatar} ${escapeHtml(u.username)}</span>
+                <span>${escapeHtml(u.avatar)} ${escapeHtml(u.username)}</span>
                 <button type="button" class="btn-inline-remove" data-remove-member="${escapeHtml(id)}" title="${escapeHtml(T('social.removeFromSquadTitle') || 'Togli dalla squadra')}">&times;</button>
             </label>
         `;
@@ -2400,7 +2400,7 @@ function renderSquadCreateSearch() {
         row.className = "carpool-group-item";
         row.innerHTML = `
             <div style="display:flex; align-items:center; gap:12px;">
-                <div class="p-avatar">${u.avatar}</div>
+                <div class="p-avatar">${escapeHtml(u.avatar)}</div>
                 <b>${escapeHtml(u.username)}</b>
             </div>
             <button type="button" class="btn btn-sm btn-secondary" data-azione="aggiungi">${escapeHtml(T('completeGroupModal.aggiungiBtn') || 'Aggiungi')}</button>

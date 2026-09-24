@@ -348,7 +348,7 @@ function renderDriversList(hike) {
             passengerListHtml = driver.passengers.map(pId => {
                 const passUser = db.users.find(u => u.id === pId);
                 const name = passUser ? passUser.username.split(" ")[0] : (T('carpool.js.passeggeroFallback') || "Passeggero");
-                const avatar = passUser ? passUser.avatar : "👤";
+                const avatar = passUser ? escapeHtml(passUser.avatar) : "👤";
                 return `<span class="badge badge-primary" title="${escapeHtml(passUser ? passUser.username : '')}">${avatar} ${escapeHtml(name)}</span>`;
             }).join(" ");
         } else {

@@ -505,7 +505,7 @@ caricato.
 La prova del PUNTO 114 (import .fit, formato nativo Garmin) NON vuole ne' server ne' rete:
 i file .fit di prova sono sintetici, costruiti con il FitEncoder di fit-file-parser.
 
-    node prove/prova-fit.js                         33 controlli  (non serve il server)
+    node prove/prova-fit.js                         35 controlli  (non serve il server)
 
     Prova lib/fit.js -> parseFit(). Controlla che: 1) restituisca le STESSE chiavi di
     parseGpx (punti/nome/inizio/fine/durataIgnota/tipo/avvisi), cosi' il codice a valle

@@ -193,6 +193,36 @@ const CHIAVI_ATTESE = ['punti', 'nome', 'inizio', 'fine', 'durataIgnota', 'tipo'
             errore instanceof ErroreFit && /orario leggibile/i.test(errore.message), errore && errore.message);
     }
 
+    // --- 10. tetto MAX_MESSAGGI_FIT, contato PRIMA della libreria (verifica generale, 57a) ---
+    // Messaggi MISTI (file_id + record + event, una definizione nuova a ogni messaggio come
+    // scrive il FitEncoder): il conteggio preventivo deve combaciare con quello della
+    // libreria al messaggio esatto, non solo sui record. Controprova: sul codice della 56a
+    // il file da 100.001 passava (il vecchio tetto guardava solo i record, a 200.000).
+    console.log('\n10. Tetto dei 100.000 messaggi (misti), controllato prima di decodificare');
+    {
+        const misto = (totale) => {
+            const enc = new FitEncoder();
+            enc.writeMessage(0, [
+                { number: 0, size: 1, baseType: FitBaseType.Enum, value: 4 },
+                { number: 4, size: 4, baseType: FitBaseType.Uint32, value: FitEncoder.toFitTimestamp(T0) }
+            ]);
+            for (let i = 0, n = 1; n < totale; i++, n++) {
+                const ts = { number: 253, size: 4, baseType: FitBaseType.Uint32, value: FitEncoder.toFitTimestamp(new Date(T0.getTime() + i * 1000)) };
+                if (i % 10 === 5) { enc.writeMessage(21, [ts, { number: 0, size: 1, baseType: FitBaseType.Enum, value: 0 }]); continue; }
+                enc.writeMessage(20, [ts,
+                    { number: 0, size: 4, baseType: FitBaseType.Sint32, value: Math.round((42.44 + i * 1e-6) * SC) },
+                    { number: 1, size: 4, baseType: FitBaseType.Sint32, value: Math.round((13.55 + i * 1e-6) * SC) }]);
+            }
+            return Buffer.from(enc.close());
+        };
+        const alTetto = await parseFit(misto(100000)).catch(e => e);
+        ok('100.000 messaggi -> accettato', !(alTetto instanceof Error), alTetto && alTetto.message);
+        let errore = null;
+        try { await parseFit(misto(100001)); } catch (e) { errore = e; }
+        ok('100.001 messaggi -> ErroreFit "piu\' di 100.000 messaggi"',
+            errore instanceof ErroreFit && /100\.000 messaggi/.test(errore.message), errore && errore.message);
+    }
+
     console.log(`\n  PASSATI: ${passati}   FALLITI: ${falliti}`);
     process.exit(falliti === 0 ? 0 : 1);
 })().catch(e => { console.error('ERRORE NON GESTITO NELLA PROVA:', e); process.exit(1); });

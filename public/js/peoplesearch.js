@@ -57,7 +57,7 @@ function renderPeopleSearchModule() {
         row.className = "carpool-group-item";
         row.innerHTML = `
             <div style="display:flex; align-items:center; gap:12px;">
-                <div class="p-avatar">${u.avatar}</div>
+                <div class="p-avatar">${escapeHtml(u.avatar)}</div>
                 <b class="user-link">${escapeHtml(u.username)}</b>
             </div>
         `;

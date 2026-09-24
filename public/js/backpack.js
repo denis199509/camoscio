@@ -901,7 +901,7 @@ function renderWeightDistribution(hike) {
         ).join('');
 
         riga.innerHTML = `
-            <span>${user.avatar} ${escapeHtml(user.username)}</span>
+            <span>${escapeHtml(user.avatar)} ${escapeHtml(user.username)}</span>
             <div style="display:flex; align-items:center; gap: 10px;">
                 <select class="user-select-dropdown" data-azione="assegna-oggetto" style="padding: 2px 4px; font-size: 0.75rem;">
                     <option value="">${T('backpack.js.assegnaOggetto') || 'Assegna oggetto...'}</option>

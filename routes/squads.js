@@ -622,18 +622,23 @@ router.post('/:id/request-join', requireAuth, async (req, res) => {
         }
         squad.pendingRequests = aggiornata.pendingRequests;
 
-        const richiedente = await User.findById(userId).select('username pendingDeletionAt deletedAt');
-        // Tutti gli amministratori, creatore compreso ("richiesta inviata all'admin, a tutti
-        // gli admin se più di uno", parole di Denis) - stesso schema di notifica a più
-        // persone già in uso in routes/hikes.js per l'invito automatico di una squadra.
-        const destinatari = [squad.creatorId, ...squad.admins];
-        for (const adminId of destinatari) {
-            await Notification.create({
-                userId: adminId,
-                text: `${nomeVisibile(richiedente) || 'Qualcuno'} ha chiesto di entrare nella squadra "${squad.name}"`,
-                read: false
-            });
-        }
+        // Best-effort, try separato (verifica generale, 57a sessione): la richiesta e' gia'
+        // salvata qui sopra. Con la notifica nel try principale un guasto rispondeva "Impossibile
+        // inviare la richiesta", e il nuovo tentativo trovava 409 "hai gia' una richiesta".
+        try {
+            const richiedente = await User.findById(userId).select('username pendingDeletionAt deletedAt');
+            // Tutti gli amministratori, creatore compreso ("richiesta inviata all'admin, a tutti
+            // gli admin se più di uno", parole di Denis) - stesso schema di notifica a più
+            // persone già in uso in routes/hikes.js per l'invito automatico di una squadra.
+            const destinatari = [squad.creatorId, ...squad.admins];
+            for (const adminId of destinatari) {
+                await Notification.create({
+                    userId: adminId,
+                    text: `${nomeVisibile(richiedente) || 'Qualcuno'} ha chiesto di entrare nella squadra "${squad.name}"`,
+                    read: false
+                });
+            }
+        } catch (e) { console.error('Notifica richiesta di partecipazione squadra non inviata:', e); }
 
         // M-3: chi chiede di entrare non e' membro -> vede solo la propria richiesta appena
         // aggiunta, non gli inviti/le richieste altrui.
@@ -667,11 +672,14 @@ router.post('/:id/approve/:userId', requireAuth, async (req, res) => {
             { $pull: { pendingRequests: targetId }, $addToSet: { members: targetId } },
             { new: true }
         );
-        await Notification.create({
-            userId: targetId,
-            text: `La tua richiesta per entrare in "${squad.name}" è stata accettata!`,
-            read: false
-        });
+        // Best-effort: il membro e' gia' dentro, un guasto qui non deve far leggere un errore.
+        try {
+            await Notification.create({
+                userId: targetId,
+                text: `La tua richiesta per entrare in "${squad.name}" è stata accettata!`,
+                read: false
+            });
+        } catch (e) { console.error('Notifica approvazione richiesta squadra non inviata:', e); }
         res.json(aggiornata);
     } catch (e) {
         console.error('Errore approvazione richiesta squadra:', e);
@@ -700,11 +708,14 @@ router.delete('/:id/pending/:userId', requireAuth, async (req, res) => {
             { $pull: { pendingRequests: targetId } },
             { new: true }
         );
-        await Notification.create({
-            userId: targetId,
-            text: `La tua richiesta per entrare in "${squad.name}" non è stata accettata.`,
-            read: false
-        });
+        // Best-effort: la richiesta e' gia' tolta, un guasto qui non deve far leggere un errore.
+        try {
+            await Notification.create({
+                userId: targetId,
+                text: `La tua richiesta per entrare in "${squad.name}" non è stata accettata.`,
+                read: false
+            });
+        } catch (e) { console.error('Notifica rifiuto richiesta squadra non inviata:', e); }
         res.json(aggiornata);
     } catch (e) {
         console.error('Errore rifiuto richiesta squadra:', e);

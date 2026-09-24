@@ -356,20 +356,25 @@ router.post('/', requireAuth, scritturaLimiter, async (req, res) => {
         });
 
         // Notifica automatica ai membri delle squadre ricorrenti del creatore (funzionalità 17b)
-        const creatorSquads = await Squad.find({ creatorId: hike.creatorId });
-        for (const squad of creatorSquads) {
-            for (const memberId of squad.members) {
-                if (memberId.equals(hike.creatorId)) continue;
-                await Notification.create({
-                    userId: memberId,
-                    text: `La tua squadra "${squad.name}" ha una nuova escursione: "${hike.title}"`,
-                    read: false,
-                    // relatedHikeId: cosi' DELETE /api/hikes/:id la porta via con l'escursione,
-                    // invece di lasciare in giro il titolo di una hike cancellata.
-                    relatedHikeId: hike._id
-                });
+        // Best-effort, try separato (verifica generale, 57a sessione): l'escursione e' gia'
+        // creata. Con la notifica nel try principale un guasto rispondeva "Impossibile creare
+        // l'escursione", e chi riprovava ne creava un doppione.
+        try {
+            const creatorSquads = await Squad.find({ creatorId: hike.creatorId });
+            for (const squad of creatorSquads) {
+                for (const memberId of squad.members) {
+                    if (memberId.equals(hike.creatorId)) continue;
+                    await Notification.create({
+                        userId: memberId,
+                        text: `La tua squadra "${squad.name}" ha una nuova escursione: "${hike.title}"`,
+                        read: false,
+                        // relatedHikeId: cosi' DELETE /api/hikes/:id la porta via con l'escursione,
+                        // invece di lasciare in giro il titolo di una hike cancellata.
+                        relatedHikeId: hike._id
+                    });
+                }
             }
-        }
+        } catch (e) { console.error('Notifiche nuova escursione di squadra non inviate:', e); }
 
         res.json(hike);
     } catch (e) {

@@ -148,7 +148,9 @@ async function gestisciScadenza(user) {
     const falliti = []; // popolato solo nel ramo else; letto anche sotto per deadManLastFired
     if (!raggiungibili.length) {
         esito = "Il timer di sicurezza è scaduto, ma non hai (più) nessun contatto di emergenza con un'email: nessun avviso è partito. Aggiungi un contatto e ricontrolla i tuoi dati.";
-        console.error(`Dead Man's Switch scaduto per ${user.username} ma nessun contatto ha un'email.`);
+        // L'id e non l'username (verifica generale, 57a sessione): i log di Render non devono
+        // legare un nome a un allarme di sicurezza. Per risalire alla persona basta l'id.
+        console.error(`Dead Man's Switch scaduto per l'utente ${user._id} ma nessun contatto ha un'email.`);
     } else {
         const posizioneTesto = await ultimaPosizioneNota(user._id);
         const nomeEscursionista = `${user.nome || ''} ${user.cognome || ''}`.trim() || user.username;
