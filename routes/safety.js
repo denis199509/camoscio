@@ -188,7 +188,16 @@ async function gestisciScadenza(user) {
         }
     }
 
-    await Notification.create({ userId: user._id, text: esito });
+    // Punto fuori elenco (b) della verifica generale, scelta di Denis (58a sessione): la
+    // notifica e' FACOLTATIVA. Le email sono gia' partite: se questo create fallisce (timeout
+    // Atlas) e l'eccezione salisse, il timer resterebbe acceso e a OGNI giro del cron i
+    // contatti riceverebbero di nuovo l'allarme, finche' dura il guasto. Si scrive nel log e si
+    // spegne comunque il timer: all'utente resta, se qualche invio e' fallito, deadManLastFired.
+    try {
+        await Notification.create({ userId: user._id, text: esito });
+    } catch (e) {
+        console.error(`Notifica di esito del Dead Man's Switch non salvata per l'utente ${user._id}:`, e && e.message);
+    }
     // BASSO-3 (revisione 35a): la notifica qui sopra scade col TTL di 90 giorni. Se qualche
     // invio e' FALLITO, i nomi da richiamare a mano vanno tenuti anche sul documento persona
     // (niente TTL) - e' l'unico appiglio se l'utente riapre il sito dopo settimane (proprio il
@@ -235,9 +244,10 @@ async function controllaScadenzeHandler(req, res) {
             try {
                 await gestisciScadenza(user);
             } catch (e) {
-                // Un utente che va storto (timeout Atlas su Notification.create, un campo non
-                // valido) NON deve annullare l'allarme degli ALTRI scaduti di questo giro: il
-                // cron esterno passa ogni N minuti, e' l'unico giro che hanno. Per l'utente
+                // Un utente che va storto (timeout Atlas sulla scrittura finale, un campo non
+                // valido - Notification.create invece non arriva qui, e' isolata dentro
+                // gestisciScadenza) NON deve annullare l'allarme degli ALTRI scaduti di questo
+                // giro: il cron esterno passa ogni N minuti, e' l'unico giro che hanno. Per l'utente
                 // fallito le email possono essere gia' partite ma deadManActive resta true ->
                 // il giro dopo ritenta (i contatti potrebbero ricevere due volte le coordinate:
                 // meno peggio di un allarme mai partito).

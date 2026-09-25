@@ -20,7 +20,8 @@ const bcrypt = require('bcryptjs');
 const mailer = require('../lib/mailer');
 const inviaEmailVero = mailer.inviaEmail;
 let indirizziCheFalliscono = new Set();
-mailer.inviaEmail = async ({ a }) => !indirizziCheFalliscono.has(a);
+let invii = 0; // contatore per la sez. 8 (safety.js destruttura inviaEmail al load: si conta qui)
+mailer.inviaEmail = async ({ a }) => { invii++; return !indirizziCheFalliscono.has(a); };
 
 const { gestisciScadenza, controllaScadenzeHandler } = require('../routes/safety');
 const User = require('../models/User');
@@ -171,6 +172,38 @@ function ok(nome, condizione, dettaglio = '') {
             (await User.findById(uid).lean()).deadManLastFired === undefined);
         ok('7: l\'avviso di 10 giorni fa NON e\' stato toccato',
             !!(await User.findById(recente._id).lean()).deadManLastFired);
+
+        // === 8. Punto fuori elenco (b), 58a: se Notification.create fallisce DOPO le email, il
+        //        timer si spegne lo stesso - altrimenti a ogni giro del cron i contatti
+        //        riceverebbero di nuovo l'allarme. Si contano gli invii su due giri di fila. ===
+        await User.findByIdAndUpdate(uid, {
+            $set: {
+                deadManActive: true, deadManExpiresAt: new Date(Date.now() + 3600000),
+                emergencyContacts: [{ name: 'Contatto Ok', relationship: 'amico', email: emailOk }]
+            },
+            $unset: { deadManLastFired: 1 }
+        });
+        indirizziCheFalliscono = new Set();
+        invii = 0;
+        const createVero = Notification.create;
+        Notification.create = async () => { throw new Error('timeout Atlas finto'); };
+        const logVero = console.error;
+        console.error = () => {}; // il log atteso della notifica fallita non sporca l'output
+        try {
+            await scadiOra();
+            let eccezione = null;
+            try { await gestisciScadenza(await User.findById(uid)); } catch (e) { eccezione = e; }
+            ok('8: notifica fallita -> gestisciScadenza non lancia', eccezione === null, eccezione && eccezione.message);
+            db = await User.findById(uid).lean();
+            ok('8: notifica fallita -> timer spento lo stesso', db.deadManActive === undefined && db.deadManExpiresAt === undefined,
+                JSON.stringify({ active: db.deadManActive, exp: db.deadManExpiresAt }));
+            const utentiScaduti = await User.find({ _id: uid, deadManActive: true, deadManExpiresAt: { $lte: new Date() } });
+            for (const u of utentiScaduti) { try { await gestisciScadenza(u); } catch (e) {} } // "giro dopo" del cron
+            ok('8: al giro dopo nessuna email ripartita (1 invio in tutto)', invii === 1, `invii=${invii}`);
+        } finally {
+            Notification.create = createVero;
+            console.error = logVero;
+        }
 
     } catch (e) {
         console.error('\nERRORE DELLA PROVA:', e);
