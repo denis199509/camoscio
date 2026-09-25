@@ -169,5 +169,13 @@ const hikeSchema = new mongoose.Schema({
 });
 
 hikeSchema.index({ location: '2dsphere' });
+// GET /api/hikes filtra nella query con un $or su questi tre campi (58a sessione): Mongo usa
+// gli indici per un $or solo se OGNI ramo ne ha uno, altrimenti scansiona tutta la collezione.
+// groupCompletedAt NON sparse: un indice sparse non serve la query `groupCompletedAt: null`
+// (e' proprio il campo assente che cerca). Tutti e tre solo AGGIUNTI: autoIndex li crea al
+// primo avvio, nessuna migrazione (07-Trappole-Tecniche, punto 113).
+hikeSchema.index({ groupCompletedAt: 1 });
+hikeSchema.index({ creatorId: 1 });
+hikeSchema.index({ participants: 1 });
 
 module.exports = mongoose.models.Hike || mongoose.model('Hike', hikeSchema);

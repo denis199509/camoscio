@@ -270,8 +270,14 @@ function hikeVisibileA(hike, userId) {
 router.get('/', requireAuth, async (req, res) => {
     try {
         const userId = req.session.userId;
+        // La regola del punto 77 sta NELLA QUERY (debito §9 del piano routePath, 58a sessione):
+        // prima Hike.find() caricava in RAM ogni escursione del database - anche le concluse
+        // degli altri, che poi il filter qui sotto scartava. `groupCompletedAt: null` combacia
+        // anche col campo assente, come in POST /:id/accept-invite. Il filter in Node resta come
+        // difesa in profondita' (stessa regola, costo nullo). Niente .lean(): servono i documenti
+        // per il toJSON globale (id al posto di _id, db/mongo.js) - vedi hikeVisibileA.
         const [hikes, conTraccia] = await Promise.all([
-            Hike.find(),
+            Hike.find({ $or: [{ groupCompletedAt: null }, { creatorId: userId }, { participants: userId }] }),
             // hasRoutePath (routePath e' select:false dalla stessa tappa): SOLO l'_id, mai
             // l'array - il filtro sta nella query, non dopo. 'routePath.1' e non 'routePath'
             // sul $exists: una linea con un punto solo non si puo' disegnare, e direbbe "c'e'"
