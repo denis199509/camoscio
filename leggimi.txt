@@ -1,11 +1,11 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-09-24 (57a sessione, CHIUSA in sicurezza). Piano CSP completo,
+Aggiornato: 2026-09-25 (58a sessione, CHIUSA in sicurezza). Piano CSP completo,
 con tutte le decisioni gia' prese da Denis (D-1...D-7):
 C:\Users\lenovo\.claude\plans\camoscio-csp-header-sicurezza.md - non
 richiede altre domande, solo eseguire la tappa rimasta (in pausa, vedi sotto).
 
-  >>> DA DOVE SI RIPARTE (58a sessione):
+  >>> DA DOVE SI RIPARTE (59a sessione):
   !!! 0. RAMO LOCALE "cron-header", NON PUSHATO DI PROPOSITO (MEDIO #1
       della verifica generale, scelta "due tempi" di Denis): lib/cronSecret.js
       accetta il segreto dei cron SOLO nell'header X-Cron-Secret, non piu'
@@ -17,44 +17,49 @@ richiede altre domande, solo eseguire la tappa rimasta (in pausa, vedi sotto).
       che rispondono 200 col codice in produzione (che accetta gia'
       l'header). Altrimenti controlla-scadenze risponde 403 e gli allarmi
       del Dead Man's Switch smettono di partire. Prima di unire: rilanciare
-      prova-punto37 (29) e prova-eliminazione-account (61).
-   1. Master = origin/master: 56a + 57a pushate (vedi FATTO sotto).
-   2. Verifica generale MEDIO/BASSO: l'elenco degli 11 candidati e' CHIUSO
-      (10 in master + il #1 sul ramo). Restano tre punti fuori elenco, da
-      proporre uno alla volta (04-Da-Fare.md punto 2): Report.reporterId
-      forse fuori dallo scrub (DA VERIFICARE sul codice); DMS - se
-      Notification.create fallisce dopo le email, il timer resta acceso e
-      le email ripartono al giro dopo (routes/safety.js:189, SCELTA DI
-      DENIS, modulo delicato); uscite GIA' importate col titolo di un
-      waypoint (conteggio in sola lettura, poi decide Denis).
-   3. CSP: TAPPE 1-4 di 5 chiuse. TAPPA 5 (enforcement, 1 riga) in pausa:
+      prova-punto37 e prova-eliminazione-account. Il ramo e' nato prima dei
+      due commit della 58a ma tocca solo cronSecret.js + le due prove:
+      verificato il 25/09 che si unisce a master senza conflitti.
+   1. Codice: master = origin/master (b0c36fb + ce6d57e pushati nella 58a).
+  !!! 1-bis. PRIMA DI TUTTO: prova-punto33 NON VERDE il 25/09 (4 FALLITI:
+      salita stimata fuori dal 10% - Pizzo Cefalone 56,1% - e fascia di
+      quota lontana), con Open-Meteo in 429 continuo. Da capire se e' un
+      difetto vero (lib/elevation.js toccato nella 57a) o quote parziali
+      durante i 429. Rilanciarla a Open-Meteo libera, SENZA "| grep" (resta
+      appesa minuti sui ritenti); se fallisce ancora, controprova con
+      git show b2cfc46:lib/elevation.js. Dettaglio: vault 04-Da-Fare 2-bis.
+   2. Tre punti SENZA Denis, proposti nell'ordine (uno alla volta, col suo ok):
+      (a) POST /:id/complete-group risponde col documento grezzo, non passa
+          da hikeVisibileA (innocuo oggi: solo il creatore; una riga + prova);
+      (b) GET /api/users manda la lista intera a ogni utente (stessa forma
+          del /api/hikes appena chiuso) - VERIFICARE prima cosa usa il
+          client, filtrare potrebbe cambiare cosa si vede;
+      (c) mappe offline, due residui della 51a: MEDIO-4 (conteggio tile
+          esplicite con cursore invece di un indice) e BASSO-2
+          (QuotaExceededError non suggerisce "Libera spazio").
+   3. GET /api/hikes: resta da DECIDERE (Denis) se servono paginazione o il
+      taglio delle escursioni passate mai chiuse degli altri - cambiano
+      cosa vede l'utente, CamoscioState.hikes e' tabella di lookup in 10
+      file del client. Con 10 escursioni oggi nessun beneficio misurabile.
+   4. CSP: TAPPE 1-4 di 5 chiuse. TAPPA 5 (enforcement, 1 riga) in pausa:
       serve il giro sul telefono Android di Denis. Non si puo' fare da soli.
-   4. prova-punto33 e prova-punto38: 1 controllo SALTATO ciascuna il 24/09 (429
-      di Open-Meteo dopo tante prove): rilanciarle, SALTATO non vuol dire passato.
    5. Debito tecnico minore (Marche/Molise, LICENSE, .git): aspettare che
       sia Denis a scegliere, non riproporlo come default.
 
-FATTO nella 57a sessione (dettaglio in ../camoscio memoria/06-Cronologia-
-Sessioni.md, sezione "57a"). Gli 11 candidati MEDIO/BASSO ricontrollati sul
-codice: tutti ancora aperti, tutti chiusi, ognuno con controprova:
- - lib/uscitaVisibile.js: viewerId mancante -> 401 (il driver toglie dal
-   filtro un campo undefined: Follow.exists diventava "ha un follower").
- - routes/users.js: birthDate/ageRange FUORI da SELF_EDITABLE_FIELDS
-   (scelta di Denis; si dichiarano solo alla registrazione, col 18+).
- - routes/squads.js (request-join/approve/rifiuto) + routes/hikes.js
-   (creazione): notifiche in try separato, niente errore falso/doppioni.
- - lib/gpx.js nomeDelPercorso: titolo dal <trk>/<rte> o <metadata> (senza
-   <author>), mai da un <wpt>.
- - lib/mailer.js: esc() sui link. routes/safety.js: log con l'id.
- - lib/geofenceTimbri.js: puntiTimbrabili via aggregate (non Hike.find({})).
-   hikeStats/trailGraph: gia' limitati, nessuna modifica.
- - lib/fit.js: MAX_MESSAGGI_FIT = 100.000 contati PRIMA della libreria
-   (scelta di Denis). prova-fit 35 (+2).
- - lib/elevation.js: mappa quote per richiesta (la cache condivisa poteva
-   sfrattare quote gia' note durante gli await).
- - 14 avatar escapati nel client (social/peoplesearch/backpack/carpool).
- - Controllo finale: vedi 06-Cronologia-Sessioni 57a. Push su scelta di
-   Denis: tutto tranne il ramo cron-header.
+FATTO nella 58a sessione (dettaglio in ../camoscio memoria/06-Cronologia-
+Sessioni.md, sezione "58a"). I tre punti fuori elenco CHIUSI:
+ - Report.reporterId: NON e' un buco (i contenuti restano per scelta,
+   pseudonimizzati; il pubblico non riceve nemmeno l'id). Nessuna modifica.
+ - DMS (scelta di Denis): Notification.create isolata in gestisciScadenza,
+   il timer si spegne comunque -> niente email ripetute ai contatti.
+   prova-deadman-esito-fallito sez. 8 (21/21; controprova 3 falliti).
+ - Titoli uscite gia' importate: 26, nessuno di un waypoint. Trovata e
+   CANCELLATA (ok di Denis) un'uscita di prova PROVA-113 pubblicata
+   sull'account demo Marco Alpinista, filtro _id+userId+marca.
+ - GET /api/hikes (scelta di Denis): filtro di visibilita' nella query +
+   indici groupCompletedAt/creatorId/participants (gia' creati su Atlas
+   da autoIndex). Niente .lean() (toJSON globale: id al posto di _id).
+ - Push: b0c36fb + ce6d57e (su richiesta esplicita di Denis).
 
 >>> APERTI (invariati salvo dove segnato):
   - CONFORMITA' GDPR + NOTA LEGALE: index.html fa accettare "Termini +
@@ -123,11 +128,9 @@ codice: tutti ancora aperti, tutti chiusi, ognuno con controprova:
     risposta se ci sono modifiche non salvate. Va rifuso in un commit vero
     prima di ogni push (git status/git log origin/master..HEAD per il
     conteggio esatto: crescono a ogni risposta con modifiche). Ultimo push
-    del codice: 47ac9b4 + 037d190 (18/09, 54a-55a). A fine 56a: UN commit
-    locale pulito b2cfc46 (i 15 file della 56a) + il commit di chiusura
-    di leggimi.txt/cose_da_fare.txt, NESSUNO pushato - Denis ha chiesto
-    "salva tutto", non il push. Vault invece allineato al suo remoto
-    (pushato a fine 56a).
+    del codice: ce6d57e (25/09, 58a). Il commit di chiusura della 58a
+    (leggimi.txt/cose_da_fare.txt) e' LOCALE salvo diverso ok di Denis -
+    controllare con git log origin/master..HEAD. Vault pushato a fine 58a.
   - Traduzione IT/EN (punto 102, CHIUSO): resta ITALIANO di proposito tutto
     il testo scritto dagli utenti, i nomi di luogo, i percorsi salvati,
     titolo/descrizione dei badge, le schede "i", il testo delle notifiche
@@ -195,7 +198,12 @@ codice: tutti ancora aperti, tutti chiusi, ognuno con controprova:
     (completamento doppio, squadre atomiche, cambio lingua, meteo, scrub
     carpool/origineUsername, coda geocoding, feed, limite .gpx) - vedi
     06-Cronologia-Sessioni.md, sezione "56a". 772/772 controlli verdi,
-    commit locale b2cfc46 NON pushato.
+    pushato poi con la 57a.
+  57a SESSIONE (24/09): gli ultimi 11 MEDIO/BASSO della verifica generale
+    chiusi (uscitaVisibile 401, birthDate fuori dalle modifiche, notifiche
+    in try separato, titolo .gpx, esc() nelle email, tetto .fit, quote
+    per richiesta, 14 avatar); 10 pushati (6346b1c), il #1 sul ramo
+    cron-header - vedi 06-Cronologia-Sessioni.md, sezione "57a".
 
 ===================================================================
 

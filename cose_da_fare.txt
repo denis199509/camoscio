@@ -14051,3 +14051,48 @@ notifica per te fallisce, al giro dopo le email ai contatti ripartono
 importate possono avere un titolo preso da un punto segnato (posso
 contarle); un dato ("Report.reporterId") forse non viene cancellato con
 l'account, da verificare.
+
+=======================================================================
+58ESIMA SESSIONE (25/09/2026)
+=======================================================================
+
+Denis: "abbiamo chiuso tutti i punti medio/basso?", poi "parti con la
+verifica" (i tre punti fuori elenco, uno alla volta), poi "parti con
+GET /api/hikes".
+
+FATTO 1 - Report.reporterId (verificato, NESSUNA modifica): non è un
+buco. Come per escursioni e messaggi, le segnalazioni restano e chi le
+legge vede "Account eliminato": l'elenco pubblico non riceve nemmeno
+l'id di chi ha segnalato, i moderatori vedono "Account eliminato".
+Resta solo il testo/foto scritti a mano (vale per ogni contenuto: va
+nell'informativa privacy).
+
+FATTO 2 - timer di sicurezza (scelta tua: "spegni comunque"): se la
+notifica per te non si salvava DOPO che le email ai contatti erano
+partite, il timer restava acceso e a ogni giro del cron i contatti
+ricevevano di nuovo l'allarme, finché durava il guasto. Ora l'errore
+va nel log e il timer si spegne. Provato: 1 email invece di 2 (sul
+codice vecchio 2). Pushato (b0c36fb).
+
+FATTO 3 - titoli delle uscite già importate (contate, NESSUNA
+modifica): 26 uscite, nessuna col nome di un punto segnato. Trovata per
+strada un'uscita DI PROVA rimasta pubblicata sul database vero
+("PROVA-113-...", account demo Marco Alpinista): cancellata su tua
+richiesta, filtrata per id + account demo; nient'altro collegato.
+L'account demo è intatto.
+
+FATTO 4 - GET /api/hikes (scelta tua: "filtro nella query"): il server
+caricava in memoria TUTTE le escursioni del database a ogni richiesta,
+anche quelle concluse degli altri, per poi scartarle. Ora le chiede già
+filtrate al database, con tre indici nuovi. Per te non cambia niente di
+visibile (provato su tutti gli utenti: stessa lista di prima). Pushato
+(ce6d57e). Non fatto, da decidere se serve: la paginazione e il taglio
+delle escursioni passate mai chiuse degli altri (cambierebbe cosa si
+vede).
+
+Restano senza di te (proposti, si riparte da qui): la risposta di
+"Completa escursione" che non passa dal filtro comune (piccolo);
+GET /api/users che manda la lista intera (come era /api/hikes);
+due punti minori delle mappe offline (51a). Con te: cron-job.org e poi
+il ramo cron-header; Tappa 5 CSP e prove col telefono; privacy (serve
+un professionista).
