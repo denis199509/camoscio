@@ -1239,7 +1239,10 @@ router.post('/:id/complete-group', requireAuth, scritturaLimiter, async (req, re
             console.error('Avvisi "segnato presente" non inviati:', e);
         }
 
-        res.json(hike);
+        // Anche questa uscita passa da hikeVisibileA, come tutte (59a sessione, §9 del piano
+        // routePath): oggi e' identica al documento, perche' solo il creatore arriva fin qui,
+        // ma non deve restare l'unica eccezione se un domani la chiamasse qualcun altro.
+        res.json(hikeVisibileA(hike, req.session.userId));
     } catch (e) {
         console.error('Errore completamento di gruppo:', e);
         res.status(400).json({ error: 'Impossibile completare la richiesta' });
