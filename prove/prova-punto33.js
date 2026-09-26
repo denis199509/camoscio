@@ -164,7 +164,11 @@ const salita = tuple => statisticheTraccia(tuple, SOGLIA_DISLIVELLO_M, haversine
         // --- 4. Le due escursioni VERE dell'utente ---
         console.log('\n4. Confronto col dislivello vero di due escursioni fatte davvero');
         const vere = await mongoose.connection.collection('activehikesessions')
-            .find({ importedFrom: 'gpx' }).toArray();
+            .find({ importedFrom: 'gpx' }).sort({ _id: 1 }).limit(2).toArray();
+        // Le DUE piu' vecchie, quelle su cui la prova e' stata tarata (59a sessione). Senza il
+        // limite la prova leggeva ogni traccia importata - 25 al 26/09/2026, ~4.700 punti -
+        // e cosi' era lei stessa a esaurire il tetto al minuto della fonte (i 429 che la
+        // facevano saltare), oltre a misurare il ±10% su altimetri che nessuno ha tarato.
         ok('le tracce vere di riferimento ci sono ancora sul database', vere.length >= 1, `${vere.length} tracce`);
 
         const disponibile = await attendiFonte();
