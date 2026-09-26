@@ -223,6 +223,13 @@ async function downloadOfflineMapForBounds(bounds, onProgress) {
     const tiles = listTilesForBounds(bounds);
     let completed = 0;
     let failed = 0;
+    // BASSO-2 (revisione 51a, chiuso nella 59a): quota del browser piena. Prima finiva nel
+    // catch generico come una tile "non riuscita": il download continuava a chiedere a
+    // OpenTopoMap centinaia di tile che non poteva piu' salvare e chiudeva con il toast verde
+    // "Mappa offline pronta: 120/800". Ora alla prima quota piena si ferma - e' anche lo
+    // spazio che serve alla coda dei punti GPS, non va consumato fino all'ultimo byte - e il
+    // chiamante lo dice all'utente, indicando "Libera spazio".
+    let spazioEsaurito = false;
 
     async function downloadOne(coords) {
         const key = tileKey(coords.z, coords.x, coords.y, tileLayer.options.styleId);
@@ -244,6 +251,7 @@ async function downloadOfflineMapForBounds(bounds, onProgress) {
                 const blob = await response.blob();
                 await idbPutTile(key, blob, true); // explicit: protetta dalla pulizia automatica
             } catch (e) {
+                if (e && e.name === 'QuotaExceededError') spazioEsaurito = true;
                 failed++;
             }
         }
@@ -253,13 +261,15 @@ async function downloadOfflineMapForBounds(bounds, onProgress) {
 
     let cursor = 0;
     async function worker() {
-        while (cursor < tiles.length) {
+        while (cursor < tiles.length && !spazioEsaurito) {
             await downloadOne(tiles[cursor++]);
         }
     }
 
     await Promise.all(Array.from({ length: TILE_DOWNLOAD_CONCURRENCY }, worker));
-    return { total: tiles.length, failed };
+    // salvate = quelle davvero sul dispositivo: con spazioEsaurito il giro si ferma prima
+    // della fine, quindi total - failed conterebbe anche le tile mai tentate.
+    return { total: tiles.length, failed, salvate: completed - failed, spazioEsaurito };
 }
 
 window.createOfflineTileLayer = createOfflineTileLayer;

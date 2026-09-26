@@ -1961,6 +1961,7 @@
             'track.tileNonRiuscite': function (n) { return ' (' + n + ' failed)'; },
             'track.mappaProntaToast': function (salvate, total) { return 'Offline map ready: ' + salvate + '/' + total + ' tiles saved on the device.'; },
             'track.erroreDownloadMappa': 'Error while downloading the offline map.',
+            'track.spazioEsauritoDownload': function (salvate, total) { return 'Device storage full: only ' + salvate + '/' + total + ' tiles saved, the offline map is incomplete. If you have offline maps you no longer need, "Free up space" below deletes them; then try the download again.'; },
             'track.spazioMappeOfflineOccupato': function (count, dimensione) { return 'Downloaded offline maps: about ' + dimensione + ' (' + count + ' tiles) on this device.'; },
             'track.confermaLiberaSpazio': "This will delete ALL offline maps downloaded so far on this device, for every hike (not just the oldest ones). If you still need one for an upcoming hike, you'll have to download it again. Continue?",
             'track.spazioLiberato': function (deleted) { return 'Space freed: ' + deleted + ' tiles deleted.'; },

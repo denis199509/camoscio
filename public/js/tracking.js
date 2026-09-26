@@ -1403,7 +1403,14 @@ async function handleDownloadOfflineMap() {
                 progressLabel.textContent = base + ko;
             }
         });
-        window.showToast(T('track.mappaProntaToast', result.total - result.failed, result.total) || `Mappa offline pronta: ${result.total - result.failed}/${result.total} tile salvate sul dispositivo.`, "success");
+        if (result.spazioEsaurito) {
+            // BASSO-2 (59a): download fermato per quota piena (offline-map.js). Non si
+            // promette che "Libera spazio" basti: lo spazio puo' essere occupato anche da
+            // altro (coda GPS, dati del sito) - lo si propone solo come la via che c'e'.
+            window.showToast(T('track.spazioEsauritoDownload', result.salvate, result.total) || `Spazio del dispositivo esaurito: salvate solo ${result.salvate}/${result.total} tile, la mappa offline è incompleta. Se hai mappe offline che non ti servono più, "Libera spazio" qui sotto le cancella; poi riprova il download.`, "error");
+        } else {
+            window.showToast(T('track.mappaProntaToast', result.salvate, result.total) || `Mappa offline pronta: ${result.salvate}/${result.total} tile salvate sul dispositivo.`, "success");
+        }
     } catch (e) {
         console.error("Errore download mappa offline:", e);
         window.showToast(T('track.erroreDownloadMappa') || "Errore durante il download della mappa offline.", "error");
