@@ -15,8 +15,8 @@ richiede altre domande, solo eseguire la tappa rimasta (in pausa, vedi sotto).
       che rispondono 200. Altrimenti gli allarmi del Dead Man's Switch
       smettono di partire. Prima di unire: rilanciare prova-punto37 e
       prova-eliminazione-account. Si unisce senza conflitti (verificato 25/09).
-   1. Codice: 3 commit della 59a + la chiusura della 58a sono LOCALI
-      (git log origin/master..HEAD). Push solo su richiesta di Denis.
+   1. Codice: master = origin/master fino a c39e88c (59a, pushato su
+      richiesta di Denis il 26/09). Resta locale solo il ramo cron-header.
    2. NESSUN punto "senza Denis" rimasto in elenco. Tutto il resto aspetta
       una sua scelta o il suo telefono:
       - GET /api/hikes: paginazione / taglio passate degli altri (decidere);
