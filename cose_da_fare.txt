@@ -14096,3 +14096,37 @@ GET /api/users che manda la lista intera (come era /api/hikes);
 due punti minori delle mappe offline (51a). Con te: cron-job.org e poi
 il ramo cron-header; Tappa 5 CSP e prove col telefono; privacy (serve
 un professionista).
+
+
+===================================================================
+59a SESSIONE (26/09/2026)
+===================================================================
+Denis: "possiamo continuare a chiudere i punti che non hanno bisogno
+del mio intervento".
+
+FATTO 1 - la prova del dislivello (prova-punto33) non era verde: il
+sito e' a posto, era la prova. Doveva confrontare 2 tracce vere, ma ne
+leggeva tutte quelle importate (oggi 25): chiedeva cosi' tante quote a
+Open-Meteo da farsi bloccare da sola, e misurava il 10% anche su tracce
+di altri orologi. Ora torna a 2. Il codice toccato nella 57a e'
+verificato innocente con una fonte finta. Verde: 32 passati, 0 falliti.
+
+FATTO 2 - "Completa escursione" (di gruppo): la risposta ora passa dal
+filtro comune come tutte le altre. Per te non cambia niente (solo chi
+ha creato l'escursione la chiama). Quattro prove verdi.
+
+FATTO 3 - mappe offline, spazio pieno: se il telefono finisce lo spazio
+durante un download, prima il sito continuava a scaricare tile che non
+poteva salvare e alla fine diceva "Mappa offline pronta" in verde. Ora
+si ferma subito e dice in rosso che la mappa e' incompleta, indicando
+"Libera spazio".
+
+NON FATTI, restano a te (col motivo):
+ - GET /api/users manda a tutti la lista intera degli utenti: non e'
+   come /api/hikes, qui ogni utente e' visibile a tutti per scelta e la
+   ricerca persone lavora su quella lista. Ridurla cambia come funziona
+   la ricerca. Con 18 utenti oggi non serve.
+ - il conteggio delle mappe offline (MEDIO-4, 51a): la correzione
+   proposta non funziona cosi' com'e' (IndexedDB non indicizza un
+   si'/no); servirebbe trasformare tutte le mappe gia' salvate sul
+   telefono. Solo dopo una misura sul telefono, se mai servisse.

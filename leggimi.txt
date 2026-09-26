@@ -1,50 +1,41 @@
 ===================================================================
 CAMOSCIO — LEGGIMI: DA DOVE SI RIPARTE
-Aggiornato: 2026-09-25 (58a sessione, CHIUSA in sicurezza). Piano CSP completo,
-con tutte le decisioni gia' prese da Denis (D-1...D-7):
+Aggiornato: 2026-09-26 (59a sessione). Piano CSP completo, con tutte le
+decisioni gia' prese da Denis (D-1...D-7):
 C:\Users\lenovo\.claude\plans\camoscio-csp-header-sicurezza.md - non
 richiede altre domande, solo eseguire la tappa rimasta (in pausa, vedi sotto).
 
-  >>> DA DOVE SI RIPARTE (59a sessione):
+  >>> DA DOVE SI RIPARTE (60a sessione):
   !!! 0. RAMO LOCALE "cron-header", NON PUSHATO DI PROPOSITO (MEDIO #1
       della verifica generale, scelta "due tempi" di Denis): lib/cronSecret.js
       accetta il segreto dei cron SOLO nell'header X-Cron-Secret, non piu'
-      in ?chiave= (+ prova-punto37 con il controllo "segreto giusto in
-      query -> 403", prova-eliminazione-account passata all'header).
-      Master NON lo contiene. Si unisce a master e si pusha SOLO DOPO che
-      Denis ha cambiato ENTRAMBI i job su cron-job.org (Avanzate -> Headers:
+      in ?chiave=. Si unisce a master e si pusha SOLO DOPO che Denis ha
+      cambiato ENTRAMBI i job su cron-job.org (Avanzate -> Headers:
       X-Cron-Secret = <segreto>, ?chiave= tolto dall'URL) e si e' visto
-      che rispondono 200 col codice in produzione (che accetta gia'
-      l'header). Altrimenti controlla-scadenze risponde 403 e gli allarmi
-      del Dead Man's Switch smettono di partire. Prima di unire: rilanciare
-      prova-punto37 e prova-eliminazione-account. Il ramo e' nato prima dei
-      due commit della 58a ma tocca solo cronSecret.js + le due prove:
-      verificato il 25/09 che si unisce a master senza conflitti.
-   1. Codice: master = origin/master (b0c36fb + ce6d57e pushati nella 58a).
-  !!! 1-bis. PRIMA DI TUTTO: prova-punto33 NON VERDE il 25/09 (4 FALLITI:
-      salita stimata fuori dal 10% - Pizzo Cefalone 56,1% - e fascia di
-      quota lontana), con Open-Meteo in 429 continuo. Da capire se e' un
-      difetto vero (lib/elevation.js toccato nella 57a) o quote parziali
-      durante i 429. Rilanciarla a Open-Meteo libera, SENZA "| grep" (resta
-      appesa minuti sui ritenti); se fallisce ancora, controprova con
-      git show b2cfc46:lib/elevation.js. Dettaglio: vault 04-Da-Fare 2-bis.
-   2. Tre punti SENZA Denis, proposti nell'ordine (uno alla volta, col suo ok):
-      (a) POST /:id/complete-group risponde col documento grezzo, non passa
-          da hikeVisibileA (innocuo oggi: solo il creatore; una riga + prova);
-      (b) GET /api/users manda la lista intera a ogni utente (stessa forma
-          del /api/hikes appena chiuso) - VERIFICARE prima cosa usa il
-          client, filtrare potrebbe cambiare cosa si vede;
-      (c) mappe offline, due residui della 51a: MEDIO-4 (conteggio tile
-          esplicite con cursore invece di un indice) e BASSO-2
-          (QuotaExceededError non suggerisce "Libera spazio").
-   3. GET /api/hikes: resta da DECIDERE (Denis) se servono paginazione o il
-      taglio delle escursioni passate mai chiuse degli altri - cambiano
-      cosa vede l'utente, CamoscioState.hikes e' tabella di lookup in 10
-      file del client. Con 10 escursioni oggi nessun beneficio misurabile.
-   4. CSP: TAPPE 1-4 di 5 chiuse. TAPPA 5 (enforcement, 1 riga) in pausa:
-      serve il giro sul telefono Android di Denis. Non si puo' fare da soli.
-   5. Debito tecnico minore (Marche/Molise, LICENSE, .git): aspettare che
+      che rispondono 200. Altrimenti gli allarmi del Dead Man's Switch
+      smettono di partire. Prima di unire: rilanciare prova-punto37 e
+      prova-eliminazione-account. Si unisce senza conflitti (verificato 25/09).
+   1. Codice: 3 commit della 59a + la chiusura della 58a sono LOCALI
+      (git log origin/master..HEAD). Push solo su richiesta di Denis.
+   2. NESSUN punto "senza Denis" rimasto in elenco. Tutto il resto aspetta
+      una sua scelta o il suo telefono:
+      - GET /api/hikes: paginazione / taglio passate degli altri (decidere);
+      - GET /api/users lista intera (59a: non e' come /api/hikes, niente
+        filtro da spostare - ridurla cambia la ricerca persone);
+      - MEDIO-4 tile offline (59a: un booleano non e' una chiave IndexedDB,
+        serve una migrazione dati v3 - solo dopo una misura sul telefono);
+      - CSP TAPPA 5 (enforcement, 1 riga): serve il giro sul telefono Android.
+   3. Debito tecnico minore (Marche/Molise, LICENSE, .git): aspettare che
       sia Denis a scegliere, non riproporlo come default.
+
+FATTO nella 59a sessione (dettaglio in ../camoscio memoria/06-Cronologia-
+Sessioni.md, sezione "59a"):
+ - prova-punto33 di nuovo VERDE (32/0/1): il difetto era della prova, che
+   leggeva tutte le 25 tracce importate invece delle 2 di taratura (i 429
+   li causava lei). elevation.js della 57a verificato neutro offline.
+ - POST /:id/complete-group: la risposta passa da hikeVisibileA.
+ - Mappe offline BASSO-2: a quota piena il download si ferma e il toast
+   indica "Libera spazio".
 
 FATTO nella 58a sessione (dettaglio in ../camoscio memoria/06-Cronologia-
 Sessioni.md, sezione "58a"). I tre punti fuori elenco CHIUSI:
